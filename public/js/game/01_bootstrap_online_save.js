@@ -128,6 +128,42 @@
     return sameHost;
   }
 
+  function requiresExplicitServerApiBase() {
+    return /(^|\.)github\.io$/i.test(String(location.hostname || ''));
+  }
+
+  function applyServerApiBaseFromAuthInput() {
+    const input = document.getElementById('server-url-input');
+    const raw = String(input?.value || '').trim();
+    if (!raw) {
+      if (requiresExplicitServerApiBase()) {
+        throw new Error('Укажите публичный HTTPS-адрес игрового сервера. GitHub Pages запускает только клиент игры.');
+      }
+      SERVER_API_BASE = defaultServerApiBase();
+      localStorage.removeItem(SERVER_URL_KEY);
+      return SERVER_API_BASE;
+    }
+
+    let parsed = null;
+    try { parsed = new URL(raw); } catch (_) {
+      throw new Error('Некорректный адрес игрового сервера. Используйте полный URL вида https://game.example.com.');
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+      throw new Error('Адрес игрового сервера должен использовать HTTP или HTTPS и не содержать логин/пароль.');
+    }
+    if (location.protocol === 'https:' && parsed.protocol !== 'https:') {
+      throw new Error('Страница открыта по HTTPS, поэтому игровой сервер тоже должен использовать HTTPS.');
+    }
+    const normalized = parsed.origin.replace(/\/+$/, '');
+    if (requiresExplicitServerApiBase() && normalized === location.origin) {
+      throw new Error('Укажите адрес Node-сервера, а не адрес GitHub Pages.');
+    }
+    SERVER_API_BASE = normalized;
+    localStorage.setItem(SERVER_URL_KEY, normalized);
+    if (input) input.value = normalized;
+    return normalized;
+  }
+
   let SERVER_API_BASE = defaultServerApiBase();
   const serverSession = {
     token: localStorage.getItem(SERVER_TOKEN_KEY) || '',
@@ -285,10 +321,12 @@
   function updateServerAuthUI() {
     const loginText = document.getElementById('server-current-login');
     const selectLogin = document.getElementById('character-select-login');
+    const serverUrlInput = document.getElementById('server-url-input');
     const loginInput = document.getElementById('server-login-input');
     const passInput = document.getElementById('server-password-input');
     if (loginText) loginText.textContent = serverSession.token ? `вход: ${serverSession.login}` : 'не выполнен вход';
     if (selectLogin) selectLogin.textContent = serverSession.token ? `аккаунт: ${serverSession.login}` : 'аккаунт';
+    if (serverUrlInput && !serverUrlInput.value) serverUrlInput.value = SERVER_API_BASE || '';
     if (loginInput && serverSession.login && !loginInput.value) loginInput.value = serverSession.login;
     if (passInput && serverSession.token) passInput.value = '';
   }
@@ -558,6 +596,10 @@
       setServerAuthStatus('Введите логин от 3 символов и пароль от 4 символов.', 'err');
       return;
     }
+    try { applyServerApiBaseFromAuthInput(); } catch (err) {
+      setServerAuthStatus(err.message || 'Проверьте адрес игрового сервера.', 'err');
+      return;
+    }
     setServerAuthStatus('Вход...');
     try {
       const data = await serverApi('/api/auth/login', { method: 'POST', body: JSON.stringify({ login, password, deviceId: getDeviceId(), clientInstanceId: getClientInstanceId(), deviceType: getDeviceType(), controlType: getDeviceControlType() }) });
@@ -579,6 +621,10 @@
     }
     if (password !== password2) {
       setServerRegisterStatus('Пароли не совпадают.', 'err');
+      return;
+    }
+    try { applyServerApiBaseFromAuthInput(); } catch (err) {
+      setServerRegisterStatus(err.message || 'Проверьте адрес игрового сервера.', 'err');
       return;
     }
     setServerRegisterStatus('Регистрация...');

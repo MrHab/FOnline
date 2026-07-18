@@ -1,0 +1,131 @@
+{
+  "schema": "realm.encounters.v1",
+  "version": 1,
+  "encounters": {
+    "ghoul_pack": {
+      "name": "Стая гулей",
+      "actors": [
+        { "tx": 16, "tz": 17, "typeIndex": 1, "name": "Гуль пустоши", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 },
+        { "tx": 19, "tz": 16, "typeIndex": 1, "name": "Гуль пустоши", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 },
+        { "tx": 22, "tz": 18, "typeIndex": 1, "name": "Гуль пустоши", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 },
+        { "tx": 18, "tz": 21, "typeIndex": 1, "name": "Гуль пустоши", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 },
+        { "tx": 21, "tz": 22, "typeIndex": 1, "name": "Гуль пустоши", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 }
+      ]
+    },
+    "peaceful_caravan": {
+      "name": "Мирный караван",
+      "actors": [
+        { "tx": 18, "tz": 18, "typeIndex": 0, "name": "Караванщик", "faction": "caravan", "role": "merchant", "hostileToPlayer": false, "stationary": true, "hp": 48, "atk": 5, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots", "backpack": "backpack" }, "tradeProfile": "caravan", "lootFromTradeStock": true },
+        { "tx": 16, "tz": 18, "typeIndex": 0, "name": "Страж каравана", "faction": "caravan", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 10, "equipment": { "weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardCaravan" },
+        { "tx": 20, "tz": 18, "typeIndex": 0, "name": "Страж каравана", "faction": "caravan", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 10, "equipment": { "weapon": "shotgun", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardCaravan" },
+        { "tx": 18, "tz": 21, "typeIndex": 0, "name": "Охранник каравана", "faction": "caravan", "role": "guard", "hostileToPlayer": false, "hp": 62, "atk": 10, "equipment": { "weapon": "pistol", "armor": "leather", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardCaravan" }
+      ]
+    },
+    "caravan_patrol_vs_ghouls": {
+      "name": "Патруль против гулей",
+      "actors": [
+        { "tx": 14, "tz": 18, "typeIndex": 0, "name": "Патрульный Старого Клима", "faction": "klim_patrol", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 11, "equipment": { "weapon": "assaultRifle", "armor": "combatArmor", "helmet": "assaultHelmet", "boots": "reinforcedBoots" }, "tradeProfile": "guardKlimPatrol" },
+        { "tx": 15, "tz": 20, "typeIndex": 0, "name": "Охрана Старого Клима", "faction": "klim_patrol", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 11, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "tacticalHelmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
+        { "tx": 16, "tz": 17, "typeIndex": 0, "name": "Охрана Старого Клима", "faction": "klim_patrol", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 11, "equipment": { "weapon": "shotgun", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
+        { "tx": 23, "tz": 18, "typeIndex": 1, "name": "Бешеный гуль", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 },
+        { "tx": 24, "tz": 20, "typeIndex": 1, "name": "Бешеный гуль", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 },
+        { "tx": 25, "tz": 17, "typeIndex": 1, "name": "Бешеный гуль", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 },
+        { "tx": 26, "tz": 19, "typeIndex": 1, "name": "Бешеный гуль", "faction": "ghouls", "role": "monster", "hostileToPlayer": true, "hp": 42, "atk": 8 }
+      ]
+    },
+    "raider_ambush": {
+      "name": "Засада рейдеров",
+      "actors": [
+        { "tx": 15, "tz": 18, "typeIndex": 0, "name": "Рейдер-стрелок", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 58, "atk": 10, "equipment": { "weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots" } },
+        { "tx": 18, "tz": 16, "typeIndex": 0, "name": "Рейдер", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 55, "atk": 9, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots" } },
+        { "tx": 22, "tz": 18, "typeIndex": 0, "name": "Рейдер с дробовиком", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 62, "atk": 11, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" } },
+        { "tx": 19, "tz": 22, "typeIndex": 0, "name": "Рейдер-мародер", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 52, "atk": 8, "equipment": { "weapon": "axe", "armor": "leather", "boots": "boots" } }
+      ]
+    },
+    "raiders_vs_patrol": {
+      "name": "Рейдеры против патруля",
+      "actors": [
+        { "tx": 14, "tz": 18, "typeIndex": 0, "name": "Патрульный Старого Клима", "faction": "klim_patrol", "role": "guard", "hostileToPlayer": false, "hp": 58, "atk": 11, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
+        { "tx": 16, "tz": 20, "typeIndex": 0, "name": "Охранник Старого Клима", "faction": "klim_patrol", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
+        { "tx": 23, "tz": 17, "typeIndex": 0, "name": "Рейдер-стрелок", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 58, "atk": 10, "equipment": { "weapon": "rifle", "armor": "leather", "helmet": "helmet", "boots": "boots" } },
+        { "tx": 24, "tz": 20, "typeIndex": 0, "name": "Рейдер", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 55, "atk": 9, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots" } },
+        { "tx": 25, "tz": 18, "typeIndex": 0, "name": "Рейдер с дробовиком", "faction": "raiders", "role": "raider", "hostileToPlayer": true, "hp": 62, "atk": 11, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" } }
+      ]
+    },
+    "radscorpion_nest": {
+      "name": "Гнездо радскорпионов",
+      "actors": [
+        { "tx": 15, "tz": 18, "typeIndex": 4, "name": "Матерый радскорпион", "faction": "radscorpions", "role": "monster", "hostileToPlayer": true, "hp": 76, "atk": 14 },
+        { "tx": 18, "tz": 16, "typeIndex": 4, "name": "Радскорпион", "faction": "radscorpions", "role": "monster", "hostileToPlayer": true, "hp": 76, "atk": 14 },
+        { "tx": 21, "tz": 18, "typeIndex": 4, "name": "Радскорпион", "faction": "radscorpions", "role": "monster", "hostileToPlayer": true, "hp": 76, "atk": 14 },
+        { "tx": 17, "tz": 21, "typeIndex": 4, "name": "Радскорпион", "faction": "radscorpions", "role": "monster", "hostileToPlayer": true, "hp": 76, "atk": 14 }
+      ]
+    },
+    "mutant_ant_swarm": {
+      "name": "Стая мутировавших муравьев",
+      "actors": [
+        { "tx": 15, "tz": 17, "typeIndex": 5, "name": "Муравей-солдат", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 17, "tz": 19, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 19, "tz": 16, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 21, "tz": 19, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 23, "tz": 17, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 19, "tz": 22, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 }
+      ]
+    },
+    "gecko_pack": {
+      "name": "Стая гекконов",
+      "actors": [
+        { "tx": 15, "tz": 18, "typeIndex": 6, "name": "Старый геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 18, "tz": 16, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 21, "tz": 17, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 23, "tz": 20, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 18, "tz": 22, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 22, "tz": 22, "typeIndex": 7, "name": "Огненный геккон", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 62, "atk": 12, "chance": 0.35 }
+      ]
+    },
+    "ants_vs_geckos": {
+      "name": "Муравьи против гекконов",
+      "actors": [
+        { "tx": 14, "tz": 17, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 15, "tz": 20, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 17, "tz": 18, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 16, "tz": 22, "typeIndex": 5, "name": "Большой мутировавший муравей", "faction": "mutant_ants", "role": "monster", "hostileToPlayer": true, "hp": 52, "atk": 10 },
+        { "tx": 23, "tz": 17, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 24, "tz": 20, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 22, "tz": 22, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 25, "tz": 18, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 }
+      ]
+    },
+    "radscorpions_vs_patrol": {
+      "name": "Патруль против радскорпионов",
+      "actors": [
+        { "tx": 14, "tz": 18, "typeIndex": 0, "name": "Патрульный Старого Клима", "faction": "klim_patrol", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": { "weapon": "rifle", "armor": "ballisticVest", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
+        { "tx": 15, "tz": 21, "typeIndex": 0, "name": "Охрана Старого Клима", "faction": "klim_patrol", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": { "weapon": "shotgun", "armor": "leather", "helmet": "helmet", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
+        { "tx": 16, "tz": 16, "typeIndex": 0, "name": "Охрана Старого Клима", "faction": "klim_patrol", "role": "guard", "hostileToPlayer": false, "hp": 56, "atk": 10, "equipment": { "weapon": "pistol", "armor": "leather", "boots": "boots" }, "tradeProfile": "guardKlimPatrol" },
+        { "tx": 23, "tz": 17, "typeIndex": 4, "name": "Радскорпион", "faction": "radscorpions", "role": "monster", "hostileToPlayer": true, "hp": 76, "atk": 14 },
+        { "tx": 24, "tz": 20, "typeIndex": 4, "name": "Радскорпион", "faction": "radscorpions", "role": "monster", "hostileToPlayer": true, "hp": 76, "atk": 14 },
+        { "tx": 25, "tz": 18, "typeIndex": 4, "name": "Радскорпион", "faction": "radscorpions", "role": "monster", "hostileToPlayer": true, "hp": 76, "atk": 14 },
+        { "tx": 22, "tz": 22, "typeIndex": 4, "name": "Радскорпион", "faction": "radscorpions", "role": "monster", "hostileToPlayer": true, "hp": 76, "atk": 14 }
+      ]
+    },
+    "super_mutant_lair": {
+      "name": "Логово супермутантов",
+      "actors": [
+        { "tx": 16, "tz": 17, "typeIndex": 2, "name": "Супермутант", "faction": "super_mutants", "role": "mutant", "hostileToPlayer": true, "hp": 120, "atk": 18, "equipment": { "weapon": "axe", "armor": "combatArmor", "boots": "boots" } },
+        { "tx": 19, "tz": 16, "typeIndex": 2, "name": "Супермутант-стрелок", "faction": "super_mutants", "role": "mutant", "hostileToPlayer": true, "hp": 118, "atk": 17, "equipment": { "weapon": "rifle", "armor": "combatArmor", "helmet": "helmet", "boots": "boots" } },
+        { "tx": 22, "tz": 19, "typeIndex": 2, "name": "Матёрый супермутант", "faction": "super_mutants", "role": "mutant", "hostileToPlayer": true, "hp": 145, "atk": 21, "equipment": { "weapon": "shotgun", "armor": "combatArmor", "helmet": "assaultHelmet", "boots": "reinforcedBoots" } },
+        { "tx": 18, "tz": 22, "typeIndex": 2, "name": "Быстрый супермутант", "faction": "super_mutants", "role": "mutant", "hostileToPlayer": true, "hp": 105, "atk": 16, "speed": 2.05, "equipment": { "weapon": "knife", "armor": "leather", "boots": "boots" } }
+      ]
+    },
+    "fire_gecko_ambush": {
+      "name": "Засада огненных гекконов",
+      "actors": [
+        { "tx": 16, "tz": 18, "typeIndex": 7, "name": "Огненный геккон", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 62, "atk": 12 },
+        { "tx": 19, "tz": 16, "typeIndex": 7, "name": "Огненный геккон", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 62, "atk": 12 },
+        { "tx": 22, "tz": 18, "typeIndex": 7, "name": "Огненный геккон", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 62, "atk": 12 },
+        { "tx": 18, "tz": 22, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 },
+        { "tx": 21, "tz": 22, "typeIndex": 6, "name": "Геккон пустоши", "faction": "geckos", "role": "monster", "hostileToPlayer": true, "hp": 46, "atk": 9 }
+      ]
+    }
+  }
+}

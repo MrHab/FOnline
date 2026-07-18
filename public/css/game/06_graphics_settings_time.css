@@ -1,0 +1,404 @@
+/* v7.12 mobile fog-of-war button */
+#touch-vision { grid-area: vision; }
+body.device-mobile .touch-buttons {
+  grid-template-areas:
+    "fire interact reload"
+    "fire loot inventory"
+    "fire vision map";
+}
+body.device-mobile #touch-vision {
+  min-height: var(--mobile-button);
+}
+body.device-mobile.fog-visual-hidden #touch-vision {
+  opacity: 0.62;
+}
+
+
+/* v7.14 Graphics settings */
+.graphics-window {
+  left: 50%;
+  top: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 24px));
+  max-height: min(76vh, 620px);
+  z-index: 70;
+}
+.graphics-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+.graphics-preset-btn.active {
+  border-color: #f0c65b;
+  color: #ffe2a0;
+  background: rgba(76, 58, 29, 0.94);
+  box-shadow: 0 0 0 1px rgba(240,198,91,0.25), 0 0 14px rgba(240,198,91,0.12);
+}
+.graphics-current {
+  font-size: 12px;
+  color: #f0d28a;
+  margin: 7px 0 9px;
+}
+.graphics-grid {
+  display: grid;
+  gap: 6px;
+}
+.graphics-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 8px;
+  border: 1px solid rgba(90,80,55,0.45);
+  border-radius: 7px;
+  background: rgba(0,0,0,0.20);
+  font-size: 11px;
+  color: #b9ad86;
+}
+.graphics-row b {
+  color: #e8ca83;
+}
+.graphics-note {
+  margin-top: 9px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: #8ea07d;
+}
+.window-close-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(176,132,72,0.58);
+  border-radius: 50%;
+  background: rgba(18,16,13,0.92);
+  color: #d7b36e;
+  font-size: 18px;
+  line-height: 18px;
+  cursor: pointer;
+  pointer-events: all;
+}
+.window-close-btn:hover {
+  border-color: #f0c65b;
+  color: #ffe0a0;
+}
+#touch-graphics { grid-area: graphics; }
+body.device-mobile .touch-buttons {
+  grid-template-areas:
+    "fire interact reload"
+    "fire loot inventory"
+    "fire vision map"
+    "fire graphics map";
+}
+body.device-mobile .graphics-window {
+  width: min(92vw, 420px);
+  max-height: calc(86vh - var(--safe-top) - var(--safe-bottom));
+  overflow: auto;
+}
+body.device-mobile .graphics-presets {
+  gap: 6px;
+}
+body.device-mobile .graphics-preset-btn {
+  padding: 9px 6px;
+  font-size: 10px;
+}
+body.device-mobile .graphics-row {
+  font-size: 10px;
+  padding: 6px 7px;
+}
+
+
+
+/* v7.15 stable graphics/menu overrides */
+body.device-mobile .touch-buttons {
+  grid-template-areas:
+    "fire interact reload"
+    "fire loot inventory"
+    "fire target map" !important;
+}
+#touch-vision,
+#touch-graphics {
+  display: none !important;
+}
+body.device-mobile.landscape-mode #mobile-vision-toggle {
+  font-size: 19px;
+}
+body.device-mobile.landscape-mode #mobile-vision-toggle.active {
+  border-color: #f0c65b;
+  color: #ffe2a0;
+  background: radial-gradient(circle at 35% 25%, rgba(96,74,30,0.88), rgba(10,10,8,0.62));
+  box-shadow: 0 0 0 1px rgba(240,198,91,0.20), 0 8px 18px rgba(0,0,0,0.28), inset 0 0 14px rgba(240,198,91,0.12);
+}
+body.device-mobile.landscape-mode #mobile-vision-toggle.vision-off {
+  opacity: 0.58;
+  color: #9aa086;
+}
+body.graphics-low .graphics-current::after {
+  content: " · быстрый режим";
+  color: #9fd58a;
+}
+
+
+/* v7.16 graphics close/ultra */
+.graphics-window {
+  pointer-events: auto;
+}
+.graphics-window .panel-title {
+  position: relative;
+}
+
+body.device-mobile .graphics-presets {
+  grid-template-columns: repeat(2, 1fr);
+}
+body.device-mobile .window-close-btn,
+body.device-mobile #graphics-close {
+  width: 32px;
+  height: 32px;
+  font-size: 22px;
+}
+
+
+/* v7.17 fps/graphics close fix */
+#fps-counter {
+  position: fixed;
+  left: calc(10px + env(safe-area-inset-left, 0px));
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  z-index: 2147483000;
+  pointer-events: none;
+  padding: 5px 8px;
+  min-width: 58px;
+  border: 1px solid rgba(240,198,91,0.38);
+  border-radius: 8px;
+  background: rgba(4, 5, 5, 0.78);
+  color: #f2d98d;
+  font: 700 11px/1.15 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px #000;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+}
+body.device-mobile #fps-counter {
+  font-size: 10px;
+  left: calc(7px + env(safe-area-inset-left, 0px));
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  padding: 4px 6px;
+  min-width: 50px;
+}
+.graphics-window {
+  position: fixed;
+}
+.graphics-window .panel-title {
+  padding-right: 34px;
+}
+.graphics-corner-close,
+#graphics-close.graphics-corner-close {
+  position: absolute !important;
+  top: 8px;
+  right: 8px;
+  z-index: 2147483001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+
+
+/* v7.18 fps100/no-night/single-close */
+#fps-counter {
+  position: fixed;
+  left: calc(10px + env(safe-area-inset-left, 0px));
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  z-index: 2147483000;
+  pointer-events: none;
+  padding: 5px 8px;
+  min-width: 58px;
+  border: 1px solid rgba(240,198,91,0.38);
+  border-radius: 8px;
+  background: rgba(4, 5, 5, 0.78);
+  color: #f2d98d;
+  font: 700 11px/1.15 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px #000;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+}
+body.device-mobile #fps-counter {
+  font-size: 10px;
+  left: calc(7px + env(safe-area-inset-left, 0px));
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  padding: 4px 6px;
+  min-width: 50px;
+}
+#graphics-window.graphics-window {
+  position: fixed !important;
+  overflow: visible;
+}
+#graphics-window .panel-title {
+  padding-right: 42px;
+}
+#graphics-window .panel-title .window-close-btn {
+  display: none !important;
+}
+#graphics-close.graphics-corner-close {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 2147483001 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(240,198,91,0.68);
+  border-radius: 50%;
+  background: rgba(12, 11, 9, 0.96);
+  color: #ffe1a0;
+  font-size: 22px;
+  line-height: 22px;
+  cursor: pointer;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  user-select: none;
+}
+body.device-mobile #graphics-close.graphics-corner-close {
+  width: 34px;
+  height: 34px;
+  font-size: 24px;
+}
+
+
+/* v7.24 natural colors / single graphics close */
+#graphics-window > .mobile-window-close {
+  display: none !important;
+}
+/* Цвет мира не меняется CSS-ом при переключении Low/Medium/High/Ultra. */
+
+
+/* v7.22: in-game time under minimap + independent day/night lighting */
+#desktop-minimap-hud,
+body.device-mobile.landscape-mode #mobile-minimap-hud {
+  overflow: visible !important;
+}
+.game-time-hud {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 112px;
+  padding: 5px 9px;
+  border-radius: 9px;
+  border: 1px solid rgba(227,195,110,0.38);
+  background: rgba(8,10,10,0.62);
+  color: rgba(245,215,146,0.92);
+  font: 800 12px/1.1 system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.85);
+  box-shadow: 0 7px 18px rgba(0,0,0,0.26), inset 0 0 12px rgba(227,195,110,0.05);
+  white-space: nowrap;
+  pointer-events: none;
+}
+body.device-mobile.landscape-mode .game-time-hud {
+  top: calc(100% + 5px);
+  right: 0;
+  min-width: 96px;
+  padding: 4px 7px;
+  font-size: 10px;
+  border-radius: 8px;
+}
+body.game-ui-panel-open #desktop-game-time,
+body.game-ui-panel-open #mobile-game-time,
+body.loot-window-open #desktop-game-time,
+body.loot-window-open #mobile-game-time {
+  display: none !important;
+}
+
+
+
+/* v7.61 PBR/WebGL pass: color grading and cheap post-FX. Heavy composer bloom is avoided for mobile WebGL. */
+#webgl {
+  filter: saturate(1.08) contrast(1.09) brightness(1.045) sepia(0.055);
+}
+body.game-night #webgl {
+  /* v7.74.40: readable moonlit night. Desktop still looks like night, mobile
+     gets extra lift below so the scene is not almost black. */
+  filter: saturate(1.02) contrast(1.02) brightness(1.10) sepia(0.025);
+}
+body.device-mobile.game-night #webgl {
+  filter: saturate(1.06) contrast(0.98) brightness(1.22) sepia(0.015);
+}
+body.graphics-low #webgl {
+  filter: saturate(1.05) contrast(1.01) brightness(1.04);
+}
+#game-container::before,
+#game-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+#game-container::before {
+  z-index: 2;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 226, 168, 0.035) 0%, rgba(95, 64, 32, 0.025) 45%, rgba(0, 0, 0, 0.16) 100%),
+    linear-gradient(180deg, rgba(255, 220, 150, 0.035), rgba(20, 12, 8, 0.055));
+  mix-blend-mode: multiply;
+}
+#game-container::after {
+  z-index: 3;
+  opacity: 0.040;
+  background-image:
+    radial-gradient(circle at 14% 24%, rgba(255,255,255,0.28) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 74% 68%, rgba(0,0,0,0.35) 0 1px, transparent 1.5px),
+    linear-gradient(115deg, transparent 0%, rgba(255,224,170,0.10) 46%, transparent 52%);
+  background-size: 52px 52px, 67px 67px, 100% 100%;
+  mix-blend-mode: overlay;
+}
+body.device-mobile #game-container::after {
+  opacity: 0.045;
+}
+body.graphics-low #game-container::before {
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.10) 100%);
+}
+body.graphics-low #game-container::after {
+  display: none;
+}
+body.game-night #game-container::before {
+  /* Moon tint only. Do not multiply the whole screen into black. */
+  opacity: 0.54;
+  background:
+    radial-gradient(ellipse at center, rgba(132, 158, 220, 0.070) 0%, rgba(54, 62, 92, 0.040) 58%, rgba(0, 0, 0, 0.045) 100%),
+    linear-gradient(180deg, rgba(160, 178, 230, 0.030), rgba(0, 0, 0, 0.018));
+}
+body.device-mobile.game-night #game-container::before {
+  opacity: 0.34;
+  background:
+    radial-gradient(ellipse at center, rgba(150, 174, 232, 0.075) 0%, rgba(74, 80, 112, 0.030) 62%, rgba(0, 0, 0, 0.020) 100%),
+    linear-gradient(180deg, rgba(180, 196, 244, 0.028), rgba(0, 0, 0, 0.012));
+}
+body.game-day #game-container::before {
+  opacity: 0.94;
+}
+
+
+/* v7.61: lightweight bloom/color-grade overlay. It gives warm highlight rolloff like a post step,
+   but stays CSS-only so mobile WebGL does not pay for an EffectComposer chain. */
+body.graphics-high #game-container::after,
+body.graphics-ultra #game-container::after {
+  background-image:
+    radial-gradient(circle at 50% 52%, rgba(255, 196, 116, 0.09) 0%, rgba(255, 196, 116, 0.025) 26%, transparent 52%),
+    radial-gradient(circle at 14% 24%, rgba(255,255,255,0.20) 0 1px, transparent 1.4px),
+    radial-gradient(circle at 74% 68%, rgba(0,0,0,0.30) 0 1px, transparent 1.5px);
+  background-size: 100% 100%, 58px 58px, 73px 73px;
+  mix-blend-mode: soft-light;
+}
+body.graphics-ultra #webgl {
+  filter: saturate(1.10) contrast(1.11) brightness(1.055) sepia(0.055);
+}
+body.device-mobile #game-container::before {
+  opacity: 0.74;
+}
+body.device-mobile.game-night #game-container::after {
+  opacity: 0.018;
+}

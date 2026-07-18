@@ -1,0 +1,103 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "randomDryBasin",
+  "name": "Сухая низина",
+  "seed": 20260921,
+  "safe": false,
+  "pvpMode": "pvp",
+  "randomTemplate": true,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "dryBasin",
+    "label": "Сухая низина"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 19
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 19
+  },
+  "entryFromNorth": { "tx": 19, "tz": 4 },
+  "entryFromSouth": { "tx": 19, "tz": 34 },
+  "entryFromWest": { "tx": 4, "tz": 19 },
+  "entryFromEast": { "tx": 34, "tz": 19 },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "objects": [
+    {
+      "id": "dry_basin_rock_01",
+      "model": "rubbleRock",
+      "name": "Сухие камни",
+      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.2,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rock"
+      ]
+    },
+    {
+      "id": "dry_basin_ore_01",
+      "model": "oreOutcrop",
+      "name": "Рудный выступ",
+      "url": "/assets/models/wasteland/ore_outcrop.glb",
+      "position": {
+        "x": 18,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.35,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "ore"
+      ],
+      "resourceType": "ore",
+      "hp": 5,
+      "maxHp": 5
+    }
+  ]
+}

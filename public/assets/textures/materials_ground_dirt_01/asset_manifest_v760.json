@@ -1,0 +1,15 @@
+{
+  "version": "7.60.0",
+  "source_archive": "Materials_Ground_Dirt_01.zip uploaded by user",
+  "note": "Runtime uses 4K base color plus 2K normal/roughness/height/AO. Original JPEG and blend files are not included.",
+  "files": [
+    "relief_cracked_patch_rgba_v760.webp",
+    "relief_gravel_pebbles_rgba_v760.webp",
+    "relief_ground_ao_2k_v760.webp",
+    "relief_ground_base_4k_v760.webp",
+    "relief_ground_height_2k_v760.webp",
+    "relief_ground_normal_2k_v760.webp",
+    "relief_ground_roughness_2k_v760.webp",
+    "relief_mud_scorch_rgba_v760.webp"
+  ]
+}

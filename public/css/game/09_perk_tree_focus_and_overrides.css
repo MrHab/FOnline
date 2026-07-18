@@ -1,0 +1,590 @@
+/* ===== v7.44.8 progression modal focus: hide game HUD and block background UI ===== */
+body.progression-window-open #player-info,
+body.progression-window-open #online-status,
+body.progression-window-open #device-status,
+body.progression-window-open #hud-top,
+body.progression-window-open #log,
+body.progression-window-open #weapon-readout,
+body.progression-window-open #quickbar,
+body.progression-window-open #desktop-minimap-hud,
+body.progression-window-open #system-log-panel,
+body.progression-window-open #global-fullscreen-btn,
+body.progression-window-open #game-settings-btn,
+body.progression-window-open #touch-controls,
+body.progression-window-open #mobile-left-menu,
+body.progression-window-open #target-hint,
+body.progression-window-open #tooltip,
+body.progression-window-open .floating-action,
+body.progression-window-open .mobile-ui,
+body.progression-window-open .hud-editor-handle {
+  display: none !important;
+}
+body.progression-window-open #talents-window.visible {
+  display: block !important;
+  z-index: 30000 !important;
+  pointer-events: auto !important;
+}
+body.progression-window-open #webgl {
+  pointer-events: none !important;
+}
+
+
+/* ===== v7.44.9 simplified fast perk tree + reliable wheel zoom ===== */
+#talents-window.progression-mode-perks #perk-wheel-info { display: none !important; }
+#talents-window.progression-mode-perks .perk-wheel-wrap {
+  overflow: auto !important;
+  height: calc(100vh - 170px) !important;
+  max-height: calc(100vh - 170px) !important;
+  min-height: 0 !important;
+  touch-action: none !important;
+  overscroll-behavior: contain !important;
+  cursor: grab !important;
+  background: #080b09 !important;
+  contain: layout paint style;
+}
+#talents-window.progression-mode-perks .perk-wheel-wrap.panning { cursor: grabbing !important; }
+#talents-window.progression-mode-perks .perk-wheel {
+  width: 2000px !important;
+  height: 2000px !important;
+  min-width: 2000px !important;
+  min-height: 2000px !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  border-radius: 0 !important;
+  transform-origin: 0 0 !important;
+  background:
+    linear-gradient(90deg, rgba(110,43,31,.10), transparent 44%, transparent 56%, rgba(52,106,59,.10)),
+    radial-gradient(circle at center, rgba(205,165,70,.10), transparent 12%),
+    #0b0d0b !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links {
+  width: 2000px !important;
+  height: 2000px !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-head small::after {
+  content: ' Колесо мыши — приблизить/отдалить. ЛКМ по пустому месту — перемещение. Двойной клик — центр.' !important;
+  color: #d0bc7a !important;
+}
+.perk-wheel-center {
+  width: 112px !important;
+  height: 112px !important;
+  margin-left: -56px !important;
+  margin-top: -56px !important;
+  border-width: 2px !important;
+  background: radial-gradient(circle, rgba(119,93,33,.95), rgba(38,31,14,.96)) !important;
+  box-shadow: 0 0 20px rgba(214,176,94,.25) !important;
+}
+.perk-wheel-center b { font-size: 28px !important; }
+.perk-node {
+  width: 46px !important;
+  height: 46px !important;
+  margin-left: -23px !important;
+  margin-top: -23px !important;
+  will-change: auto !important;
+  background: radial-gradient(circle at 35% 30%, rgba(58,60,58,.98), rgba(15,16,15,.98)) !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,.45) !important;
+}
+.perk-node:hover, .perk-node:focus-visible { transform: scale(1.16) !important; z-index: 20 !important; }
+.perk-node-icon { font-size: 21px !important; }
+.perk-node-rank { font-size: 7px !important; right: 2px !important; bottom: 2px !important; }
+.perk-node.left { border-color: rgba(204,104,76,.68) !important; }
+.perk-node.right { border-color: rgba(139,194,125,.62) !important; }
+.perk-node.top, .perk-node.bottom { border-color: rgba(214,176,94,.68) !important; }
+.perk-group-hub {
+  position: absolute !important;
+  transform: translate(-50%, -50%) !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: none !important;
+  color: #d9b762 !important;
+  background: #171815 !important;
+  border: 1px solid rgba(214,176,94,.35) !important;
+}
+.perk-branch-label {
+  position: absolute !important;
+  pointer-events: none !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  letter-spacing: .8px !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 2px 8px #000 !important;
+  white-space: nowrap !important;
+}
+.perk-branch-label.left { color: #d7926d !important; transform: translate(-100%, -50%) !important; text-align: right !important; }
+.perk-branch-label.right { color: #a8d58a !important; transform: translate(0, -50%) !important; text-align: left !important; }
+.perk-branch-label.top { color: #f0d28a !important; transform: translate(-50%, -100%) !important; text-align: center !important; }
+.perk-branch-label.bottom { color: #f0d28a !important; transform: translate(-50%, 0) !important; text-align: center !important; }
+.perk-side-label {
+  position: absolute !important;
+  transform: translate(-50%, -50%) !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  pointer-events: none !important;
+  font-size: 18px !important;
+  font-weight: 1000 !important;
+  letter-spacing: 2px !important;
+  opacity: .78 !important;
+  white-space: nowrap !important;
+}
+.perk-side-label.left { color: #d7926d !important; transform: translate(-50%, -50%) rotate(-90deg) !important; }
+.perk-side-label.right { color: #a8d58a !important; transform: translate(-50%, -50%) rotate(90deg) !important; }
+.perk-side-label.top, .perk-side-label.bottom { color: #d9bd76 !important; }
+.perk-level-label {
+  font-size: 11px !important;
+  padding: 2px 7px !important;
+  color: rgba(240,210,138,.80) !important;
+  background: rgba(0,0,0,.44) !important;
+  border: 1px solid rgba(214,176,94,.22) !important;
+  border-radius: 999px !important;
+}
+#perk-hover-tooltip { z-index: 50000 !important; }
+@media (max-width: 760px) {
+  #talents-window.progression-mode-perks .perk-wheel { width: 1800px !important; height: 1800px !important; min-width: 1800px !important; min-height: 1800px !important; }
+  #talents-window.progression-mode-perks .perk-wheel svg.perk-links { width: 1800px !important; height: 1800px !important; }
+}
+
+
+/* ===== v7.44.10 perk tree no rings + navigation controls ===== */
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links circle,
+#talents-window.progression-mode-perks .perk-level-label {
+  display: none !important;
+}
+#talents-window.progression-mode-perks .perk-wheel {
+  background:
+    linear-gradient(90deg, rgba(110,43,31,.12), transparent 46%, transparent 54%, rgba(52,106,59,.12)),
+    radial-gradient(circle at center, rgba(205,165,70,.13), transparent 13%),
+    #0a0d0b !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-wrap {
+  scrollbar-width: thin;
+  scroll-behavior: auto;
+}
+#talents-window.progression-mode-perks .perk-wheel-head {
+  align-items: center !important;
+  gap: 10px !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-head small::after {
+  content: '' !important;
+}
+.perk-nav-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  pointer-events: auto;
+}
+.perk-nav-controls button {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 8px;
+  border: 1px solid rgba(214,176,94,.45);
+  background: linear-gradient(180deg, rgba(64,50,22,.96), rgba(18,18,15,.96));
+  color: #f0d28a;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 2px 8px rgba(0,0,0,.35);
+}
+.perk-nav-controls button:hover {
+  background: linear-gradient(180deg, rgba(116,87,35,.98), rgba(35,28,14,.98));
+}
+#perk-wheel-wrap::after {
+  content: attr(data-zoom) '%';
+  position: sticky;
+  left: calc(100% - 70px);
+  bottom: 10px;
+  display: block;
+  width: 52px;
+  margin-left: auto;
+  margin-top: -26px;
+  padding: 5px 8px;
+  border: 1px solid rgba(214,176,94,.35);
+  border-radius: 9px;
+  background: rgba(0,0,0,.55);
+  color: #f0d28a;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+  pointer-events: none;
+}
+.perk-group-hub {
+  opacity: .9 !important;
+}
+.perk-side-label {
+  opacity: .55 !important;
+}
+@media (max-width: 760px) {
+  .perk-nav-controls { justify-content: flex-start; margin-left: 0; }
+  .perk-nav-controls button { min-width: 30px; height: 26px; padding: 0 7px; }
+}
+
+
+/* ===== v7.45.1 perk tree clarity polish ===== */
+#talents-window.progression-mode-perks .progression-main-card,
+#talents-window.progression-mode-perks #talents-wrap,
+#talents-window.progression-mode-perks .perk-wheel-wrap {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-wrap {
+  background:
+    linear-gradient(90deg, rgba(110,43,31,.12), transparent 46%, transparent 54%, rgba(52,106,59,.12)),
+    radial-gradient(circle at center, rgba(205,165,70,.12), transparent 13%),
+    #0a0d0b !important;
+}
+#talents-window.progression-mode-perks .perk-wheel {
+  margin: 0 !important;
+  background: transparent !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-head {
+  border: 0 !important;
+  box-shadow: none !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+}
+.perk-wheel-center {
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  text-align: center !important;
+}
+.perk-wheel-center span { display:block !important; text-align:center !important; }
+.perk-branch-label.top {
+  transform: translate(-50%, -100%) !important;
+  letter-spacing: 1.1px !important;
+}
+.perk-tip-meta { display: none !important; }
+
+
+/* ===== v7.45.2 centered clean perk tree redesign ===== */
+#talents-window.progression-mode-perks .progression-main-card,
+#talents-window.progression-mode-perks #talents-wrap {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-wrap {
+  border: 1px solid rgba(214,176,94,.24) !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 0 60px rgba(0,0,0,.42), 0 8px 28px rgba(0,0,0,.35) !important;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(214,176,94,.12) 0%, rgba(214,176,94,.04) 22%, transparent 34%),
+    linear-gradient(90deg, rgba(93,37,27,.22) 0%, rgba(32,20,16,.10) 33%, rgba(10,13,11,.78) 50%, rgba(14,42,23,.14) 67%, rgba(39,89,42,.22) 100%),
+    #090d0a !important;
+}
+#talents-window.progression-mode-perks .perk-wheel {
+  width: 1800px !important;
+  height: 1800px !important;
+  min-width: 1800px !important;
+  min-height: 1800px !important;
+  background: transparent !important;
+  margin: 0 auto !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links {
+  width: 1800px !important;
+  height: 1800px !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-head {
+  background: linear-gradient(180deg, rgba(20,24,20,.72), rgba(7,8,7,.36)) !important;
+  border-bottom: 1px solid rgba(214,176,94,.18) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 8px 10px !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-head > div:first-child {
+  color: #f0d28a !important;
+  letter-spacing: 1.6px !important;
+  text-transform: uppercase !important;
+  font-weight: 1000 !important;
+}
+.perk-wheel-center {
+  width: 104px !important;
+  height: 104px !important;
+  margin-left: -52px !important;
+  margin-top: -52px !important;
+  background: radial-gradient(circle, rgba(217,178,75,.98), rgba(83,61,18,.98) 54%, rgba(31,25,12,.98)) !important;
+  border: 2px solid rgba(255,224,133,.78) !important;
+  box-shadow: 0 0 34px rgba(240,198,91,.34), inset 0 0 20px rgba(255,228,130,.18) !important;
+  color: #2d220d !important;
+}
+.perk-wheel-center b { color: #2a1b08 !important; text-shadow: 0 1px 0 rgba(255,240,168,.45) !important; }
+.perk-wheel-center span { color: #3a2a0b !important; font-weight: 1000 !important; }
+.perk-group-hub {
+  width: 18px !important;
+  height: 18px !important;
+  opacity: .72 !important;
+  background: rgba(19,20,17,.96) !important;
+  color: rgba(240,210,138,.78) !important;
+}
+.perk-branch-label {
+  font-size: 12px !important;
+  letter-spacing: .9px !important;
+  opacity: .98 !important;
+  padding: 3px 7px !important;
+  border-radius: 999px !important;
+  background: rgba(0,0,0,.22) !important;
+}
+.perk-branch-label.left { color: #ee9b74 !important; }
+.perk-branch-label.right { color: #b2e893 !important; }
+.perk-branch-label.top, .perk-branch-label.bottom { color: #f0d28a !important; }
+.perk-side-label {
+  font-size: 13px !important;
+  opacity: .42 !important;
+  text-shadow: 0 2px 10px #000 !important;
+}
+.perk-node {
+  width: 42px !important;
+  height: 42px !important;
+  margin-left: -21px !important;
+  margin-top: -21px !important;
+  border-width: 1px !important;
+  background: radial-gradient(circle at 35% 28%, rgba(64,66,62,.98), rgba(18,19,18,.98)) !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,.44), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+.perk-node-icon { font-size: 19px !important; }
+.perk-node-rank { font-size: 7px !important; right: 1px !important; bottom: 1px !important; background: rgba(0,0,0,.58) !important; }
+.perk-node.available { box-shadow: 0 0 0 1px rgba(240,198,91,.55), 0 0 18px rgba(240,198,91,.25) !important; }
+.perk-node.maxed { box-shadow: 0 0 0 1px rgba(126,205,103,.50), 0 0 16px rgba(126,205,103,.22) !important; }
+.perk-node:hover, .perk-node:focus-visible { transform: scale(1.14) !important; }
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line {
+  stroke-linecap: round;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line[stroke*="204"] { stroke-opacity: .78; }
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line[stroke*="139"] { stroke-opacity: .74; }
+.perk-tip-meta { display: none !important; }
+@media (max-width: 760px) {
+  #talents-window.progression-mode-perks .perk-wheel { width: 1600px !important; height: 1600px !important; min-width:1600px !important; min-height:1600px !important; }
+  #talents-window.progression-mode-perks .perk-wheel svg.perk-links { width: 1600px !important; height: 1600px !important; }
+}
+
+
+/* ===== v7.45.4 perk tree layout cleanup ===== */
+#talents-window.progression-mode-perks .perk-wheel-wrap {
+  border: 1px solid rgba(214,176,94,.18) !important;
+  box-shadow: inset 0 0 48px rgba(0,0,0,.36) !important;
+}
+.perk-wheel-center {
+  left: 50% !important;
+  top: 50% !important;
+  margin-left: 0 !important;
+  margin-top: 0 !important;
+  transform: translate(-50%, -50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  text-align: center !important;
+  line-height: 1.05 !important;
+}
+.perk-wheel-center b {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  margin: 0 0 5px 0 !important;
+}
+.perk-wheel-center span {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  line-height: 1.12 !important;
+}
+.perk-branch-label.top {
+  transform: translate(-50%, -50%) !important;
+  background: rgba(0,0,0,.18) !important;
+}
+.perk-branch-label.bottom {
+  transform: translate(-50%, -50%) !important;
+  background: rgba(0,0,0,.18) !important;
+}
+.perk-side-label.bottom {
+  display: none !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line {
+  opacity: .72 !important;
+}
+.perk-node {
+  z-index: 6 !important;
+}
+.perk-group-hub {
+  z-index: 5 !important;
+}
+
+/* ===== v7.45.5 fixed safe perk lanes: no icon collisions ===== */
+#talents-window.progression-mode-perks .perk-wheel {
+  width: 2400px !important;
+  height: 2400px !important;
+  min-width: 2400px !important;
+  min-height: 2400px !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  background: transparent !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links {
+  width: 2400px !important;
+  height: 2400px !important;
+  min-width: 2400px !important;
+  min-height: 2400px !important;
+  pointer-events: none !important;
+}
+#talents-window.progression-mode-perks .perk-wheel-wrap {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(214,176,94,.11) 0%, rgba(214,176,94,.035) 20%, transparent 33%),
+    linear-gradient(90deg, rgba(94,38,28,.22) 0%, rgba(31,20,16,.10) 32%, rgba(9,13,10,.78) 50%, rgba(15,43,24,.14) 68%, rgba(39,89,42,.22) 100%),
+    #080c09 !important;
+}
+.perk-node {
+  width: 46px !important;
+  height: 46px !important;
+  margin-left: -23px !important;
+  margin-top: -23px !important;
+  z-index: 8 !important;
+}
+.perk-node:hover,
+.perk-node:focus-visible {
+  transform: scale(1.12) !important;
+  z-index: 20 !important;
+}
+.perk-node-icon { font-size: 20px !important; }
+.perk-node-rank { right: 2px !important; bottom: 2px !important; }
+.perk-group-hub {
+  width: 20px !important;
+  height: 20px !important;
+  z-index: 6 !important;
+  opacity: .78 !important;
+}
+.perk-branch-label {
+  z-index: 7 !important;
+  font-size: 13px !important;
+  letter-spacing: 1px !important;
+  white-space: nowrap !important;
+  background: rgba(0,0,0,.20) !important;
+  border: 1px solid rgba(214,176,94,.12) !important;
+  border-radius: 999px !important;
+  padding: 4px 8px !important;
+}
+.perk-branch-label.left { transform: translate(-100%, -50%) !important; text-align: right !important; }
+.perk-branch-label.right { transform: translate(0, -50%) !important; text-align: left !important; }
+.perk-branch-label.top,
+.perk-branch-label.bottom { transform: translate(-50%, -50%) !important; text-align: center !important; }
+.perk-branch-label.bottom {
+  font-size: 14px !important;
+  letter-spacing: 1.15px !important;
+  color: #f0d28a !important;
+}
+.perk-side-label {
+  z-index: 1 !important;
+  opacity: .46 !important;
+}
+.perk-side-label.bottom { display: none !important; }
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-hub-link {
+  opacity: .52 !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-node-link {
+  opacity: .76 !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-node-link.left { stroke: rgba(204,104,76,.22) !important; }
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-node-link.right { stroke: rgba(139,194,125,.20) !important; }
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-node-link.top,
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-node-link.bottom { stroke: rgba(214,176,94,.22) !important; }
+@media (max-width: 760px) {
+  #talents-window.progression-mode-perks .perk-wheel {
+    width: 2400px !important;
+    height: 2400px !important;
+    min-width: 2400px !important;
+    min-height: 2400px !important;
+  }
+  #talents-window.progression-mode-perks .perk-wheel svg.perk-links {
+    width: 2400px !important;
+    height: 2400px !important;
+    min-width: 2400px !important;
+    min-height: 2400px !important;
+  }
+}
+
+
+/* ===== v7.45.6 aligned perk labels + compact canvas ===== */
+#talents-window.progression-mode-perks .perk-wheel {
+  width: 2100px !important;
+  height: 2100px !important;
+  min-width: 2100px !important;
+  min-height: 2100px !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links {
+  width: 2100px !important;
+  height: 2100px !important;
+  min-width: 2100px !important;
+  min-height: 2100px !important;
+}
+.perk-branch-label {
+  max-width: 220px !important;
+  white-space: nowrap !important;
+}
+.perk-branch-label.left,
+.perk-branch-label.right,
+.perk-branch-label.top,
+.perk-branch-label.bottom {
+  min-width: 0 !important;
+}
+.perk-branch-label.bottom {
+  transform: translate(-50%, 0) !important;
+}
+.perk-side-label {
+  opacity: .52 !important;
+  letter-spacing: 1.4px !important;
+}
+.perk-side-label.left {
+  transform: translate(-50%, -50%) rotate(-90deg) !important;
+}
+.perk-side-label.right {
+  transform: translate(-50%, -50%) rotate(90deg) !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-node-link {
+  opacity: .82 !important;
+}
+@media (max-width: 760px) {
+  #talents-window.progression-mode-perks .perk-wheel {
+    width: 2100px !important;
+    height: 2100px !important;
+    min-width: 2100px !important;
+    min-height: 2100px !important;
+  }
+  #talents-window.progression-mode-perks .perk-wheel svg.perk-links {
+    width: 2100px !important;
+    height: 2100px !important;
+    min-width: 2100px !important;
+    min-height: 2100px !important;
+  }
+}
+
+
+/* ===== v7.45.8 non-crossing perk link rule ===== */
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links path.perk-node-link,
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-node-link,
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-hub-link {
+  fill: none !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links line.hub-port-link {
+  opacity: .84 !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links path.dependency-link {
+  opacity: .82 !important;
+}
+
+
+/* ===== v7.45.9 strict grid alignment + orthogonal links ===== */
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links path.hub-port-link {
+  opacity: .84 !important;
+}
+#talents-window.progression-mode-perks .perk-wheel svg.perk-links path.dependency-link {
+  opacity: .82 !important;
+}

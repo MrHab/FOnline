@@ -1,0 +1,931 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "relayStation",
+  "name": "Станция Ретранслятор",
+  "seed": 20260823,
+  "safe": true,
+  "pvpMode": "peaceful",
+  "kind": "settlement",
+  "city": true,
+  "settlement": true,
+  "respawnAllowed": true,
+  "ground": {
+    "preset": "relayConcrete",
+    "label": "Бетон и радиопыль"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 25
+  },
+  "respawn": {
+    "tx": 19,
+    "tz": 25
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 25
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Край станции",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "trader": {
+    "id": "relay_rada",
+    "dialogueProfile": "relay",
+    "caps": 640,
+    "quests": [
+      "relayCalibration"
+    ],
+    "tx": 22,
+    "tz": 18,
+    "name": "Рада Искра",
+    "stock": [
+      {
+        "id": "energyCell",
+        "price": 4,
+        "qty": 120
+      },
+      {
+        "id": "napalm",
+        "price": 6,
+        "qty": 50
+      },
+      {
+        "id": "laserPistol",
+        "price": 128,
+        "qty": 1
+      },
+      {
+        "id": "plasmaRifle",
+        "price": 232,
+        "qty": 1
+      },
+      {
+        "id": "flamethrower",
+        "price": 198,
+        "qty": 1
+      },
+      {
+        "id": "oil",
+        "price": 9,
+        "qty": 14
+      },
+      {
+        "id": "repairKit",
+        "price": 18,
+        "qty": 3
+      },
+      {
+        "id": "hazmatSuit",
+        "price": 88,
+        "qty": 1
+      },
+      {
+        "id": "energySuit",
+        "price": 138,
+        "qty": 1
+      },
+      {
+        "id": "tacticalHelmet",
+        "price": 32,
+        "qty": 1
+      },
+      {
+        "id": "assaultHelmet",
+        "price": 50,
+        "qty": 1
+      },
+      {
+        "id": "doctorBag",
+        "price": 36,
+        "qty": 2
+      },
+      {
+        "id": "antibiotics",
+        "price": 26,
+        "qty": 4
+      },
+      {
+        "id": "medkit",
+        "price": 21,
+        "qty": 4
+      },
+      {
+        "id": "rocketAmmo",
+        "price": 22,
+        "qty": 4
+      },
+      {
+        "id": "water",
+        "price": 6,
+        "qty": 4
+      }
+    ],
+    "buyInterests": [
+      "tools",
+      "ammo",
+      "weapons",
+      "armor"
+    ]
+  },
+  "containers": [
+    {
+      "id": "relay_terminal_1",
+      "tx": 18,
+      "tz": 16,
+      "name": "Технический ящик станции",
+      "tier": "rare",
+      "locked": true,
+      "lockDifficulty": "medium",
+      "terminalLocked": true,
+      "terminalDifficulty": "medium",
+      "terminalUnlocksLock": true,
+      "terminalName": "Пульт ретранслятора"
+    }
+  ],
+  "objects": [
+    {
+      "id": "relay_antenna_01",
+      "model": "relayAntenna",
+      "name": "Антенна ретранслятора",
+      "url": "/assets/models/wasteland/relay_antenna.glb",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.15,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "relay"
+      ]
+    },
+    {
+      "id": "relay_tank_01",
+      "model": "waterTank",
+      "name": "Технический бак",
+      "url": "/assets/models/wasteland/water_tank.glb",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": 10
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.4,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "station"
+      ],
+      "vision": {
+        "blocks": true
+      }
+    },
+    {
+      "id": "relayStation_job_board_01",
+      "model": "jobBoard",
+      "name": "????? ???????",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -6
+      },
+      "rotation": {
+        "x": 0,
+        "y": 2.6704,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        },
+        "groundSnap": true
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "relayStation"
+      }
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": 13
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.15,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "tx": 14,
+      "tz": 25,
+      "x": -10,
+      "z": 13,
+      "objectId": "rest_campfire_01",
+      "objectModel": "campfireRest",
+      "authoredObject": true,
+      "vision": {
+        "mode": "none"
+      },
+      "role": "campfire"
+    },
+    {
+      "id": "relayStation_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -13,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "relayStation_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "relayStation_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "relayStation_cot_04",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "relayStation_cot_05",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -13,
+        "y": 0,
+        "z": 13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "capital_storage_relay_order",
+      "model": "storageChest",
+      "name": "????????? ?????? ?????????????",
+      "url": "/assets/models/wasteland/storage_chest.glb",
+      "position": {
+        "x": 5,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "storage",
+        "container",
+        "personal-storage",
+        "capital-storage"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "container",
+        "role": "storage",
+        "containerType": "storage",
+        "storageFaction": "relay_order"
+      }
+    },
+    {
+      "id": "capital_station_relay_order_ammo_bench",
+      "model": "craftStationAmmo",
+      "name": "Патронный станок",
+      "url": "/assets/models/wasteland/craft_station_ammo.glb",
+      "position": {
+        "x": -15,
+        "y": 0,
+        "z": -4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "ammo_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "ammo_bench"
+      ],
+      "stationSiteId": "relayStation",
+      "worksiteId": "relayStation",
+      "stationOwner": "relay_order",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "relayStation"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "relayStation"
+      }
+    },
+    {
+      "id": "capital_station_relay_order_weapon_bench",
+      "model": "craftStationWeapon",
+      "name": "Оружейный верстак",
+      "url": "/assets/models/wasteland/craft_station_weapon.glb",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": -4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "weapon_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "weapon_bench"
+      ],
+      "stationSiteId": "relayStation",
+      "worksiteId": "relayStation",
+      "stationOwner": "relay_order",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "relayStation"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "relayStation"
+      }
+    },
+    {
+      "id": "capital_station_relay_order_tool_bench",
+      "model": "craftStationTools",
+      "name": "Инструментальный верстак",
+      "url": "/assets/models/wasteland/craft_station_tools.glb",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": -4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "tool_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "tool_bench"
+      ],
+      "stationSiteId": "relayStation",
+      "worksiteId": "relayStation",
+      "stationOwner": "relay_order",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "relayStation"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "relayStation"
+      }
+    },
+    {
+      "id": "capital_station_relay_order_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",
+      "url": "/assets/models/wasteland/craft_station_repair.glb",
+      "position": {
+        "x": -15,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "relayStation",
+      "worksiteId": "relayStation",
+      "stationOwner": "relay_order",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "relayStation"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "relayStation"
+      }
+    },
+    {
+      "id": "capital_station_relay_order_energy_bench",
+      "model": "craftStationEnergy",
+      "name": "Энергетический стенд",
+      "url": "/assets/models/wasteland/craft_station_energy.glb",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "energy_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "energy_bench"
+      ],
+      "stationSiteId": "relayStation",
+      "worksiteId": "relayStation",
+      "stationOwner": "relay_order",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "relayStation"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "relayStation"
+      }
+    },
+    {
+      "id": "capital_station_relay_order_chem_station",
+      "model": "craftStationChem",
+      "name": "Химический стол",
+      "url": "/assets/models/wasteland/craft_station_chem.glb",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 0
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "chem_station"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "chem_station"
+      ],
+      "stationSiteId": "relayStation",
+      "worksiteId": "relayStation",
+      "stationOwner": "relay_order",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "chem_station"
+        ],
+        "stationSiteId": "relayStation"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "chem_station"
+        ],
+        "stationSiteId": "relayStation"
+      }
+    }
+  ],
+  "updatedAt": "2026-07-12T01:43:36.132Z"
+}

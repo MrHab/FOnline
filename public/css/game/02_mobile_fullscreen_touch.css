@@ -1,0 +1,826 @@
+  /* ===== v23 MOBILE FULLSCREEN / WINDOW CLOSE / TOUCH COMBAT FIX ===== */
+  html, body { width: 100%; height: var(--app-height, 100dvh); overflow: hidden; }
+  body.device-mobile #game-container { height: var(--app-height, 100dvh); }
+  body.device-mobile #mobile-controls { z-index: 24; }
+
+  .mobile-fullscreen-btn {
+    display: none;
+    position: absolute;
+    right: calc(10px + var(--safe-right));
+    top: calc(10px + var(--safe-top));
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    border: 1px solid rgba(214, 194, 138, 0.55);
+    background: rgba(9, 12, 12, 0.58);
+    color: #f0d28a;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    z-index: 9;
+    pointer-events: all;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body.device-mobile .mobile-fullscreen-btn { display: block; }
+  body.device-mobile.fullscreen-active .mobile-fullscreen-btn { opacity: 0.45; }
+
+  body.device-mobile .window-panel,
+  body.device-mobile .modal-panel,
+  body.device-mobile #character-screen { z-index: 60; }
+  body.device-mobile #character-screen { z-index: 300; }
+
+  body.device-mobile.mobile-ui-panel-open #touch-move-zone,
+  body.device-mobile.mobile-ui-panel-open #touch-aim-zone,
+  body.device-mobile.mobile-ui-panel-open #touch-joystick,
+  body.device-mobile.mobile-ui-panel-open .touch-buttons,
+  body.device-mobile.mobile-ui-panel-open .touch-help,
+  body.device-mobile.mobile-ui-panel-open #touch-aim-reticle {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  body.device-mobile #touch-aim-zone {
+    top: calc(58px + var(--safe-top));
+    height: calc(var(--app-height, 100dvh) - 58px - var(--safe-top));
+    width: 56vw;
+  }
+  body.device-mobile #touch-move-zone {
+    height: min(58vh, 390px);
+    width: min(48vw, 310px);
+  }
+  body.device-mobile #touch-aim-reticle {
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    border-width: 1px;
+    opacity: 0.72;
+  }
+  body.device-mobile #touch-aim-reticle::before { left: 14px; top: 4px; width: 1px; height: 20px; }
+  body.device-mobile #touch-aim-reticle::after { left: 4px; top: 14px; width: 20px; height: 1px; }
+
+  body.device-mobile #online-status,
+  body.device-mobile #device-status { display: none !important; }
+
+  body.device-mobile #player-info {
+    top: calc(6px + var(--safe-top));
+    left: calc(6px + var(--safe-left));
+    max-width: 39vw;
+    min-width: 0;
+    padding: 6px 7px;
+    border-radius: 7px;
+    opacity: 0.90;
+  }
+  body.device-mobile #player-name { font-size: 12px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.device-mobile #player-level { font-size: 8px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  body.device-mobile #hud-top {
+    left: auto;
+    right: calc(58px + var(--safe-right));
+    top: calc(6px + var(--safe-top));
+    transform: none !important;
+    padding: 5px 6px;
+    gap: 4px;
+    border-radius: 8px;
+    max-width: calc(61vw - 62px);
+    overflow: hidden;
+    opacity: 0.92;
+  }
+  body.device-mobile #hud-top .stat-bar { gap: 1px; }
+  body.device-mobile #hud-top .bar-label { font-size: 7px; letter-spacing: 0.3px; }
+  body.device-mobile #hud-top .bar-track { width: clamp(46px, 13vw, 72px); height: 7px; }
+  body.device-mobile #hud-top .bar-text { font-size: 7px; }
+
+  body.device-mobile #weapon-readout { display: none !important; }
+  body.device-mobile #quickbar {
+    left: 50%;
+    bottom: calc(var(--mobile-controls-bottom) + var(--mobile-joy) + 12px);
+    transform: translateX(-50%);
+    max-width: min(92vw, 420px);
+    padding: 4px;
+    gap: 4px;
+    opacity: 0.92;
+    z-index: 23;
+  }
+  body.device-mobile .quick-slot { width: 42px; min-width: 42px; height: 46px; }
+  body.device-mobile .quick-icon { font-size: 18px; height: 21px; line-height: 21px; }
+  body.device-mobile .quick-label { font-size: 7px; max-width: 36px; }
+
+  body.device-mobile .touch-joystick {
+    left: calc(12px + var(--safe-left));
+    bottom: calc(var(--mobile-controls-bottom) + 14px);
+    opacity: 0.62;
+  }
+  body.device-mobile .touch-buttons {
+    right: calc(10px + var(--safe-right));
+    bottom: calc(var(--mobile-controls-bottom) + 10px);
+    width: clamp(160px, 41vw, 218px);
+    gap: 7px;
+  }
+  body.device-mobile .touch-btn {
+    min-height: clamp(42px, 10.5vmin, 58px);
+    padding: 4px 5px;
+    font-size: clamp(9px, 2.2vmin, 12px);
+    background: rgba(23, 24, 21, 0.56);
+  }
+  body.device-mobile .touch-btn.fire { min-height: clamp(92px, 23vmin, 122px); }
+
+  body.device-mobile .window-panel {
+    left: 50% !important;
+    right: auto !important;
+    top: calc(8px + var(--safe-top)) !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 14px - var(--safe-left) - var(--safe-right)) !important;
+    max-height: calc(var(--app-height, 100dvh) - 18px - var(--safe-top) - var(--safe-bottom)) !important;
+    padding: 10px;
+  }
+  body.device-mobile .window-scroll { max-height: calc(var(--app-height, 100dvh) - 52px - var(--safe-top) - var(--safe-bottom)); }
+  body.device-mobile #inventory-grid,
+  body.device-mobile #trader-grid,
+  body.device-mobile #loot-grid,
+  body.device-mobile .trade-sell-list,
+  body.device-mobile .storage-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  body.device-mobile .inv-card,
+  body.device-mobile .trade-card,
+  body.device-mobile .loot-card { min-height: 64px; padding: 5px; touch-action: manipulation; }
+  body.device-mobile .inv-name { font-size: 9px; min-height: 18px; }
+  body.device-mobile .inv-emoji { font-size: 20px; height: 23px; line-height: 23px; }
+  body.device-mobile #storage-window { width: calc(100vw - 14px - var(--safe-left) - var(--safe-right)) !important; }
+  body.device-mobile .storage-layout { grid-template-columns: 1fr; }
+
+  @media (orientation: landscape) and (max-height: 560px) {
+    body.device-mobile #player-info { max-width: 24vw; transform: none !important; }
+    body.device-mobile #hud-top { right: calc(58px + var(--safe-right)); max-width: 50vw; }
+    body.device-mobile #quickbar { bottom: calc(var(--mobile-controls-bottom) + 6px); max-width: 30vw; }
+    body.device-mobile .touch-joystick { bottom: calc(var(--mobile-controls-bottom) + 8px); }
+    body.device-mobile .touch-buttons { bottom: calc(var(--mobile-controls-bottom) + 8px); width: clamp(168px, 31vw, 226px); gap: 5px; }
+    body.device-mobile #touch-aim-zone { top: calc(48px + var(--safe-top)); height: calc(var(--app-height, 100dvh) - 48px - var(--safe-top)); width: 52vw; }
+    body.device-mobile .window-panel { max-height: calc(var(--app-height, 100dvh) - 14px - var(--safe-top) - var(--safe-bottom)) !important; }
+  }
+
+  @media (orientation: portrait) and (max-width: 520px) {
+    body.device-mobile #quickbar { bottom: calc(var(--mobile-controls-bottom) + var(--mobile-joy) + 10px); }
+    body.device-mobile #hud-top { max-width: calc(61vw - 62px); }
+    body.device-mobile .touch-buttons { width: clamp(162px, 42vw, 206px); }
+  }
+
+
+  /* ===== v23 MOBILE FULLSCREEN / WINDOW CLOSE / TOUCH COMBAT FIX ===== */
+  .global-fullscreen-btn {
+    display: block;
+    position: absolute;
+    right: calc(10px + var(--safe-right));
+    top: calc(10px + var(--safe-top));
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    border: 1px solid rgba(214, 194, 138, 0.55);
+    background: rgba(9, 12, 12, 0.62);
+    color: #f0d28a;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    z-index: 120;
+    pointer-events: all;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .global-fullscreen-btn:hover { background: rgba(38, 34, 24, 0.86); border-color: #f0c65b; }
+  body.fullscreen-active .global-fullscreen-btn { opacity: 0.52; }
+  body.device-mobile .mobile-fullscreen-btn { display: none !important; }
+
+  .mobile-window-close {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    border: 1px solid rgba(214, 194, 138, 0.62);
+    background: rgba(20, 18, 15, 0.92);
+    color: #f0d28a;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 28px;
+    z-index: 4;
+    cursor: pointer;
+    pointer-events: all;
+    touch-action: manipulation;
+  }
+  .mobile-window-close:active { transform: scale(0.96); background: rgba(76, 58, 29, 0.96); }
+  body.device-desktop .mobile-window-close { opacity: 0.72; }
+
+  body.device-mobile.mobile-ui-panel-open #quickbar { display: none !important; }
+  body.device-mobile.mobile-ui-panel-open .global-fullscreen-btn { opacity: 0.55; }
+
+  body.device-mobile .window-panel,
+  body.device-mobile .modal-panel {
+    z-index: 90 !important;
+    border-radius: 12px;
+    padding-top: 44px !important;
+  }
+  body.device-mobile .panel-title { padding-right: 36px; }
+  body.device-mobile .modal-panel .panel-title .ui-btn,
+  body.device-mobile #loot-close,
+  body.device-mobile #trader-close,
+  body.device-mobile #storage-close {
+    min-height: 34px;
+    min-width: 68px;
+    font-size: 12px;
+  }
+
+  body.device-mobile #inventory-window,
+  body.device-mobile #map-window,
+  body.device-mobile #talents-window,
+  body.device-mobile #craft-window {
+    width: calc(100vw - 12px - var(--safe-left) - var(--safe-right)) !important;
+    max-height: calc(var(--app-height, 100dvh) - 14px - var(--safe-top) - var(--safe-bottom)) !important;
+  }
+  body.device-mobile .window-scroll {
+    max-height: calc(var(--app-height, 100dvh) - 72px - var(--safe-top) - var(--safe-bottom)) !important;
+  }
+  body.device-mobile #map-window { padding-top: 44px !important; }
+  body.device-mobile #minimap { height: min(62vh, calc(var(--app-height, 100dvh) - 120px)); }
+
+  body.device-mobile #mobile-controls { z-index: 26 !important; }
+  body.device-mobile #touch-move-zone {
+    left: 0;
+    bottom: 0;
+    width: 50vw;
+    height: calc(var(--app-height, 100dvh) - 56px - var(--safe-top));
+    z-index: 1;
+  }
+  body.device-mobile #touch-aim-zone {
+    right: 0;
+    top: calc(54px + var(--safe-top));
+    width: 58vw;
+    height: calc(var(--app-height, 100dvh) - 54px - var(--safe-top));
+    z-index: 1;
+  }
+  body.device-mobile .touch-joystick {
+    left: calc(12px + var(--safe-left));
+    bottom: calc(10px + var(--safe-bottom));
+    width: clamp(116px, 30vmin, 154px);
+    height: clamp(116px, 30vmin, 154px);
+    opacity: 0.56;
+  }
+  body.device-mobile .touch-joystick.active,
+  body.device-mobile .touch-joystick.floating { opacity: 0.94; }
+  body.device-mobile .touch-buttons {
+    right: calc(8px + var(--safe-right));
+    bottom: calc(8px + var(--safe-bottom));
+    width: clamp(76px, 18vw, 102px) !important;
+    display: flex !important;
+    flex-direction: column;
+    grid-template-columns: none !important;
+    grid-template-areas: none !important;
+    gap: 6px;
+    z-index: 6;
+  }
+  body.device-mobile .touch-btn {
+    width: 100%;
+    min-height: clamp(38px, 9.5vmin, 50px) !important;
+    padding: 3px 4px;
+    border-radius: 11px;
+    font-size: clamp(8px, 2vmin, 10px) !important;
+    background: rgba(20, 20, 18, 0.50);
+  }
+  body.device-mobile .touch-btn.fire {
+    min-height: clamp(44px, 10vmin, 56px) !important;
+    font-size: clamp(9px, 2.1vmin, 11px) !important;
+    color: #ffd08a;
+  }
+  body.device-mobile #touch-aim-reticle {
+    width: 24px !important;
+    height: 24px !important;
+    margin: -12px 0 0 -12px !important;
+    border-width: 1px !important;
+    opacity: 0.62;
+  }
+  body.device-mobile #touch-aim-reticle::before { left: 11px !important; top: 4px !important; width: 1px !important; height: 16px !important; }
+  body.device-mobile #touch-aim-reticle::after { left: 4px !important; top: 11px !important; width: 16px !important; height: 1px !important; }
+  body.device-mobile .touch-help { display: none !important; }
+  body.device-mobile #quickbar {
+    bottom: calc(var(--safe-bottom) + 8px) !important;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(58vw, 310px) !important;
+    z-index: 25;
+  }
+  body.device-mobile .quick-slot { width: 40px !important; min-width: 40px !important; height: 44px !important; }
+
+  .mobile-inventory-quickbar {
+    display: none;
+    margin: 0 0 8px;
+    padding: 8px;
+    border: 1px solid rgba(174,139,72,0.42);
+    border-radius: 9px;
+    background: rgba(0,0,0,0.22);
+  }
+  body.device-mobile .mobile-inventory-quickbar { display: block; }
+  .mobile-quickbar-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 7px;
+    color: #d9bd7a;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+  .mobile-quickbar-title b { color: #f0d28a; }
+  .mobile-quickbar-slots { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 2px; }
+  .mobile-quickbar-slots .quick-slot { flex: 0 0 auto; pointer-events: all; }
+  .mobile-quickbar-slots .quick-slot.assign-target { border-color: #f0c65b; box-shadow: 0 0 0 1px rgba(240,198,91,0.28), 0 0 16px rgba(240,198,91,0.16); }
+  .mobile-quick-pick {
+    display: none;
+    position: absolute;
+    left: 4px;
+    bottom: 3px;
+    min-width: 22px;
+    height: 20px;
+    border-radius: 7px;
+    border: 1px solid rgba(240,198,91,0.58);
+    background: rgba(31, 26, 16, 0.92);
+    color: #ffd98b;
+    font-size: 12px;
+    font-weight: 900;
+    pointer-events: all;
+  }
+  body.device-mobile .inv-card.quickable .mobile-quick-pick { display: block; }
+  body.device-mobile .inv-card.selected-for-quickbar { border-color: #f0c65b; box-shadow: 0 0 0 1px rgba(240,198,91,0.28), 0 0 14px rgba(240,198,91,0.14); }
+
+  body.device-mobile #inventory-grid,
+  body.device-mobile #trader-grid,
+  body.device-mobile #loot-grid,
+  body.device-mobile .trade-sell-list,
+  body.device-mobile .storage-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 7px !important; }
+
+  @media (orientation: landscape) and (max-height: 560px) {
+    body.device-mobile .touch-joystick { width: clamp(92px, 25vh, 122px); height: clamp(92px, 25vh, 122px); }
+    body.device-mobile .touch-buttons { width: clamp(68px, 14vw, 88px) !important; gap: 4px; }
+    body.device-mobile .touch-btn { min-height: 32px !important; font-size: 8px !important; }
+    body.device-mobile .touch-btn.fire { min-height: 38px !important; }
+    body.device-mobile #quickbar { max-width: min(42vw, 250px) !important; }
+    body.device-mobile .quick-slot { width: 36px !important; min-width: 36px !important; height: 40px !important; }
+  }
+
+
+  /* ===== v24 MOBILE LANDSCAPE MMO HUD / CONTROL REDESIGN ===== */
+  body.device-mobile {
+    --mmo-gold: #e3c36e;
+    --mmo-panel: rgba(9, 10, 10, 0.42);
+    --mmo-panel-strong: rgba(9, 10, 10, 0.66);
+  }
+
+  #mobile-landscape-lock,
+  #mobile-minimap-hud,
+  .mobile-left-rail,
+  .mobile-right-rail,
+  .mobile-quest-panel,
+  .mobile-chat-panel,
+  .mobile-aim-label {
+    display: none;
+  }
+
+  body.device-mobile #mobile-landscape-lock {
+    position: absolute;
+    inset: 0;
+    z-index: 260;
+    pointer-events: all;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    background: radial-gradient(circle at 50% 35%, rgba(44,35,19,0.94), rgba(2,3,4,0.98) 72%);
+    text-align: center;
+  }
+  body.device-mobile #mobile-landscape-lock .landscape-box {
+    width: min(420px, calc(100vw - 32px));
+    padding: 18px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(227,195,110,0.45);
+    background: rgba(9,12,12,0.78);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 25px rgba(227,195,110,0.08);
+  }
+  body.device-mobile #mobile-landscape-lock .phone-rotate-icon {
+    width: 86px;
+    height: 52px;
+    margin: 0 auto 12px;
+    border: 4px solid rgba(240,210,138,0.85);
+    border-radius: 15px;
+    position: relative;
+    box-shadow: 0 0 22px rgba(240,198,91,0.12);
+  }
+  body.device-mobile #mobile-landscape-lock .phone-rotate-icon::after {
+    content: '';
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    margin-top: -2.5px;
+    border-radius: 50%;
+    background: rgba(240,210,138,0.95);
+  }
+  body.device-mobile #mobile-landscape-lock h2 {
+    color: #f0d28a;
+    font-size: 20px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  body.device-mobile #mobile-landscape-lock p {
+    color: #b9ad86;
+    font-size: 13px;
+    line-height: 1.35;
+    margin-bottom: 12px;
+  }
+  body.device-mobile #landscape-fullscreen-btn {
+    min-height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(240,198,91,0.70);
+    background: rgba(54,41,22,0.94);
+    color: #ffe0a0;
+    font-weight: 900;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  @media (orientation: portrait) {
+    body.device-mobile #mobile-landscape-lock { display: flex; }
+    body.device-mobile #mobile-controls,
+    body.device-mobile #player-info,
+    body.device-mobile #hud-top,
+    body.device-mobile #quickbar,
+    body.device-mobile #global-fullscreen-btn { visibility: hidden; }
+    body.device-mobile #character-screen.visible { visibility: hidden; }
+  }
+
+  body.device-mobile.landscape-mode #mobile-minimap-hud,
+  body.device-mobile.landscape-mode .mobile-left-rail,
+  body.device-mobile.landscape-mode .mobile-right-rail,
+  body.device-mobile.landscape-mode .mobile-quest-panel,
+  body.device-mobile.landscape-mode .mobile-chat-panel,
+  body.device-mobile.landscape-mode .mobile-aim-label {
+    display: block;
+  }
+
+  body.device-mobile.landscape-mode #player-info {
+    top: calc(6px + var(--safe-top)) !important;
+    left: calc(62px + var(--safe-left)) !important;
+    width: 170px !important;
+    max-width: 170px !important;
+    min-width: 0 !important;
+    height: 54px;
+    padding: 6px 8px 6px 54px !important;
+    border-radius: 0 13px 13px 0 !important;
+    background: linear-gradient(90deg, rgba(8,10,10,0.72), rgba(9,10,10,0.42)) !important;
+    border-color: rgba(227,195,110,0.42) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.28), inset 0 0 16px rgba(240,198,91,0.06) !important;
+    opacity: 1 !important;
+  }
+  body.device-mobile.landscape-mode #player-info::before {
+    content: '☢';
+    position: absolute;
+    left: -45px;
+    top: -2px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(227,195,110,0.75);
+    background: radial-gradient(circle at 35% 30%, rgba(101,65,44,0.94), rgba(12,12,10,0.86));
+    color: #f0d28a;
+    font-size: 25px;
+    box-shadow: 0 9px 20px rgba(0,0,0,0.45);
+  }
+  body.device-mobile.landscape-mode #player-name { font-size: 13px !important; line-height: 1.05 !important; color: #f4d887 !important; }
+  body.device-mobile.landscape-mode #player-level { font-size: 8px !important; color: #c1b284 !important; }
+  body.device-mobile.landscape-mode #hud-top {
+    top: calc(7px + var(--safe-top)) !important;
+    left: calc(236px + var(--safe-left)) !important;
+    right: auto !important;
+    transform: none !important;
+    height: 44px;
+    padding: 4px 8px !important;
+    gap: 5px !important;
+    max-width: 275px !important;
+    background: linear-gradient(90deg, rgba(9,10,10,0.58), rgba(9,10,10,0.28)) !important;
+    border-radius: 0 12px 12px 0 !important;
+    opacity: 0.98 !important;
+  }
+  body.device-mobile.landscape-mode #hud-top .bar-label { display: none !important; }
+  body.device-mobile.landscape-mode #hud-top .bar-track { width: clamp(58px, 9vw, 82px) !important; height: 6px !important; }
+  body.device-mobile.landscape-mode #hud-top .bar-text { font-size: 7px !important; }
+
+  body.device-mobile.landscape-mode .global-fullscreen-btn {
+    right: calc(186px + var(--safe-right));
+    top: calc(6px + var(--safe-top));
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 18px;
+    background: rgba(8,10,10,0.50);
+    z-index: 86;
+  }
+
+  body.device-mobile.landscape-mode #mobile-minimap-hud {
+    position: absolute;
+    right: calc(10px + var(--safe-right));
+    top: calc(6px + var(--safe-top));
+    width: clamp(128px, 18vw, 182px);
+    height: clamp(94px, 25vh, 134px);
+    z-index: 40;
+    pointer-events: none;
+    border-radius: 12px;
+    border: 1px solid rgba(227,195,110,0.43);
+    background: rgba(8,10,10,0.38);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.28), inset 0 0 18px rgba(227,195,110,0.06);
+    overflow: hidden;
+  }
+  body.device-mobile.landscape-mode #mobile-minimap-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0.82;
+  }
+  body.device-mobile.landscape-mode .mobile-minimap-compass {
+    position: absolute;
+    inset: 0;
+    color: rgba(245,215,146,0.82);
+    font-weight: 900;
+    font-size: 12px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+  }
+  body.device-mobile.landscape-mode .mobile-minimap-compass .n { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); }
+  body.device-mobile.landscape-mode .mobile-minimap-compass .s { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); }
+  body.device-mobile.landscape-mode .mobile-minimap-compass .w { position: absolute; left: 5px; top: 50%; transform: translateY(-50%); }
+  body.device-mobile.landscape-mode .mobile-minimap-compass .e { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); }
+
+  body.device-mobile.landscape-mode .mobile-left-rail {
+    position: absolute;
+    left: calc(8px + var(--safe-left));
+    top: calc(76px + var(--safe-top));
+    width: 42px;
+    z-index: 42;
+    pointer-events: all;
+  }
+  body.device-mobile.landscape-mode .mobile-right-rail {
+    position: absolute;
+    right: calc(8px + var(--safe-right));
+    top: calc(150px + var(--safe-top));
+    width: 42px;
+    z-index: 42;
+    pointer-events: all;
+  }
+  body.device-mobile.landscape-mode .mobile-rail-btn {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 7px;
+    border-radius: 50%;
+    border: 1px solid rgba(227,195,110,0.52);
+    background: radial-gradient(circle at 35% 25%, rgba(69,56,28,0.78), rgba(7,8,8,0.58));
+    color: #f0d28a;
+    font-size: 18px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.26), inset 0 0 10px rgba(240,198,91,0.08);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body.device-mobile.landscape-mode .mobile-rail-btn:active { transform: scale(0.95); border-color: #f0c65b; }
+  body.device-mobile.landscape-mode .mobile-rail-btn.active {
+    border-color: rgba(255,216,129,0.95);
+    background: radial-gradient(circle at 35% 25%, rgba(121,91,37,0.88), rgba(18,15,8,0.72));
+    color: #ffe39a;
+    box-shadow: 0 0 0 1px rgba(240,198,91,0.32), 0 8px 20px rgba(0,0,0,0.32), inset 0 0 14px rgba(240,198,91,0.16);
+  }
+
+  body.device-mobile.landscape-mode .mobile-quest-panel {
+    position: absolute;
+    left: calc(58px + var(--safe-left));
+    top: calc(78px + var(--safe-top));
+    width: min(310px, 34vw);
+    max-height: 54px;
+    z-index: 39;
+    padding: 7px 10px;
+    border-left: 3px solid rgba(227,195,110,0.76);
+    border-radius: 8px;
+    background: rgba(8,10,10,0.48);
+    color: #e7d5ae;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  body.device-mobile.landscape-mode .mobile-quest-panel b { display: block; color: #f0d28a; font-size: 11px; margin-bottom: 3px; }
+  body.device-mobile.landscape-mode .mobile-quest-panel span { display: block; color: #b9ad86; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  body.device-mobile.landscape-mode .mobile-chat-panel {
+    position: absolute;
+    left: 50%;
+    bottom: calc(10px + var(--safe-bottom));
+    transform: translateX(-50%);
+    width: min(330px, 34vw);
+    height: 66px;
+    z-index: 39;
+    padding: 7px 9px 7px 36px;
+    border-radius: 8px;
+    background: rgba(8,10,10,0.42);
+    color: #d3c199;
+    font-size: 10px;
+    line-height: 1.23;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  body.device-mobile.landscape-mode .mobile-chat-panel::before {
+    content: '☷';
+    position: absolute;
+    left: 8px;
+    top: 7px;
+    color: #f0d28a;
+    font-size: 20px;
+  }
+
+  body.device-mobile.landscape-mode #quickbar {
+    left: 50% !important;
+    bottom: calc(82px + var(--safe-bottom)) !important;
+    max-width: min(390px, 36vw) !important;
+    transform: translateX(-50%) !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    border-radius: 12px !important;
+    background: rgba(8,10,10,0.36) !important;
+    z-index: 41 !important;
+  }
+  body.device-mobile.landscape-mode .quick-slot { width: 38px !important; min-width: 38px !important; height: 40px !important; border-radius: 10px !important; background: rgba(8,10,10,0.48) !important; }
+  body.device-mobile.landscape-mode .quick-key { font-size: 8px !important; }
+  body.device-mobile.landscape-mode .quick-icon { font-size: 17px !important; height: 19px !important; line-height: 19px !important; }
+  body.device-mobile.landscape-mode .quick-label { display: none !important; }
+
+  body.device-mobile.landscape-mode #touch-move-zone {
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 42vw !important;
+    height: calc(var(--app-height, 100dvh) - 74px - var(--safe-top)) !important;
+    z-index: 2 !important;
+  }
+  body.device-mobile.landscape-mode #touch-aim-zone {
+    right: 0 !important;
+    top: calc(72px + var(--safe-top)) !important;
+    width: 58vw !important;
+    height: calc(var(--app-height, 100dvh) - 72px - var(--safe-top)) !important;
+    z-index: 2 !important;
+  }
+  body.device-mobile.landscape-mode .touch-joystick {
+    left: calc(92px + var(--safe-left)) !important;
+    bottom: calc(24px + var(--safe-bottom)) !important;
+    width: clamp(92px, 23vh, 128px) !important;
+    height: clamp(92px, 23vh, 128px) !important;
+    opacity: 0.46 !important;
+    border-color: rgba(240,230,190,0.24) !important;
+    background: radial-gradient(circle, rgba(220,220,210,0.24), rgba(30,30,28,0.15)) !important;
+  }
+  body.device-mobile.landscape-mode .touch-joystick.active,
+  body.device-mobile.landscape-mode .touch-joystick.floating { opacity: 0.88 !important; }
+  body.device-mobile.landscape-mode .touch-knob {
+    background: radial-gradient(circle at 35% 30%, rgba(227,195,110,0.76), rgba(29,27,23,0.58)) !important;
+    border-color: rgba(240,230,190,0.56) !important;
+  }
+
+  body.device-mobile.landscape-mode .touch-buttons {
+    right: calc(72px + var(--safe-right)) !important;
+    bottom: calc(18px + var(--safe-bottom)) !important;
+    width: 186px !important;
+    height: 186px;
+    display: block !important;
+    pointer-events: none !important;
+    z-index: 44 !important;
+  }
+  body.device-mobile.landscape-mode .touch-btn {
+    position: absolute;
+    width: 48px !important;
+    min-height: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    background: radial-gradient(circle at 35% 25%, rgba(68,61,42,0.62), rgba(8,9,9,0.40)) !important;
+    border: 1px solid rgba(227,195,110,0.38) !important;
+    pointer-events: all !important;
+    box-shadow: 0 7px 18px rgba(0,0,0,0.22), inset 0 0 11px rgba(240,198,91,0.06) !important;
+  }
+  body.device-mobile.landscape-mode .touch-btn::before {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: rgba(245,215,146,0.88);
+    font-size: 22px;
+    line-height: 1;
+  }
+  body.device-mobile.landscape-mode #touch-fire {
+    left: 58px;
+    top: 58px;
+    width: 70px !important;
+    height: 70px !important;
+    min-height: 70px !important;
+    border-width: 2px !important;
+    border-color: rgba(240,198,91,0.66) !important;
+    background: radial-gradient(circle at 35% 25%, rgba(112,86,34,0.76), rgba(10,10,9,0.50)) !important;
+  }
+  body.device-mobile.landscape-mode #touch-fire::before { content: '⚔'; font-size: 32px; }
+  body.device-mobile.landscape-mode #touch-interact { left: 69px; top: 0; }
+  body.device-mobile.landscape-mode #touch-interact::before { content: '✋'; }
+  body.device-mobile.landscape-mode #touch-reload { left: 126px; top: 33px; }
+  body.device-mobile.landscape-mode #touch-reload::before { content: '⟳'; }
+  body.device-mobile.landscape-mode #touch-loot { left: 0; top: 70px; }
+  body.device-mobile.landscape-mode #touch-loot::before { content: '✋'; }
+  body.device-mobile.landscape-mode #touch-player-menu { display: none; }
+  body.device-mobile.landscape-mode #touch-player-menu::before { content: none; }
+  body.device-mobile.landscape-mode #touch-inventory { left: 126px; top: 104px; }
+  body.device-mobile.landscape-mode #touch-inventory::before { content: '🎒'; font-size: 20px; }
+  body.device-mobile.landscape-mode #touch-map { left: 69px; top: 138px; }
+  body.device-mobile.landscape-mode #touch-map::before { content: '◇'; }
+
+  body.device-mobile.landscape-mode .mobile-aim-label {
+    position: absolute;
+    right: calc(272px + var(--safe-right));
+    bottom: calc(48px + var(--safe-bottom));
+    z-index: 39;
+    pointer-events: none;
+    color: rgba(240,210,138,0.58);
+    font-size: 10px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9);
+  }
+
+  body.device-mobile.landscape-mode #touch-aim-reticle {
+    width: 18px !important;
+    height: 18px !important;
+    margin: -9px 0 0 -9px !important;
+    border-color: rgba(240,198,91,0.58) !important;
+    opacity: 0.58 !important;
+  }
+  body.device-mobile.landscape-mode #touch-aim-reticle::before { left: 8px !important; top: 3px !important; width: 1px !important; height: 12px !important; }
+  body.device-mobile.landscape-mode #touch-aim-reticle::after { left: 3px !important; top: 8px !important; width: 12px !important; height: 1px !important; }
+
+  body.device-mobile.landscape-mode #online-status,
+  body.device-mobile.landscape-mode #device-status,
+  body.device-mobile.landscape-mode #weapon-readout,
+  body.device-mobile.landscape-mode .touch-help,
+  body.device-mobile.landscape-mode #mobile-fullscreen-btn {
+    display: none !important;
+  }
+
+  body.device-mobile.landscape-mode.mobile-ui-panel-open #mobile-minimap-hud,
+  body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-left-rail,
+  body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-right-rail,
+  body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-quest-panel,
+  body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-chat-panel,
+  body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-aim-label { display: none !important; }
+
+  body.device-mobile.landscape-mode .window-panel,
+  body.device-mobile.landscape-mode .modal-panel {
+    width: min(720px, calc(100vw - 26px - var(--safe-left) - var(--safe-right))) !important;
+    max-height: calc(var(--app-height, 100dvh) - 28px - var(--safe-top) - var(--safe-bottom)) !important;
+    top: calc(12px + var(--safe-top)) !important;
+    padding-top: 44px !important;
+  }
+  body.device-mobile.landscape-mode #inventory-window { width: min(760px, calc(100vw - 26px - var(--safe-left) - var(--safe-right))) !important; }
+  body.device-mobile.landscape-mode .window-scroll { max-height: calc(var(--app-height, 100dvh) - 92px - var(--safe-top) - var(--safe-bottom)) !important; }
+  body.device-mobile.landscape-mode #inventory-grid,
+  body.device-mobile.landscape-mode #trader-grid,
+  body.device-mobile.landscape-mode #loot-grid,
+  body.device-mobile.landscape-mode .trade-sell-list,
+  body.device-mobile.landscape-mode .storage-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+
+  @media (max-height: 390px) and (orientation: landscape) {
+    body.device-mobile.landscape-mode #player-info { transform: scale(0.86) !important; transform-origin: top left !important; }
+    body.device-mobile.landscape-mode #hud-top { transform: scale(0.86) !important; transform-origin: top left !important; }
+    body.device-mobile.landscape-mode .mobile-quest-panel { display: none !important; }
+    body.device-mobile.landscape-mode .mobile-chat-panel { height: 46px; width: min(280px, 30vw); }
+    body.device-mobile.landscape-mode #quickbar { bottom: calc(58px + var(--safe-bottom)) !important; max-width: min(332px, 34vw) !important; }
+    body.device-mobile.landscape-mode .touch-buttons { transform: scale(0.86); transform-origin: bottom right; }
+    body.device-mobile.landscape-mode .mobile-right-rail { display: none !important; }
+    body.device-mobile.landscape-mode #mobile-minimap-hud { width: 122px; height: 82px; }
+  }
+
+
+
+/* v7.46.7: меню игрока на телефоне выглядит как контекстное меню инвентаря */
+body.device-mobile #world-context-menu.mobile-inventory-style {
+  min-width: 168px;
+  max-width: min(238px, calc(100vw - 16px));
+  padding: 5px;
+  z-index: 13020;
+}
+body.device-mobile #world-context-menu.mobile-inventory-style .world-ctx-title {
+  display: none;
+}
+body.device-mobile #world-context-menu.mobile-inventory-style .world-ctx-option {
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1.2;
+}

@@ -1,0 +1,111 @@
+{
+  "schema": "realm.lootTables.v1",
+  "version": 1,
+  "containers": {
+    "survival": [
+      { "id": "water", "min": 1, "max": 2 },
+      { "id": "wood", "min": 1, "max": 3 },
+      { "id": "silver", "min": 2, "max": 5, "chance": 0.55 },
+      { "id": "stim", "min": 1, "max": 1, "chance": 0.28 },
+      { "id": "antibiotics", "min": 1, "max": 1, "chance": 0.1 }
+    ],
+    "settlement": [
+      { "id": "water", "min": 1, "max": 2 },
+      { "id": "wood", "min": 1, "max": 3 },
+      { "id": "silver", "min": 2, "max": 5, "chance": 0.45 },
+      { "id": "stim", "min": 1, "max": 1, "chance": 0.35 }
+    ],
+    "tools": [
+      { "oneOf": ["wood", "ore"], "min": 2, "max": 4 },
+      { "id": "repairKit", "min": 1, "max": 1, "chance": 0.42 },
+      { "oneOf": ["pickaxe", "axe"], "min": 1, "max": 1, "chance": 0.3 },
+      { "id": "scoutBoots", "min": 1, "max": 1, "chance": 0.08 }
+    ],
+    "medical": [
+      { "id": "stim", "min": 1, "max": 2 },
+      { "id": "medkit", "min": 1, "max": 1, "chance": 0.58 },
+      { "id": "antibiotics", "min": 1, "max": 1, "chance": 0.36 },
+      { "id": "doctorBag", "min": 1, "max": 1, "chance": 0.18 },
+      { "id": "water", "min": 1, "max": 1, "chance": 0.25 }
+    ],
+    "ammo": [
+      { "id": "silver", "min": 4, "max": 10 },
+      { "oneOf": ["ammo9", "ammo556", "shotgunShell"], "min": 4, "max": 12 },
+      { "oneOf": ["ammo9", "ammo556", "energyCell", "napalm"], "min": 3, "max": 9, "chance": 0.46 },
+      { "id": "shotgunShell", "min": 2, "max": 6, "chance": 0.3 },
+      { "oneOf": ["pistol", "shotgun"], "min": 1, "max": 1, "chance": 0.12 },
+      { "id": "repairKit", "min": 1, "max": 1, "chance": 0.16 }
+    ],
+    "wasteland": [
+      { "id": "silver", "min": 3, "max": 9 },
+      { "oneOf": ["ammo9", "ammo556"], "min": 2, "max": 8, "chance": 0.58 },
+      { "oneOf": ["stim", "water"], "min": 1, "max": 1, "chance": 0.42 },
+      { "oneOf": ["ore", "wood"], "min": 1, "max": 3, "chance": 0.3 },
+      { "id": "antibiotics", "min": 1, "max": 1, "chance": 0.1 }
+    ],
+    "rare": [
+      { "id": "silver", "min": 10, "max": 22 },
+      { "oneOf": ["ammo556", "shotgunShell", "energyCell", "napalm"], "min": 5, "max": 14 },
+      { "id": "medkit", "min": 1, "max": 1, "chance": 0.5 },
+      { "oneOf": ["rifle", "shotgun", "ballisticVest"], "min": 1, "max": 1, "chance": 0.24 },
+      { "oneOf": ["laserPistol", "combatArmor", "scoutBoots"], "min": 1, "max": 1, "chance": 0.08 },
+      { "id": "repairKit", "min": 1, "max": 1, "chance": 0.3 }
+    ],
+    "basic": [
+      { "id": "silver", "min": 3, "max": 8 },
+      { "oneOf": ["ammo9", "ammo556"], "min": 2, "max": 6, "chance": 0.55 },
+      { "oneOf": ["stim", "water"], "min": 1, "max": 1, "chance": 0.35 },
+      { "oneOf": ["ore", "wood"], "min": 1, "max": 3, "chance": 0.22 }
+    ]
+  },
+  "enemies": {
+    "raider": [
+      { "oneOf": ["ammo9", "ammo556"], "min": 2, "max": 7, "chance": 0.52 },
+      { "oneOf": ["stim", "water"], "min": 1, "max": 1, "chance": 0.24 },
+      { "oneOf": ["pistol", "knife"], "min": 1, "max": 1, "chance": 0.15 },
+      { "id": "assaultRifle", "min": 1, "max": 1, "chance": 0.045 },
+      { "oneOf": ["leather", "helmet"], "min": 1, "max": 1, "chance": 0.07 }
+    ],
+    "ghoul": [
+      { "id": "trophy", "min": 1, "max": 1, "chance": 0.42 },
+      { "oneOf": ["antibiotics", "stim"], "min": 1, "max": 1, "chance": 0.18 },
+      { "oneOf": ["water", "silver"], "min": 1, "max": 3, "chance": 0.22 }
+    ],
+    "superMutant": [
+      { "id": "trophy", "min": 1, "max": 1, "chance": 0.7 },
+      { "oneOf": ["ammo556", "shotgunShell", "rocketAmmo", "napalm"], "min": 2, "max": 8, "chance": 0.48 },
+      { "oneOf": ["medkit", "repairKit"], "min": 1, "max": 1, "chance": 0.26 },
+      { "oneOf": ["combatArmor", "metalArmor", "assaultRifle"], "min": 1, "max": 1, "chance": 0.1 }
+    ],
+    "ashWolf": [
+      { "id": "trophy", "min": 1, "max": 2, "chance": 0.72 },
+      { "oneOf": ["wood", "water"], "min": 1, "max": 2, "chance": 0.24 },
+      { "id": "antibiotics", "min": 1, "max": 1, "chance": 0.08 }
+    ],
+    "radScorpion": [
+      { "id": "trophy", "min": 1, "max": 2, "chance": 0.78 },
+      { "id": "antibiotics", "min": 1, "max": 1, "chance": 0.16 },
+      { "oneOf": ["ore", "silver"], "min": 1, "max": 3, "chance": 0.22 }
+    ],
+    "mutantAnt": [
+      { "id": "trophy", "min": 1, "max": 2, "chance": 0.62 },
+      { "oneOf": ["wood", "ore"], "min": 1, "max": 2, "chance": 0.28 },
+      { "oneOf": ["water", "stim"], "min": 1, "max": 1, "chance": 0.12 }
+    ],
+    "gecko": [
+      { "id": "trophy", "min": 1, "max": 2, "chance": 0.66 },
+      { "oneOf": ["water", "wood"], "min": 1, "max": 2, "chance": 0.2 },
+      { "id": "stim", "min": 1, "max": 1, "chance": 0.08 }
+    ],
+    "fireGecko": [
+      { "id": "trophy", "min": 1, "max": 2, "chance": 0.76 },
+      { "oneOf": ["energyCell", "silver"], "min": 2, "max": 5, "chance": 0.2 },
+      { "oneOf": ["stim", "antibiotics"], "min": 1, "max": 1, "chance": 0.12 }
+    ],
+    "basic": [
+      { "oneOf": ["ammo9", "ammo556"], "min": 1, "max": 5, "chance": 0.3 },
+      { "oneOf": ["stim", "water"], "min": 1, "max": 1, "chance": 0.2 },
+      { "oneOf": ["ore", "wood"], "min": 1, "max": 2, "chance": 0.16 }
+    ]
+  }
+}

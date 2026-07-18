@@ -1,0 +1,651 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "roadOutpost",
+  "name": "Дорожный аванпост Старого Клима",
+  "seed": 20260709,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "location",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "scrapDust",
+    "label": "Пыль и металлолом",
+    "texture": "reliefWasteland"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 25,
+    "x": 1,
+    "y": 0,
+    "z": 13,
+    "rotationY": 0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 25,
+    "x": 1,
+    "y": 0,
+    "z": 13,
+    "rotationY": 0
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "type": "globalMap",
+      "shape": "edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 1,
+      "radius": 4,
+      "edgeWidth": 4,
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "edges": [
+        "north",
+        "south",
+        "west",
+        "east"
+      ]
+    }
+  ],
+  "containers": [
+    {
+      "id": "road_outpost_supply",
+      "tx": 16,
+      "tz": 18,
+      "name": "Ящик снабжения аванпоста",
+      "tier": "ammo",
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "road_outpost_tools",
+      "tx": 23,
+      "tz": 22,
+      "name": "Инструменты патруля",
+      "tier": "tools"
+    }
+  ],
+  "objects": [
+    {
+      "id": "outpost_cargo_01",
+      "model": "cargoStack",
+      "name": "Груз аванпоста",
+      "url": "/assets/models/wasteland/cargo_stack.glb",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": 7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.1,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover",
+        "supplies"
+      ],
+      "footprint": {
+        "x": 4,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 2,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "road_outpost_trade_machine",
+      "model": "tradeMachine",
+      "name": "Торговый автомат аванпоста",
+      "url": "/assets/models/wasteland/trade_machine.glb",
+      "position": {
+        "x": 3,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "tradeMachine",
+        "vendingMachine"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "tradeMachine",
+        "role": "tradeMachine",
+        "traderProfile": "outpostMachine",
+        "caps": 350,
+        "buyInterests": [
+          "materials",
+          "tools",
+          "aid",
+          "ammo"
+        ],
+        "stock": [
+          {
+            "id": "water",
+            "price": 6,
+            "qty": 12
+          },
+          {
+            "id": "stim",
+            "price": 13,
+            "qty": 6
+          },
+          {
+            "id": "medkit",
+            "price": 24,
+            "qty": 3
+          },
+          {
+            "id": "ammo9",
+            "price": 3,
+            "qty": 90
+          },
+          {
+            "id": "ammo556",
+            "price": 5,
+            "qty": 60
+          },
+          {
+            "id": "shotgunShell",
+            "price": 6,
+            "qty": 24
+          },
+          {
+            "id": "repairKit",
+            "price": 22,
+            "qty": 3
+          },
+          {
+            "id": "oil",
+            "price": 10,
+            "qty": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "roadOutpost_job_board_01",
+      "model": "jobBoard",
+      "name": "Доска заданий",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": -1,
+        "y": 0,
+        "z": 5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "roadOutpost"
+      },
+      "boardSiteId": "roadOutpost",
+      "entity": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "roadOutpost"
+      }
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": -17,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.3,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      }
+    },
+    {
+      "id": "road_outpost_ammo_bench",
+      "model": "craftStationAmmo",
+      "name": "Патронный станок",
+      "url": "/assets/models/wasteland/craft_station_ammo.glb",
+      "position": {
+        "x": -4,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "ammo_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "ammo_bench"
+      ],
+      "stationSiteId": "roadOutpost",
+      "worksiteId": "roadOutpost",
+      "stationOwner": "old_klim",
+      "stationKind": "outpost",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "roadOutpost"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "roadOutpost"
+      }
+    },
+    {
+      "id": "road_outpost_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",
+      "url": "/assets/models/wasteland/craft_station_repair.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "roadOutpost",
+      "worksiteId": "roadOutpost",
+      "stationOwner": "old_klim",
+      "stationKind": "outpost",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "roadOutpost"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "roadOutpost"
+      }
+    },
+    {
+      "id": "roadOutpost_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -19,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "none"
+      }
+    },
+    {
+      "id": "roadOutpost_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -17,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.142,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "none"
+      }
+    },
+    {
+      "id": "roadOutpost_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -15,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "none"
+      }
+    },
+    {
+      "id": "roadOutpost_cot_04",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -13,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.142,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "none"
+      }
+    },
+    {
+      "id": "roadOutpost_cot_05",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -19,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "none"
+      }
+    }
+  ],
+  "pvp": true,
+  "fullDrop": false,
+  "city": false,
+  "settlement": false,
+  "respawnAllowed": false,
+  "exportedAt": "2026-07-13T16:57:56.118Z",
+  "units": "game-meters",
+  "entry": {
+    "tx": 19,
+    "tz": 25,
+    "x": 1,
+    "y": 0,
+    "z": 13,
+    "rotationY": 0
+  },
+  "transitions": []
+}

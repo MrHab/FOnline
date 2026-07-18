@@ -1,0 +1,168 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "radscorpionNest",
+  "name": "Гнездо радскорпионов",
+  "seed": 20260710,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "kind": "location",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "caravanYard",
+    "label": "Стоянка Старого Клима",
+    "texture": "traderYard"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24,
+    "x": 1,
+    "y": 0,
+    "z": 11,
+    "rotationY": 0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24,
+    "x": 1,
+    "y": 0,
+    "z": 11,
+    "rotationY": 0
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "type": "globalMap",
+      "shape": "edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 1,
+      "radius": 4,
+      "edgeWidth": 4,
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "edges": [
+        "north",
+        "south",
+        "west",
+        "east"
+      ]
+    }
+  ],
+  "containers": [],
+  "objects": [
+    {
+      "id": "scorpion_rocks_01",
+      "model": "rubbleRock",
+      "name": "Каменная осыпь",
+      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": -7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rock"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      }
+    },
+    {
+      "id": "scorpion_rocks_02",
+      "model": "oreOutcrop",
+      "name": "Сухая гряда",
+      "url": "/assets/models/wasteland/ore_outcrop.glb",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": -5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover",
+        "resource",
+        "ore"
+      ],
+      "resourceType": "ore",
+      "hp": 5,
+      "maxHp": 5,
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      }
+    }
+  ],
+  "pvp": true,
+  "fullDrop": true,
+  "city": false,
+  "settlement": false,
+  "respawnAllowed": false,
+  "exportedAt": "2026-07-13T16:57:50.822Z",
+  "units": "game-meters",
+  "entry": {
+    "tx": 19,
+    "tz": 24,
+    "x": 1,
+    "y": 0,
+    "z": 11,
+    "rotationY": 0
+  },
+  "transitions": []
+}

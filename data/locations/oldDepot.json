@@ -1,0 +1,516 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "oldDepot",
+  "name": "Старый военный склад",
+  "seed": 20260710,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "kind": "pointOfInterest",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "ashConcrete",
+    "label": "Пыльный бетон склада"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 25
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 25
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [
+    {
+      "id": "old_depot_ammo_cache",
+      "tx": 14,
+      "tz": 16,
+      "name": "Военный ящик с боеприпасами",
+      "tier": "ammo",
+      "locked": true,
+      "lockDifficulty": "hard"
+    },
+    {
+      "id": "old_depot_rare_cache",
+      "tx": 25,
+      "tz": 15,
+      "name": "Запертый армейский сейф",
+      "tier": "rare",
+      "locked": true,
+      "lockDifficulty": "hard",
+      "terminalLocked": true,
+      "terminalDifficulty": "hard",
+      "terminalUnlocksLock": true,
+      "terminalName": "Старый армейский терминал"
+    }
+  ],
+  "objects": [
+    {
+      "id": "depot_armory_01",
+      "model": "armoryRack",
+      "name": "Стойка оружия",
+      "url": "/assets/models/wasteland/armory_rack.glb",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": -9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.25,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "ammoParts",
+        "weapon-parts"
+      ],
+      "resourceType": "ammoParts",
+      "hp": 6,
+      "maxHp": 6,
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "depot_electronics_01",
+      "model": "workshopBench",
+      "name": "Разобранный терминал",
+      "url": "/assets/models/wasteland/workshop_bench.glb",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -6
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.35,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "electronics"
+      ],
+      "resourceType": "electronics",
+      "hp": 5,
+      "maxHp": 5,
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "depot_scrap_01",
+      "model": "scrapHeap",
+      "name": "Военный лом",
+      "url": "/assets/models/wasteland/scrap_heap.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.55,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "scrap"
+      ],
+      "resourceType": "scrap",
+      "hp": 6,
+      "maxHp": 6
+    },
+    {
+      "id": "depot_barrels_01",
+      "model": "barrelCluster",
+      "name": "Ржавые бочки",
+      "url": "/assets/models/wasteland/barrel_cluster.glb",
+      "position": {
+        "x": 13,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.6,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover",
+        "depot"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "depot_raider_01",
+      "model": "enemyRaider",
+      "name": "Рейдер склада",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": -8,
+        "y": 0,
+        "z": 2
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.7,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      }
+    },
+    {
+      "id": "depot_raider_02",
+      "model": "enemyRaider",
+      "name": "Рейдер склада",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.5,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      }
+    },
+    {
+      "id": "depot_raider_03",
+      "model": "enemyRaider",
+      "name": "Смотрящий склада",
+      "url": "/assets/models/wasteland/npc_raider.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "enemy",
+        "hostile",
+        "raider"
+      ],
+      "entity": {
+        "kind": "npc",
+        "role": "raider",
+        "species": "raider",
+        "faction": "raiders",
+        "enemyType": "raider",
+        "hostileToPlayer": true,
+        "profile": "raider",
+        "statProfile": "raider",
+        "equipmentProfile": "raider",
+        "lootProfile": "raider"
+      }
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": 17,
+        "y": 0,
+        "z": -11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.2,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "tx": 27,
+      "tz": 13,
+      "x": 17,
+      "z": -11,
+      "objectId": "rest_campfire_01",
+      "objectModel": "campfireRest",
+      "authoredObject": true,
+      "vision": {
+        "mode": "none"
+      },
+      "role": "campfire"
+    },
+    {
+      "id": "oldDepot_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": -13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "oldDepot_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 16,
+        "y": 0,
+        "z": -13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "oldDepot_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 18,
+        "y": 0,
+        "z": -13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    }
+  ]
+}

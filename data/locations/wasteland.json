@@ -1,0 +1,145 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "wasteland",
+  "name": "Пепельный лес",
+  "seed": 123456,
+  "safe": false,
+  "pvpMode": "pvp",
+  "enemyCap": 12,
+  "spawnCount": 8,
+  "ground": {
+    "preset": "ashForest",
+    "label": "Пепельная земля"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 32
+  },
+  "entryFromSettlement": {
+    "tx": 19,
+    "tz": 34
+  },
+  "exit": {
+    "tx": 19,
+    "tz": 35,
+    "to": "settlement",
+    "label": "Дорога в поселение"
+  },
+  "transitions": [
+    {
+      "id": "road_to_klim",
+      "type": "location",
+      "label": "Дорога к Старому Климу",
+      "to": "settlement",
+      "entryKey": "entryFromWasteland",
+      "tx": 19,
+      "tz": 35,
+      "radius": 2.4
+    }
+  ],
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Край Пепельного леса",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [
+    {
+      "id": "wasteland_cache_1",
+      "tx": 10,
+      "tz": 10,
+      "name": "Заброшенная аптечка",
+      "tier": "medical"
+    },
+    {
+      "id": "wasteland_cache_2",
+      "tx": 27,
+      "tz": 12,
+      "name": "Ржавый боевой контейнер",
+      "tier": "ammo",
+      "locked": true,
+      "lockDifficulty": "medium"
+    },
+    {
+      "id": "wasteland_cache_3",
+      "tx": 14,
+      "tz": 27,
+      "name": "Запертый редкий тайник",
+      "tier": "rare",
+      "locked": true,
+      "lockDifficulty": "hard",
+      "terminalLocked": true,
+      "terminalDifficulty": "hard",
+      "terminalUnlocksLock": true,
+      "terminalName": "Ржавый терминал тайника"
+    }
+  ],
+  "objects": [
+    {
+      "id": "ash_tree_01",
+      "model": "deadTreeA",
+      "name": "Пепельное дерево",
+      "url": "/assets/models/wasteland/dead_tree_a.glb",
+      "position": {
+        "x": -25,
+        "y": 0,
+        "z": -21
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.4,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "forest"
+      ]
+    },
+    {
+      "id": "ash_wreck_01",
+      "model": "carWreck",
+      "name": "Остов машины",
+      "url": "/assets/models/wasteland/car_wreck.glb",
+      "position": {
+        "x": 16,
+        "y": 0,
+        "z": -14
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.7,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "cover": true
+      }
+    }
+  ]
+}

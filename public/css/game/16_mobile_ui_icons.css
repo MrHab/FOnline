@@ -1,0 +1,76 @@
+/* v7.74.26 mobile transparent image icons
+   The left rail and touch buttons must not rely on emoji/text glyphs: those can render with white boxes on Android browsers. */
+body.device-mobile.landscape-mode .mobile-rail-btn,
+body.device-mobile.landscape-mode .touch-btn,
+body.device-mobile.landscape-mode #global-fullscreen-btn,
+body.device-mobile.landscape-mode #game-settings-btn,
+body.device-mobile.landscape-mode #mobile-fullscreen-btn {
+  font-size: 0 !important;
+  color: transparent !important;
+  text-indent: -9999px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 0 !important;
+}
+
+body.device-mobile.landscape-mode .mobile-rail-btn::before,
+body.device-mobile.landscape-mode .touch-btn::before,
+body.device-mobile.landscape-mode #global-fullscreen-btn::before,
+body.device-mobile.landscape-mode #game-settings-btn::before,
+body.device-mobile.landscape-mode #mobile-fullscreen-btn::before {
+  content: '' !important;
+  display: block !important;
+  width: 72% !important;
+  height: 72% !important;
+  margin: 0 !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.75));
+  text-indent: 0 !important;
+  pointer-events: none !important;
+}
+
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn::before { width: 76% !important; height: 76% !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="inventory"]::before { background-image: url('/assets/ui/mobile/left/inventory.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="map"]::before { background-image: url('/assets/ui/mobile/left/map.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="talents"]::before { background-image: url('/assets/ui/mobile/left/skills.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="craft"]::before { background-image: url('/assets/ui/mobile/left/craft.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="tutorial"]::before { background-image: url('/assets/ui/mobile/left/tutorial.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="vision"]::before { background-image: url('/assets/ui/mobile/left/vision_fog.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="crouch"]::before { background-image: url('/assets/ui/mobile/left/crouch.png') !important; }
+
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="reload"]::before,
+body.device-mobile.landscape-mode #touch-reload::before { background-image: url('/assets/ui/mobile/right/reload.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="mode"]::before,
+body.device-mobile.landscape-mode #touch-mode::before { background-image: url('/assets/ui/mobile/right/mode.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="interact"]::before,
+body.device-mobile.landscape-mode #touch-interact::before,
+body.device-mobile.landscape-mode #touch-loot::before { background-image: url('/assets/ui/mobile/right/interact.png') !important; }
+body.device-mobile.landscape-mode .mobile-rail-btn[data-mobile-action="target"]::before,
+body.device-mobile.landscape-mode #touch-target::before { background-image: url('/assets/ui/mobile/right/target.png') !important; }
+body.device-mobile.landscape-mode #touch-fire::before { background-image: url('/assets/ui/mobile/right/attack.png') !important; }
+body.device-mobile.landscape-mode #touch-player-menu::before { background-image: url('/assets/ui/mobile/right/radial_menu.png') !important; }
+
+body.device-mobile.landscape-mode #touch-fire::before {
+  width: 82% !important;
+  height: 82% !important;
+}
+body.device-mobile.landscape-mode #touch-player-menu::before {
+  width: 76% !important;
+  height: 76% !important;
+}
+body.device-mobile.landscape-mode #global-fullscreen-btn::before,
+body.device-mobile.landscape-mode #mobile-fullscreen-btn::before { background-image: url('/assets/ui/mobile/top/fullscreen.png') !important; }
+body.device-mobile.landscape-mode #game-settings-btn::before { background-image: url('/assets/ui/mobile/top/main_menu.png') !important; }
+
+/* Extra safety against accidental white square backgrounds from browser glyph fallback or pasted assets. */
+body.device-mobile.landscape-mode .mobile-rail-btn,
+body.device-mobile.landscape-mode .touch-btn,
+body.device-mobile.landscape-mode #global-fullscreen-btn,
+body.device-mobile.landscape-mode #game-settings-btn,
+body.device-mobile.landscape-mode #mobile-fullscreen-btn {
+  background-clip: padding-box !important;
+}

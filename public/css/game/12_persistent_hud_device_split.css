@@ -1,0 +1,133 @@
+/* v7.49.3: разделяем постоянный HUD для ПК и мобильной версии.
+   Предыдущая правка держала HUD видимым общими селекторами и могла показать
+   мобильный системный журнал на ПК. Здесь поздним слоем каскада фиксируем:
+   ПК видит только desktop HUD и #log; мобильная версия видит только mobile HUD
+   и #system-log-panel в landscape. */
+
+/* ПК: никогда не показываем мобильный HUD и мобильный системный блок. */
+body.device-desktop #mobile-controls,
+body.device-desktop #mobile-minimap-hud,
+body.device-desktop #mobile-game-time,
+body.device-desktop #mobile-fullscreen-btn,
+body.device-desktop .mobile-left-rail,
+body.device-desktop .mobile-right-rail,
+body.device-desktop .mobile-quest-panel,
+body.device-desktop .mobile-chat-panel,
+body.device-desktop .mobile-aim-label,
+body.device-desktop #touch-move-zone,
+body.device-desktop #touch-aim-zone,
+body.device-desktop #touch-aim-reticle,
+body.device-desktop #touch-joystick,
+body.device-desktop .touch-buttons,
+body.device-desktop #system-log-panel,
+body.device-desktop.game-ui-panel-open #mobile-controls,
+body.device-desktop.game-ui-panel-open #mobile-minimap-hud,
+body.device-desktop.game-ui-panel-open #mobile-game-time,
+body.device-desktop.game-ui-panel-open #mobile-fullscreen-btn,
+body.device-desktop.game-ui-panel-open .mobile-left-rail,
+body.device-desktop.game-ui-panel-open .mobile-right-rail,
+body.device-desktop.game-ui-panel-open .mobile-quest-panel,
+body.device-desktop.game-ui-panel-open .mobile-chat-panel,
+body.device-desktop.game-ui-panel-open .mobile-aim-label,
+body.device-desktop.game-ui-panel-open #system-log-panel,
+body.device-desktop.loot-window-open #system-log-panel,
+body.device-desktop.trader-window-open #system-log-panel,
+body.device-desktop.storage-window-open #system-log-panel {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* ПК: при открытых игровых окнах оставляем именно desktop-интерфейс. */
+body.device-desktop.game-ui-panel-open #global-fullscreen-btn,
+body.device-desktop.game-ui-panel-open #game-settings-btn,
+body.device-desktop.game-ui-panel-open #desktop-minimap-hud,
+body.device-desktop.game-ui-panel-open #desktop-game-time,
+body.device-desktop.loot-window-open #desktop-minimap-hud,
+body.device-desktop.loot-window-open #desktop-game-time,
+body.device-desktop.trader-window-open #desktop-minimap-hud,
+body.device-desktop.trader-window-open #desktop-game-time,
+body.device-desktop.storage-window-open #desktop-minimap-hud,
+body.device-desktop.storage-window-open #desktop-game-time {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+body.device-desktop.game-ui-panel-open #log,
+body.device-desktop.loot-window-open #log,
+body.device-desktop.trader-window-open #log,
+body.device-desktop.storage-window-open #log {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Мобильная версия: старый desktop-log скрыт всегда. */
+body.device-mobile #log,
+body.device-mobile.game-ui-panel-open #log,
+body.device-mobile.loot-window-open #log,
+body.device-mobile.trader-window-open #log,
+body.device-mobile.storage-window-open #log {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Мобильная версия: при открытых окнах сохраняем только мобильный HUD. */
+body.device-mobile.landscape-mode.game-ui-panel-open #mobile-minimap-hud,
+body.device-mobile.landscape-mode.game-ui-panel-open #mobile-game-time,
+body.device-mobile.landscape-mode.game-ui-panel-open #system-log-panel,
+body.device-mobile.landscape-mode.loot-window-open #mobile-minimap-hud,
+body.device-mobile.landscape-mode.loot-window-open #mobile-game-time,
+body.device-mobile.landscape-mode.loot-window-open #system-log-panel,
+body.device-mobile.landscape-mode.trader-window-open #mobile-minimap-hud,
+body.device-mobile.landscape-mode.trader-window-open #mobile-game-time,
+body.device-mobile.landscape-mode.trader-window-open #system-log-panel,
+body.device-mobile.landscape-mode.storage-window-open #mobile-minimap-hud,
+body.device-mobile.landscape-mode.storage-window-open #mobile-game-time,
+body.device-mobile.landscape-mode.storage-window-open #system-log-panel {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+body.device-mobile.landscape-mode.game-ui-panel-open .mobile-left-rail,
+body.device-mobile.landscape-mode.game-ui-panel-open .mobile-right-rail,
+body.device-mobile.landscape-mode.game-ui-panel-open .touch-buttons,
+body.device-mobile.landscape-mode.loot-window-open .mobile-left-rail,
+body.device-mobile.landscape-mode.loot-window-open .mobile-right-rail,
+body.device-mobile.landscape-mode.loot-window-open .touch-buttons,
+body.device-mobile.landscape-mode.trader-window-open .mobile-left-rail,
+body.device-mobile.landscape-mode.trader-window-open .mobile-right-rail,
+body.device-mobile.landscape-mode.trader-window-open .touch-buttons,
+body.device-mobile.landscape-mode.storage-window-open .mobile-left-rail,
+body.device-mobile.landscape-mode.storage-window-open .mobile-right-rail,
+body.device-mobile.landscape-mode.storage-window-open .touch-buttons {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+body.device-mobile.landscape-mode.game-ui-panel-open #quickbar,
+body.device-mobile.landscape-mode.loot-window-open #quickbar,
+body.device-mobile.landscape-mode.trader-window-open #quickbar,
+body.device-mobile.landscape-mode.storage-window-open #quickbar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* В мобильной версии не возвращаем устаревший отдельный mobile-chat-panel поверх нового system-log-panel. */
+body.device-mobile.landscape-mode .mobile-chat-panel,
+body.device-mobile.landscape-mode.game-ui-panel-open .mobile-chat-panel,
+body.device-mobile.landscape-mode.loot-window-open .mobile-chat-panel,
+body.device-mobile.landscape-mode.trader-window-open .mobile-chat-panel,
+body.device-mobile.landscape-mode.storage-window-open .mobile-chat-panel {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Мобильный fullscreen имеет свой контрол; desktop-кнопку не вытаскиваем поверх мобильной раскладки. */
+body.device-mobile.landscape-mode.game-ui-panel-open #global-fullscreen-btn {
+  display: none !important;
+}

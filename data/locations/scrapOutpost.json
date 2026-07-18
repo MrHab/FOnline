@@ -1,0 +1,702 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "scrapOutpost",
+  "name": "Сторожевой пост Свалочного союза",
+  "seed": 20260721,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "outpost",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "scrapDust",
+    "label": "Пыльная трасса у свалки"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 25
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 25
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [
+    {
+      "id": "scrap_outpost_tools",
+      "tx": 15,
+      "tz": 18,
+      "name": "Ящик полевого механика",
+      "tier": "tools"
+    },
+    {
+      "id": "scrap_outpost_ammo",
+      "tx": 23,
+      "tz": 20,
+      "name": "Запас ополчения",
+      "tier": "ammo",
+      "locked": true,
+      "lockDifficulty": "easy"
+    }
+  ],
+  "objects": [
+    {
+      "id": "scrap_outpost_cargo",
+      "model": "cargoStack",
+      "name": "Груз лома",
+      "url": "/assets/models/wasteland/cargo_stack.glb",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "z": 7
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.25,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover",
+        "supplies"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "scrap_outpost_trade_machine",
+      "model": "tradeMachine",
+      "name": "Торговый автомат аванпоста",
+      "url": "/assets/models/wasteland/trade_machine.glb",
+      "position": {
+        "x": 2,
+        "y": 0,
+        "z": 10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        },
+        "groundSnap": true
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "tradeMachine",
+        "vendingMachine"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "tradeMachine",
+        "role": "tradeMachine",
+        "traderProfile": "outpostMachine",
+        "caps": 350,
+        "buyInterests": [
+          "materials",
+          "tools",
+          "aid",
+          "ammo"
+        ],
+        "stock": [
+          {
+            "id": "water",
+            "price": 6,
+            "qty": 12
+          },
+          {
+            "id": "stim",
+            "price": 13,
+            "qty": 6
+          },
+          {
+            "id": "medkit",
+            "price": 24,
+            "qty": 3
+          },
+          {
+            "id": "ammo9",
+            "price": 3,
+            "qty": 90
+          },
+          {
+            "id": "ammo556",
+            "price": 5,
+            "qty": 60
+          },
+          {
+            "id": "shotgunShell",
+            "price": 6,
+            "qty": 24
+          },
+          {
+            "id": "napalm",
+            "price": 7,
+            "qty": 18
+          },
+          {
+            "id": "repairKit",
+            "price": 22,
+            "qty": 3
+          },
+          {
+            "id": "oil",
+            "price": 10,
+            "qty": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "scrap_outpost_job_board",
+      "model": "jobBoard",
+      "name": "Доска работ",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": -2,
+        "y": 0,
+        "z": 4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        },
+        "groundSnap": true
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "scrapOutpost"
+      }
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": 17,
+        "y": 0,
+        "z": 10
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.2,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "tx": 27,
+      "tz": 24,
+      "x": 17,
+      "z": 10,
+      "objectId": "rest_campfire_01",
+      "objectModel": "campfireRest",
+      "authoredObject": true,
+      "vision": {
+        "mode": "none"
+      },
+      "role": "campfire"
+    },
+    {
+      "id": "scrap_outpost_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",
+      "url": "/assets/models/wasteland/craft_station_repair.glb",
+      "position": {
+        "x": -37,
+        "y": 0,
+        "z": -17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "scrapOutpost",
+      "worksiteId": "scrapOutpost",
+      "stationOwner": "scrap_union",
+      "stationKind": "outpost",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "scrapOutpost"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "scrapOutpost"
+      }
+    },
+    {
+      "id": "scrap_outpost_tool_bench",
+      "model": "craftStationTools",
+      "name": "Инструментальный верстак",
+      "url": "/assets/models/wasteland/craft_station_tools.glb",
+      "position": {
+        "x": -34,
+        "y": 0,
+        "z": -17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "tool_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "tool_bench"
+      ],
+      "stationSiteId": "scrapOutpost",
+      "worksiteId": "scrapOutpost",
+      "stationOwner": "scrap_union",
+      "stationKind": "outpost",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "scrapOutpost"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "scrapOutpost"
+      }
+    },
+    {
+      "id": "scrap_outpost_ammo_bench",
+      "model": "craftStationAmmo",
+      "name": "Патронный станок",
+      "url": "/assets/models/wasteland/craft_station_ammo.glb",
+      "position": {
+        "x": -31,
+        "y": 0,
+        "z": -17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "ammo_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "ammo_bench"
+      ],
+      "stationSiteId": "scrapOutpost",
+      "worksiteId": "scrapOutpost",
+      "stationOwner": "scrap_union",
+      "stationKind": "outpost",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "scrapOutpost"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "scrapOutpost"
+      }
+    },
+    {
+      "id": "scrapOutpost_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapOutpost_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 16,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapOutpost_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 18,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapOutpost_cot_04",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 20,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapOutpost_cot_05",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": 10
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    }
+  ]
+}

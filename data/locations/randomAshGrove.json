@@ -1,0 +1,108 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "randomAshGrove",
+  "name": "Пепельная роща",
+  "seed": 20260911,
+  "safe": false,
+  "pvpMode": "pvp",
+  "randomTemplate": true,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "ashGrove",
+    "label": "Пепельная роща"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 19
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 19
+  },
+  "entryFromNorth": { "tx": 19, "tz": 4 },
+  "entryFromSouth": { "tx": 19, "tz": 34 },
+  "entryFromWest": { "tx": 4, "tz": 19 },
+  "entryFromEast": { "tx": 34, "tz": 19 },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "objects": [
+    {
+      "id": "ash_grove_tree_01",
+      "model": "deadTreeB",
+      "name": "Мертвое дерево",
+      "url": "/assets/models/wasteland/dead_tree_b.glb",
+      "position": {
+        "x": -16,
+        "y": 0,
+        "z": -12
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.7,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "tree",
+        "resource",
+        "wood"
+      ],
+      "resourceType": "wood",
+      "hp": 4,
+      "maxHp": 4
+    },
+    {
+      "id": "ash_grove_deadwood_01",
+      "model": "deadwood",
+      "name": "Валежник",
+      "url": "/assets/models/wasteland/deadwood.glb",
+      "position": {
+        "x": 11,
+        "y": 0,
+        "z": 13
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.5,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "wood"
+      ],
+      "resourceType": "wood",
+      "hp": 3,
+      "maxHp": 3
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "version": "7.61.0",
+  "purpose": "PBR decal normal maps and cheap baked-AO/bloom assets for the handbuilt trader yard.",
+  "source": "Derived locally from user-provided Materials_Ground_Dirt_01.zip texture maps and generated procedural AO/glow masks.",
+  "files": [
+    "relief_cracked_patch_normal_v761.webp",
+    "relief_gravel_pebbles_normal_v761.webp",
+    "layer_tire_tracks_normal_v761.webp",
+    "relief_mud_scorch_normal_v761.webp",
+    "layer_straw_dry_grass_normal_v761.webp",
+    "layer_sand_micro_normal_v761.webp",
+    "relief_cracked_patch_height_v761.webp"
+  ]
+}

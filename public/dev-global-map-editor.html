@@ -1,0 +1,2377 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Realm of Ashes - редактор глобальной карты</title>
+  <script src="/vendor/three.min.js"></script>
+  <script src="/vendor/GLTFLoader.js"></script>
+  <script>
+    (() => {
+      if (window.location.protocol !== 'file:') return;
+      const target = `http://127.0.0.1:3000/dev-global-map-editor.html${window.location.search || ''}${window.location.hash || ''}`;
+      window.location.replace(target);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #050705;
+      --panel: rgba(8, 13, 8, 0.95);
+      --panel2: rgba(12, 18, 11, 0.96);
+      --line: rgba(196, 157, 65, 0.52);
+      --line2: rgba(85, 139, 65, 0.36);
+      --gold: #f0d47f;
+      --green: #9ad17a;
+      --muted: #7f9b73;
+      --text: #e8dca1;
+      --danger: #e07b5f;
+      --shadow: rgba(0, 0, 0, 0.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 22% 20%, rgba(117, 93, 42, 0.16), transparent 36%),
+        radial-gradient(circle at 76% 64%, rgba(45, 79, 42, 0.18), transparent 34%),
+        #050705;
+      color: var(--text);
+      font-family: Consolas, "Courier New", monospace;
+      text-shadow: 0 1px 2px #000;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+      color: var(--text);
+    }
+
+    button {
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: linear-gradient(180deg, rgba(62, 50, 22, 0.84), rgba(24, 20, 11, 0.9));
+      color: var(--gold);
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: rgba(240, 212, 127, 0.9); }
+    button.secondary { color: var(--green); background: rgba(7, 22, 8, 0.72); border-color: var(--line2); }
+    button.danger { color: #ffb19d; border-color: rgba(224, 123, 95, 0.7); }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(150, 128, 60, 0.48);
+      border-radius: 6px;
+      background: rgba(2, 8, 4, 0.78);
+      padding: 8px 9px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 330px minmax(420px, 1fr) 380px;
+      gap: 14px;
+      height: 100vh;
+      padding: 12px;
+    }
+
+    .panel {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, var(--panel2), var(--panel));
+      box-shadow: 0 18px 44px var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 48px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(196, 157, 65, 0.28);
+    }
+
+    .panel-head strong {
+      color: var(--gold);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .panel-head small { color: var(--green); }
+
+    .panel-body {
+      height: calc(100% - 49px);
+      overflow: auto;
+      padding: 14px;
+    }
+
+    .stack { display: grid; gap: 12px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    .map-wrap {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid rgba(196, 157, 65, 0.42);
+      border-radius: 8px;
+      background: #070a06;
+      box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.55);
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    .hud {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      z-index: 2;
+      display: grid;
+      gap: 4px;
+      min-width: 250px;
+      padding: 10px 12px;
+      border: 1px solid rgba(196, 157, 65, 0.48);
+      border-radius: 8px;
+      background: rgba(5, 9, 5, 0.82);
+      pointer-events: none;
+    }
+
+    .hud b { color: var(--gold); }
+    .hud span { color: var(--green); font-size: 12px; }
+
+    .legend {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 26px;
+      padding: 4px 8px;
+      border: 1px solid rgba(196, 157, 65, 0.35);
+      border-radius: 999px;
+      background: rgba(5, 9, 5, 0.78);
+      color: var(--green);
+      font-size: 11px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    .list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .model-list {
+      display: grid;
+      gap: 7px;
+      max-height: 250px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .model-list::-webkit-scrollbar,
+    .panel-body::-webkit-scrollbar { width: 8px; height: 8px; }
+
+    .model-list::-webkit-scrollbar-track,
+    .panel-body::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.26); border-radius: 8px; }
+
+    .model-list::-webkit-scrollbar-thumb,
+    .panel-body::-webkit-scrollbar-thumb { background: rgba(204, 168, 78, 0.64); border-radius: 8px; }
+
+    .model-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 48px;
+      padding: 8px 9px;
+      border: 1px solid rgba(85, 139, 65, 0.28);
+      border-radius: 7px;
+      background: linear-gradient(180deg, rgba(6, 16, 8, 0.88), rgba(2, 7, 4, 0.78));
+      cursor: pointer;
+      text-align: left;
+      text-transform: none;
+    }
+
+    .model-card:hover,
+    .model-card.selected {
+      border-color: rgba(240, 212, 127, 0.82);
+      background: linear-gradient(180deg, rgba(35, 34, 16, 0.92), rgba(6, 14, 7, 0.88));
+    }
+
+    .model-card b {
+      display: block;
+      color: var(--gold);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .model-card span span {
+      display: block;
+      margin-top: 3px;
+      color: var(--green);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .model-card i {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      max-width: 108px;
+      min-height: 22px;
+      padding: 3px 7px;
+      color: var(--green);
+      border: 1px solid rgba(116, 168, 83, 0.4);
+      border-radius: 999px;
+      background: rgba(1, 7, 4, 0.72);
+      font-size: 10px;
+      font-weight: 700;
+      font-style: normal;
+      line-height: 1.12;
+      text-align: center;
+    }
+
+    .cell-model-status {
+      min-height: 30px;
+      padding: 8px 10px;
+      border: 1px dashed rgba(119, 185, 91, 0.35);
+      border-radius: 6px;
+      background: rgba(5, 18, 7, 0.45);
+      color: var(--green);
+      line-height: 1.35;
+    }
+
+    .texture-preview {
+      min-height: 36px;
+      border: 1px solid rgba(196, 157, 65, 0.28);
+      border-radius: 6px;
+      background: rgba(126,94,50,0.18);
+      box-shadow: inset 0 0 22px rgba(0,0,0,0.24);
+    }
+
+    .weight-row {
+      display: grid;
+      grid-template-columns: 20px 1fr 68px;
+      gap: 8px;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px;
+      border: 1px solid rgba(85, 139, 65, 0.24);
+      border-radius: 6px;
+      background: rgba(2, 10, 4, 0.62);
+    }
+
+    .weight-row input[type="checkbox"] { width: 16px; height: 16px; }
+    .weight-row input[type="number"] { padding: 5px 7px; }
+    .weight-row b { color: var(--gold); font-size: 12px; }
+    .weight-row small { display: block; color: var(--muted); font-size: 10px; }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 4px;
+      border: 1px solid rgba(85, 139, 65, 0.3);
+      border-radius: 8px;
+      background: rgba(1, 6, 3, 0.58);
+    }
+
+    .tabs button {
+      min-height: 34px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--green);
+    }
+
+    .tabs button.active {
+      border-color: var(--line);
+      background: rgba(65, 50, 18, 0.75);
+      color: var(--gold);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      z-index: 20;
+      transform: translateX(-50%);
+      min-width: 280px;
+      max-width: 520px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(5, 9, 5, 0.94);
+      color: var(--green);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+
+    .toast.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <div class="panel-head">
+        <strong>Глобальная карта</strong>
+        <small id="file-label">data/global-map.json</small>
+      </div>
+      <div class="panel-body stack">
+        <div class="tabs">
+          <button id="mode-cell" class="active" type="button">Клетки</button>
+          <button id="mode-node" type="button">Города</button>
+        </div>
+        <button id="save-map" type="button">Сохранить карту</button>
+        <a class="pill" href="/dev-location-editor.html">Открыть редактор локаций</a>
+        <div class="row3">
+          <label>Клетка X<input id="cell-x" type="number" min="1" max="30" value="1"></label>
+          <label>Клетка Y<input id="cell-y" type="number" min="1" max="30" value="1"></label>
+          <label>Центр клетки<input id="point-label" type="text" readonly></label>
+        </div>
+        <label>Название зоны<input id="cell-terrain" placeholder="например: старая трасса"></label>
+        <div class="row">
+          <label>Тип зоны
+            <select id="cell-pvp">
+              <option value="peaceful">Мирная</option>
+              <option value="pvp">PvP без полного дропа</option>
+              <option value="pvpFullDrop">PvP полный дроп</option>
+            </select>
+          </label>
+          <label>Текстура квадрата<select id="cell-texture"></select></label>
+        </div>
+        <div class="row">
+          <label>Цвет поверх текстуры<input id="cell-fill" placeholder="rgba(126,94,50,0.22)"></label>
+          <label>Превью текстуры<div id="cell-texture-preview" class="texture-preview"></div></label>
+        </div>
+        <div class="row">
+          <label>Шанс встречи %<input id="cell-chance" type="number" min="0" max="100" value="12"></label>
+          <label>Сложность 1-5<input id="cell-difficulty" type="number" min="1" max="5" value="2"></label>
+        </div>
+        <div class="row">
+          <button id="apply-cell" type="button">Применить к клетке</button>
+          <button id="clear-cell" class="danger" type="button">Очистить клетку</button>
+        </div>
+        <div class="stack">
+          <strong>3D модель клетки</strong>
+          <div id="cell-object-status" class="cell-model-status">На клетке нет модели.</div>
+          <div class="row">
+            <label>Масштаб модели<input id="cell-object-scale" type="number" min="0.2" max="5" step="0.05" value="1"></label>
+            <label>Поворот модели<input id="cell-object-rotation" type="number" min="0" max="360" step="5" value="0"></label>
+          </div>
+          <div class="row">
+            <button id="place-cell-object" type="button">Поставить модель на клетку</button>
+            <button id="remove-cell-object" class="danger" type="button">Убрать модель с клетки</button>
+          </div>
+        </div>
+        <div class="stack">
+          <strong>Город / локация</strong>
+          <label>Выбранный город<select id="node-select"></select></label>
+          <label>Локация города<select id="node-location"></select></label>
+          <label>Модель города<select id="node-model"></select></label>
+          <div class="row3">
+            <label>X точки<input id="node-x" type="number" min="0" max="900"></label>
+            <label>Y точки<input id="node-y" type="number" min="0" max="900"></label>
+            <label>Размер<input id="node-count" type="number" min="1" max="1" value="1" disabled title="Все локации занимают один квадрат"></label>
+          </div>
+          <div class="row">
+            <label>Масштаб модели<input id="node-model-scale" type="number" min="0.4" max="4" step="0.05" value="1"></label>
+            <label>Поворот модели<input id="node-model-rotation" type="number" min="0" max="360" step="5" value="0"></label>
+          </div>
+          <label>Заметка<textarea id="node-note" placeholder="что важно знать об этой точке"></textarea></label>
+          <div class="row">
+            <button id="apply-node" type="button">Поставить город</button>
+            <button id="remove-node" class="danger" type="button">Удалить город</button>
+          </div>
+        </div>
+        <div class="stack">
+          <strong>Живая пустошь</strong>
+          <label>Точка мира<select id="world-site-select"></select></label>
+          <div class="row">
+            <label>ID точки<input id="world-site-id" placeholder="scrap_fields"></label>
+            <label>Название<input id="world-site-name" placeholder="Свалка у старой трассы"></label>
+          </div>
+          <div class="row">
+            <label>Тип точки
+              <select id="world-site-type">
+                <option value="resource">Ресурс</option>
+                <option value="outpost">Аванпост</option>
+                <option value="pointOfInterest">Точка интереса</option>
+                <option value="settlement">Поселение</option>
+              </select>
+            </label>
+            <label>Владелец
+              <select id="world-site-owner">
+                <option value="neutral">Нейтралы</option>
+                <option value="old_klim">Старый Клим</option>
+                <option value="caravans">Караваны</option>
+                <option value="raiders">Рейдеры</option>
+                <option value="mutants">Мутанты</option>
+                <option value="wild">Дикая фауна</option>
+              </select>
+            </label>
+          </div>
+          <div class="row3">
+            <label>X точки<input id="world-site-x" type="number" min="0" max="900"></label>
+            <label>Y точки<input id="world-site-y" type="number" min="0" max="900"></label>
+            <label>PvP
+              <select id="world-site-pvp">
+                <option value="peaceful">Мирная</option>
+                <option value="pvp">PvP</option>
+                <option value="pvpFullDrop">Полный дроп</option>
+              </select>
+            </label>
+          </div>
+          <label>Локация при входе<select id="world-site-location"></select></label>
+          <div class="row3">
+            <label>Безопасность<input id="world-site-security" type="number" min="0" max="100" value="35"></label>
+            <label>Процветание<input id="world-site-prosperity" type="number" min="0" max="100" value="0"></label>
+            <label>Опасность 0-5<input id="world-site-danger" type="number" min="0" max="5" step="0.1" value="2"></label>
+          </div>
+          <label>Производство за цикл<textarea id="world-site-output" placeholder='{"scrap": 16, "ammoParts": 5}'></textarea></label>
+          <label>Текущие запасы<textarea id="world-site-stockpile" placeholder='{"water": 10, "scrap": 20}'></textarea></label>
+          <label>Торговые профили через запятую<input id="world-site-traders" placeholder="oldKlim, scrap, relay"></label>
+          <label>Заметка<textarea id="world-site-note" placeholder="что игрок должен понимать об этой точке"></textarea></label>
+          <div class="row">
+            <button id="world-site-use-cell" type="button">В центр выбранной клетки</button>
+            <button id="save-world-site" type="button">Сохранить точку</button>
+          </div>
+          <div class="row">
+            <button id="new-world-site" class="secondary" type="button">Новая точка</button>
+            <button id="delete-world-site" class="danger" type="button">Удалить точку</button>
+          </div>
+          <div id="world-site-status" class="cell-model-status">Данные живой пустоши ещё не загружены.</div>
+        </div>
+        <div class="stack">
+          <strong>3D модели карты</strong>
+          <label>Поиск модели<input id="model-search" placeholder="город, антенна, свалка, пост"></label>
+          <div id="model-list" class="model-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="map-wrap">
+      <canvas id="map" width="900" height="900"></canvas>
+      <div class="hud">
+        <b id="hud-title">Карта 30 x 30</b>
+        <span id="hud-cell">Клетка 1:1, центр 15:15</span>
+        <span id="hud-mode">Режим: редактирование клеток</span>
+      </div>
+      <div class="legend">
+        <span class="pill"><i class="dot" style="color:#9ad17a;background:#9ad17a"></i>Мирная</span>
+        <span class="pill"><i class="dot" style="color:#e8d06a;background:#e8d06a"></i>PvP</span>
+        <span class="pill"><i class="dot" style="color:#e07b5f;background:#e07b5f"></i>Полный дроп</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <strong>Правила клетки</strong>
+        <small id="cell-key">0:0</small>
+      </div>
+      <div class="panel-body stack">
+        <div>
+          <strong>Случайные встречи</strong>
+          <div id="encounter-list" class="list"></div>
+        </div>
+        <div>
+          <strong>Случайные локации</strong>
+          <div id="location-list" class="list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const GRID = { cols: 30, rows: 30, cellPoints: 30, size: 900 };
+    const CELL_TEXTURES = [
+      { id: 'auto', label: 'Авто по рельефу', fill: '' },
+      { id: 'wasteland_dust', label: 'Пыльная пустошь', fill: 'rgba(126,94,50,0.22)', base: '#7a5b32', accent: '#b69155' },
+      { id: 'old_road', label: 'Старая трасса', fill: 'rgba(112,98,62,0.34)', base: '#675a3d', accent: '#29241e' },
+      { id: 'salt_flat', label: 'Солончак', fill: 'rgba(167,160,115,0.34)', base: '#a89e70', accent: '#d5cfa0' },
+      { id: 'dry_lake', label: 'Высохшее озеро', fill: 'rgba(174,151,91,0.34)', base: '#b39a60', accent: '#6e5532' },
+      { id: 'rocky_hills', label: 'Каменистые холмы', fill: 'rgba(111,101,78,0.36)', base: '#6a6250', accent: '#39352d' },
+      { id: 'scrap_field', label: 'Свалка металлолома', fill: 'rgba(96,82,64,0.36)', base: '#5c5142', accent: '#9b6f37' },
+      { id: 'green_lowland', label: 'Зеленая низина', fill: 'rgba(54,91,47,0.34)', base: '#405b32', accent: '#7aa15c' },
+      { id: 'water', label: 'Вода (непроходимо)', fill: 'rgba(42,90,96,0.56)', base: '#254a52', accent: '#7fb3a5' }
+    ];
+    const GLOBAL_MAP_COASTLINE = [
+      { x: 0.105, y: 0.00 }, { x: 0.070, y: 0.08 }, { x: 0.082, y: 0.16 }, { x: 0.055, y: 0.25 },
+      { x: 0.106, y: 0.36 }, { x: 0.090, y: 0.48 }, { x: 0.142, y: 0.62 }, { x: 0.126, y: 0.73 },
+      { x: 0.184, y: 0.86 }, { x: 0.154, y: 1.00 }
+    ];
+    const WATER_TEXTURES = new Set(['water', 'ocean', 'sea', 'lake']);
+    const textureById = new Map(CELL_TEXTURES.map(row => [row.id, row]));
+    const GLOBAL_MODEL_LIBRARY = [
+      { key: 'oldKlimYard', file: 'trader_awning.glb', name: 'Караванный двор', category: 'Город' },
+      { key: 'scrapTown', file: 'scrap_watch_tower.glb', name: 'Свалочный пост', category: 'Город' },
+      { key: 'relayStation', file: 'relay_antenna.glb', name: 'Станция ретранслятор', category: 'Город' },
+      { key: 'wastelandShack', file: 'wasteland_shack.glb', name: 'Хижина поселения', category: 'Город' },
+      { key: 'watchPost', file: 'watch_post.glb', name: 'Пост наблюдения', category: 'Город' },
+      { key: 'storageLeanTo', file: 'storage_lean_to.glb', name: 'Складской навес', category: 'Город' },
+      { key: 'waterTank', file: 'water_tank.glb', name: 'Водяной бак', category: 'Ориентир' },
+      { key: 'oilPumpJack', file: 'oil_pump_jack.glb', name: 'Нефтяная качалка', category: 'Ресурс' },
+      { key: 'ruinedBillboard', file: 'ruined_billboard.glb', name: 'Разрушенный щит', category: 'Ориентир' },
+      { key: 'highwaySign', file: 'highway_sign.glb', name: 'Дорожный знак', category: 'Ориентир' },
+      { key: 'carWreck', file: 'car_wreck.glb', name: 'Остов машины', category: 'Ориентир' },
+      { key: 'cargoStack', file: 'cargo_stack.glb', name: 'Грузовой штабель', category: 'Ориентир' }
+    ].map(row => ({ ...row, url: '/assets/models/wasteland/' + row.file }));
+    const modelByKey = new Map(GLOBAL_MODEL_LIBRARY.map(model => [model.key, model]));
+    const canvas = document.getElementById('map');
+    const map3d = {
+      renderer: null,
+      scene: null,
+      camera: null,
+      raycaster: null,
+      pointer: null,
+      terrain: null,
+      staticGroup: null,
+      nodeGroup: null,
+      dynamicGroup: null,
+      loader: null,
+      modelCache: new Map(),
+      texture: null,
+      worldWidth: 92,
+      worldDepth: 92,
+      zoom: 108,
+      minZoom: 30,
+      maxZoom: 150,
+      targetX: 0,
+      targetZ: 0,
+      dragging: false,
+      dragX: 0,
+      dragY: 0,
+      moved: false,
+      failed: false,
+      buildId: 0,
+      staticDirty: true
+    };
+    const state = {
+      mode: 'cell',
+      map: null,
+      wasteland: { worldHour: 0, sites: [], parties: [], threatZones: [], events: [], stats: {} },
+      locations: [],
+      selectedCell: { cx: 0, cy: 0 },
+      selectedPoint: { x: 15, y: 15 },
+      hoverPoint: { x: 0, y: 0 },
+      selectedNodeId: '',
+      selectedModelKey: 'oldKlimYard',
+      modelSelectionIsAuto: true,
+      fileLabel: 'data/global-map.json',
+      wastelandFileLabel: 'data/wasteland-sim.json',
+      selectedWorldSiteId: '',
+      dirty: false
+    };
+    const undoHistory = {
+      stack: [],
+      max: 80,
+      restoring: false
+    };
+
+    const $ = id => document.getElementById(id);
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, Number(v || 0)));
+    const cellKey = (cx, cy) => `${cx}:${cy}`;
+    const pvpLabels = { peaceful: 'Мирная', pvp: 'PvP', pvpFullDrop: 'PvP полный дроп' };
+    const worldSiteTypeLabels = {
+      settlement: 'Поселение',
+      resource: 'Ресурс',
+      outpost: 'Аванпост',
+      pointOfInterest: 'Точка интереса'
+    };
+    const worldOwnerLabels = {
+      old_klim: 'Старый Клим',
+      caravans: 'Караваны',
+      neutral: 'Нейтралы',
+      raiders: 'Рейдеры',
+      mutants: 'Мутанты',
+      wild: 'Дикая фауна'
+    };
+
+    function clampMapPoint(point = {}) {
+      return {
+        x: clamp(point.x, 0, GRID.size),
+        y: clamp(point.y, 0, GRID.size)
+      };
+    }
+
+    function cellFromPoint(point = {}) {
+      const p = clampMapPoint(point);
+      return {
+        cx: Math.max(0, Math.min(GRID.cols - 1, Math.floor(p.x / GRID.cellPoints))),
+        cy: Math.max(0, Math.min(GRID.rows - 1, Math.floor(p.y / GRID.cellPoints)))
+      };
+    }
+
+    function cellCenterPoint(cx, cy) {
+      return {
+        x: Math.round((Math.max(0, Math.min(GRID.cols - 1, cx)) + 0.5) * GRID.cellPoints),
+        y: Math.round((Math.max(0, Math.min(GRID.rows - 1, cy)) + 0.5) * GRID.cellPoints)
+      };
+    }
+
+    function pointToCellCenter(point = {}) {
+      const cell = cellFromPoint(point);
+      return cellCenterPoint(cell.cx, cell.cy);
+    }
+
+    function coastNormXAtY(ny = 0) {
+      const y = Math.max(0, Math.min(1, Number(ny || 0)));
+      const points = GLOBAL_MAP_COASTLINE;
+      if (y <= points[0].y) return points[0].x;
+      for (let i = 0; i < points.length - 1; i++) {
+        const a = points[i];
+        const b = points[i + 1];
+        if (y <= b.y) {
+          const t = (y - a.y) / Math.max(0.0001, b.y - a.y);
+          return a.x + (b.x - a.x) * t;
+        }
+      }
+      return points[points.length - 1].x;
+    }
+
+    function pointIsOcean(point = {}) {
+      const p = clampMapPoint(point);
+      return (p.x / GRID.size) <= coastNormXAtY(p.y / GRID.size);
+    }
+
+    function cellIsWater(cx, cy) {
+      const center = cellCenterPoint(cx, cy);
+      if (pointIsOcean(center)) return true;
+      const custom = ensureMapCollections().cells[cellKey(cx, cy)];
+      const texture = String(custom?.texture || custom?.textureId || '').trim().toLowerCase();
+      return WATER_TEXTURES.has(texture);
+    }
+
+    function toast(text) {
+      const el = $('toast');
+      el.textContent = text;
+      el.classList.add('visible');
+      clearTimeout(toast.timer);
+      toast.timer = setTimeout(() => el.classList.remove('visible'), 2200);
+    }
+
+    function defaultMap() {
+      return {
+        schema: 'realm.globalMap.v1',
+        version: 1,
+        grid: { cols: 30, rows: 30, cellPoints: 30, cellKm: 10 },
+        nodes: [],
+        objects: [],
+        encounters: [],
+        randomLocations: [],
+        cells: {}
+      };
+    }
+
+    function ensureMapCollections() {
+      if (!state.map || typeof state.map !== 'object') state.map = defaultMap();
+      if (!Array.isArray(state.map.nodes)) state.map.nodes = [];
+      if (!Array.isArray(state.map.objects)) state.map.objects = [];
+      if (!Array.isArray(state.map.encounters)) state.map.encounters = [];
+      if (!Array.isArray(state.map.randomLocations)) state.map.randomLocations = [];
+      if (!state.map.cells || typeof state.map.cells !== 'object') state.map.cells = {};
+      return state.map;
+    }
+
+    function setDirty(value = true) {
+      state.dirty = !!value;
+      const fileLabel = $('file-label');
+      if (fileLabel) fileLabel.textContent = state.fileLabel + (state.dirty ? ' · не сохранено' : '');
+    }
+
+    function markMapStaticDirty() {
+      map3d.staticDirty = true;
+    }
+
+    function mapSnapshot() {
+      return JSON.stringify({
+        map: state.map || defaultMap(),
+        mode: state.mode,
+        selectedCell: state.selectedCell,
+        selectedPoint: state.selectedPoint,
+        selectedNodeId: state.selectedNodeId,
+        selectedModelKey: state.selectedModelKey
+      });
+    }
+
+    function rememberUndo(label = '') {
+      if (undoHistory.restoring || !state.map) return false;
+      const snapshot = mapSnapshot();
+      if (undoHistory.stack[undoHistory.stack.length - 1] === snapshot) return false;
+      undoHistory.stack.push(snapshot);
+      if (undoHistory.stack.length > undoHistory.max) undoHistory.stack.shift();
+      return true;
+    }
+
+    function restoreUndoSnapshot(snapshot) {
+      undoHistory.restoring = true;
+      try {
+        const data = JSON.parse(snapshot);
+        state.map = data.map || defaultMap();
+        state.mode = data.mode === 'node' ? 'node' : 'cell';
+        state.selectedCell = data.selectedCell || { cx: 0, cy: 0 };
+        state.selectedPoint = data.selectedPoint || cellCenterPoint(state.selectedCell.cx, state.selectedCell.cy);
+        state.selectedNodeId = data.selectedNodeId || state.map.nodes?.[0]?.id || '';
+        state.selectedModelKey = data.selectedModelKey || 'oldKlimYard';
+        markMapStaticDirty();
+        setMode(state.mode);
+        syncAll();
+      } finally {
+        undoHistory.restoring = false;
+      }
+    }
+
+    function undoEditorAction() {
+      const snapshot = undoHistory.stack.pop();
+      if (!snapshot) {
+        toast('Нет действий для отмены.');
+        return false;
+      }
+      restoreUndoSnapshot(snapshot);
+      toast('Действие отменено.');
+      return true;
+    }
+
+    function bindUndoMemory(elements, label = 'изменение') {
+      elements.filter(Boolean).forEach(input => {
+        input.addEventListener('focus', () => rememberUndo(label));
+        input.addEventListener('pointerdown', () => rememberUndo(label));
+        input.addEventListener('keydown', event => {
+          if (event.ctrlKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z' || event.code === 'KeyZ')) {
+            event.preventDefault();
+            event.stopPropagation();
+            undoEditorAction();
+          }
+        });
+      });
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        ...options
+      });
+      const text = await res.text();
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (err) {
+        throw new Error(`Сервер вернул не JSON (${res.status}). Проверь, что редактор открыт через http://127.0.0.1:3000/.`);
+      }
+      if (!res.ok || data.ok === false) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    function normalizePvp(value) {
+      if (value === 'peaceful' || value === 'pvp' || value === 'pvpFullDrop') return value;
+      return 'pvp';
+    }
+
+    function normalizeWeightRows(rows) {
+      return (Array.isArray(rows) ? rows : [])
+        .map(row => ({ id: String(row.id || ''), weight: Math.max(0, Math.round(Number(row.weight || 0))) }))
+        .filter(row => row.id && row.weight > 0);
+    }
+
+    function currentCell() {
+      const map = ensureMapCollections();
+      return map.cells[cellKey(state.selectedCell.cx, state.selectedCell.cy)] || null;
+    }
+
+    function objectCellKey(object = {}) {
+      if (Number.isFinite(Number(object.cx)) && Number.isFinite(Number(object.cy))) {
+        return cellKey(Math.floor(Number(object.cx)), Math.floor(Number(object.cy)));
+      }
+      return cellKey(cellFromPoint(object).cx, cellFromPoint(object).cy);
+    }
+
+    function currentCellObject() {
+      const map = ensureMapCollections();
+      const key = cellKey(state.selectedCell.cx, state.selectedCell.cy);
+      return (map.objects || []).find(object => objectCellKey(object) === key) || null;
+    }
+
+    function removeObjectsFromCell(cx, cy) {
+      const map = ensureMapCollections();
+      const key = cellKey(cx, cy);
+      const before = map.objects.length;
+      map.objects = map.objects.filter(object => objectCellKey(object) !== key);
+      return before !== map.objects.length;
+    }
+
+    function fallbackTerrain(cx, cy) {
+      const nx = (cx + 0.5) / GRID.cols;
+      const ny = (cy + 0.5) / GRID.rows;
+      if (nx < 0.13 + Math.sin(ny * 8) * 0.025 && ny > 0.1) return { name: 'прибрежный солончак', fill: 'rgba(65,85,76,0.34)', texture: 'salt_flat' };
+      if (((nx - 0.32) ** 2) / 0.008 + ((ny - 0.22) ** 2) / 0.003 < 1) return { name: 'высохшее озеро', fill: 'rgba(174,151,91,0.30)', texture: 'dry_lake' };
+      if (Math.abs(cy - (18 + Math.sin(cx * 0.45) * 2.2)) < 1.15) return { name: 'старая трасса', fill: 'rgba(112,98,62,0.30)', texture: 'old_road' };
+      const ridge = Math.sin(cx * 0.72 + cy * 0.31) + Math.cos(cx * 0.22 - cy * 0.63);
+      if (ridge > 0.72) return { name: 'горный проход', fill: 'rgba(111,101,78,0.32)', texture: 'rocky_hills' };
+      if (ridge < -0.86) return { name: 'мертвая низина', fill: 'rgba(54,71,47,0.30)', texture: 'green_lowland' };
+      return { name: 'пустошь', fill: 'rgba(126,94,50,0.18)', texture: 'wasteland_dust' };
+    }
+
+    function cellProfile(cx, cy) {
+      const fallback = fallbackTerrain(cx, cy);
+      const custom = ensureMapCollections().cells[cellKey(cx, cy)];
+      const texture = custom?.texture || custom?.textureId || fallback.texture || 'wasteland_dust';
+      const preset = textureById.get(texture) || textureById.get('wasteland_dust');
+      return {
+        terrain: custom?.terrain || fallback.name,
+        fill: custom?.fill || preset?.fill || fallback.fill,
+        texture,
+        textureLabel: preset?.label || fallback.name,
+        pvpMode: normalizePvp(custom?.pvpMode || 'pvp'),
+        chance: Number.isFinite(Number(custom?.chance)) ? Number(custom.chance) : 12,
+        difficulty: Number.isFinite(Number(custom?.difficulty)) ? Number(custom.difficulty) : 2
+      };
+    }
+
+    function drawTexturePatch(ctx, x, y, w, h, profile, shade) {
+      const preset = textureById.get(profile.texture) || textureById.get('wasteland_dust');
+      ctx.fillStyle = preset?.base || profile.fill || 'rgba(126,94,50,0.18)';
+      ctx.fillRect(x, y, w + 1, h + 1);
+      ctx.fillStyle = profile.fill || preset?.fill || 'rgba(126,94,50,0.18)';
+      ctx.fillRect(x, y, w + 1, h + 1);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w + 1, h + 1);
+      ctx.clip();
+      ctx.strokeStyle = preset?.accent || 'rgba(190,160,92,0.4)';
+      ctx.fillStyle = preset?.accent || 'rgba(190,160,92,0.4)';
+      ctx.globalAlpha = 0.18;
+      const id = profile.texture;
+      if (id === 'old_road') {
+        ctx.globalAlpha = 0.34;
+        ctx.lineWidth = Math.max(2, w * 0.14);
+        ctx.beginPath();
+        ctx.moveTo(x - w * 0.12, y + h * 0.68);
+        ctx.lineTo(x + w * 1.15, y + h * 0.34);
+        ctx.stroke();
+        ctx.globalAlpha = 0.24;
+        ctx.setLineDash([w * 0.18, w * 0.12]);
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y + h * 0.61);
+        ctx.lineTo(x + w, y + h * 0.39);
+        ctx.stroke();
+      } else if (id === 'water') {
+        ctx.globalAlpha = 0.28;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 4; i++) {
+          const yy = y + h * (0.22 + i * 0.19);
+          ctx.beginPath();
+          ctx.moveTo(x - w * 0.1, yy);
+          ctx.bezierCurveTo(x + w * 0.18, yy - h * 0.09, x + w * 0.34, yy + h * 0.09, x + w * 0.58, yy);
+          ctx.bezierCurveTo(x + w * 0.76, yy - h * 0.07, x + w * 0.98, yy + h * 0.07, x + w * 1.12, yy);
+          ctx.stroke();
+        }
+      } else if (id === 'salt_flat' || id === 'dry_lake') {
+        ctx.globalAlpha = id === 'dry_lake' ? 0.22 : 0.16;
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath();
+          ctx.ellipse(x + w * (0.22 + i * 0.18), y + h * (0.38 + (i % 2) * 0.18), w * 0.22, h * 0.08, i * 0.55, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (id === 'rocky_hills' || id === 'scrap_field') {
+        for (let i = 0; i < 9; i++) {
+          const px = x + ((i * 23 + shade * 31) % 100) / 100 * w;
+          const py = y + ((i * 37 + shade * 17) % 100) / 100 * h;
+          ctx.globalAlpha = id === 'scrap_field' ? 0.22 : 0.18;
+          ctx.fillRect(px, py, w * 0.09, h * 0.045);
+        }
+      } else if (id === 'green_lowland') {
+        for (let i = 0; i < 7; i++) {
+          ctx.globalAlpha = 0.17;
+          ctx.beginPath();
+          ctx.arc(x + ((i * 19 + 11) % 100) / 100 * w, y + ((i * 31 + 7) % 100) / 100 * h, Math.max(2, w * 0.045), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        for (let i = 0; i < 6; i++) {
+          ctx.globalAlpha = 0.12;
+          ctx.fillRect(x + ((i * 29 + 13) % 100) / 100 * w, y + ((i * 17 + 41) % 100) / 100 * h, w * 0.08, h * 0.025);
+        }
+      }
+      ctx.restore();
+    }
+
+    function mapWorldFromPoint(point = {}) {
+      return {
+        x: (clamp(point.x, 0, GRID.size) / GRID.size - 0.5) * map3d.worldWidth,
+        z: (clamp(point.y, 0, GRID.size) / GRID.size - 0.5) * map3d.worldDepth
+      };
+    }
+
+    function mapPointFromWorld(x = 0, z = 0) {
+      return {
+        x: clamp((Number(x || 0) / map3d.worldWidth + 0.5) * GRID.size, 0, GRID.size),
+        y: clamp((Number(z || 0) / map3d.worldDepth + 0.5) * GRID.size, 0, GRID.size)
+      };
+    }
+
+    function normIsOcean(nx = 0, ny = 0) {
+      return nx < (0.075 + Math.sin(ny * 10.8) * 0.025 + Math.max(0, ny - 0.50) * 0.12);
+    }
+
+    function normIsDryLake(nx = 0, ny = 0) {
+      return ((nx - 0.315) ** 2) / (0.080 ** 2) + ((ny - 0.215) ** 2) / (0.040 ** 2) < 1 ||
+        ((nx - 0.595) ** 2) / (0.095 ** 2) + ((ny - 0.560) ** 2) / (0.052 ** 2) < 1 ||
+        ((nx - 0.385) ** 2) / (0.070 ** 2) + ((ny - 0.805) ** 2) / (0.040 ** 2) < 1;
+    }
+
+    function mapHeightAtPoint(x = 0, y = 0) {
+      const nx = clamp(x, 0, GRID.size) / GRID.size;
+      const ny = clamp(y, 0, GRID.size) / GRID.size;
+      if (normIsOcean(nx, ny)) return -1.05 + Math.sin(ny * 38) * 0.04;
+      const ridge =
+        Math.sin(nx * 20.5 + ny * 8.7) * 0.55 +
+        Math.cos(nx * 7.4 - ny * 22.0) * 0.45 +
+        Math.sin(nx * 42.0 + ny * 31.0) * 0.12;
+      const eastMountains = Math.max(0, 1 - Math.abs(nx - (0.60 + ny * 0.30)) / 0.11) * Math.max(0, 1 - Math.abs(ny - 0.50) / 0.48);
+      const oldMountains = Math.max(0, 1 - Math.abs(nx - (0.34 + ny * 0.30)) / 0.09) * Math.max(0, 1 - Math.abs(ny - 0.24) / 0.25);
+      const basin = normIsDryLake(nx, ny) ? -0.28 : 0;
+      const coastRamp = nx < 0.18 ? -0.18 + nx * 0.55 : 0;
+      return Math.max(-0.45, basin + coastRamp + ridge * 0.16 + eastMountains * 2.35 + oldMountains * 1.55);
+    }
+
+    function mapHeightAtWorld(x = 0, z = 0) {
+      const point = mapPointFromWorld(x, z);
+      return mapHeightAtPoint(point.x, point.y);
+    }
+
+    function map3dWorldPoint(point = {}, lift = 0.14) {
+      const world = mapWorldFromPoint(point);
+      return new THREE.Vector3(world.x, mapHeightAtPoint(point.x, point.y) + lift, world.z);
+    }
+
+    function buildMapTextureCanvas(size = 1536) {
+      const textureCanvas = document.createElement('canvas');
+      textureCanvas.width = size;
+      textureCanvas.height = size;
+      const textureCtx = textureCanvas.getContext('2d');
+      const w = size;
+      const h = size;
+      const cw = w / GRID.cols;
+      const ch = h / GRID.rows;
+      const np = (x, y) => ({ x: x * w, y: y * h });
+      textureCtx.fillStyle = '#6f5b35';
+      textureCtx.fillRect(0, 0, w, h);
+
+      for (let cy = 0; cy < GRID.rows; cy++) {
+        for (let cx = 0; cx < GRID.cols; cx++) {
+          const profile = cellProfile(cx, cy);
+          const shade = Math.sin(cx * 0.71 + cy * 0.38) * 0.5 + Math.cos(cx * 0.26 - cy * 0.67) * 0.5;
+          drawTexturePatch(textureCtx, cx * cw, cy * ch, cw, ch, profile, shade);
+          textureCtx.fillStyle = profile.pvpMode === 'peaceful'
+            ? 'rgba(94,170,76,0.08)'
+            : (profile.pvpMode === 'pvpFullDrop' ? 'rgba(210,80,50,0.12)' : 'rgba(230,194,82,0.07)');
+          textureCtx.fillRect(cx * cw, cy * ch, cw + 1, ch + 1);
+          textureCtx.fillStyle = shade > 0 ? `rgba(255,235,180,${0.04 + shade * 0.035})` : `rgba(24,18,12,${0.05 + Math.abs(shade) * 0.04})`;
+          textureCtx.fillRect(cx * cw, cy * ch, cw + 1, ch + 1);
+        }
+      }
+
+      const coastLine = [
+        np(0.105, 0.00), np(0.070, 0.08), np(0.082, 0.16), np(0.055, 0.25),
+        np(0.106, 0.36), np(0.090, 0.48), np(0.142, 0.62), np(0.126, 0.73),
+        np(0.184, 0.86), np(0.154, 1.00)
+      ];
+      textureCtx.save();
+      textureCtx.beginPath();
+      textureCtx.moveTo(0, 0);
+      coastLine.forEach(p => textureCtx.lineTo(p.x, p.y));
+      textureCtx.lineTo(0, h);
+      textureCtx.closePath();
+      const ocean = textureCtx.createLinearGradient(0, 0, w * 0.25, h);
+      ocean.addColorStop(0, '#254a52');
+      ocean.addColorStop(0.55, '#305d61');
+      ocean.addColorStop(1, '#172429');
+      textureCtx.fillStyle = ocean;
+      textureCtx.fill();
+      textureCtx.clip();
+      for (let i = 0; i < 42; i++) {
+        const y = ((i * 37) % 100) / 100 * h;
+        const x = (0.012 + (i % 9) * 0.018) * w;
+        textureCtx.strokeStyle = i % 2 ? 'rgba(205,231,218,0.18)' : 'rgba(6,18,22,0.22)';
+        textureCtx.lineWidth = 2;
+        textureCtx.beginPath();
+        textureCtx.moveTo(x - 44, y);
+        textureCtx.bezierCurveTo(x + 18, y - 18, x + 66, y + 14, x + 132, y - 5);
+        textureCtx.stroke();
+      }
+      textureCtx.restore();
+      textureCtx.strokeStyle = 'rgba(238,205,127,0.45)';
+      textureCtx.lineWidth = 10;
+      textureCtx.beginPath();
+      coastLine.forEach((p, i) => i ? textureCtx.lineTo(p.x, p.y) : textureCtx.moveTo(p.x, p.y));
+      textureCtx.stroke();
+
+      const drawDryLake = (x, y, rx, ry, rot) => {
+        textureCtx.save();
+        textureCtx.translate(x, y);
+        textureCtx.rotate(rot);
+        const lake = textureCtx.createRadialGradient(0, 0, 2, 0, 0, Math.max(rx, ry));
+        lake.addColorStop(0, 'rgba(225,213,164,0.65)');
+        lake.addColorStop(0.62, 'rgba(181,154,95,0.46)');
+        lake.addColorStop(1, 'rgba(70,53,32,0.22)');
+        textureCtx.fillStyle = lake;
+        textureCtx.beginPath();
+        textureCtx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        textureCtx.fill();
+        textureCtx.setLineDash([10, 9]);
+        textureCtx.strokeStyle = 'rgba(56,43,26,0.32)';
+        textureCtx.lineWidth = 2;
+        for (let i = 0; i < 4; i++) {
+          textureCtx.beginPath();
+          textureCtx.ellipse(0, 0, rx * (0.38 + i * 0.15), ry * (0.36 + i * 0.14), 0, 0, Math.PI * 2);
+          textureCtx.stroke();
+        }
+        textureCtx.restore();
+      };
+      drawDryLake(w * 0.315, h * 0.215, w * 0.070, h * 0.030, -0.32);
+      drawDryLake(w * 0.595, h * 0.560, w * 0.085, h * 0.037, 0.24);
+      drawDryLake(w * 0.385, h * 0.805, w * 0.060, h * 0.026, 0.10);
+
+      const nodePoint = id => {
+        const node = (state.map.nodes || []).find(row => row.id === id);
+        return node ? { x: Number(node.x || 0) / GRID.size * w, y: Number(node.y || 0) / GRID.size * h } : null;
+      };
+      const drawRoad = points => {
+        const pts = points.map(p => Array.isArray(p) ? np(p[0], p[1]) : nodePoint(p)).filter(Boolean);
+        if (pts.length < 2) return;
+        textureCtx.save();
+        textureCtx.lineCap = 'round';
+        textureCtx.lineJoin = 'round';
+        textureCtx.strokeStyle = 'rgba(22,16,9,0.58)';
+        textureCtx.lineWidth = 12;
+        textureCtx.beginPath();
+        pts.forEach((p, i) => i ? textureCtx.lineTo(p.x, p.y) : textureCtx.moveTo(p.x, p.y));
+        textureCtx.stroke();
+        textureCtx.strokeStyle = 'rgba(218,168,83,0.48)';
+        textureCtx.lineWidth = 6;
+        textureCtx.beginPath();
+        pts.forEach((p, i) => i ? textureCtx.lineTo(p.x, p.y) : textureCtx.moveTo(p.x, p.y));
+        textureCtx.stroke();
+        textureCtx.setLineDash([16, 13]);
+        textureCtx.strokeStyle = 'rgba(244,213,126,0.55)';
+        textureCtx.lineWidth = 2;
+        textureCtx.beginPath();
+        pts.forEach((p, i) => i ? textureCtx.lineTo(p.x, p.y) : textureCtx.moveTo(p.x, p.y));
+        textureCtx.stroke();
+        textureCtx.restore();
+      };
+      drawRoad(['settlement', [0.40, 0.70], 'scrapTown', [0.63, 0.60], 'relayStation']);
+      drawRoad(['settlement', [0.30, 0.52], [0.50, 0.42], 'relayStation']);
+
+      textureCtx.strokeStyle = 'rgba(229,190,92,0.16)';
+      textureCtx.lineWidth = 1;
+      for (let x = 0; x <= w; x += cw) { textureCtx.beginPath(); textureCtx.moveTo(x, 0); textureCtx.lineTo(x, h); textureCtx.stroke(); }
+      for (let y = 0; y <= h; y += ch) { textureCtx.beginPath(); textureCtx.moveTo(0, y); textureCtx.lineTo(w, y); textureCtx.stroke(); }
+      textureCtx.strokeStyle = 'rgba(255,218,118,0.20)';
+      textureCtx.lineWidth = 1.5;
+      for (let x = 0; x <= w; x += cw * 5) { textureCtx.beginPath(); textureCtx.moveTo(x, 0); textureCtx.lineTo(x, h); textureCtx.stroke(); }
+      for (let y = 0; y <= h; y += ch * 5) { textureCtx.beginPath(); textureCtx.moveTo(0, y); textureCtx.lineTo(w, y); textureCtx.stroke(); }
+      return textureCanvas;
+    }
+
+    function dispose3dObject(obj) {
+      if (!obj) return;
+      obj.traverse?.(child => {
+        if (child.geometry?.dispose) child.geometry.dispose();
+        const mats = Array.isArray(child.material) ? child.material : (child.material ? [child.material] : []);
+        mats.forEach(mat => {
+          if (mat.map?.dispose) mat.map.dispose();
+          if (mat.dispose) mat.dispose();
+        });
+      });
+    }
+
+    function clear3dGroup(group) {
+      if (!group) return;
+      while (group.children.length) {
+        const child = group.children[0];
+        group.remove(child);
+        dispose3dObject(child);
+      }
+    }
+
+    function makeTextSprite(text = '', color = '#efd078', bg = 'rgba(46,28,13,0.86)') {
+      const labelCanvas = document.createElement('canvas');
+      labelCanvas.width = 512;
+      labelCanvas.height = 112;
+      const labelCtx = labelCanvas.getContext('2d');
+      labelCtx.clearRect(0, 0, labelCanvas.width, labelCanvas.height);
+      labelCtx.fillStyle = bg;
+      labelCtx.strokeStyle = 'rgba(239,208,120,0.88)';
+      labelCtx.lineWidth = 4;
+      labelCtx.beginPath();
+      labelCtx.moveTo(28, 18);
+      labelCtx.lineTo(484, 18);
+      labelCtx.lineTo(506, 56);
+      labelCtx.lineTo(484, 94);
+      labelCtx.lineTo(28, 94);
+      labelCtx.lineTo(6, 56);
+      labelCtx.closePath();
+      labelCtx.fill();
+      labelCtx.stroke();
+      labelCtx.font = '900 30px Consolas, monospace';
+      labelCtx.textAlign = 'center';
+      labelCtx.textBaseline = 'middle';
+      labelCtx.lineWidth = 7;
+      labelCtx.strokeStyle = 'rgba(0,0,0,0.78)';
+      labelCtx.fillStyle = color;
+      const label = String(text || '').slice(0, 34);
+      labelCtx.strokeText(label, 256, 56);
+      labelCtx.fillText(label, 256, 56);
+      const texture = new THREE.CanvasTexture(labelCanvas);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
+      sprite.scale.set(10.5, 2.3, 1);
+      return sprite;
+    }
+
+    function cloneMaterial(material) {
+      if (Array.isArray(material)) return material.map(cloneMaterial);
+      return material?.clone ? material.clone() : material;
+    }
+
+    function defaultNodeModel(locationId = '') {
+      if (locationId === 'relayStation') return 'relayStation';
+      if (locationId === 'scrapTown') return 'scrapTown';
+      if (locationId === 'settlement') return 'oldKlimYard';
+      return 'wastelandShack';
+    }
+
+    function loadGlobalModel(modelKey) {
+      const def = modelByKey.get(modelKey) || modelByKey.get('wastelandShack');
+      if (!def || !map3d.loader) return Promise.reject(new Error('Загрузчик моделей недоступен'));
+      if (!map3d.modelCache.has(def.key)) {
+        map3d.modelCache.set(def.key, new Promise((resolve, reject) => {
+          map3d.loader.load(def.url, gltf => {
+            const root = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
+            if (!root) reject(new Error('Пустая модель: ' + def.key));
+            else resolve(root);
+          }, undefined, reject);
+        }));
+      }
+      return map3d.modelCache.get(def.key).then(template => {
+        const model = template.clone(true);
+        model.traverse(part => {
+          if (part.isMesh) {
+            part.material = cloneMaterial(part.material);
+            part.castShadow = true;
+            part.receiveShadow = true;
+          }
+        });
+        return model;
+      });
+    }
+
+    function fitNodeModel(model, node = {}) {
+      model.rotation.set(0, THREE.Math.degToRad(Number(node.rotationY || 0)), 0);
+      model.scale.set(1, 1, 1);
+      model.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+      const target = (Number(node.locationCount || 1) > 1 ? 3.2 : 2.1) * Math.max(0.45, Math.min(4, Number(node.modelScale || 1)));
+      const scale = Math.max(0.01, target / Math.max(size.x || 1, size.z || 1, size.y || 1));
+      model.scale.setScalar(scale);
+      model.position.set(-center.x * scale, -box.min.y * scale + 0.04, -center.z * scale);
+      model.rotation.y = THREE.Math.degToRad(Number(node.rotationY || 0));
+      model.userData.globalMapNodeModel = true;
+      return model;
+    }
+
+    function fitCellObjectModel(model, object = {}) {
+      model.rotation.set(0, THREE.Math.degToRad(Number(object.rotationY || 0)), 0);
+      model.scale.set(1, 1, 1);
+      model.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+      const scaleInput = Math.max(0.2, Math.min(5, Number(object.modelScale || 1)));
+      const target = 1.65 * scaleInput;
+      const scale = Math.max(0.01, target / Math.max(size.x || 1, size.z || 1, size.y || 1));
+      model.scale.setScalar(scale);
+      model.position.set(-center.x * scale, -box.min.y * scale + 0.035, -center.z * scale);
+      model.rotation.y = THREE.Math.degToRad(Number(object.rotationY || 0));
+      model.userData.globalMapCellObject = true;
+      return model;
+    }
+
+    function addFallbackCityModel(group, node) {
+      const boxMat = new THREE.MeshLambertMaterial({ color: 0x28321d, emissive: 0x071006 });
+      const fallback = new THREE.Group();
+      fallback.name = 'fallback-city-model';
+      [[-0.8, -0.35, 0.78, 0.45], [0.0, -0.65, 0.65, 0.65], [0.72, -0.22, 0.86, 0.42], [-0.48, 0.55, 0.68, 0.5], [0.42, 0.48, 1.0, 0.5]].forEach(([x, z, sx, sz]) => {
+        const b = new THREE.Mesh(new THREE.BoxBufferGeometry(sx, 0.38, sz), boxMat);
+        b.position.set(x, 0.22, z);
+        fallback.add(b);
+      });
+      const marker = new THREE.Mesh(
+        new THREE.CylinderBufferGeometry(0.36, 0.46, 0.28, 18),
+        new THREE.MeshLambertMaterial({ color: 0x2f9f32, emissive: 0x081605 })
+      );
+      marker.position.y = 0.18;
+      fallback.add(marker);
+      group.add(fallback);
+      return fallback;
+    }
+
+    function addNodeModel(group, node, buildId = map3d.buildId) {
+      const modelKey = node.model || defaultNodeModel(node.id);
+      const fallback = addFallbackCityModel(group, node);
+      loadGlobalModel(modelKey).then(model => {
+        if (buildId !== map3d.buildId || !map3d.nodeGroup || !map3d.nodeGroup.children.includes(group)) {
+          dispose3dObject(model);
+          return;
+        }
+        group.remove(fallback);
+        dispose3dObject(fallback);
+        group.add(fitNodeModel(model, { ...node, model: modelKey }));
+        renderMap3d();
+      }).catch(() => {
+        fallback.userData.modelLoadFailed = true;
+      });
+    }
+
+    function addCellObjectModel(group, object, buildId = map3d.buildId) {
+      const modelKey = object.model || state.selectedModelKey || 'wastelandShack';
+      const fallback = addFallbackCityModel(group, object);
+      fallback.scale.setScalar(0.55);
+      loadGlobalModel(modelKey).then(model => {
+        if (buildId !== map3d.buildId || !map3d.staticGroup || !map3d.staticGroup.children.includes(group)) {
+          dispose3dObject(model);
+          return;
+        }
+        group.remove(fallback);
+        dispose3dObject(fallback);
+        group.add(fitCellObjectModel(model, { ...object, model: modelKey }));
+        renderMap3d();
+      }).catch(() => {
+        fallback.userData.modelLoadFailed = true;
+      });
+    }
+
+    function buildTerrainGeometry() {
+      const segX = 128;
+      const segZ = 128;
+      const positions = [];
+      const uvs = [];
+      const indices = [];
+      for (let z = 0; z <= segZ; z++) {
+        const v = z / segZ;
+        for (let x = 0; x <= segX; x++) {
+          const u = x / segX;
+          const pointX = u * GRID.size;
+          const pointY = v * GRID.size;
+          positions.push((u - 0.5) * map3d.worldWidth, mapHeightAtPoint(pointX, pointY), (v - 0.5) * map3d.worldDepth);
+          uvs.push(u, 1 - v);
+        }
+      }
+      for (let z = 0; z < segZ; z++) {
+        for (let x = 0; x < segX; x++) {
+          const a = z * (segX + 1) + x;
+          const b = a + 1;
+          const c = a + (segX + 1);
+          const d = c + 1;
+          indices.push(a, c, b, b, c, d);
+        }
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    function routePoint(input) {
+      if (Array.isArray(input)) return map3dWorldPoint({ x: input[0] * GRID.size, y: input[1] * GRID.size }, 0.10);
+      const node = (state.map.nodes || []).find(row => row.id === input);
+      return node ? map3dWorldPoint(node, 0.10) : null;
+    }
+
+    function addRoad(group, points) {
+      const pts = points.map(routePoint).filter(Boolean);
+      if (pts.length < 2) return;
+      const curve = new THREE.CatmullRomCurve3(pts);
+      group.add(new THREE.Mesh(
+        new THREE.TubeBufferGeometry(curve, 96, 0.135, 7, false),
+        new THREE.MeshLambertMaterial({ color: 0x1a1209 })
+      ));
+      group.add(new THREE.Mesh(
+        new THREE.TubeBufferGeometry(curve, 96, 0.062, 7, false),
+        new THREE.MeshLambertMaterial({ color: 0xd5a055, emissive: 0x171006 })
+      ));
+    }
+
+    function addMountainChain(group, points) {
+      const mat = new THREE.MeshLambertMaterial({ color: 0x5f5846 });
+      points.forEach((row, index) => {
+        const point = { x: row[0] * GRID.size, y: row[1] * GRID.size };
+        const pos = map3dWorldPoint(point, 0.05);
+        const scale = 0.75 + (index % 4) * 0.16;
+        const cone = new THREE.Mesh(new THREE.ConeBufferGeometry(scale, 1.5 + scale, 4), mat);
+        cone.position.set(pos.x, pos.y + 0.62 + scale * 0.32, pos.z);
+        cone.rotation.y = index * 0.57;
+        group.add(cone);
+      });
+    }
+
+    function settlementRadius(node = {}) {
+      return GRID.cellPoints * 0.5;
+    }
+
+    function addCircle(group, point, radius, color, opacity = 0.78) {
+      const p = map3dWorldPoint(point, 0.18);
+      const pts = [];
+      for (let i = 0; i <= 72; i++) {
+        const a = i / 72 * Math.PI * 2;
+        pts.push(new THREE.Vector3(p.x + Math.cos(a) * radius, p.y, p.z + Math.sin(a) * radius));
+      }
+      group.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity })
+      ));
+    }
+
+    function ensureMap3d() {
+      if (map3d.failed || typeof THREE === 'undefined') return false;
+      if (map3d.renderer) return true;
+      try {
+        map3d.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+        map3d.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+        map3d.renderer.setClearColor(0x050806, 1);
+        map3d.scene = new THREE.Scene();
+        map3d.scene.fog = new THREE.Fog(0x050806, 92, 210);
+        map3d.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 260);
+        map3d.raycaster = new THREE.Raycaster();
+        map3d.pointer = new THREE.Vector2();
+        if (THREE.GLTFLoader) map3d.loader = new THREE.GLTFLoader();
+        map3d.staticGroup = new THREE.Group();
+        map3d.nodeGroup = new THREE.Group();
+        map3d.dynamicGroup = new THREE.Group();
+        map3d.scene.add(map3d.staticGroup, map3d.nodeGroup, map3d.dynamicGroup);
+        map3d.scene.add(new THREE.HemisphereLight(0xf2dfac, 0x273320, 1.18));
+        const sun = new THREE.DirectionalLight(0xffd58a, 1.65);
+        sun.position.set(-24, 42, 30);
+        map3d.scene.add(sun);
+        const fill = new THREE.DirectionalLight(0x95b9ff, 0.42);
+        fill.position.set(38, 22, -34);
+        map3d.scene.add(fill);
+        return true;
+      } catch (err) {
+        console.warn('[global-map-editor-3d] failed to initialize', err);
+        map3d.failed = true;
+        return false;
+      }
+    }
+
+    function resizeMap3d() {
+      if (!map3d.renderer) return;
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      map3d.renderer.setSize(w, h, false);
+      map3d.camera.aspect = w / h;
+      map3d.camera.updateProjectionMatrix();
+    }
+
+    function rebuildMap3dStatic() {
+      if (!ensureMap3d()) return false;
+      map3d.buildId += 1;
+      const buildId = map3d.buildId;
+      if (map3d.terrain) {
+        map3d.scene.remove(map3d.terrain);
+        dispose3dObject(map3d.terrain);
+        map3d.terrain = null;
+      }
+      clear3dGroup(map3d.staticGroup);
+      clear3dGroup(map3d.nodeGroup);
+      if (map3d.texture?.dispose) map3d.texture.dispose();
+      map3d.texture = new THREE.CanvasTexture(buildMapTextureCanvas());
+      map3d.texture.anisotropy = Math.min(8, map3d.renderer.capabilities.getMaxAnisotropy?.() || 1);
+      map3d.texture.needsUpdate = true;
+      map3d.terrain = new THREE.Mesh(
+        buildTerrainGeometry(),
+        new THREE.MeshLambertMaterial({ map: map3d.texture })
+      );
+      map3d.terrain.receiveShadow = true;
+      map3d.scene.add(map3d.terrain);
+
+      const borderPts = [
+        new THREE.Vector3(-46, 0.24, -46), new THREE.Vector3(46, 0.24, -46),
+        new THREE.Vector3(46, 0.24, 46), new THREE.Vector3(-46, 0.24, 46),
+        new THREE.Vector3(-46, 0.24, -46)
+      ];
+      map3d.staticGroup.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(borderPts),
+        new THREE.LineBasicMaterial({ color: 0xcaa24b, transparent: true, opacity: 0.72 })
+      ));
+      addRoad(map3d.staticGroup, ['settlement', [0.40, 0.70], 'scrapTown', [0.63, 0.60], 'relayStation']);
+      addRoad(map3d.staticGroup, ['settlement', [0.30, 0.52], [0.50, 0.42], 'relayStation']);
+      addMountainChain(map3d.staticGroup, [[0.58, 0.06], [0.66, 0.16], [0.72, 0.27], [0.78, 0.42], [0.85, 0.58], [0.91, 0.76]]);
+      addMountainChain(map3d.staticGroup, [[0.36, 0.08], [0.45, 0.19], [0.49, 0.33], [0.52, 0.49]]);
+
+      (state.map.objects || []).forEach(object => {
+        if (!object || !object.model) return;
+        const p = map3dWorldPoint(object, 0.14);
+        const group = new THREE.Group();
+        group.position.set(p.x, p.y, p.z);
+        group.userData.cellObjectId = object.id || objectCellKey(object);
+        addCellObjectModel(group, object, buildId);
+        map3d.staticGroup.add(group);
+      });
+
+      const ringMat = new THREE.LineBasicMaterial({ color: 0x7fd65c, transparent: true, opacity: 0.58 });
+      (state.map.nodes || []).forEach(node => {
+        const p = map3dWorldPoint(node, 0.12);
+        const group = new THREE.Group();
+        group.position.set(p.x, p.y, p.z);
+        group.userData.nodeId = node.id;
+        const radius = settlementRadius(node) / GRID.size * map3d.worldWidth;
+        const ringPts = [];
+        for (let i = 0; i <= 80; i++) {
+          const a = i / 80 * Math.PI * 2;
+          ringPts.push(new THREE.Vector3(Math.cos(a) * radius, 0.02, Math.sin(a) * radius));
+        }
+        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ringPts), ringMat));
+        addNodeModel(group, node, buildId);
+        const label = makeTextSprite(locationName(node.id), node.id === state.selectedNodeId ? '#ffffff' : '#ffe38b');
+        label.position.set(0, 2.5, -1.05);
+        group.add(label);
+        map3d.nodeGroup.add(group);
+      });
+      map3d.staticDirty = false;
+      return true;
+    }
+
+    function updateMap3dDynamic() {
+      clear3dGroup(map3d.dynamicGroup);
+      const cx = state.selectedCell.cx;
+      const cy = state.selectedCell.cy;
+      const corners = [
+        { x: cx * GRID.cellPoints, y: cy * GRID.cellPoints },
+        { x: (cx + 1) * GRID.cellPoints, y: cy * GRID.cellPoints },
+        { x: (cx + 1) * GRID.cellPoints, y: (cy + 1) * GRID.cellPoints },
+        { x: cx * GRID.cellPoints, y: (cy + 1) * GRID.cellPoints },
+        { x: cx * GRID.cellPoints, y: cy * GRID.cellPoints }
+      ].map(p => map3dWorldPoint(p, 0.32));
+      map3d.dynamicGroup.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(corners),
+        new THREE.LineBasicMaterial({ color: 0xffdf7d, transparent: true, opacity: 0.95 })
+      ));
+      const pointPos = map3dWorldPoint(state.selectedPoint, 0.58);
+      const flag = new THREE.Group();
+      flag.position.copy(pointPos);
+      const pole = new THREE.Mesh(new THREE.CylinderBufferGeometry(0.045, 0.055, 1.45, 8), new THREE.MeshLambertMaterial({ color: 0x1c1308 }));
+      pole.position.y = 0.68;
+      const cloth = new THREE.Mesh(new THREE.PlaneBufferGeometry(0.85, 0.48), new THREE.MeshLambertMaterial({ color: 0xefd078, side: THREE.DoubleSide }));
+      cloth.position.set(0.42, 1.08, 0);
+      cloth.rotation.y = -0.25;
+      flag.add(pole, cloth);
+      map3d.dynamicGroup.add(flag);
+      worldSites().forEach(site => {
+        if (!site || String(site.type || '') === 'settlement') return;
+        const p = map3dWorldPoint(site, site.id === state.selectedWorldSiteId ? 0.82 : 0.48);
+        const color = worldSiteMarkerColor(site);
+        const marker = new THREE.Group();
+        marker.position.copy(p);
+        const core = new THREE.Mesh(
+          new THREE.CylinderBufferGeometry(0.22, 0.28, site.id === state.selectedWorldSiteId ? 0.72 : 0.44, 18),
+          new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: site.id === state.selectedWorldSiteId ? 0.38 : 0.16 })
+        );
+        core.position.y = 0.18;
+        marker.add(core);
+        const ringPts = [];
+        const radius = site.id === state.selectedWorldSiteId ? 1.2 : 0.78;
+        for (let i = 0; i <= 48; i++) {
+          const a = i / 48 * Math.PI * 2;
+          ringPts.push(new THREE.Vector3(Math.cos(a) * radius, 0.02, Math.sin(a) * radius));
+        }
+        marker.add(new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(ringPts),
+          new THREE.LineBasicMaterial({ color, transparent: true, opacity: site.id === state.selectedWorldSiteId ? 0.9 : 0.48 })
+        ));
+        map3d.dynamicGroup.add(marker);
+      });
+      const selectedNode = (state.map.nodes || []).find(node => node.id === state.selectedNodeId);
+      if (selectedNode) addCircle(map3d.dynamicGroup, selectedNode, settlementRadius(selectedNode) / GRID.size * map3d.worldWidth, 0xffffff, 0.86);
+    }
+
+    function updateMap3dCamera() {
+      const zoom = map3d.zoom;
+      map3d.camera.position.set(map3d.targetX, zoom * 0.62, map3d.targetZ + zoom * 0.72);
+      map3d.camera.lookAt(map3d.targetX, mapHeightAtWorld(map3d.targetX, map3d.targetZ) - 0.2, map3d.targetZ);
+    }
+
+    function renderMap3d() {
+      if (!state.map) return false;
+      if (!ensureMap3d()) return false;
+      resizeMap3d();
+      updateMap3dDynamic();
+      updateMap3dCamera();
+      map3d.renderer.render(map3d.scene, map3d.camera);
+      return true;
+    }
+
+    function worldSiteMarkerColor(site = {}) {
+      const owner = String(site.owner || '').toLowerCase();
+      if (owner === 'raiders') return 0xe07b5f;
+      if (owner === 'mutants' || owner === 'wild') return 0xbb75d4;
+      if (owner === 'old_klim' || owner === 'caravans') return 0x8fdf6f;
+      const type = String(site.type || '').toLowerCase();
+      if (type === 'resource') return 0x77c5ff;
+      if (type === 'outpost') return 0xffd86d;
+      return 0xa8e66f;
+    }
+
+    function drawMap() {
+      if (!state.map || !ensureMap3d()) return;
+      if ((map3d.staticDirty || !map3d.terrain) && !rebuildMap3dStatic()) return;
+      renderMap3d();
+    }
+
+    function pointFromEvent(e) {
+      if (!ensureMap3d() || !map3d.terrain) return { ...state.hoverPoint };
+      resizeMap3d();
+      const rect = canvas.getBoundingClientRect();
+      map3d.pointer.set(
+        ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1,
+        -(((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1)
+      );
+      map3d.raycaster.setFromCamera(map3d.pointer, map3d.camera);
+      const hit = map3d.raycaster.intersectObject(map3d.terrain, false)[0];
+      return hit ? mapPointFromWorld(hit.point.x, hit.point.z) : { ...state.hoverPoint };
+    }
+
+    function drawLandmarks() {
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = 'rgba(42,76,80,0.34)';
+      ctx.beginPath();
+      ctx.moveTo(0, 80);
+      for (let y = 80; y <= GRID.size; y += 25) {
+        const x = 55 + Math.sin(y * 0.035) * 18 + Math.max(0, y - 520) * 0.11;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(0, GRID.size);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(105,92,56,0.42)';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      for (let x = 60; x < 850; x += 30) {
+        const y = 545 + Math.sin(x * 0.024) * 38;
+        if (x === 60) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawNodes() {
+      for (const node of state.map.nodes || []) {
+        const radius = GRID.cellPoints * 0.5;
+        const selected = node.id === state.selectedNodeId;
+        ctx.save();
+        ctx.translate(node.x, node.y);
+        ctx.fillStyle = selected ? 'rgba(255,220,105,0.22)' : 'rgba(28,130,38,0.22)';
+        ctx.strokeStyle = selected ? '#ffd86d' : '#29a33a';
+        ctx.lineWidth = selected ? 4 : 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#f2ead0';
+        ctx.font = 'bold 16px Consolas';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.lineWidth = 4;
+        const name = locationName(node.id);
+        ctx.strokeText(name, 0, radius + 18);
+        ctx.fillText(name, 0, radius + 18);
+        ctx.restore();
+      }
+    }
+
+    function locationName(id) {
+      return state.locations.find(row => row.id === id)?.name || id;
+    }
+
+    function locationCanBeCityNode(row = {}) {
+      if (!row || row.randomTemplate || row.encounterOnly) return false;
+      return row.kind === 'settlement' || row.city === true || row.settlement === true || row.respawnAllowed === true;
+    }
+
+    function cityLocations() {
+      return state.locations.filter(locationCanBeCityNode);
+    }
+
+    function buildTextureOptions() {
+      $('cell-texture').innerHTML = CELL_TEXTURES.map(row => `<option value="${row.id}">${escapeHtml(row.label)}</option>`).join('');
+    }
+
+    function syncTexturePreview() {
+      const textureId = $('cell-texture').value || 'auto';
+      const profile = cellProfile(state.selectedCell.cx, state.selectedCell.cy);
+      const preset = textureById.get(textureId === 'auto' ? profile.texture : textureId) || textureById.get('wasteland_dust');
+      const fill = $('cell-fill').value.trim() || preset?.fill || 'rgba(126,94,50,0.18)';
+      $('cell-texture-preview').style.background = `
+        linear-gradient(135deg, ${preset?.base || '#6f5b35'} 0%, ${preset?.base || '#6f5b35'} 46%, ${preset?.accent || '#b69155'} 47%, ${preset?.base || '#6f5b35'} 54%, ${preset?.base || '#6f5b35'} 100%),
+        ${fill}`;
+    }
+
+    function buildModelOptions() {
+      $('node-model').innerHTML = GLOBAL_MODEL_LIBRARY.map(model => `<option value="${model.key}">${escapeHtml(model.name)}</option>`).join('');
+    }
+
+    function selectGlobalModel(modelKey, options = {}) {
+      const model = modelByKey.get(modelKey) || GLOBAL_MODEL_LIBRARY[0];
+      state.selectedModelKey = model.key;
+      state.modelSelectionIsAuto = !!options.auto;
+      $('node-model').value = model.key;
+      renderModelLibrary();
+    }
+
+    function renderModelLibrary() {
+      const search = String($('model-search').value || '').trim().toLowerCase();
+      const filtered = GLOBAL_MODEL_LIBRARY.filter(model => {
+        const haystack = `${model.name} ${model.key} ${model.category} ${model.file}`.toLowerCase();
+        return !search || haystack.includes(search);
+      });
+      $('model-list').innerHTML = filtered.map(model => `
+        <button class="model-card${model.key === state.selectedModelKey ? ' selected' : ''}" data-model-key="${escapeHtml(model.key)}" type="button">
+          <span><b>${escapeHtml(model.name)}</b><span>${escapeHtml(model.file)}</span></span>
+          <i>${escapeHtml(model.category)}</i>
+        </button>
+      `).join('');
+      $('model-list').querySelectorAll('[data-model-key]').forEach(button => {
+        button.onclick = () => {
+          selectGlobalModel(button.dataset.modelKey, { auto: false });
+          const name = modelByKey.get(button.dataset.modelKey)?.name || button.dataset.modelKey;
+          toast(state.mode === 'cell' ? `Выбрана модель: ${name}. Нажмите «Поставить модель на клетку».` : `Выбрана модель: ${name}`);
+        };
+      });
+    }
+
+    function selectCellByPoint(point) {
+      const { cx, cy } = cellFromPoint(point);
+      state.selectedCell = { cx, cy };
+      state.selectedPoint = cellCenterPoint(cx, cy);
+      syncCellForm();
+    }
+
+    function selectedCellFromInputs() {
+      return {
+        cx: Math.floor(clamp(Number($('cell-x').value) - 1, 0, GRID.cols - 1)),
+        cy: Math.floor(clamp(Number($('cell-y').value) - 1, 0, GRID.rows - 1))
+      };
+    }
+
+    function selectCellFromInputs() {
+      const { cx, cy } = selectedCellFromInputs();
+      state.selectedCell = { cx, cy };
+      state.selectedPoint = cellCenterPoint(cx, cy);
+      syncCellForm();
+    }
+
+    function nearestNode(point) {
+      const cell = cellFromPoint(point);
+      let best = null;
+      let bestDist = Infinity;
+      for (const node of state.map.nodes || []) {
+        const nodeCell = cellFromPoint(node);
+        if (nodeCell.cx !== cell.cx || nodeCell.cy !== cell.cy) continue;
+        const d = Math.hypot(point.x - node.x, point.y - node.y);
+        if (d < bestDist) { best = node; bestDist = d; }
+      }
+      return best;
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      if (mode === 'cell') state.selectedPoint = cellCenterPoint(state.selectedCell.cx, state.selectedCell.cy);
+      $('mode-cell').classList.toggle('active', mode === 'cell');
+      $('mode-node').classList.toggle('active', mode === 'node');
+      $('hud-mode').textContent = mode === 'cell' ? 'Режим: редактирование клеток' : 'Режим: размещение городов';
+      syncCellForm();
+    }
+
+    function syncCellObjectForm() {
+      const object = currentCellObject();
+      const status = $('cell-object-status');
+      const removeButton = $('remove-cell-object');
+      const placeButton = $('place-cell-object');
+      const waterCell = cellIsWater(state.selectedCell.cx, state.selectedCell.cy);
+      if (placeButton) placeButton.disabled = waterCell;
+      if (waterCell && !object) {
+        if (status) status.textContent = 'Водная клетка непроходима: сюда нельзя ставить 3D модели.';
+        $('cell-object-scale').value = 1;
+        $('cell-object-rotation').value = 0;
+        if (removeButton) removeButton.disabled = true;
+        return;
+      }
+      if (object) {
+        const model = modelByKey.get(object.model);
+        if (status) status.textContent = `На клетке стоит: ${model?.name || object.model}. Центр ${Math.round(object.x)}:${Math.round(object.y)}.`;
+        $('cell-object-scale').value = Number(object.modelScale || 1);
+        $('cell-object-rotation').value = Math.round(Number(object.rotationY || 0));
+        if (removeButton) removeButton.disabled = false;
+      } else {
+        if (status) status.textContent = 'На клетке нет модели. Выбери модель ниже и нажми «Поставить модель на клетку».';
+        $('cell-object-scale').value = 1;
+        $('cell-object-rotation').value = 0;
+        if (removeButton) removeButton.disabled = true;
+      }
+    }
+
+    function syncCellForm() {
+      const { cx, cy } = state.selectedCell;
+      const custom = currentCell();
+      const profile = cellProfile(cx, cy);
+      const center = cellCenterPoint(cx, cy);
+      $('cell-x').value = cx + 1;
+      $('cell-y').value = cy + 1;
+      $('cell-key').textContent = `${cx}:${cy}`;
+      $('point-label').value = `${center.x}:${center.y}`;
+      $('cell-terrain').value = custom?.terrain || profile.terrain;
+      $('cell-pvp').value = profile.pvpMode;
+      $('cell-texture').value = custom?.texture || custom?.textureId || 'auto';
+      $('cell-fill').value = custom?.fill || profile.fill;
+      $('cell-chance').value = profile.chance;
+      $('cell-difficulty').value = profile.difficulty;
+      syncTexturePreview();
+      const waterCell = cellIsWater(cx, cy);
+      if (waterCell && custom?.texture === 'water') $('cell-chance').value = 0;
+      syncWeightInputs('encounter', waterCell ? [] : (custom?.encounters || []));
+      syncWeightInputs('location', waterCell ? [] : (custom?.randomLocations || []));
+      $('hud-title').textContent = custom ? profile.terrain : `${profile.terrain} (по умолчанию)`;
+      const pointText = state.mode === 'node'
+        ? `точка ${state.selectedPoint.x}:${state.selectedPoint.y}`
+        : `центр ${center.x}:${center.y}`;
+      $('hud-cell').textContent = `Клетка ${cx + 1}:${cy + 1}, ${pointText}, ${pvpLabels[profile.pvpMode]}`;
+      syncCellObjectForm();
+      drawMap();
+    }
+
+    function syncNodeForm() {
+      const nodes = state.map.nodes || [];
+      $('node-select').innerHTML = nodes.map(node => `<option value="${node.id}">${locationName(node.id)}</option>`).join('');
+      const node = nodes.find(row => row.id === state.selectedNodeId) || nodes[0] || null;
+      state.selectedNodeId = node?.id || '';
+      if (node) {
+        $('node-select').value = node.id;
+        $('node-location').value = node.id;
+        selectGlobalModel(node.model || defaultNodeModel(node.id), { auto: !node.model });
+        $('node-x').value = Math.round(node.x);
+        $('node-y').value = Math.round(node.y);
+        $('node-count').value = 1;
+        $('node-model-scale').value = Number(node.modelScale || 1);
+        $('node-model-rotation').value = Math.round(Number(node.rotationY || 0));
+        $('node-note').value = node.note || '';
+      } else {
+        $('node-location').selectedIndex = Math.max(0, $('node-location').selectedIndex);
+        selectGlobalModel(defaultNodeModel($('node-location').value), { auto: true });
+        $('node-x').value = Math.round(state.selectedPoint.x || 15);
+        $('node-y').value = Math.round(state.selectedPoint.y || 15);
+        $('node-count').value = 1;
+        $('node-model-scale').value = 1;
+        $('node-model-rotation').value = 0;
+        $('node-note').value = '';
+      }
+      drawMap();
+    }
+
+    function buildWeightLists() {
+      $('encounter-list').innerHTML = (state.map.encounters || []).map(row => weightRowHtml('encounter', row.id, row.title || row.id, row.kind || '')).join('');
+      const randomLocations = state.locations.filter(row => row.randomTemplate || row.id.startsWith('random'));
+      $('location-list').innerHTML = randomLocations.map(row => weightRowHtml('location', row.id, row.name || row.id, row.id)).join('');
+    }
+
+    function weightRowHtml(kind, id, title, hint) {
+      return `<label class="weight-row">
+        <input data-kind="${kind}" data-id="${id}" type="checkbox">
+        <span><b>${escapeHtml(title)}</b><small>${escapeHtml(hint)}</small></span>
+        <input data-weight="${kind}" data-id="${id}" type="number" min="0" max="999" value="0">
+      </label>`;
+    }
+
+    function syncWeightInputs(kind, rows) {
+      const byId = new Map(normalizeWeightRows(rows).map(row => [row.id, row.weight]));
+      document.querySelectorAll(`[data-kind="${kind}"]`).forEach(input => {
+        const checked = byId.has(input.dataset.id);
+        input.checked = checked;
+      });
+      document.querySelectorAll(`[data-weight="${kind}"]`).forEach(input => {
+        input.value = byId.get(input.dataset.id) || 0;
+      });
+    }
+
+    function collectWeightInputs(kind) {
+      const rows = [];
+      document.querySelectorAll(`[data-weight="${kind}"]`).forEach(input => {
+        const id = input.dataset.id;
+        const checked = document.querySelector(`[data-kind="${kind}"][data-id="${CSS.escape(id)}"]`)?.checked;
+        const weight = Math.max(0, Math.round(Number(input.value || 0)));
+        if (checked && weight > 0) rows.push({ id, weight });
+      });
+      return rows;
+    }
+
+    function applyCell() {
+      rememberUndo('клетка');
+      const map = ensureMapCollections();
+      const { cx, cy } = selectedCellFromInputs();
+      state.selectedCell = { cx, cy };
+      state.selectedPoint = cellCenterPoint(cx, cy);
+      const texture = $('cell-texture').value === 'auto' ? '' : ($('cell-texture').value || '');
+      const waterCell = WATER_TEXTURES.has(String(texture || '').trim().toLowerCase()) || pointIsOcean(state.selectedPoint);
+      map.cells[cellKey(cx, cy)] = {
+        terrain: $('cell-terrain').value.trim(),
+        pvpMode: normalizePvp($('cell-pvp').value),
+        texture,
+        chance: waterCell ? 0 : Math.round(clamp($('cell-chance').value, 0, 100)),
+        difficulty: Math.round(clamp($('cell-difficulty').value, 1, 5)),
+        fill: $('cell-fill').value.trim(),
+        encounters: waterCell ? [] : collectWeightInputs('encounter'),
+        randomLocations: waterCell ? [] : collectWeightInputs('location')
+      };
+      setDirty(true);
+      markMapStaticDirty();
+      syncCellForm();
+      toast('Клетка обновлена.');
+    }
+
+    function clearCell() {
+      rememberUndo('очистка клетки');
+      delete ensureMapCollections().cells[cellKey(state.selectedCell.cx, state.selectedCell.cy)];
+      setDirty(true);
+      markMapStaticDirty();
+      syncCellForm();
+      toast('Клетка очищена.');
+    }
+
+    function placeCellObject() {
+      const model = modelByKey.get(state.selectedModelKey) || GLOBAL_MODEL_LIBRARY[0];
+      if (!model) return toast('Выберите 3D модель.');
+      const map = ensureMapCollections();
+      const selected = selectedCellFromInputs();
+      const cx = selected.cx;
+      const cy = selected.cy;
+      if (cellIsWater(cx, cy)) return toast('На воду нельзя ставить 3D модели. Выберите клетку суши.');
+      rememberUndo('модель клетки');
+      state.selectedCell = { cx, cy };
+      const center = cellCenterPoint(cx, cy);
+      removeObjectsFromCell(cx, cy);
+      map.objects.push({
+        id: `cell_${cx}_${cy}_${model.key}`,
+        kind: 'landmark',
+        cx,
+        cy,
+        x: center.x,
+        y: center.y,
+        model: model.key,
+        modelScale: clamp($('cell-object-scale').value || 1, 0.2, 5),
+        rotationY: clamp($('cell-object-rotation').value || 0, 0, 360)
+      });
+      state.selectedPoint = center;
+      setDirty(true);
+      markMapStaticDirty();
+      syncCellForm();
+      toast('3D модель поставлена в центр клетки.');
+    }
+
+    function removeCellObject() {
+      const selected = selectedCellFromInputs();
+      const cx = selected.cx;
+      const cy = selected.cy;
+      state.selectedCell = { cx, cy };
+      if (!currentCellObject()) return toast('На этой клетке нет модели.');
+      rememberUndo('удаление модели клетки');
+      removeObjectsFromCell(cx, cy);
+      setDirty(true);
+      markMapStaticDirty();
+      syncCellForm();
+      toast('3D модель убрана с клетки.');
+    }
+
+    function applyNode() {
+      const locationId = $('node-location').value;
+      if (!locationId) return toast('Выберите локацию.');
+      const selectedLocation = state.locations.find(row => row.id === locationId);
+      if (!locationCanBeCityNode(selectedLocation)) return toast('Город на глобальной карте можно создать только из городской локации.');
+      const rawNodePoint = clampMapPoint({
+        x: $('node-x').value || state.selectedPoint.x,
+        y: $('node-y').value || state.selectedPoint.y
+      });
+      const nodeCell = cellFromPoint(rawNodePoint);
+      const nodePoint = cellCenterPoint(nodeCell.cx, nodeCell.cy);
+      if (pointIsOcean(nodePoint) || cellIsWater(nodeCell.cx, nodeCell.cy)) {
+        return toast('Город нельзя поставить на воду. Выберите точку на суше.');
+      }
+      rememberUndo('город');
+      const map = ensureMapCollections();
+      const node = {
+        id: locationId,
+        x: Math.round(nodePoint.x),
+        y: Math.round(nodePoint.y),
+        kind: 'settlement',
+        locationCount: 1,
+        model: $('node-model').value || defaultNodeModel(locationId),
+        modelScale: clamp($('node-model-scale').value || 1, 0.4, 4),
+        rotationY: clamp($('node-model-rotation').value || 0, 0, 360),
+        note: $('node-note').value.trim()
+      };
+      const index = map.nodes.findIndex(row => row.id === locationId);
+      if (index >= 0) map.nodes[index] = node;
+      else map.nodes.push(node);
+      state.selectedNodeId = node.id;
+      setDirty(true);
+      markMapStaticDirty();
+      syncNodeForm();
+      toast('Город размещен.');
+    }
+
+    function removeNode() {
+      const id = $('node-select').value || state.selectedNodeId;
+      if (!id) return toast('Нет выбранного города.');
+      rememberUndo('удаление города');
+      const map = ensureMapCollections();
+      map.nodes = map.nodes.filter(row => row.id !== id);
+      state.selectedNodeId = map.nodes[0]?.id || '';
+      setDirty(true);
+      markMapStaticDirty();
+      syncNodeForm();
+      toast('Город удален.');
+    }
+
+    async function saveMap() {
+      const saveButton = $('save-map');
+      saveButton.disabled = true;
+      const map = ensureMapCollections();
+      const payload = {
+        ...map,
+        grid: { cols: 30, rows: 30, cellPoints: 30, cellKm: 10 },
+        nodes: map.nodes || [],
+        objects: map.objects || [],
+        encounters: map.encounters || [],
+        randomLocations: normalizeWeightRows(map.randomLocations || []),
+        cells: map.cells || {}
+      };
+      try {
+        const data = await api('/api/dev/global-map', {
+          method: 'POST',
+          body: JSON.stringify({ map: payload })
+        });
+        state.map = data.map || defaultMap();
+        ensureMapCollections();
+        state.fileLabel = data.file || state.fileLabel;
+        setDirty(false);
+        markMapStaticDirty();
+        toast('Глобальная карта сохранена.');
+        syncAll();
+      } finally {
+        saveButton.disabled = false;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    function syncAll() {
+      ensureMapCollections();
+      markMapStaticDirty();
+      buildTextureOptions();
+      buildModelOptions();
+      buildLocationOptions();
+      buildWorldSiteOptions();
+      renderModelLibrary();
+      buildWeightLists();
+      syncNodeForm();
+      syncCellForm();
+      syncWorldSiteForm();
+    }
+
+    function buildLocationOptions() {
+      const usedNodeIds = new Set((state.map.nodes || []).map(node => node.id));
+      const rows = cityLocations();
+      const missingRows = state.locations.filter(row => usedNodeIds.has(row.id) && !rows.some(city => city.id === row.id));
+      const all = [...rows, ...missingRows].map(row => `<option value="${row.id}">${escapeHtml(row.name || row.id)}</option>`).join('');
+      $('node-location').innerHTML = all;
+    }
+
+    function worldSites() {
+      return Array.isArray(state.wasteland?.sites) ? state.wasteland.sites : [];
+    }
+
+    function currentWorldSite() {
+      const id = String(state.selectedWorldSiteId || $('world-site-select')?.value || '');
+      return worldSites().find(site => String(site.id || '') === id) || null;
+    }
+
+    function parseWorldObjectInput(id) {
+      const value = String($(id)?.value || '').trim();
+      if (!value) return {};
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+      } catch (_) {}
+      const out = {};
+      value.split(/[,\n;]/).forEach(part => {
+        const [key, raw] = part.split(/[:=]/);
+        const id = String(key || '').trim();
+        const amount = Number(String(raw || '').trim());
+        if (id && Number.isFinite(amount) && amount >= 0) out[id] = amount;
+      });
+      return out;
+    }
+
+    function worldObjectText(value = {}) {
+      const entries = Object.entries(value || {}).filter(([, amount]) => Number(amount || 0) > 0);
+      return entries.length ? JSON.stringify(Object.fromEntries(entries), null, 2) : '';
+    }
+
+    function buildWorldSiteOptions() {
+      const select = $('world-site-select');
+      if (!select) return;
+      const sites = worldSites().slice().sort((a, b) => String(a.name || a.id).localeCompare(String(b.name || b.id), 'ru'));
+      select.innerHTML = sites.map(site => {
+        const label = `${worldSiteTypeLabels[site.type] || site.type || 'Точка'} · ${site.name || site.id}`;
+        return `<option value="${escapeHtml(site.id)}">${escapeHtml(label)}</option>`;
+      }).join('');
+      if (!state.selectedWorldSiteId && sites[0]) state.selectedWorldSiteId = sites[0].id;
+      if (state.selectedWorldSiteId && sites.some(site => site.id === state.selectedWorldSiteId)) select.value = state.selectedWorldSiteId;
+    }
+
+    function syncWorldSiteForm() {
+      const site = currentWorldSite();
+      const center = cellCenterPoint(state.selectedCell.cx, state.selectedCell.cy);
+      const fallbackId = `site_${state.selectedCell.cx + 1}_${state.selectedCell.cy + 1}`;
+      const locationSelect = $('world-site-location');
+      if (locationSelect) {
+        const options = [{ id: '', name: 'Без отдельной локации' }, ...state.locations]
+          .map(row => `<option value="${escapeHtml(row.id)}">${escapeHtml(row.name || row.id)}</option>`)
+          .join('');
+        locationSelect.innerHTML = options;
+        locationSelect.value = site?.locationId || '';
+      }
+      $('world-site-id').value = site?.id || fallbackId;
+      $('world-site-name').value = site?.name || '';
+      $('world-site-type').value = site?.type || 'resource';
+      $('world-site-owner').value = site?.owner || 'neutral';
+      $('world-site-x').value = Math.round(Number(site?.x ?? center.x));
+      $('world-site-y').value = Math.round(Number(site?.y ?? center.y));
+      $('world-site-pvp').value = site?.pvpMode || 'pvp';
+      $('world-site-security').value = Math.round(Number(site?.security ?? 35));
+      $('world-site-prosperity').value = Math.round(Number(site?.prosperity ?? 0));
+      $('world-site-danger').value = Number(site?.danger ?? 2);
+      $('world-site-output').value = worldObjectText(site?.output || {});
+      $('world-site-stockpile').value = worldObjectText(site?.stockpile || {});
+      $('world-site-traders').value = Array.isArray(site?.traderProfiles) ? site.traderProfiles.join(', ') : '';
+      $('world-site-note').value = site?.note || '';
+      const status = $('world-site-status');
+      if (status) {
+        status.textContent = site
+          ? `Редактируется: ${site.name || site.id}. Владелец: ${worldOwnerLabels[site.owner] || site.owner || 'неизвестно'}.`
+          : 'Новая точка будет создана в выбранной клетке.';
+      }
+    }
+
+    function collectWorldSitePayload() {
+      const sitePoint = pointToCellCenter({
+        x: $('world-site-x').value,
+        y: $('world-site-y').value
+      });
+      return {
+        id: $('world-site-id').value.trim(),
+        name: $('world-site-name').value.trim() || $('world-site-id').value.trim(),
+        type: $('world-site-type').value || 'resource',
+        owner: $('world-site-owner').value || 'neutral',
+        x: sitePoint.x,
+        y: sitePoint.y,
+        pvpMode: $('world-site-pvp').value || 'pvp',
+        security: clamp($('world-site-security').value, 0, 100),
+        prosperity: clamp($('world-site-prosperity').value, 0, 100),
+        danger: clamp($('world-site-danger').value, 0, 5),
+        locationId: $('world-site-location')?.value || '',
+        output: parseWorldObjectInput('world-site-output'),
+        stockpile: parseWorldObjectInput('world-site-stockpile'),
+        traderProfiles: String($('world-site-traders').value || '').split(',').map(row => row.trim()).filter(Boolean),
+        note: $('world-site-note').value.trim()
+      };
+    }
+
+    function useSelectedCellForWorldSite() {
+      const center = cellCenterPoint(state.selectedCell.cx, state.selectedCell.cy);
+      $('world-site-x').value = center.x;
+      $('world-site-y').value = center.y;
+      if (!currentWorldSite()) $('world-site-id').value = `site_${state.selectedCell.cx + 1}_${state.selectedCell.cy + 1}`;
+      toast('Координаты точки выставлены в центр выбранной клетки.');
+    }
+
+    function newWorldSite() {
+      state.selectedWorldSiteId = '';
+      if ($('world-site-select')) $('world-site-select').value = '';
+      syncWorldSiteForm();
+      useSelectedCellForWorldSite();
+    }
+
+    async function saveWorldSite() {
+      const payload = collectWorldSitePayload();
+      if (!payload.id) return toast('Укажите ID точки мира.');
+      const data = await api('/api/dev/wasteland/site', {
+        method: 'POST',
+        body: JSON.stringify({ site: payload })
+      });
+      state.wasteland = data.sim || state.wasteland;
+      state.wastelandFileLabel = data.file || state.wastelandFileLabel;
+      state.selectedWorldSiteId = payload.id;
+      buildWorldSiteOptions();
+      syncWorldSiteForm();
+      drawMap();
+      toast('Точка живой пустоши сохранена.');
+    }
+
+    async function deleteWorldSite() {
+      const site = currentWorldSite();
+      if (!site) return toast('Выберите точку мира.');
+      if (site.type === 'settlement') return toast('Поселение нельзя удалить из симуляции здесь. Удалите город на карте или измените тип точки.');
+      const data = await api(`/api/dev/wasteland/site/${encodeURIComponent(site.id)}`, { method: 'DELETE' });
+      state.wasteland = data.sim || state.wasteland;
+      state.selectedWorldSiteId = worldSites()[0]?.id || '';
+      buildWorldSiteOptions();
+      syncWorldSiteForm();
+      drawMap();
+      toast('Точка живой пустоши удалена.');
+    }
+
+    async function load() {
+      const [data, wastelandData] = await Promise.all([
+        api('/api/dev/global-map'),
+        api('/api/dev/wasteland').catch(() => null)
+      ]);
+      state.map = data.map || defaultMap();
+      ensureMapCollections();
+      state.locations = data.locations || [];
+      state.fileLabel = data.file || 'data/global-map.json';
+      if (wastelandData?.sim) {
+        state.wasteland = wastelandData.sim;
+        state.wastelandFileLabel = wastelandData.file || state.wastelandFileLabel;
+        state.selectedWorldSiteId = state.wasteland.sites?.[0]?.id || '';
+      }
+      setDirty(false);
+      state.selectedNodeId = state.map.nodes?.[0]?.id || '';
+      markMapStaticDirty();
+      syncAll();
+      toast('Глобальная карта загружена.');
+    }
+
+    canvas.addEventListener('mousemove', e => {
+      const p = pointFromEvent(e);
+      const hover = clampMapPoint(p);
+      state.hoverPoint = { x: Math.round(hover.x), y: Math.round(hover.y) };
+      const { cx, cy } = cellFromPoint(hover);
+      $('hud-cell').textContent = `Клетка ${cx + 1}:${cy + 1}, курсор ${Math.round(hover.x)}:${Math.round(hover.y)}`;
+    });
+
+    canvas.addEventListener('click', e => {
+      const p = pointFromEvent(e);
+      if (state.mode === 'cell') {
+        selectCellByPoint(p);
+        return;
+      }
+      const exactPoint = clampMapPoint(p);
+      state.selectedCell = cellFromPoint(exactPoint);
+      state.selectedPoint = { x: Math.round(exactPoint.x), y: Math.round(exactPoint.y) };
+      const node = nearestNode(p);
+      if (state.mode === 'node') {
+        if (node) {
+          state.selectedNodeId = node.id;
+          state.selectedPoint = { x: Math.round(Number(node.x || 0)), y: Math.round(Number(node.y || 0)) };
+          state.selectedCell = cellFromPoint(state.selectedPoint);
+          markMapStaticDirty();
+          syncNodeForm();
+          syncCellForm();
+          return;
+        }
+        syncCellForm();
+        const centeredPoint = cellCenterPoint(state.selectedCell.cx, state.selectedCell.cy);
+        $('node-x').value = Math.round(centeredPoint.x);
+        $('node-y').value = Math.round(centeredPoint.y);
+      }
+    });
+
+    canvas.addEventListener('pointerdown', e => {
+      if (e.button !== 1 && e.button !== 2 && !e.altKey) return;
+      e.preventDefault();
+      map3d.dragging = true;
+      map3d.dragX = e.clientX;
+      map3d.dragY = e.clientY;
+      canvas.setPointerCapture?.(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', e => {
+      if (!map3d.dragging) return;
+      e.preventDefault();
+      const dx = e.clientX - map3d.dragX;
+      const dy = e.clientY - map3d.dragY;
+      map3d.dragX = e.clientX;
+      map3d.dragY = e.clientY;
+      const scale = map3d.zoom / 980;
+      map3d.targetX = clamp(map3d.targetX - dx * scale, -map3d.worldWidth * 0.62, map3d.worldWidth * 0.62);
+      map3d.targetZ = clamp(map3d.targetZ - dy * scale, -map3d.worldDepth * 0.62, map3d.worldDepth * 0.62);
+      renderMap3d();
+    });
+
+    canvas.addEventListener('pointerup', e => {
+      if (!map3d.dragging) return;
+      map3d.dragging = false;
+      canvas.releasePointerCapture?.(e.pointerId);
+    });
+
+    canvas.addEventListener('pointercancel', e => {
+      map3d.dragging = false;
+      canvas.releasePointerCapture?.(e.pointerId);
+    });
+
+    canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const factor = Math.exp(Math.max(-240, Math.min(240, Number(e.deltaY || 0))) * 0.0016);
+      map3d.zoom = clamp(map3d.zoom * factor, map3d.minZoom, map3d.maxZoom);
+      renderMap3d();
+    }, { passive: false });
+
+    $('mode-cell').onclick = () => setMode('cell');
+    $('mode-node').onclick = () => setMode('node');
+    $('apply-cell').onclick = applyCell;
+    $('clear-cell').onclick = clearCell;
+    $('place-cell-object').onclick = placeCellObject;
+    $('remove-cell-object').onclick = removeCellObject;
+    $('apply-node').onclick = applyNode;
+    $('remove-node').onclick = removeNode;
+    $('world-site-select').onchange = e => {
+      state.selectedWorldSiteId = e.target.value;
+      syncWorldSiteForm();
+      drawMap();
+    };
+    $('world-site-use-cell').onclick = useSelectedCellForWorldSite;
+    $('new-world-site').onclick = newWorldSite;
+    $('save-world-site').onclick = () => saveWorldSite().catch(err => toast(err.message));
+    $('delete-world-site').onclick = () => deleteWorldSite().catch(err => toast(err.message));
+    $('save-map').onclick = () => saveMap().catch(err => toast(err.message));
+    $('model-search').oninput = renderModelLibrary;
+    $('node-model').onchange = e => selectGlobalModel(e.target.value, { auto: false });
+    $('node-location').onchange = e => {
+      if (state.modelSelectionIsAuto || !$('node-model').value) selectGlobalModel(defaultNodeModel(e.target.value), { auto: true });
+    };
+    $('cell-texture').onchange = () => {
+      const preset = textureById.get($('cell-texture').value);
+      if (preset?.fill) $('cell-fill').value = preset.fill;
+      syncTexturePreview();
+    };
+    $('cell-fill').oninput = syncTexturePreview;
+    $('node-select').onchange = e => {
+      state.selectedNodeId = e.target.value;
+      markMapStaticDirty();
+      syncNodeForm();
+    };
+    $('cell-x').onchange = selectCellFromInputs;
+    $('cell-y').onchange = selectCellFromInputs;
+    bindUndoMemory([
+      $('cell-x'), $('cell-y'), $('cell-terrain'), $('cell-pvp'), $('cell-texture'), $('cell-fill'),
+      $('cell-chance'), $('cell-difficulty'), $('cell-object-scale'), $('cell-object-rotation'), $('node-select'), $('node-location'), $('node-model'),
+      $('node-x'), $('node-y'), $('node-count'), $('node-model-scale'), $('node-model-rotation'), $('node-note'),
+      $('world-site-id'), $('world-site-name'), $('world-site-type'), $('world-site-owner'), $('world-site-x'), $('world-site-y'),
+      $('world-site-pvp'), $('world-site-location'), $('world-site-security'), $('world-site-prosperity'), $('world-site-danger'), $('world-site-output'),
+      $('world-site-stockpile'), $('world-site-traders'), $('world-site-note')
+    ], 'поле');
+    window.addEventListener('keydown', event => {
+      if (event.ctrlKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z' || event.code === 'KeyZ')) {
+        event.preventDefault();
+        undoEditorAction();
+        return;
+      }
+      if (event.ctrlKey && !event.shiftKey && (event.key === 's' || event.key === 'S' || event.code === 'KeyS')) {
+        event.preventDefault();
+        saveMap().catch(err => toast(err.message));
+      }
+    });
+    window.addEventListener('resize', renderMap3d);
+    window.addEventListener('beforeunload', event => {
+      if (!state.dirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
+
+    load().catch(err => toast(err.message));
+  </script>
+</body>
+</html>

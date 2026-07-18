@@ -1,0 +1,18 @@
+{
+  "source_archive": "Materials_Ground_Dirt_01.zip",
+  "added_in": "v7.59.0",
+  "files": [
+    "layer_cracked_dirt_from_archive_v759.webp",
+    "layer_gravel_from_archive_v759.webp",
+    "layer_mud_scorch_from_archive_v759.webp",
+    "layer_sand_from_archive_v759.webp",
+    "layer_straw_dry_grass_from_archive_v759.webp",
+    "layer_tire_tracks_from_archive_v759.webp",
+    "stone_wall_base_v759.webp",
+    "stone_wall_normal_v759.webp",
+    "trader_yard_ground_base_v759.webp",
+    "trader_yard_ground_normal_v759.webp",
+    "trader_yard_ground_roughness_v759.webp"
+  ],
+  "usage": "first settlement/trader yard ground base, high-resolution layered terrain decals, rock/wall material"
+}

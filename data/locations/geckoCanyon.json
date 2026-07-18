@@ -1,0 +1,122 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "geckoCanyon",
+  "name": "Каньон гекконов",
+  "seed": 20260710,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "kind": "lair",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "dryBasin",
+    "label": "Горячий каньон"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [],
+  "objects": [
+    {
+      "id": "gecko_rock_01",
+      "model": "rubbleRock",
+      "name": "Тёплые камни",
+      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": -6
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rock"
+      ]
+    },
+    {
+      "id": "gecko_tree_01",
+      "model": "deadwood",
+      "name": "Сухой ствол",
+      "url": "/assets/models/wasteland/deadwood.glb",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "debris"
+      ]
+    },
+    {
+      "id": "gecko_bush_01",
+      "model": "dryBush",
+      "name": "Сухой куст",
+      "url": "/assets/models/wasteland/dry_bush.glb",
+      "position": {
+        "x": 2,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "bush"
+      ]
+    }
+  ]
+}

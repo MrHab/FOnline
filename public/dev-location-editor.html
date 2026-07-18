@@ -1,0 +1,3842 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Realm of Ashes - редактор локаций</title>
+  <script>
+    (() => {
+      if (window.location.protocol !== 'file:') return;
+      const target = `http://127.0.0.1:3000/dev-location-editor.html${window.location.search || ''}${window.location.hash || ''}`;
+      window.location.replace(target);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #050705;
+      --panel: rgba(7, 13, 8, 0.94);
+      --line: rgba(196, 157, 65, 0.54);
+      --gold: #f0d47f;
+      --green: #9ad17a;
+      --muted: #78986d;
+      --danger: #e07954;
+      --text: #e8dca1;
+      --shadow: rgba(0, 0, 0, 0.56);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    button,
+    input,
+    textarea,
+    select { font: inherit; }
+
+    #viewport {
+      position: fixed;
+      inset: 0;
+      display: block;
+      cursor: crosshair;
+    }
+
+    .topbar,
+    .panel,
+    .toast,
+    .statusbar { text-shadow: 0 1px 2px #000; }
+
+    .topbar {
+      position: fixed;
+      left: 368px;
+      right: 388px;
+      top: 12px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 42px;
+      gap: 12px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(16, 22, 13, 0.95), rgba(5, 9, 6, 0.88));
+      box-shadow: 0 18px 42px var(--shadow);
+    }
+
+    .topbar strong {
+      color: var(--gold);
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .topbar span {
+      color: var(--green);
+      font-size: 11px;
+      line-height: 1.3;
+      text-align: right;
+    }
+
+    .panel {
+      position: fixed;
+      top: 12px;
+      bottom: 12px;
+      z-index: 2;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      width: 340px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background:
+        linear-gradient(180deg, rgba(15, 24, 12, 0.96), rgba(4, 8, 5, 0.94)),
+        repeating-linear-gradient(0deg, rgba(127, 193, 97, 0.05), rgba(127, 193, 97, 0.05) 1px, transparent 1px, transparent 4px);
+      box-shadow: 0 22px 56px var(--shadow);
+    }
+
+    .panel-left { left: 12px; }
+
+    .panel-right {
+      right: 12px;
+      width: 360px;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .brand {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(196, 157, 65, 0.34);
+    }
+
+    .brand b {
+      color: var(--gold);
+      font-size: 20px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+    }
+
+    .brand span {
+      color: var(--green);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .scroll {
+      min-height: 0;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.32); border-radius: 8px; }
+    .scroll::-webkit-scrollbar-thumb { background: rgba(204, 168, 78, 0.7); border-radius: 8px; }
+
+    .stack { display: grid; gap: 8px; }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 12px 0 7px;
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .section-title small {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .field,
+    .inline-fields,
+    .triple-fields {
+      display: grid;
+      gap: 5px;
+    }
+
+    .inline-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .triple-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .field-help {
+      min-height: 28px;
+      color: #a9c88a;
+      border: 1px solid rgba(116, 168, 83, 0.22);
+      border-radius: 6px;
+      background: rgba(1, 7, 4, 0.46);
+      padding: 6px 8px;
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .editor-note,
+    .point-editor {
+      border: 1px solid rgba(116, 168, 83, 0.28);
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(5, 16, 8, 0.78), rgba(1, 7, 4, 0.62));
+    }
+
+    .editor-note {
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      color: #a9c88a;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .point-editor {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 9px;
+    }
+
+    .point-editor-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .point-editor-title small {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0;
+      text-transform: none;
+      text-align: right;
+    }
+
+    .transition-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .transition-actions .wide { grid-column: 1 / -1; }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 32px;
+      color: var(--text);
+      border: 1px solid rgba(116, 168, 83, 0.45);
+      border-radius: 6px;
+      background: rgba(1, 7, 4, 0.84);
+      outline: none;
+      padding: 7px 9px;
+      box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.24);
+    }
+
+    input:disabled,
+    select:disabled {
+      opacity: 0.68;
+      cursor: not-allowed;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(240, 212, 127, 0.82);
+      box-shadow: 0 0 0 2px rgba(240, 212, 127, 0.12), inset 0 0 18px rgba(0, 0, 0, 0.24);
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+      line-height: 1.35;
+      white-space: pre;
+      overflow-wrap: normal;
+      overflow-x: auto;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .button-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .button-row.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    button {
+      min-height: 32px;
+      color: var(--gold);
+      border: 1px solid rgba(196, 157, 65, 0.55);
+      border-radius: 6px;
+      background: linear-gradient(180deg, rgba(51, 42, 22, 0.92), rgba(22, 18, 11, 0.92));
+      box-shadow: inset 0 0 16px rgba(240, 212, 127, 0.06);
+      cursor: pointer;
+    }
+
+    button:hover { border-color: rgba(240, 212, 127, 0.96); color: #ffeaa5; }
+
+    button:disabled {
+      opacity: 0.46;
+      cursor: not-allowed;
+      filter: saturate(0.72);
+    }
+
+    button.active {
+      color: #061006;
+      border-color: rgba(255, 224, 126, 0.98);
+      background: linear-gradient(180deg, rgba(240, 212, 127, 0.96), rgba(173, 135, 50, 0.96));
+      text-shadow: none;
+    }
+
+    button.danger {
+      color: #ffb498;
+      border-color: rgba(224, 121, 84, 0.65);
+      background: linear-gradient(180deg, rgba(58, 23, 15, 0.9), rgba(20, 7, 5, 0.92));
+    }
+
+    .model-list,
+    .object-list,
+    .point-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .model-card,
+    .object-card,
+    .point-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 48px;
+      padding: 8px 9px;
+      border: 1px solid rgba(116, 168, 83, 0.34);
+      border-radius: 7px;
+      background: linear-gradient(180deg, rgba(6, 16, 8, 0.9), rgba(2, 7, 4, 0.82));
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .model-card:hover,
+    .object-card:hover,
+    .point-card:hover,
+    .model-card.selected,
+    .object-card.selected,
+    .point-card.selected {
+      border-color: rgba(240, 212, 127, 0.82);
+      background: linear-gradient(180deg, rgba(28, 35, 14, 0.93), rgba(5, 13, 7, 0.9));
+    }
+
+    .model-card b,
+    .object-card b,
+    .point-card b {
+      display: block;
+      color: var(--gold);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .model-card span,
+    .object-card span,
+    .point-card span {
+      display: block;
+      margin-top: 3px;
+      color: var(--green);
+      font-size: 10px;
+      line-height: 1.2;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 46px;
+      max-width: 110px;
+      min-height: 22px;
+      padding: 3px 7px;
+      color: var(--green);
+      border: 1px solid rgba(116, 168, 83, 0.4);
+      border-radius: 999px;
+      background: rgba(1, 7, 4, 0.72);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-style: normal;
+      text-align: center;
+      line-height: 1.15;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 88px;
+      padding: 13px;
+      color: var(--muted);
+      border: 1px dashed rgba(116, 168, 83, 0.35);
+      border-radius: 8px;
+      background: rgba(1, 7, 4, 0.5);
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .preview-box {
+      margin-top: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(116, 168, 83, 0.38);
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(240, 212, 127, 0.16), transparent 58%),
+        linear-gradient(180deg, rgba(6, 16, 8, 0.92), rgba(1, 6, 4, 0.92));
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.35);
+    }
+
+    #modelPreview {
+      display: block;
+      width: 100%;
+      height: 138px;
+    }
+
+    .preview-meta {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+      min-height: 42px;
+      padding: 7px 9px 8px;
+      border-top: 1px solid rgba(196, 157, 65, 0.24);
+      background: rgba(1, 7, 4, 0.58);
+    }
+
+    .preview-meta b {
+      overflow: hidden;
+      color: var(--gold);
+      font-size: 12px;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .preview-meta span {
+      overflow: hidden;
+      color: var(--green);
+      font-size: 10px;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 11px 0;
+      background: rgba(196, 157, 65, 0.28);
+    }
+
+    .statusbar {
+      position: fixed;
+      left: 50%;
+      bottom: 12px;
+      z-index: 2;
+      width: min(620px, calc(100vw - 740px));
+      min-height: 44px;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(5, 10, 6, 0.88);
+      box-shadow: 0 18px 42px var(--shadow);
+      font-size: 11px;
+      color: var(--green);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 68px;
+      z-index: 5;
+      max-width: min(560px, calc(100vw - 40px));
+      transform: translateX(-50%) translateY(-12px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 10px 13px;
+      color: var(--gold);
+      border: 1px solid rgba(240, 212, 127, 0.65);
+      border-radius: 8px;
+      background: rgba(8, 10, 6, 0.94);
+      box-shadow: 0 14px 42px var(--shadow);
+      transition: opacity 0.16s ease, transform 0.16s ease;
+      font-size: 12px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .editor-confirm-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.48);
+    }
+
+    .editor-confirm-panel {
+      width: min(420px, calc(100vw - 48px));
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid rgba(240, 212, 127, 0.7);
+      border-radius: 10px;
+      background:
+        linear-gradient(180deg, rgba(21, 28, 15, 0.98), rgba(5, 9, 6, 0.96)),
+        repeating-linear-gradient(0deg, rgba(127, 193, 97, 0.04), rgba(127, 193, 97, 0.04) 1px, transparent 1px, transparent 4px);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72);
+      text-shadow: 0 1px 2px #000;
+    }
+
+    .editor-confirm-title {
+      color: var(--gold);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .editor-confirm-message {
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .editor-confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 1260px) {
+      .panel { width: 300px; }
+      .panel-right { width: 330px; }
+      .topbar { left: 320px; right: 350px; }
+      .statusbar { width: min(420px, calc(100vw - 660px)); }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="viewport"></canvas>
+
+  <div class="topbar">
+    <strong>Редактор локаций</strong>
+    <span>ЛКМ по земле: поставить модель или точку · ЛКМ по объекту: выбрать/перетащить · Shift+ЛКМ по объекту: поставить поверх · ПКМ: камера · Ctrl+Z: отмена</span>
+  </div>
+
+  <aside class="panel panel-left">
+    <div>
+      <div class="brand">
+        <b>LOC-ASH</b>
+        <span>ручная сборка локаций</span>
+      </div>
+
+      <div class="field">
+        <label for="locationFileSelect">Файл локации</label>
+        <select id="locationFileSelect"></select>
+      </div>
+      <div class="button-row three" style="margin-top: 8px;">
+        <button id="refreshLocations">Обновить</button>
+        <button id="loadLocation">Загрузить</button>
+        <button id="saveLocationFile">Сохранить</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="inline-fields">
+        <div class="field">
+          <label for="modelSearch">Поиск модели</label>
+          <input id="modelSearch" placeholder="бочка, стена, машина">
+        </div>
+        <div class="field">
+          <label for="categoryFilter">Категория</label>
+          <select id="categoryFilter"></select>
+        </div>
+      </div>
+      <div class="section-title">
+        <span>Превью модели</span>
+        <small id="modelPreviewStatus">готово</small>
+      </div>
+      <div class="preview-box">
+        <canvas id="modelPreview"></canvas>
+        <div class="preview-meta">
+          <b id="modelPreviewName">Модель</b>
+          <span id="modelPreviewFile">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <div class="section-title">
+        <span>Модели</span>
+        <small id="modelCounter">0</small>
+      </div>
+      <div id="modelList" class="model-list"></div>
+    </div>
+  </aside>
+
+  <aside class="panel panel-right">
+    <div>
+      <div class="brand">
+        <b>LOCATION</b>
+        <span id="locationFolderLabel">data/locations</span>
+      </div>
+      <div class="inline-fields">
+        <div class="field">
+          <label for="locationId">ID</label>
+          <input id="locationId" value="custom_wasteland_site">
+        </div>
+        <div class="field">
+          <label for="locationName">Название</label>
+          <input id="locationName" value="Новая локация">
+        </div>
+      </div>
+      <div class="triple-fields" style="margin-top: 8px;">
+        <div class="field">
+          <label for="locationSeed">Seed</label>
+          <input id="locationSeed" type="number" step="1" value="20260630">
+        </div>
+        <div class="field">
+          <label for="locationKind">Тип локации</label>
+          <select id="locationKind">
+            <option value="location">Обычная локация</option>
+            <option value="settlement">Город / поселение</option>
+          </select>
+          <div id="locationKindHelp" class="field-help"></div>
+        </div>
+        <div class="field">
+          <label for="locationSafe">PvP режим</label>
+          <select id="locationSafe">
+            <option value="peaceful">Мирная</option>
+            <option value="pvp">PvP без полного дропа</option>
+            <option value="pvpFullDrop">PvP с полным дропом</option>
+          </select>
+          <div id="locationPvpHelp" class="field-help"></div>
+        </div>
+        <div class="field">
+          <label for="groundPreset">Земля</label>
+          <select id="groundPreset"></select>
+        </div>
+      </div>
+      <div class="triple-fields" style="margin-top: 8px;">
+        <div class="field">
+          <label for="mapWidth">Ширина</label>
+          <input id="mapWidth" type="number" min="8" max="240" step="1" value="76">
+        </div>
+        <div class="field">
+          <label for="mapDepth">Глубина</label>
+          <input id="mapDepth" type="number" min="8" max="240" step="1" value="76">
+        </div>
+        <div class="field">
+          <label for="gridStep">Шаг</label>
+          <input id="gridStep" type="number" value="2" readonly disabled title="Шаг сетки фиксирован: 2×2 метра">
+        </div>
+      </div>
+      <div class="button-row three" style="margin-top: 8px;">
+        <button id="snapToggle" class="active">Сетка 2x2</button>
+        <button id="setSpawnButton">Старт игрока</button>
+        <button id="setEntryButton">Вход из мира</button>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <div class="section-title">
+        <span>Переходы между локациями</span>
+        <small id="pointCounter">0</small>
+      </div>
+      <div class="editor-note">
+        Обычный переход ставится внутри локации и ведет в выбранный файл. Выход на глобальную карту всегда находится по краям текущей локации.
+      </div>
+      <div class="transition-actions">
+        <button id="addTransitionButton" class="wide">Поставить переход в другую локацию</button>
+        <button id="movePointButton">Переместить выбранный</button>
+        <button id="deletePointButton" class="danger">Удалить выбранный</button>
+        <button id="addWorldZoneButton" class="wide">Включить выход на глобальную карту по краям</button>
+      </div>
+
+      <div id="pointEditor" class="point-editor">
+        <div class="point-editor-title">
+          <span id="pointKindLabel">Новый переход</span>
+          <small id="pointSelectionLabel">не выбран</small>
+        </div>
+        <div class="inline-fields">
+          <div class="field">
+            <label for="pointLabel">Название зоны</label>
+            <input id="pointLabel" value="Переход" placeholder="Например: Ворота города">
+          </div>
+          <div class="field">
+            <label id="pointRadiusLabel" for="pointRadius">Размер зоны</label>
+            <input id="pointRadius" type="number" min="0.5" max="18" step="0.25" value="2.4">
+          </div>
+        </div>
+        <div id="pointTargetField" class="field">
+          <label for="pointTarget">Целевая локация</label>
+          <select id="pointTarget"></select>
+        </div>
+        <div id="pointEntryField" class="field">
+          <label for="pointEntryKey">Куда поставить игрока</label>
+          <select id="pointEntryKey">
+            <option value="spawn">Старт игрока (spawn)</option>
+            <option value="entryFromWorld">Вход из глобальной карты</option>
+            <option value="entryFromWasteland">Вход из пустоши</option>
+            <option value="entryFromSettlement">Вход из поселения</option>
+          </select>
+        </div>
+        <div id="pointHelp" class="field-help">Выберите целевую локацию, нажмите кнопку постановки перехода и кликните место на карте.</div>
+      </div>
+
+      <div id="pointList" class="point-list" style="margin-top: 8px;"></div>
+
+      <div class="divider"></div>
+
+      <div class="section-title">
+        <span>Выбранный объект</span>
+        <small id="selectedName">нет</small>
+      </div>
+      <div id="inspectorEmpty" class="empty">Выбери объект на сцене или поставь модель из списка.</div>
+      <div id="inspector" class="stack hidden">
+        <div class="field">
+          <label for="objectLabel">Имя</label>
+          <input id="objectLabel">
+        </div>
+        <div class="triple-fields">
+          <div class="field"><label for="objectX">X</label><input id="objectX" type="number" step="0.25"></div>
+          <div class="field"><label for="objectY">Y</label><input id="objectY" type="number" step="0.25"></div>
+          <div class="field"><label for="objectZ">Z</label><input id="objectZ" type="number" step="0.25"></div>
+        </div>
+        <div class="triple-fields">
+          <div class="field"><label for="objectScaleX">Scale X</label><input id="objectScaleX" type="number" min="0.05" max="30" step="0.05"></div>
+          <div class="field"><label for="objectScaleY">Scale Y</label><input id="objectScaleY" type="number" min="0.05" max="30" step="0.05"></div>
+          <div class="field"><label for="objectScaleZ">Scale Z</label><input id="objectScaleZ" type="number" min="0.05" max="30" step="0.05"></div>
+        </div>
+        <div class="inline-fields">
+          <div class="field"><label for="objectRot">Поворот Y</label><input id="objectRot" type="number" step="1"></div>
+          <div class="field">
+            <label for="objectCollision">Коллизия</label>
+            <select id="objectCollision">
+              <option value="solid">Блокирует проход</option>
+              <option value="cover">Укрытие</option>
+              <option value="resource">Добываемый ресурс</option>
+              <option value="decoration">Декор с логикой</option>
+              <option value="none">Без коллизии</option>
+            </select>
+            <div id="objectCollisionHelp" class="field-help"></div>
+            <div id="objectVisionHelp" class="field-help"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="objectTags">Теги</label>
+          <input id="objectTags" placeholder="trader, exit, loot">
+        </div>
+        <div class="button-row three">
+          <button id="rotateLeft">-15°</button>
+          <button id="duplicateObject">Копия</button>
+          <button id="rotateRight">+15°</button>
+        </div>
+        <div class="button-row">
+          <button id="centerCamera">Камера</button>
+          <button id="deleteObject" class="danger">Удалить</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title">
+        <span>Объекты</span>
+        <small id="objectCounter">0</small>
+      </div>
+      <div id="objectList" class="object-list"></div>
+
+      <div class="divider"></div>
+
+      <div class="section-title">
+        <span>JSON</span>
+        <small>realm.location.v1</small>
+      </div>
+      <textarea id="jsonOutput" spellcheck="false"></textarea>
+    </div>
+
+    <div class="stack">
+      <div class="button-row three">
+        <button id="copyJson">Копировать</button>
+        <button id="downloadJson">Скачать</button>
+        <button id="importJson">Импорт</button>
+      </div>
+      <div class="button-row">
+        <button id="saveDraft">Черновик</button>
+        <button id="clearScene" class="danger">Очистить</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="statusbar">
+    <span id="cursorReadout">Курсор: x 0, z 0 · клетка 19:19</span>
+    <span id="sceneReadout">0 объектов</span>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/vendor/three.min.js"></script>
+  <script src="/vendor/GLTFLoader.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const TILE = 2;
+      const MAP_TILES = 38;
+      const API_BASE = '/api/dev/locations';
+      const FIXED_LOCATION_GRID_STEP = 2;
+
+      const COLLISION_INFO = {
+        solid: {
+          label: 'Блокирует проход',
+          help: 'Игрок и NPC не могут пройти сквозь объект. Подходит для стен, ящиков, зданий, хранилищ и живых NPC.'
+        },
+        cover: {
+          label: 'Укрытие',
+          help: 'Объект блокирует проход и считается укрытием в бою. Подходит для стен, баррикад, бочек и остовов машин.'
+        },
+        resource: {
+          label: 'Добываемый ресурс',
+          help: 'Объект можно добывать подходящим инструментом. Используй для руды, валежника и похожих ресурсов.'
+        },
+        decoration: {
+          label: 'Декор с логикой',
+          help: 'Объект не обязан мешать движению, но может иметь игровую логику. Используй осторожно для особых интерактивных деталей.'
+        },
+        none: {
+          label: 'Без коллизии',
+          help: 'Объект не мешает движению. Подходит для мелкого мусора, травы, камней, покрышек и плоских деталей земли.'
+        }
+      };
+
+      const LOCATION_PVP_INFO = {
+        peaceful: {
+          label: 'Мирная',
+          help: 'Игроки не могут наносить урон друг другу. Подходит для городов, баз, торговых и социальных зон.'
+        },
+        pvp: {
+          label: 'PvP без полного дропа',
+          help: 'Игроки могут атаковать друг друга, но рюкзак при смерти не выпадает полностью.'
+        },
+        pvpFullDrop: {
+          label: 'PvP с полным дропом',
+          help: 'Игроки могут атаковать друг друга. При смерти содержимое рюкзака выпадает на землю.'
+        }
+      };
+
+      const GROUND_TEXTURES = {
+        traderYard: {
+          name: 'PBR земля Старого Клима',
+          tileMeters: 8,
+          color: 0xffffff,
+          base: '/assets/textures/materials_ground_dirt_01/trader_yard_ground_base_v759.webp',
+          normal: '/assets/textures/materials_ground_dirt_01/trader_yard_ground_normal_v759.webp',
+          roughness: '/assets/textures/materials_ground_dirt_01/trader_yard_ground_roughness_v759.webp',
+          normalScale: 0.46,
+          bumpScale: 0
+        },
+        reliefWasteland: {
+          name: 'PBR рельефная пустошь',
+          tileMeters: 9,
+          color: 0xffffff,
+          base: '/assets/textures/materials_ground_dirt_01/relief_ground_base_1k_v762.webp',
+          normal: '/assets/textures/materials_ground_dirt_01/relief_ground_normal_1k_v762.webp',
+          roughness: '/assets/textures/materials_ground_dirt_01/relief_ground_roughness_1k_v762.webp',
+          ao: '/assets/textures/materials_ground_dirt_01/relief_ground_ao_1k_v762.webp',
+          height: '/assets/textures/materials_ground_dirt_01/relief_ground_height_1k_v762.webp',
+          normalScale: 0.72,
+          bumpScale: 0.032
+        },
+        destroyedConcrete: {
+          name: 'PBR разрушенный бетон',
+          tileMeters: 7,
+          color: 0xffffff,
+          base: '/assets/textures/materials_wood_bricks_01/destroyed_concrete_base_v770.webp',
+          normal: '/assets/textures/materials_wood_bricks_01/destroyed_concrete_normal_v770.webp',
+          roughness: '/assets/textures/materials_wood_bricks_01/destroyed_concrete_roughness_v770.webp',
+          ao: '/assets/textures/materials_wood_bricks_01/destroyed_concrete_ao_v770.webp',
+          height: '/assets/textures/materials_wood_bricks_01/destroyed_concrete_height_v770.webp',
+          normalScale: 0.52,
+          bumpScale: 0.020
+        }
+      };
+
+      const GROUND_PRESETS = [
+        { id: 'caravanYard', label: 'Стоянка Старого Клима', texture: 'traderYard', base: 0x8d7350, high: 0xc7aa75, low: 0x4b3826, lines: 16 },
+        { id: 'ashForest', label: 'Пепельная земля', texture: 'reliefWasteland', tint: 0x8d8772, base: 0x756c59, high: 0xa69777, low: 0x3d372d, lines: 12 },
+        { id: 'scrapDust', label: 'Пыль и металлолом', texture: 'reliefWasteland', tint: 0xa68c68, base: 0x7a6647, high: 0xb09763, low: 0x3a3022, lines: 18 },
+        { id: 'relayConcrete', label: 'Бетон станции', texture: 'destroyedConcrete', tint: 0xbab2a0, base: 0x69675e, high: 0x9a9688, low: 0x34332e, lines: 8 },
+        { id: 'encounterDust', label: 'Случайная пустошь', texture: 'reliefWasteland', tint: 0xb59768, base: 0x8a7049, high: 0xc0a36d, low: 0x44341f, lines: 14 },
+        { id: 'ashGrove', label: 'Пепельная роща', texture: 'reliefWasteland', tint: 0x8f876d, base: 0x706b55, high: 0xa1946e, low: 0x39372a, lines: 14 },
+        { id: 'dryBasin', label: 'Сухая низина', texture: 'reliefWasteland', tint: 0xc4a06e, base: 0x9a8052, high: 0xd0b476, low: 0x4c3a22, lines: 10 },
+        { id: 'ruinedRoad', label: 'Разбитая дорога', texture: 'destroyedConcrete', tint: 0x928875, base: 0x655e50, high: 0x9c8f75, low: 0x2e2c27, lines: 6 }
+      ];
+
+      const MODEL_LIBRARY = [
+        { key: 'traderWallBlock', file: 'trader_wall_block.glb', name: 'Блок стены Старого Клима', category: 'Блоки Старого Клима', collision: 'solid' },
+        { key: 'traderWindowBlock', file: 'trader_window_block.glb', name: 'Оконный блок Старого Клима', category: 'Блоки Старого Клима', collision: 'solid' },
+        { key: 'traderFloorSlab', file: 'trader_floor_slab.glb', name: 'Плита пола Старого Клима', category: 'Блоки Старого Клима', collision: 'none' },
+        { key: 'traderRoofBlock', file: 'trader_roof_block.glb', name: 'Блок крыши Старого Клима', category: 'Блоки Старого Клима', collision: 'solid' },
+        { key: 'wallWoodBlock', file: 'mod_wall_wood.glb', name: 'Стена: дерево', category: 'Модульные блоки', collision: 'solid' },
+        { key: 'wallBrickBlock', file: 'mod_wall_brick.glb', name: 'Стена: кирпич', category: 'Модульные блоки', collision: 'solid' },
+        { key: 'wallMetalBlock', file: 'mod_wall_metal.glb', name: 'Стена: металл', category: 'Модульные блоки', collision: 'solid' },
+        { key: 'roofWoodBlock', file: 'mod_roof_wood.glb', name: 'Крыша: дерево', category: 'Модульные блоки', collision: 'solid' },
+        { key: 'roofMetalBlock', file: 'mod_roof_metal.glb', name: 'Крыша: металл', category: 'Модульные блоки', collision: 'solid' },
+        { key: 'floorWoodBlock', file: 'mod_floor_wood.glb', name: 'Пол: дерево', category: 'Модульные блоки', collision: 'none' },
+        { key: 'floorTileBlock', file: 'mod_floor_tile.glb', name: 'Пол: плитка', category: 'Модульные блоки', collision: 'none' },
+        { key: 'wastelandShack', file: 'wasteland_shack.glb', name: 'Хижина пустоши', category: 'Здания', collision: 'solid' },
+        { key: 'storageLeanTo', file: 'storage_lean_to.glb', name: 'Навес склада', category: 'Здания', collision: 'solid' },
+        { key: 'scrapWatchTower', file: 'scrap_watch_tower.glb', name: 'Сторожевая вышка', category: 'Здания', collision: 'solid' },
+        { key: 'watchPost', file: 'watch_post.glb', name: 'Пост наблюдения', category: 'Здания', collision: 'cover' },
+        { key: 'openScrapGate', file: 'open_scrap_gate.glb', name: 'Открытые ворота', category: 'Ограды', collision: 'solid' },
+        { key: 'scrapWallSegment', file: 'scrap_wall_segment.glb', name: 'Стенка из металлолома', category: 'Ограды', collision: 'cover' },
+        { key: 'fenceSegment', file: 'fence_segment.glb', name: 'Забор', category: 'Ограды', collision: 'cover' },
+        { key: 'concreteWall', file: 'concrete_wall.glb', name: 'Бетонная стена', category: 'Ограды', collision: 'cover' },
+        { key: 'lowRuinedWall', file: 'low_ruined_wall.glb', name: 'Низкая руина', category: 'Ограды', collision: 'cover' },
+        { key: 'roadblockBarricade', file: 'roadblock_barricade.glb', name: 'Баррикада', category: 'Ограды', collision: 'cover' },
+        { key: 'crate', file: 'crate.glb', name: 'Ящик', category: 'Предметы', collision: 'solid' },
+        { key: 'storageChest', file: 'storage_chest.glb', name: 'Хранилище', category: 'Интерактивные', collision: 'solid' },
+        { key: 'jobBoard', file: 'job_board.glb', name: 'Доска заданий', category: 'Интерактивные', collision: 'solid' },
+        { key: 'tradeMachine', file: 'trade_machine.glb', name: 'Торговый автомат', category: 'Интерактивные', collision: 'solid' },
+        { key: 'traderNpc', file: 'trader_npc.glb', name: 'Старый Клим - торговец', category: 'НПС: дружественные', collision: 'solid' },
+        { key: 'caravanMerchant', file: 'npc_caravan_trader.glb', name: 'Караванщик - торговец', category: 'НПС: дружественные', collision: 'solid' },
+        { key: 'caravanGuard', file: 'npc_caravan_guard.glb', name: 'Охранник каравана', category: 'НПС: дружественные', collision: 'solid' },
+        { key: 'klimPatrolGuard', file: 'npc_klim_guard.glb', name: 'Патруль Старого Клима', category: 'НПС: дружественные', collision: 'solid' },
+        { key: 'wastelandSettler', file: 'npc_wasteland_settler.glb', name: 'Поселенец пустоши', category: 'НПС: дружественные', collision: 'solid' },
+        { key: 'friendlyBrahmin', file: 'brahmin.glb', name: 'Брамин', category: 'НПС: дружественные', collision: 'solid' },
+        { key: 'enemyRaider', file: 'npc_raider.glb', name: 'Рейдер', category: 'НПС: враждебные', collision: 'solid' },
+        { key: 'enemyGhoul', file: 'npc_ghoul.glb', name: 'Гуль', category: 'НПС: враждебные', collision: 'solid' },
+        { key: 'enemySuperMutant', file: 'npc_super_mutant.glb', name: 'Супермутант', category: 'НПС: враждебные', collision: 'solid' },
+        { key: 'enemyAshWolf', file: 'npc_ash_wolf.glb', name: 'Пепельный волк', category: 'НПС: враждебные', collision: 'solid' },
+        { key: 'enemyRadscorpion', file: 'npc_radscorpion.glb', name: 'Радскорпион', category: 'НПС: враждебные', collision: 'solid' },
+        { key: 'enemyMutantAnt', file: 'npc_mutant_ant.glb', name: 'Большой мутировавший муравей', category: 'НПС: враждебные', collision: 'solid' },
+        { key: 'enemyGecko', file: 'npc_gecko.glb', name: 'Геккон пустоши', category: 'НПС: враждебные', collision: 'solid' },
+        { key: 'enemyFireGecko', file: 'npc_fire_gecko.glb', name: 'Огненный геккон', category: 'НПС: враждебные', collision: 'solid' },
+        { key: 'rustBarrel', file: 'rust_barrel_v1.glb', name: 'Ржавая бочка', category: 'Предметы', collision: 'cover' },
+        { key: 'barrelCluster', file: 'barrel_cluster.glb', name: 'Группа бочек', category: 'Предметы', collision: 'cover' },
+        { key: 'tireStack', file: 'tire_stack.glb', name: 'Покрышки', category: 'Предметы', collision: 'none' },
+        { key: 'scrapHeap', file: 'scrap_heap.glb', name: 'Куча металлолома', category: 'Предметы', collision: 'none' },
+        { key: 'cargoStack', file: 'cargo_stack.glb', name: 'Грузовой штабель', category: 'Предметы', collision: 'solid' },
+        { key: 'armoryRack', file: 'armory_rack.glb', name: 'Стойка оружия', category: 'Предметы', collision: 'solid' },
+        { key: 'cotBed', file: 'cot_bed.glb', name: 'Койка НПС', category: 'Предметы', collision: 'none' },
+        { key: 'workshopBench', file: 'workshop_bench.glb', name: 'Верстак', category: 'Предметы', collision: 'solid' },
+        { key: 'craftStationAmmo', file: 'craft_station_ammo.glb', name: 'Патронный станок', category: 'Интерактивные', collision: 'solid' },
+        { key: 'craftStationWeapon', file: 'craft_station_weapon.glb', name: 'Оружейный верстак', category: 'Интерактивные', collision: 'solid' },
+        { key: 'craftStationTools', file: 'craft_station_tools.glb', name: 'Инструментальный верстак', category: 'Интерактивные', collision: 'solid' },
+        { key: 'craftStationRepair', file: 'craft_station_repair.glb', name: 'Ремонтный верстак', category: 'Интерактивные', collision: 'solid' },
+        { key: 'craftStationEnergy', file: 'craft_station_energy.glb', name: 'Энергетический стенд', category: 'Интерактивные', collision: 'solid' },
+        { key: 'craftStationChem', file: 'craft_station_chem.glb', name: 'Химический стол', category: 'Интерактивные', collision: 'solid' },
+        { key: 'carWreck', file: 'car_wreck.glb', name: 'Остов машины', category: 'Пустошь', collision: 'cover' },
+        { key: 'asphaltSlab', file: 'asphalt_slab.glb', name: 'Плита асфальта', category: 'Пустошь', collision: 'none' },
+        { key: 'rubbleRock', file: 'rubble_rock.glb', name: 'Камни', category: 'Пустошь', collision: 'none' },
+        { key: 'oreOutcrop', file: 'ore_outcrop.glb', name: 'Рудная жила', category: 'Пустошь', collision: 'resource' },
+        { key: 'oilPumpJack', file: 'oil_pump_jack.glb', name: 'Нефтяная качалка', category: 'Пустошь', collision: 'resource' },
+        { key: 'deadwood', file: 'deadwood.glb', name: 'Сухой валежник', category: 'Пустошь', collision: 'resource' },
+        { key: 'deadTreeA', file: 'dead_tree_a.glb', name: 'Мертвое дерево A', category: 'Пустошь', collision: 'none' },
+        { key: 'deadTreeB', file: 'dead_tree_b.glb', name: 'Мертвое дерево B', category: 'Пустошь', collision: 'none' },
+        { key: 'deadTreeC', file: 'dead_tree_c.glb', name: 'Мертвое дерево C', category: 'Пустошь', collision: 'none' },
+        { key: 'dryBush', file: 'dry_bush.glb', name: 'Сухой куст', category: 'Пустошь', collision: 'none' },
+        { key: 'cactus', file: 'cactus.glb', name: 'Кактус', category: 'Пустошь', collision: 'none' },
+        { key: 'highwaySign', file: 'highway_sign.glb', name: 'Дорожный знак', category: 'Декор', collision: 'none' },
+        { key: 'ruinedBillboard', file: 'ruined_billboard.glb', name: 'Рекламный щит', category: 'Декор', collision: 'none' },
+        { key: 'utilityPole', file: 'utility_pole.glb', name: 'Столб', category: 'Декор', collision: 'none' },
+        { key: 'relayAntenna', file: 'relay_antenna.glb', name: 'Антенна', category: 'Декор', collision: 'solid' },
+        { key: 'waterTank', file: 'water_tank.glb', name: 'Водяной бак', category: 'Декор', collision: 'solid' },
+        { key: 'campfireRest', file: 'campfire_rest.glb', name: 'Костер', category: 'Декор', collision: 'none' },
+        { key: 'latrineOuthouse', file: 'latrine_outhouse.glb', name: 'Уборная', category: 'Декор', collision: 'solid' },
+        { key: 'gardenPatch', file: 'garden_patch.glb', name: 'Грядка', category: 'Декор', collision: 'none' },
+        { key: 'brahminPen', file: 'brahmin_pen.glb', name: 'Загон брамина', category: 'Декор', collision: 'solid' },
+        { key: 'traderAwning', file: 'trader_awning.glb', name: 'Тент торговца', category: 'Декор', collision: 'none' }
+      ].map(row => ({ ...row, url: '/assets/models/wasteland/' + row.file }));
+
+      const MODEL_RULES = {
+        traderWallBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 1,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'wall', 'trader-cutaway'],
+          occlusion: { mode: 'traderCutaway', role: 'wall', tileSized: true, blockSize: 2, bottomY: 0, topY: 1 },
+          vision: { blocks: true }
+        },
+        traderWindowBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 1,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'window', 'trader-cutaway'],
+          occlusion: { mode: 'traderCutaway', role: 'window', tileSized: true, blockSize: 2, bottomY: 0, topY: 1, losBlocking: false },
+          vision: { blocks: false }
+        },
+        traderFloorSlab: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 0.12,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'floor'],
+          occlusion: null,
+          vision: { blocks: false }
+        },
+        traderRoofBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 0.20,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'roof', 'trader-cutaway'],
+          occlusion: { mode: 'traderCutaway', role: 'roof', tileSized: true, blockSize: 2, thickness: 0.20, proceduralCenterY: 5.32 },
+          vision: { blocks: false }
+        },
+        wallWoodBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 1,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'wall', 'wood', 'trader-cutaway'],
+          occlusion: { mode: 'traderCutaway', role: 'wall', tileSized: true, blockSize: 2, bottomY: 0, topY: 1 },
+          vision: { blocks: true }
+        },
+        wallBrickBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 1,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'wall', 'brick', 'trader-cutaway'],
+          occlusion: { mode: 'traderCutaway', role: 'wall', tileSized: true, blockSize: 2, bottomY: 0, topY: 1 },
+          vision: { blocks: true }
+        },
+        wallMetalBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 1,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'wall', 'metal', 'trader-cutaway'],
+          occlusion: { mode: 'traderCutaway', role: 'wall', tileSized: true, blockSize: 2, bottomY: 0, topY: 1 },
+          vision: { blocks: true }
+        },
+        roofWoodBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 0.20,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'roof', 'wood', 'trader-cutaway'],
+          occlusion: { mode: 'traderCutaway', role: 'roof', tileSized: true, blockSize: 2, thickness: 0.20, proceduralCenterY: 5.32 },
+          vision: { blocks: false }
+        },
+        roofMetalBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 0.20,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'roof', 'metal', 'trader-cutaway'],
+          occlusion: { mode: 'traderCutaway', role: 'roof', tileSized: true, blockSize: 2, thickness: 0.20, proceduralCenterY: 5.32 },
+          vision: { blocks: false }
+        },
+        floorWoodBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 0.12,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'floor', 'wood'],
+          occlusion: null,
+          vision: { blocks: false }
+        },
+        floorTileBlock: {
+          tileSize: 2,
+          footprint: { x: 2, z: 2 },
+          height: 0.12,
+          lockScale: true,
+          groundSnap: true,
+          tags: ['building', 'module', 'floor', 'tile'],
+          occlusion: null,
+          vision: { blocks: false }
+        }
+      };
+
+      const MODEL_PLACEMENT_RULES = {
+        wastelandShack: { tileSize: 2, footprint: { x: 6, z: 6 }, height: 2.4, groundSnap: true, buildingModule: false },
+        storageLeanTo: { tileSize: 2, footprint: { x: 6, z: 4 }, height: 2.2, groundSnap: true, buildingModule: false },
+        scrapWatchTower: { tileSize: 2, footprint: { x: 4, z: 4 }, height: 4.2, groundSnap: true, buildingModule: false },
+        watchPost: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.4, groundSnap: true, buildingModule: false },
+        openScrapGate: { tileSize: 2, footprint: { x: 6, z: 2 }, height: 2.2, groundSnap: true, buildingModule: false },
+        scrapWallSegment: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.6, groundSnap: true, buildingModule: false },
+        fenceSegment: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.3, groundSnap: true, buildingModule: false },
+        concreteWall: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.4, groundSnap: true, buildingModule: false },
+        lowRuinedWall: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.1, groundSnap: true, buildingModule: false },
+        roadblockBarricade: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.2, groundSnap: true, buildingModule: false },
+        crate: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1, groundSnap: true, buildingModule: false },
+        storageChest: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.9, groundSnap: true, buildingModule: false },
+        jobBoard: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.9, groundSnap: true, buildingModule: false },
+        tradeMachine: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.8, groundSnap: true, buildingModule: false },
+        rustBarrel: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.15, groundSnap: true, buildingModule: false },
+        barrelCluster: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.2, groundSnap: true, buildingModule: false },
+        tireStack: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.8, groundSnap: true, buildingModule: false },
+        scrapHeap: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.65, groundSnap: true, buildingModule: false },
+        cargoStack: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.35, groundSnap: true, buildingModule: false },
+        armoryRack: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.4, groundSnap: true, buildingModule: false },
+        cotBed: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.55, groundSnap: true, buildingModule: false, tags: ['sleep', 'bed', 'cot', 'personal-bed'] },
+        workshopBench: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.1, groundSnap: true, buildingModule: false },
+        craftStationAmmo: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.9, groundSnap: true, buildingModule: false },
+        craftStationWeapon: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 2.0, groundSnap: true, buildingModule: false },
+        craftStationTools: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.9, groundSnap: true, buildingModule: false },
+        craftStationRepair: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 2.3, groundSnap: true, buildingModule: false },
+        craftStationEnergy: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 2.0, groundSnap: true, buildingModule: false },
+        craftStationChem: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.9, groundSnap: true, buildingModule: false },
+        carWreck: { tileSize: 2, footprint: { x: 6, z: 4 }, height: 1.7, groundSnap: true, buildingModule: false },
+        asphaltSlab: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.06, groundSnap: true, buildingModule: false },
+        rubbleRock: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.7, groundSnap: true, buildingModule: false },
+        oreOutcrop: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.1, groundSnap: true, buildingModule: false },
+        oilPumpJack: { tileSize: 2, footprint: { x: 4, z: 4 }, height: 2.4, groundSnap: true, buildingModule: false },
+        deadwood: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.45, groundSnap: true, buildingModule: false },
+        deadTreeA: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 2.6, groundSnap: true, buildingModule: false },
+        deadTreeB: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 2.4, groundSnap: true, buildingModule: false },
+        deadTreeC: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 2.2, groundSnap: true, buildingModule: false },
+        dryBush: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.7, groundSnap: true, buildingModule: false },
+        cactus: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.8, groundSnap: true, buildingModule: false },
+        highwaySign: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 2.4, groundSnap: true, buildingModule: false },
+        ruinedBillboard: { tileSize: 2, footprint: { x: 6, z: 2 }, height: 3.2, groundSnap: true, buildingModule: false },
+        utilityPole: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 4.2, groundSnap: true, buildingModule: false },
+        relayAntenna: { tileSize: 2, footprint: { x: 4, z: 4 }, height: 5.2, groundSnap: true, buildingModule: false },
+        waterTank: { tileSize: 2, footprint: { x: 4, z: 4 }, height: 3.1, groundSnap: true, buildingModule: false },
+        campfireRest: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.5, groundSnap: true, buildingModule: false, tags: ['rest', 'social', 'campfire'] },
+        latrineOuthouse: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 2.2, groundSnap: true, buildingModule: false },
+        gardenPatch: { tileSize: 2, footprint: { x: 4, z: 4 }, height: 0.25, groundSnap: true, buildingModule: false },
+        brahminPen: { tileSize: 2, footprint: { x: 6, z: 4 }, height: 1.4, groundSnap: true, buildingModule: false },
+        traderAwning: { tileSize: 2, footprint: { x: 4, z: 4 }, height: 2.5, groundSnap: true, buildingModule: false },
+        traderNpc: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.8, groundSnap: true, buildingModule: false },
+        caravanMerchant: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.8, groundSnap: true, buildingModule: false },
+        caravanGuard: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.85, groundSnap: true, buildingModule: false },
+        klimPatrolGuard: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.85, groundSnap: true, buildingModule: false },
+        wastelandSettler: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.75, groundSnap: true, buildingModule: false },
+        friendlyBrahmin: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 1.7, groundSnap: true, buildingModule: false },
+        enemyRaider: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.8, groundSnap: true, buildingModule: false },
+        enemyGhoul: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 1.65, groundSnap: true, buildingModule: false },
+        enemySuperMutant: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 2.15, groundSnap: true, buildingModule: false },
+        enemyAshWolf: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.95, groundSnap: true, buildingModule: false },
+        enemyRadscorpion: { tileSize: 2, footprint: { x: 4, z: 2 }, height: 0.9, groundSnap: true, buildingModule: false },
+        enemyMutantAnt: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.85, groundSnap: true, buildingModule: false },
+        enemyGecko: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.9, groundSnap: true, buildingModule: false },
+        enemyFireGecko: { tileSize: 2, footprint: { x: 2, z: 2 }, height: 0.95, groundSnap: true, buildingModule: false }
+      };
+
+      const DEFAULT_MODEL_PLACEMENT_RULE = {
+        tileSize: 2,
+        footprint: { x: 2, z: 2 },
+        height: 1,
+        groundSnap: true,
+        buildingModule: false,
+        lockScale: true
+      };
+
+      const MODEL_VISION_RULES = {
+        traderWallBlock: { mode: 'block' },
+        wallWoodBlock: { mode: 'block' },
+        wallBrickBlock: { mode: 'block' },
+        wallMetalBlock: { mode: 'block' },
+        wastelandShack: { mode: 'block' },
+        storageLeanTo: { mode: 'block' },
+        scrapWatchTower: { mode: 'block' },
+        latrineOuthouse: { mode: 'block' },
+        waterTank: { mode: 'block' },
+        traderWindowBlock: { mode: 'none' },
+        traderFloorSlab: { mode: 'none' },
+        traderRoofBlock: { mode: 'none' },
+        roofWoodBlock: { mode: 'none' },
+        roofMetalBlock: { mode: 'none' },
+        floorWoodBlock: { mode: 'none' },
+        floorTileBlock: { mode: 'none' },
+        asphaltSlab: { mode: 'none' },
+        traderAwning: { mode: 'none' },
+        openScrapGate: { mode: 'cover' },
+        watchPost: { mode: 'cover' },
+        scrapWallSegment: { mode: 'cover' },
+        fenceSegment: { mode: 'cover' },
+        concreteWall: { mode: 'cover' },
+        lowRuinedWall: { mode: 'cover' },
+        roadblockBarricade: { mode: 'cover' },
+        crate: { mode: 'cover' },
+        storageChest: { mode: 'cover' },
+        jobBoard: { mode: 'cover' },
+        tradeMachine: { mode: 'cover' },
+        rustBarrel: { mode: 'cover' },
+        barrelCluster: { mode: 'cover' },
+        cargoStack: { mode: 'cover' },
+        armoryRack: { mode: 'cover' },
+        cotBed: { mode: 'none' },
+        workshopBench: { mode: 'cover' },
+        craftStationAmmo: { mode: 'cover' },
+        craftStationWeapon: { mode: 'cover' },
+        craftStationTools: { mode: 'cover' },
+        craftStationRepair: { mode: 'cover' },
+        craftStationEnergy: { mode: 'cover' },
+        craftStationChem: { mode: 'cover' },
+        carWreck: { mode: 'cover' },
+        oreOutcrop: { mode: 'cover' },
+        oilPumpJack: { mode: 'cover' },
+        deadwood: { mode: 'cover' },
+        relayAntenna: { mode: 'cover' },
+        brahminPen: { mode: 'cover' }
+      };
+
+      const MODEL_ENTITY_RULES = {
+        storageChest: {
+          kind: 'container',
+          role: 'storage',
+          containerType: 'storage',
+          tags: ['interactive', 'storage', 'container']
+        },
+        jobBoard: {
+          kind: 'jobBoard',
+          role: 'worldTaskBoard',
+          tags: ['interactive', 'jobBoard', 'questBoard']
+        },
+        tradeMachine: {
+          kind: 'tradeMachine',
+          role: 'tradeMachine',
+          traderProfile: 'outpostMachine',
+          caps: 350,
+          buyInterests: ['materials', 'tools', 'aid', 'ammo'],
+          stock: [
+            { id: 'water', price: 6, qty: 12 },
+            { id: 'stim', price: 13, qty: 6 },
+            { id: 'medkit', price: 24, qty: 3 },
+            { id: 'ammo9', price: 3, qty: 90 },
+            { id: 'ammo556', price: 5, qty: 60 },
+            { id: 'shotgunShell', price: 6, qty: 24 },
+            { id: 'repairKit', price: 22, qty: 3 },
+            { id: 'oil', price: 10, qty: 5 }
+          ],
+          tags: ['interactive', 'tradeMachine', 'vendingMachine']
+        },
+        traderNpc: {
+          kind: 'npc',
+          role: 'merchant',
+          faction: 'old_klim',
+          hostileToPlayer: false,
+          stationary: true,
+          traderProfile: 'oldKlim',
+          tags: ['npc', 'friendly', 'merchant', 'trader']
+        },
+        caravanMerchant: {
+          kind: 'npc',
+          role: 'merchant',
+          faction: 'caravan',
+          hostileToPlayer: false,
+          stationary: true,
+          traderProfile: 'caravan',
+          tags: ['npc', 'friendly', 'merchant', 'caravan']
+        },
+        caravanGuard: {
+          kind: 'npc',
+          role: 'guard',
+          faction: 'caravan',
+          hostileToPlayer: false,
+          tags: ['npc', 'friendly', 'guard', 'caravan']
+        },
+        klimPatrolGuard: {
+          kind: 'npc',
+          role: 'guard',
+          faction: 'klim_patrol',
+          hostileToPlayer: false,
+          tags: ['npc', 'friendly', 'guard', 'klim_patrol']
+        },
+        wastelandSettler: {
+          kind: 'npc',
+          role: 'civilian',
+          faction: 'settlers',
+          hostileToPlayer: false,
+          tags: ['npc', 'friendly', 'civilian']
+        },
+        friendlyBrahmin: {
+          kind: 'npc',
+          role: 'animal',
+          species: 'brahmin',
+          faction: 'caravan',
+          hostileToPlayer: false,
+          canDialogue: false,
+          tags: ['npc', 'friendly', 'animal', 'brahmin']
+        },
+        enemyRaider: {
+          kind: 'npc',
+          role: 'raider',
+          species: 'raider',
+          faction: 'raiders',
+          enemyType: 'raider',
+          hostileToPlayer: true,
+          tags: ['npc', 'enemy', 'hostile', 'raider']
+        },
+        enemyGhoul: {
+          kind: 'npc',
+          role: 'monster',
+          species: 'ghoul',
+          faction: 'ghouls',
+          enemyType: 'ghoul',
+          hostileToPlayer: true,
+          tags: ['npc', 'enemy', 'hostile', 'ghoul']
+        },
+        enemySuperMutant: {
+          kind: 'npc',
+          role: 'monster',
+          species: 'superMutant',
+          faction: 'super_mutants',
+          enemyType: 'superMutant',
+          hostileToPlayer: true,
+          tags: ['npc', 'enemy', 'hostile', 'super_mutant']
+        },
+        enemyAshWolf: {
+          kind: 'npc',
+          role: 'monster',
+          species: 'ashWolf',
+          faction: 'ash_wolves',
+          enemyType: 'ashWolf',
+          hostileToPlayer: true,
+          tags: ['npc', 'enemy', 'hostile', 'ash_wolf']
+        },
+        enemyRadscorpion: {
+          kind: 'npc',
+          role: 'monster',
+          species: 'radScorpion',
+          faction: 'radscorpions',
+          enemyType: 'radScorpion',
+          hostileToPlayer: true,
+          tags: ['npc', 'enemy', 'hostile', 'radscorpion']
+        },
+        enemyMutantAnt: {
+          kind: 'npc',
+          role: 'monster',
+          species: 'mutantAnt',
+          faction: 'mutant_ants',
+          enemyType: 'mutantAnt',
+          hostileToPlayer: true,
+          tags: ['npc', 'enemy', 'hostile', 'mutant_ant']
+        },
+        enemyGecko: {
+          kind: 'npc',
+          role: 'monster',
+          species: 'gecko',
+          faction: 'geckos',
+          enemyType: 'gecko',
+          hostileToPlayer: true,
+          tags: ['npc', 'enemy', 'hostile', 'gecko']
+        },
+        enemyFireGecko: {
+          kind: 'npc',
+          role: 'monster',
+          species: 'fireGecko',
+          faction: 'geckos',
+          enemyType: 'fireGecko',
+          hostileToPlayer: true,
+          damageType: 'fire',
+          tags: ['npc', 'enemy', 'hostile', 'fire_gecko']
+        }
+      };
+
+      const NPC_AUTO_GENERATION_PROFILES = {
+        traderNpc: {
+          profile: 'oldKlimMerchant',
+          statProfile: 'merchantVeteran',
+          equipmentProfile: 'oldKlimMerchant',
+          tradeProfile: 'oldKlim',
+          lootProfile: 'merchant'
+        },
+        caravanMerchant: {
+          profile: 'caravanMerchant',
+          statProfile: 'merchant',
+          equipmentProfile: 'caravanMerchant',
+          tradeProfile: 'caravan',
+          lootProfile: 'caravanMerchant'
+        },
+        caravanGuard: {
+          profile: 'caravanGuard',
+          statProfile: 'guard',
+          equipmentProfile: 'caravanGuard',
+          tradeProfile: 'guardCaravan',
+          lootProfile: 'guard'
+        },
+        klimPatrolGuard: {
+          profile: 'klimPatrolGuard',
+          statProfile: 'eliteGuard',
+          equipmentProfile: 'klimPatrolGuard',
+          tradeProfile: 'guardKlimPatrol',
+          lootProfile: 'guard'
+        },
+        wastelandSettler: {
+          profile: 'wastelandSettler',
+          statProfile: 'civilian',
+          equipmentProfile: 'settler',
+          lootProfile: 'civilian'
+        },
+        friendlyBrahmin: {
+          profile: 'brahmin',
+          statProfile: 'brahmin',
+          equipmentProfile: 'none',
+          lootProfile: 'brahmin'
+        },
+        enemyRaider: {
+          profile: 'raider',
+          statProfile: 'raider',
+          equipmentProfile: 'raider',
+          lootProfile: 'raider'
+        },
+        enemyGhoul: {
+          profile: 'ghoul',
+          statProfile: 'ghoul',
+          equipmentProfile: 'natural',
+          lootProfile: 'ghoul'
+        },
+        enemySuperMutant: {
+          profile: 'superMutant',
+          statProfile: 'superMutant',
+          equipmentProfile: 'superMutant',
+          lootProfile: 'superMutant'
+        },
+        enemyAshWolf: {
+          profile: 'ashWolf',
+          statProfile: 'ashWolf',
+          equipmentProfile: 'natural',
+          lootProfile: 'ashWolf'
+        },
+        enemyRadscorpion: {
+          profile: 'radscorpion',
+          statProfile: 'radscorpion',
+          equipmentProfile: 'natural',
+          lootProfile: 'radscorpion'
+        },
+        enemyMutantAnt: {
+          profile: 'mutantAnt',
+          statProfile: 'mutantAnt',
+          equipmentProfile: 'natural',
+          lootProfile: 'mutantAnt'
+        },
+        enemyGecko: {
+          profile: 'gecko',
+          statProfile: 'gecko',
+          equipmentProfile: 'natural',
+          lootProfile: 'gecko'
+        },
+        enemyFireGecko: {
+          profile: 'fireGecko',
+          statProfile: 'fireGecko',
+          equipmentProfile: 'natural',
+          lootProfile: 'fireGecko'
+        }
+      };
+
+      const dom = {};
+      [
+        'viewport', 'locationFileSelect', 'refreshLocations', 'loadLocation', 'saveLocationFile', 'locationFolderLabel',
+        'modelSearch', 'categoryFilter', 'modelPreview', 'modelPreviewStatus', 'modelPreviewName', 'modelPreviewFile',
+        'modelList', 'modelCounter', 'locationId', 'locationName', 'locationSeed',
+        'locationKind', 'locationKindHelp', 'locationSafe', 'locationPvpHelp', 'groundPreset', 'mapWidth', 'mapDepth', 'gridStep', 'snapToggle', 'setSpawnButton',
+        'setEntryButton', 'movePointButton', 'pointCounter', 'pointEditor', 'pointKindLabel', 'pointSelectionLabel',
+        'pointLabel', 'pointRadiusLabel', 'pointRadius', 'pointTargetField', 'pointTarget',
+        'pointEntryField', 'pointEntryKey', 'pointHelp', 'addTransitionButton', 'addWorldZoneButton', 'deletePointButton', 'pointList',
+        'inspectorEmpty', 'inspector', 'selectedName', 'objectLabel', 'objectX', 'objectY', 'objectZ',
+        'objectScaleX', 'objectScaleY', 'objectScaleZ', 'objectRot', 'objectCollision', 'objectCollisionHelp', 'objectVisionHelp', 'objectTags',
+        'rotateLeft', 'rotateRight', 'duplicateObject', 'deleteObject', 'centerCamera', 'objectList',
+        'objectCounter', 'jsonOutput', 'copyJson', 'downloadJson', 'importJson', 'saveDraft', 'clearScene',
+        'cursorReadout', 'sceneReadout', 'toast'
+      ].forEach(id => { dom[id] = document.getElementById(id); });
+
+      const modelByKey = new Map(MODEL_LIBRARY.map(model => [model.key, model]));
+      const modelByUrl = new Map(MODEL_LIBRARY.map(model => [model.url, model]));
+      const groundById = new Map(GROUND_PRESETS.map(row => [row.id, row]));
+
+      const state = {
+        selectedModelKey: 'traderWallBlock',
+        selectedObjectId: null,
+        selectedPoint: null,
+        markerMode: null,
+        snap: true,
+        objects: [],
+        transitions: [],
+        worldZones: [],
+        nextObjectNumber: 1,
+        nextPointNumber: 1,
+        spawn: tileToWorldPoint({ tx: 19, tz: 19 }),
+        entry: tileToWorldPoint({ tx: 19, tz: 19 }),
+        primaryEntryKey: 'entryFromWorld',
+        rawLocation: {},
+        locationSummaries: [],
+        cameraYaw: -0.78,
+        cameraPitch: 0.76,
+        cameraDistance: 54,
+        cameraTarget: new THREE.Vector3(0, 0, 0),
+        pointer: new THREE.Vector2()
+      };
+
+      const loader = new THREE.GLTFLoader();
+      const textureLoader = new THREE.TextureLoader();
+      const modelCache = new Map();
+      const raycaster = new THREE.Raycaster();
+      const mouseDown = { active: false, x: 0, y: 0, button: 0, camera: false, draggingObject: false, objectId: null, undoRecorded: false };
+      const undoHistory = { stack: [], restoring: false, max: 80 };
+
+      const renderer = new THREE.WebGLRenderer({ canvas: dom.viewport, antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      if ('sRGBEncoding' in THREE) renderer.outputEncoding = THREE.sRGBEncoding;
+
+      const previewRenderer = new THREE.WebGLRenderer({ canvas: dom.modelPreview, antialias: true, alpha: true });
+      previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      previewRenderer.setClearColor(0x000000, 0);
+      if ('sRGBEncoding' in THREE) previewRenderer.outputEncoding = THREE.sRGBEncoding;
+
+      const previewScene = new THREE.Scene();
+      const previewCamera = new THREE.PerspectiveCamera(34, 1, 0.1, 80);
+      previewCamera.position.set(0, 1.45, 4.6);
+      const previewRoot = new THREE.Group();
+      previewScene.add(previewRoot);
+      previewScene.add(new THREE.HemisphereLight(0xe8d8a8, 0x172012, 1.65));
+      const previewKeyLight = new THREE.DirectionalLight(0xffd58a, 2.2);
+      previewKeyLight.position.set(-3.5, 5.0, 3.0);
+      previewScene.add(previewKeyLight);
+      const previewFillLight = new THREE.DirectionalLight(0x8fb2ff, 0.75);
+      previewFillLight.position.set(3.5, 2.5, -4.0);
+      previewScene.add(previewFillLight);
+      const previewFloor = new THREE.Mesh(
+        new THREE.CircleBufferGeometry(1.65, 48),
+        new THREE.MeshBasicMaterial({ color: 0xf0d47f, transparent: true, opacity: 0.08, side: THREE.DoubleSide })
+      );
+      previewFloor.rotation.x = -Math.PI / 2;
+      previewFloor.position.y = -0.015;
+      previewScene.add(previewFloor);
+      const previewState = {
+        key: '',
+        ticket: 0,
+        radius: 1,
+        centerY: 0.6
+      };
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x090b08);
+      scene.fog = new THREE.Fog(0x090b08, 72, 170);
+
+      const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 280);
+      const objectRoot = new THREE.Group();
+      const pointRoot = new THREE.Group();
+      scene.add(objectRoot);
+      scene.add(pointRoot);
+
+      scene.add(new THREE.HemisphereLight(0xd5c593, 0x242016, 1.38));
+      const sun = new THREE.DirectionalLight(0xffd58a, 2.36);
+      sun.position.set(-24, 38, 18);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(2048, 2048);
+      sun.shadow.camera.left = -80;
+      sun.shadow.camera.right = 80;
+      sun.shadow.camera.top = 80;
+      sun.shadow.camera.bottom = -80;
+      scene.add(sun);
+      const fill = new THREE.DirectionalLight(0x98b6ff, 0.36);
+      fill.position.set(26, 22, -30);
+      scene.add(fill);
+
+      let floor = null;
+      let grid = null;
+      let selectionBox = null;
+      const groundPlane = new THREE.Mesh(new THREE.PlaneBufferGeometry(1000, 1000), new THREE.MeshBasicMaterial({ visible: false }));
+      groundPlane.rotation.x = -Math.PI / 2;
+      scene.add(groundPlane);
+
+      function numberFrom(input, fallback) {
+        const value = Number(input && input.value != null ? input.value : input);
+        return Number.isFinite(value) ? value : fallback;
+      }
+
+      function locationGridStep() {
+        if (dom.gridStep) dom.gridStep.value = String(FIXED_LOCATION_GRID_STEP);
+        return FIXED_LOCATION_GRID_STEP;
+      }
+
+      function roundValue(value, precision = 3) {
+        return Math.round(Number(value || 0) * Math.pow(10, precision)) / Math.pow(10, precision);
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function slugify(value) {
+        return String(value || 'custom_location')
+          .trim()
+          .replace(/[^a-zA-Z0-9_-]+/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '') || 'custom_location';
+      }
+
+      function tileToWorldPoint(point = {}) {
+        const tx = Number.isFinite(Number(point.tx)) ? Number(point.tx) : 19;
+        const tz = Number.isFinite(Number(point.tz)) ? Number(point.tz) : 19;
+        return {
+          x: roundValue((tx - MAP_TILES / 2 + 0.5) * TILE),
+          y: Number(point.y || 0),
+          z: roundValue((tz - MAP_TILES / 2 + 0.5) * TILE),
+          rotationY: Number(point.rotationY || 0)
+        };
+      }
+
+      function worldToTilePoint(point = {}) {
+        return {
+          tx: clamp(Math.floor(Number(point.x || 0) / TILE + MAP_TILES / 2), 0, MAP_TILES - 1),
+          tz: clamp(Math.floor(Number(point.z || 0) / TILE + MAP_TILES / 2), 0, MAP_TILES - 1)
+        };
+      }
+
+      function normalizeWorldPoint(input, fallback = { x: 0, y: 0, z: 0 }) {
+        const src = input && typeof input === 'object' ? input : {};
+        if (Number.isFinite(Number(src.tx)) && Number.isFinite(Number(src.tz))) return tileToWorldPoint(src);
+        const pos = src.position && typeof src.position === 'object' ? src.position : src;
+        return {
+          x: roundValue(Number.isFinite(Number(pos.x)) ? Number(pos.x) : fallback.x),
+          y: roundValue(Number.isFinite(Number(pos.y)) ? Number(pos.y) : fallback.y),
+          z: roundValue(Number.isFinite(Number(pos.z)) ? Number(pos.z) : fallback.z),
+          rotationY: Number(src.rotationY || pos.rotationY || fallback.rotationY || 0)
+        };
+      }
+
+      function snapValue(value) {
+        if (!state.snap) return value;
+        const step = locationGridStep();
+        return Math.round(value / step) * step;
+      }
+
+      function modelRuleFor(modelKey) {
+        return MODEL_RULES[modelKey] || MODEL_PLACEMENT_RULES[modelKey] || (modelByKey.has(modelKey) ? DEFAULT_MODEL_PLACEMENT_RULE : null);
+      }
+
+      function modelRuleLocksScale(rule) {
+        return !!rule && rule.lockScale !== false;
+      }
+
+      function entityRuleFor(modelKey) {
+        return MODEL_ENTITY_RULES[modelKey] || null;
+      }
+
+      function entityTagsFor(modelKey) {
+        const rule = entityRuleFor(modelKey);
+        return rule?.tags || [];
+      }
+
+      function modelIsLivingEntity(modelKey) {
+        const entity = entityRuleFor(modelKey);
+        if (entity?.kind === 'npc' || entity?.kind === 'player') return true;
+        const tags = entityTagsFor(modelKey).map(tag => String(tag || '').toLowerCase());
+        const key = String(modelKey || '').toLowerCase();
+        return tags.some(tag => ['npc', 'enemy', 'hostile', 'monster', 'animal', 'player'].includes(tag)) ||
+          /^(enemy|npc|player|caravan|klimpatrol|wastelandsettler|friendlybrahmin|tradernpc)/i.test(key);
+      }
+
+      function normalizedRuleFootprint(rule) {
+        const step = locationGridStep();
+        const source = rule?.footprint || { x: rule?.tileSize || step, z: rule?.tileSize || step };
+        const x = Math.max(step, Math.round(Math.max(0.01, Number(source.x || step)) / step) * step);
+        const z = Math.max(step, Math.round(Math.max(0.01, Number(source.z || step)) / step) * step);
+        return { x, z };
+      }
+
+      function footprintCellsForModel(modelKey, rotationY = 0) {
+        const step = locationGridStep();
+        const footprint = normalizedRuleFootprint(modelRuleFor(modelKey));
+        let cellsX = Math.max(1, Math.round(footprint.x / step));
+        let cellsZ = Math.max(1, Math.round(footprint.z / step));
+        const halfPi = Math.PI / 2;
+        const fullTurn = Math.PI * 2;
+        const angle = ((Number(rotationY || 0) % fullTurn) + fullTurn) % fullTurn;
+        const quarter = Math.round(angle / halfPi) % 4;
+        const snappedAngle = quarter * halfPi;
+        const nearRightAngle = Math.min(Math.abs(angle - snappedAngle), Math.abs(angle - snappedAngle + fullTurn), Math.abs(angle - snappedAngle - fullTurn)) < 0.001;
+        if (nearRightAngle && quarter % 2 === 1) [cellsX, cellsZ] = [cellsZ, cellsX];
+        return { x: cellsX, z: cellsZ };
+      }
+
+      function modelFootprintForPlacement(modelKey, rotationY = 0) {
+        const step = locationGridStep();
+        const cells = footprintCellsForModel(modelKey, rotationY);
+        return { x: cells.x * step, z: cells.z * step, cellsX: cells.x, cellsZ: cells.z };
+      }
+
+      function snapValueForModel(value, modelKey, axis = 'x', rotationY = 0) {
+        const rule = modelRuleFor(modelKey);
+        if (!state.snap && !rule?.tileSize && !rule?.footprint) return value;
+        const step = locationGridStep();
+        const cells = footprintCellsForModel(modelKey, rotationY);
+        const cellCount = axis === 'z' ? cells.z : cells.x;
+        const offset = cellCount % 2 === 0 ? 0 : step / 2;
+        return Math.round((Number(value || 0) - offset) / step) * step + offset;
+      }
+
+      function placementBoundsFor(modelKey, x, z, rotationY = 0) {
+        const footprint = modelFootprintForPlacement(modelKey, rotationY);
+        return {
+          x,
+          z,
+          width: footprint.x,
+          depth: footprint.z,
+          left: x - footprint.x / 2,
+          right: x + footprint.x / 2,
+          top: z - footprint.z / 2,
+          bottom: z + footprint.z / 2
+        };
+      }
+
+      function modelHasRuleTag(modelKey, tag) {
+        const rule = modelRuleFor(modelKey);
+        return !!(rule && Array.isArray(rule.tags) && rule.tags.includes(tag));
+      }
+
+      function modelIsRoofBlock(modelKey) {
+        const rule = modelRuleFor(modelKey);
+        return !!(rule && (rule.occlusion?.role === 'roof' || modelHasRuleTag(modelKey, 'roof')));
+      }
+
+      function modelIsWallBlock(modelKey) {
+        const rule = modelRuleFor(modelKey);
+        return !!(rule && (rule.occlusion?.role === 'wall' || modelHasRuleTag(modelKey, 'wall') || modelHasRuleTag(modelKey, 'window')));
+      }
+
+      function modelIsBuildingModule(modelKey) {
+        return modelHasRuleTag(modelKey, 'building') && modelHasRuleTag(modelKey, 'module');
+      }
+
+      function seamlessModuleVisualScale(modelKey) {
+        if (!modelIsBuildingModule(modelKey)) return { x: 1, y: 1, z: 1 };
+        return { x: 1, y: 1, z: 1 };
+      }
+
+      function fitAxisScale(size, target, visualScale = 1, allowDecorativeOverflow = false) {
+        if (!(size > 0)) return 1;
+        if (allowDecorativeOverflow && size > target) return visualScale;
+        return (target / size) * visualScale;
+      }
+
+      function recordTopY(record) {
+        const rule = record ? modelRuleFor(record.model) : null;
+        const height = Math.max(0, Number(rule?.height || 0) * Math.max(0.01, Number(record?.scaleY || 1)));
+        return roundValue(Number(record?.y || 0) + height, 3);
+      }
+
+      function rangeOverlap(aMin, aMax, bMin, bMax) {
+        return Math.max(0, Math.min(aMax, bMax) - Math.max(aMin, bMin));
+      }
+
+      function rangeGap(aMin, aMax, bMin, bMax) {
+        if (aMax < bMin) return bMin - aMax;
+        if (bMax < aMin) return aMin - bMax;
+        return 0;
+      }
+
+      function boundsTouchOrOverlap(candidate, neighbor, threshold = 0.08) {
+        const xGap = rangeGap(candidate.left, candidate.right, neighbor.left, neighbor.right);
+        const zGap = rangeGap(candidate.top, candidate.bottom, neighbor.top, neighbor.bottom);
+        const xOverlap = rangeOverlap(candidate.left, candidate.right, neighbor.left, neighbor.right);
+        const zOverlap = rangeOverlap(candidate.top, candidate.bottom, neighbor.top, neighbor.bottom);
+        return (xGap <= threshold && zOverlap > threshold) || (zGap <= threshold && xOverlap > threshold);
+      }
+
+      function nearestEdgeDelta(candidate, neighbor, axis) {
+        const useX = axis === 'x';
+        const pairs = useX
+          ? [
+              neighbor.right - candidate.left,
+              neighbor.left - candidate.right
+            ]
+          : [
+              neighbor.bottom - candidate.top,
+              neighbor.top - candidate.bottom
+            ];
+        return pairs.reduce((best, value) => Math.abs(value) < Math.abs(best) ? value : best, pairs[0]);
+      }
+
+      function snapPlacementToNeighborEdges(modelKey, x, z, rotationY = 0, options = {}) {
+        if (!state.snap) return { x, z };
+        const step = locationGridStep();
+        const threshold = Math.max(0.18, step * 0.36);
+        let nextX = x;
+        let nextZ = z;
+        let bestX = null;
+        let bestZ = null;
+        state.objects.forEach(object => {
+          if (!object || object.id === options.ignoreObjectId) return;
+          const candidate = placementBoundsFor(modelKey, nextX, nextZ, rotationY);
+          const neighbor = placementBoundsFor(object.model, object.x, object.z, object.rotationY);
+          const zClose = rangeGap(candidate.top, candidate.bottom, neighbor.top, neighbor.bottom) <= threshold;
+          const xClose = rangeGap(candidate.left, candidate.right, neighbor.left, neighbor.right) <= threshold;
+          if (zClose) {
+            const dx = nearestEdgeDelta(candidate, neighbor, 'x');
+            if (Math.abs(dx) <= threshold && (!bestX || Math.abs(dx) < Math.abs(bestX.delta))) bestX = { delta: dx };
+          }
+          if (xClose) {
+            const dz = nearestEdgeDelta(candidate, neighbor, 'z');
+            if (Math.abs(dz) <= threshold && (!bestZ || Math.abs(dz) < Math.abs(bestZ.delta))) bestZ = { delta: dz };
+          }
+        });
+        if (bestX) nextX += bestX.delta;
+        if (bestZ) nextZ += bestZ.delta;
+        return {
+          x: roundValue(snapValueForModel(nextX, modelKey, 'x', rotationY)),
+          z: roundValue(snapValueForModel(nextZ, modelKey, 'z', rotationY))
+        };
+      }
+
+      function inferRoofPlacementY(modelKey, x, z, rotationY = 0, point = {}, options = {}) {
+        let y = Math.max(0, roundValue(numberFrom(point.y, 0), 3));
+        if (!modelIsRoofBlock(modelKey)) return y;
+
+        const candidate = placementBoundsFor(modelKey, x, z, rotationY);
+        const hitRecord = point.objectId ? findRecord(point.objectId) : null;
+        const canUseNeighborLevel = point.surface === 'ground' || y <= 0.001 || (hitRecord && modelIsRoofBlock(hitRecord.model));
+        let bestRoof = null;
+        let bestWall = null;
+
+        state.objects.forEach(object => {
+          if (!object || object.id === options.ignoreObjectId) return;
+          if (!modelIsRoofBlock(object.model) && !modelIsWallBlock(object.model)) return;
+          const neighbor = placementBoundsFor(object.model, object.x, object.z, object.rotationY);
+          if (!boundsTouchOrOverlap(candidate, neighbor, 0.12)) return;
+          const roofNeighbor = modelIsRoofBlock(object.model);
+          const supportY = roofNeighbor ? Number(object.y || 0) : recordTopY(object);
+          if (!Number.isFinite(supportY)) return;
+          const verticalCost = canUseNeighborLevel ? Math.abs(supportY - y) : Math.max(0, Math.abs(supportY - y) - 0.18);
+          const horizontalCost = Math.hypot(Number(object.x || 0) - x, Number(object.z || 0) - z);
+          const score = verticalCost * 2 + horizontalCost * 0.04;
+          const target = roofNeighbor ? 'roof' : 'wall';
+          if (target === 'roof' && (!bestRoof || score < bestRoof.score)) bestRoof = { y: supportY, score };
+          if (target === 'wall' && (!bestWall || score < bestWall.score)) bestWall = { y: supportY, score };
+        });
+
+        const best = bestRoof || bestWall;
+        if (best && (canUseNeighborLevel || Math.abs(best.y - y) <= 0.45)) return roundValue(Math.max(0, best.y), 3);
+        return y;
+      }
+
+      function roofNeighborPlacementFromHit(modelKey, x, z, rotationY = 0, point = {}) {
+        if (!modelIsRoofBlock(modelKey) || point.surface !== 'object' || !point.objectId) return { x, z };
+        const hitRecord = findRecord(point.objectId);
+        if (!hitRecord || !modelIsRoofBlock(hitRecord.model)) return { x, z };
+        const candidate = placementBoundsFor(modelKey, x, z, rotationY);
+        const hitBounds = placementBoundsFor(hitRecord.model, hitRecord.x, hitRecord.z, hitRecord.rotationY);
+        const overlapX = rangeOverlap(candidate.left, candidate.right, hitBounds.left, hitBounds.right);
+        const overlapZ = rangeOverlap(candidate.top, candidate.bottom, hitBounds.top, hitBounds.bottom);
+        const sameCell = overlapX >= Math.min(candidate.width, hitBounds.width) * 0.72 &&
+          overlapZ >= Math.min(candidate.depth, hitBounds.depth) * 0.72;
+        if (!sameCell) return { x, z };
+        const dx = Number(point.x || 0) - Number(hitRecord.x || 0);
+        const dz = Number(point.z || 0) - Number(hitRecord.z || 0);
+        if (Math.abs(dx) >= Math.abs(dz)) {
+          const sign = dx >= 0 ? 1 : -1;
+          return {
+            x: roundValue(snapValueForModel(Number(hitRecord.x || 0) + sign * (candidate.width + hitBounds.width) * 0.5, modelKey, 'x', rotationY)),
+            z: roundValue(snapValueForModel(Number(hitRecord.z || 0), modelKey, 'z', rotationY))
+          };
+        }
+        const sign = dz >= 0 ? 1 : -1;
+        return {
+          x: roundValue(snapValueForModel(Number(hitRecord.x || 0), modelKey, 'x', rotationY)),
+          z: roundValue(snapValueForModel(Number(hitRecord.z || 0) + sign * (candidate.depth + hitBounds.depth) * 0.5, modelKey, 'z', rotationY))
+        };
+      }
+
+      function fitModelToFootprint(model, record) {
+        const rule = modelRuleFor(record.model);
+        if (!rule) return;
+        model.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        if (modelIsLivingEntity(record.model)) {
+          const center = new THREE.Vector3();
+          box.getCenter(center);
+          model.position.x -= center.x;
+          model.position.y -= box.min.y;
+          model.position.z -= center.z;
+          return;
+        }
+        const footprint = normalizedRuleFootprint(rule);
+        const targetHeight = Math.max(0.01, Number(rule.height || size.y || 1));
+        const allowDecorativeOverflow = modelIsBuildingModule(record.model);
+        const visualScale = seamlessModuleVisualScale(record.model);
+        const scaleX = fitAxisScale(size.x, footprint.x, visualScale.x, allowDecorativeOverflow);
+        const scaleY = fitAxisScale(size.y, targetHeight, visualScale.y, allowDecorativeOverflow);
+        const scaleZ = fitAxisScale(size.z, footprint.z, visualScale.z, allowDecorativeOverflow);
+        model.scale.set(model.scale.x * scaleX, model.scale.y * scaleY, model.scale.z * scaleZ);
+        model.updateMatrixWorld(true);
+        const fittedBox = new THREE.Box3().setFromObject(model);
+        const center = new THREE.Vector3();
+        fittedBox.getCenter(center);
+        model.position.x -= center.x;
+        model.position.y -= fittedBox.min.y;
+        model.position.z -= center.z;
+      }
+
+      function uniqueTags(tags, extra = []) {
+        const out = [];
+        [...(Array.isArray(tags) ? tags : []), ...(Array.isArray(extra) ? extra : [])].forEach(tag => {
+          const safe = String(tag || '').trim();
+          if (safe && !out.includes(safe)) out.push(safe);
+        });
+        return out;
+      }
+
+      function collisionLabel(value) {
+        return COLLISION_INFO[value]?.label || String(value || 'Без коллизии');
+      }
+
+      function updateCollisionHelp() {
+        if (!dom.objectCollisionHelp) return;
+        const value = dom.objectCollision?.value || 'none';
+        const row = COLLISION_INFO[value] || COLLISION_INFO.none;
+        dom.objectCollisionHelp.textContent = row.help;
+      }
+
+      function visionMetadataForModelKey(modelKey) {
+        const rule = MODEL_VISION_RULES[modelKey];
+        return rule ? { ...rule } : null;
+      }
+
+      function visionKindFromMetadata(vision) {
+        if (!vision || typeof vision !== 'object') return '';
+        const mode = String(vision.mode || vision.kind || '').toLowerCase();
+        if (vision.blocks === true || mode === 'block' || mode === 'blocking') return 'block';
+        if (vision.cover === true || vision.lowCover === true || mode === 'cover' || mode === 'low-cover') return 'cover';
+        if (vision.blocks === false || mode === 'none' || mode === 'clear') return 'none';
+        return '';
+      }
+
+      function visionLabelForMetadata(vision) {
+        const kind = visionKindFromMetadata(vision);
+        if (kind === 'block') return 'Туман: блокирует обзор';
+        if (kind === 'cover') return 'Туман: низкое укрытие';
+        if (kind === 'none') return 'Туман: не влияет на обзор';
+        return 'Туман: правило не задано';
+      }
+
+      function visionLabelForModel(modelKey, collision = '') {
+        const record = { model: modelKey, collision };
+        return visionLabelForMetadata(inferredVisionMetadataForRule(record, modelRuleFor(modelKey)));
+      }
+
+      function updateObjectVisionHelp(record) {
+        if (!dom.objectVisionHelp) return;
+        if (!record) {
+          dom.objectVisionHelp.textContent = '';
+          return;
+        }
+        const vision = inferredVisionMetadataForRule(record, modelRuleFor(record.model));
+        dom.objectVisionHelp.textContent = visionLabelForMetadata(vision) + '. Это правило попадет в JSON и будет использоваться туманом войны.';
+      }
+
+      function normalizeLocationPvpMode(data = {}) {
+        if (typeof data === 'string') {
+          if (LOCATION_PVP_INFO[data]) return data;
+          return data === 'false' ? 'pvp' : 'peaceful';
+        }
+        const raw = data?.pvpMode || data?.pvpType || data?.combatMode || data?.pvp;
+        if (LOCATION_PVP_INFO[raw]) return raw;
+        if (raw === true || raw === 'true') return 'pvp';
+        return data?.safe === false ? 'pvp' : 'peaceful';
+      }
+
+      function updateLocationPvpHelp() {
+        if (!dom.locationPvpHelp) return;
+        const mode = normalizeLocationPvpMode(dom.locationSafe?.value || 'peaceful');
+        const row = LOCATION_PVP_INFO[mode] || LOCATION_PVP_INFO.peaceful;
+        dom.locationPvpHelp.textContent = row.help;
+      }
+
+      function normalizeLocationKind(data = {}) {
+        return data?.kind === 'settlement' || data?.city === true || data?.settlement === true || data?.respawnAllowed === true
+          ? 'settlement'
+          : 'location';
+      }
+
+      function locationAllowsRespawn() {
+        return (dom.locationKind?.value || 'location') === 'settlement';
+      }
+
+      function updateLocationKindHelp() {
+        if (!dom.locationKindHelp) return;
+        const isSettlement = locationAllowsRespawn();
+        dom.locationKindHelp.textContent = isSettlement
+          ? 'Городская локация: игрок может возродиться здесь после смерти. Точка старта сохраняется как respawn.'
+          : 'Обычная локация: точка старта нужна только для входов и переходов, но не используется как респавн.';
+        if (dom.setSpawnButton) {
+          dom.setSpawnButton.textContent = isSettlement ? 'Точка респавна' : 'Старт игрока';
+        }
+      }
+
+      function inferredVisionMetadataForRule(record, rule) {
+        if (!rule) return null;
+        if (rule.vision) return { ...rule.vision };
+        const modelVision = visionMetadataForModelKey(record?.model);
+        if (modelVision) return modelVision;
+        const occlusion = rule.occlusion && typeof rule.occlusion === 'object' ? rule.occlusion : null;
+        const role = String(occlusion?.role || '').toLowerCase();
+        if (occlusion?.losBlocking === false || role === 'window' || role === 'roof' || role === 'floor') return { blocks: false };
+        if (role === 'wall') return { blocks: true };
+        const tags = (Array.isArray(rule.tags) ? rule.tags : []).map(tag => String(tag || '').toLowerCase());
+        const model = String(record?.model || '').toLowerCase();
+        const collision = String(record?.collision || '').toLowerCase();
+        if (tags.includes('window') || tags.includes('roof') || tags.includes('floor')) return { blocks: false };
+        if (tags.includes('wall') || collision === 'wall' || collision === 'block' || collision === 'blocked') return { blocks: true };
+        if (collision === 'cover') return { cover: true };
+        if (/(wall|shack|tower|outhouse|billboard|water_?tank|car_?wreck)/.test(model)) return { blocks: true };
+        if (/(barrel|crate|tire|scrap|barricade|roadblock|ruined)/.test(model)) return { cover: true };
+        return null;
+      }
+
+      function createRuleMetadata(record) {
+        const rule = modelRuleFor(record.model);
+        if (!rule) return {};
+        const step = locationGridStep();
+        const footprint = normalizedRuleFootprint(rule);
+        const placement = modelFootprintForPlacement(record.model, record.rotationY);
+        const metadata = {
+          footprint: { x: footprint.x, z: footprint.z },
+          placement: {
+            anchor: 'cell-center',
+            gridStep: step,
+            cells: { x: placement.cellsX, z: placement.cellsZ }
+          }
+        };
+        if (rule.buildingModule !== false) {
+          metadata.building = {
+            module: true,
+            tileSize: Number(rule.tileSize || step),
+            height: Number(rule.height || 1),
+            bottomOnGround: true,
+            lockScale: modelRuleLocksScale(rule)
+          };
+        }
+        if (rule.occlusion) metadata.occlusion = { ...rule.occlusion };
+        const vision = inferredVisionMetadataForRule(record, rule);
+        if (vision) metadata.vision = vision;
+        return metadata;
+      }
+
+      function resourceTypeForRecord(record) {
+        const explicit = String(record?.resourceType || record?.resource || '').trim().toLowerCase();
+        if (['ore', 'wood', 'scrap', 'water', 'oil'].includes(explicit)) return explicit;
+        const model = String(record?.model || record?.url || '').toLowerCase();
+        const tags = Array.isArray(record?.tags) ? record.tags.map(tag => String(tag || '').toLowerCase()) : [];
+        const isResourceCandidate = String(record?.collision || '').toLowerCase() === 'resource'
+          || tags.includes('resource')
+          || tags.includes('harvestable')
+          || tags.includes('resource-node');
+        if (!isResourceCandidate) return '';
+        if (tags.includes('oil') || /oil_?pump|pump_?jack/.test(model)) return 'oil';
+        if (tags.includes('water') || /water_?tank|water_?pump/.test(model)) return 'water';
+        if (tags.includes('scrap') || /scrap/.test(model)) return 'scrap';
+        if (tags.includes('wood') || /deadwood|wood/.test(model)) return 'wood';
+        if (tags.includes('ore') || /ore/.test(model)) return 'ore';
+        return '';
+      }
+
+      function resourceTagsFor(modelKey) {
+        const model = MODEL_LIBRARY.find(item => item.key === modelKey);
+        if (!model || String(model.collision || '').toLowerCase() !== 'resource') return [];
+        const type = resourceTypeForRecord({ model: modelKey, collision: model.collision, tags: ['resource'] });
+        return type ? ['resource', type] : [];
+      }
+
+      function createResourceMetadata(record) {
+        const type = resourceTypeForRecord(record);
+        if (!type || String(record?.collision || '').toLowerCase() !== 'resource') return {};
+        const hpByType = { ore: 3, wood: 3, scrap: 4, water: 5, oil: 7 };
+        const hp = Number(record.hp || record.maxHp || hpByType[type] || 3);
+        return {
+          resourceType: type,
+          hp,
+          maxHp: Number(record.maxHp || hp)
+        };
+      }
+
+      function npcAutoGenerationForModel(modelKey, rule) {
+        if (!rule || rule.kind !== 'npc') return null;
+        const profile = NPC_AUTO_GENERATION_PROFILES[modelKey] || {
+          profile: String(modelKey || 'npc'),
+          statProfile: String(rule.role || 'npc'),
+          equipmentProfile: String(rule.role || 'npc'),
+          lootProfile: String(rule.role || 'npc')
+        };
+        return {
+          autoGenerated: true,
+          generatedBy: 'location-editor',
+          ...profile
+        };
+      }
+
+      function createEntityMetadata(record) {
+        const rule = entityRuleFor(record.model);
+        if (!rule) return {};
+        const { tags, ...metadata } = rule;
+        if (metadata.kind === 'container' || metadata.kind === 'jobBoard' || metadata.kind === 'tradeMachine') return { interactive: metadata };
+        const generation = npcAutoGenerationForModel(record.model, rule);
+        if (generation) {
+          delete metadata.equipment;
+          delete metadata.inventory;
+          delete metadata.stats;
+          delete metadata.special;
+          return {
+            entity: {
+              ...metadata,
+              ...generation,
+              generation: { ...generation }
+            }
+          };
+        }
+        return { entity: metadata };
+      }
+
+      function applyModelRule(record, { applyPlacementDefaults = false, preserveY = false } = {}) {
+        const rule = modelRuleFor(record.model);
+        const entityTags = entityTagsFor(record.model);
+        record.tags = uniqueTags(record.tags, [...(rule?.tags || []), ...entityTags]);
+        if (!rule) return;
+        if (modelRuleLocksScale(rule)) {
+          record.scaleX = 1;
+          record.scaleY = 1;
+          record.scaleZ = 1;
+        }
+        if (applyPlacementDefaults && rule.groundSnap && !preserveY) record.y = 0;
+        if (Math.abs(record.y) < 0.001) record.y = 0;
+        if (rule.tileSize || rule.footprint) {
+          record.x = roundValue(snapValueForModel(record.x, record.model, 'x', record.rotationY));
+          record.z = roundValue(snapValueForModel(record.z, record.model, 'z', record.rotationY));
+        }
+        if (!record.collision && rule.collision) record.collision = rule.collision;
+      }
+
+      function toast(message) {
+        dom.toast.textContent = message;
+        dom.toast.classList.add('show');
+        clearTimeout(toast.timer);
+        toast.timer = setTimeout(() => dom.toast.classList.remove('show'), 1800);
+      }
+
+      function confirmEditorAction(message, onAccept) {
+        document.querySelectorAll('.editor-confirm-overlay').forEach(node => node.remove());
+        const overlay = document.createElement('div');
+        overlay.className = 'editor-confirm-overlay';
+        overlay.innerHTML = `
+          <div class="editor-confirm-panel" role="dialog" aria-modal="true" aria-label="Подтверждение">
+            <div class="editor-confirm-title">Подтвердить действие</div>
+            <div class="editor-confirm-message"></div>
+            <div class="editor-confirm-actions">
+              <button type="button" data-cancel>Отмена</button>
+              <button type="button" class="danger" data-accept>Очистить</button>
+            </div>
+          </div>
+        `;
+        overlay.querySelector('.editor-confirm-message').textContent = message;
+        const close = () => overlay.remove();
+        overlay.addEventListener('click', event => {
+          if (event.target === overlay) close();
+        });
+        overlay.querySelector('[data-cancel]').addEventListener('click', close);
+        overlay.querySelector('[data-accept]').addEventListener('click', () => {
+          close();
+          onAccept();
+        });
+        document.body.appendChild(overlay);
+        overlay.querySelector('[data-cancel]').focus();
+      }
+
+      function makeProceduralGroundTexture(preset) {
+        const key = 'ground-' + preset.id;
+        if (makeProceduralGroundTexture.cache && makeProceduralGroundTexture.cache.has(key)) return makeProceduralGroundTexture.cache.get(key);
+        makeProceduralGroundTexture.cache = makeProceduralGroundTexture.cache || new Map();
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        const base = new THREE.Color(preset.base);
+        const high = new THREE.Color(preset.high);
+        const low = new THREE.Color(preset.low);
+        ctx.fillStyle = '#' + base.getHexString();
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < 2400; i++) {
+          const mix = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+          const color = base.clone().lerp(mix > 0.5 ? high : low, Math.abs(mix) * 0.34);
+          ctx.globalAlpha = 0.08 + Math.abs(mix) * 0.13;
+          ctx.fillStyle = '#' + color.getHexString();
+          const x = Math.abs(Math.sin(i * 91.7)) * canvas.width;
+          const y = Math.abs(Math.sin(i * 37.3)) * canvas.height;
+          const r = 1 + Math.abs(Math.sin(i * 7.1)) * 2.6;
+          ctx.fillRect(x, y, r, r);
+        }
+        ctx.globalAlpha = 0.11;
+        ctx.strokeStyle = '#' + low.getHexString();
+        for (let i = 0; i < preset.lines; i++) {
+          const y = (i + 0.5) * canvas.height / preset.lines + Math.sin(i * 4.7) * 18;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          for (let x = 0; x <= canvas.width; x += 32) ctx.lineTo(x, y + Math.sin(x * 0.03 + i) * 11);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(8, 8);
+        makeProceduralGroundTexture.cache.set(key, texture);
+        return texture;
+      }
+
+      function configureGroundTexture(texture, repeatX, repeatY, colorTexture = false) {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(Math.max(1, repeatX), Math.max(1, repeatY));
+        texture.anisotropy = renderer?.capabilities?.getMaxAnisotropy ? Math.min(12, renderer.capabilities.getMaxAnisotropy()) : 1;
+        if (colorTexture) {
+          if ('colorSpace' in texture && THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
+          else if ('encoding' in texture && THREE.sRGBEncoding) texture.encoding = THREE.sRGBEncoding;
+        }
+        return texture;
+      }
+
+      function loadGroundTexture(path, repeatX, repeatY, colorTexture = false) {
+        if (!path) return null;
+        const key = [path, roundValue(repeatX, 3), roundValue(repeatY, 3), colorTexture ? 'color' : 'data'].join('|');
+        loadGroundTexture.cache = loadGroundTexture.cache || new Map();
+        if (loadGroundTexture.cache.has(key)) return loadGroundTexture.cache.get(key);
+        const texture = textureLoader.load(path, tex => {
+          configureGroundTexture(tex, repeatX, repeatY, colorTexture);
+          tex.needsUpdate = true;
+          if (floor?.material) floor.material.needsUpdate = true;
+        });
+        configureGroundTexture(texture, repeatX, repeatY, colorTexture);
+        loadGroundTexture.cache.set(key, texture);
+        return texture;
+      }
+
+      function makeGroundMaterial(preset, width, depth) {
+        const source = GROUND_TEXTURES[preset.texture];
+        if (!source || !source.base) {
+          return new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            map: makeProceduralGroundTexture(preset),
+            roughness: 0.98,
+            metalness: 0
+          });
+        }
+        const tileMeters = Math.max(1, Number(source.tileMeters || 8));
+        const repeatX = width / tileMeters;
+        const repeatY = depth / tileMeters;
+        return new THREE.MeshStandardMaterial({
+          name: source.name || preset.label,
+          color: new THREE.Color(preset.tint || source.color || 0xffffff),
+          map: loadGroundTexture(source.base, repeatX, repeatY, true),
+          normalMap: loadGroundTexture(source.normal, repeatX, repeatY, false),
+          roughnessMap: loadGroundTexture(source.roughness, repeatX, repeatY, false),
+          aoMap: loadGroundTexture(source.ao, repeatX, repeatY, false),
+          bumpMap: loadGroundTexture(source.height, repeatX, repeatY, false),
+          aoMapIntensity: source.ao ? 1.08 : 0,
+          normalScale: new THREE.Vector2(source.normalScale || 0.55, source.normalScale || 0.55),
+          bumpScale: source.height ? Number(source.bumpScale || 0.02) : 0,
+          roughness: 0.96,
+          metalness: 0
+        });
+      }
+
+      function currentMapSize() {
+        return {
+          width: Math.max(8, numberFrom(dom.mapWidth, 76)),
+          depth: Math.max(8, numberFrom(dom.mapDepth, 76))
+        };
+      }
+
+      function defaultWorldEdgeZone(label = '') {
+        return {
+          id: 'world_exit_edges',
+          type: 'globalMap',
+          shape: 'edges',
+          label: label || 'Край локации',
+          radius: 4,
+          edgeWidth: 4,
+          x: 0,
+          y: 0,
+          z: 0
+        };
+      }
+
+      function normalizeWorldEdgeZone(row = {}, index = 0) {
+        const point = normalizeWorldPoint(row, { x: 0, y: 0, z: 0 });
+        const edgeWidth = clamp(numberFrom(row.edgeWidth, numberFrom(row.radius, 4)), 0.5, 18);
+        const northCenter = { x: 0, z: -currentMapSize().depth / 2 + edgeWidth / 2 };
+        const tile = worldToTilePoint(northCenter);
+        return {
+          id: String(row.id || (index === 0 ? 'world_exit_edges' : 'world_exit_' + (index + 1))),
+          type: 'globalMap',
+          shape: 'edges',
+          label: row.label || row.name || 'Край локации',
+          radius: edgeWidth,
+          edgeWidth,
+          x: 0,
+          y: 0,
+          z: 0,
+          tx: Number.isFinite(Number(row.tx)) ? Number(row.tx) : tile.tx,
+          tz: Number.isFinite(Number(row.tz)) ? Number(row.tz) : tile.tz
+        };
+      }
+
+      function rebuildGrid() {
+        if (floor) scene.remove(floor);
+        if (grid) scene.remove(grid);
+        const { width, depth } = currentMapSize();
+        const preset = groundById.get(dom.groundPreset.value) || GROUND_PRESETS[0];
+        const geometry = new THREE.PlaneBufferGeometry(width, depth, 96, 96);
+        if (geometry.attributes.uv && !geometry.attributes.uv2) {
+          geometry.setAttribute('uv2', new THREE.BufferAttribute(geometry.attributes.uv.array.slice(0), 2));
+        }
+        floor = new THREE.Mesh(
+          geometry,
+          makeGroundMaterial(preset, width, depth)
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const maxSize = Math.max(width, depth);
+        const divisions = Math.max(8, Math.round(maxSize / locationGridStep()));
+        grid = new THREE.GridHelper(maxSize, divisions, 0xc79b44, 0x314126);
+        grid.position.y = 0.025;
+        scene.add(grid);
+        refreshPointMarkers();
+      }
+
+      function loadModel(def) {
+        if (!modelCache.has(def.url)) {
+          modelCache.set(def.url, new Promise((resolve, reject) => {
+            loader.load(def.url, gltf => {
+              const root = gltf.scene;
+              root.traverse(node => {
+                if (!node.isMesh) return;
+                node.castShadow = true;
+                node.receiveShadow = true;
+                if (node.material) node.material.needsUpdate = true;
+              });
+              resolve(root);
+            }, undefined, reject);
+          }));
+        }
+        return modelCache.get(def.url).then(template => {
+          const copy = template.clone(true);
+          copy.traverse(node => {
+            if (!node.isMesh) return;
+            node.castShadow = true;
+            node.receiveShadow = true;
+          });
+          return copy;
+        });
+      }
+
+      function clearPreviewRoot() {
+        while (previewRoot.children.length) previewRoot.remove(previewRoot.children[0]);
+      }
+
+      function updateModelPreview() {
+        const def = modelByKey.get(state.selectedModelKey) || MODEL_LIBRARY[0];
+        if (!def) return;
+        previewState.key = def.key;
+        previewState.ticket += 1;
+        const ticket = previewState.ticket;
+        dom.modelPreviewName.textContent = def.name;
+        dom.modelPreviewFile.textContent = def.file + ' · ' + visionLabelForModel(def.key, def.collision);
+        dom.modelPreviewStatus.textContent = 'загрузка';
+        clearPreviewRoot();
+        loadModel(def).then(model => {
+          if (ticket !== previewState.ticket) return;
+          clearPreviewRoot();
+          model.rotation.set(0, 0, 0);
+          model.position.set(0, 0, 0);
+          model.scale.set(1, 1, 1);
+          const box = new THREE.Box3().setFromObject(model);
+          const size = new THREE.Vector3();
+          const center = new THREE.Vector3();
+          box.getSize(size);
+          box.getCenter(center);
+          const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+          const scale = 2.35 / maxDim;
+          model.scale.setScalar(scale);
+          model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+          const scaledBox = new THREE.Box3().setFromObject(model);
+          const scaledSize = new THREE.Vector3();
+          scaledBox.getSize(scaledSize);
+          previewState.radius = Math.max(scaledSize.x, scaledSize.y, scaledSize.z, 1);
+          previewState.centerY = Math.max(0.25, scaledSize.y * 0.42);
+          previewRoot.add(model);
+          dom.modelPreviewStatus.textContent = 'готово';
+        }).catch(error => {
+          if (ticket !== previewState.ticket) return;
+          dom.modelPreviewStatus.textContent = 'ошибка';
+          dom.modelPreviewFile.textContent = def.file + ' · не удалось загрузить';
+          console.error(error);
+        });
+      }
+
+      function setObjectTransform(record) {
+        if (!record.group) return;
+        record.group.position.set(record.x, record.y, record.z);
+        record.group.rotation.set(0, record.rotationY, 0);
+        record.group.scale.set(record.scaleX, record.scaleY, record.scaleZ);
+        updateSelectionBox();
+      }
+
+      function findRecord(id) {
+        return state.objects.find(object => object.id === id) || null;
+      }
+
+      function createPlacedObject(def, options = {}) {
+        const id = options.id || ('obj_' + String(state.nextObjectNumber++).padStart(4, '0'));
+        const scale = options.scale && typeof options.scale === 'object' ? options.scale : {};
+        const pos = options.position && typeof options.position === 'object' ? options.position : options;
+        const rot = options.rotation && typeof options.rotation === 'object' ? options.rotation : {};
+        const record = {
+          id,
+          model: options.model || def.key,
+          name: options.name || def.name,
+          url: options.url || def.url,
+          x: roundValue(numberFrom(pos.x, 0)),
+          y: roundValue(numberFrom(pos.y, 0)),
+          z: roundValue(numberFrom(pos.z, 0)),
+          rotationY: numberFrom(rot.y, numberFrom(options.rotationY, 0)),
+          scaleX: numberFrom(scale.x, numberFrom(options.scaleX, numberFrom(options.scale, 1))),
+          scaleY: numberFrom(scale.y, numberFrom(options.scaleY, numberFrom(options.scale, 1))),
+          scaleZ: numberFrom(scale.z, numberFrom(options.scaleZ, numberFrom(options.scale, 1))),
+          collision: options.collision || def.collision || 'none',
+          tags: Array.isArray(options.tags) ? options.tags.slice() : [],
+          resourceType: options.resourceType || options.resource || '',
+          hp: Number(options.hp || options.maxHp || 0),
+          maxHp: Number(options.maxHp || options.hp || 0),
+          group: new THREE.Group(),
+          loading: true
+        };
+        const preservePlacementY = !!options.preserveY || Math.abs(numberFrom(pos.y, 0)) > 0.001;
+        applyModelRule(record, { applyPlacementDefaults: !!options.applyPlacementDefaults, preserveY: preservePlacementY });
+        record.group.name = record.id + '_' + def.key;
+        record.group.userData.editorId = id;
+        objectRoot.add(record.group);
+        state.objects.push(record);
+        setObjectTransform(record);
+        selectObject(id);
+        refreshObjectList();
+        refreshExport();
+
+        loadModel(def).then(model => {
+          model.userData.editorId = id;
+          model.traverse(node => { node.userData.editorId = id; });
+          fitModelToFootprint(model, record);
+          record.group.add(model);
+          record.loading = false;
+          setObjectTransform(record);
+          refreshObjectList();
+        }).catch(error => {
+          record.loading = false;
+          const rule = modelRuleFor(record.model);
+          const footprint = normalizedRuleFootprint(rule);
+          const fallbackHeight = Math.max(0.1, Number(rule?.height || 1));
+          const fallback = new THREE.Mesh(
+            new THREE.BoxBufferGeometry(footprint.x, fallbackHeight, footprint.z),
+            new THREE.MeshStandardMaterial({ color: 0x7c2f22, roughness: 0.8 })
+          );
+          fallback.position.y = fallbackHeight / 2;
+          fallback.userData.editorId = id;
+          record.group.add(fallback);
+          toast('Не удалось загрузить модель: ' + def.file);
+          console.error(error);
+        });
+        return record;
+      }
+
+      function selectObject(id) {
+        state.selectedObjectId = id;
+        const record = findRecord(id);
+        if (selectionBox) {
+          scene.remove(selectionBox);
+          selectionBox = null;
+        }
+        if (record && record.group) {
+          selectionBox = new THREE.BoxHelper(record.group, 0xf0d47f);
+          scene.add(selectionBox);
+        }
+        refreshInspector();
+        refreshObjectList();
+      }
+
+      function updateSelectionBox() {
+        if (selectionBox) selectionBox.update();
+      }
+
+      function deleteSelectedObject() {
+        const record = findRecord(state.selectedObjectId);
+        if (!record) return;
+        rememberUndo('удаление объекта');
+        objectRoot.remove(record.group);
+        state.objects = state.objects.filter(object => object.id !== record.id);
+        state.selectedObjectId = null;
+        if (selectionBox) {
+          scene.remove(selectionBox);
+          selectionBox = null;
+        }
+        refreshInspector();
+        refreshObjectList();
+        refreshExport();
+      }
+
+      function duplicateSelectedObject() {
+        const record = findRecord(state.selectedObjectId);
+        if (!record) return;
+        const def = modelByKey.get(record.model) || modelByUrl.get(record.url);
+        if (!def) return;
+        rememberUndo('дублирование объекта');
+        const footprint = modelFootprintForPlacement(record.model, record.rotationY);
+        const step = Math.max(locationGridStep(), footprint.x, footprint.z);
+        createPlacedObject(def, {
+          name: record.name + ' копия',
+          x: roundValue(record.x + step),
+          y: record.y,
+          z: roundValue(record.z + step),
+          rotationY: record.rotationY,
+          scaleX: record.scaleX,
+          scaleY: record.scaleY,
+          scaleZ: record.scaleZ,
+          collision: record.collision,
+          tags: record.tags.slice()
+        });
+      }
+
+      function makePointMarker(point, kind) {
+        const color = kind === 'spawn' ? 0x88df62 : kind === 'entry' ? 0xf0d47f : kind === 'transition' ? 0x66b5ff : 0xff9f45;
+        const radius = Math.max(0.45, Number(point.radius || 1.2));
+        const group = new THREE.Group();
+        group.position.set(point.x, 0.02, point.z);
+        const ring = new THREE.Mesh(
+          new THREE.RingBufferGeometry(radius * 0.84, radius, 64),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.82, side: THREE.DoubleSide, depthWrite: false })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        group.add(ring);
+        const dot = new THREE.Mesh(
+          new THREE.CylinderBufferGeometry(0.12, 0.12, 0.05, 18),
+          new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.98 })
+        );
+        dot.position.y = 0.06;
+        group.add(dot);
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(2, 7, 4, 0.86)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#' + new THREE.Color(color).getHexString();
+        ctx.lineWidth = 3;
+        ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+        ctx.fillStyle = '#f0d47f';
+        ctx.font = 'bold 20px Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(point.label || kind).slice(0, 20), canvas.width / 2, canvas.height / 2);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: new THREE.CanvasTexture(canvas),
+          transparent: true,
+          depthWrite: false
+        }));
+        sprite.position.set(0, 1.1, 0);
+        sprite.scale.set(3.2, 0.8, 1);
+        group.add(sprite);
+        return group;
+      }
+
+      function makeWorldEdgeMarker(point) {
+        const { width, depth } = currentMapSize();
+        const edgeWidth = clamp(numberFrom(point.edgeWidth, numberFrom(point.radius, 4)), 0.5, Math.max(0.5, Math.min(width, depth) * 0.45));
+        const selected = !!(state.selectedPoint && state.selectedPoint.kind === 'world' && state.selectedPoint.id === point.id);
+        const group = new THREE.Group();
+        group.name = 'editor_world_exit_edges';
+        const fillMat = new THREE.MeshBasicMaterial({
+          color: selected ? 0xffc75d : 0xff9f45,
+          transparent: true,
+          opacity: selected ? 0.30 : 0.20,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending
+        });
+        const lineMat = new THREE.MeshBasicMaterial({
+          color: selected ? 0xffdf8a : 0xffb15c,
+          transparent: true,
+          opacity: selected ? 0.82 : 0.62,
+          depthWrite: false,
+          side: THREE.DoubleSide
+        });
+        const addPlane = (w, h, x, z, mat, y = 0.065) => {
+          const mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(w, h), mat);
+          mesh.rotation.x = -Math.PI / 2;
+          mesh.position.set(x, y, z);
+          group.add(mesh);
+          return mesh;
+        };
+        const halfW = width / 2;
+        const halfD = depth / 2;
+        addPlane(width, edgeWidth, 0, -halfD + edgeWidth / 2, fillMat);
+        addPlane(width, edgeWidth, 0, halfD - edgeWidth / 2, fillMat);
+        addPlane(edgeWidth, Math.max(0.01, depth - edgeWidth * 2), -halfW + edgeWidth / 2, 0, fillMat);
+        addPlane(edgeWidth, Math.max(0.01, depth - edgeWidth * 2), halfW - edgeWidth / 2, 0, fillMat);
+        addPlane(width, 0.16, 0, -halfD + edgeWidth, lineMat, 0.082);
+        addPlane(width, 0.16, 0, halfD - edgeWidth, lineMat, 0.082);
+        addPlane(0.16, depth, -halfW + edgeWidth, 0, lineMat, 0.082);
+        addPlane(0.16, depth, halfW - edgeWidth, 0, lineMat, 0.082);
+        const label = makePointLabelSprite(point.label || 'КРАЙ ЛОКАЦИИ', selected ? '#ffdf8a' : '#ffb15c');
+        label.position.set(0, 1.45, -halfD + edgeWidth + 1.2);
+        label.scale.set(6.2, 0.92, 1);
+        group.add(label);
+        return group;
+      }
+
+      function makePointLabelSprite(text, color = '#f0d47f') {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 80;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(2, 7, 4, 0.86)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+        ctx.fillStyle = color;
+        ctx.font = 'bold 22px Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(text || '').slice(0, 30), canvas.width / 2, canvas.height / 2);
+        return new THREE.Sprite(new THREE.SpriteMaterial({
+          map: new THREE.CanvasTexture(canvas),
+          transparent: true,
+          depthWrite: false
+        }));
+      }
+
+      function refreshPointMarkers() {
+        while (pointRoot.children.length) pointRoot.remove(pointRoot.children[0]);
+        pointRoot.add(makePointMarker({ ...state.spawn, label: locationAllowsRespawn() ? 'RESPAWN' : 'SPAWN', radius: 1.1 }, 'spawn'));
+        pointRoot.add(makePointMarker({ ...state.entry, label: 'ENTRY', radius: 1.1 }, 'entry'));
+        state.transitions.forEach(point => pointRoot.add(makePointMarker(point, 'transition')));
+        state.worldZones.forEach(point => pointRoot.add(makeWorldEdgeMarker(point)));
+      }
+
+      function selectedPointRow() {
+        if (!state.selectedPoint) return null;
+        const list = state.selectedPoint.kind === 'transition' ? state.transitions : state.worldZones;
+        return list.find(point => point.id === state.selectedPoint.id) || null;
+      }
+
+      function transitionTargetLabel(id) {
+        const match = state.locationSummaries.find(row => row.id === id);
+        return match ? match.name : (id || 'не выбрано');
+      }
+
+      function entryPointLabel(key) {
+        const labels = {
+          spawn: 'Старт игрока',
+          entryFromWorld: 'Вход из глобальной карты',
+          entryFromWasteland: 'Вход из пустоши',
+          entryFromSettlement: 'Вход из поселения'
+        };
+        return labels[key] || key || 'не выбрано';
+      }
+
+      function pluralRu(value, one, few, many) {
+        const n = Math.abs(Number(value) || 0);
+        const mod10 = n % 10;
+        const mod100 = n % 100;
+        if (mod10 === 1 && mod100 !== 11) return one;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+        return many;
+      }
+
+      function selectedPointInfo() {
+        if (!state.selectedPoint) return null;
+        if (state.selectedPoint.kind === 'spawn') {
+          return { kind: 'spawn', id: 'spawn', point: state.spawn, title: locationAllowsRespawn() ? 'Точка респавна' : 'Старт игрока' };
+        }
+        if (state.selectedPoint.kind === 'entry') {
+          return { kind: 'entry', id: 'entry', point: state.entry, title: 'Вход из глобальной карты' };
+        }
+        const point = selectedPointRow();
+        if (!point) return null;
+        return {
+          kind: state.selectedPoint.kind,
+          id: point.id,
+          point,
+          title: state.selectedPoint.kind === 'world' ? 'Выход на глобальную карту' : 'Переход в другую локацию'
+        };
+      }
+
+      function refreshPointEditor() {
+        const info = selectedPointInfo();
+        const kind = info?.kind || null;
+        const point = info?.point || null;
+        const isTransition = kind === 'transition';
+        const isWorld = kind === 'world';
+        const isService = kind === 'spawn' || kind === 'entry';
+        dom.pointKindLabel.textContent = info ? info.title : 'Новый переход';
+        dom.pointSelectionLabel.textContent = info ? 'выбран' : 'для новой зоны';
+        dom.pointRadiusLabel.textContent = isWorld ? 'Ширина края карты' : 'Размер зоны';
+        dom.pointTargetField.classList.toggle('hidden', !isTransition && !!info);
+        dom.pointEntryField.classList.toggle('hidden', !isTransition && !!info);
+        dom.pointLabel.disabled = isService;
+        dom.pointRadius.disabled = isService;
+        dom.pointTarget.disabled = !!info && !isTransition;
+        dom.pointEntryKey.disabled = !!info && !isTransition;
+        dom.movePointButton.disabled = !isTransition;
+        dom.deletePointButton.disabled = !(isTransition || isWorld);
+
+        if (point) {
+          dom.pointLabel.value = isService ? info.title : (point.label || info.title);
+          dom.pointRadius.value = roundValue(isWorld ? (point.edgeWidth || point.radius || 4) : (isService ? 1.1 : (point.radius || 2.4)), 2);
+        }
+
+        if (isTransition) {
+          dom.pointTarget.value = point.to || dom.pointTarget.value;
+          dom.pointEntryKey.value = point.entryKey || 'spawn';
+          dom.pointHelp.textContent = 'Эта зона перенесет игрока в "' + transitionTargetLabel(point.to) + '" и поставит его в точку "' + entryPointLabel(point.entryKey) + '".';
+          return;
+        }
+        if (isWorld) {
+          dom.pointHelp.textContent = 'Выход на глобальную карту работает по всем краям локации. Меняется только ширина края и подпись.';
+          return;
+        }
+        if (isService) {
+          dom.pointHelp.textContent = kind === 'spawn'
+            ? (locationAllowsRespawn()
+              ? 'Это точка респавна городской локации. Игрок будет возрождаться здесь после смерти. Чтобы переставить ее, нажмите "Точка респавна" и кликните землю.'
+              : 'Это служебная точка старта и входов. В обычной локации она не считается респавном. Респавн доступен только для типа "Город / поселение".')
+            : 'Вход из глобальной карты - точка, куда игрок попадает при входе с карты мира. Чтобы переставить ее, нажмите "Вход из мира".';
+          return;
+        }
+        dom.pointHelp.textContent = 'Выберите целевую локацию, нажмите кнопку постановки перехода и кликните место на карте.';
+      }
+
+      function ensureWorldEdgeZone() {
+        rememberUndo('зона глобальной карты');
+        if (!state.worldZones.length) {
+          state.worldZones.push(defaultWorldEdgeZone(dom.locationName.value.trim() ? 'Край ' + dom.locationName.value.trim() : 'Край локации'));
+        } else {
+          state.worldZones = [normalizeWorldEdgeZone(state.worldZones[0], 0)];
+        }
+        selectPoint('world', state.worldZones[0].id);
+        refreshPointMarkers();
+        refreshPointList();
+        refreshExport();
+        return state.worldZones[0];
+      }
+
+      function selectPoint(kind, id) {
+        state.selectedPoint = kind && id ? { kind, id } : null;
+        const point = selectedPointRow();
+        if (point) {
+          dom.pointLabel.value = point.label || '';
+          dom.pointRadius.value = roundValue(kind === 'world' ? (point.edgeWidth || point.radius || 4) : (point.radius || 2.4), 2);
+          if (kind === 'transition') {
+            dom.pointTarget.value = point.to || dom.pointTarget.value;
+            dom.pointEntryKey.value = point.entryKey || 'spawn';
+          }
+        }
+        updateModeButtons();
+        refreshPointList();
+        refreshPointEditor();
+      }
+
+      function updateSelectedPointFromInputs() {
+        const point = selectedPointRow();
+        if (!point) return;
+        point.label = dom.pointLabel.value.trim() || point.label || 'Переход';
+        point.radius = clamp(numberFrom(dom.pointRadius, point.radius || 2.4), 0.5, 18);
+        if (state.selectedPoint.kind === 'world') {
+          point.shape = 'edges';
+          point.edgeWidth = point.radius;
+          point.x = 0;
+          point.y = 0;
+          point.z = 0;
+        }
+        if (state.selectedPoint.kind === 'transition') {
+          point.to = dom.pointTarget.value || point.to || 'settlement';
+          point.entryKey = dom.pointEntryKey.value || 'spawn';
+        }
+        refreshPointList();
+        refreshPointEditor();
+        refreshPointMarkers();
+        refreshExport();
+      }
+
+      function placePoint(kind, point) {
+        rememberUndo('точка перехода');
+        if (kind === 'world') {
+          ensureWorldEdgeZone();
+          return;
+        }
+        const base = {
+          id: (kind === 'transition' ? 'transition_' : 'world_exit_') + String(state.nextPointNumber++).padStart(2, '0'),
+          label: dom.pointLabel.value.trim() || (kind === 'transition' ? 'Переход' : 'Выход на глобальную карту'),
+          radius: clamp(numberFrom(dom.pointRadius, kind === 'transition' ? 2.4 : 4), 0.5, 18),
+          x: roundValue(snapValue(point.x)),
+          y: 0,
+          z: roundValue(snapValue(point.z))
+        };
+        if (kind === 'transition') {
+          state.transitions.push({ ...base, type: 'location', to: dom.pointTarget.value || 'settlement', entryKey: dom.pointEntryKey.value || 'spawn' });
+          selectPoint('transition', base.id);
+        } else {
+          state.worldZones.push({ ...base, type: 'globalMap' });
+          selectPoint('world', base.id);
+        }
+        refreshPointMarkers();
+        refreshPointList();
+        refreshExport();
+      }
+
+      function moveSelectedPoint(point) {
+        const row = selectedPointRow();
+        if (!row) return;
+        rememberUndo('перемещение точки');
+        if (state.selectedPoint.kind === 'world') {
+          row.x = 0;
+          row.y = 0;
+          row.z = 0;
+          row.shape = 'edges';
+          refreshPointMarkers();
+          refreshPointList();
+          refreshExport();
+          return;
+        }
+        row.x = roundValue(snapValue(point.x));
+        row.z = roundValue(snapValue(point.z));
+        refreshPointMarkers();
+        refreshPointList();
+        refreshExport();
+      }
+
+      function deleteSelectedPoint() {
+        if (!state.selectedPoint) return;
+        rememberUndo('удаление точки');
+        if (state.selectedPoint.kind === 'transition') state.transitions = state.transitions.filter(point => point.id !== state.selectedPoint.id);
+        if (state.selectedPoint.kind === 'world') state.worldZones = state.worldZones.filter(point => point.id !== state.selectedPoint.id);
+        state.selectedPoint = null;
+        state.markerMode = null;
+        dom.pointLabel.value = 'Переход';
+        dom.pointRadius.value = 2.4;
+        updateModeButtons();
+        refreshPointMarkers();
+        refreshPointList();
+        refreshPointEditor();
+        refreshExport();
+      }
+
+      function renderModelLibrary() {
+        const search = dom.modelSearch.value.trim().toLowerCase();
+        const category = dom.categoryFilter.value;
+        const filtered = MODEL_LIBRARY.filter(model => {
+          const matchesSearch = !search || (model.name + ' ' + model.key + ' ' + model.category).toLowerCase().includes(search);
+          const matchesCategory = category === 'all' || model.category === category;
+          return matchesSearch && matchesCategory;
+        });
+        dom.modelCounter.textContent = String(filtered.length);
+        dom.modelList.innerHTML = '';
+        filtered.forEach(model => {
+          const card = document.createElement('button');
+          card.className = 'model-card' + (model.key === state.selectedModelKey ? ' selected' : '');
+          card.type = 'button';
+          card.innerHTML = '<span><b></b><span></span></span><i class="pill"></i>';
+          card.querySelector('b').textContent = model.name;
+          card.querySelector('span span').textContent = model.file + ' · ' + visionLabelForModel(model.key, model.collision);
+          card.querySelector('i').textContent = model.category;
+          card.addEventListener('click', () => {
+            state.selectedModelKey = model.key;
+            renderModelLibrary();
+            updateModelPreview();
+            toast('Выбрана модель: ' + model.name);
+          });
+          dom.modelList.appendChild(card);
+        });
+      }
+
+      function setupFilters() {
+        dom.categoryFilter.innerHTML = '';
+        ['all', ...Array.from(new Set(MODEL_LIBRARY.map(model => model.category))).sort((a, b) => a.localeCompare(b, 'ru'))].forEach(category => {
+          const option = document.createElement('option');
+          option.value = category;
+          option.textContent = category === 'all' ? 'Все' : category;
+          dom.categoryFilter.appendChild(option);
+        });
+        dom.groundPreset.innerHTML = '';
+        GROUND_PRESETS.forEach(row => {
+          const option = document.createElement('option');
+          option.value = row.id;
+          option.textContent = row.label;
+          dom.groundPreset.appendChild(option);
+        });
+      }
+
+      function refreshObjectList() {
+        dom.objectCounter.textContent = String(state.objects.length);
+        dom.sceneReadout.textContent = state.objects.length + ' объектов · ' + state.transitions.length + ' переходов · ' + state.worldZones.length + ' зон';
+        dom.objectList.innerHTML = '';
+        state.objects.forEach(object => {
+          const card = document.createElement('button');
+          card.className = 'object-card' + (object.id === state.selectedObjectId ? ' selected' : '');
+          card.type = 'button';
+          card.innerHTML = '<span><b></b><span></span></span><i class="pill"></i>';
+          card.querySelector('b').textContent = object.name || object.model;
+          card.querySelector('span span').textContent = object.id + ' · x ' + roundValue(object.x, 2) + ', z ' + roundValue(object.z, 2);
+          card.querySelector('i').textContent = object.loading ? 'загрузка' : collisionLabel(object.collision);
+          card.addEventListener('click', () => selectObject(object.id));
+          dom.objectList.appendChild(card);
+        });
+      }
+
+      function refreshPointList() {
+        const transitionCount = state.transitions.length;
+        dom.pointCounter.textContent = transitionCount + ' ' + pluralRu(transitionCount, 'переход', 'перехода', 'переходов') + (state.worldZones.length ? ' · есть выход на карту' : '');
+        dom.pointList.innerHTML = '';
+        const rows = [
+          { kind: 'spawn', id: 'spawn', label: locationAllowsRespawn() ? 'Точка респавна' : 'Старт игрока', point: state.spawn, meta: locationAllowsRespawn() ? 'респавн' : 'старт' },
+          { kind: 'entry', id: 'entry', label: 'Вход из глобальной карты', point: state.entry, meta: 'вход' },
+          ...state.transitions.map(point => ({ kind: 'transition', id: point.id, label: point.label, point, meta: 'переход' })),
+          ...state.worldZones.map(point => ({ kind: 'world', id: point.id, label: 'Выход на глобальную карту', point, meta: 'края карты' }))
+        ];
+        rows.forEach(row => {
+          const tile = worldToTilePoint(row.point);
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.dataset.pointKind = row.kind;
+          card.dataset.pointId = row.id;
+          card.className = 'point-card' + (state.selectedPoint && state.selectedPoint.kind === row.kind && state.selectedPoint.id === row.id ? ' selected' : '');
+          card.innerHTML = '<span><b></b><span></span></span><i class="pill"></i>';
+          card.querySelector('b').textContent = row.label || row.id;
+          if (row.kind === 'world') {
+            card.querySelector('span span').textContent = 'По всем краям локации · ширина ' + roundValue(row.point.edgeWidth || row.point.radius || 4, 2) + ' м';
+          } else if (row.kind === 'transition') {
+            card.querySelector('span span').textContent = 'Ведет в: ' + transitionTargetLabel(row.point.to) + ' · вход: ' + entryPointLabel(row.point.entryKey);
+          } else {
+            card.querySelector('span span').textContent = 'x ' + roundValue(row.point.x, 2) + ', z ' + roundValue(row.point.z, 2) + ' · клетка ' + tile.tx + ':' + tile.tz;
+          }
+          card.querySelector('i').textContent = row.meta;
+          card.addEventListener('click', () => {
+            if (row.kind === 'spawn' || row.kind === 'entry') {
+              state.selectedPoint = { kind: row.kind, id: row.id };
+            } else {
+              selectPoint(row.kind, row.id);
+              return;
+            }
+            refreshPointList();
+            refreshPointEditor();
+            updateModeButtons();
+          });
+          dom.pointList.appendChild(card);
+        });
+        refreshPointEditor();
+      }
+
+      function refreshInspector() {
+        const record = findRecord(state.selectedObjectId);
+        dom.selectedName.textContent = record ? record.name : 'нет';
+        dom.inspector.classList.toggle('hidden', !record);
+        dom.inspectorEmpty.classList.toggle('hidden', !!record);
+        if (!record) return;
+        const rule = modelRuleFor(record.model);
+        const scaleLocked = modelRuleLocksScale(rule);
+        dom.objectLabel.value = record.name;
+        dom.objectX.value = roundValue(record.x, 3);
+        dom.objectY.value = roundValue(record.y, 3);
+        dom.objectZ.value = roundValue(record.z, 3);
+        dom.objectScaleX.value = roundValue(record.scaleX, 3);
+        dom.objectScaleY.value = roundValue(record.scaleY, 3);
+        dom.objectScaleZ.value = roundValue(record.scaleZ, 3);
+        dom.objectScaleX.disabled = scaleLocked;
+        dom.objectScaleY.disabled = scaleLocked;
+        dom.objectScaleZ.disabled = scaleLocked;
+        dom.objectRot.value = roundValue(THREE.Math.radToDeg(record.rotationY), 2);
+        dom.objectCollision.value = record.collision;
+        updateCollisionHelp();
+        updateObjectVisionHelp(record);
+        dom.objectTags.value = record.tags.join(', ');
+      }
+
+      function updateSelectedFromInspector() {
+        const record = findRecord(state.selectedObjectId);
+        if (!record) return;
+        record.name = dom.objectLabel.value.trim() || record.name;
+        const rule = modelRuleFor(record.model);
+        const nextRotationY = THREE.Math.degToRad(numberFrom(dom.objectRot, THREE.Math.radToDeg(record.rotationY)));
+        record.x = numberFrom(dom.objectX, record.x);
+        record.y = numberFrom(dom.objectY, record.y);
+        record.z = numberFrom(dom.objectZ, record.z);
+        if (rule?.tileSize || rule?.footprint) {
+          record.x = roundValue(snapValueForModel(record.x, record.model, 'x', nextRotationY));
+          record.z = roundValue(snapValueForModel(record.z, record.model, 'z', nextRotationY));
+          const snapped = snapPlacementToNeighborEdges(record.model, record.x, record.z, nextRotationY, { ignoreObjectId: record.id });
+          record.x = snapped.x;
+          record.z = snapped.z;
+        }
+        if (rule?.groundSnap && Math.abs(record.y) < 0.001) record.y = 0;
+        if (modelRuleLocksScale(rule)) {
+          record.scaleX = 1;
+          record.scaleY = 1;
+          record.scaleZ = 1;
+        } else {
+          record.scaleX = Math.max(0.05, numberFrom(dom.objectScaleX, record.scaleX));
+          record.scaleY = Math.max(0.05, numberFrom(dom.objectScaleY, record.scaleY));
+          record.scaleZ = Math.max(0.05, numberFrom(dom.objectScaleZ, record.scaleZ));
+        }
+        record.rotationY = nextRotationY;
+        record.collision = dom.objectCollision.value;
+        updateCollisionHelp();
+        updateObjectVisionHelp(record);
+        record.tags = uniqueTags(
+          dom.objectTags.value.split(',').map(tag => tag.trim()).filter(Boolean),
+          [...(rule?.tags || []), ...entityTagsFor(record.model)]
+        );
+        setObjectTransform(record);
+        refreshInspector();
+        refreshObjectList();
+        refreshExport();
+      }
+
+      function exportTilePoint(point) {
+        const tile = worldToTilePoint(point);
+        return {
+          tx: tile.tx,
+          tz: tile.tz,
+          x: roundValue(point.x),
+          y: roundValue(point.y || 0),
+          z: roundValue(point.z),
+          rotationY: roundValue(point.rotationY || 0)
+        };
+      }
+
+      function buildExportObject() {
+        const groundPreset = groundById.get(dom.groundPreset.value) || GROUND_PRESETS[0];
+        const pvpMode = normalizeLocationPvpMode(dom.locationSafe.value);
+        const cityLocation = locationAllowsRespawn();
+        const base = { ...(state.rawLocation && typeof state.rawLocation === 'object' ? state.rawLocation : {}) };
+        const transitions = state.transitions.map(point => {
+          const tile = worldToTilePoint(point);
+          return {
+            id: point.id,
+            type: 'location',
+            label: point.label || 'Переход',
+            to: point.to || 'settlement',
+            entryKey: point.entryKey || 'spawn',
+            tx: tile.tx,
+            tz: tile.tz,
+            radius: roundValue(point.radius || 2.4, 2),
+            position: { x: roundValue(point.x), y: 0, z: roundValue(point.z) }
+          };
+        });
+        const worldZones = state.worldZones.map(point => {
+          const edgeWidth = clamp(numberFrom(point.edgeWidth, numberFrom(point.radius, 4)), 0.5, 18);
+          const tile = worldToTilePoint({ x: 0, z: -currentMapSize().depth / 2 + edgeWidth / 2 });
+          return {
+            id: point.id,
+            type: 'globalMap',
+            shape: 'edges',
+            label: point.label || 'Выход на глобальную карту',
+            tx: tile.tx,
+            tz: tile.tz,
+            radius: roundValue(edgeWidth, 2),
+            edgeWidth: roundValue(edgeWidth, 2),
+            position: { x: 0, y: 0, z: 0 },
+            edges: ['north', 'south', 'west', 'east']
+          };
+        });
+        const objects = state.objects.map(object => ({
+          id: object.id,
+          model: object.model,
+          name: object.name,
+          url: object.url,
+          position: { x: roundValue(object.x), y: roundValue(object.y), z: roundValue(object.z) },
+          rotation: { x: 0, y: roundValue(object.rotationY), z: 0 },
+          scale: { x: roundValue(object.scaleX), y: roundValue(object.scaleY), z: roundValue(object.scaleZ) },
+          collision: object.collision,
+          tags: uniqueTags(object.tags, [...(modelRuleFor(object.model)?.tags || []), ...entityTagsFor(object.model), ...resourceTagsFor(object.model)]),
+          ...createRuleMetadata(object),
+          ...createResourceMetadata(object),
+          ...createEntityMetadata(object)
+        }));
+        const entryPoint = exportTilePoint(state.entry);
+        const firstTransition = transitions[0];
+        return {
+          ...base,
+          schema: 'realm.location.v1',
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          id: slugify(dom.locationId.value),
+          name: dom.locationName.value.trim() || 'Новая локация',
+          seed: Math.round(numberFrom(dom.locationSeed, Date.now() % 1000000)),
+          kind: cityLocation ? 'settlement' : 'location',
+          city: cityLocation,
+          settlement: cityLocation,
+          respawnAllowed: cityLocation,
+          pvpMode,
+          safe: pvpMode === 'peaceful',
+          pvp: pvpMode !== 'peaceful',
+          fullDrop: pvpMode === 'pvpFullDrop',
+          ground: { preset: groundPreset.id, label: groundPreset.label, texture: groundPreset.texture || 'procedural' },
+          units: 'game-meters',
+          grid: { snap: state.snap, step: locationGridStep() },
+          map: {
+            width: Math.max(8, numberFrom(dom.mapWidth, 76)),
+            depth: Math.max(8, numberFrom(dom.mapDepth, 76)),
+            origin: 'center'
+          },
+          spawn: exportTilePoint(state.spawn),
+          ...(cityLocation ? { respawn: exportTilePoint(state.spawn) } : { respawn: undefined }),
+          entry: entryPoint,
+          [state.primaryEntryKey || 'entryFromWorld']: entryPoint,
+          exit: firstTransition ? {
+            tx: firstTransition.tx,
+            tz: firstTransition.tz,
+            to: firstTransition.to,
+            label: firstTransition.label
+          } : base.exit,
+          transitions,
+          worldZones,
+          objects
+        };
+      }
+
+      function refreshExport() {
+        dom.jsonOutput.value = JSON.stringify(buildExportObject(), null, 2);
+      }
+
+      function editorSnapshot() {
+        return JSON.stringify(buildExportObject());
+      }
+
+      function rememberUndo(label = '') {
+        if (undoHistory.restoring) return false;
+        const snapshot = editorSnapshot();
+        if (undoHistory.stack[undoHistory.stack.length - 1] === snapshot) return false;
+        undoHistory.stack.push(snapshot);
+        if (undoHistory.stack.length > undoHistory.max) undoHistory.stack.shift();
+        undoHistory.label = label;
+        return true;
+      }
+
+      function restoreEditorSnapshot(snapshot) {
+        undoHistory.restoring = true;
+        try {
+          importLocation(JSON.parse(snapshot), { silent: true });
+        } finally {
+          undoHistory.restoring = false;
+        }
+      }
+
+      function undoEditorAction() {
+        const snapshot = undoHistory.stack.pop();
+        if (!snapshot) {
+          toast('Нет действий для отмены');
+          return false;
+        }
+        restoreEditorSnapshot(snapshot);
+        toast('Действие отменено');
+        return true;
+      }
+
+      function bindUndoMemory(elements, label = 'поле') {
+        elements.forEach(input => {
+          input.addEventListener('focus', () => rememberUndo(label));
+          input.addEventListener('pointerdown', () => rememberUndo(label));
+          input.addEventListener('keydown', event => {
+            if (event.ctrlKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z' || event.code === 'KeyZ')) {
+              event.preventDefault();
+              event.stopPropagation();
+              undoEditorAction();
+            }
+          });
+        });
+      }
+
+      function clearScene(keepMeta = false) {
+        state.objects.forEach(object => objectRoot.remove(object.group));
+        state.objects = [];
+        state.transitions = [];
+        state.worldZones = [];
+        state.selectedObjectId = null;
+        state.selectedPoint = null;
+        state.nextObjectNumber = 1;
+        state.nextPointNumber = 1;
+        if (!keepMeta) state.rawLocation = {};
+        if (selectionBox) {
+          scene.remove(selectionBox);
+          selectionBox = null;
+        }
+        refreshInspector();
+        refreshObjectList();
+        refreshPointMarkers();
+        refreshPointList();
+        refreshExport();
+      }
+
+      function importLocation(raw, options = {}) {
+        let data;
+        try {
+          data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        } catch (error) {
+          toast('JSON не читается: ' + error.message);
+          return;
+        }
+        clearScene(true);
+        state.rawLocation = JSON.parse(JSON.stringify(data || {}));
+        dom.locationId.value = data.id || 'custom_wasteland_site';
+        dom.locationName.value = data.name || 'Новая локация';
+        dom.locationSeed.value = Number.isFinite(Number(data.seed)) ? Number(data.seed) : 20260630;
+        dom.locationKind.value = normalizeLocationKind(data);
+        updateLocationKindHelp();
+        dom.locationSafe.value = normalizeLocationPvpMode(data);
+        updateLocationPvpHelp();
+        if (data.map) {
+          dom.mapWidth.value = data.map.width || 76;
+          dom.mapDepth.value = data.map.depth || data.map.height || 76;
+        }
+        locationGridStep();
+        state.snap = !data.grid || data.grid.snap !== false;
+        dom.snapToggle.classList.toggle('active', state.snap);
+        const groundId = data.ground?.preset || data.ground?.material || 'caravanYard';
+        dom.groundPreset.value = groundById.has(groundId) ? groundId : 'caravanYard';
+        rebuildGrid();
+        state.spawn = normalizeWorldPoint(data.spawn, tileToWorldPoint({ tx: 19, tz: 19 }));
+        const entryKeys = ['entryFromWorld', 'entryFromWasteland', 'entryFromSettlement'];
+        state.primaryEntryKey = entryKeys.find(key => data[key]) || 'entryFromWorld';
+        state.entry = normalizeWorldPoint(data.entry || data[state.primaryEntryKey] || data.spawn, state.spawn);
+
+        const transitionRows = Array.isArray(data.transitions) ? data.transitions : (data.exit ? [data.exit] : []);
+        state.transitions = transitionRows.filter(row => row && (row.to || row.type === 'location' || !row.type)).map((row, index) => {
+          const point = normalizeWorldPoint(row, state.entry);
+          return {
+            id: String(row.id || 'transition_' + (index + 1)),
+            type: 'location',
+            label: row.label || row.name || 'Переход',
+            to: row.to || 'settlement',
+            entryKey: row.entryKey || 'spawn',
+            radius: clamp(numberFrom(row.radius, 2.4), 0.5, 18),
+            x: point.x,
+            y: 0,
+            z: point.z
+          };
+        });
+        state.worldZones = Array.isArray(data.worldZones) && data.worldZones.length
+          ? [normalizeWorldEdgeZone(data.worldZones[0], 0)]
+          : [];
+        state.nextPointNumber = state.transitions.length + state.worldZones.length + 1;
+
+        const objects = Array.isArray(data.objects) ? data.objects : [];
+        objects.forEach(object => {
+          const def = modelByKey.get(object.model) || modelByUrl.get(object.url) || MODEL_LIBRARY.find(item => item.file === object.file);
+          if (!def) return;
+          createPlacedObject(def, object);
+          const match = String(object.id || '').match(/obj_(\d+)/);
+          if (match) state.nextObjectNumber = Math.max(state.nextObjectNumber, Number(match[1]) + 1);
+        });
+        selectObject(null);
+        selectPoint(null, null);
+        refreshPointMarkers();
+        refreshPointList();
+        refreshObjectList();
+        refreshExport();
+        if (!options.silent) toast('Локация загружена');
+      }
+
+      async function refreshLocationFiles() {
+        try {
+          const res = await fetch(API_BASE);
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error || 'Ошибка списка локаций');
+          state.locationSummaries = data.locations || [];
+          dom.locationFolderLabel.textContent = data.dir || 'data/locations';
+          dom.locationFileSelect.innerHTML = '';
+          state.locationSummaries.forEach(row => {
+            const option = document.createElement('option');
+            option.value = row.id;
+            option.textContent = row.name + ' · ' + row.id;
+            dom.locationFileSelect.appendChild(option);
+          });
+          refreshPointTargetOptions();
+          toast('Список локаций обновлен');
+        } catch (error) {
+          toast('Серверный список локаций недоступен');
+          console.warn(error);
+        }
+      }
+
+      function refreshPointTargetOptions() {
+        const current = dom.pointTarget.value;
+        dom.pointTarget.innerHTML = '';
+        const rows = state.locationSummaries.length ? state.locationSummaries : [{ id: 'settlement', name: 'Караванная стоянка Старого Клима' }, { id: 'wasteland', name: 'Пепельный лес' }];
+        rows.forEach(row => {
+          const option = document.createElement('option');
+          option.value = row.id;
+          option.textContent = row.name + ' · ' + row.id;
+          dom.pointTarget.appendChild(option);
+        });
+        if (current && rows.some(row => row.id === current)) dom.pointTarget.value = current;
+        refreshPointEditor();
+      }
+
+      async function loadSelectedLocationFile() {
+        const id = dom.locationFileSelect.value;
+        if (!id) return toast('Файл локации не выбран');
+        try {
+          const res = await fetch(API_BASE + '/' + encodeURIComponent(id));
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error || 'Ошибка загрузки');
+          importLocation(data.location);
+        } catch (error) {
+          toast('Не удалось загрузить локацию');
+          console.error(error);
+        }
+      }
+
+      async function saveLocationToFolder() {
+        refreshExport();
+        const location = JSON.parse(dom.jsonOutput.value);
+        try {
+          const res = await fetch(API_BASE + '/' + encodeURIComponent(location.id), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ location })
+          });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error || 'Ошибка сохранения');
+          await refreshLocationFiles();
+          dom.locationFileSelect.value = location.id;
+          toast('Сохранено: ' + data.file);
+        } catch (error) {
+          toast('Не удалось сохранить в папку. Можно скачать JSON.');
+          console.error(error);
+        }
+      }
+
+      function downloadJson() {
+        refreshExport();
+        const id = slugify(dom.locationId.value);
+        const blob = new Blob([dom.jsonOutput.value], { type: 'application/json;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = id + '.json';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(link.href);
+        toast('Файл локации скачан');
+      }
+
+      function setPointerFromEvent(event) {
+        const rect = dom.viewport.getBoundingClientRect();
+        state.pointer.x = ((event.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+        state.pointer.y = -(((event.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1);
+      }
+
+      function groundPointFromEvent(event) {
+        setPointerFromEvent(event);
+        raycaster.setFromCamera(state.pointer, camera);
+        const hit = raycaster.intersectObject(groundPlane, false)[0];
+        return hit ? hit.point : null;
+      }
+
+      function editorIdForObject(object) {
+        let current = object;
+        while (current) {
+          if (current.userData && current.userData.editorId) return current.userData.editorId;
+          current = current.parent;
+        }
+        return null;
+      }
+
+      function surfaceYForRecord(id, fallbackY) {
+        const record = findRecord(id);
+        const rule = record ? modelRuleFor(record.model) : null;
+        if (record && rule && Number.isFinite(Number(rule.height))) {
+          return roundValue(record.y + Number(rule.height) * Math.max(0.01, Number(record.scaleY || 1)), 3);
+        }
+        return roundValue(fallbackY, 3);
+      }
+
+      function placementPointFromEvent(event, { ignoreObjectId = null } = {}) {
+        setPointerFromEvent(event);
+        raycaster.setFromCamera(state.pointer, camera);
+        const hits = raycaster.intersectObjects(objectRoot.children, true);
+        for (const hit of hits) {
+          const id = editorIdForObject(hit.object);
+          if (!id || id === ignoreObjectId) continue;
+          const normal = hit.face && hit.face.normal
+            ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld)
+            : null;
+          if (normal && normal.y < 0.45) continue;
+          const point = hit.point.clone();
+          point.y = Math.max(0, surfaceYForRecord(id, point.y));
+          point.surface = 'object';
+          point.objectId = id;
+          return point;
+        }
+        const ground = groundPointFromEvent(event);
+        if (!ground) return null;
+        const point = ground.clone();
+        point.y = 0;
+        point.surface = 'ground';
+        point.objectId = null;
+        return point;
+      }
+
+      function objectIdFromEvent(event) {
+        setPointerFromEvent(event);
+        raycaster.setFromCamera(state.pointer, camera);
+        const hits = raycaster.intersectObjects(objectRoot.children, true);
+        for (const hit of hits) {
+          const id = editorIdForObject(hit.object);
+          if (id) return id;
+        }
+        return null;
+      }
+
+      function placeSelectedModel(point) {
+        const def = modelByKey.get(state.selectedModelKey);
+        if (!def) return;
+        rememberUndo('размещение модели');
+        let snapped = snapPlacementToNeighborEdges(
+          def.key,
+          snapValueForModel(point.x, def.key, 'x', 0),
+          snapValueForModel(point.z, def.key, 'z', 0),
+          0
+        );
+        snapped = roofNeighborPlacementFromHit(def.key, snapped.x, snapped.z, 0, point);
+        snapped = snapPlacementToNeighborEdges(def.key, snapped.x, snapped.z, 0);
+        const y = inferRoofPlacementY(def.key, snapped.x, snapped.z, 0, point);
+        createPlacedObject(def, {
+          x: snapped.x,
+          y,
+          z: snapped.z,
+          preserveY: y > 0.001,
+          applyPlacementDefaults: true
+        });
+      }
+
+      function moveSelectedObjectTo(point) {
+        const record = findRecord(state.selectedObjectId);
+        if (!record) return;
+        record.x = roundValue(snapValueForModel(point.x, record.model, 'x', record.rotationY));
+        record.z = roundValue(snapValueForModel(point.z, record.model, 'z', record.rotationY));
+        const snapped = snapPlacementToNeighborEdges(record.model, record.x, record.z, record.rotationY, { ignoreObjectId: record.id });
+        record.x = snapped.x;
+        record.z = snapped.z;
+        record.y = inferRoofPlacementY(record.model, record.x, record.z, record.rotationY, point, { ignoreObjectId: record.id });
+        setObjectTransform(record);
+        refreshInspector();
+        refreshObjectList();
+        refreshExport();
+      }
+
+      function setMarkerAt(mode, point) {
+        if (mode === 'spawn') {
+          state.spawn = { x: roundValue(snapValue(point.x)), y: 0, z: roundValue(snapValue(point.z)), rotationY: 0 };
+          state.selectedPoint = { kind: 'spawn', id: 'spawn' };
+        }
+        if (mode === 'entry') {
+          state.entry = { x: roundValue(snapValue(point.x)), y: 0, z: roundValue(snapValue(point.z)), rotationY: 0 };
+          state.selectedPoint = { kind: 'entry', id: 'entry' };
+        }
+        if (mode === 'transition') placePoint('transition', point);
+        if (mode === 'world') ensureWorldEdgeZone();
+        if (mode === 'movePoint') moveSelectedPoint(point);
+        state.markerMode = null;
+        updateModeButtons();
+        refreshPointMarkers();
+        refreshPointList();
+        refreshPointEditor();
+        refreshExport();
+      }
+
+      function updateModeButtons() {
+        dom.setSpawnButton.classList.toggle('active', state.markerMode === 'spawn');
+        dom.setEntryButton.classList.toggle('active', state.markerMode === 'entry');
+        dom.addTransitionButton.classList.toggle('active', state.markerMode === 'transition');
+        dom.addWorldZoneButton.classList.toggle('active', state.markerMode === 'world' || !!state.worldZones.length);
+        dom.addWorldZoneButton.textContent = state.worldZones.length
+          ? 'Выход на глобальную карту включен'
+          : 'Включить выход на глобальную карту по краям';
+        dom.movePointButton.classList.toggle('active', state.markerMode === 'movePoint');
+        dom.movePointButton.disabled = !(state.selectedPoint && state.selectedPoint.kind === 'transition');
+        dom.deletePointButton.disabled = !(state.selectedPoint && (state.selectedPoint.kind === 'transition' || state.selectedPoint.kind === 'world'));
+      }
+
+      function rotateSelected(degrees) {
+        const record = findRecord(state.selectedObjectId);
+        if (!record) return;
+        rememberUndo('поворот объекта');
+        record.rotationY += THREE.Math.degToRad(degrees);
+        if (modelRuleFor(record.model)) {
+          record.x = roundValue(snapValueForModel(record.x, record.model, 'x', record.rotationY));
+          record.z = roundValue(snapValueForModel(record.z, record.model, 'z', record.rotationY));
+          const snapped = snapPlacementToNeighborEdges(record.model, record.x, record.z, record.rotationY, { ignoreObjectId: record.id });
+          record.x = snapped.x;
+          record.z = snapped.z;
+        }
+        setObjectTransform(record);
+        refreshInspector();
+        refreshExport();
+      }
+
+      function centerCameraOnSelected() {
+        const record = findRecord(state.selectedObjectId);
+        if (!record) return;
+        state.cameraTarget.set(record.x, record.y, record.z);
+        state.cameraDistance = Math.max(12, Math.min(state.cameraDistance, 34));
+      }
+
+      function updateCursorReadout(event) {
+        const point = placementPointFromEvent(event, { ignoreObjectId: state.selectedObjectId });
+        if (!point) return;
+        const tile = worldToTilePoint(point);
+        const heightText = point.y > 0.001 ? ', y ' + roundValue(point.y, 2) : '';
+        const surfaceText = point.surface === 'object' ? ' · поверхность объекта' : '';
+        dom.cursorReadout.textContent = 'Курсор: x ' + roundValue(point.x, 2) + ', z ' + roundValue(point.z, 2) + heightText + ' · клетка ' + tile.tx + ':' + tile.tz + surfaceText;
+      }
+
+      function updateCamera() {
+        state.cameraPitch = Math.max(0.22, Math.min(1.32, state.cameraPitch));
+        const horizontal = Math.cos(state.cameraPitch) * state.cameraDistance;
+        const y = Math.sin(state.cameraPitch) * state.cameraDistance;
+        const x = Math.sin(state.cameraYaw) * horizontal;
+        const z = Math.cos(state.cameraYaw) * horizontal;
+        camera.position.set(state.cameraTarget.x + x, state.cameraTarget.y + y, state.cameraTarget.z + z);
+        camera.lookAt(state.cameraTarget);
+      }
+
+      function bindEvents() {
+        dom.modelSearch.addEventListener('input', renderModelLibrary);
+        dom.categoryFilter.addEventListener('change', renderModelLibrary);
+        dom.refreshLocations.addEventListener('click', refreshLocationFiles);
+        dom.loadLocation.addEventListener('click', loadSelectedLocationFile);
+        dom.saveLocationFile.addEventListener('click', saveLocationToFolder);
+        dom.groundPreset.addEventListener('change', () => { rebuildGrid(); refreshExport(); });
+        [dom.mapWidth, dom.mapDepth].forEach(input => input.addEventListener('change', () => { rebuildGrid(); refreshExport(); }));
+        [dom.locationId, dom.locationName, dom.locationSeed].forEach(input => input.addEventListener('input', refreshExport));
+        dom.locationKind.addEventListener('change', () => {
+          updateLocationKindHelp();
+          refreshPointMarkers();
+          refreshPointList();
+          refreshPointEditor();
+          refreshExport();
+        });
+        dom.locationSafe.addEventListener('change', () => { updateLocationPvpHelp(); refreshExport(); });
+        dom.snapToggle.addEventListener('click', () => {
+          state.snap = !state.snap;
+          dom.snapToggle.classList.toggle('active', state.snap);
+          refreshExport();
+        });
+        dom.setSpawnButton.addEventListener('click', () => {
+          state.markerMode = state.markerMode === 'spawn' ? null : 'spawn';
+          updateModeButtons();
+          refreshPointEditor();
+          toast(locationAllowsRespawn()
+            ? 'Кликни по земле, чтобы поставить точку респавна'
+            : 'Кликни по земле, чтобы поставить старт игрока');
+        });
+        dom.setEntryButton.addEventListener('click', () => {
+          state.markerMode = state.markerMode === 'entry' ? null : 'entry';
+          updateModeButtons();
+          refreshPointEditor();
+          toast('Кликни по земле, чтобы поставить вход из глобальной карты');
+        });
+        dom.addTransitionButton.addEventListener('click', () => {
+          const nextMode = state.markerMode === 'transition' ? null : 'transition';
+          if (nextMode === 'transition' && state.selectedPoint && state.selectedPoint.kind !== 'transition') {
+            state.selectedPoint = null;
+            dom.pointLabel.value = 'Переход';
+            dom.pointRadius.value = 2.4;
+          }
+          state.markerMode = nextMode;
+          updateModeButtons();
+          refreshPointList();
+          refreshPointEditor();
+          toast(nextMode === 'transition'
+            ? 'Кликни по земле, чтобы поставить переход в выбранную локацию'
+            : 'Постановка перехода отменена');
+        });
+        dom.addWorldZoneButton.addEventListener('click', () => {
+          state.markerMode = null;
+          ensureWorldEdgeZone();
+          updateModeButtons();
+          refreshPointEditor();
+          toast('Выход на глобальную карту включен по краям локации');
+        });
+        dom.movePointButton.addEventListener('click', () => {
+          if (!state.selectedPoint || state.selectedPoint.kind !== 'transition') return toast('Сначала выбери обычный переход в списке');
+          state.markerMode = state.markerMode === 'movePoint' ? null : 'movePoint';
+          updateModeButtons();
+          toast('Кликни по земле, чтобы переставить выбранный переход');
+        });
+        dom.deletePointButton.addEventListener('click', deleteSelectedPoint);
+        [dom.pointLabel, dom.pointRadius, dom.pointTarget, dom.pointEntryKey].forEach(input => {
+          input.addEventListener('input', updateSelectedPointFromInputs);
+          input.addEventListener('change', updateSelectedPointFromInputs);
+        });
+        [dom.objectLabel, dom.objectX, dom.objectY, dom.objectZ, dom.objectScaleX, dom.objectScaleY, dom.objectScaleZ, dom.objectRot, dom.objectCollision, dom.objectTags].forEach(input => {
+          input.addEventListener('input', updateSelectedFromInspector);
+          input.addEventListener('change', updateSelectedFromInspector);
+        });
+        bindUndoMemory([
+          dom.locationId, dom.locationName, dom.locationSeed, dom.locationKind, dom.locationSafe, dom.groundPreset,
+          dom.mapWidth, dom.mapDepth,
+          dom.pointLabel, dom.pointRadius, dom.pointTarget, dom.pointEntryKey,
+          dom.objectLabel, dom.objectX, dom.objectY, dom.objectZ,
+          dom.objectScaleX, dom.objectScaleY, dom.objectScaleZ, dom.objectRot, dom.objectCollision, dom.objectTags
+        ], 'изменение поля');
+        dom.rotateLeft.addEventListener('click', () => rotateSelected(-15));
+        dom.rotateRight.addEventListener('click', () => rotateSelected(15));
+        dom.duplicateObject.addEventListener('click', duplicateSelectedObject);
+        dom.deleteObject.addEventListener('click', deleteSelectedObject);
+        dom.centerCamera.addEventListener('click', centerCameraOnSelected);
+        dom.copyJson.addEventListener('click', async () => {
+          refreshExport();
+          try {
+            await navigator.clipboard.writeText(dom.jsonOutput.value);
+            toast('JSON скопирован');
+          } catch (_) {
+            dom.jsonOutput.select();
+            toast('Выделил JSON, можно копировать вручную');
+          }
+        });
+        dom.downloadJson.addEventListener('click', downloadJson);
+        dom.importJson.addEventListener('click', () => importLocation(dom.jsonOutput.value));
+        dom.saveDraft.addEventListener('click', () => {
+          refreshExport();
+          localStorage.setItem('realm.locationEditorDraft', dom.jsonOutput.value);
+          toast('Черновик сохранен в браузере');
+        });
+        dom.clearScene.addEventListener('click', () => {
+          confirmEditorAction('Очистить текущую локацию? Это удалит объекты, переходы и зоны из текущей сцены.', () => {
+            clearScene();
+            toast('Локация очищена');
+          });
+        });
+
+        dom.viewport.addEventListener('contextmenu', event => event.preventDefault());
+        dom.viewport.addEventListener('pointermove', event => {
+          updateCursorReadout(event);
+          if (!mouseDown.active) return;
+          const dx = event.clientX - mouseDown.x;
+          const dy = event.clientY - mouseDown.y;
+          if (mouseDown.camera) {
+            if (event.shiftKey || mouseDown.button === 1) {
+              const panScale = state.cameraDistance * 0.0018;
+              const right = new THREE.Vector3();
+              const forward = new THREE.Vector3();
+              camera.getWorldDirection(forward);
+              forward.y = 0;
+              forward.normalize();
+              right.crossVectors(forward, camera.up).normalize();
+              state.cameraTarget.addScaledVector(right, -dx * panScale);
+              state.cameraTarget.addScaledVector(forward, dy * panScale);
+            } else {
+              state.cameraYaw -= dx * 0.006;
+              state.cameraPitch += dy * 0.004;
+            }
+            mouseDown.x = event.clientX;
+            mouseDown.y = event.clientY;
+            return;
+          }
+          if (mouseDown.objectId && Math.hypot(dx, dy) > 4) {
+            mouseDown.draggingObject = true;
+            const point = placementPointFromEvent(event, { ignoreObjectId: mouseDown.objectId });
+            if (point) moveSelectedObjectTo(point);
+          }
+        });
+        dom.viewport.addEventListener('pointerdown', event => {
+          dom.viewport.setPointerCapture(event.pointerId);
+          mouseDown.active = true;
+          mouseDown.x = event.clientX;
+          mouseDown.y = event.clientY;
+          mouseDown.button = event.button;
+          mouseDown.camera = event.button === 2 || event.button === 1 || event.altKey;
+          mouseDown.draggingObject = false;
+          mouseDown.objectId = null;
+          if (!mouseDown.camera && event.button === 0 && !state.markerMode) {
+            const id = objectIdFromEvent(event);
+            if (id) {
+              selectObject(id);
+              mouseDown.objectId = id;
+            }
+          }
+        });
+        dom.viewport.addEventListener('pointerup', event => {
+          try { dom.viewport.releasePointerCapture(event.pointerId); } catch (_) {}
+          const moved = Math.hypot(event.clientX - mouseDown.x, event.clientY - mouseDown.y);
+          const wasCamera = mouseDown.camera;
+          const wasDraggingObject = mouseDown.draggingObject;
+          mouseDown.active = false;
+          mouseDown.camera = false;
+          mouseDown.draggingObject = false;
+          if (wasCamera || event.button !== 0) return;
+          if (state.markerMode && moved < 5) {
+            const point = groundPointFromEvent(event);
+            if (!point) return;
+            setMarkerAt(state.markerMode, point);
+            return;
+          }
+          if (wasDraggingObject) return;
+          const id = objectIdFromEvent(event);
+          const point = placementPointFromEvent(event);
+          if (!point) return;
+          if (id && !event.shiftKey) {
+            selectObject(id);
+            return;
+          }
+          if (moved < 5) placeSelectedModel(point);
+        });
+        dom.viewport.addEventListener('wheel', event => {
+          event.preventDefault();
+          state.cameraDistance = Math.max(8, Math.min(140, state.cameraDistance + event.deltaY * 0.045));
+        }, { passive: false });
+        window.addEventListener('keydown', event => {
+          const tag = document.activeElement && document.activeElement.tagName;
+          const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+          if (event.ctrlKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z' || event.code === 'KeyZ')) {
+            event.preventDefault();
+            undoEditorAction();
+            return;
+          }
+          if (typing) return;
+          if (event.key === 'Delete' || event.key === 'Backspace') {
+            deleteSelectedObject();
+            event.preventDefault();
+          } else if (event.key === 'q' || event.key === 'Q') {
+            rotateSelected(-15);
+          } else if (event.key === 'e' || event.key === 'E') {
+            rotateSelected(15);
+          } else if (event.ctrlKey && (event.key === 'd' || event.key === 'D')) {
+            duplicateSelectedObject();
+            event.preventDefault();
+          } else if (event.ctrlKey && (event.key === 's' || event.key === 'S')) {
+            saveLocationToFolder();
+            event.preventDefault();
+          }
+        });
+        window.addEventListener('resize', resize);
+      }
+
+      function resize() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        renderer.setSize(width, height, false);
+        camera.aspect = width / Math.max(1, height);
+        camera.updateProjectionMatrix();
+        resizePreview();
+      }
+
+      function resizePreview() {
+        const rect = dom.modelPreview.getBoundingClientRect();
+        const width = Math.max(1, Math.floor(rect.width || 300));
+        const height = Math.max(1, Math.floor(rect.height || 138));
+        previewRenderer.setSize(width, height, false);
+        previewCamera.aspect = width / Math.max(1, height);
+        previewCamera.updateProjectionMatrix();
+      }
+
+      function renderPreview() {
+        previewRoot.rotation.y += 0.008;
+        const distance = Math.max(3.25, previewState.radius * 2.25);
+        previewCamera.position.set(0, previewState.centerY + previewState.radius * 0.18, distance);
+        previewCamera.lookAt(0, previewState.centerY * 0.7, 0);
+        previewRenderer.render(previewScene, previewCamera);
+      }
+
+      function animate() {
+        updateCamera();
+        updateSelectionBox();
+        renderer.render(scene, camera);
+        renderPreview();
+        requestAnimationFrame(animate);
+      }
+
+      async function init() {
+        setupFilters();
+        renderModelLibrary();
+        updateModelPreview();
+        refreshPointTargetOptions();
+        rebuildGrid();
+        refreshPointMarkers();
+        refreshPointList();
+        refreshInspector();
+        refreshObjectList();
+        updateLocationKindHelp();
+        updateLocationPvpHelp();
+        refreshExport();
+        bindEvents();
+        resize();
+        animate();
+        await refreshLocationFiles();
+        const draft = localStorage.getItem('realm.locationEditorDraft');
+        if (draft && !dom.locationFileSelect.value) {
+          try { importLocation(JSON.parse(draft)); } catch (_) {}
+        } else if (dom.locationFileSelect.value) {
+          await loadSelectedLocationFile();
+        }
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

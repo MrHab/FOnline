@@ -1,0 +1,799 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "scrapFoundry",
+  "name": "Литейная Свалочного поста",
+  "seed": 20260710,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "production",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "scrapDust",
+    "label": "Горячая свалка"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [
+    {
+      "id": "foundry_parts_crate",
+      "tx": 18,
+      "tz": 17,
+      "name": "Ящик литейной",
+      "tier": "tools"
+    }
+  ],
+  "objects": [
+    {
+      "id": "foundry_weapon_bench",
+      "model": "craftStationWeapon",
+      "name": "Оружейный верстак",
+      "url": "/assets/models/wasteland/craft_station_weapon.glb",
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": -5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "weapon_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "weapon_bench"
+      ],
+      "stationSiteId": "scrapFoundry",
+      "worksiteId": "scrapFoundry",
+      "stationOwner": "scrap_union",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      }
+    },
+    {
+      "id": "foundry_ammo_bench",
+      "model": "craftStationAmmo",
+      "name": "Патронный станок",
+      "url": "/assets/models/wasteland/craft_station_ammo.glb",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "ammo_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "ammo_bench"
+      ],
+      "stationSiteId": "scrapFoundry",
+      "worksiteId": "scrapFoundry",
+      "stationOwner": "scrap_union",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      }
+    },
+    {
+      "id": "foundry_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",
+      "url": "/assets/models/wasteland/craft_station_repair.glb",
+      "position": {
+        "x": -3,
+        "y": 0,
+        "z": -5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "scrapFoundry",
+      "worksiteId": "scrapFoundry",
+      "stationOwner": "scrap_union",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      }
+    },
+    {
+      "id": "foundry_tool_bench",
+      "model": "craftStationTools",
+      "name": "Инструментальный верстак",
+      "url": "/assets/models/wasteland/craft_station_tools.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -5
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "tool_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "tool_bench"
+      ],
+      "stationSiteId": "scrapFoundry",
+      "worksiteId": "scrapFoundry",
+      "stationOwner": "scrap_union",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "scrapFoundry"
+      }
+    },
+    {
+      "id": "scrap_foundry_trade_machine",
+      "model": "tradeMachine",
+      "name": "Автомат снабжения литейной",
+      "url": "/assets/models/wasteland/trade_machine.glb",
+      "position": {
+        "x": 2,
+        "y": 0,
+        "z": 7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "tradeMachine",
+        "vendingMachine",
+        "production-market"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "tradeMachine",
+        "role": "productionTradeMachine",
+        "siteId": "scrapFoundry",
+        "traderProfile": "scrapFoundryMachine",
+        "caps": 170,
+        "buyInterests": [
+          "materials",
+          "tools",
+          "weapons",
+          "armor"
+        ],
+        "stock": [
+          {
+            "id": "scrap",
+            "price": 4,
+            "qty": 24
+          },
+          {
+            "id": "ammoParts",
+            "price": 4,
+            "qty": 24
+          },
+          {
+            "id": "weaponParts",
+            "price": 14,
+            "qty": 8
+          },
+          {
+            "id": "repairKit",
+            "price": 20,
+            "qty": 5
+          },
+          {
+            "id": "rifle",
+            "price": 84,
+            "qty": 2
+          },
+          {
+            "id": "metalArmor",
+            "price": 38,
+            "qty": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "foundry_scrap_01",
+      "model": "scrapHeap",
+      "name": "Куча металлолома",
+      "url": "/assets/models/wasteland/scrap_heap.glb",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -6
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "scrap"
+      ],
+      "resourceType": "scrap",
+      "hp": 6,
+      "maxHp": 6
+    },
+    {
+      "id": "foundry_barrels_01",
+      "model": "barrelCluster",
+      "name": "Топливные бочки",
+      "url": "/assets/models/wasteland/barrel_cluster.glb",
+      "position": {
+        "x": 11,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": 17,
+        "y": 0,
+        "z": -14
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "tx": 27,
+      "tz": 12,
+      "x": 17,
+      "z": -14,
+      "objectId": "rest_campfire_01",
+      "objectModel": "campfireRest",
+      "authoredObject": true,
+      "vision": {
+        "mode": "none"
+      },
+      "role": "campfire"
+    },
+    {
+      "id": "scrapFoundry_job_board",
+      "model": "jobBoard",
+      "name": "????? ?????",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": -24,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        },
+        "groundSnap": true
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "scrapFoundry"
+      }
+    },
+    {
+      "id": "scrapFoundry_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapFoundry_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 16,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapFoundry_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 18,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapFoundry_cot_04",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 20,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapFoundry_cot_05",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": -14
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapFoundry_cot_06",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 16,
+        "y": 0,
+        "z": -14
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    }
+  ]
+}

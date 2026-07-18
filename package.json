@@ -1,0 +1,34 @@
+{
+  "name": "realm-of-ashes",
+  "version": "7.76.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build:colliders": "node tools/build-model-colliders.js",
+    "build:stations": "node tools/build-wasteland-models.js craft_station_ammo craft_station_weapon craft_station_tools craft_station_repair craft_station_energy craft_station_chem && node tools/build-model-colliders.js",
+    "upgrade:stations": "node tools/upgrade-crafting-stations.js",
+    "check": "node --check server.js && node --check src/server/model-colliders.js && node --check src/server/authoritative-server.js && node --check src/server/wasteland-sim.js && node --check src/server/global-infrastructure.js && node --check src/server/global-exit-direction.js && node --check src/server/npc-inventory.js && node --check tools/model-collider-geometry.js && node --check tools/build-model-colliders.js && node --check tools/build-wasteland-models.js && node --check tools/upgrade-crafting-stations.js && node --check tools/check-client-js.js && node --check tools/check-project-metadata.js && node --check tools/check-static-assets.js && node --check tools/check-graphics-upgrade.js && node --check tools/check-progression-sync.js && node --check tools/check-progression-balance.js && node --check tools/check-glb-models.js && node --check tools/check-editor-models.js && node --check tools/check-world-data.js && node --check tools/check-world-location-instances.js && node --check tools/check-quests.js && node --check tools/check-economy-generation.js && node --check tools/check-npc-schedules.js && node --check tools/check-npc-inventory.js && node --check tools/check-wasteland-autonomy.js && node --check tools/check-movement-collision.js && node --check tools/check-global-exit-direction.js && node --check tools/check-faction-storage.js && node tools/check-project-metadata.js && node tools/check-client-js.js && node tools/check-client-css.js && node tools/check-static-assets.js && node tools/check-graphics-upgrade.js && node tools/check-progression-sync.js && node tools/check-progression-balance.js && node tools/check-glb-models.js && node tools/check-editor-models.js && node tools/check-world-data.js && node tools/check-world-location-instances.js && node tools/check-quests.js && node tools/check-economy-generation.js && node tools/check-npc-schedules.js && node tools/check-npc-inventory.js && node tools/check-wasteland-autonomy.js && node tools/check-movement-collision.js && node tools/check-global-exit-direction.js && node tools/check-faction-storage.js && node tools/smoke-check.js",
+    "check:server": "node --check server.js && node --check src/server/model-colliders.js && node --check src/server/authoritative-server.js && node --check src/server/wasteland-sim.js && node --check src/server/global-infrastructure.js && node --check src/server/global-exit-direction.js && node --check src/server/npc-inventory.js",
+    "check:metadata": "node --check tools/check-project-metadata.js && node tools/check-project-metadata.js",
+    "check:client": "node --check tools/check-client-js.js && node tools/check-client-js.js",
+    "check:css": "node tools/check-client-css.js",
+    "check:assets": "node --check tools/model-collider-geometry.js && node --check tools/build-model-colliders.js && node --check tools/check-static-assets.js && node --check tools/check-graphics-upgrade.js && node --check tools/check-editor-models.js && node tools/check-static-assets.js && node tools/check-graphics-upgrade.js && node tools/check-glb-models.js && node tools/check-editor-models.js",
+    "check:data": "node --check tools/check-world-data.js && node --check tools/check-world-location-instances.js && node tools/check-world-data.js && node tools/check-world-location-instances.js",
+    "check:quests": "node --check tools/check-quests.js && node tools/check-quests.js",
+    "check:economy": "node --check tools/check-economy-generation.js && node tools/check-economy-generation.js",
+    "check:npc": "node --check src/server/npc-inventory.js && node --check tools/check-npc-schedules.js && node --check tools/check-npc-inventory.js && node tools/check-npc-schedules.js && node tools/check-npc-inventory.js",
+    "check:movement": "node --check tools/check-movement-collision.js && node --check tools/check-global-exit-direction.js && node tools/check-movement-collision.js && node tools/check-global-exit-direction.js",
+    "check:storage": "node --check tools/check-faction-storage.js && node tools/check-faction-storage.js",
+    "smoke": "node tools/smoke-check.js",
+    "check:smoke": "node tools/smoke-check.js"
+  },
+  "dependencies": {
+    "express": "^4.18.3",
+    "socket.io": "^4.7.5",
+    "three": "0.125.2"
+  },
+  "devDependencies": {
+    "socket.io-client": "4.8.3"
+  }
+}

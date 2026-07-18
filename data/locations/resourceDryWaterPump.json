@@ -1,0 +1,228 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "resourceDryWaterPump",
+  "name": "Старая водяная помпа",
+  "seed": 20260708,
+  "safe": false,
+  "pvpMode": "pvp",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "dryBasin",
+    "label": "Сухая низина"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "objects": [
+    {
+      "id": "water_pump_01",
+      "model": "waterTank",
+      "name": "Старая водяная помпа",
+      "url": "/assets/models/wasteland/water_tank.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": -7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.3,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "water"
+      ],
+      "resourceType": "water",
+      "hp": 7,
+      "maxHp": 7,
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "water_barrels_01",
+      "model": "barrelCluster",
+      "name": "Пустые бочки",
+      "url": "/assets/models/wasteland/barrel_cluster.glb",
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": 5
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.25,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "water_basin_rock_01",
+      "model": "rubbleRock",
+      "name": "Сухие камни",
+      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "position": {
+        "x": 12,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.15,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rock"
+      ]
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": -17,
+        "y": 0,
+        "z": 16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "tx": 10,
+      "tz": 27,
+      "x": -17,
+      "z": 16,
+      "objectId": "rest_campfire_01",
+      "objectModel": "campfireRest",
+      "authoredObject": true,
+      "vision": {
+        "mode": "none"
+      },
+      "role": "campfire"
+    },
+    {
+      "id": "resourceDryWaterPump_job_board",
+      "model": "jobBoard",
+      "name": "????? ?????",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": -24,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        },
+        "groundSnap": true
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "dryWaterPump"
+      }
+    }
+  ],
+  "kind": "resource"
+}

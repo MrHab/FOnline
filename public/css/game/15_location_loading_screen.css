@@ -1,0 +1,1764 @@
+/* v7.65 — transition loading screen. Blocks input while a location is rebuilt. */
+.location-loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(18px, 4vw, 54px);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(210, 142, 70, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(10, 8, 6, 0.78), rgba(6, 5, 4, 0.94));
+  backdrop-filter: blur(2px) saturate(0.9);
+  transition: opacity 140ms ease, visibility 0ms linear 140ms;
+}
+
+.location-loading-screen.visible {
+  pointer-events: all;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 120ms ease;
+}
+
+
+body.game-startup-loading-active .location-loading-screen.visible {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(119, 74, 34, 0.24), transparent 38%),
+    linear-gradient(180deg, #0a0806, #060504 72%, #030302);
+  backdrop-filter: none;
+}
+
+.location-loading-card {
+  width: min(520px, 92vw);
+  min-height: 220px;
+  border: 2px solid rgba(233, 186, 104, 0.34);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(83, 59, 36, 0.95), rgba(32, 27, 22, 0.98) 44%, rgba(17, 16, 14, 0.98)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 9px);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(255, 234, 176, 0.08),
+    inset 0 -18px 40px rgba(0, 0, 0, 0.36);
+  color: #f0d9a2;
+  padding: 26px 28px 24px;
+  text-align: center;
+  font-family: Georgia, 'Times New Roman', serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.location-loading-card::before,
+.location-loading-card::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4e3926;
+  border: 1px solid rgba(240, 196, 113, 0.44);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+  top: 15px;
+}
+
+.location-loading-card::before { left: 15px; }
+.location-loading-card::after { right: 15px; }
+
+.location-loading-kicker {
+  font: 700 11px/1.2 Arial, sans-serif;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(250, 205, 119, 0.72);
+  margin-bottom: 12px;
+}
+
+.location-loading-title {
+  font-size: clamp(24px, 3.6vw, 36px);
+  line-height: 1.05;
+  font-weight: 800;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.55), 0 0 18px rgba(255, 147, 54, 0.22);
+  margin-bottom: 10px;
+}
+
+.location-loading-subtitle,
+.location-loading-step,
+.location-loading-hint {
+  font-family: Arial, sans-serif;
+}
+
+.location-loading-subtitle {
+  color: rgba(236, 220, 176, 0.86);
+  font-size: 14px;
+  min-height: 20px;
+  margin-bottom: 22px;
+}
+
+.location-loading-progress {
+  height: 16px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(245, 204, 126, 0.28);
+  background: rgba(10, 8, 6, 0.62);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.78);
+}
+
+#location-loading-bar {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7c4a22, #c98638 54%, #f0c06c);
+  box-shadow: 0 0 18px rgba(240, 160, 64, 0.48);
+  transition: width 170ms ease;
+}
+
+.location-loading-step {
+  margin-top: 14px;
+  font-size: 13px;
+  color: rgba(245, 217, 160, 0.82);
+}
+
+.location-loading-hint {
+  margin: 18px auto 0;
+  max-width: 420px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(211, 187, 137, 0.58);
+}
+
+body.location-loading-active #ui-overlay,
+body.location-loading-active #mobile-controls,
+body.location-loading-active #game-settings-btn,
+body.location-loading-active #global-fullscreen-btn {
+  pointer-events: none !important;
+}
+
+@media (max-width: 740px) {
+  .location-loading-screen { padding: 12px; }
+  .location-loading-card { min-height: 190px; padding: 20px 20px 18px; }
+  .location-loading-hint { display: none; }
+}
+
+
+/* v7.75.68: desktop/assign radial remains, mobile returns to stable quickbar slots. */
+#quick-use-radial-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 50000;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 0.08s ease, transform 0.08s ease;
+}
+
+#quick-use-radial-menu.visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.quick-use-radial-center,
+.quick-use-radial-item {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.quick-use-radial-center {
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  background: radial-gradient(circle at 35% 25%, rgba(72, 52, 26, 0.98), rgba(11, 11, 9, 0.96));
+  border: 1px solid rgba(240, 198, 91, 0.62);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.9), 0 0 26px rgba(240,198,91,0.18), inset 0 1px 0 rgba(255,232,176,0.12);
+  color: #f0d28a;
+  font-family: "Segoe UI", Arial, sans-serif;
+  text-align: center;
+}
+
+.quick-use-radial-center b {
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.4px;
+}
+
+.quick-use-radial-center span {
+  font-size: 8px;
+  line-height: 1;
+  color: rgba(228, 198, 136, 0.72);
+}
+
+.quick-use-radial-item {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(44, 36, 23, 0.96), rgba(11, 11, 9, 0.98));
+  border: 1px solid rgba(126, 96, 51, 0.74);
+  box-shadow: 0 9px 22px rgba(0,0,0,0.42), inset 0 0 15px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,231,165,0.08);
+  color: #f0d28a;
+  transition: transform 0.08s ease, border-color 0.08s ease, background 0.08s ease, box-shadow 0.08s ease, opacity 0.08s ease;
+  pointer-events: auto;
+}
+
+.quick-use-radial-item.selected {
+  transform: translate(-50%, -50%) scale(1.16);
+  border-color: rgba(255, 214, 116, 0.98);
+  background: radial-gradient(circle at 36% 28%, rgba(105, 80, 34, 0.98), rgba(18, 16, 12, 0.98));
+  box-shadow: 0 0 0 2px rgba(240,198,91,0.18), 0 0 30px rgba(240,198,91,0.30), inset 0 0 18px rgba(255,216,112,0.13);
+}
+
+.quick-use-radial-item.active { border-color: rgba(126, 178, 75, 0.86); }
+.quick-use-radial-item.disabled { opacity: 0.38; filter: grayscale(0.55); }
+.quick-use-radial-icon {
+  font-size: 24px;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+}
+
+.quick-use-radial-count {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  min-width: 12px;
+  text-align: right;
+  color: #ffd976;
+  font-size: 10px;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.85);
+}
+
+.quick-use-radial-slot-num {
+  position: absolute;
+  left: 6px;
+  top: 4px;
+  font-size: 9px;
+  color: rgba(240,210,138,0.78);
+  font-weight: 900;
+}
+
+/* Stable mobile quickbar: visible real quick slots, no radial button/menu. */
+body.device-mobile #quickbar,
+body.device-mobile.landscape-mode #quickbar {
+  display: flex !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  left: 50% !important;
+  bottom: calc(4px + var(--safe-bottom)) !important;
+  transform: translateX(-50%) !important;
+  max-width: min(430px, 42vw) !important;
+  padding: 4px !important;
+  gap: 4px !important;
+  opacity: 0.94 !important;
+  z-index: 41 !important;
+}
+
+body.device-mobile .quick-slot,
+body.device-mobile.landscape-mode .quick-slot {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 40px !important;
+  padding: 2px !important;
+}
+
+body.device-mobile .quick-key { font-size: 7px !important; }
+body.device-mobile .quick-icon { font-size: 17px !important; height: 19px !important; line-height: 19px !important; }
+body.device-mobile .quick-label { font-size: 6.5px !important; max-width: 34px !important; }
+body.device-mobile .quick-count { font-size: 8px !important; }
+
+/* Compact mobile combat cluster without quick-access radial button. */
+body.device-mobile.landscape-mode .touch-buttons {
+  display: block !important;
+  width: 160px !important;
+  height: 132px !important;
+  right: calc(18px + var(--safe-right)) !important;
+  bottom: calc(18px + var(--safe-bottom)) !important;
+  pointer-events: auto !important;
+  z-index: 30030 !important;
+}
+
+body.device-mobile.landscape-mode .touch-buttons .touch-btn {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: absolute !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  font-size: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  touch-action: manipulation !important;
+  z-index: 30040 !important;
+}
+
+body.device-mobile.landscape-mode .touch-buttons .touch-btn::before {
+  font-size: 19px !important;
+  line-height: 1 !important;
+}
+
+body.device-mobile.landscape-mode #touch-fire {
+  left: 50px !important;
+  top: 34px !important;
+  width: 60px !important;
+  height: 60px !important;
+  min-width: 60px !important;
+  min-height: 60px !important;
+  z-index: 30045 !important;
+}
+body.device-mobile.landscape-mode #touch-fire::before { content: '⚔' !important; font-size: 30px !important; }
+
+body.device-mobile.landscape-mode #touch-target { left: 4px !important; top: 22px !important; }
+body.device-mobile.landscape-mode #touch-target::before { content: '🎯' !important; }
+
+body.device-mobile.landscape-mode #touch-interact {
+  left: 4px !important;
+  top: 72px !important;
+}
+body.device-mobile.landscape-mode #touch-interact::before { content: '✋' !important; }
+
+body.device-mobile.landscape-mode #touch-reload { left: 114px !important; top: 22px !important; }
+body.device-mobile.landscape-mode #touch-reload::before { content: '⟳' !important; }
+
+body.device-mobile.landscape-mode #touch-mode { left: 114px !important; top: 72px !important; }
+body.device-mobile.landscape-mode #touch-mode::before { content: 'X' !important; font-weight: 900 !important; }
+
+body.device-mobile.landscape-mode #touch-loot,
+body.device-mobile.landscape-mode #touch-player-menu {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+
+/* v7.75.69: restore mobile interaction and quick-slot assignment. */
+body.device-mobile.landscape-mode .touch-buttons {
+  display: block !important;
+  width: 166px !important;
+  height: 138px !important;
+  right: calc(18px + var(--safe-right)) !important;
+  bottom: calc(18px + var(--safe-bottom)) !important;
+  pointer-events: auto !important;
+  z-index: 30030 !important;
+}
+
+body.device-mobile.landscape-mode .touch-buttons .touch-btn {
+  position: absolute !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  font-size: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  touch-action: manipulation !important;
+  z-index: 30040 !important;
+}
+
+body.device-mobile.landscape-mode .touch-buttons .touch-btn::before {
+  font-size: 19px !important;
+  line-height: 1 !important;
+}
+
+body.device-mobile.landscape-mode #touch-fire {
+  left: 52px !important;
+  top: 40px !important;
+  width: 60px !important;
+  height: 60px !important;
+  min-width: 60px !important;
+  min-height: 60px !important;
+  z-index: 30045 !important;
+}
+body.device-mobile.landscape-mode #touch-fire::before { content: '⚔' !important; font-size: 30px !important; }
+
+body.device-mobile.landscape-mode #touch-target {
+  left: 6px !important;
+  top: 20px !important;
+}
+body.device-mobile.landscape-mode #touch-target::before { content: '🎯' !important; }
+
+body.device-mobile.landscape-mode #touch-interact {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  left: 6px !important;
+  top: 74px !important;
+  border-color: rgba(240,198,91,0.82) !important;
+}
+body.device-mobile.landscape-mode #touch-interact::before { content: '✋' !important; font-size: 20px !important; }
+
+body.device-mobile.landscape-mode #touch-reload {
+  left: 118px !important;
+  top: 20px !important;
+}
+body.device-mobile.landscape-mode #touch-reload::before { content: '⟳' !important; }
+
+body.device-mobile.landscape-mode #touch-mode {
+  left: 118px !important;
+  top: 74px !important;
+}
+body.device-mobile.landscape-mode #touch-mode::before { content: 'X' !important; font-weight: 900 !important; }
+
+body.device-mobile.landscape-mode #touch-loot,
+body.device-mobile.landscape-mode #touch-player-menu {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.device-mobile .mobile-inventory-quickbar {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  margin: 0 0 8px !important;
+  padding: 8px !important;
+  border: 1px solid rgba(240,198,91,0.45) !important;
+  border-radius: 10px !important;
+  background: rgba(0,0,0,0.30) !important;
+}
+
+body.device-mobile .mobile-quickbar-slots {
+  display: flex !important;
+  gap: 6px !important;
+  overflow-x: auto !important;
+  padding: 2px 0 4px !important;
+}
+
+body.device-mobile .mobile-quickbar-slots .quick-slot {
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  flex: 0 0 auto !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 46px !important;
+}
+
+body.device-mobile .mobile-quickbar-slots .quick-slot.assign-target {
+  border-color: #f0c65b !important;
+  box-shadow: 0 0 0 1px rgba(240,198,91,0.38), 0 0 18px rgba(240,198,91,0.20) !important;
+}
+
+body.device-mobile .inv-card.quickable .mobile-quick-pick {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: absolute !important;
+  left: 5px !important;
+  bottom: 5px !important;
+  width: 28px !important;
+  height: 24px !important;
+  min-width: 28px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(240,198,91,0.78) !important;
+  background: rgba(31,26,16,0.96) !important;
+  color: #ffd98b !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  z-index: 8 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+}
+
+body.device-mobile .inv-card.selected-for-quickbar {
+  border-color: #f0c65b !important;
+  box-shadow: 0 0 0 1px rgba(240,198,91,0.40), 0 0 16px rgba(240,198,91,0.18) !important;
+}
+
+
+/* v7.75.70: mobile UI images from /assets/ui/mobile. */
+body.device-mobile.landscape-mode .touch-buttons .touch-btn,
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn,
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn,
+body.device-mobile #game-settings-btn,
+body.device-mobile #global-fullscreen-btn,
+body.device-mobile #mobile-fullscreen-btn {
+  color: transparent !important;
+  text-shadow: none !important;
+  font-size: 0 !important;
+  overflow: hidden !important;
+  background-color: transparent !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.device-mobile.landscape-mode .touch-buttons .touch-btn::before,
+body.device-mobile.landscape-mode .touch-buttons .touch-btn::after,
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn::before,
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn::after,
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn::before,
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn::after,
+body.device-mobile #game-settings-btn::before,
+body.device-mobile #game-settings-btn::after,
+body.device-mobile #global-fullscreen-btn::before,
+body.device-mobile #global-fullscreen-btn::after,
+body.device-mobile #mobile-fullscreen-btn::before,
+body.device-mobile #mobile-fullscreen-btn::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.device-mobile #game-settings-btn {
+  background-image: url('/assets/ui/mobile/top/menu.webp') !important;
+}
+body.device-mobile #global-fullscreen-btn,
+body.device-mobile #mobile-fullscreen-btn {
+  background-image: url('/assets/ui/mobile/top/fullscreen.webp') !important;
+}
+
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="inventory"] { background-image: url('/assets/ui/mobile/left/inventory.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="map"] { background-image: url('/assets/ui/mobile/left/map.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="talents"] { background-image: url('/assets/ui/mobile/left/skills.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="craft"] { background-image: url('/assets/ui/mobile/left/craft.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="tutorial"] { background-image: url('/assets/ui/mobile/left/tutorial.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="vision"] { background-image: url('/assets/ui/mobile/left/fog.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="crouch"] { background-image: url('/assets/ui/mobile/left/crouch.webp') !important; }
+
+body.device-mobile.landscape-mode #touch-fire { background-image: url('/assets/ui/mobile/right/attack.webp') !important; }
+body.device-mobile.landscape-mode #touch-target { background-image: url('/assets/ui/mobile/right/auto_aim.webp') !important; }
+body.device-mobile.landscape-mode #touch-interact,
+body.device-mobile.landscape-mode #touch-loot { background-image: url('/assets/ui/mobile/right/interact.webp') !important; }
+body.device-mobile.landscape-mode #touch-reload { background-image: url('/assets/ui/mobile/right/reload.webp') !important; }
+body.device-mobile.landscape-mode #touch-mode { background-image: url('/assets/ui/mobile/right/fire_mode.webp') !important; }
+body.device-mobile.landscape-mode #touch-quick-access,
+body.device-mobile.landscape-mode #touch-radial { background-image: url('/assets/ui/mobile/right/radial.webp') !important; }
+
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn[data-mobile-action="reload"] { background-image: url('/assets/ui/mobile/right/reload.webp') !important; }
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn[data-mobile-action="mode"] { background-image: url('/assets/ui/mobile/right/fire_mode.webp') !important; }
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn[data-mobile-action="interact"] { background-image: url('/assets/ui/mobile/right/interact.webp') !important; }
+
+body.device-mobile.landscape-mode .touch-buttons .touch-btn.pressed,
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn:active,
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn:active,
+body.device-mobile #game-settings-btn:active,
+body.device-mobile #global-fullscreen-btn:active,
+body.device-mobile #mobile-fullscreen-btn:active {
+  transform: scale(0.94) !important;
+  filter: brightness(1.12) contrast(1.05) !important;
+}
+
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout {
+  background-image: url('/assets/ui/mobile/weapon/weapon_ui.webp') !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+}
+
+/* v7.75.71: cleaned transparent UI icons and new weapon panel layout. */
+body.device-mobile.landscape-mode .touch-buttons .touch-btn,
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn,
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn,
+#game-settings-btn,
+#global-fullscreen-btn,
+#mobile-fullscreen-btn {
+  color: transparent !important;
+  text-shadow: none !important;
+  font-size: 0 !important;
+  overflow: hidden !important;
+  background-color: transparent !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.device-mobile.landscape-mode .touch-buttons .touch-btn::before,
+body.device-mobile.landscape-mode .touch-buttons .touch-btn::after,
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn::before,
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn::after,
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn::before,
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn::after,
+#game-settings-btn::before,
+#game-settings-btn::after,
+#global-fullscreen-btn::before,
+#global-fullscreen-btn::after,
+#mobile-fullscreen-btn::before,
+#mobile-fullscreen-btn::after {
+  content: none !important;
+  display: none !important;
+}
+
+#game-settings-btn { background-image: url('/assets/ui/mobile/top/menu.webp') !important; }
+#global-fullscreen-btn,
+#mobile-fullscreen-btn { background-image: url('/assets/ui/mobile/top/fullscreen.webp') !important; }
+
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="inventory"] { background-image: url('/assets/ui/mobile/left/inventory.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="map"] { background-image: url('/assets/ui/mobile/left/map.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="talents"] { background-image: url('/assets/ui/mobile/left/skills.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="craft"] { background-image: url('/assets/ui/mobile/left/craft.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="tutorial"] { background-image: url('/assets/ui/mobile/left/tutorial.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="vision"] { background-image: url('/assets/ui/mobile/left/fog.webp') !important; }
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn[data-mobile-action="crouch"] { background-image: url('/assets/ui/mobile/left/crouch.webp') !important; }
+
+body.device-mobile.landscape-mode #touch-fire {
+  left: 50px !important;
+  top: 38px !important;
+  width: 64px !important;
+  height: 64px !important;
+  min-width: 64px !important;
+  min-height: 64px !important;
+  background-image: url('/assets/ui/mobile/right/attack.webp') !important;
+  background-size: 108% 108% !important;
+  background-position: center center !important;
+}
+body.device-mobile.landscape-mode #touch-target { background-image: url('/assets/ui/mobile/right/auto_aim.webp') !important; }
+body.device-mobile.landscape-mode #touch-interact,
+body.device-mobile.landscape-mode #touch-loot { background-image: url('/assets/ui/mobile/right/interact.webp') !important; }
+body.device-mobile.landscape-mode #touch-reload { background-image: url('/assets/ui/mobile/right/reload.webp') !important; }
+body.device-mobile.landscape-mode #touch-mode { background-image: url('/assets/ui/mobile/right/fire_mode.webp') !important; }
+body.device-mobile.landscape-mode #touch-quick-access,
+body.device-mobile.landscape-mode #touch-radial { background-image: url('/assets/ui/mobile/right/radial.webp') !important; }
+
+body.device-mobile.landscape-mode .touch-buttons .touch-btn.pressed,
+body.device-mobile.landscape-mode .mobile-left-rail .mobile-rail-btn:active,
+body.device-mobile.landscape-mode .mobile-right-rail .mobile-rail-btn:active,
+#game-settings-btn:active,
+#global-fullscreen-btn:active,
+#mobile-fullscreen-btn:active {
+  transform: scale(0.94) !important;
+  filter: brightness(1.12) contrast(1.05) !important;
+}
+
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout.weapon-ui-panel,
+#weapon-readout {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 18px !important;
+  transform: translateX(-50%) !important;
+  width: min(1060px, calc(100vw - 18px)) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 2048 / 682 !important;
+  display: block !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  z-index: 32 !important;
+  background: url('/assets/ui/mobile/weapon/weapon_ui.webp') center / 100% 100% no-repeat !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+#weapon-readout::before,
+#weapon-readout::after,
+#weapon-readout .fallout-side-button,
+#weapon-readout .fallout-side-stack,
+#weapon-readout .fallout-weapon-console {
+  display: none !important;
+  content: none !important;
+}
+
+#weapon-readout .weapon-ui-box,
+#weapon-readout .weapon-ui-center,
+#weapon-readout .weapon-ui-leds,
+#weapon-readout .weapon-ui-mode-note {
+  position: absolute !important;
+  z-index: 2 !important;
+  box-sizing: border-box !important;
+  color: #f2f0e8 !important;
+  font-family: "Segoe UI", Arial, sans-serif !important;
+  text-shadow: 0 2px 3px rgba(0,0,0,0.9), 0 0 9px rgba(255,230,180,0.08) !important;
+}
+
+#weapon-readout .weapon-ui-box {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  overflow: hidden !important;
+}
+
+#weapon-readout .weapon-ui-box b {
+  display: block !important;
+  margin: 0 0 0.35em !important;
+  color: rgba(255,255,255,0.86) !important;
+  font-size: clamp(10px, 1.45vw, 22px) !important;
+  line-height: 1.1 !important;
+  font-weight: 600 !important;
+}
+
+#weapon-readout .weapon-ui-box span,
+#weapon-readout .weapon-ui-box em {
+  display: block !important;
+  color: rgba(255,255,255,0.94) !important;
+  font-style: normal !important;
+  font-size: clamp(11px, 1.5vw, 24px) !important;
+  line-height: 1.12 !important;
+  font-weight: 700 !important;
+}
+
+#weapon-readout .weapon-ui-hp { left: 9.5% !important; top: 17.8% !important; width: 16.2% !important; height: 11.8% !important; }
+#weapon-readout .weapon-ui-ap { left: 9.6% !important; top: 38.4% !important; width: 16.4% !important; height: 11.6% !important; }
+#weapon-readout .weapon-ui-armor { left: 9.4% !important; top: 60.5% !important; width: 18.0% !important; height: 12.2% !important; }
+#weapon-readout .weapon-ui-damage { left: 76.7% !important; top: 17.5% !important; width: 14.5% !important; height: 11.7% !important; }
+#weapon-readout .weapon-ui-mag { left: 75.2% !important; top: 38.0% !important; width: 8.4% !important; height: 10.8% !important; }
+#weapon-readout .weapon-ui-reserve { left: 84.1% !important; top: 38.0% !important; width: 8.5% !important; height: 10.8% !important; }
+#weapon-readout .weapon-ui-ammo-type { left: 75.7% !important; top: 56.4% !important; width: 16.8% !important; height: 15.6% !important; align-items: flex-start !important; justify-content: center !important; text-align: left !important; padding-left: 1.3% !important; }
+#weapon-readout .weapon-ui-ammo-type b,
+#weapon-readout .weapon-ui-ammo-type em { font-size: clamp(8px, 1.05vw, 16px) !important; margin: 0 0 0.2em !important; }
+#weapon-readout .weapon-ui-ammo-type span { font-size: clamp(9px, 1.08vw, 17px) !important; margin: 0 0 0.45em !important; }
+
+#weapon-readout .weapon-ui-leds {
+  left: 31.5% !important;
+  top: 2.8% !important;
+  width: 37.5% !important;
+  height: 8.2% !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 0 1.2% !important;
+}
+
+#weapon-readout .weapon-ui-leds span {
+  width: min(2.45vw, 29px) !important;
+  height: min(2.45vw, 29px) !important;
+  max-width: 29px !important;
+  max-height: 29px !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 30%, #2c281e 0, #090805 67%) !important;
+  border: 1px solid rgba(0,0,0,0.95) !important;
+  box-shadow: inset 0 2px 2px rgba(255,255,255,0.08), 0 1px 4px rgba(0,0,0,0.85) !important;
+}
+#weapon-readout .weapon-ui-leds span.on { background: radial-gradient(circle at 35% 30%, #eaffcf 0, #82d861 43%, #203d17 76%) !important; box-shadow: 0 0 8px rgba(116,217,86,0.75), inset 0 1px 1px rgba(255,255,255,0.36) !important; }
+#weapon-readout .weapon-ui-leds span.warn.on { background: radial-gradient(circle at 35% 30%, #ffe2a0 0, #c8792f 48%, #5d2618 76%) !important; box-shadow: 0 0 8px rgba(218,128,45,0.75), inset 0 1px 1px rgba(255,255,255,0.28) !important; }
+
+#weapon-readout .weapon-ui-center {
+  left: 30.0% !important;
+  top: 16.5% !important;
+  width: 39.2% !important;
+  height: 56.5% !important;
+  overflow: hidden !important;
+}
+
+#weapon-readout .weapon-ui-action-label {
+  position: absolute !important;
+  left: 8% !important;
+  right: 8% !important;
+  top: 6% !important;
+  text-align: center !important;
+  color: #d9b769 !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: clamp(11px, 1.35vw, 22px) !important;
+  letter-spacing: 0.12em !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#weapon-readout .weapon-ui-center .fallout-weapon-art {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: 58% !important;
+  height: 18% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 3 !important;
+  filter: drop-shadow(0 5px 4px rgba(0,0,0,0.85)) !important;
+}
+
+#weapon-readout .weapon-ui-ap-cost { position: absolute !important; left: 13% !important; bottom: 13% !important; color: #f0d28a !important; font-size: clamp(12px, 1.6vw, 25px) !important; font-weight: 900 !important; }
+#weapon-readout .weapon-ui-ammo-main { position: absolute !important; right: 13% !important; bottom: 13% !important; color: #f0d28a !important; font-size: clamp(13px, 1.7vw, 27px) !important; font-weight: 900 !important; letter-spacing: 0.08em !important; }
+#weapon-readout .weapon-ui-ammo-main.is-empty { color: #ff6d56 !important; }
+#weapon-readout .weapon-ui-weapon-name { position: absolute !important; left: 23% !important; right: 23% !important; bottom: 14% !important; text-align: center !important; color: rgba(230,206,151,0.72) !important; font-size: clamp(7px, 0.9vw, 14px) !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+#weapon-readout .weapon-ui-condition { position: absolute !important; left: 31% !important; right: 31% !important; bottom: 7.5% !important; height: 2.2% !important; background: rgba(20,14,8,0.76) !important; border: 1px solid rgba(140,100,45,0.44) !important; }
+#weapon-readout .weapon-ui-condition-fill { display: block !important; height: 100% !important; background: linear-gradient(90deg, #6ea34e, #d2b96a) !important; box-shadow: 0 0 5px rgba(177,213,112,0.34) !important; }
+
+#weapon-readout .weapon-ui-mode-note {
+  left: 36.0% !important;
+  bottom: 9.7% !important;
+  width: 28.8% !important;
+  height: 7.4% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.8em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: rgba(240,210,138,0.82) !important;
+  font-size: clamp(8px, 0.9vw, 14px) !important;
+}
+#weapon-readout .weapon-ui-mode-note b { color: #f0d28a !important; }
+#weapon-readout .weapon-ui-mode-note span { color: rgba(230,206,151,0.72) !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+
+body.device-mobile #weapon-readout.fallout-weapon-readout,
+body.device-mobile.landscape-mode #weapon-readout.fallout-weapon-readout,
+body.device-mobile #weapon-readout.weapon-ui-panel,
+body.device-mobile.landscape-mode #weapon-readout.weapon-ui-panel {
+  display: block !important;
+  width: min(76vw, 560px) !important;
+  bottom: calc(12px + var(--safe-bottom)) !important;
+  z-index: 24 !important;
+}
+
+
+/* v7.75.73: use clean transparent weapon UI source and final text placement. */
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout.weapon-ui-panel,
+#weapon-readout {
+  width: min(1000px, calc(100vw - 20px)) !important;
+  aspect-ratio: 1086 / 362 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  background-image: url('/assets/ui/mobile/weapon/weapon_ui.webp') !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: 100% 100% !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+  color: #f1d08a !important;
+  font-family: 'Trebuchet MS', 'Segoe UI', Arial, sans-serif !important;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.95), 0 0 8px rgba(214,151,63,0.18) !important;
+}
+#weapon-readout::before,
+#weapon-readout::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Only highlight sockets already present in the artwork. No drawn black lamp bases. */
+#weapon-readout .weapon-ui-leds {
+  position: absolute !important;
+  left: 30.1% !important;
+  top: 2.15% !important;
+  width: 39.8% !important;
+  height: 8.8% !important;
+  display: grid !important;
+  grid-template-columns: repeat(14, 1fr) !important;
+  gap: 1.05% !important;
+  align-items: center !important;
+  pointer-events: none !important;
+}
+#weapon-readout .weapon-ui-leds span {
+  justify-self: center !important;
+  width: 62% !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: 0 !important;
+}
+#weapon-readout .weapon-ui-leds span.on {
+  opacity: 1 !important;
+}
+#weapon-readout .weapon-ui-leds span.on:not(.warn) {
+  background: radial-gradient(circle at 38% 35%, rgba(236,255,225,0.92) 0%, rgba(134,245,105,0.78) 42%, rgba(67,169,51,0.46) 70%, rgba(27,80,20,0.10) 100%) !important;
+  box-shadow: 0 0 7px rgba(112,232,88,0.56), 0 0 18px rgba(112,232,88,0.18) !important;
+}
+#weapon-readout .weapon-ui-leds span.on.warn {
+  background: radial-gradient(circle at 38% 35%, rgba(255,236,196,0.92) 0%, rgba(247,173,74,0.80) 45%, rgba(165,80,30,0.46) 72%, rgba(67,21,7,0.10) 100%) !important;
+  box-shadow: 0 0 7px rgba(246,158,68,0.54), 0 0 18px rgba(246,158,68,0.17) !important;
+}
+
+/* Compact readable values inside the artwork's empty windows. */
+#weapon-readout .weapon-ui-box {
+  position: absolute !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  padding: 0 0.45% !important;
+  overflow: hidden !important;
+}
+#weapon-readout .weapon-ui-label {
+  font-size: clamp(8px, 0.82vw, 13px) !important;
+  line-height: 1.0 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.055em !important;
+  color: #f0d08c !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+#weapon-readout .weapon-ui-value {
+  font-size: clamp(13px, 1.25vw, 22px) !important;
+  line-height: 1.0 !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* side boxes */
+#weapon-readout .weapon-ui-hp { left: 8.9% !important; top: 15.0% !important; width: 13.4% !important; height: 12.2% !important; align-items: center !important; text-align: center !important; }
+#weapon-readout .weapon-ui-ap { left: 8.9% !important; top: 33.8% !important; width: 13.4% !important; height: 12.2% !important; align-items: center !important; text-align: center !important; }
+#weapon-readout .weapon-ui-armor { left: 8.9% !important; top: 53.6% !important; width: 13.4% !important; height: 12.0% !important; align-items: center !important; text-align: center !important; }
+
+#weapon-readout .weapon-ui-damage { right: 9.0% !important; top: 15.0% !important; width: 13.5% !important; height: 12.2% !important; align-items: center !important; text-align: center !important; }
+#weapon-readout .weapon-ui-mag { right: 15.8% !important; top: 33.8% !important; width: 6.8% !important; height: 12.0% !important; align-items: center !important; text-align: center !important; }
+#weapon-readout .weapon-ui-reserve { right: 9.0% !important; top: 33.8% !important; width: 6.5% !important; height: 12.0% !important; align-items: center !important; text-align: center !important; }
+#weapon-readout .weapon-ui-ammo-type { right: 9.0% !important; top: 53.2% !important; width: 13.5% !important; height: 13.5% !important; align-items: flex-start !important; text-align: left !important; padding-left: 1.0% !important; }
+#weapon-readout .weapon-ui-ammo-type .weapon-ui-value {
+  font-size: clamp(9px, 0.92vw, 15px) !important;
+  line-height: 1.1 !important;
+  white-space: normal !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+}
+
+/* center stage */
+#weapon-readout .weapon-ui-stage {
+  position: absolute !important;
+  left: 25.9% !important;
+  top: 13.8% !important;
+  width: 48.2% !important;
+  height: 65.0% !important;
+}
+#weapon-readout .weapon-ui-action-label {
+  position: absolute !important;
+  left: 10% !important;
+  right: 10% !important;
+  top: 5.5% !important;
+  text-align: center !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: clamp(17px, 1.68vw, 28px) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  color: #efd07d !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#weapon-readout .fallout-weapon-art {
+  position: absolute !important;
+  left: 50% !important;
+  top: 43.5% !important;
+  width: 34% !important;
+  height: 23% !important;
+  transform: translate(-50%, -50%) !important;
+  opacity: 0.94 !important;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.62)) !important;
+}
+#weapon-readout .weapon-ui-ap-cost {
+  position: absolute !important;
+  left: 18% !important;
+  bottom: 17.0% !important;
+  min-width: 20% !important;
+  text-align: center !important;
+  font-size: clamp(17px, 1.55vw, 28px) !important;
+  font-weight: 900 !important;
+  color: #ffd268 !important;
+}
+#weapon-readout .weapon-ui-ammo-main {
+  position: absolute !important;
+  right: 18% !important;
+  bottom: 17.0% !important;
+  min-width: 18% !important;
+  text-align: center !important;
+  font-size: clamp(20px, 1.85vw, 34px) !important;
+  font-weight: 900 !important;
+  color: #ffd268 !important;
+  letter-spacing: 0.055em !important;
+}
+#weapon-readout .weapon-ui-weapon-name {
+  position: absolute !important;
+  left: 20% !important;
+  right: 20% !important;
+  bottom: 10.5% !important;
+  text-align: center !important;
+  font-size: clamp(9px, 0.75vw, 13px) !important;
+  font-weight: 700 !important;
+  color: #cfbe73 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#weapon-readout .weapon-ui-condition {
+  position: absolute !important;
+  left: 28.5% !important;
+  right: 28.5% !important;
+  bottom: 6.6% !important;
+  height: 2.0% !important;
+  border-radius: 999px !important;
+  background: rgba(26,21,16,0.72) !important;
+  overflow: hidden !important;
+  box-shadow: inset 0 0 0 1px rgba(225,194,96,0.17) !important;
+}
+#weapon-readout .weapon-ui-condition-fill {
+  display: block !important;
+  height: 100% !important;
+  background: linear-gradient(90deg, #736830, #d6d86e, #82c45b) !important;
+}
+#weapon-readout .weapon-ui-mode-note {
+  position: absolute !important;
+  left: 33.1% !important;
+  right: 33.1% !important;
+  bottom: 5.7% !important;
+  height: 6.3% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  text-align: center !important;
+  font-size: clamp(8px, 0.72vw, 12px) !important;
+  color: #ddbf68 !important;
+  overflow: hidden !important;
+}
+#weapon-readout .weapon-ui-mode-note b,
+#weapon-readout .weapon-ui-mode-note span {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#weapon-readout .weapon-ui-mode-note b { color: #f1cb68 !important; flex: 0 0 auto !important; }
+#weapon-readout .weapon-ui-mode-note span { color: #caa25a !important; min-width: 0 !important; }
+
+body.device-mobile #weapon-readout {
+  bottom: calc(74px + var(--safe-bottom, 0px)) !important;
+  width: min(92vw, 860px) !important;
+}
+body.device-mobile #weapon-readout .weapon-ui-value { font-size: clamp(10px, 2.0vw, 18px) !important; }
+body.device-mobile #weapon-readout .weapon-ui-label { font-size: clamp(7px, 1.35vw, 10px) !important; }
+body.device-mobile #weapon-readout .weapon-ui-action-label { font-size: clamp(13px, 2.0vw, 20px) !important; }
+body.device-mobile #weapon-readout .weapon-ui-ap-cost,
+body.device-mobile #weapon-readout .weapon-ui-ammo-main { font-size: clamp(15px, 2.2vw, 23px) !important; }
+
+/* v7.75.74: final weapon HUD fit from live screenshot. */
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout.weapon-ui-panel,
+#weapon-readout {
+  width: min(860px, calc(100vw - 56px)) !important;
+  bottom: 34px !important;
+  overflow: visible !important;
+}
+
+/* Keep only the artwork transparent edges; darken actual inner screens so the map never shines through them. */
+#weapon-readout .weapon-ui-stage::before,
+#weapon-readout .weapon-ui-box::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 4% 3% !important;
+  border-radius: 9px !important;
+  background: rgba(8, 8, 7, 0.54) !important;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.42) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+#weapon-readout .weapon-ui-stage::before {
+  inset: 7% 1.5% 10% 1.5% !important;
+  border-radius: 12px !important;
+  background: rgba(8, 8, 7, 0.62) !important;
+  box-shadow: inset 0 0 30px rgba(0,0,0,0.46) !important;
+}
+#weapon-readout .weapon-ui-box > *,
+#weapon-readout .weapon-ui-stage > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Smaller glow: highlight the sockets from the UI art instead of drawing new bulbs. */
+#weapon-readout .weapon-ui-leds {
+  left: 30.45% !important;
+  top: 2.35% !important;
+  width: 39.0% !important;
+  height: 7.6% !important;
+  gap: 1.45% !important;
+  align-items: center !important;
+}
+#weapon-readout .weapon-ui-leds span {
+  width: 42% !important;
+  opacity: 0 !important;
+  mix-blend-mode: screen !important;
+}
+#weapon-readout .weapon-ui-leds span.on:not(.warn) {
+  opacity: 0.92 !important;
+  background: radial-gradient(circle at 42% 36%, rgba(238,255,228,0.88) 0%, rgba(112,232,88,0.56) 45%, rgba(54,150,42,0.24) 72%, transparent 100%) !important;
+  box-shadow: 0 0 5px rgba(111,225,86,0.42), 0 0 10px rgba(111,225,86,0.12) !important;
+}
+#weapon-readout .weapon-ui-leds span.on.warn {
+  opacity: 0.92 !important;
+  background: radial-gradient(circle at 42% 36%, rgba(255,237,197,0.88) 0%, rgba(241,163,70,0.58) 48%, rgba(153,75,30,0.24) 74%, transparent 100%) !important;
+  box-shadow: 0 0 5px rgba(241,159,70,0.40), 0 0 10px rgba(241,159,70,0.12) !important;
+}
+
+/* More compact typography: text stays inside the drawn boxes. */
+#weapon-readout .weapon-ui-box {
+  gap: 1px !important;
+  padding: 0 0.35% !important;
+}
+#weapon-readout .weapon-ui-label {
+  font-size: clamp(7px, 0.72vw, 11px) !important;
+  letter-spacing: 0.045em !important;
+}
+#weapon-readout .weapon-ui-value {
+  font-size: clamp(11px, 1.08vw, 18px) !important;
+  line-height: 0.98 !important;
+}
+#weapon-readout .weapon-ui-hp { top: 15.7% !important; height: 11.2% !important; }
+#weapon-readout .weapon-ui-ap { top: 34.5% !important; height: 11.2% !important; }
+#weapon-readout .weapon-ui-armor { top: 54.2% !important; height: 11.0% !important; }
+#weapon-readout .weapon-ui-damage { top: 15.7% !important; height: 11.2% !important; }
+#weapon-readout .weapon-ui-mag { top: 34.5% !important; height: 11.2% !important; }
+#weapon-readout .weapon-ui-reserve { top: 34.5% !important; height: 11.2% !important; }
+#weapon-readout .weapon-ui-ammo-type { top: 53.8% !important; height: 12.7% !important; }
+#weapon-readout .weapon-ui-mag .weapon-ui-value,
+#weapon-readout .weapon-ui-reserve .weapon-ui-value,
+#weapon-readout .weapon-ui-ammo-type .weapon-ui-value {
+  font-size: clamp(9px, 0.88vw, 15px) !important;
+}
+#weapon-readout .weapon-ui-action-label {
+  top: 7.0% !important;
+  font-size: clamp(15px, 1.48vw, 24px) !important;
+  letter-spacing: 0.05em !important;
+}
+#weapon-readout .fallout-weapon-art {
+  top: 45.0% !important;
+  width: 30% !important;
+  height: 21% !important;
+}
+#weapon-readout .weapon-ui-ap-cost {
+  left: 19.2% !important;
+  bottom: 18.2% !important;
+  font-size: clamp(15px, 1.35vw, 24px) !important;
+}
+#weapon-readout .weapon-ui-ammo-main {
+  right: 19.2% !important;
+  bottom: 18.2% !important;
+  font-size: clamp(17px, 1.55vw, 28px) !important;
+}
+#weapon-readout .weapon-ui-weapon-name {
+  bottom: 11.0% !important;
+  font-size: clamp(8px, 0.68vw, 11px) !important;
+}
+#weapon-readout .weapon-ui-condition {
+  bottom: 7.2% !important;
+}
+#weapon-readout .weapon-ui-mode-note {
+  bottom: 5.9% !important;
+  font-size: clamp(7px, 0.62vw, 10px) !important;
+}
+
+body.device-mobile #weapon-readout {
+  width: min(82vw, 690px) !important;
+  bottom: calc(70px + var(--safe-bottom, 0px)) !important;
+}
+
+
+/* v7.75.75 AP lamps: only green, count equals current AP. */
+#weapon-readout .weapon-ui-leds span.on,
+#weapon-readout .weapon-ui-leds span.on.warn,
+#weapon-readout .weapon-ui-leds span.on:not(.warn) {
+  opacity: 1 !important;
+  background: radial-gradient(circle at 38% 35%, rgba(233,255,223,0.98) 0%, rgba(136,242,107,0.94) 38%, rgba(62,156,50,0.82) 68%, rgba(18,61,12,0.32) 100%) !important;
+  box-shadow: 0 0 6px rgba(116,225,86,0.55), 0 0 14px rgba(116,225,86,0.20) !important;
+}
+
+
+/* v7.75.76: AP lamps aligned to drawn sockets, compact text, weapon HUD at the bottom. */
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout.weapon-ui-panel,
+#weapon-readout {
+  bottom: 0px !important;
+  width: min(860px, calc(100vw - 48px)) !important;
+}
+
+body.device-mobile #weapon-readout {
+  bottom: calc(2px + var(--safe-bottom, 0px)) !important;
+  width: min(86vw, 700px) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-leds {
+  left: 30.95% !important;
+  top: 2.05% !important;
+  width: 38.15% !important;
+  height: 8.25% !important;
+  display: grid !important;
+  grid-template-columns: repeat(14, 1fr) !important;
+  grid-template-rows: 1fr !important;
+  column-gap: 0 !important;
+  row-gap: 0 !important;
+  align-items: center !important;
+  justify-items: center !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span {
+  display: block !important;
+  width: 46% !important;
+  max-width: 13px !important;
+  min-width: 7px !important;
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  border-radius: 999px !important;
+  opacity: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  transform: none !important;
+  filter: none !important;
+  mix-blend-mode: screen !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on,
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on.warn,
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on:not(.warn) {
+  opacity: 0.82 !important;
+  background: radial-gradient(circle at 38% 35%,
+    rgba(229,255,216,0.92) 0%,
+    rgba(118,238,92,0.72) 34%,
+    rgba(55,168,45,0.36) 62%,
+    rgba(20,70,14,0.06) 100%) !important;
+  box-shadow:
+    0 0 4px rgba(116,225,86,0.38),
+    0 0 8px rgba(116,225,86,0.16) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-box {
+  gap: 0 !important;
+  padding: 0 0.2% !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-label {
+  font-size: clamp(7px, 0.62vw, 10px) !important;
+  line-height: 1.0 !important;
+  letter-spacing: 0.035em !important;
+  margin: 0 0 2px !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-value {
+  font-size: clamp(12px, 1.0vw, 17px) !important;
+  line-height: 0.98 !important;
+  font-weight: 900 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-hp { left: 9.7% !important; top: 16.3% !important; width: 15.5% !important; height: 10.5% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-ap { left: 9.7% !important; top: 34.8% !important; width: 15.5% !important; height: 10.5% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-armor { left: 9.7% !important; top: 54.6% !important; width: 15.5% !important; height: 10.5% !important; }
+
+#weapon-readout.weapon-ui-panel .weapon-ui-damage { left: 77.0% !important; top: 16.3% !important; width: 14.0% !important; height: 10.5% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-mag { left: 75.3% !important; top: 35.1% !important; width: 7.6% !important; height: 10.0% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-reserve { left: 84.0% !important; top: 35.1% !important; width: 7.6% !important; height: 10.0% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-ammo-type { left: 75.8% !important; top: 54.3% !important; width: 16.4% !important; height: 12.2% !important; padding-left: 1.0% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-ammo-type .weapon-ui-value {
+  font-size: clamp(9px, 0.76vw, 13px) !important;
+  line-height: 1.05 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage {
+  left: 25.9% !important;
+  top: 14.8% !important;
+  width: 48.2% !important;
+  height: 62.5% !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-action-label {
+  position: absolute !important;
+  top: 6.0% !important;
+  left: 12% !important;
+  right: 12% !important;
+  font-size: clamp(15px, 1.34vw, 23px) !important;
+  line-height: 1.0 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .fallout-weapon-art {
+  position: absolute !important;
+  left: 50% !important;
+  top: 44.8% !important;
+  width: 28% !important;
+  height: 20% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ap-cost {
+  position: absolute !important;
+  left: 18.0% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 19.2% !important;
+  min-width: 20% !important;
+  text-align: center !important;
+  font-size: clamp(15px, 1.25vw, 22px) !important;
+  line-height: 1.0 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ammo-main {
+  position: absolute !important;
+  left: auto !important;
+  right: 18.0% !important;
+  top: auto !important;
+  bottom: 19.2% !important;
+  min-width: 18% !important;
+  text-align: center !important;
+  font-size: clamp(17px, 1.42vw, 25px) !important;
+  line-height: 1.0 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-weapon-name {
+  position: absolute !important;
+  left: 24% !important;
+  right: 24% !important;
+  top: auto !important;
+  bottom: 11.0% !important;
+  font-size: clamp(7px, 0.62vw, 10px) !important;
+  line-height: 1.0 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-condition {
+  position: absolute !important;
+  left: 28% !important;
+  right: 28% !important;
+  top: auto !important;
+  bottom: 7.3% !important;
+  height: 1.8% !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note {
+  left: 33% !important;
+  right: 33% !important;
+  bottom: 3.8% !important;
+  height: 4.8% !important;
+  font-size: clamp(7px, 0.56vw, 9px) !important;
+  line-height: 1.0 !important;
+}
+
+
+/* v7.75.77: brighter socket-only AP glow and bottom text cleanup. */
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout.weapon-ui-panel,
+#weapon-readout {
+  bottom: -2px !important;
+}
+body.device-mobile #weapon-readout {
+  bottom: calc(0px + var(--safe-bottom, 0px)) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-leds {
+  left: 30.88% !important;
+  top: 2.08% !important;
+  width: 38.35% !important;
+  height: 8.35% !important;
+  grid-template-columns: repeat(14, 1fr) !important;
+  justify-items: center !important;
+  align-items: center !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span {
+  width: 58% !important;
+  max-width: 15px !important;
+  min-width: 9px !important;
+  aspect-ratio: 1 / 1 !important;
+  opacity: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: translateY(1px) !important;
+  mix-blend-mode: screen !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on,
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on.warn,
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on:not(.warn) {
+  opacity: 0.96 !important;
+  background: radial-gradient(circle at 38% 34%,
+    rgba(239,255,229,0.98) 0%,
+    rgba(128,244,98,0.86) 34%,
+    rgba(45,155,38,0.50) 64%,
+    rgba(16,68,12,0.08) 100%) !important;
+  box-shadow:
+    0 0 5px rgba(116,225,86,0.52),
+    0 0 11px rgba(116,225,86,0.22) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-action-label {
+  top: 5.4% !important;
+  font-size: clamp(15px, 1.30vw, 22px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .fallout-weapon-art {
+  top: 43.5% !important;
+  width: 26% !important;
+  height: 19% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ap-cost,
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ammo-main {
+  bottom: 20.0% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-weapon-name {
+  bottom: 12.4% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-condition {
+  bottom: 8.8% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note {
+  left: 36.0% !important;
+  right: 36.0% !important;
+  bottom: 2.9% !important;
+  height: 4.8% !important;
+  gap: 4px !important;
+  font-size: clamp(6px, 0.52vw, 8px) !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note span {
+  max-width: 52% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+
+/* v7.75.78: lower weapon HUD flush to screen and make bottom text readable. */
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout.weapon-ui-panel,
+#weapon-readout {
+  bottom: -8px !important;
+  width: min(880px, calc(100vw - 44px)) !important;
+}
+
+body.device-mobile #weapon-readout {
+  bottom: calc(-4px + var(--safe-bottom, 0px)) !important;
+  width: min(88vw, 720px) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note {
+  bottom: 4.8% !important;
+  height: 5.6% !important;
+  font-size: clamp(8px, 0.66vw, 11px) !important;
+  line-height: 1.05 !important;
+  color: #f0d28a !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 7px rgba(240,198,91,0.14) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note b {
+  color: #ffd56f !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note span {
+  color: #cfa85a !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-action-label {
+  top: 5.6% !important;
+  font-size: clamp(16px, 1.42vw, 24px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .fallout-weapon-art {
+  top: 43.6% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ap-cost,
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ammo-main {
+  bottom: 20.2% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-weapon-name {
+  bottom: 12.0% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-condition {
+  bottom: 8.1% !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-leds {
+  top: 2.2% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on,
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on.warn,
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on:not(.warn) {
+  opacity: 0.88 !important;
+}
+
+
+/* v7.75.79: readable health/action labels, HP danger color and cleaner weapon panel composition. */
+#weapon-readout.weapon-ui-panel,
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout {
+  bottom: 0 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-label {
+  font-size: clamp(6px, 0.52vw, 8.5px) !important;
+  line-height: 0.98 !important;
+  letter-spacing: 0.025em !important;
+  white-space: nowrap !important;
+  color: #f2d27e !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.96) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-value {
+  font-size: clamp(12px, 0.98vw, 17px) !important;
+  line-height: 0.98 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-hp,
+#weapon-readout.weapon-ui-panel .weapon-ui-ap {
+  left: 9.35% !important;
+  width: 16.3% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-hp { top: 16.2% !important; height: 10.9% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-ap { top: 34.9% !important; height: 10.9% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-armor { top: 54.5% !important; height: 10.6% !important; }
+
+#weapon-readout.weapon-ui-panel .weapon-ui-hp-value.hp-healthy {
+  color: #e9ffcf !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 8px rgba(113,224,82,0.22) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-hp-value.hp-warning {
+  color: #ffd86f !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 8px rgba(255,190,73,0.28) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-hp-value.hp-critical {
+  color: #ff6e58 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 10px rgba(255,68,42,0.36) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-action-label {
+  top: 6.6% !important;
+  font-size: clamp(15px, 1.25vw, 22px) !important;
+  letter-spacing: 0.055em !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .fallout-weapon-art {
+  top: 43.6% !important;
+  width: 27% !important;
+  height: 19% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ap-cost {
+  left: 17.2% !important;
+  bottom: 20.4% !important;
+  font-size: clamp(15px, 1.2vw, 21px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ammo-main {
+  right: 17.2% !important;
+  bottom: 20.4% !important;
+  font-size: clamp(17px, 1.35vw, 24px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-weapon-name {
+  bottom: 12.0% !important;
+  font-size: clamp(7px, 0.58vw, 9px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-condition {
+  bottom: 8.7% !important;
+  height: 1.6% !important;
+}
+
+/* Move the mode hint into the bottom central empty window. */
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note {
+  left: 37.2% !important;
+  right: 37.2% !important;
+  bottom: 8.6% !important;
+  height: 5.2% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  font-size: clamp(7px, 0.58vw, 9px) !important;
+  line-height: 1 !important;
+  overflow: hidden !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note b {
+  color: #f2cf66 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note span {
+  color: #b99250 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Keep AP lamps green and tied to the existing sockets. */
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on,
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on.warn,
+#weapon-readout.weapon-ui-panel .weapon-ui-leds span.on:not(.warn) {
+  opacity: 0.88 !important;
+  background: radial-gradient(circle at 38% 35%, rgba(231,255,219,0.94) 0%, rgba(119,239,92,0.74) 34%, rgba(55,168,45,0.36) 62%, rgba(20,70,14,0.04) 100%) !important;
+  box-shadow: 0 0 4px rgba(116,225,86,0.38), 0 0 8px rgba(116,225,86,0.14) !important;
+}
+
+body.device-mobile #weapon-readout.weapon-ui-panel .weapon-ui-label {
+  font-size: clamp(5.5px, 1.0vw, 7.5px) !important;
+}
+body.device-mobile #weapon-readout.weapon-ui-panel .weapon-ui-mode-note {
+  bottom: 8.2% !important;
+  font-size: clamp(6px, 0.9vw, 8px) !important;
+}
+
+/* v7.75.80: fit long labels into their window frames and rebalance text blocks. */
+#weapon-readout.weapon-ui-panel .weapon-ui-box {
+  gap: 1px !important;
+  justify-content: center !important;
+  padding: 0.1% 0.45% !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-label {
+  display: block !important;
+  width: 100% !important;
+  font-size: clamp(5px, 0.44vw, 7px) !important;
+  line-height: 0.9 !important;
+  letter-spacing: 0.01em !important;
+  white-space: normal !important;
+  text-align: center !important;
+  word-break: keep-all !important;
+  overflow-wrap: anywhere !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-value {
+  width: 100% !important;
+  text-align: center !important;
+  font-size: clamp(11px, 0.94vw, 16px) !important;
+  line-height: 0.94 !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-hp,
+#weapon-readout.weapon-ui-panel .weapon-ui-ap,
+#weapon-readout.weapon-ui-panel .weapon-ui-armor {
+  left: 8.9% !important;
+  width: 17.1% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-hp { top: 15.7% !important; height: 11.6% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-ap { top: 34.35% !important; height: 11.8% !important; }
+#weapon-readout.weapon-ui-panel .weapon-ui-armor { top: 53.8% !important; height: 11.3% !important; }
+
+#weapon-readout.weapon-ui-panel .weapon-ui-hp .weapon-ui-label,
+#weapon-readout.weapon-ui-panel .weapon-ui-ap .weapon-ui-label {
+  font-size: clamp(4.8px, 0.41vw, 6.6px) !important;
+  line-height: 0.88 !important;
+  margin-bottom: 1px !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-hp .weapon-ui-value,
+#weapon-readout.weapon-ui-panel .weapon-ui-ap .weapon-ui-value,
+#weapon-readout.weapon-ui-panel .weapon-ui-armor .weapon-ui-value {
+  font-size: clamp(12px, 1.02vw, 17px) !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-damage {
+  left: 75.7% !important;
+  width: 15.0% !important;
+  top: 15.7% !important;
+  height: 11.6% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mag {
+  left: 75.3% !important;
+  width: 7.8% !important;
+  top: 34.4% !important;
+  height: 11.3% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-reserve {
+  left: 83.7% !important;
+  width: 7.8% !important;
+  top: 34.4% !important;
+  height: 11.3% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-ammo-type {
+  left: 75.3% !important;
+  width: 16.2% !important;
+  top: 53.5% !important;
+  height: 12.2% !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding-left: 0.35% !important;
+  padding-right: 0.35% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-damage .weapon-ui-label,
+#weapon-readout.weapon-ui-panel .weapon-ui-mag .weapon-ui-label,
+#weapon-readout.weapon-ui-panel .weapon-ui-reserve .weapon-ui-label,
+#weapon-readout.weapon-ui-panel .weapon-ui-ammo-type .weapon-ui-label {
+  font-size: clamp(4.8px, 0.42vw, 6.7px) !important;
+  line-height: 0.88 !important;
+  margin-bottom: 1px !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mag .weapon-ui-value,
+#weapon-readout.weapon-ui-panel .weapon-ui-reserve .weapon-ui-value,
+#weapon-readout.weapon-ui-panel .weapon-ui-damage .weapon-ui-value,
+#weapon-readout.weapon-ui-panel .weapon-ui-ammo-type .weapon-ui-value {
+  font-size: clamp(11px, 0.96vw, 16px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-ammo-type .weapon-ui-value {
+  white-space: nowrap !important;
+}
+
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-action-label {
+  top: 6.2% !important;
+  left: 10% !important;
+  right: 10% !important;
+  font-size: clamp(15px, 1.26vw, 21px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .fallout-weapon-art {
+  top: 44.0% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ap-cost {
+  left: 18.2% !important;
+  bottom: 20.8% !important;
+  font-size: clamp(14px, 1.16vw, 20px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-ammo-main {
+  right: 18.2% !important;
+  bottom: 20.8% !important;
+  font-size: clamp(16px, 1.32vw, 23px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-weapon-name {
+  left: 21% !important;
+  right: 21% !important;
+  bottom: 11.5% !important;
+  font-size: clamp(7px, 0.56vw, 9px) !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-stage .weapon-ui-condition {
+  left: 27% !important;
+  right: 27% !important;
+  bottom: 8.3% !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note {
+  left: 35.1% !important;
+  right: 35.1% !important;
+  bottom: 8.15% !important;
+  height: 4.9% !important;
+  font-size: clamp(6.5px, 0.52vw, 8px) !important;
+  gap: 4px !important;
+}
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note b,
+#weapon-readout.weapon-ui-panel .weapon-ui-mode-note span {
+  line-height: 0.95 !important;
+}
+
+body.device-mobile #weapon-readout.weapon-ui-panel .weapon-ui-label {
+  font-size: clamp(4.7px, 0.92vw, 6.4px) !important;
+}
+body.device-mobile #weapon-readout.weapon-ui-panel .weapon-ui-value {
+  font-size: clamp(10px, 1.8vw, 15px) !important;
+}
+body.device-mobile #weapon-readout.weapon-ui-panel .weapon-ui-mode-note {
+  font-size: clamp(6px, 0.85vw, 7.5px) !important;
+}

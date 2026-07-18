@@ -1,0 +1,70 @@
+/* v7.49.2: держим основной HUD видимым при открытых игровых окнах.
+   Окна лута, контейнеров, торговли, хранилища, инвентаря и других панелей
+   больше не должны прятать время, миникарту, системный журнал, fullscreen и меню. */
+
+body.game-ui-panel-open #global-fullscreen-btn,
+body.game-ui-panel-open #mobile-fullscreen-btn,
+body.game-ui-panel-open #game-settings-btn,
+body.game-ui-panel-open #desktop-minimap-hud,
+body.game-ui-panel-open #mobile-minimap-hud,
+body.game-ui-panel-open #system-log-panel,
+body.game-ui-panel-open #desktop-game-time,
+body.game-ui-panel-open #mobile-game-time,
+body.loot-window-open #desktop-minimap-hud,
+body.loot-window-open #mobile-minimap-hud,
+body.loot-window-open #desktop-game-time,
+body.loot-window-open #mobile-game-time,
+body.trader-window-open #desktop-minimap-hud,
+body.trader-window-open #mobile-minimap-hud,
+body.trader-window-open #desktop-game-time,
+body.trader-window-open #mobile-game-time,
+body.storage-window-open #desktop-minimap-hud,
+body.storage-window-open #mobile-minimap-hud,
+body.storage-window-open #desktop-game-time,
+body.storage-window-open #mobile-game-time {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+body.device-mobile.landscape-mode.mobile-ui-panel-open #global-fullscreen-btn,
+body.device-mobile.landscape-mode.mobile-ui-panel-open #mobile-fullscreen-btn,
+body.device-mobile.landscape-mode.mobile-ui-panel-open #game-settings-btn,
+body.device-mobile.landscape-mode.mobile-ui-panel-open #mobile-minimap-hud,
+body.device-mobile.landscape-mode.mobile-ui-panel-open #system-log-panel,
+body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-left-rail,
+body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-right-rail,
+body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-quest-panel,
+body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-chat-panel,
+body.device-mobile.landscape-mode.mobile-ui-panel-open .mobile-aim-label {
+  display: block !important;
+  visibility: visible !important;
+}
+
+body.device-mobile.mobile-ui-panel-open #quickbar,
+body.device-mobile.landscape-mode.mobile-ui-panel-open #quickbar {
+  display: flex !important;
+  visibility: visible !important;
+}
+
+body.device-mobile.landscape-mode.mobile-ui-panel-open .touch-buttons {
+  display: block !important;
+  visibility: visible !important;
+}
+
+body.device-mobile.mobile-ui-panel-open #touch-joystick,
+body.device-mobile.mobile-ui-panel-open #touch-move-zone,
+body.device-mobile.mobile-ui-panel-open #touch-aim-zone,
+body.device-mobile.mobile-ui-panel-open #touch-aim-reticle {
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Окна остаются выше HUD; HUD видим, но не перекрывает содержимое окон. */
+body.game-ui-panel-open .window-panel,
+body.game-ui-panel-open .modal-panel,
+body.game-ui-panel-open #loot-window,
+body.game-ui-panel-open #trader-window,
+body.game-ui-panel-open #storage-window {
+  z-index: 120 !important;
+}

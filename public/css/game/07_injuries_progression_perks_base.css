@@ -1,0 +1,371 @@
+/* ===== v7.43.2 injury status panels ===== */
+.injury-status-panel {
+  margin: 8px 0 10px;
+  padding: 8px;
+  border: 1px solid rgba(214, 176, 94, 0.30);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(48, 35, 24, 0.72), rgba(9, 11, 10, 0.64));
+  box-shadow: inset 0 0 22px rgba(204, 96, 48, 0.08);
+}
+.injury-status-title {
+  color: #f0d28a;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .7px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.injury-status-empty {
+  color: #91a07b;
+  font-size: 11px;
+}
+.injury-status-list {
+  display: grid;
+  gap: 5px;
+}
+.injury-status-row {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 7px;
+  align-items: start;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(194, 93, 61, 0.30);
+  background: rgba(80, 31, 22, 0.28);
+}
+.injury-status-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: rgba(0,0,0,.24);
+  font-size: 15px;
+}
+.injury-status-name {
+  color: #ffd68a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.injury-status-effect {
+  color: #c7b88e;
+  font-size: 10.5px;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+.injury-status-panel.compact { margin-top: 10px; }
+.injury-status-panel.compact .injury-status-row { padding: 5px; }
+.injury-status-panel.compact .injury-status-effect { font-size: 10px; }
+
+
+  /* ===== v7.44.2 fullscreen progression and Albion-style perk wheel ===== */
+  #talents-window.visible {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: 12px !important;
+    bottom: 12px !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    box-sizing: border-box !important;
+    z-index: 12000 !important;
+    padding: 14px !important;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.48), 0 28px 85px rgba(0,0,0,.78) !important;
+  }
+  #talents-window.visible .window-scroll {
+    max-height: calc(100vh - 54px) !important;
+    height: calc(100vh - 54px) !important;
+    overflow: auto;
+    padding-right: 7px;
+  }
+  #talents-window .fullscreen-title {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: linear-gradient(180deg, rgba(19,22,22,.96), rgba(19,22,22,.78));
+    padding-bottom: 8px;
+  }
+  .progression-tabs {
+    position: sticky;
+    top: 34px;
+    z-index: 4;
+    display: flex;
+    gap: 8px;
+    margin: 0 0 12px;
+    padding: 8px 0 10px;
+    background: linear-gradient(180deg, rgba(19,22,22,.94), rgba(19,22,22,.66));
+    border-bottom: 1px solid rgba(174,139,72,.18);
+  }
+  .progression-tab {
+    min-width: 132px;
+    font-weight: 900;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+  }
+  .progression-tab.active {
+    color: #1d1609;
+    background: linear-gradient(180deg, #f0d28a, #ad7b2e);
+    border-color: rgba(255,226,148,.8);
+    box-shadow: 0 0 18px rgba(214,157,66,.26);
+  }
+  #talents-window.progression-mode-perks .progression-hero-card,
+  #talents-window.progression-mode-perks #special-summary,
+  #talents-window.progression-mode-perks #skills-header,
+  #talents-window.progression-mode-perks #skill-grid,
+  #talents-window.progression-mode-perks #talent-grid {
+    display: none !important;
+  }
+  #talents-window.progression-mode-perks .progression-window-layout {
+    display: block !important;
+  }
+  #talents-window.progression-mode-perks .progression-main-card {
+    width: 100%;
+  }
+  #talents-window.progression-mode-overview #perk-wheel-wrap {
+    display: none !important;
+  }
+  .perk-wheel-wrap {
+    min-height: calc(100vh - 125px);
+    border: 1px solid rgba(214,176,94,.35);
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at 50% 48%, rgba(214,157,66,.18), rgba(14,17,17,.72) 36%, rgba(5,6,6,.92) 72%),
+      linear-gradient(180deg, rgba(38,31,19,.62), rgba(6,7,7,.92));
+    box-shadow: inset 0 0 48px rgba(240,198,91,.08), 0 18px 50px rgba(0,0,0,.35);
+    padding: 12px;
+    overflow: hidden;
+  }
+  .perk-wheel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    color: #f0d28a;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .perk-wheel-head small {
+    color: #9fae83;
+    font-size: 10px;
+    line-height: 1.25;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+    text-align: right;
+  }
+  .perk-wheel {
+    position: relative;
+    min-height: 650px;
+    height: min(76vh, 780px);
+    border-radius: 50%;
+    margin: 0 auto;
+    max-width: min(980px, calc(100vw - 80px));
+    background:
+      radial-gradient(circle, rgba(240,198,91,.12) 0 2px, transparent 3px),
+      radial-gradient(circle, transparent 0 17%, rgba(174,139,72,.10) 17.25% 17.55%, transparent 17.9% 34%, rgba(174,139,72,.10) 34.25% 34.55%, transparent 34.9% 51%, rgba(174,139,72,.10) 51.25% 51.55%, transparent 51.9% 68%, rgba(174,139,72,.10) 68.25% 68.55%, transparent 68.9%),
+      radial-gradient(circle at center, rgba(42,34,20,.34), rgba(0,0,0,.08) 40%, rgba(0,0,0,.28));
+  }
+  .perk-wheel svg.perk-links {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .perk-wheel-center {
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 118px; height: 118px;
+    border-radius: 50%;
+    border: 2px solid rgba(240,198,91,.8);
+    background: radial-gradient(circle at 45% 32%, rgba(240,210,138,.28), rgba(80,58,25,.95) 62%, rgba(13,11,8,.98));
+    box-shadow: 0 0 34px rgba(240,198,91,.28), inset 0 0 24px rgba(0,0,0,.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #f0d28a;
+    font-weight: 900;
+    font-size: 12px;
+    z-index: 2;
+  }
+  .perk-wheel-center b { display:block; font-size: 28px; line-height: 1; margin-bottom: 3px; }
+  .perk-node {
+    position: absolute;
+    width: 84px;
+    height: 84px;
+    margin-left: -42px;
+    margin-top: -42px;
+    border-radius: 50%;
+    border: 2px solid rgba(105,99,70,.75);
+    background: radial-gradient(circle at 40% 28%, rgba(255,230,160,.15), rgba(25,28,25,.96) 56%, rgba(8,9,9,.98));
+    box-shadow: 0 8px 20px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.04);
+    color: #d5c196;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 2;
+    transition: transform .12s, border-color .12s, box-shadow .12s, filter .12s;
+  }
+  .perk-node:hover { transform: scale(1.08); border-color: #f0d28a; box-shadow: 0 0 24px rgba(240,198,91,.24), 0 8px 20px rgba(0,0,0,.34); }
+  .perk-node-icon { font-size: 24px; line-height: 1; margin-bottom: 3px; }
+  .perk-node-name { width: 70px; font-size: 8.5px; line-height: 1.08; font-weight: 900; color: #e8d19a; }
+  .perk-node-rank { font-size: 8px; color: #f0c65b; margin-top: 2px; }
+  .perk-node.maxed {
+    border-color: rgba(126,205,103,.92);
+    background: radial-gradient(circle at 40% 28%, rgba(164,255,125,.24), rgba(32,55,28,.95) 60%, rgba(7,10,7,.98));
+    box-shadow: 0 0 20px rgba(126,205,103,.28), inset 0 0 0 1px rgba(126,205,103,.18);
+  }
+  .perk-node.available:not(.maxed) {
+    border-color: rgba(240,198,91,.95);
+    box-shadow: 0 0 28px rgba(240,198,91,.30), 0 8px 20px rgba(0,0,0,.34);
+  }
+  .perk-node.locked:not(.maxed) {
+    opacity: .55;
+    filter: grayscale(.58);
+  }
+  .perk-branch-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    color: rgba(240,210,138,.82);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 5px rgba(0,0,0,.8);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .perk-wheel-info {
+    margin: 10px auto 0;
+    max-width: min(980px, calc(100vw - 80px));
+    min-height: 44px;
+    border: 1px solid rgba(174,139,72,.28);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: rgba(0,0,0,.28);
+    color: #b9c296;
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .perk-wheel-info b { color:#f0d28a; }
+
+  @media (max-width: 760px) {
+    #talents-window.visible { left: 6px !important; right: 6px !important; top: 6px !important; bottom: 6px !important; transform: none !important; }
+    #talents-window.visible .window-scroll { height: calc(var(--app-height, 100dvh) - 36px) !important; max-height: calc(var(--app-height, 100dvh) - 36px) !important; }
+    .progression-tabs { top: 30px; overflow-x: auto; }
+    .progression-tab { min-width: 124px; }
+    .perk-wheel-wrap { min-height: 560px; padding: 8px; }
+    .perk-wheel { min-height: 520px; height: 560px; max-width: 560px; }
+    .perk-node { width: 68px; height: 68px; margin-left: -34px; margin-top: -34px; }
+    .perk-node-icon { font-size: 19px; }
+    .perk-node-name { width: 58px; font-size: 7.5px; }
+    .perk-wheel-center { width: 88px; height: 88px; font-size: 10px; }
+    .perk-wheel-center b { font-size: 22px; }
+    .perk-wheel-head { display: block; }
+    .perk-wheel-head small { display:block; text-align:left; margin-top: 4px; }
+  }
+
+
+  /* ===== v7.44.4 perk wheel rings + hover-only descriptions ===== */
+  #talents-window #talents-header,
+  #talents-window #talent-grid {
+    display: none !important;
+  }
+  #talents-window.progression-mode-overview #talents-header,
+  #talents-window.progression-mode-overview #talent-grid {
+    display: none !important;
+  }
+  #talents-window.progression-mode-perks #perk-wheel-wrap {
+    display: block !important;
+  }
+  #talents-window.progression-mode-perks .progression-main-card {
+    padding-top: 0;
+  }
+  .perk-wheel-wrap {
+    overflow: hidden;
+  }
+  .perk-wheel-head small {
+    max-width: 620px;
+  }
+  .perk-wheel {
+    width: min(76vh, 980px, calc(100vw - 96px));
+    height: auto;
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    max-height: calc(100vh - 205px);
+  }
+  .perk-wheel svg.perk-links circle {
+    filter: drop-shadow(0 0 6px rgba(240,198,91,.08));
+  }
+  .perk-level-label {
+    position: absolute;
+    transform: translate(-50%, -115%);
+    color: rgba(240,210,138,.75);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 5px rgba(0,0,0,.85);
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 1;
+  }
+  .perk-node {
+    width: 62px;
+    height: 62px;
+    margin-left: -31px;
+    margin-top: -31px;
+    z-index: 3;
+  }
+  .perk-node:hover {
+    transform: scale(1.12);
+    z-index: 8;
+  }
+  .perk-node-icon {
+    font-size: 25px;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .perk-node-name {
+    display: none !important;
+  }
+  .perk-node-rank {
+    font-size: 8px;
+    line-height: 1;
+    margin-top: 1px;
+  }
+  .perk-wheel-info {
+    display: none !important;
+  }
+  @media (max-width: 760px) {
+    .perk-wheel {
+      width: min(78vh, calc(100vw - 28px), 620px);
+      height: auto;
+      aspect-ratio: 1 / 1;
+      max-height: calc(var(--app-height, 100dvh) - 136px);
+      min-height: 0;
+    }
+    .perk-node {
+      width: 50px;
+      height: 50px;
+      margin-left: -25px;
+      margin-top: -25px;
+    }
+    .perk-node-icon { font-size: 21px; }
+    .perk-node-rank { font-size: 7px; }
+    .perk-level-label { font-size: 8px; }
+  }
+

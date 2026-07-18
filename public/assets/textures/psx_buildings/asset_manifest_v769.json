@@ -1,0 +1,86 @@
+{
+  "version": "v7.69.0",
+  "source_archive": "PSXBuildings.zip",
+  "materials": [
+    {
+      "id": "trader_wall_metal_blue",
+      "base": "trader_wall_metal_blue_base_v769.webp",
+      "normal": "trader_wall_metal_blue_normal_v769.webp",
+      "roughness": "trader_wall_metal_blue_roughness_v769.webp",
+      "ao": "trader_wall_metal_blue_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_wall_corrugated_rust",
+      "base": "trader_wall_corrugated_rust_base_v769.webp",
+      "normal": "trader_wall_corrugated_rust_normal_v769.webp",
+      "roughness": "trader_wall_corrugated_rust_roughness_v769.webp",
+      "ao": "trader_wall_corrugated_rust_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_wall_corrugated_white",
+      "base": "trader_wall_corrugated_white_base_v769.webp",
+      "normal": "trader_wall_corrugated_white_normal_v769.webp",
+      "roughness": "trader_wall_corrugated_white_roughness_v769.webp",
+      "ao": "trader_wall_corrugated_white_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_wall_brick_window",
+      "base": "trader_wall_brick_window_base_v769.webp",
+      "normal": "trader_wall_brick_window_normal_v769.webp",
+      "roughness": "trader_wall_brick_window_roughness_v769.webp",
+      "ao": "trader_wall_brick_window_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_wall_concrete_window",
+      "base": "trader_wall_concrete_window_base_v769.webp",
+      "normal": "trader_wall_concrete_window_normal_v769.webp",
+      "roughness": "trader_wall_concrete_window_roughness_v769.webp",
+      "ao": "trader_wall_concrete_window_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_door_grey",
+      "base": "trader_door_grey_base_v769.webp",
+      "normal": "trader_door_grey_normal_v769.webp",
+      "roughness": "trader_door_grey_roughness_v769.webp",
+      "ao": "trader_door_grey_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_rollup_door",
+      "base": "trader_rollup_door_base_v769.webp",
+      "normal": "trader_rollup_door_normal_v769.webp",
+      "roughness": "trader_rollup_door_roughness_v769.webp",
+      "ao": "trader_rollup_door_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_floor_concrete",
+      "base": "trader_floor_concrete_base_v769.webp",
+      "normal": "trader_floor_concrete_normal_v769.webp",
+      "roughness": "trader_floor_concrete_roughness_v769.webp",
+      "ao": "trader_floor_concrete_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_roof_red_white",
+      "base": "trader_roof_red_white_base_v769.webp",
+      "normal": "trader_roof_red_white_normal_v769.webp",
+      "roughness": "trader_roof_red_white_roughness_v769.webp",
+      "ao": "trader_roof_red_white_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    },
+    {
+      "id": "trader_dark_window_strip",
+      "base": "trader_dark_window_strip_base_v769.webp",
+      "normal": "trader_dark_window_strip_normal_v769.webp",
+      "roughness": "trader_dark_window_strip_roughness_v769.webp",
+      "ao": "trader_dark_window_strip_ao_v769.webp",
+      "source": "PSXBuildings.zip / T_Buildings_Textures.png"
+    }
+  ]
+}

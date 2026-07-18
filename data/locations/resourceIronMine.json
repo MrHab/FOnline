@@ -1,0 +1,232 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "resourceIronMine",
+  "name": "Заброшенный рудник",
+  "seed": 20260706,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "dryBasin",
+    "label": "Сухая низина"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "objects": [
+    {
+      "id": "iron_ore_01",
+      "model": "oreOutcrop",
+      "name": "Рудная жила",
+      "url": "/assets/models/wasteland/ore_outcrop.glb",
+      "position": {
+        "x": -8,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.35,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "ore"
+      ],
+      "resourceType": "ore",
+      "hp": 6,
+      "maxHp": 6,
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "iron_ore_02",
+      "model": "oreOutcrop",
+      "name": "Рудная жила",
+      "url": "/assets/models/wasteland/ore_outcrop.glb",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": -14
+      },
+      "rotation": {
+        "x": 0,
+        "y": -0.4,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "ore"
+      ],
+      "resourceType": "ore",
+      "hp": 5,
+      "maxHp": 5,
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "mine_rubble_01",
+      "model": "rubbleRock",
+      "name": "Каменная осыпь",
+      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.1,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rock"
+      ]
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": -17,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "tx": 10,
+      "tz": 11,
+      "x": -17,
+      "z": -16,
+      "objectId": "rest_campfire_01",
+      "objectModel": "campfireRest",
+      "authoredObject": true,
+      "vision": {
+        "mode": "none"
+      },
+      "role": "campfire"
+    },
+    {
+      "id": "resourceIronMine_job_board",
+      "model": "jobBoard",
+      "name": "????? ?????",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": -24,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        },
+        "groundSnap": true
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "ironMine"
+      }
+    }
+  ],
+  "kind": "resource"
+}

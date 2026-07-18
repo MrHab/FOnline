@@ -1,0 +1,37 @@
+{
+  "version": "7.56.0",
+  "purpose": "Local optimized wasteland textures matching the selected CC0 art direction. These lightweight game-ready PNGs are procedural stand-ins until full downloaded PBR packs are curated into the project.",
+  "license_policy": "Use only CC0/public-domain sources for external replacements. Do not import Fallout assets.",
+  "candidate_sources": [
+    {
+      "source": "ambientCG",
+      "license": "CC0",
+      "use": "ground, asphalt, metal, wood texture packs"
+    },
+    {
+      "source": "Poly Haven",
+      "license": "CC0",
+      "use": "terrain textures, HDRI, rock/prop models"
+    },
+    {
+      "source": "Quaternius",
+      "license": "CC0",
+      "use": "low-poly zombie/apocalypse props and character bases"
+    },
+    {
+      "source": "Kenney",
+      "license": "CC0",
+      "use": "game-ready icons/props if stylistically suitable"
+    }
+  ],
+  "bundled_files": [
+    "cc0_style_desert_cracked_ground.png",
+    "cc0_style_dust_decal.png",
+    "cc0_style_crack_decal.png",
+    "cc0_style_tire_tracks.png",
+    "cc0_style_scorch_decal.png",
+    "cc0_style_scrap_scatter.png",
+    "cc0_style_rusty_metal.png",
+    "cc0_style_dry_wood.png"
+  ]
+}

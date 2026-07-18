@@ -1,0 +1,100 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "mutantCrater",
+  "name": "Кратер супермутантов",
+  "seed": 20260710,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "kind": "lair",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "dryBasin",
+    "label": "Опасная низина"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [],
+  "objects": [
+    {
+      "id": "mutant_crater_cargo_01",
+      "model": "cargoStack",
+      "name": "Украденный груз",
+      "url": "/assets/models/wasteland/cargo_stack.glb",
+      "position": {
+        "x": 7,
+        "y": 0,
+        "z": -6
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "mutant_crater_fire_01",
+      "model": "campfireRest",
+      "name": "Кострище мутантов",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": 2,
+        "y": 0,
+        "z": 8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "camp"
+      ]
+    }
+  ]
+}

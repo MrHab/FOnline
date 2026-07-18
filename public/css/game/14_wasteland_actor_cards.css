@@ -1,0 +1,151 @@
+/* ===== v7.53 Wasteland actor cards =====
+   The 3D characters are now rugged survivor silhouettes. These CSS previews keep
+   inventory/craft/progression cards in the same rusty, dusty style without adding
+   heavy assets or extra images. */
+.progression-model {
+  background:
+    radial-gradient(circle at 50% 28%, rgba(205, 170, 103, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(31, 25, 18, 0.72), rgba(12, 10, 8, 0.94));
+  border-color: rgba(125, 96, 57, 0.72);
+  box-shadow: inset 0 0 28px rgba(0,0,0,.72), 0 12px 28px rgba(0,0,0,.34);
+}
+.progression-model::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  width: 110px;
+  height: 24px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,.62), transparent 70%);
+  pointer-events: none;
+}
+.progression-model .model-body {
+  width: 86px;
+  height: 168px;
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,.55));
+}
+.model-body .head {
+  left: 28px;
+  top: 0;
+  width: 30px;
+  height: 31px;
+  background: radial-gradient(circle at 45% 30%, #c09a6b, #8e6440 64%, #2a1a10 100%);
+  border: 2px solid #1a130d;
+}
+.model-body .head::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  width: 22px;
+  height: 7px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #18201b, #76a18e 48%, #171b16);
+  border: 1px solid #0a0907;
+  box-shadow: 0 6px 0 #2b1b12;
+}
+.model-body .torso {
+  left: 17px;
+  top: 35px;
+  width: 52px;
+  height: 70px;
+  border-radius: 14px 14px 9px 9px;
+  background:
+    linear-gradient(90deg, transparent 0 18%, rgba(25,18,11,.72) 19% 24%, transparent 25% 76%, rgba(25,18,11,.72) 77% 82%, transparent 83%),
+    linear-gradient(180deg, #7b5533, #402719 48%, #2a1d16 100%);
+  border: 2px solid #15100b;
+}
+.model-body .torso::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 13px;
+  width: 34px;
+  height: 28px;
+  transform: rotate(-4deg);
+  border-radius: 5px;
+  background: linear-gradient(180deg, #777568, #3a3c37);
+  border: 1px solid #151714;
+  box-shadow: inset 0 -8px 0 rgba(0,0,0,.22);
+}
+.model-body .arm {
+  top: 43px;
+  width: 14px;
+  height: 66px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #704a2c, #2c1c13);
+  border: 1px solid #100c08;
+}
+.model-body .arm::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  bottom: 8px;
+  height: 18px;
+  border-radius: 7px;
+  background: #2b1b12;
+  border: 1px solid #0c0906;
+}
+.model-body .arm.l { left: 1px; transform: rotate(13deg); }
+.model-body .arm.r { right: 1px; transform: rotate(-13deg); }
+.model-body .leg {
+  top: 100px;
+  width: 18px;
+  height: 58px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #2f3130, #161412 72%, #090807);
+  border: 1px solid #0c0a08;
+}
+.model-body .leg::after {
+  content: "";
+  position: absolute;
+  left: -3px;
+  bottom: -1px;
+  width: 24px;
+  height: 10px;
+  border-radius: 6px;
+  background: #130f0b;
+  border: 1px solid #050403;
+}
+.model-body .leg.l { left: 21px; transform: rotate(-2deg); }
+.model-body .leg.r { right: 21px; transform: rotate(2deg); }
+.model-body .weapon {
+  right: -24px;
+  top: 62px;
+  width: 66px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #7d7665, #222421 66%, #090a09);
+  border: 1px solid #100f0c;
+  transform: rotate(-8deg);
+  transform-origin: left center;
+  box-shadow: 42px 1px 0 -2px #161716, 13px 9px 0 -2px #4a2c18;
+}
+.model-body .backpack {
+  left: 7px;
+  top: 42px;
+  width: 20px;
+  height: 54px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #515237, #252719);
+  border: 1px solid #121009;
+  opacity: .98;
+}
+.model-body .backpack::after {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: -13px;
+  width: 27px;
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #b2935c, #5e4726);
+  border: 1px solid #1b130a;
+}
+body.device-mobile.landscape-mode .progression-model .model-body {
+  transform: scale(.84);
+  transform-origin: center bottom;
+}

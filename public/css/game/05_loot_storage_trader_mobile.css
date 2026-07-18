@@ -1,0 +1,629 @@
+/* v7.1: mobile container/loot window usability */
+#loot-window .loot-panel-title {
+  position: relative;
+  min-height: 34px;
+  padding-right: 42px;
+  align-items: center;
+}
+#loot-window #loot-close.loot-close-x {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 24px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+body.device-mobile #loot-window {
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(92vw, 430px) !important;
+  max-height: min(74vh, calc(var(--app-height, 100dvh) - 92px - var(--safe-top) - var(--safe-bottom))) !important;
+  padding: 12px !important;
+  overflow: hidden;
+}
+body.device-mobile #loot-window .panel-title {
+  padding-right: 42px !important;
+  margin-bottom: 8px;
+}
+body.device-mobile #loot-window #loot-close.loot-close-x {
+  right: 0;
+  top: 0;
+  transform: none;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  font-size: 24px;
+}
+body.device-mobile #loot-grid {
+  max-height: min(48vh, calc(var(--app-height, 100dvh) - 190px - var(--safe-top) - var(--safe-bottom))) !important;
+  overflow: auto;
+}
+/* When loot/container window is open, keep the movement joystick alive so the player can walk away and auto-close the container. */
+body.device-mobile.mobile-ui-panel-open.loot-window-open #touch-move-zone,
+body.device-mobile.mobile-ui-panel-open.loot-window-open #touch-joystick {
+  display: block !important;
+  pointer-events: all !important;
+}
+
+/* v7.2: compact mobile trader/storage windows and keep movement joystick active. */
+body.device-mobile #trader-window,
+body.device-mobile #storage-window {
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(92vw, 560px) !important;
+  max-height: calc(var(--app-height, 100dvh) - 24px - var(--safe-top) - var(--safe-bottom)) !important;
+  padding: 10px !important;
+  overflow: hidden !important;
+}
+
+body.device-mobile #trader-window .panel-title,
+body.device-mobile #storage-window .panel-title {
+  padding-right: 42px !important;
+  margin-bottom: 7px !important;
+}
+
+body.device-mobile #trader-close.modal-close-x,
+body.device-mobile #storage-close.modal-close-x {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 24px;
+  line-height: 28px;
+  text-align: center;
+  z-index: 5;
+}
+
+body.device-mobile #trader-window .trade-hint,
+body.device-mobile #storage-window .trade-hint {
+  margin-bottom: 6px !important;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+
+body.device-mobile #trader-window .trade-layout {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+  min-height: 0 !important;
+}
+
+body.device-mobile #trader-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  max-height: min(52vh, calc(var(--app-height, 100dvh) - 150px - var(--safe-top) - var(--safe-bottom))) !important;
+  overflow: auto !important;
+  padding-right: 2px !important;
+}
+
+body.device-mobile #trade-sell-zone {
+  min-height: 0 !important;
+  max-height: min(52vh, calc(var(--app-height, 100dvh) - 150px - var(--safe-top) - var(--safe-bottom))) !important;
+  overflow: auto !important;
+  padding: 7px !important;
+}
+
+body.device-mobile .trade-mobile-inventory-wrap {
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(174,139,72,0.25);
+}
+body.device-mobile .trade-mobile-title {
+  color: #d9bd7a;
+  font-size: 10px;
+  font-weight: 800;
+  margin-bottom: 5px;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+}
+body.device-mobile .trade-mobile-inventory {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+body.device-mobile .mobile-sell-card {
+  min-height: 60px !important;
+}
+body.device-mobile .item-category-tabs {
+  gap: 4px !important;
+  margin-bottom: 5px !important;
+}
+body.device-mobile .item-category-tab {
+  min-height: 21px !important;
+  padding: 3px 5px !important;
+  font-size: 8px !important;
+  letter-spacing: 0 !important;
+}
+body.device-mobile #inventory-window .item-category-tabs,
+body.device-mobile #storage-window .item-category-tabs {
+  max-height: 52px;
+  overflow: auto;
+}
+
+body.device-mobile #storage-window .storage-layout {
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+}
+body.device-mobile #storage-window .storage-title {
+  font-size: 10px !important;
+  margin-bottom: 4px !important;
+}
+body.device-mobile #storage-window .storage-sort-actions {
+  margin-bottom: 5px !important;
+}
+body.device-mobile #storage-window .storage-sort-actions .ui-btn,
+body.device-mobile #storage-window .storage-actions-extra .ui-btn {
+  padding: 5px 7px !important;
+  font-size: 10px !important;
+}
+body.device-mobile #storage-window .storage-grid {
+  min-height: 0 !important;
+  max-height: min(46vh, calc(var(--app-height, 100dvh) - 178px - var(--safe-top) - var(--safe-bottom))) !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  padding: 6px !important;
+  overflow: auto !important;
+}
+body.device-mobile #storage-window .inv-card,
+body.device-mobile #trader-window .trade-card,
+body.device-mobile #trader-window .inv-card {
+  min-height: 58px !important;
+  padding: 4px !important;
+}
+body.device-mobile #storage-window .inv-emoji,
+body.device-mobile #trader-window .inv-emoji { font-size: 18px !important; height: 20px !important; line-height: 20px !important; }
+body.device-mobile #storage-window .inv-name,
+body.device-mobile #trader-window .inv-name { font-size: 8px !important; min-height: 17px !important; }
+body.device-mobile #storage-window .storage-actions-extra {
+  margin-top: 7px !important;
+  display: flex !important;
+  gap: 7px !important;
+}
+body.device-mobile #storage-window .storage-actions-extra .ui-btn { flex: 1; }
+
+body.device-mobile.mobile-ui-panel-open.storage-window-open #touch-move-zone,
+body.device-mobile.mobile-ui-panel-open.storage-window-open #touch-joystick,
+body.device-mobile.mobile-ui-panel-open.trader-window-open #touch-move-zone,
+body.device-mobile.mobile-ui-panel-open.trader-window-open #touch-joystick {
+  display: block !important;
+  pointer-events: all !important;
+}
+
+@media (orientation: portrait) and (max-width: 560px) {
+  body.device-mobile #trader-window .trade-layout,
+  body.device-mobile #storage-window .storage-layout {
+    grid-template-columns: 1fr !important;
+  }
+  body.device-mobile #trader-grid,
+  body.device-mobile #trade-sell-zone,
+  body.device-mobile #storage-window .storage-grid {
+    max-height: min(32vh, calc(var(--app-height, 100dvh) - 260px)) !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  body.device-mobile #trader-window,
+  body.device-mobile #storage-window {
+    width: min(78vw, 720px) !important;
+    max-height: calc(var(--app-height, 100dvh) - 14px - var(--safe-top) - var(--safe-bottom)) !important;
+  }
+  body.device-mobile #trader-grid,
+  body.device-mobile #trade-sell-zone {
+    max-height: calc(var(--app-height, 100dvh) - 128px - var(--safe-top) - var(--safe-bottom)) !important;
+  }
+  body.device-mobile #storage-window .storage-grid {
+    max-height: calc(var(--app-height, 100dvh) - 158px - var(--safe-top) - var(--safe-bottom)) !important;
+  }
+}
+
+body.device-mobile #trader-window.barter-window {
+  width: min(96vw, 980px) !important;
+  padding: 8px !important;
+}
+
+body.device-mobile #trader-window.barter-window .barter-status-row {
+  margin-bottom: 6px !important;
+  font-size: 9px !important;
+}
+
+body.device-mobile #trader-window.barter-window .trade-layout {
+  grid-template-columns: minmax(190px, 1fr) clamp(210px, 30vw, 280px) minmax(190px, 1fr) !important;
+  gap: 6px !important;
+  height: min(620px, calc(var(--app-height, 100dvh) - 92px - var(--safe-top) - var(--safe-bottom))) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+body.device-mobile #trader-window.barter-window #trader-player-items,
+body.device-mobile #trader-window.barter-window #trader-grid {
+  grid-template-columns: 1fr !important;
+  gap: 5px !important;
+  max-height: none !important;
+  padding: 5px !important;
+}
+
+body.device-mobile #trader-window.barter-window #trade-sell-zone {
+  max-height: none !important;
+  padding: 6px !important;
+}
+
+body.device-mobile #trader-window.barter-window .trade-card.barter-row {
+  grid-template-columns: 28px minmax(0, 1fr);
+  min-height: 48px !important;
+  padding: 5px !important;
+}
+
+body.device-mobile #trader-window.barter-window .barter-row-side {
+  grid-column: 2;
+  justify-items: start;
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: 7px;
+  min-width: 0;
+}
+
+body.device-mobile #trader-window.barter-window .barter-row-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 16px;
+}
+
+body.device-mobile #trader-window.barter-window .barter-row-name {
+  font-size: 9px;
+}
+
+body.device-mobile #trader-window.barter-window .barter-row-note,
+body.device-mobile #trader-window.barter-window .barter-row-side,
+body.device-mobile #trader-window.barter-window .trade-warning {
+  font-size: 8px;
+}
+
+body.device-mobile #trader-window.barter-window .barter-ledger,
+body.device-mobile #trader-window.barter-window .barter-center {
+  padding: 5px !important;
+}
+
+body.device-mobile #trader-window.barter-window .barter-ledger-title,
+body.device-mobile #trader-window.barter-window .barter-offer-title {
+  font-size: 8px;
+  margin-bottom: 4px;
+}
+
+body.device-mobile #trader-window.barter-window .barter-ledger-net {
+  padding: 5px;
+  font-size: 9px;
+}
+
+body.device-mobile #trader-window.barter-window .barter-offer-list {
+  grid-template-columns: 1fr !important;
+  max-height: min(120px, 19vh);
+}
+
+body.device-mobile #trader-window.barter-window .barter-mini-row {
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
+  min-height: 28px !important;
+  font-size: 8px !important;
+}
+
+body.device-mobile #trader-window.barter-window .barter-mini-row strong {
+  grid-column: auto;
+  justify-self: end;
+}
+
+body.device-mobile #trader-window.barter-window .trade-sell-actions {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+body.device-mobile #trader-window.barter-window .trade-sell-actions .ui-btn {
+  padding: 5px 6px !important;
+  font-size: 9px !important;
+}
+
+@media (orientation: portrait) and (max-width: 620px) {
+  body.device-mobile #trader-window.barter-window {
+    width: min(94vw, 480px) !important;
+  }
+  body.device-mobile #trader-window.barter-window .trade-layout {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  body.device-mobile #trader-window.barter-window #trader-player-items,
+  body.device-mobile #trader-window.barter-window #trader-grid,
+  body.device-mobile #trader-window.barter-window #trade-sell-zone {
+    max-height: min(27vh, calc(var(--app-height, 100dvh) - 330px)) !important;
+  }
+}
+
+
+
+
+/* v7.47.0: мобильное меню игрока как контейнер */
+#player-action-window {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100vw - 26px));
+  max-height: 72vh;
+  z-index: 95;
+  box-sizing: border-box;
+  padding: 12px;
+}
+#player-action-window .player-action-status {
+  margin: 0 0 10px;
+  padding: 8px 9px;
+  border: 1px solid rgba(174,139,72,0.28);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.18);
+  color: #aeba92;
+  font-size: 12px;
+  line-height: 1.35;
+}
+#player-action-window .player-action-status b { color: #f0d28a; }
+#player-action-window .player-action-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  max-height: 46vh;
+  overflow: auto;
+  padding-right: 2px;
+}
+#player-action-window .player-action-btn {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  text-align: left;
+  white-space: normal;
+}
+#player-action-window .player-action-btn.disabled {
+  opacity: 0.52;
+}
+#player-action-window .player-action-label {
+  color: #f0d28a;
+  font-weight: 800;
+  font-size: 12px;
+}
+#player-action-window .player-action-hint {
+  color: #9aa787;
+  font-size: 10px;
+  line-height: 1.2;
+}
+body.device-mobile #player-action-window {
+  width: min(420px, calc(100vw - 18px - var(--safe-left) - var(--safe-right))) !important;
+  max-height: calc(100vh - 18px - var(--safe-top) - var(--safe-bottom)) !important;
+}
+body.device-mobile #player-action-window .player-action-grid {
+  max-height: calc(100vh - 152px - var(--safe-top) - var(--safe-bottom));
+}
+
+
+/* v7.47.6: меню игрока полностью отделено от раскладки мобильного HUD.
+   Никакие body-классы меню игрока не должны менять quickbar, touch-buttons или журналы.
+   Защита ниже нужна только на случай старого сохранённого класса в DOM. */
+body.device-mobile.landscape-mode.player-action-window-open:not(.loot-window-open):not(.trader-window-open):not(.storage-window-open) .touch-buttons {
+  display: block !important;
+}
+
+body.device-mobile:not(.landscape-mode).player-action-window-open:not(.loot-window-open):not(.trader-window-open):not(.storage-window-open) .touch-buttons {
+  display: grid !important;
+}
+
+body.device-mobile.landscape-mode.player-action-window-open:not(.loot-window-open):not(.trader-window-open):not(.storage-window-open) .mobile-chat-panel {
+  display: none !important;
+}
+
+body.device-mobile #player-action-window {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 240 !important;
+  pointer-events: all !important;
+}
+
+body.device-mobile.landscape-mode #player-action-window {
+  width: min(420px, calc(100vw - 18px - var(--safe-left) - var(--safe-right))) !important;
+  max-height: calc(var(--app-height, 100dvh) - 18px - var(--safe-top) - var(--safe-bottom)) !important;
+}
+
+/* v7.47.6: явное отображение меню игрока без body-класса, который ломал HUD. */
+#player-action-window.visible {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+
+/* v7.47.7: меню лечения игрока всегда поверх мобильного HUD и внутри экрана. */
+body.device-mobile #player-action-window,
+body.device-mobile.landscape-mode #player-action-window,
+#player-action-window.visible {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 2147482500 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: all !important;
+  overflow: auto !important;
+  max-width: calc(100vw - 16px - var(--safe-left) - var(--safe-right)) !important;
+  max-height: calc(var(--app-height, 100dvh) - 16px - var(--safe-top) - var(--safe-bottom)) !important;
+}
+body.device-mobile #player-action-window:not(.visible) {
+  display: none !important;
+}
+body.device-mobile #player-action-window .player-action-titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(13, 16, 16, 0.96);
+  padding-bottom: 6px;
+}
+
+/* v7.47.8: отдельная карточка лечения игрока на мобильном, не связанная с HUD-классами окон. */
+#mobile-player-treatment-menu {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 16px - var(--safe-left) - var(--safe-right)));
+  max-height: calc(var(--app-height, 100dvh) - 16px - var(--safe-top) - var(--safe-bottom));
+  z-index: 2147483647;
+  box-sizing: border-box;
+  padding: 12px;
+  overflow: auto;
+  pointer-events: all;
+  border-color: rgba(214,176,94,0.62);
+  box-shadow: 0 18px 44px rgba(0,0,0,0.68), inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+#mobile-player-treatment-menu.visible {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+#mobile-player-treatment-menu .mobile-player-treatment-titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(13, 16, 16, 0.96);
+  padding-bottom: 6px;
+}
+#mobile-player-treatment-menu .player-action-status {
+  margin: 0 0 10px;
+  padding: 8px 9px;
+  border: 1px solid rgba(174,139,72,0.28);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.18);
+  color: #aeba92;
+  font-size: 12px;
+  line-height: 1.35;
+}
+#mobile-player-treatment-menu .player-action-status b { color: #f0d28a; }
+#mobile-player-treatment-menu .player-action-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  max-height: calc(var(--app-height, 100dvh) - 150px - var(--safe-top) - var(--safe-bottom));
+  overflow: auto;
+  padding-right: 2px;
+}
+#mobile-player-treatment-menu .player-action-btn {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  text-align: left;
+  white-space: normal;
+}
+#mobile-player-treatment-menu .player-action-btn.disabled { opacity: 0.52; }
+#mobile-player-treatment-menu .player-action-label {
+  color: #f0d28a;
+  font-weight: 800;
+  font-size: 12px;
+}
+#mobile-player-treatment-menu .player-action-hint {
+  color: #9aa787;
+  font-size: 10px;
+  line-height: 1.2;
+}
+body.device-mobile #mobile-player-treatment-menu {
+  width: min(420px, calc(100vw - 16px - var(--safe-left) - var(--safe-right))) !important;
+  max-height: calc(var(--app-height, 100dvh) - 16px - var(--safe-top) - var(--safe-bottom)) !important;
+}
+
+/* v7.48.2: меню лечения игрока должно жить внутри fullscreen-контейнера, а не за его пределами. */
+#mobile-player-treatment-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: var(--app-height, 100dvh) !important;
+  z-index: 2147483600 !important;
+  pointer-events: none !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+#mobile-player-treatment-menu.visible {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: all !important;
+  z-index: 2147483647 !important;
+}
+
+#mobile-player-treatment-layer.treatment-open {
+  pointer-events: all !important;
+}
+
+/* v7.48.9: carry-weight affordance for loot, trader and storage cards.
+   Partial stacks stay visually active if the player can carry at least one item. */
+.loot-card.carry-limited,
+.inv-card.carry-limited {
+  border-color: rgba(224, 170, 96, 0.72) !important;
+}
+
+.loot-card.carry-blocked,
+.inv-card.carry-blocked,
+.trade-card.carry-blocked {
+  opacity: 0.42;
+  filter: grayscale(0.9) brightness(0.55);
+}
+
+.loot-card.carry-blocked:hover,
+.inv-card.carry-blocked:hover,
+.trade-card.carry-blocked:hover {
+  transform: none;
+}
+
+.loot-weight-note {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 4px;
+  color: #e48464;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+
+.ui-btn.carry-blocked,
+button.carry-blocked {
+  opacity: 0.42 !important;
+  filter: grayscale(0.75) brightness(0.65);
+}

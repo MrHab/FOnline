@@ -1,0 +1,26 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "randomEncounter",
+  "name": "Событие мира",
+  "seed": 20260901,
+  "safe": false,
+  "pvpMode": "pvp",
+  "encounterOnly": true,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": { "preset": "encounterDust", "label": "Пустошь события" },
+  "map": { "width": 76, "depth": 76, "origin": "center" },
+  "grid": { "snap": true, "step": 2 },
+  "spawn": { "tx": 19, "tz": 19 },
+  "entryFromWorld": { "tx": 19, "tz": 19 },
+  "entryFromNorth": { "tx": 19, "tz": 4 },
+  "entryFromSouth": { "tx": 19, "tz": 34 },
+  "entryFromWest": { "tx": 4, "tz": 19 },
+  "entryFromEast": { "tx": 34, "tz": 19 },
+  "worldZones": [
+    { "id": "world_exit_edges", "label": "Уйти на глобальную карту", "tx": 19, "tz": 2, "radius": 4 }
+  ],
+  "objects": []
+}

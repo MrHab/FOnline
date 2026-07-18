@@ -1,0 +1,304 @@
+  /* ===== v33 progression / inventory / mobile fixes ===== */
+  #tooltip { z-index: 1000 !important; }
+  #item-context-menu { z-index: 1100 !important; }
+  #quantity-side-panel { z-index: 950 !important; }
+  #craft-window .progression-model { display: none !important; }
+  #craft-window .progression-window-layout { grid-template-columns: 1fr !important; }
+  #craft-window .progression-hero-card { min-height: auto; }
+  #craft-window .progression-hero-card .progression-hero-title,
+  #craft-window .progression-hero-card .progression-hero-sub { display: none !important; }
+  .inventory-actions, .storage-sort-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin: 0 0 8px;
+  }
+  .storage-sort-actions { margin: -1px 0 6px; justify-content: flex-start; flex-wrap: wrap; }
+  .inv-card.drag-over-slot, .storage-grid .inv-card.drag-over-slot {
+    border-color: #f0c65b !important;
+    background: rgba(64, 50, 24, 0.96) !important;
+    transform: translateY(-2px);
+  }
+  .inv-card.empty-slot { cursor: default; opacity: 0.58; }
+  .inv-card.empty-slot.drag-over-slot { opacity: 0.95; }
+  .special-pill { cursor: help; }
+  body.device-mobile .inv-card { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+
+
+
+  /* v34 fixes */
+  body.loot-window-open #desktop-minimap-hud,
+  body.loot-window-open #mobile-minimap-hud,
+  body.device-mobile.landscape-mode.mobile-ui-panel-open.loot-window-open #mobile-minimap-hud,
+  body.game-ui-panel-open.loot-window-open #desktop-minimap-hud,
+  body.game-ui-panel-open.loot-window-open #mobile-minimap-hud {
+    display: block !important;
+    opacity: 0.92;
+  }
+  .inv-card, .loot-card, .trade-card { -webkit-user-drag: none; }
+  body.device-mobile .inv-card, body.device-mobile .loot-card, body.device-mobile .trade-card { touch-action: none; }
+  .storage-grid .empty-slot { min-height: 68px; }
+
+  .manual-drag-ghost {
+    position: fixed;
+    z-index: 99999;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    min-width: 68px;
+    min-height: 68px;
+    opacity: 0.9;
+    box-shadow: 0 12px 34px rgba(0,0,0,0.55), 0 0 0 1px rgba(240,198,91,0.45);
+  }
+  body.manual-item-dragging { cursor: grabbing; }
+  body.manual-item-dragging #tooltip { display: none !important; }
+
+  .sort-mode-label { opacity: .82; font-size: 10px; }
+
+
+
+  /* Stable mobile movement: joystick no longer recalculates scene/screen axes */
+  #craft-window .progression-hero-card { display: none !important; }
+  body.device-mobile #inventory-grid {
+    max-height: calc(100dvh - 210px);
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    padding-right: 5px;
+  }
+  body.device-mobile #inventory-grid .inv-card,
+  body.device-mobile #storage-inventory-grid .inv-card,
+  body.device-mobile #storage-grid .inv-card {
+    touch-action: pan-y;
+  }
+  body.device-mobile #craft-window .progression-hero-card,
+  body.device-desktop #craft-window .progression-hero-card {
+    display: none !important;
+  }
+
+
+  /* ===== v44 mobile target lock / HUD edit / weapon panel fixes ===== */
+  #target-hint {
+    position: absolute;
+    display: none;
+    z-index: 12020;
+    min-width: 160px;
+    max-width: 220px;
+    padding: 8px 10px;
+    border-radius: 9px;
+    border: 1px solid rgba(240,198,91,0.58);
+    background: rgba(8,10,10,0.88);
+    color: #d9c28b;
+    font-size: 11px;
+    line-height: 1.25;
+    pointer-events: none;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.34), inset 0 0 14px rgba(240,198,91,0.06);
+    text-shadow: 0 1px 1px #000;
+  }
+  #target-hint b { color: #f0d28a; font-size: 12px; }
+  #target-hint .hit-good { color: #94d36b; font-weight: 900; }
+  #target-hint .hit-mid { color: #f0c65b; font-weight: 900; }
+  #target-hint .hit-bad { color: #e48464; font-weight: 900; }
+  #target-hint .target-note { color: #93a582; }
+
+  body.device-mobile #weapon-readout,
+  body.device-mobile.landscape-mode #weapon-readout {
+    display: grid !important;
+    position: absolute !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: calc(56px + var(--safe-bottom)) !important;
+    transform: translateX(-50%) scale(0.82) !important;
+    transform-origin: bottom center !important;
+    width: min(720px, 68vw) !important;
+    max-width: calc(100vw - 220px - var(--safe-left) - var(--safe-right)) !important;
+    min-width: min(560px, 58vw) !important;
+    grid-template-columns: 1.15fr 1fr 1fr 1fr !important;
+    gap: 7px !important;
+    padding: 7px 10px !important;
+    z-index: 42 !important;
+    pointer-events: none !important;
+    opacity: 0.94;
+  }
+  body.device-mobile #weapon-readout .weapon-box-title,
+  body.device-mobile.landscape-mode #weapon-readout .weapon-box-title { font-size: 8px !important; letter-spacing: 0.9px; }
+  body.device-mobile #weapon-readout .weapon-box-value,
+  body.device-mobile.landscape-mode #weapon-readout .weapon-box-value { font-size: 11px !important; }
+  @media (orientation: landscape) and (max-height: 430px) {
+    body.device-mobile.landscape-mode #weapon-readout {
+      bottom: calc(48px + var(--safe-bottom)) !important;
+      transform: translateX(-50%) scale(0.74) !important;
+      width: min(720px, 72vw) !important;
+      max-width: calc(100vw - 188px - var(--safe-left) - var(--safe-right)) !important;
+    }
+  }
+
+  body.hud-edit-mode #player-info,
+  body.hud-edit-mode #hud-top,
+  body.hud-edit-mode #quickbar,
+  body.hud-edit-mode #weapon-readout,
+  body.hud-edit-mode #log,
+  body.hud-edit-mode #desktop-minimap-hud,
+  body.hud-edit-mode #mobile-minimap-hud,
+  body.hud-edit-mode #system-log-panel,
+  body.hud-edit-mode .mobile-left-rail,
+  body.hud-edit-mode .mobile-right-rail,
+  body.hud-edit-mode .touch-buttons,
+  body.hud-edit-mode .touch-joystick {
+    outline: 2px dashed rgba(240,198,91,0.82) !important;
+    outline-offset: 3px !important;
+    pointer-events: all !important;
+    cursor: move !important;
+    resize: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    touch-action: none !important;
+  }
+  body.hud-edit-mode #log,
+  body.hud-edit-mode #weapon-readout { display: block !important; }
+  body.hud-edit-mode #weapon-readout { display: grid !important; }
+  body.hud-edit-mode.device-desktop #system-log-panel { display: block !important; }
+  body.hud-edit-mode .touch-btn,
+  body.hud-edit-mode .mobile-rail-btn,
+  body.hud-edit-mode .quick-slot,
+  body.hud-edit-mode .ui-btn { resize: none !important; }
+  body.hud-edit-mode .touch-btn:active,
+  body.hud-edit-mode .touch-btn.active,
+  body.hud-edit-mode .mobile-rail-btn:active,
+  body.hud-edit-mode .quick-slot:hover,
+  body.hud-edit-mode .quick-slot.active { transform: none !important; }
+
+
+
+  /* ===== v48 compact mobile weapon / PC journal / no Space shoot ===== */
+  body.device-desktop #online-status,
+  body.device-desktop #device-status {
+    display: none !important;
+  }
+
+  body.device-desktop #system-log-panel,
+  body.hud-edit-mode.device-desktop #system-log-panel {
+    display: none !important;
+  }
+
+  body.device-mobile #log,
+  body.hud-edit-mode.device-mobile #log {
+    display: none !important;
+  }
+
+  body.device-desktop #log {
+    display: block !important;
+    position: absolute !important;
+    left: 12px !important;
+    bottom: 92px !important;
+    width: 390px !important;
+    max-height: 178px !important;
+    padding: 30px 10px 9px !important;
+    z-index: 24 !important;
+    pointer-events: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    scrollbar-gutter: stable !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(174,139,72,0.46) !important;
+    background:
+      linear-gradient(180deg, rgba(20,22,20,0.90), rgba(7,9,9,0.72)) !important;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.70),
+      0 12px 28px rgba(0,0,0,0.34),
+      inset 0 0 20px rgba(227,195,110,0.06) !important;
+    backdrop-filter: blur(3px);
+  }
+  body.device-desktop #log::before {
+    content: 'Системный журнал';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid rgba(174,139,72,0.28);
+    background: linear-gradient(90deg, rgba(44,35,18,0.66), rgba(8,10,10,0.38));
+    color: #f0d28a;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 1px #000;
+    pointer-events: none;
+  }
+  body.device-desktop .log-msg {
+    margin-top: 5px !important;
+    padding: 5px 8px !important;
+    border-radius: 6px !important;
+    border-left: 3px solid rgba(136,120,78,0.72) !important;
+    background: rgba(2,4,5,0.34) !important;
+    color: #b7c0a5 !important;
+    font-size: 11px !important;
+    line-height: 1.26 !important;
+    text-shadow: 0 1px 1px #000 !important;
+  }
+  body.device-desktop .log-msg.combat { color: #d99a76 !important; border-left-color: #b65736 !important; }
+  body.device-desktop .log-msg.loot { color: #e0be5c !important; border-left-color: #c99a33 !important; }
+  body.device-desktop .log-msg.system { color: #91b2bc !important; border-left-color: #4e8d98 !important; }
+  body.device-desktop .log-msg.level { color: #bba2e8 !important; border-left-color: #815fbe !important; }
+
+  #touch-mode { grid-area: mode; }
+  body.device-mobile.landscape-mode #touch-mode {
+    left: 134px !important;
+    top: 104px !important;
+    display: block !important;
+  }
+  body.device-mobile.landscape-mode #touch-mode::before {
+    content: 'X';
+    font-size: 20px;
+    font-weight: 900;
+  }
+  body.device-mobile.landscape-mode #touch-reload {
+    display: block !important;
+  }
+
+  body.device-mobile #weapon-readout,
+  body.device-mobile.landscape-mode #weapon-readout {
+    display: grid !important;
+    position: absolute !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: calc(45px + var(--safe-bottom)) !important;
+    transform: translateX(-50%) scale(0.70) !important;
+    transform-origin: bottom center !important;
+    width: clamp(170px, 30vw, 280px) !important;
+    min-width: 0 !important;
+    max-width: min(300px, calc(100vw - 220px - var(--safe-left) - var(--safe-right))) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 3px 5px !important;
+    padding: 4px 6px !important;
+    border-radius: 8px !important;
+    z-index: 42 !important;
+    pointer-events: none !important;
+    opacity: 0.86 !important;
+  }
+  body.device-mobile #weapon-readout .weapon-box-title,
+  body.device-mobile.landscape-mode #weapon-readout .weapon-box-title {
+    font-size: 6.5px !important;
+    letter-spacing: 0.45px !important;
+  }
+  body.device-mobile #weapon-readout .weapon-box-value,
+  body.device-mobile.landscape-mode #weapon-readout .weapon-box-value {
+    font-size: 8.5px !important;
+    margin-top: 1px !important;
+  }
+  @media (orientation: landscape) and (max-height: 430px) {
+    body.device-mobile.landscape-mode #weapon-readout {
+      bottom: calc(40px + var(--safe-bottom)) !important;
+      transform: translateX(-50%) scale(0.62) !important;
+      width: clamp(160px, 28vw, 250px) !important;
+      max-width: min(270px, calc(100vw - 200px - var(--safe-left) - var(--safe-right))) !important;
+    }
+  }

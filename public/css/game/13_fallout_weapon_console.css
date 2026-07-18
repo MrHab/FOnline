@@ -1,0 +1,4188 @@
+/* ===== v50 Fallout-inspired weapon console for Realm of Ashes =====
+   Правило HUD: оружейный блок — это один самостоятельный нижний модуль.
+   Внутри него всегда есть действие, силуэт оружия, стоимость AP и патроны.
+   Быстрые слоты остаются ниже и не должны визуально спорить с оружейной панелью. */
+
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 82px !important;
+  transform: translateX(-50%) !important;
+  width: min(760px, calc(100vw - 28px)) !important;
+  min-height: 122px;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-columns: 54px 38px minmax(360px, 1fr) 178px 54px;
+  grid-template-rows: 1fr 24px;
+  gap: 8px;
+  align-items: stretch;
+  pointer-events: none !important;
+  z-index: 32 !important;
+  border: none !important;
+  border-radius: 20px !important;
+  background:
+    linear-gradient(180deg, rgba(98, 82, 50, 0.28), rgba(12, 10, 7, 0.32)),
+    radial-gradient(circle at 18% 12%, rgba(240, 198, 91, 0.15), transparent 28%),
+    linear-gradient(90deg, rgba(18, 15, 11, 0.94), rgba(54, 45, 29, 0.92) 50%, rgba(18, 15, 11, 0.94));
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.90),
+    0 0 0 2px rgba(128, 91, 45, 0.38),
+    0 18px 42px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 223, 151, 0.13),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.88);
+  backdrop-filter: none !important;
+  overflow: visible;
+}
+
+#weapon-readout::before,
+#weapon-readout::after {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+#weapon-readout::before {
+  border: 1px solid rgba(214, 166, 86, 0.20);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.62), inset 0 0 28px rgba(0,0,0,0.28);
+}
+
+#weapon-readout::after {
+  opacity: 0.14;
+  background-image:
+    radial-gradient(circle at 12px 14px, rgba(255,255,255,0.8) 0 0.7px, transparent 1px),
+    radial-gradient(circle at 61px 38px, rgba(255,255,255,0.6) 0 0.6px, transparent 1px),
+    linear-gradient(100deg, transparent 0 18%, rgba(255,255,255,0.22) 19%, transparent 20% 100%);
+  background-size: 76px 54px, 92px 70px, 320px 100%;
+  mix-blend-mode: screen;
+}
+
+.fallout-weapon-console,
+.fallout-side-stack,
+.fallout-side-button,
+.fallout-mode-note {
+  position: relative;
+  z-index: 1;
+}
+
+.fallout-weapon-console {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  min-height: 122px;
+  border-radius: 14px;
+  border: 2px solid rgba(22, 18, 12, 0.96);
+  background:
+    linear-gradient(180deg, rgba(95, 80, 50, 0.40), rgba(21, 18, 13, 0.96) 16%, rgba(17, 18, 15, 0.96) 78%, rgba(45, 34, 18, 0.82)),
+    radial-gradient(ellipse at 50% 22%, rgba(143, 124, 77, 0.20), transparent 62%);
+  box-shadow:
+    inset 0 0 0 1px rgba(195, 153, 74, 0.20),
+    inset 0 0 32px rgba(0, 0, 0, 0.82),
+    0 0 0 1px rgba(129, 88, 42, 0.44),
+    0 8px 18px rgba(0,0,0,0.42);
+  overflow: hidden;
+}
+
+.fallout-weapon-console::before,
+.fallout-weapon-console::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.fallout-weapon-console::before {
+  left: 18px;
+  right: 18px;
+  top: 7px;
+  height: 18px;
+  clip-path: polygon(7% 0, 93% 0, 100% 50%, 93% 100%, 7% 100%, 0 50%);
+  background:
+    linear-gradient(180deg, rgba(8, 10, 8, 0.94), rgba(39, 34, 23, 0.96)),
+    linear-gradient(90deg, transparent, rgba(222, 171, 81, 0.12), transparent);
+  border: 1px solid rgba(125, 88, 44, 0.62);
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.78);
+}
+
+.fallout-weapon-console::after {
+  inset: 31px 13px 10px 13px;
+  border-radius: 8px;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 221, 132, 0.07), transparent 50%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, rgba(36, 36, 29, 0.70), rgba(8, 9, 8, 0.70));
+  border: 1px solid rgba(102, 83, 50, 0.32);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.72);
+}
+
+.fallout-leds {
+  position: absolute;
+  left: 50%;
+  top: 11px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 3;
+}
+
+.fallout-leds span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #161a12;
+  border: 1px solid rgba(0,0,0,0.9);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.08), 0 0 2px rgba(0,0,0,0.95);
+}
+
+.fallout-leds span.on {
+  background: radial-gradient(circle at 35% 30%, #dcffd0, #70c755 42%, #214c1c 72%);
+  box-shadow: 0 0 7px rgba(116, 217, 86, 0.72), inset 0 1px 1px rgba(255,255,255,0.34);
+}
+
+.fallout-leds span.warn.on {
+  background: radial-gradient(circle at 35% 30%, #ffe2a0, #c8792f 48%, #5d2618 76%);
+  box-shadow: 0 0 7px rgba(218, 128, 45, 0.72), inset 0 1px 1px rgba(255,255,255,0.28);
+}
+
+.fallout-action-label {
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  top: 36px;
+  z-index: 3;
+  text-align: center;
+  color: #b88a37;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 20px;
+  letter-spacing: 2.6px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 #080605, 0 0 12px rgba(212, 155, 55, 0.20);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fallout-weapon-stage {
+  position: absolute;
+  left: 92px;
+  right: 92px;
+  top: 54px;
+  height: 42px;
+  z-index: 3;
+  filter: drop-shadow(0 5px 4px rgba(0,0,0,0.82));
+}
+
+.fallout-weapon-art {
+  --weapon-metal: #665b4c;
+  --weapon-dark: #171817;
+  --weapon-edge: #9a876a;
+  --weapon-wood: #7b4b23;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 210px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+}
+
+.fallout-weapon-art::before,
+.fallout-weapon-art::after,
+.fallout-weapon-art span,
+.fallout-weapon-art span::before,
+.fallout-weapon-art span::after {
+  content: '';
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+}
+
+.fallout-weapon-art::before {
+  left: 18px;
+  top: 12px;
+  width: 132px;
+  height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--weapon-edge), var(--weapon-metal) 35%, var(--weapon-dark) 100%);
+  border: 1px solid #070706;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -3px 4px rgba(0,0,0,0.70);
+}
+
+.fallout-weapon-art::after {
+  left: 132px;
+  top: 11px;
+  width: 62px;
+  height: 7px;
+  border-radius: 0 5px 5px 0;
+  background: linear-gradient(180deg, #857765, #2a2924);
+  border: 1px solid #070706;
+  transform-origin: left center;
+}
+
+.fallout-weapon-art span {
+  left: 64px;
+  top: 18px;
+  width: 44px;
+  height: 18px;
+  border-radius: 4px 7px 4px 4px;
+  background: linear-gradient(135deg, var(--weapon-metal), var(--weapon-dark) 62%);
+  border: 1px solid #070706;
+}
+
+.fallout-weapon-art span::before {
+  left: 30px;
+  top: 12px;
+  width: 13px;
+  height: 28px;
+  border-radius: 2px 2px 5px 5px;
+  transform: rotate(-16deg);
+  transform-origin: top center;
+  background: linear-gradient(90deg, #3a2415, var(--weapon-wood), #2b190f);
+  border: 1px solid #070706;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.48);
+}
+
+.fallout-weapon-art span::after {
+  left: 11px;
+  top: 17px;
+  width: 20px;
+  height: 15px;
+  border: 2px solid #070706;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+}
+
+.fallout-weapon-art-rifle,
+.fallout-weapon-art-assaultRifle,
+.fallout-weapon-art-machineGun,
+.fallout-weapon-art-shotgun,
+.fallout-weapon-art-plasmaRifle,
+.fallout-weapon-art-flamethrower,
+.fallout-weapon-art-rocketLauncher {
+  width: 270px;
+}
+
+.fallout-weapon-art-rifle::before,
+.fallout-weapon-art-shotgun::before,
+.fallout-weapon-art-assaultRifle::before,
+.fallout-weapon-art-machineGun::before,
+.fallout-weapon-art-plasmaRifle::before,
+.fallout-weapon-art-flamethrower::before {
+  left: 44px;
+  width: 154px;
+  height: 9px;
+}
+
+.fallout-weapon-art-rifle::after,
+.fallout-weapon-art-shotgun::after,
+.fallout-weapon-art-assaultRifle::after,
+.fallout-weapon-art-machineGun::after,
+.fallout-weapon-art-plasmaRifle::after,
+.fallout-weapon-art-flamethrower::after {
+  left: 188px;
+  width: 66px;
+  height: 6px;
+}
+
+.fallout-weapon-art-rifle span,
+.fallout-weapon-art-shotgun span,
+.fallout-weapon-art-assaultRifle span,
+.fallout-weapon-art-machineGun span,
+.fallout-weapon-art-plasmaRifle span,
+.fallout-weapon-art-flamethrower span {
+  left: 86px;
+  top: 17px;
+  width: 78px;
+  height: 16px;
+}
+
+.fallout-weapon-art-rifle span::before,
+.fallout-weapon-art-shotgun span::before,
+.fallout-weapon-art-assaultRifle span::before,
+.fallout-weapon-art-machineGun span::before,
+.fallout-weapon-art-plasmaRifle span::before,
+.fallout-weapon-art-flamethrower span::before {
+  left: -54px;
+  top: -2px;
+  width: 58px;
+  height: 20px;
+  border-radius: 12px 4px 4px 12px;
+  transform: none;
+  background: linear-gradient(90deg, #24170e, #6b421f 48%, #26170d);
+}
+
+.fallout-weapon-art-rifle span::after,
+.fallout-weapon-art-shotgun span::after,
+.fallout-weapon-art-assaultRifle span::after,
+.fallout-weapon-art-machineGun span::after,
+.fallout-weapon-art-plasmaRifle span::after,
+.fallout-weapon-art-flamethrower span::after {
+  left: 49px;
+  top: 13px;
+  width: 18px;
+  height: 24px;
+  border-radius: 2px 2px 6px 6px;
+  transform: rotate(-9deg);
+  background: linear-gradient(90deg, #21140d, #6b421f, #20120b);
+  border: 1px solid #070706;
+}
+
+.fallout-weapon-art-assaultRifle span::after,
+.fallout-weapon-art-machineGun span::after {
+  height: 33px;
+  width: 22px;
+  background: linear-gradient(90deg, #141414, #423b31, #111);
+}
+
+.fallout-weapon-art-machineGun::before { height: 13px; top: 10px; width: 172px; }
+.fallout-weapon-art-machineGun::after { left: 206px; width: 48px; height: 10px; top: 11px; }
+.fallout-weapon-art-machineGun span { width: 92px; height: 20px; top: 17px; }
+
+.fallout-weapon-art-laserPistol { --weapon-metal: #4d635f; --weapon-edge: #8cbdb3; --weapon-wood: #293c3a; }
+.fallout-weapon-art-plasmaRifle { --weapon-metal: #466a52; --weapon-edge: #89c990; --weapon-wood: #273a2a; }
+.fallout-weapon-art-flamethrower { --weapon-metal: #80613a; --weapon-edge: #d19452; --weapon-wood: #4a2d17; }
+
+.fallout-weapon-art-rocketLauncher::before {
+  left: 42px;
+  top: 7px;
+  width: 188px;
+  height: 22px;
+  border-radius: 11px 18px 18px 11px;
+  background: linear-gradient(180deg, #8d846d, #4c493d 48%, #151513);
+}
+.fallout-weapon-art-rocketLauncher::after {
+  left: 24px;
+  top: 10px;
+  width: 36px;
+  height: 16px;
+  border-radius: 10px 2px 2px 10px;
+}
+.fallout-weapon-art-rocketLauncher span {
+  left: 112px;
+  top: 26px;
+  width: 50px;
+  height: 12px;
+}
+.fallout-weapon-art-rocketLauncher span::before {
+  left: 19px;
+  top: 8px;
+  width: 15px;
+  height: 26px;
+  transform: rotate(-10deg);
+}
+.fallout-weapon-art-rocketLauncher span::after { display: none; }
+
+.fallout-weapon-art-knife,
+.fallout-weapon-art-fists {
+  width: 165px;
+}
+.fallout-weapon-art-knife::before {
+  left: 62px;
+  top: 8px;
+  width: 88px;
+  height: 12px;
+  clip-path: polygon(0 20%, 84% 20%, 100% 50%, 84% 80%, 0 80%);
+  background: linear-gradient(180deg, #d1c7a8, #656053 58%, #1b1b19);
+}
+.fallout-weapon-art-knife::after {
+  left: 28px;
+  top: 10px;
+  width: 40px;
+  height: 9px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #2b190d, #815027, #2b190d);
+}
+.fallout-weapon-art-knife span { display: none; }
+.fallout-weapon-art-fists::before {
+  left: 60px;
+  top: 4px;
+  width: 42px;
+  height: 32px;
+  border-radius: 45% 45% 38% 38%;
+  background: linear-gradient(180deg, #836040, #31221a);
+}
+.fallout-weapon-art-fists::after {
+  left: 92px;
+  top: 8px;
+  width: 36px;
+  height: 28px;
+  border-radius: 45% 45% 38% 38%;
+  background: linear-gradient(180deg, #76563a, #2b1d16);
+}
+.fallout-weapon-art-fists span { display: none; }
+
+.fallout-ap-cost,
+.fallout-ammo-count {
+  position: absolute;
+  bottom: 15px;
+  z-index: 4;
+  color: #c59b45;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  line-height: 1;
+  text-shadow: 0 2px 0 #070504, 0 0 11px rgba(225, 170, 68, 0.22);
+}
+
+.fallout-ap-cost { left: 26px; }
+.fallout-ammo-count { right: 27px; }
+.fallout-weapon-console.is-empty .fallout-ammo-count { color: #be6246; text-shadow: 0 2px 0 #070504, 0 0 12px rgba(207, 64, 39, 0.38); }
+
+.fallout-weapon-name {
+  position: absolute;
+  left: 116px;
+  right: 116px;
+  bottom: 13px;
+  z-index: 4;
+  text-align: center;
+  color: #8f9c76;
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 1px #000;
+}
+
+.fallout-condition {
+  position: absolute;
+  left: 118px;
+  right: 118px;
+  bottom: 4px;
+  height: 3px;
+  z-index: 4;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.62);
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.88);
+  overflow: hidden;
+}
+
+.fallout-condition span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #84613a, #b9a262, #7aa85b);
+}
+
+.fallout-side-button {
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  width: 52px;
+  height: 70px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 50% 50%, #781414 0 30%, #3c0b0b 46%, #120706 66%, #0b0806 100%);
+  border: 4px solid rgba(24, 19, 14, 0.98);
+  box-shadow:
+    0 0 0 1px rgba(133, 93, 43, 0.58),
+    inset 0 2px 6px rgba(255, 183, 91, 0.14),
+    inset 0 -8px 12px rgba(0,0,0,0.78),
+    0 8px 16px rgba(0,0,0,0.48);
+}
+.fallout-side-button-left { grid-column: 1; }
+.fallout-side-button-right { grid-column: 5; }
+.fallout-side-button i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,210,150,0.40), rgba(118,10,10,0.12) 48%, rgba(0,0,0,0.36));
+}
+
+.fallout-side-stack-left {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 11px;
+}
+.fallout-side-stack-left span {
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(118, 88, 50, 0.52);
+  background: linear-gradient(180deg, #3d3324, #14120e);
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.68), 0 1px 0 rgba(255,230,160,0.06);
+}
+.fallout-side-stack-left span:nth-child(1)::before { content: '◎'; }
+.fallout-side-stack-left span:nth-child(2)::before { content: '◆'; }
+.fallout-side-stack-left span:nth-child(3)::before { content: '◉'; }
+.fallout-side-stack-left span::before {
+  display: block;
+  text-align: center;
+  line-height: 22px;
+  color: #7e714e;
+  font-size: 13px;
+  text-shadow: 0 1px 1px #000;
+}
+
+.fallout-side-stack-right {
+  grid-column: 4;
+  grid-row: 1;
+  align-self: stretch;
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 5px;
+  min-width: 0;
+}
+.fallout-side-stack-right > div {
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(105, 80, 47, 0.55);
+  background: linear-gradient(180deg, rgba(53, 43, 27, 0.95), rgba(16, 14, 11, 0.96));
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.56);
+  min-width: 0;
+}
+.fallout-side-stack-right b,
+.fallout-side-stack-right span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 1px #000;
+}
+.fallout-side-stack-right b {
+  color: #796f56;
+  font-size: 7px;
+  line-height: 1;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.fallout-side-stack-right span {
+  color: #d0b679;
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+.fallout-side-stack-right span.danger { color: #d98760; }
+
+.fallout-mode-note {
+  grid-column: 4 / span 2;
+  grid-row: 2;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(93, 70, 42, 0.55);
+  background: linear-gradient(180deg, rgba(45, 37, 25, 0.92), rgba(12, 11, 9, 0.92));
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.62);
+  color: #8f9c76;
+  text-shadow: 0 1px 1px #000;
+}
+.fallout-mode-note b,
+.fallout-mode-note span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fallout-mode-note b {
+  color: #caa45b;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  flex: 0 0 auto;
+}
+.fallout-mode-note span { font-size: 10px; min-width: 0; }
+
+/* Quickbar gets the same heavy metal language, but stays secondary. */
+#quickbar {
+  border-radius: 13px !important;
+  border: 1px solid rgba(133, 96, 50, 0.52) !important;
+  background:
+    linear-gradient(180deg, rgba(72, 58, 36, 0.86), rgba(13, 12, 10, 0.93)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 9px) !important;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.82),
+    0 10px 24px rgba(0,0,0,0.42),
+    inset 0 1px 0 rgba(255,224,160,0.09),
+    inset 0 -12px 22px rgba(0,0,0,0.30) !important;
+}
+
+.quick-slot {
+  border-radius: 7px !important;
+  background: linear-gradient(180deg, rgba(42, 36, 26, 0.97), rgba(12, 12, 10, 0.98)) !important;
+  border-color: rgba(124, 91, 48, 0.64) !important;
+  box-shadow: inset 0 0 14px rgba(0,0,0,0.55), 0 1px 0 rgba(255,229,164,0.05) !important;
+}
+.quick-slot.active {
+  border-color: rgba(126, 178, 75, 0.86) !important;
+  box-shadow: inset 0 0 0 1px rgba(127,178,75,0.28), inset 0 0 15px rgba(95, 145, 60, 0.15), 0 0 12px rgba(105, 180, 76, 0.14) !important;
+}
+.quick-slot:hover { background: linear-gradient(180deg, rgba(58, 48, 31, 0.99), rgba(17, 16, 13, 0.99)) !important; }
+.quick-key { color: #9a855a !important; }
+.quick-label { color: #cdb57a !important; text-shadow: 0 1px 1px #000; }
+.quick-count { color: #d7ac55 !important; text-shadow: 0 1px 1px #000; }
+
+@media (max-width: 760px) {
+  #weapon-readout.fallout-weapon-readout,
+  #weapon-readout {
+    width: min(620px, calc(100vw - 18px)) !important;
+    grid-template-columns: 42px minmax(280px, 1fr) 132px 42px;
+    gap: 6px;
+  }
+  .fallout-side-stack-left { display: none; }
+  .fallout-side-button-left { grid-column: 1; }
+  .fallout-weapon-console { grid-column: 2; }
+  .fallout-side-stack-right { grid-column: 3; }
+  .fallout-side-button-right { grid-column: 4; }
+  .fallout-mode-note { grid-column: 3 / span 2; }
+  .fallout-action-label { font-size: 17px; letter-spacing: 1.7px; }
+  .fallout-weapon-stage { left: 72px; right: 72px; }
+  .fallout-weapon-art { transform: translate(-50%, -50%) scale(0.84); }
+}
+
+body.device-mobile #weapon-readout.fallout-weapon-readout,
+body.device-mobile.landscape-mode #weapon-readout.fallout-weapon-readout,
+body.device-mobile #weapon-readout,
+body.device-mobile.landscape-mode #weapon-readout {
+  display: grid !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(62px + var(--safe-bottom)) !important;
+  transform: translateX(-50%) scale(0.76) !important;
+  transform-origin: bottom center !important;
+  width: clamp(360px, 50vw, 520px) !important;
+  max-width: calc(100vw - 190px - var(--safe-left) - var(--safe-right)) !important;
+  min-width: 340px !important;
+  min-height: 112px !important;
+  grid-template-columns: 42px minmax(274px, 1fr) 42px !important;
+  grid-template-rows: 1fr 22px !important;
+  gap: 6px !important;
+  opacity: 0.94 !important;
+  z-index: 42 !important;
+}
+
+body.device-mobile .fallout-side-stack-left,
+body.device-mobile.landscape-mode .fallout-side-stack-left,
+body.device-mobile .fallout-side-stack-right,
+body.device-mobile.landscape-mode .fallout-side-stack-right { display: none !important; }
+
+body.device-mobile .fallout-side-button-left,
+body.device-mobile.landscape-mode .fallout-side-button-left { grid-column: 1 !important; }
+body.device-mobile .fallout-weapon-console,
+body.device-mobile.landscape-mode .fallout-weapon-console { grid-column: 2 !important; grid-row: 1 / span 2 !important; min-height: 112px !important; }
+body.device-mobile .fallout-side-button-right,
+body.device-mobile.landscape-mode .fallout-side-button-right { grid-column: 3 !important; }
+body.device-mobile .fallout-mode-note,
+body.device-mobile.landscape-mode .fallout-mode-note { display: none !important; }
+body.device-mobile .fallout-action-label,
+body.device-mobile.landscape-mode .fallout-action-label { top: 34px; font-size: 16px; letter-spacing: 1.4px; }
+body.device-mobile .fallout-weapon-stage,
+body.device-mobile.landscape-mode .fallout-weapon-stage { left: 72px; right: 72px; top: 51px; }
+body.device-mobile .fallout-weapon-art,
+body.device-mobile.landscape-mode .fallout-weapon-art { transform: translate(-50%, -50%) scale(0.78); }
+body.device-mobile .fallout-ap-cost,
+body.device-mobile.landscape-mode .fallout-ap-cost,
+body.device-mobile .fallout-ammo-count,
+body.device-mobile.landscape-mode .fallout-ammo-count { font-size: 22px; bottom: 13px; }
+body.device-mobile .fallout-weapon-name,
+body.device-mobile.landscape-mode .fallout-weapon-name { font-size: 9px; left: 98px; right: 98px; }
+body.device-mobile .fallout-condition,
+body.device-mobile.landscape-mode .fallout-condition { left: 100px; right: 100px; }
+body.device-mobile .fallout-leds,
+body.device-mobile.landscape-mode .fallout-leds { gap: 6px; }
+body.device-mobile .fallout-leds span,
+body.device-mobile.landscape-mode .fallout-leds span { width: 8px; height: 8px; }
+
+@media (orientation: landscape) and (max-height: 430px) {
+  body.device-mobile #weapon-readout.fallout-weapon-readout,
+  body.device-mobile.landscape-mode #weapon-readout.fallout-weapon-readout,
+  body.device-mobile #weapon-readout,
+  body.device-mobile.landscape-mode #weapon-readout {
+    bottom: calc(52px + var(--safe-bottom)) !important;
+    transform: translateX(-50%) scale(0.66) !important;
+    width: clamp(340px, 48vw, 500px) !important;
+    min-width: 320px !important;
+  }
+}
+
+
+/* ===== v7.75.72 weapon panel polish ===== */
+#weapon-readout.fallout-weapon-readout,
+#weapon-readout.weapon-ui-panel,
+#weapon-readout {
+  width: min(1000px, calc(100vw - 20px)) !important;
+  aspect-ratio: 1086 / 362 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  overflow: visible !important;
+  isolation: isolate;
+}
+#weapon-readout::before,
+#weapon-readout::after {
+  display: none !important;
+  content: none !important;
+}
+#weapon-readout.weapon-ui-panel {
+  background-image: url('/assets/ui/mobile/weapon/weapon_ui.webp') !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
+  background-position: center center !important;
+  color: #f3d186;
+  font-family: 'Trebuchet MS', 'Segoe UI', Arial, sans-serif !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.92), 0 0 10px rgba(191,134,55,0.18) !important;
+}
+
+#weapon-readout .weapon-ui-leds {
+  position: absolute;
+  left: 26.4%;
+  top: 1.9%;
+  width: 48.6%;
+  height: 8.9%;
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  gap: 0.8%;
+  align-items: center;
+  pointer-events: none;
+}
+#weapon-readout .weapon-ui-leds span {
+  justify-self: center;
+  width: 70%;
+  aspect-ratio: 1 / 1;
+  border-radius: 999px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 0;
+}
+#weapon-readout .weapon-ui-leds span.on {
+  opacity: 1;
+}
+#weapon-readout .weapon-ui-leds span.on:not(.warn) {
+  background: radial-gradient(circle at 38% 35%, rgba(233,255,223,0.98) 0%, rgba(136,242,107,0.94) 38%, rgba(62,156,50,0.82) 68%, rgba(18,61,12,0.32) 100%) !important;
+  box-shadow: 0 0 8px rgba(116,225,86,0.62), 0 0 18px rgba(116,225,86,0.26) !important;
+}
+#weapon-readout .weapon-ui-leds span.on.warn {
+  background: radial-gradient(circle at 38% 35%, rgba(255,235,194,0.98) 0%, rgba(246,173,70,0.94) 44%, rgba(153,74,31,0.82) 73%, rgba(64,18,7,0.28) 100%) !important;
+  box-shadow: 0 0 8px rgba(248,165,72,0.60), 0 0 18px rgba(248,165,72,0.24) !important;
+}
+
+#weapon-readout .weapon-ui-box {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 0.2% 0.7%;
+  overflow: hidden;
+}
+#weapon-readout .weapon-ui-label {
+  font-size: clamp(10px, 1.0vw, 15px);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #f6e2b4;
+  text-transform: uppercase;
+}
+#weapon-readout .weapon-ui-value {
+  font-size: clamp(18px, 1.75vw, 30px);
+  line-height: 1.0;
+  font-weight: 900;
+  color: #ffffff;
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#weapon-readout .weapon-ui-hp { left: 9.0%; top: 15.0%; width: 13.4%; height: 12.2%; align-items: center; text-align: center; }
+#weapon-readout .weapon-ui-ap { left: 9.0%; top: 33.6%; width: 13.4%; height: 12.2%; align-items: center; text-align: center; }
+#weapon-readout .weapon-ui-armor { left: 9.0%; top: 53.3%; width: 13.4%; height: 12.2%; align-items: center; text-align: center; }
+#weapon-readout .weapon-ui-damage { right: 9.1%; top: 15.0%; width: 13.5%; height: 12.2%; align-items: center; text-align: center; }
+#weapon-readout .weapon-ui-mag { right: 15.8%; top: 33.8%; width: 6.8%; height: 11.8%; align-items: center; text-align: center; }
+#weapon-readout .weapon-ui-reserve { right: 9.0%; top: 33.8%; width: 6.4%; height: 11.8%; align-items: center; text-align: center; }
+#weapon-readout .weapon-ui-ammo-type { right: 9.0%; top: 53.0%; width: 13.5%; height: 14.1%; align-items: flex-start; text-align: left; padding-left: 1.2%; }
+#weapon-readout .weapon-ui-ammo-type .weapon-ui-value {
+  font-size: clamp(13px, 1.15vw, 18px);
+  line-height: 1.1;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+#weapon-readout .weapon-ui-mag .weapon-ui-value,
+#weapon-readout .weapon-ui-reserve .weapon-ui-value {
+  font-size: clamp(16px, 1.4vw, 22px);
+}
+
+#weapon-readout .weapon-ui-stage {
+  position: absolute;
+  left: 26.3%;
+  top: 14.7%;
+  width: 47.2%;
+  height: 63.8%;
+}
+#weapon-readout .weapon-ui-action-label {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 2%;
+  text-align: center;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: clamp(20px, 2.0vw, 34px);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #f2d27e;
+  text-transform: uppercase;
+}
+#weapon-readout .fallout-weapon-art {
+  position: absolute !important;
+  left: 50% !important;
+  top: 44% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 38% !important;
+  height: 24% !important;
+  opacity: 0.95;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.55));
+}
+#weapon-readout .weapon-ui-ap-cost {
+  position: absolute;
+  left: 20%;
+  bottom: 15%;
+  min-width: 20%;
+  text-align: center;
+  font-size: clamp(20px, 1.9vw, 34px);
+  font-weight: 900;
+  color: #ffd15c;
+}
+#weapon-readout .weapon-ui-ammo-main {
+  position: absolute;
+  right: 20%;
+  bottom: 15%;
+  min-width: 18%;
+  text-align: center;
+  font-size: clamp(26px, 2.2vw, 40px);
+  font-weight: 900;
+  color: #ffd15c;
+  letter-spacing: 0.06em;
+}
+#weapon-readout .weapon-ui-weapon-name {
+  position: absolute;
+  left: 19%;
+  right: 19%;
+  bottom: 10%;
+  text-align: center;
+  font-size: clamp(14px, 1.05vw, 18px);
+  font-weight: 700;
+  color: #d2c074;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#weapon-readout .weapon-ui-condition {
+  position: absolute;
+  left: 28%;
+  right: 28%;
+  bottom: 6%;
+  height: 2.2%;
+  border-radius: 999px;
+  background: rgba(29,24,18,0.82);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(224,196,95,0.18);
+}
+#weapon-readout .weapon-ui-condition-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #746a34, #d7db73, #83c157);
+}
+#weapon-readout .weapon-ui-mode-note {
+  position: absolute;
+  left: 33.2%;
+  right: 33.2%;
+  bottom: 5.8%;
+  height: 6.4%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  font-size: clamp(11px, 0.95vw, 15px);
+  color: #e8d27a;
+}
+#weapon-readout .weapon-ui-mode-note b {
+  color: #f1ca67;
+  white-space: nowrap;
+}
+#weapon-readout .weapon-ui-mode-note span {
+  color: #cfa85a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* keep mobile version readable and slightly smaller */
+body.device-mobile #weapon-readout {
+  bottom: calc(74px + var(--safe-bottom, 0px)) !important;
+  width: min(92vw, 860px) !important;
+}
+body.device-mobile #weapon-readout .weapon-ui-value {
+  font-size: clamp(13px, 2.2vw, 22px);
+}
+body.device-mobile #weapon-readout .weapon-ui-label {
+  font-size: clamp(8px, 1.5vw, 11px);
+}
+body.device-mobile #weapon-readout .weapon-ui-ammo-main,
+body.device-mobile #weapon-readout .weapon-ui-ap-cost {
+  font-size: clamp(18px, 2.5vw, 26px);
+}
+body.device-mobile #weapon-readout .weapon-ui-action-label {
+  font-size: clamp(15px, 2.1vw, 24px);
+}
+
+/* Pip-Ash inventory terminal */
+#inventory-window.pipboy-window,
+#talents-window.pipboy-window.visible,
+#craft-window.pipboy-window.visible {
+  left: 50% !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(980px, calc(100vw - 34px)) !important;
+  height: min(780px, calc(100vh - 34px)) !important;
+  max-width: none !important;
+  max-height: calc(100vh - 34px) !important;
+  padding: 16px !important;
+  border: 1px solid rgba(209, 177, 103, 0.58);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(86, 76, 49, 0.52), rgba(24, 22, 17, 0.94) 28%, rgba(67, 55, 34, 0.72) 100%),
+    #171713;
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.46),
+    0 32px 92px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 2px rgba(255, 230, 156, 0.08),
+    inset 0 0 42px rgba(0, 0, 0, 0.58);
+  overflow: hidden;
+}
+
+#inventory-window.pipboy-window::before,
+#talents-window.pipboy-window.visible::before,
+#craft-window.pipboy-window.visible::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 230, 157, 0.18);
+  pointer-events: none;
+}
+
+#inventory-window .pipboy-scroll,
+#talents-window.pipboy-window.visible .window-scroll,
+#craft-window.pipboy-window.visible .window-scroll {
+  height: 100% !important;
+  max-height: none !important;
+  overflow: hidden;
+  padding: 0;
+}
+
+#talents-window.pipboy-window.visible .window-scroll,
+#craft-window.pipboy-window.visible .window-scroll {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding-right: 6px;
+}
+
+.pipboy-screen {
+  position: relative;
+  min-height: min(720px, calc(100vh - 66px));
+  padding: 18px 20px 72px;
+  border-radius: 13px;
+  border: 1px solid rgba(136, 175, 101, 0.34);
+  background:
+    radial-gradient(ellipse at 52% 22%, rgba(137, 205, 103, 0.22), transparent 42%),
+    linear-gradient(180deg, rgba(11, 28, 16, 0.98), rgba(5, 13, 9, 0.99));
+  color: #9fdb7a;
+  font-family: Consolas, "Courier New", monospace;
+  text-shadow: 0 0 8px rgba(123, 237, 99, 0.32);
+  box-shadow:
+    inset 0 0 0 1px rgba(164, 232, 107, 0.12),
+    inset 0 0 46px rgba(0, 0, 0, 0.72),
+    inset 0 0 86px rgba(120, 158, 82, 0.12);
+  overflow: hidden;
+}
+
+.pipboy-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 4px),
+    linear-gradient(90deg, rgba(255, 205, 105, 0.07), transparent 16%, transparent 84%, rgba(255, 205, 105, 0.06));
+  mix-blend-mode: screen;
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.pipboy-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.32) 100%);
+  pointer-events: none;
+}
+
+.pipboy-screen > * {
+  position: relative;
+  z-index: 1;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .pipboy-screen::after {
+  background: radial-gradient(ellipse at center, transparent 68%, rgba(0, 0, 0, 0.16) 100%);
+}
+
+.pipboy-title-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.pipboy-title {
+  color: #d4b35b;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.pipboy-subtitle {
+  margin-top: 3px;
+  color: rgba(159, 219, 122, 0.82);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.pipboy-window .window-x {
+  min-width: 34px;
+  min-height: 30px;
+  border-color: rgba(205, 172, 92, 0.7);
+  background: rgba(38, 29, 17, 0.84);
+  color: #f0d28a;
+}
+
+.pipboy-topline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 7px 0 8px;
+  border-top: 1px solid rgba(204, 178, 92, 0.42);
+  border-bottom: 1px solid rgba(204, 178, 92, 0.42);
+  color: rgba(213, 184, 100, 0.84);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pipboy-topline span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pipboy-topline b {
+  color: #c8f28b;
+  font-weight: 900;
+}
+
+.pipboy-pages {
+  min-height: 482px;
+  max-height: min(58vh, 560px);
+  overflow: hidden;
+}
+
+#inventory-window.pipboy-window .pipboy-screen {
+  height: 100%;
+  min-height: 0;
+}
+
+#inventory-window.pipboy-window .pipboy-pages {
+  height: calc(100% - 110px);
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+#inventory-window.pipboy-window .pipboy-page.active {
+  height: 100%;
+  min-height: 0;
+}
+
+.pipboy-page {
+  display: none;
+  min-height: 100%;
+}
+
+.pipboy-page.active {
+  display: block;
+}
+
+.pipboy-section-title {
+  margin-bottom: 10px;
+  color: #d5b864;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.pipboy-status-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.74fr) minmax(360px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.pipboy-left-column,
+.pipboy-right-column {
+  min-width: 0;
+}
+
+.pipboy-character-plate {
+  min-height: 238px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid rgba(125, 205, 94, 0.32);
+  background: rgba(3, 12, 7, 0.44);
+}
+
+.pipboy-character-name {
+  color: #d7c16c;
+  font-size: 15px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipboy-character-meta {
+  margin-top: 3px;
+  color: rgba(159, 219, 122, 0.78);
+  font-size: 11px;
+}
+
+.pipboy-body-readout {
+  position: relative;
+  height: 178px;
+  margin: 10px auto 0;
+  width: min(180px, 72%);
+  filter: drop-shadow(0 0 12px rgba(140, 235, 92, 0.32));
+}
+
+.pipboy-body-readout > div {
+  position: absolute;
+  border: 2px solid rgba(166, 226, 97, 0.78);
+  background: rgba(70, 130, 56, 0.08);
+}
+
+.pipboy-body-head {
+  left: calc(50% - 18px);
+  top: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.pipboy-body-torso {
+  left: calc(50% - 28px);
+  top: 41px;
+  width: 56px;
+  height: 70px;
+  border-radius: 12px 12px 8px 8px;
+}
+
+.pipboy-body-arm {
+  top: 48px;
+  width: 18px;
+  height: 68px;
+  border-radius: 999px;
+}
+
+.pipboy-body-arm.left {
+  left: calc(50% - 56px);
+  transform: rotate(10deg);
+}
+
+.pipboy-body-arm.right {
+  right: calc(50% - 56px);
+  transform: rotate(-10deg);
+}
+
+.pipboy-body-leg {
+  top: 112px;
+  width: 22px;
+  height: 60px;
+  border-radius: 999px;
+}
+
+.pipboy-body-leg.left {
+  left: calc(50% - 27px);
+}
+
+.pipboy-body-leg.right {
+  right: calc(50% - 27px);
+}
+
+.pipboy-body-weapon {
+  right: calc(50% - 82px);
+  top: 71px;
+  width: 66px;
+  height: 10px;
+  border-radius: 999px;
+  transform: rotate(-12deg);
+}
+
+#inventory-window #equipment-grid {
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-bottom: 0;
+  max-height: 222px;
+  overflow: auto;
+  padding-right: 3px;
+}
+
+#inventory-window .equip-slot,
+#inventory-window #stats-box,
+#inventory-window .injury-status-panel,
+#inventory-window .carry-line,
+#inventory-window .inv-card,
+#inventory-window .inventory-category-empty {
+  border-color: rgba(126, 200, 91, 0.32);
+  background: rgba(4, 14, 8, 0.58);
+  border-radius: 3px;
+  box-shadow: inset 0 0 16px rgba(93, 189, 83, 0.04);
+}
+
+#inventory-window #stats-box {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin-bottom: 10px;
+  padding: 10px;
+}
+
+#inventory-window .special-status-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 9px;
+  border: 1px solid rgba(213, 184, 100, 0.30);
+  border-radius: 5px;
+  background:
+    radial-gradient(circle at 10% 18%, rgba(239, 208, 120, 0.08), transparent 36%),
+    rgba(0, 0, 0, 0.18);
+}
+
+#inventory-window .special-status-title {
+  color: #d5b864;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+#inventory-window .special-status-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+}
+
+#inventory-window .special-status-cell {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 6px 3px 5px;
+  border: 1px solid rgba(126, 200, 91, 0.28);
+  border-radius: 4px;
+  background: rgba(3, 13, 7, 0.62);
+}
+
+#inventory-window .special-status-cell span {
+  color: rgba(159, 219, 122, 0.78);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+#inventory-window .special-status-cell b {
+  color: #efd078;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+#inventory-window .special-status-cell small {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  color: #9fdb7a;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+#inventory-window .stat-line,
+#inventory-window .equip-type,
+#inventory-window .injury-status-empty,
+#inventory-window .injury-status-effect {
+  color: rgba(159, 219, 122, 0.78);
+}
+
+#inventory-window .stat-line b,
+#inventory-window .equip-name,
+#inventory-window .injury-status-title,
+#inventory-window .injury-status-name {
+  color: #d3ee8a;
+}
+
+.pipboy-inventory-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+#inventory-window .inventory-actions {
+  display: flex;
+  align-items: stretch;
+}
+
+#inventory-window #inventory-sort-btn {
+  min-width: 132px;
+  border-color: rgba(213, 184, 100, 0.6);
+  background: rgba(43, 32, 15, 0.78);
+  color: #e5c36d;
+  font-family: Consolas, "Courier New", monospace;
+  text-transform: uppercase;
+}
+
+#inventory-window .item-category-tabs {
+  margin: 0 0 9px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(213, 184, 100, 0.34);
+}
+
+#inventory-window .item-category-tab {
+  border-color: rgba(126, 200, 91, 0.36);
+  background: rgba(3, 13, 7, 0.66);
+  color: #9fdb7a;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+#inventory-window .item-category-tab.active {
+  border-color: #d4b35b;
+  background: rgba(83, 62, 23, 0.42);
+  color: #efd078;
+  box-shadow: inset 0 -2px 0 rgba(159, 219, 122, 0.55);
+}
+
+#inventory-window #inventory-grid {
+  grid-template-columns: repeat(5, minmax(112px, 1fr));
+  max-height: min(43vh, 430px);
+  gap: 6px;
+  padding-right: 4px;
+}
+
+#inventory-window .inv-card {
+  min-height: 76px;
+  padding: 7px 6px 6px;
+}
+
+#inventory-window .inv-card:hover {
+  border-color: rgba(214, 190, 99, 0.8);
+  background: rgba(15, 31, 14, 0.82);
+}
+
+#inventory-window .inv-emoji {
+  color: #d3ee8a;
+  font-size: 24px;
+  filter: saturate(0.6) sepia(0.2);
+}
+
+#inventory-window .inv-name {
+  color: #c9e883;
+  font-size: 10px;
+}
+
+#inventory-window .inv-count,
+#inventory-window .inv-price,
+#inventory-window .inv-tag,
+#inventory-window .inv-weight {
+  color: #e3c269;
+}
+
+.pipboy-quest-grid,
+.pipboy-radio-grid {
+  display: grid;
+  gap: 8px;
+  max-height: min(52vh, 500px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.pipboy-quest-card,
+.pipboy-quest-empty,
+.pipboy-radio-row {
+  min-height: 52px;
+  padding: 9px 10px;
+  border: 1px solid rgba(126, 200, 91, 0.34);
+  background: rgba(4, 14, 8, 0.58);
+  color: #9fdb7a;
+  text-align: left;
+}
+
+.pipboy-quest-section {
+  display: grid;
+  gap: 8px;
+}
+
+.pipboy-quest-section + .pipboy-quest-section {
+  margin-top: 12px;
+}
+
+.pipboy-quest-section-title {
+  padding: 0 2px 3px;
+  color: #d4b35b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pipboy-quest-card {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.34fr) minmax(140px, 0.45fr) minmax(180px, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.pipboy-quest-card span {
+  color: #d4b35b;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.pipboy-quest-card b {
+  color: #d3ee8a;
+}
+
+.pipboy-quest-card small,
+.pipboy-radio-row span {
+  color: rgba(159, 219, 122, 0.76);
+  line-height: 1.35;
+}
+
+.pipboy-quest-card small,
+.pipboy-quest-card em {
+  grid-column: 3;
+}
+
+.pipboy-quest-card em {
+  color: rgba(227, 194, 105, 0.82);
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.pipboy-quest-card.world-task.accepted {
+  border-color: rgba(227, 194, 105, 0.48);
+  background:
+    linear-gradient(90deg, rgba(78, 58, 18, 0.26), rgba(0, 18, 6, 0.34)),
+    rgba(0, 16, 6, 0.46);
+}
+
+.pipboy-quest-card.world-task.tracked {
+  border-color: rgba(143, 215, 255, 0.78);
+  box-shadow:
+    inset 0 0 0 1px rgba(143, 215, 255, 0.16),
+    0 0 18px rgba(73, 160, 255, 0.18);
+  background:
+    linear-gradient(90deg, rgba(24, 72, 94, 0.34), rgba(0, 18, 6, 0.34)),
+    rgba(0, 16, 6, 0.54);
+}
+
+.pipboy-quest-claim {
+  grid-column: 3;
+  justify-self: start;
+  padding: 6px 12px;
+  border: 1px solid rgba(227, 194, 105, 0.75);
+  border-radius: 4px;
+  background: rgba(69, 49, 16, 0.78);
+  color: #f0d56f;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pipboy-quest-claim:hover {
+  background: rgba(105, 76, 23, 0.9);
+  color: #fff2a6;
+}
+
+.pipboy-quest-track {
+  border-color: rgba(143, 215, 255, 0.78);
+  background: rgba(14, 45, 58, 0.82);
+  color: #c8f0ff;
+}
+
+.pipboy-quest-track:hover {
+  background: rgba(25, 77, 98, 0.9);
+  color: #ffffff;
+}
+
+.pipboy-quest-claim:disabled {
+  border-color: rgba(118, 151, 87, 0.45);
+  background: rgba(18, 36, 21, 0.65);
+  color: rgba(159, 219, 122, 0.55);
+  cursor: not-allowed;
+}
+
+.pipboy-world-task-supplies {
+  color: rgba(159, 219, 122, 0.78);
+}
+
+.caravan-departure-countdown {
+  display: block;
+  color: #f0d878;
+  font-weight: 900;
+}
+
+.pipboy-world-task-route {
+  color: rgba(239, 208, 120, 0.88);
+}
+
+.pipboy-quest-empty {
+  display: flex;
+  align-items: center;
+  color: rgba(159, 219, 122, 0.7);
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.world-task-board-window {
+  position: fixed;
+  z-index: 7600;
+  left: 50%;
+  top: 50%;
+  width: min(760px, calc(100vw - 44px));
+  max-height: min(720px, calc(100vh - 48px));
+  transform: translate(-50%, -50%);
+  display: none;
+  padding: 18px 18px 20px;
+  border: 1px solid rgba(220, 186, 82, 0.72);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(27, 33, 20, 0.96), rgba(5, 12, 8, 0.98)),
+    repeating-linear-gradient(0deg, rgba(128, 255, 95, 0.035), rgba(128, 255, 95, 0.035) 1px, transparent 1px, transparent 4px);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.72), inset 0 0 26px rgba(144, 196, 83, 0.12);
+  color: #e8d076;
+  pointer-events: auto;
+}
+
+.world-task-board-window::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(92, 157, 72, 0.45);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.world-task-board-close {
+  position: absolute;
+  right: 18px;
+  top: 16px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid rgba(220, 186, 82, 0.86);
+  background: rgba(48, 34, 14, 0.92);
+  color: #f0cf70;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.world-task-board-head {
+  padding: 4px 52px 14px 4px;
+  border-bottom: 1px solid rgba(220, 186, 82, 0.34);
+  text-transform: uppercase;
+}
+
+.world-task-board-head span {
+  display: block;
+  margin-bottom: 6px;
+  color: #9fdb7a;
+  font-size: 10px;
+}
+
+.world-task-board-head h2 {
+  margin: 0;
+  color: #f0d878;
+  font-size: 22px;
+  letter-spacing: 4px;
+}
+
+.world-task-board-head small {
+  display: block;
+  margin-top: 6px;
+  color: #9fcf82;
+  font-size: 10px;
+}
+
+.world-task-board-list {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  max-height: min(540px, calc(100vh - 220px));
+  margin-top: 14px;
+  padding: 2px 4px 2px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.world-task-board-empty,
+.world-task-board-card {
+  border: 1px solid rgba(82, 142, 61, 0.68);
+  border-radius: 6px;
+  background: rgba(4, 16, 8, 0.76);
+}
+
+.world-task-board-empty {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  color: #a7d987;
+  text-align: center;
+}
+
+.world-task-board-faction-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 14px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--faction-color, #9fdb7a) 62%, rgba(220, 186, 82, 0.28));
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--faction-color, #9fdb7a) 18%, transparent), transparent 72%),
+    rgba(4, 16, 8, 0.8);
+  box-shadow: inset 4px 0 0 var(--faction-color, #9fdb7a);
+}
+
+.world-task-board-faction-panel > div {
+  min-width: 0;
+}
+
+.world-task-board-faction-panel span {
+  display: block;
+  margin-bottom: 5px;
+  color: #9fdb7a;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.world-task-board-faction-panel b {
+  display: block;
+  color: var(--faction-color, #f0d878);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.world-task-board-faction-panel small,
+.world-task-board-faction-panel p {
+  color: #b7dc93;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.world-task-board-faction-panel small {
+  display: block;
+  margin-top: 5px;
+}
+
+.world-task-board-faction-panel p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.world-task-board-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 124px;
+  gap: 14px;
+  padding: 12px;
+}
+
+.world-task-board-card.accepted {
+  border-color: rgba(220, 186, 82, 0.78);
+  box-shadow: inset 3px 0 0 rgba(220, 186, 82, 0.72);
+}
+
+.world-task-board-card.tracked {
+  background: rgba(22, 30, 11, 0.88);
+}
+
+.world-task-board-card-main {
+  min-width: 0;
+}
+
+.world-task-board-card-main span {
+  display: block;
+  margin-bottom: 5px;
+  color: #9fdb7a;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.world-task-board-card-main b {
+  display: block;
+  color: #f0d878;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.world-task-board-card-main small,
+.world-task-board-card-main em {
+  display: block;
+  margin-top: 6px;
+  color: #b7dc93;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.world-task-board-card-main em {
+  color: #d6bd72;
+}
+
+.world-task-board-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.world-task-board-actions button {
+  width: 112px;
+  min-height: 36px;
+  border: 1px solid rgba(220, 186, 82, 0.86);
+  border-radius: 5px;
+  background: rgba(53, 39, 16, 0.92);
+  color: #f0d878;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.world-task-board-actions button:hover,
+.world-task-board-close:hover {
+  background: rgba(92, 64, 21, 0.96);
+  box-shadow: 0 0 16px rgba(220, 186, 82, 0.28);
+}
+
+@media (max-width: 720px) {
+  .world-task-board-card {
+    grid-template-columns: 1fr;
+  }
+
+  .world-task-board-actions {
+    justify-content: flex-start;
+  }
+}
+
+.pipboy-radio-row {
+  cursor: pointer;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+.pipboy-radio-row b {
+  display: block;
+  margin-bottom: 4px;
+  color: #d3ee8a;
+  text-transform: uppercase;
+}
+
+.pipboy-radio-row.active {
+  border-color: #d4b35b;
+  background: rgba(67, 52, 20, 0.42);
+}
+
+.pipboy-social-grid {
+  display: grid;
+  gap: 10px;
+  max-height: min(52vh, 500px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.pipboy-social-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pipboy-social-dashboard > div,
+.pipboy-social-clan-card,
+.pipboy-social-panel {
+  border: 1px solid rgba(126, 200, 91, 0.34);
+  background: linear-gradient(135deg, rgba(4, 14, 8, 0.72), rgba(8, 23, 11, 0.52));
+  box-shadow: inset 0 0 20px rgba(80, 180, 76, 0.04);
+}
+
+.pipboy-social-dashboard > div {
+  min-height: 58px;
+  padding: 9px 10px;
+}
+
+.pipboy-social-dashboard span,
+.pipboy-social-clan-card span {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(159, 219, 122, 0.72);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pipboy-social-dashboard b,
+.pipboy-social-clan-card b {
+  display: block;
+  color: #efd078;
+  font-size: 17px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pipboy-social-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.45fr) 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(126, 200, 91, 0.28);
+  background: rgba(2, 10, 6, 0.58);
+}
+
+.pipboy-social-toolbar span,
+.pipboy-social-clan-card small {
+  color: rgba(159, 219, 122, 0.74);
+  line-height: 1.35;
+}
+
+.pipboy-social-input {
+  min-height: 34px;
+  width: 100%;
+  border: 1px solid rgba(126, 200, 91, 0.34);
+  border-radius: 3px;
+  background: rgba(1, 8, 4, 0.72);
+  color: #d3ee8a;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+  outline: none;
+  padding: 0 10px;
+}
+
+.pipboy-social-input:focus {
+  border-color: #d4b35b;
+  box-shadow: 0 0 12px rgba(224, 164, 66, 0.14);
+}
+
+.pipboy-social-columns {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.15fr) minmax(220px, 1fr) minmax(220px, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.pipboy-social-panel {
+  min-width: 0;
+  padding: 9px;
+}
+
+.pipboy-social-panel.wide {
+  min-height: 220px;
+}
+
+.pipboy-social-title {
+  margin-bottom: 8px;
+  color: #d4b35b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pipboy-social-list {
+  display: grid;
+  gap: 7px;
+}
+
+.pipboy-social-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  min-height: 54px;
+  padding: 8px;
+  border: 1px solid rgba(126, 200, 91, 0.25);
+  background: rgba(1, 9, 5, 0.56);
+}
+
+.pipboy-social-row.hidden {
+  display: none;
+}
+
+.pipboy-social-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(213, 184, 100, 0.62);
+  border-radius: 3px;
+  background: radial-gradient(circle, rgba(84, 62, 22, 0.92), rgba(5, 13, 7, 0.82));
+  color: #efd078;
+  font-weight: 900;
+}
+
+.pipboy-social-main {
+  min-width: 0;
+}
+
+.pipboy-social-main b,
+.pipboy-social-main span,
+.pipboy-social-main small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pipboy-social-main b {
+  color: #d3ee8a;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.pipboy-social-main span {
+  color: rgba(227, 194, 105, 0.86);
+  font-size: 11px;
+}
+
+.pipboy-social-main small {
+  color: rgba(159, 219, 122, 0.72);
+  font-size: 10px;
+}
+
+.pipboy-social-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: rgba(159, 219, 122, 0.24);
+  box-shadow: 0 0 0 1px rgba(159, 219, 122, 0.18);
+}
+
+.pipboy-social-dot.online {
+  background: #8ee66d;
+  box-shadow: 0 0 8px rgba(126, 230, 109, 0.72);
+}
+
+.pipboy-social-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.pipboy-social-btn {
+  min-height: 28px;
+  border: 1px solid rgba(213, 184, 100, 0.54);
+  border-radius: 3px;
+  background: rgba(67, 52, 20, 0.42);
+  color: #efd078;
+  cursor: pointer;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 0 9px;
+  text-transform: uppercase;
+}
+
+.pipboy-social-btn:hover:not(:disabled) {
+  background: rgba(101, 79, 28, 0.54);
+  box-shadow: 0 0 12px rgba(224, 164, 66, 0.14);
+}
+
+.pipboy-social-btn:disabled {
+  border-color: rgba(126, 200, 91, 0.24);
+  color: rgba(159, 219, 122, 0.52);
+  cursor: default;
+}
+
+.pipboy-social-btn.danger {
+  border-color: rgba(221, 104, 77, 0.58);
+  color: #ffbf8a;
+}
+
+.pipboy-social-empty {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px dashed rgba(126, 200, 91, 0.24);
+  color: rgba(159, 219, 122, 0.7);
+  line-height: 1.35;
+}
+
+.pipboy-social-clan-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.42fr) minmax(220px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+}
+
+.pipboy-social-clan-card small {
+  display: block;
+}
+
+.pipboy-social-create {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  gap: 8px;
+}
+
+.pipboy-factions-grid {
+  display: grid;
+  gap: 10px;
+  max-height: min(52vh, 500px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.pipboy-faction-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pipboy-faction-dashboard > div,
+.pipboy-faction-card {
+  border: 1px solid rgba(126, 200, 91, 0.34);
+  background: linear-gradient(135deg, rgba(4, 14, 8, 0.72), rgba(8, 23, 11, 0.52));
+  box-shadow: inset 0 0 20px rgba(80, 180, 76, 0.04);
+}
+
+.pipboy-faction-dashboard > div {
+  min-height: 58px;
+  padding: 9px 10px;
+}
+
+.pipboy-faction-dashboard span,
+.pipboy-faction-card span {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(159, 219, 122, 0.72);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pipboy-faction-dashboard b {
+  display: block;
+  color: #efd078;
+  font-size: 17px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pipboy-faction-list {
+  display: grid;
+  gap: 8px;
+}
+
+.pipboy-faction-card {
+  --faction-color: #9fdb7a;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) minmax(220px, 0.46fr);
+  gap: 10px;
+  align-items: stretch;
+  min-height: 78px;
+  padding: 9px;
+  border-color: color-mix(in srgb, var(--faction-color) 48%, rgba(126, 200, 91, 0.24));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--faction-color) 18%, transparent), transparent 68%),
+    rgba(3, 14, 7, 0.66);
+}
+
+.pipboy-faction-card.hostile {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--faction-color) 22%, transparent), transparent 70%),
+    rgba(20, 6, 4, 0.62);
+}
+
+.pipboy-faction-mark {
+  border: 1px solid color-mix(in srgb, var(--faction-color) 72%, #efd078);
+  background: var(--faction-color);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--faction-color) 42%, transparent);
+}
+
+.pipboy-faction-main {
+  min-width: 0;
+}
+
+.pipboy-faction-main b {
+  display: block;
+  color: #d3ee8a;
+  font-size: 15px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pipboy-faction-main small {
+  display: block;
+  margin-top: 7px;
+  color: #efd078;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pipboy-faction-card.hostile .pipboy-faction-main small {
+  color: #ffbf8a;
+}
+
+.pipboy-faction-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: stretch;
+}
+
+.pipboy-faction-stats > div {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid rgba(126, 200, 91, 0.22);
+  background: rgba(1, 9, 5, 0.42);
+}
+
+.pipboy-faction-stats span {
+  margin-bottom: 3px;
+  font-size: 9px;
+}
+
+.pipboy-faction-stats b {
+  color: #efd078;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.pipboy-tabs {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 15px;
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(213, 184, 100, 0.36);
+}
+
+.pipboy-tab {
+  min-height: 32px;
+  border: 1px solid rgba(126, 200, 91, 0.36);
+  border-radius: 3px;
+  background: rgba(3, 13, 7, 0.66);
+  color: #9fdb7a;
+  cursor: pointer;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 12px rgba(93, 189, 83, 0.04);
+}
+
+.pipboy-tab:hover,
+.pipboy-tab.active {
+  border-color: #d4b35b;
+  background: rgba(83, 62, 23, 0.42);
+  color: #efd078;
+  box-shadow: inset 0 -2px 0 rgba(159, 219, 122, 0.55), 0 0 14px rgba(224, 164, 66, 0.16);
+}
+
+#talents-window.pipboy-window .pipboy-tabs-compact,
+#craft-window.pipboy-window .pipboy-tabs-compact {
+  position: sticky;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  top: 36px;
+  z-index: 5;
+  margin: 0 0 10px;
+  padding: 8px 0 10px;
+  background: linear-gradient(180deg, rgba(19, 22, 22, 0.96), rgba(19, 22, 22, 0.72));
+}
+
+#talents-window.pipboy-window.visible .pipboy-scroll,
+#craft-window.pipboy-window.visible .pipboy-scroll {
+  overflow: hidden !important;
+  padding: 0;
+}
+
+#talents-window.pipboy-window.visible .pipboy-screen,
+#craft-window.pipboy-window.visible .pipboy-screen {
+  height: 100%;
+  min-height: 0;
+}
+
+#talents-window.pipboy-window .pipboy-utility-pages,
+#craft-window.pipboy-window .pipboy-utility-pages {
+  height: calc(100% - 50px);
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+#talents-window.pipboy-window .progression-window-layout,
+#craft-window.pipboy-window .progression-window-layout {
+  display: block;
+  grid-template-columns: 1fr;
+  min-height: 100%;
+}
+
+#talents-window.pipboy-window .progression-main-card,
+#craft-window.pipboy-window .progression-main-card {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+#talents-window.progression-mode-overview #special-summary {
+  display: none !important;
+}
+
+#talents-window.pipboy-window .progression-subtitle {
+  margin: 0 0 9px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid rgba(213, 184, 100, 0.34);
+  background: transparent !important;
+  color: #d5b864;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window .progression-subtitle small {
+  color: rgba(159, 219, 122, 0.78);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+#talents-window.pipboy-window #skill-grid,
+#craft-window.pipboy-window #craft-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#talents-window.pipboy-window .skill-group-title {
+  color: #d4b35b;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+#talents-window.pipboy-window .talent-card,
+#craft-window.pipboy-window .recipe-card {
+  border-color: rgba(126, 200, 91, 0.34);
+  border-radius: 3px;
+  background: rgba(4, 14, 8, 0.58);
+  color: #9fdb7a;
+  box-shadow: inset 0 0 16px rgba(93, 189, 83, 0.04);
+}
+
+#talents-window.pipboy-window .talent-card:hover,
+#craft-window.pipboy-window .recipe-card:hover {
+  border-color: rgba(214, 190, 99, 0.8);
+  background: rgba(15, 31, 14, 0.82);
+}
+
+#talents-window.pipboy-window .talent-name,
+#craft-window.pipboy-window .recipe-title {
+  color: #d3ee8a;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+#talents-window.pipboy-window .talent-desc,
+#craft-window.pipboy-window .recipe-desc {
+  color: rgba(159, 219, 122, 0.76);
+}
+
+#talents-window.pipboy-window .skill-formula,
+#talents-window.pipboy-window .perk-tip-formula,
+.perk-hover-tooltip .perk-tip-formula {
+  margin-top: 5px;
+  color: rgba(227, 194, 105, 0.82);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 10px;
+  line-height: 1.28;
+}
+
+#talents-window.pipboy-window .talent-rank,
+#craft-window.pipboy-window .recipe-cost {
+  color: #e3c269;
+}
+
+#talents-window.pipboy-window .skill-plus {
+  border-color: rgba(213, 184, 100, 0.58);
+  border-radius: 3px;
+  background: rgba(43, 32, 15, 0.78);
+  color: #e5c36d;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+#talents-window.pipboy-window .skill-plan-controls {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(126, 200, 91, 0.34);
+  border-radius: 3px;
+  background: rgba(4, 14, 8, 0.72);
+}
+
+#talents-window.pipboy-window .skill-plan-readout,
+#talents-window.pipboy-window .skill-plan-actions,
+#talents-window.pipboy-window .skill-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#talents-window.pipboy-window .skill-plan-readout span,
+#talents-window.pipboy-window .skill-plan-row span {
+  color: rgba(159, 219, 122, 0.76);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+}
+
+#talents-window.pipboy-window .skill-plan-readout b {
+  min-width: 24px;
+  color: #f1d87a;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 16px;
+  text-align: center;
+}
+
+#talents-window.pipboy-window .skill-card.planned {
+  border-color: rgba(227, 194, 105, 0.82);
+  box-shadow: inset 0 0 20px rgba(227, 194, 105, 0.07), 0 0 16px rgba(126, 200, 91, 0.08);
+}
+
+#talents-window.pipboy-window .skill-plan-row {
+  justify-self: end;
+  justify-content: end;
+  margin-top: 8px;
+  padding: 3px;
+  gap: 5px;
+  border: 1px solid rgba(126, 200, 91, 0.22);
+  border-radius: 3px;
+  background: rgba(1, 8, 4, 0.46);
+}
+
+#talents-window.pipboy-window .skill-plan-row .skill-minus,
+#talents-window.pipboy-window .skill-plan-row .skill-plus {
+  position: static;
+  inset: auto;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  height: 28px;
+  margin: 0;
+  padding: 0 8px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+#talents-window.pipboy-window .skill-plan-row .skill-plus {
+  min-width: 56px;
+}
+
+#talents-window.pipboy-window .skill-plan-row span {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: 30px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid rgba(126, 200, 91, 0.18);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.22);
+  text-align: center;
+  line-height: 1;
+}
+
+#talents-window.pipboy-window .skill-minus,
+#talents-window.pipboy-window .skill-plan-reset,
+#talents-window.pipboy-window .skill-plan-apply {
+  border: 1px solid rgba(213, 184, 100, 0.58);
+  border-radius: 3px;
+  background: rgba(43, 32, 15, 0.78);
+  color: #e5c36d;
+  font-family: Consolas, "Courier New", monospace;
+  font-weight: 700;
+}
+
+#talents-window.pipboy-window .skill-minus {
+  min-width: 30px;
+  min-height: 28px;
+  font-size: 15px;
+}
+
+#talents-window.pipboy-window .skill-plan-reset,
+#talents-window.pipboy-window .skill-plan-apply {
+  min-height: 30px;
+  padding: 0 12px;
+}
+
+#talents-window.pipboy-window .skill-plan-apply:not(:disabled) {
+  border-color: rgba(241, 216, 122, 0.88);
+  background: rgba(77, 61, 21, 0.86);
+  color: #ffe08a;
+}
+
+#talents-window.pipboy-window .skill-minus:disabled,
+#talents-window.pipboy-window .skill-plus:disabled,
+#talents-window.pipboy-window .skill-plan-reset:disabled,
+#talents-window.pipboy-window .skill-plan-apply:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#talents-window.pipboy-window .perk-wheel-wrap {
+  min-height: min(56vh, 548px);
+  border-color: rgba(126, 200, 91, 0.34);
+  border-radius: 3px;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(126, 200, 91, 0.13), rgba(4, 14, 8, 0.72) 38%, rgba(3, 8, 5, 0.92) 74%),
+    linear-gradient(180deg, rgba(9, 24, 13, 0.78), rgba(4, 10, 6, 0.96));
+}
+
+#talents-window.pipboy-window.progression-mode-perks .pipboy-utility-pages {
+  overflow: hidden !important;
+  padding-right: 0;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .pipboy-page.active,
+#talents-window.pipboy-window.progression-mode-perks .progression-window-layout,
+#talents-window.pipboy-window.progression-mode-perks #talents-wrap {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel-wrap {
+  position: relative;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+#talents-window.pipboy-window .perk-wheel-fullscreen-btn {
+  position: absolute;
+  top: 13px;
+  right: auto;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 32px;
+  margin: 0;
+  border: 1px solid rgba(213, 184, 100, 0.58);
+  border-radius: 3px;
+  background: rgba(43, 32, 15, 0.78);
+  color: #e5c36d;
+  cursor: pointer;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel,
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links {
+  width: 2100px !important;
+  height: 2100px !important;
+  min-width: 2100px !important;
+  min-height: 2100px !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel {
+  margin: var(--perk-wheel-offset-y, 0) 0 0 var(--perk-wheel-offset-x, 0) !important;
+  border-radius: 0 !important;
+  transform-origin: 0 0 !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 50px !important;
+  height: 50px !important;
+  margin-left: -25px !important;
+  margin-top: -25px !important;
+  padding: 0 !important;
+  border-width: 2px !important;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(102, 127, 82, 0.98), rgba(22, 31, 21, 0.98) 54%, rgba(8, 12, 8, 0.98) 100%) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100%;
+  height: 100%;
+  font-size: 21px !important;
+  line-height: 1 !important;
+  transform: translateY(-1px);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node-rank {
+  right: 2px !important;
+  bottom: 2px !important;
+  min-width: 18px;
+  padding: 1px 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.64) !important;
+  color: #f0d28a !important;
+  font-size: 7px !important;
+  line-height: 1.1;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-atlas-status {
+  width: 104px !important;
+  height: 64px !important;
+  margin-left: -52px !important;
+  margin-top: -32px !important;
+  border-radius: 8px !important;
+  transform: none !important;
+  background: linear-gradient(180deg, rgba(91, 72, 26, 0.94), rgba(28, 24, 12, 0.96)) !important;
+  box-shadow: 0 0 0 1px rgba(255, 220, 118, 0.28), 0 0 18px rgba(240, 198, 91, 0.18), inset 0 0 18px rgba(240, 198, 91, 0.10) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-atlas-status b {
+  font-size: 20px !important;
+  line-height: 1 !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-atlas-status span {
+  font-size: 8px !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links .perk-lane-band {
+  fill: rgba(3, 13, 8, 0.50);
+  stroke: rgba(214, 176, 94, 0.14);
+  stroke-width: 1;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links .perk-lane-band.left {
+  fill: rgba(38, 12, 9, 0.30);
+  stroke: rgba(210, 108, 82, 0.18);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links .perk-lane-band.right {
+  fill: rgba(8, 34, 16, 0.28);
+  stroke: rgba(139, 194, 125, 0.16);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links .perk-lane-guide {
+  stroke: rgba(214, 176, 94, 0.18);
+  stroke-width: 1;
+  stroke-dasharray: 8 10;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-group-hub {
+  display: none !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node {
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  width: 128px !important;
+  height: 56px !important;
+  margin-left: -64px !important;
+  margin-top: -28px !important;
+  padding: 6px 8px !important;
+  gap: 6px !important;
+  border-radius: 8px !important;
+  border-width: 1px !important;
+  background:
+    radial-gradient(circle at 20% 24%, rgba(126, 151, 100, 0.28), transparent 38%),
+    linear-gradient(180deg, rgba(21, 29, 20, 0.98), rgba(8, 13, 9, 0.99)) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node.left {
+  border-color: rgba(210, 108, 82, 0.50) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node.right {
+  border-color: rgba(139, 194, 125, 0.46) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node.top,
+#talents-window.pipboy-window.progression-mode-perks .perk-node.bottom {
+  border-color: rgba(214, 176, 94, 0.54) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node:hover,
+#talents-window.pipboy-window.progression-mode-perks .perk-node:focus-visible {
+  transform: scale(1.06) !important;
+  z-index: 40 !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node-icon {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 18px !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node-text {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  padding-right: 20px;
+  text-align: left;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node-label {
+  overflow: hidden;
+  color: #e8d59d;
+  font-size: 8.5px;
+  font-weight: 900;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node-req {
+  margin-top: 3px;
+  color: #9fbd86;
+  font-size: 7px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-node-rank {
+  right: 6px !important;
+  bottom: 5px !important;
+  min-width: 20px !important;
+  font-size: 7px !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-side-label {
+  display: none !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-branch-label {
+  width: 230px !important;
+  max-width: 230px !important;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 11px !important;
+  letter-spacing: 0.9px !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+  transform: translate(0, -50%) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-branch-label.left,
+#talents-window.pipboy-window.progression-mode-perks .perk-branch-label.right,
+#talents-window.pipboy-window.progression-mode-perks .perk-branch-label.top,
+#talents-window.pipboy-window.progression-mode-perks .perk-branch-label.bottom {
+  transform: translate(0, -50%) !important;
+  text-align: left !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links {
+  overflow: visible !important;
+  filter: drop-shadow(0 0 5px rgba(140, 235, 92, 0.12));
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-hub-link,
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links path.perk-node-link {
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links line.perk-hub-link {
+  stroke-width: 2 !important;
+  stroke-opacity: 0.34 !important;
+  stroke-dasharray: 5 9;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links path.hub-port-link {
+  stroke-width: 1.9 !important;
+  stroke-opacity: 0.52 !important;
+  stroke-dasharray: 9 7;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-wheel svg.perk-links path.dependency-link {
+  stroke-width: 2.7 !important;
+  stroke-opacity: 0.78 !important;
+}
+
+#talents-window.pipboy-window .perk-wheel-fullscreen-btn:hover,
+#talents-window.pipboy-window .perk-wheel-fullscreen-btn.active {
+  border-color: rgba(255, 225, 130, 0.82);
+  background: rgba(83, 62, 23, 0.64);
+  color: #fff1a8;
+}
+
+#talents-window.pipboy-window.visible.perk-tree-fullscreen {
+  width: calc(100vw - 20px) !important;
+  height: calc(var(--app-height, 100dvh) - 20px) !important;
+  max-height: calc(var(--app-height, 100dvh) - 20px) !important;
+}
+
+#talents-window.pipboy-window.visible.perk-tree-fullscreen .pipboy-screen {
+  padding: 14px 16px 72px;
+}
+
+#talents-window.pipboy-window.visible,
+#craft-window.pipboy-window.visible {
+  border-color: rgba(209, 177, 103, 0.56) !important;
+  background:
+    radial-gradient(ellipse at 50% 10%, rgba(86, 131, 57, 0.12), transparent 44%),
+    linear-gradient(180deg, rgba(22, 26, 22, 0.98), rgba(7, 11, 8, 0.96)) !important;
+}
+
+#inventory-window.pipboy-window,
+#talents-window.pipboy-window.visible,
+#craft-window.pipboy-window.visible {
+  background:
+    linear-gradient(135deg, rgba(86, 76, 49, 0.52), rgba(24, 22, 17, 0.94) 28%, rgba(67, 55, 34, 0.72) 100%),
+    #171713 !important;
+}
+
+#inventory-window.pipboy-window .pipboy-screen,
+#talents-window.pipboy-window.visible .pipboy-screen,
+#craft-window.pipboy-window.visible .pipboy-screen {
+  border-color: rgba(136, 175, 101, 0.34) !important;
+  background:
+    radial-gradient(ellipse at 52% 22%, rgba(137, 205, 103, 0.22), transparent 42%),
+    linear-gradient(180deg, rgba(11, 28, 16, 0.98), rgba(5, 13, 9, 0.99)) !important;
+}
+
+#talents-window.pipboy-window .fullscreen-title,
+#craft-window.pipboy-window .panel-title {
+  background: linear-gradient(180deg, rgba(9, 20, 12, 0.98), rgba(9, 20, 12, 0.74));
+}
+
+#talents-window.pipboy-window .pipboy-tab,
+#craft-window.pipboy-window .pipboy-tab {
+  min-height: 32px;
+}
+
+@media (max-width: 920px) {
+  #inventory-window #inventory-grid {
+    grid-template-columns: repeat(4, minmax(96px, 1fr));
+  }
+  .pipboy-status-layout {
+    grid-template-columns: 1fr;
+  }
+  #inventory-window .special-status-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  #inventory-window #equipment-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+  }
+  .pipboy-pages {
+    max-height: min(61vh, 590px);
+    overflow: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  #inventory-window .special-status-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  #inventory-window.pipboy-window,
+  #talents-window.pipboy-window.visible,
+  #craft-window.pipboy-window.visible {
+    width: calc(100vw - 14px) !important;
+    height: calc(var(--app-height, 100dvh) - 14px) !important;
+    max-height: calc(var(--app-height, 100dvh) - 14px) !important;
+    padding: 9px !important;
+  }
+  #inventory-window .pipboy-scroll,
+  #talents-window.pipboy-window.visible .window-scroll,
+  #craft-window.pipboy-window.visible .window-scroll {
+    height: 100% !important;
+    max-height: none !important;
+  }
+  .pipboy-screen {
+    min-height: calc(var(--app-height, 100dvh) - 32px);
+    padding: 13px 12px 80px;
+  }
+  .pipboy-topline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pipboy-title {
+    font-size: 18px;
+  }
+  #inventory-window #inventory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+  }
+  #inventory-window #stats-box,
+  #inventory-window #equipment-grid,
+  .pipboy-inventory-head,
+  .pipboy-quest-card,
+  .pipboy-social-dashboard,
+  .pipboy-social-toolbar,
+  .pipboy-social-columns,
+  .pipboy-social-clan-card,
+  .pipboy-social-create {
+    grid-template-columns: 1fr;
+  }
+  .pipboy-social-row {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .pipboy-social-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .pipboy-quest-card small,
+  .pipboy-quest-card em {
+    grid-column: auto;
+  }
+  .pipboy-world-layout {
+    grid-template-columns: 1fr;
+  }
+  #talents-window.pipboy-window #skill-grid,
+  #craft-window.pipboy-window #craft-grid {
+    grid-template-columns: 1fr;
+  }
+  .pipboy-tabs {
+    left: 12px;
+    right: 12px;
+    bottom: 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .pipboy-tab {
+    min-height: 34px;
+    font-size: 10px;
+  }
+}
+
+/* v7.75.87 living wasteland pip-boy page */
+.pipboy-world-grid {
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+.pipboy-world-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pipboy-world-dashboard > div,
+.pipboy-world-card,
+.pipboy-world-row,
+.pipboy-world-event,
+.pipboy-world-empty {
+  border: 1px solid rgba(108, 184, 82, 0.28);
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(164, 210, 104, 0.09), transparent 48%),
+    rgba(4, 18, 8, 0.72);
+  color: #a9e989;
+}
+
+.pipboy-world-dashboard > div {
+  display: grid;
+  gap: 4px;
+  min-height: 56px;
+  padding: 9px 10px;
+}
+
+.pipboy-world-dashboard span,
+.pipboy-world-card span,
+.pipboy-world-row span,
+.pipboy-world-event span {
+  color: rgba(154, 209, 122, 0.82);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.pipboy-world-dashboard b {
+  color: #ffe375;
+  font-size: 18px;
+}
+
+.pipboy-world-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.pipboy-world-layout > section {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pipboy-world-title {
+  margin-top: 2px;
+  color: #f0cf66;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.pipboy-world-card,
+.pipboy-world-row,
+.pipboy-world-event,
+.pipboy-world-empty {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.pipboy-world-card > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+
+.pipboy-world-card b,
+.pipboy-world-row b,
+.pipboy-world-event b {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #f3d978;
+}
+
+.pipboy-world-card small,
+.pipboy-world-card em,
+.pipboy-world-row small {
+  color: rgba(180, 226, 139, 0.82);
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.pipboy-world-card.danger {
+  border-color: rgba(224, 112, 85, 0.62);
+  background: linear-gradient(180deg, rgba(45, 13, 8, 0.78), rgba(6, 16, 8, 0.72));
+}
+
+.pipboy-world-card.warning {
+  border-color: rgba(224, 194, 91, 0.55);
+  background: linear-gradient(180deg, rgba(42, 34, 10, 0.72), rgba(6, 16, 8, 0.72));
+}
+
+.pipboy-world-card.safe,
+.pipboy-world-card.stable {
+  border-color: rgba(128, 208, 91, 0.36);
+}
+
+@media (max-width: 760px) {
+  .pipboy-world-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pipboy-world-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* v7.75.84 readable perk board */
+#talents-window.pipboy-window.progression-mode-perks .pipboy-utility-pages,
+#talents-window.pipboy-window.progression-mode-perks .pipboy-page.active,
+#talents-window.pipboy-window.progression-mode-perks .progression-window-layout,
+#talents-window.pipboy-window.progression-mode-perks #talents-wrap {
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .pipboy-utility-pages {
+  height: calc(100% - 48px) !important;
+  overflow: hidden !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .pipboy-page.active {
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .progression-window-layout {
+  display: flex !important;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks #talents-wrap {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  overflow: hidden !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks #special-summary,
+#talents-window.pipboy-window.progression-mode-perks #skills-header,
+#talents-window.pipboy-window.progression-mode-perks #skill-grid,
+#talents-window.pipboy-window.progression-mode-perks #talents-header,
+#talents-window.pipboy-window.progression-mode-perks #talent-grid,
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel-info {
+  display: none !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel-wrap.perk-board-wrap {
+  position: relative !important;
+  display: block !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  padding: 10px !important;
+  overflow: hidden !important;
+  cursor: default !important;
+  touch-action: pan-y !important;
+  overscroll-behavior: contain !important;
+  border: 1px solid rgba(126, 200, 91, 0.24) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(90deg, rgba(11, 28, 16, 0.92), rgba(4, 13, 8, 0.98)),
+    #07100a !important;
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.52) !important;
+  scrollbar-width: thin;
+}
+
+#talents-window.pipboy-window.visible.perk-tree-fullscreen #perk-wheel-wrap.perk-board-wrap {
+  height: calc(var(--app-height, 100vh) - 174px) !important;
+  min-height: 520px !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel-wrap.perk-board-wrap::after {
+  content: none !important;
+  display: none !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel.perk-board {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+  transform-origin: initial !important;
+  zoom: 1 !important;
+  overflow: hidden !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel.perk-board .perk-links,
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel.perk-board .perk-wheel-center,
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel.perk-board .perk-group-hub,
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel.perk-board .perk-branch-label,
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel.perk-board .perk-side-label {
+  display: none !important;
+}
+
+.perk-board-shell {
+  display: grid;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.perk-board-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding-right: 44px;
+}
+
+.perk-board-status > div {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(126, 200, 91, 0.24);
+  border-radius: 6px;
+  background: rgba(4, 14, 8, 0.58);
+}
+
+.perk-board-status span {
+  display: block;
+  color: rgba(159, 219, 122, 0.68);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.perk-board-status b {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: #efd078;
+  font-size: 18px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perk-board-layout {
+  display: grid;
+  grid-template-columns: 178px minmax(330px, 1fr) minmax(270px, 330px);
+  gap: 10px;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.perk-board-categories {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 6px;
+  align-self: start;
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.perk-category-btn {
+  min-width: 0;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 1px solid rgba(126, 200, 91, 0.28);
+  border-radius: 6px;
+  background: rgba(3, 13, 7, 0.66);
+  color: #9fdb7a;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.perk-category-btn:hover,
+.perk-category-btn.active {
+  border-color: rgba(213, 184, 100, 0.72);
+  background: rgba(83, 62, 23, 0.46);
+  color: #efd078;
+  box-shadow: inset 3px 0 0 rgba(159, 219, 122, 0.62);
+}
+
+.perk-board-list {
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: max-content;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  overflow: auto;
+}
+
+.perk-board-group-title {
+  margin: 5px 0 1px;
+  padding: 0 2px 4px;
+  border-bottom: 1px solid rgba(213, 184, 100, 0.22);
+  color: #d5b864;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.perk-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr) minmax(76px, auto) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-height: 56px !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 7px 8px !important;
+  border: 1px solid rgba(126, 200, 91, 0.26) !important;
+  border-radius: 6px !important;
+  background: rgba(4, 14, 8, 0.62) !important;
+  color: #c9e883 !important;
+  font-family: Consolas, "Courier New", monospace !important;
+  text-align: left !important;
+  cursor: pointer;
+  transform: none !important;
+  box-shadow: inset 0 0 14px rgba(93, 189, 83, 0.05) !important;
+}
+
+.perk-card:has(+ .perk-card)::after {
+  content: '';
+  position: absolute;
+  left: 27px;
+  bottom: -8px;
+  width: 1px;
+  height: 8px;
+  background: rgba(213, 184, 100, 0.28);
+}
+
+.perk-card:hover,
+.perk-card:focus-visible,
+.perk-card.selected {
+  border-color: rgba(213, 184, 100, 0.84) !important;
+  background: rgba(15, 31, 14, 0.84) !important;
+  outline: none !important;
+}
+
+.perk-card.available {
+  border-color: rgba(239, 208, 120, 0.68) !important;
+  box-shadow: inset 0 0 14px rgba(239, 208, 120, 0.07), 0 0 12px rgba(239, 208, 120, 0.10) !important;
+}
+
+.perk-card.maxed {
+  border-color: rgba(139, 219, 112, 0.52) !important;
+  color: #bdf09a !important;
+}
+
+.perk-card.locked {
+  opacity: 0.62;
+}
+
+.perk-card-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(126, 200, 91, 0.22);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.30);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.perk-card-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.perk-card-main b {
+  overflow: hidden;
+  color: #d3ee8a;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.14;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perk-card-main small {
+  overflow: hidden;
+  color: rgba(159, 219, 122, 0.70);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perk-card-state {
+  justify-self: end;
+  max-width: 108px;
+  padding: 4px 6px;
+  border: 1px solid rgba(213, 184, 100, 0.22);
+  border-radius: 6px;
+  color: #d5b864;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.05;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.perk-card.available .perk-card-state {
+  border-color: rgba(239, 208, 120, 0.58);
+  color: #f3d982;
+}
+
+.perk-card.maxed .perk-card-state {
+  border-color: rgba(139, 219, 112, 0.36);
+  color: #bdf09a;
+}
+
+.perk-detail-panel {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 10px;
+  align-self: start;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(213, 184, 100, 0.34);
+  border-radius: 8px;
+  background: rgba(4, 14, 8, 0.70);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.28);
+}
+
+.perk-detail-kicker {
+  color: rgba(159, 219, 122, 0.72);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.perk-detail-title {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+}
+
+.perk-detail-title span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(213, 184, 100, 0.30);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 21px;
+}
+
+.perk-detail-title b {
+  min-width: 0;
+  color: #efd078;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.12;
+}
+
+.perk-detail-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.perk-detail-state span {
+  padding: 4px 6px;
+  border: 1px solid rgba(126, 200, 91, 0.24);
+  border-radius: 6px;
+  color: #aedd8b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.perk-detail-state.available span:first-child,
+.perk-detail-state.maxed span:first-child {
+  border-color: rgba(239, 208, 120, 0.54);
+  color: #f3d982;
+}
+
+.perk-detail-desc,
+.perk-detail-formula {
+  color: rgba(201, 232, 131, 0.86);
+  font-size: 11px;
+  line-height: 1.36;
+}
+
+.perk-detail-formula {
+  padding-top: 8px;
+  border-top: 1px solid rgba(213, 184, 100, 0.20);
+  color: rgba(239, 208, 120, 0.86);
+}
+
+.perk-detail-reqs {
+  display: grid;
+  gap: 5px;
+}
+
+.perk-detail-req {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 5px;
+  color: rgba(201, 232, 131, 0.76);
+  font-size: 10px;
+  line-height: 1.22;
+}
+
+.perk-detail-req.bad {
+  color: rgba(219, 145, 112, 0.82);
+}
+
+.perk-detail-req span {
+  font-weight: 900;
+  text-align: center;
+}
+
+.perk-detail-learn {
+  min-height: 34px;
+  border: 1px solid rgba(213, 184, 100, 0.62);
+  border-radius: 6px;
+  background: rgba(83, 62, 23, 0.48);
+  color: #efd078;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.perk-detail-learn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.perk-detail-empty,
+.perk-board-empty {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px dashed rgba(213, 184, 100, 0.28);
+  border-radius: 8px;
+  color: rgba(201, 232, 131, 0.72);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.perk-detail-empty b {
+  color: #efd078;
+  font-size: 13px;
+}
+
+#talents-window.pipboy-window .perk-wheel-fullscreen-btn {
+  z-index: 5 !important;
+}
+
+@media (max-width: 980px) {
+  .perk-board-layout {
+    grid-template-columns: 154px minmax(280px, 1fr);
+  }
+  .perk-detail-panel {
+    position: relative;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 680px) {
+  #talents-window.pipboy-window.progression-mode-perks .pipboy-utility-pages {
+    height: calc(100% - 112px) !important;
+  }
+  #talents-window.pipboy-window.progression-mode-perks #perk-wheel-wrap.perk-board-wrap {
+    height: calc(var(--app-height, 100vh) - 182px) !important;
+    min-height: 360px !important;
+    padding: 8px !important;
+  }
+  .perk-board-status,
+  .perk-board-layout {
+    grid-template-columns: 1fr;
+  }
+  .perk-board-categories {
+    position: relative;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .perk-category-btn {
+    min-height: 32px;
+    font-size: 10px;
+  }
+  .perk-card {
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+  }
+  .perk-card-state {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .perk-detail-panel {
+    position: relative;
+  }
+}
+
+/* v7.75.85 perk directory: readable choice-first layout */
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel-wrap.perk-board-wrap {
+  padding: 12px !important;
+  background:
+    linear-gradient(90deg, rgba(7, 24, 13, 0.94), rgba(3, 10, 7, 0.98)),
+    repeating-linear-gradient(0deg, rgba(159, 219, 122, 0.028) 0 1px, transparent 1px 4px),
+    #061009 !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-shell {
+  gap: 12px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-focus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(126, 200, 91, 0.24);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(8, 22, 12, 0.78), rgba(3, 10, 6, 0.72));
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-focus > div:first-child {
+  display: grid;
+  grid-template-columns: 34px minmax(0, auto) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-focus > div:first-child > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(213, 184, 100, 0.34);
+  border-radius: 6px;
+  color: #efd078;
+  background: rgba(0, 0, 0, 0.22);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-focus b,
+#talents-window.pipboy-window.progression-mode-perks .perk-board-focus small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-focus b {
+  color: #efd078;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-focus small {
+  color: rgba(201, 232, 131, 0.78);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-legend button {
+  padding: 4px 7px;
+  border: 1px solid rgba(126, 200, 91, 0.24);
+  border-radius: 5px;
+  color: rgba(201, 232, 131, 0.78);
+  background: rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-legend button:hover,
+#talents-window.pipboy-window.progression-mode-perks .perk-board-legend button:focus-visible {
+  border-color: rgba(239, 208, 120, 0.68);
+  color: #efd078;
+  outline: none;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-legend .ready {
+  border-color: rgba(239, 208, 120, 0.52);
+  color: #efd078;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-legend .locked {
+  border-color: rgba(126, 200, 91, 0.26);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-legend .done {
+  border-color: rgba(139, 219, 112, 0.34);
+  color: #bdf09a;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-legend button.active {
+  border-color: rgba(239, 208, 120, 0.88);
+  color: #061009;
+  background: linear-gradient(180deg, rgba(239, 208, 120, 0.92), rgba(169, 130, 44, 0.82));
+  box-shadow: 0 0 10px rgba(239, 208, 120, 0.18), inset 0 0 0 1px rgba(255, 244, 178, 0.18);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-status {
+  grid-template-columns: minmax(118px, 0.8fr) minmax(96px, 0.65fr) minmax(96px, 0.65fr) minmax(126px, 0.85fr) minmax(170px, 1.25fr);
+  gap: 8px;
+  padding-right: 48px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-status > div {
+  min-height: 58px;
+  border-color: rgba(126, 200, 91, 0.30);
+  background:
+    linear-gradient(180deg, rgba(9, 25, 13, 0.86), rgba(3, 10, 6, 0.78));
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-status > div.primary {
+  border-color: rgba(239, 208, 120, 0.48);
+  background:
+    radial-gradient(circle at 12% 24%, rgba(239, 208, 120, 0.15), transparent 44%),
+    linear-gradient(180deg, rgba(43, 35, 16, 0.86), rgba(8, 18, 9, 0.78));
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-status > div.wide b {
+  color: #c9e883;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-layout {
+  grid-template-columns: 172px minmax(360px, 1fr) minmax(260px, 310px);
+  gap: 9px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-categories {
+  gap: 7px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 7px 8px;
+  border-color: rgba(126, 200, 91, 0.24);
+  background:
+    linear-gradient(180deg, rgba(7, 22, 11, 0.72), rgba(3, 11, 6, 0.70));
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(126, 200, 91, 0.22);
+  border-radius: 5px;
+  color: #efd078;
+  background: rgba(0, 0, 0, 0.24);
+  font-size: 12px;
+  line-height: 1;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-label b,
+#talents-window.pipboy-window.progression-mode-perks .perk-category-label small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-label b {
+  color: inherit;
+  font-size: 10.5px;
+  line-height: 1.05;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-label small {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 13px;
+  padding: 1px 4px 0 0;
+  color: rgba(159, 219, 122, 0.62);
+  font-size: 8.5px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn.ready .perk-category-icon,
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn.points .perk-category-icon {
+  border-color: rgba(239, 208, 120, 0.48);
+  color: #efd078;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn.done .perk-category-icon {
+  border-color: rgba(139, 219, 112, 0.34);
+  color: #bdf09a;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn.locked:not(.active),
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn.empty:not(.active) {
+  opacity: 0.72;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn.active .perk-category-label small {
+  color: rgba(239, 208, 120, 0.80);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-list {
+  gap: 8px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-group-title {
+  margin: 3px 0 0;
+  padding: 5px 8px;
+  border: 1px solid rgba(213, 184, 100, 0.22);
+  border-radius: 6px;
+  background: rgba(83, 62, 23, 0.14);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card {
+  grid-template-columns: 48px minmax(0, 1fr) !important;
+  align-items: start !important;
+  height: max-content !important;
+  min-height: 132px !important;
+  padding: 10px !important;
+  border-color: rgba(126, 200, 91, 0.24) !important;
+  background:
+    linear-gradient(180deg, rgba(7, 20, 10, 0.78), rgba(3, 10, 6, 0.76)) !important;
+  overflow: visible !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card:has(+ .perk-card)::after {
+  content: none !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card.selected {
+  border-color: rgba(239, 208, 120, 0.86) !important;
+  box-shadow: inset 3px 0 0 rgba(239, 208, 120, 0.72), 0 0 16px rgba(239, 208, 120, 0.10) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card.available {
+  border-color: rgba(239, 208, 120, 0.62) !important;
+  background:
+    radial-gradient(circle at 9% 24%, rgba(239, 208, 120, 0.13), transparent 42%),
+    linear-gradient(180deg, rgba(14, 30, 13, 0.88), rgba(4, 12, 7, 0.78)) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card.no-points {
+  border-color: rgba(213, 184, 100, 0.42) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card.locked {
+  opacity: 0.76;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-icon {
+  align-self: start;
+  width: 42px;
+  height: 42px;
+  margin-top: 3px;
+  border-color: rgba(213, 184, 100, 0.28);
+  border-radius: 7px;
+  color: #efd078;
+  font-size: 21px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-main {
+  align-content: start;
+  gap: 6px;
+  min-height: 0;
+  overflow: visible;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-main b {
+  color: #efd078;
+  font-size: 13px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-main em {
+  display: block;
+  overflow: visible;
+  color: rgba(201, 232, 131, 0.84);
+  font-size: 10.5px;
+  font-style: normal;
+  line-height: 1.3;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-state {
+  justify-self: end;
+  max-width: 128px;
+  white-space: nowrap;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card.no-points .perk-card-state {
+  border-color: rgba(213, 184, 100, 0.36);
+  color: #d5b864;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-reqs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 1px;
+  min-height: 0;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-req-chip {
+  max-width: 100%;
+  padding: 3px 5px;
+  border: 1px solid rgba(126, 200, 91, 0.24);
+  border-radius: 5px;
+  color: rgba(201, 232, 131, 0.78);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-req-chip.bad {
+  border-color: rgba(219, 145, 112, 0.30);
+  color: rgba(235, 158, 118, 0.88);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-req-chip.more {
+  color: #efd078;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-panel {
+  gap: 12px;
+  padding: 14px;
+  border-color: rgba(213, 184, 100, 0.44);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(239, 208, 120, 0.10), transparent 36%),
+    linear-gradient(180deg, rgba(6, 20, 10, 0.88), rgba(3, 10, 6, 0.86));
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-kicker {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-kicker span:last-child {
+  color: #efd078;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-block {
+  display: grid;
+  gap: 6px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(213, 184, 100, 0.18);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-next {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid rgba(126, 200, 91, 0.24);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-next b {
+  color: #efd078;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-next span {
+  color: rgba(201, 232, 131, 0.82);
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-next.available {
+  border-color: rgba(239, 208, 120, 0.52);
+  background: rgba(83, 62, 23, 0.24);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-block-title {
+  color: rgba(159, 219, 122, 0.70);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-formula {
+  padding-top: 0;
+  border-top: 0;
+}
+
+@media (max-width: 1040px) {
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-layout {
+    grid-template-columns: 156px minmax(320px, 1fr) minmax(270px, 320px);
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-status {
+    grid-template-columns: minmax(104px, 0.8fr) minmax(86px, 0.62fr) minmax(86px, 0.62fr) minmax(96px, 0.62fr) minmax(150px, 1.2fr);
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-status > div.wide {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 820px) {
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-layout,
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-status {
+    grid-template-columns: 1fr;
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-status > div.wide {
+    grid-column: auto;
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-detail-panel {
+    position: relative;
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-focus {
+    grid-template-columns: 1fr;
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-legend {
+    justify-content: flex-start;
+  }
+}
+
+/* v7.76 perk terminal: choice-first readable catalog */
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel-wrap.perk-board-wrap {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+#talents-window.pipboy-window.visible.perk-tree-fullscreen #perk-wheel-wrap.perk-board-wrap {
+  height: calc(var(--app-height, 100vh) - 174px) !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks #perk-wheel.perk-board {
+  height: 100% !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-shell {
+  height: 100%;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-focus {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) auto;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(126, 200, 91, 0.22);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-search span {
+  color: rgba(159, 219, 122, 0.72);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-search input {
+  min-width: 0;
+  height: 24px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #efd078;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-search input::placeholder {
+  color: rgba(159, 219, 122, 0.46);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-layout {
+  grid-template-columns: 184px minmax(380px, 1fr) minmax(282px, 336px);
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-categories,
+#talents-window.pipboy-window.progression-mode-perks .perk-board-list,
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-panel {
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-categories {
+  position: relative;
+  padding-right: 3px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-board-list {
+  padding-right: 4px;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-detail-panel {
+  position: relative;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-category-btn.active {
+  box-shadow: inset 4px 0 0 rgba(239, 208, 120, 0.76), 0 0 12px rgba(239, 208, 120, 0.10);
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card {
+  height: max-content !important;
+  min-height: 132px !important;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-main small {
+  white-space: normal;
+}
+
+#talents-window.pipboy-window.progression-mode-perks .perk-card-state {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1180px) {
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-focus {
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-legend {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-layout {
+    grid-template-columns: 168px minmax(320px, 1fr) minmax(262px, 310px);
+  }
+}
+
+@media (max-width: 900px) {
+  #talents-window.pipboy-window.progression-mode-perks #perk-wheel-wrap.perk-board-wrap {
+    overflow: auto !important;
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-shell {
+    height: auto;
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-focus,
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-layout {
+    grid-template-columns: 1fr;
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-categories,
+  #talents-window.pipboy-window.progression-mode-perks .perk-board-list,
+  #talents-window.pipboy-window.progression-mode-perks .perk-detail-panel {
+    max-height: none;
+    overflow: visible;
+  }
+}

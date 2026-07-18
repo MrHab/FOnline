@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Realm of Ashes v7.76.0</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/game.css?v=7.76.0-network-ping">
+
+</head>
+<body>
+<div id="game-container">
+  <canvas id="webgl"></canvas>
+
+  <div id="location-loading-screen" class="location-loading-screen" aria-hidden="true">
+    <div class="location-loading-card">
+      <div id="location-loading-kicker" class="location-loading-kicker">Переход между локациями</div>
+      <div id="location-loading-title" class="location-loading-title">Загрузка локации</div>
+      <div id="location-loading-subtitle" class="location-loading-subtitle">Подготовка мира...</div>
+      <div class="location-loading-progress" aria-hidden="true"><div id="location-loading-bar"></div></div>
+      <div id="location-loading-step" class="location-loading-step">Ожидание...</div>
+      <div id="location-loading-hint" class="location-loading-hint">Мир станет доступен после загрузки геометрии, текстур, теней и сетевой комнаты.</div>
+    </div>
+  </div>
+
+  <div id="ui-overlay">
+    <div id="player-info" class="ui-panel player-frame-hud">
+      <div id="fps-counter" class="player-hud-fps" aria-hidden="true">
+        <span id="fps-counter-value">FPS: --</span>
+        <span id="network-ping" class="ping-offline" title="Пинг до игрового сервера">—ms</span>
+      </div>
+      <div id="player-name">Arathar</div>
+      <div id="player-level">
+        <span class="player-hud-chip"><small>&#1059;&#1088;&#1086;&#1074;&#1077;&#1085;&#1100;</small><b id="lvl-num">1</b></span>
+        <span class="player-hud-chip player-hud-chip-wide"><small>&#1054;&#1087;&#1099;&#1090;</small><b><span id="xp-small">0</span>/<span id="xp-needed">100</span></b></span>
+        <span class="player-hud-chip"><small>&#1055;&#1077;&#1088;&#1082;&#1080;</small><b id="perk-small">0</b></span>
+        <span class="player-hud-chip"><small>&#1053;&#1072;&#1074;&#1099;&#1082;&#1080;</small><b id="skill-small">0</b></span>
+      </div>
+    </div>
+
+    <div id="online-status" class="ui-panel">Профиль: подготовка...</div>
+    <div id="device-status" class="ui-panel">Устройство: определение...</div>
+
+    <div id="inventory-window" class="ui-panel window-panel pipboy-window" data-pipboy-screen="items">
+      <div class="window-scroll pipboy-scroll">
+        <div class="pipboy-screen">
+          <div class="pipboy-title-row">
+            <div>
+              <div class="pipboy-title">PIP-ASH</div>
+              <div class="pipboy-subtitle" id="pipboy-location-line">Поселение</div>
+            </div>
+            <button class="ui-btn window-x" type="button" data-close-window="inventory">×</button>
+          </div>
+          <div class="pipboy-topline" aria-label="Сводка персонажа">
+            <span>WG <b id="pipboy-top-weight">0/0</b></span>
+            <span>HP <b id="pipboy-top-hp">0/0</b></span>
+            <span>AP <b id="pipboy-top-ap">0/0</b></span>
+            <span>DT <b id="pipboy-top-armor">0</b></span>
+            <span>Caps <b id="pipboy-top-caps">0</b></span>
+          </div>
+
+          <div class="pipboy-pages">
+            <section class="pipboy-page" data-pipboy-page="status">
+              <div class="pipboy-section-title">STATUS</div>
+              <div class="pipboy-status-layout">
+                <div class="pipboy-left-column">
+                  <div class="pipboy-character-plate">
+                    <div class="pipboy-character-name" id="pipboy-character-name">Странник</div>
+                    <div class="pipboy-character-meta" id="pipboy-character-meta">Уровень 1</div>
+                    <div class="pipboy-body-readout" aria-hidden="true">
+                      <div class="pipboy-body-head"></div>
+                      <div class="pipboy-body-torso"></div>
+                      <div class="pipboy-body-arm left"></div>
+                      <div class="pipboy-body-arm right"></div>
+                      <div class="pipboy-body-leg left"></div>
+                      <div class="pipboy-body-leg right"></div>
+                      <div class="pipboy-body-weapon"></div>
+                    </div>
+                  </div>
+                  <div id="equipment-grid"></div>
+                </div>
+                <div class="pipboy-right-column">
+                  <div id="stats-box"></div>
+                  <div id="inventory-injury-status" class="injury-status-panel"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="pipboy-page active" data-pipboy-page="items">
+              <div class="pipboy-section-title">ITEMS</div>
+              <div class="pipboy-inventory-layout">
+                <aside id="inventory-character-panel" class="inventory-character-panel" aria-label="Модель персонажа и экипировка"></aside>
+                <div class="pipboy-inventory-list">
+                  <div class="pipboy-inventory-head">
+                    <div id="carry-line" class="carry-line"></div>
+                    <div class="inventory-actions"><button id="inventory-sort-btn" class="ui-btn" type="button">Сортировать</button></div>
+                  </div>
+                  <div id="inventory-category-tabs" class="item-category-tabs" role="tablist" aria-label="Категории инвентаря"></div>
+                  <div id="inventory-grid"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="pipboy-page" data-pipboy-page="quests">
+              <div class="pipboy-section-title">QUESTS</div>
+              <div id="pipboy-quest-grid" class="pipboy-quest-grid"></div>
+            </section>
+
+            <section class="pipboy-page" data-pipboy-page="world">
+              <div class="pipboy-section-title">WORLD</div>
+              <div id="pipboy-world-grid" class="pipboy-world-grid"></div>
+            </section>
+
+            <section class="pipboy-page" data-pipboy-page="factions">
+              <div class="pipboy-section-title">FACTIONS</div>
+              <div id="pipboy-factions-grid" class="pipboy-factions-grid"></div>
+            </section>
+
+            <section class="pipboy-page" data-pipboy-page="friends">
+              <div class="pipboy-section-title">FRIENDS</div>
+              <div id="pipboy-friends-grid" class="pipboy-social-grid"></div>
+            </section>
+
+            <section class="pipboy-page" data-pipboy-page="clan">
+              <div class="pipboy-section-title">CLAN</div>
+              <div id="pipboy-clan-grid" class="pipboy-social-grid"></div>
+            </section>
+
+            <section class="pipboy-page" data-pipboy-page="radio">
+              <div class="pipboy-section-title">RADIO</div>
+              <div id="pipboy-radio-grid" class="pipboy-radio-grid"></div>
+            </section>
+          </div>
+
+          <div class="pipboy-tabs" role="tablist" aria-label="Разделы терминала">
+            <button type="button" class="pipboy-tab" data-pipboy-tab="status">Статус</button>
+            <button type="button" class="pipboy-tab active" data-pipboy-tab="items">Инвентарь</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="skills">Навыки</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="perks">Перки</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="craft">Крафт</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="quests">Задания</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="world">Мир</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="factions">Фракции</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="friends">Друзья</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="clan">Клан</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="radio">Радио</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="talents-window" class="ui-panel window-panel pipboy-window">
+      <div class="window-scroll pipboy-scroll">
+        <div class="pipboy-screen">
+          <div class="pipboy-title-row">
+            <div>
+              <div class="pipboy-title">PIP-ASH</div>
+              <div class="pipboy-subtitle">Развитие персонажа</div>
+            </div>
+            <button class="ui-btn window-x" type="button" data-close-window="talents">×</button>
+          </div>
+
+          <div class="pipboy-pages pipboy-utility-pages">
+            <section class="pipboy-page active">
+              <div class="pipboy-section-title" id="pipboy-progression-title">SKILLS</div>
+              <div class="progression-window-layout">
+                <div id="talents-wrap" class="progression-main-card">
+                  <div id="special-summary"></div>
+                  <div id="skills-header" class="panel-title progression-subtitle">Навыки <small>очков: <span id="skill-points">0</span></small></div>
+                  <div id="skill-grid"></div>
+                  <div id="talents-header" class="panel-title progression-subtitle">Перки <small>каждые 3 уровня · очков: <span id="talent-points">0</span></small></div>
+                  <div id="talent-grid"></div>
+                  <div id="perk-wheel-wrap" class="perk-wheel-wrap">
+                    <button id="perk-wheel-fullscreen" class="perk-wheel-fullscreen-btn" type="button" aria-label="Развернуть древо перков">⛶</button>
+                    <div id="perk-wheel" class="perk-wheel" aria-label="Круговое древо перков"></div>
+                    <div id="perk-wheel-info" class="perk-wheel-info">Выберите узел перка.</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="pipboy-tabs" role="tablist" aria-label="Разделы терминала">
+            <button type="button" class="pipboy-tab" data-pipboy-tab="status">Статус</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="items">Инвентарь</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="skills">Навыки</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="perks">Перки</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="craft">Крафт</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="quests">Задания</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="world">Мир</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="factions">Фракции</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="friends">Друзья</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="clan">Клан</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="radio">Радио</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="craft-window" class="ui-panel window-panel pipboy-window">
+      <div class="window-scroll pipboy-scroll">
+        <div class="pipboy-screen">
+          <div class="pipboy-title-row">
+            <div>
+              <div class="pipboy-title">PIP-ASH</div>
+              <div class="pipboy-subtitle">Мастерская</div>
+            </div>
+            <button class="ui-btn window-x" type="button" data-close-window="craft">×</button>
+          </div>
+
+          <div class="pipboy-pages pipboy-utility-pages">
+            <section class="pipboy-page active">
+              <div class="pipboy-section-title">CRAFT</div>
+              <div class="progression-window-layout">
+                <div class="progression-main-card">
+                  <div id="craft-grid"></div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="pipboy-tabs" role="tablist" aria-label="Разделы терминала">
+            <button type="button" class="pipboy-tab" data-pipboy-tab="status">Статус</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="items">Инвентарь</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="skills">Навыки</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="perks">Перки</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="craft">Крафт</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="quests">Задания</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="world">Мир</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="factions">Фракции</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="friends">Друзья</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="clan">Клан</button>
+            <button type="button" class="pipboy-tab" data-pipboy-tab="radio">Радио</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="map-window" class="ui-panel window-panel">
+      <div class="panel-title">
+        <span id="map-title">Поселение</span>
+      </div>
+      <div id="map-wrap" class="map-local-panel">
+        <canvas id="minimap" width="680" height="520"></canvas>
+      </div>
+    </div>
+
+    <div id="global-map-window" class="ui-panel window-panel">
+      <div class="panel-title">
+        <span id="global-map-title">Глобальная карта</span>
+      </div>
+      <div id="global-map-panel" class="global-map-panel" aria-hidden="true">
+        <div class="global-map-main">
+          <canvas id="global-map-3d-canvas" width="1200" height="760"></canvas>
+          <canvas id="global-map-canvas" width="900" height="900"></canvas>
+          <div id="global-map-cursor" class="global-map-cursor" aria-hidden="true"></div>
+          <div id="global-encounter-panel" class="global-encounter-panel" aria-hidden="true"></div>
+        </div>
+        <aside class="global-map-side">
+          <div class="global-map-kicker">Маршрут</div>
+          <div id="global-map-route" class="global-map-route">Выберите точку на карте.</div>
+          <div class="global-map-actions">
+            <button id="global-map-enter-btn" class="ui-btn" type="button">Войти</button>
+            <button id="global-map-cancel-btn" class="ui-btn" type="button">Стоп</button>
+          </div>
+          <div class="global-map-kicker">События мира</div>
+          <div id="global-map-world-contacts" class="global-map-world-contacts"></div>
+          <div class="global-map-kicker">Доска работ</div>
+          <div id="global-map-work-board" class="global-map-work-board"></div>
+          <div class="global-map-kicker">Системный журнал</div>
+          <div id="global-map-system-log" class="global-map-system-log" aria-live="polite"></div>
+          <div class="global-map-kicker">Группа</div>
+          <div id="global-map-party" class="global-map-party"></div>
+        </aside>
+      </div>
+    </div>
+
+    <div id="log"></div>
+
+    <div id="weapon-readout" class="ui-panel"></div>
+
+    <div id="quickbar" class="ui-panel"></div>
+
+    <button id="global-fullscreen-btn" class="global-fullscreen-btn" type="button" aria-label="Полноэкранный режим">⛶</button>
+
+    <button id="game-settings-btn" type="button" aria-label="Меню">⚙</button>
+
+    <div id="desktop-minimap-hud" aria-hidden="true">
+      <canvas id="desktop-minimap-canvas" width="220" height="150"></canvas>
+      <div class="mobile-minimap-compass"><span class="n">N</span><span class="s">S</span><span class="w">W</span><span class="e">E</span></div>
+      <div id="desktop-game-time" class="game-time-hud">00:00 · Ночь</div>
+    </div>
+
+    <div id="system-log-panel" class="ui-panel" aria-live="polite">
+      <div id="system-log-head"><span>Система</span><button id="system-log-toggle" type="button" aria-label="Свернуть системные сообщения">−</button></div>
+      <div id="system-log-list"></div>
+    </div>
+
+    <div id="game-settings-panel" class="ui-panel">
+      <div class="panel-title">Меню <button id="settings-close-btn" class="ui-btn" type="button">Закрыть</button></div>
+      <div class="settings-actions">
+        <button id="settings-switch-character-btn" class="ui-btn" type="button">Сменить персонажа</button>
+        <button id="settings-logout-btn" class="ui-btn" type="button">Выйти из аккаунта</button>
+        <button id="settings-edit-hud-btn" class="ui-btn" type="button">Редактировать HUD</button>
+        <button id="settings-reset-hud-btn" class="ui-btn" type="button">Сбросить HUD</button>
+        <button id="settings-graphics-btn" class="ui-btn" type="button">Настройки графики</button>
+      </div>
+      <div class="settings-note">На ПК кнопка ⛶ включает настоящий fullscreen, если браузер разрешит. ESC браузера нельзя заблокировать полностью, поэтому после выхода игра оставляет внутренний полноэкранный режим страницы.</div>
+    </div>
+
+    <div id="tutorial-window" class="ui-panel">
+      <div class="panel-title">Обучение <button id="tutorial-close-btn" class="ui-btn" type="button">Закрыть</button></div>
+      <div class="tutorial-body">
+        <h4>Передвижение</h4>
+        <p>ПК: WASD, мышь — направление взгляда. Телефон: левый палец — движение и авторазворот персонажа, правый — прицел и стрельба удержанием.</p>
+        <h4>Взаимодействие</h4>
+        <p>Кнопка действия работает для торговца, хранилища, контейнеров мира, переходов между локациями, обыска трупов и добычи ресурсов.</p>
+        <h4>Инвентарь</h4>
+        <p>На телефоне предмет можно нажать, а быстрый слот назначается через кнопку ⚡ на карточке предмета.</p>
+        <h4>HUD</h4>
+        <p>Откройте шестерёнку и включите редактирование HUD, затем перетащите элементы интерфейса.</p>
+      </div>
+    </div>
+
+
+
+    <div id="quantity-side-panel" class="ui-panel" aria-hidden="true">
+      <div class="qty-title" id="qty-title">Количество</div>
+      <div class="qty-sub" id="qty-sub">Выберите количество предметов.</div>
+      <div class="qty-row">
+        <button id="qty-dec" type="button">−</button>
+        <input id="qty-value" type="number" min="1" value="1" />
+        <button id="qty-inc" type="button">+</button>
+      </div>
+      <input id="qty-range" type="range" min="1" value="1" />
+      <div class="qty-max-row">
+        <button id="qty-one" type="button">1</button>
+        <button id="qty-half" type="button">1/2</button>
+        <button id="qty-max" type="button">Все</button>
+      </div>
+      <div class="qty-actions">
+        <button id="qty-confirm" class="ui-btn" type="button">ОК</button>
+        <button id="qty-cancel" class="ui-btn" type="button">Отмена</button>
+      </div>
+    </div>
+
+    <div id="action-readout" class="ui-panel"></div>
+
+    <div id="mobile-controls" aria-hidden="true">
+      <div id="touch-move-zone" class="touch-zone" aria-hidden="true"></div>
+      <div id="touch-aim-zone" class="touch-zone" aria-hidden="true"></div>
+      <div id="touch-aim-reticle" aria-hidden="true"></div>
+      <div id="mobile-minimap-hud" aria-hidden="true">
+        <canvas id="mobile-minimap-canvas" width="220" height="150"></canvas>
+        <div class="mobile-minimap-compass"><span class="n">N</span><span class="s">S</span><span class="w">W</span><span class="e">E</span></div>
+        <div id="mobile-game-time" class="game-time-hud">00:00 · Ночь</div>
+      </div>
+      <div class="mobile-left-rail" aria-hidden="false">
+        <button class="mobile-rail-btn" data-mobile-action="inventory" type="button" aria-label="Инвентарь">🎒</button>
+        <button class="mobile-rail-btn" data-mobile-action="map" type="button" aria-label="Карта">◇</button>
+        <button class="mobile-rail-btn" data-mobile-action="talents" type="button" aria-label="Навыки">★</button>
+        <button class="mobile-rail-btn" data-mobile-action="craft" type="button" aria-label="Крафт">⚒</button>
+        <button class="mobile-rail-btn" data-mobile-action="tutorial" type="button" aria-label="Обучение">?</button>
+        <button id="mobile-vision-toggle" class="mobile-rail-btn" data-mobile-action="vision" type="button" aria-label="Затенение обзора">◐</button>
+        <button id="mobile-crouch-toggle" class="mobile-rail-btn" data-mobile-action="crouch" type="button" aria-label="Присесть">⇩</button>
+      </div>
+      <div class="mobile-right-rail" aria-hidden="false">
+        <button class="mobile-rail-btn" data-mobile-action="reload" type="button" aria-label="Перезарядить">⟳</button>
+        <button class="mobile-rail-btn" data-mobile-action="mode" type="button" aria-label="Сменить режим оружия">X</button>
+        <button class="mobile-rail-btn" data-mobile-action="interact" type="button" aria-label="Действие">✋</button>
+      </div>
+      <div class="mobile-quest-panel"><b>Обучение</b><span>Нажмите ? в левом столбце, чтобы открыть подсказки.</span></div>
+      <div class="mobile-chat-panel"><b>Системный канал</b><br><span id="mobile-chat-line">Горизонтальный режим включён.</span></div>
+      <div class="mobile-aim-label"></div>
+      <div id="touch-joystick" class="touch-joystick">
+        <div id="touch-knob" class="touch-knob"></div>
+      </div>
+      <button id="mobile-fullscreen-btn" class="mobile-fullscreen-btn" type="button" aria-label="Полноэкранный режим">⛶</button>
+      <div class="touch-buttons">
+        <button id="touch-fire" class="touch-btn fire" aria-label="Огонь">Огонь</button>
+        <button id="touch-target" class="touch-btn" aria-label="Автоприцел">🎯</button>
+        <button id="touch-interact" class="touch-btn">E<br>Действие</button>
+        <button id="touch-reload" class="touch-btn">R<br>Патроны</button>
+        <button id="touch-mode" class="touch-btn" aria-label="Сменить режим оружия">X<br>Режим</button>
+        <button id="touch-loot" class="touch-btn" aria-label="Действие">E<br>Действие</button>
+        <button id="touch-inventory" class="touch-btn">I<br>Рюкзак</button>
+        <button id="touch-map" class="touch-btn">M<br>Карта</button>
+      </div>
+      <div class="touch-help">Левый стик — движение. Атака — стрельба.</div>
+    </div>
+
+    <div id="mobile-landscape-lock" aria-hidden="false">
+      <div class="landscape-box">
+        <div class="phone-rotate-icon" aria-hidden="true"></div>
+        <h2>Поверните телефон</h2>
+        <p>Мобильная версия Realm of Ashes запускается только горизонтально, как полноценная MMO-панель управления.</p>
+        <button id="landscape-fullscreen-btn" type="button">На весь экран</button>
+      </div>
+    </div>
+
+    <div id="target-hint"></div>
+
+    <div id="loot-window" class="ui-panel modal-panel">
+      <div class="panel-title loot-panel-title"><span id="loot-title">Обыск</span><button id="loot-close" class="ui-btn loot-close-x" aria-label="Закрыть контейнер">×</button></div>
+      <div id="loot-grid"></div>
+      <div class="modal-actions">
+        <button id="loot-all" class="ui-btn">Забрать всё</button>
+      </div>
+    </div>
+
+    <div id="trader-window" class="ui-panel modal-panel barter-window">
+      <div class="panel-title barter-panel-title"><span id="trader-title">БАРТЕР</span><button id="trader-close" class="ui-btn modal-close-x" aria-label="Закрыть торговца">×</button></div>
+      <div class="barter-status-row">
+        <span id="trade-barter-skill">Бартер 0%</span>
+        <span id="trade-carry-projection">Вес 0/0</span>
+      </div>
+      <div class="trade-layout barter-layout">
+        <section class="barter-column barter-player-column">
+          <div class="barter-column-title"><span>Ваши вещи</span><b id="trade-player-caps">0 🪙</b></div>
+          <div id="trader-player-category-tabs" class="item-category-tabs barter-category-tabs" role="tablist" aria-label="Категории вещей игрока"></div>
+          <div id="trader-player-items" class="barter-item-list" aria-label="Инвентарь игрока"></div>
+        </section>
+        <section id="trade-sell-zone" class="trade-sell-zone barter-center" aria-label="Итог обмена"></section>
+        <section class="barter-column barter-vendor-column">
+          <div class="barter-column-title"><span>Товар торговца</span><b id="trade-trader-name">Старый Клим</b></div>
+          <div id="trader-vendor-category-tabs" class="item-category-tabs barter-category-tabs" role="tablist" aria-label="Категории товаров торговца"></div>
+          <div id="trader-grid" class="barter-item-list" aria-label="Товары торговца"></div>
+        </section>
+      </div>
+    </div>
+
+    <div id="storage-window" class="ui-panel modal-panel">
+      <div class="panel-title"><span id="storage-title">Хранилище</span><button id="storage-close" class="ui-btn modal-close-x" aria-label="Закрыть хранилище">×</button></div>
+      <div class="trade-hint">Если предметов много, появится выбор количества. На телефоне нажмите предмет, на ПК можно перетаскивать.</div>
+      <div class="storage-layout">
+        <div class="storage-column">
+          <div class="storage-title"><span>Рюкзак</span><span id="storage-carry-info"></span></div>
+          <div class="storage-sort-actions"><button id="storage-sort-inventory" class="ui-btn" type="button">Сортировать рюкзак</button></div>
+          <div id="storage-inventory-category-tabs" class="item-category-tabs storage-category-tabs" role="tablist" aria-label="Категории рюкзака"></div>
+          <div id="storage-inventory-grid" class="storage-grid"></div>
+        </div>
+        <div class="storage-column">
+          <div class="storage-title"><span>Ящик</span><span id="storage-weight-info"></span></div>
+          <div class="storage-sort-actions"><button id="storage-sort-box" class="ui-btn" type="button">Сортировать ящик</button></div>
+          <div id="storage-category-tabs" class="item-category-tabs storage-category-tabs" role="tablist" aria-label="Категории хранилища"></div>
+          <div id="storage-grid" class="storage-grid"></div>
+        </div>
+      </div>
+      <div class="storage-actions-extra"><button id="storage-put-all" class="ui-btn" type="button">Положить всё</button><button id="storage-take-all" class="ui-btn" type="button">Забрать всё</button></div>
+    </div>
+
+    <div id="controls" class="ui-panel">
+      <b>Управление:</b> курсор — направление взгляда · <b>W</b> — вперёд · <b>S</b> — назад · <b>A</b> — влево · <b>D</b> — вправо · <b>ЛКМ</b> — выстрел в сторону курсора · <b>F</b> — обыскать ближайший труп · <b>Space</b> — забрать весь лут в окне обыска · <b>E</b> — действие рядом / торговля / хранилище / переход · <b>R</b> — перезарядить · <b>X</b> — режим стрельбы · <b>P</b> — крафт · <b>I</b> — инвентарь · <b>B</b> — навыки и перки · <b>M</b> — карта · быстрые слоты заполняются перетаскиванием, перемещаются между собой и очищаются перетаскиванием за границы кнопки · <b>F1</b> — подсказки · <b>Esc</b> — закрыть окно
+    </div>
+
+
+
+    <div id="character-screen" class="visible">
+      <div id="character-card" class="ui-panel">
+        <div class="char-title">
+          <div>
+            <h1 id="character-screen-title">Вход в игру</h1>
+            <p id="character-screen-subtitle">Войдите в серверный аккаунт, чтобы выбрать уже созданного персонажа или создать нового. Прогресс, карта, инвентарь и хранилище привязаны к серверному аккаунту.</p>
+          </div>
+          <div class="char-small-note" id="character-online-note">Проверка профиля...</div>
+        </div>
+        <div id="login-panel" class="auth-step active auth-window-panel">
+          <div class="server-auth-title">
+            <span>Вход</span>
+            <small id="server-current-login">не выполнен вход</small>
+          </div>
+          <form id="server-login-form" class="auth-form" autocomplete="on">
+            <div class="auth-form-grid">
+              <input id="server-login-input" class="char-input" maxlength="32" autocomplete="username" placeholder="Логин" />
+              <input id="server-password-input" class="char-input" maxlength="128" type="password" autocomplete="current-password" placeholder="Пароль" />
+            </div>
+          </form>
+          <div class="auth-buttons">
+            <button id="open-register-btn" class="char-action-btn auth-link-btn">Зарегистрироваться</button>
+            <button id="server-login-btn" class="char-action-btn">Войти</button>
+          </div>
+          <div id="server-auth-status" class="server-auth-status">Войдите, чтобы загрузить персонажей с сервера.</div>
+        </div>
+
+        <div id="register-panel" class="auth-step auth-window-panel">
+          <div class="server-auth-title">
+            <span>Регистрация</span>
+            <small>новый аккаунт</small>
+          </div>
+          <form id="server-register-form" class="auth-form" autocomplete="on">
+            <div class="auth-form-grid">
+              <input id="register-login-input" class="char-input" maxlength="32" autocomplete="username" placeholder="Логин" />
+              <input id="register-password-input" class="char-input" maxlength="128" type="password" autocomplete="new-password" placeholder="Пароль" />
+              <input id="register-password2-input" class="char-input" maxlength="128" type="password" autocomplete="new-password" placeholder="Повторите пароль" />
+            </div>
+          </form>
+          <div class="auth-buttons">
+            <button id="back-login-btn" class="char-action-btn auth-link-btn">Назад ко входу</button>
+            <button id="server-register-btn" class="char-action-btn">Создать аккаунт</button>
+          </div>
+          <div id="server-register-status" class="server-auth-status">После регистрации откроется выбор персонажа.</div>
+        </div>
+
+        <div id="character-select-panel" class="auth-step auth-window-panel">
+          <div class="character-select-head">
+            <div class="server-auth-title" style="margin-bottom:0;">
+              <span>Выбор персонажа</span>
+              <small id="character-select-login">аккаунт</small>
+            </div>
+            <button id="server-logout-btn" class="char-action-btn auth-link-btn">Выйти</button>
+          </div>
+          <div id="character-list" class="character-list"></div>
+          <div class="auth-buttons">
+            <button id="create-new-character-btn" class="char-action-btn">Создать нового персонажа</button>
+          </div>
+          <div id="character-select-status" class="server-auth-status">Выберите персонажа или создайте нового.</div>
+        </div>
+
+        <div id="character-creator-panel" class="auth-step">
+          <div class="char-layout">
+            <div class="char-block">
+              <h3>Имя и SPECIAL</h3>
+              <input id="char-name-input" class="char-input" maxlength="18" placeholder="Имя персонажа" value="" />
+              <div id="char-stats"></div>
+              <div class="char-points">Свободные очки: <b id="char-points-left">5</b></div>
+            </div>
+            <div class="char-block">
+              <h3>Стартовые черты <small id="trait-count">0/2</small></h3>
+              <div id="trait-list"></div>
+            </div>
+            <div class="char-block">
+              <h3>Производные параметры</h3>
+              <div id="char-derived" class="char-derived"></div>
+            </div>
+          </div>
+          <div class="char-actions">
+            <div>
+              <div class="char-small-note">Статы меняют HP, очки действий и базовые параметры. Прогресс, карта, инвентарь и хранилище привязаны к выбранному серверному персонажу.</div>
+              <div id="char-error" class="char-error-note"></div>
+            </div>
+            <div>
+              <button id="back-character-select-btn" class="char-action-btn auth-link-btn">Назад</button>
+              <button id="char-auth-btn" class="char-action-btn">Яндекс-вход</button>
+              <button id="char-start-btn" class="char-action-btn">Создать и начать</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tooltip">
+      <div class="tt-name" id="tt-name"></div>
+      <div class="tt-desc" id="tt-desc"></div>
+      <div class="tt-stat" id="tt-stat"></div>
+    </div>
+
+    <div id="item-context-menu" class="ui-panel"></div>
+
+  
+  <div id="graphics-window" class="window-panel ui-panel graphics-window">
+    <button id="graphics-close" class="window-close-btn graphics-corner-close" type="button" aria-label="Закрыть настройки графики">×</button>
+    <div class="panel-title">
+      <span>Настройки графики</span>
+    </div>
+    <div class="graphics-presets">
+      <button class="ui-btn graphics-preset-btn" data-graphics-quality="low" type="button">Низкая</button>
+      <button class="ui-btn graphics-preset-btn" data-graphics-quality="medium" type="button">Средняя</button>
+      <button class="ui-btn graphics-preset-btn" data-graphics-quality="high" type="button">Высокая</button>
+      <button class="ui-btn graphics-preset-btn" data-graphics-quality="ultra" type="button">Ультра</button>
+    </div>
+    <div id="graphics-current" class="graphics-current">Текущий режим: —</div>
+    <div class="graphics-grid">
+      <div class="graphics-row"><b>Разрешение рендера</b><span id="gfx-pixel-ratio">—</span></div>
+      <div class="graphics-row"><b>Тени</b><span id="gfx-shadows">—</span></div>
+      <div class="graphics-row"><b>Туман войны</b><span id="gfx-fog">—</span></div>
+      <div class="graphics-row"><b>Дальность статики</b><span id="gfx-culling">—</span></div>
+      <div class="graphics-row"><b>Частота обзора</b><span id="gfx-vision-rate">—</span></div>
+      <div class="graphics-row"><b>Эффекты</b><span id="gfx-effects">—</span></div>
+    </div>
+    <div class="graphics-note">
+      Настройки применяются сразу и запоминаются в браузере. Пресеты меняют производительность, но не меняют игровую дальность обзора.
+    </div>
+  </div>
+
+
+  <div id="pause-screen">
+      <div class="box ui-panel">
+        <h2>Окно закрыто</h2>
+        <p>Esc теперь только закрывает открытые окна.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/vendor/three.min.js"></script>
+<script src="/vendor/GLTFLoader.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/game.js?v=7.76.0-network-ping"></script>
+
+</body>
+</html>
+
+<!-- v43: static environment props use fixed transforms; no one-frame rotation snap on login/location rebuild -->

@@ -1,0 +1,465 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "solarArray",
+  "name": "Солнечная станция Ретранслятора",
+  "seed": 20260710,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "production",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "saltFlat",
+    "label": "Светлый солончак"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [],
+  "objects": [
+    {
+      "id": "solar_pole_01",
+      "model": "utilityPole",
+      "name": "Опора станции",
+      "url": "/assets/models/wasteland/utility_pole.glb",
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "solar_pole_02",
+      "model": "utilityPole",
+      "name": "Опора станции",
+      "url": "/assets/models/wasteland/utility_pole.glb",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "solar_energy_bench",
+      "model": "craftStationEnergy",
+      "name": "Энергетический стенд",
+      "url": "/assets/models/wasteland/craft_station_energy.glb",
+      "position": {
+        "x": -1.7,
+        "y": 0,
+        "z": 7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "energy_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "energy_bench"
+      ],
+      "stationSiteId": "solarArray",
+      "worksiteId": "solarArray",
+      "stationOwner": "relay_order",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "solarArray"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "solarArray"
+      }
+    },
+    {
+      "id": "solar_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",
+      "url": "/assets/models/wasteland/craft_station_repair.glb",
+      "position": {
+        "x": 1.7,
+        "y": 0,
+        "z": 7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "solarArray",
+      "worksiteId": "solarArray",
+      "stationOwner": "relay_order",
+      "stationKind": "production",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "solarArray"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "solarArray"
+      }
+    },
+    {
+      "id": "solar_array_trade_machine",
+      "model": "tradeMachine",
+      "name": "Автомат снабжения солнечной станции",
+      "url": "/assets/models/wasteland/trade_machine.glb",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": 7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "tradeMachine",
+        "vendingMachine",
+        "production-market"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "tradeMachine",
+        "role": "productionTradeMachine",
+        "siteId": "solarArray",
+        "traderProfile": "solarArrayMachine",
+        "caps": 130,
+        "buyInterests": [
+          "materials",
+          "ammo",
+          "tools"
+        ],
+        "stock": [
+          {
+            "id": "energyCell",
+            "price": 4,
+            "qty": 96
+          },
+          {
+            "id": "electronics",
+            "price": 8,
+            "qty": 14
+          },
+          {
+            "id": "repairKit",
+            "price": 22,
+            "qty": 4
+          },
+          {
+            "id": "laserPistol",
+            "price": 90,
+            "qty": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": 17,
+        "y": 0,
+        "z": 14
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "tx": 27,
+      "tz": 26,
+      "x": 17,
+      "z": 14,
+      "objectId": "rest_campfire_01",
+      "objectModel": "campfireRest",
+      "authoredObject": true,
+      "vision": {
+        "mode": "none"
+      },
+      "role": "campfire"
+    },
+    {
+      "id": "solarArray_cot_01",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -18,
+        "y": 0,
+        "z": 16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "solarArray_cot_02",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -16,
+        "y": 0,
+        "z": 16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "solarArray_cot_03",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": 16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "solarArray_job_board",
+      "model": "jobBoard",
+      "name": "????? ?????",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": -24,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        },
+        "groundSnap": true
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "solarArray"
+      }
+    }
+  ]
+}

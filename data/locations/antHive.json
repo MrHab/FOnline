@@ -1,0 +1,125 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "antHive",
+  "name": "Муравьиный улей",
+  "seed": 20260710,
+  "safe": false,
+  "pvpMode": "pvpFullDrop",
+  "kind": "lair",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "dryBasin",
+    "label": "Сухие туннели"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [],
+  "objects": [
+    {
+      "id": "ant_mound_01",
+      "model": "rubbleRock",
+      "name": "Муравьиный холм",
+      "url": "/assets/models/wasteland/rubble_rock.glb",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": -6
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1.4,
+        "y": 0.8,
+        "z": 1.4
+      },
+      "collision": "cover",
+      "tags": [
+        "cover"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "ant_debris_01",
+      "model": "perimeterDebris",
+      "name": "Разбросанные кости",
+      "url": "/assets/models/wasteland/perimeter_debris.glb",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "debris"
+      ]
+    },
+    {
+      "id": "ant_deadwood_01",
+      "model": "deadwood",
+      "name": "Сухие ветки",
+      "url": "/assets/models/wasteland/deadwood.glb",
+      "position": {
+        "x": 2,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "debris"
+      ]
+    }
+  ]
+}

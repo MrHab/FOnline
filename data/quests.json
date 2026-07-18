@@ -1,0 +1,105 @@
+{
+  "schema": "realm.quests.v1",
+  "version": 1,
+  "quests": {
+    "klimSupplies": {
+      "id": "klimSupplies",
+      "title": "Старый Клим",
+      "name": "Припасы для поселения",
+      "initialState": "available",
+      "requirements": {
+        "items": {
+          "ore": 3,
+          "wood": 3,
+          "water": 1
+        },
+        "labels": {
+          "ore": "Руда",
+          "wood": "Древесина",
+          "water": "Вода"
+        }
+      },
+      "reward": {
+        "xp": 55,
+        "silver": 42,
+        "items": []
+      },
+      "panel": {
+        "active": "Соберите припасы для поселения.",
+        "done": "Припасы переданы Старому Климу."
+      },
+      "unlocks": ["klimTerminal"]
+    },
+    "klimTerminal": {
+      "id": "klimTerminal",
+      "title": "Старый Клим",
+      "name": "Данные с ржавого терминала",
+      "initialState": "locked",
+      "requirements": {
+        "event": "klimTerminalHacked"
+      },
+      "reward": {
+        "xp": 70,
+        "silver": 65,
+        "items": []
+      },
+      "panel": {
+        "active": "Взломайте терминал редкого тайника в Пепельном лесу.",
+        "ready": "Вернитесь к Климу за наградой.",
+        "done": "Данные терминала переданы Старому Климу."
+      }
+    },
+    "scrapParts": {
+      "id": "scrapParts",
+      "title": "Грач-Жестянщик",
+      "name": "Детали для свалочного пресса",
+      "initialState": "available",
+      "requirements": {
+        "items": {
+          "ore": 6,
+          "wood": 2,
+          "repairKit": 1
+        },
+        "labels": {
+          "ore": "Руда",
+          "wood": "Древесина",
+          "repairKit": "Ремкомплект"
+        }
+      },
+      "reward": {
+        "xp": 85,
+        "silver": 70,
+        "items": []
+      },
+      "panel": {
+        "active": "Соберите детали для свалочного пресса.",
+        "done": "Пресс снова работает."
+      }
+    },
+    "relayCalibration": {
+      "id": "relayCalibration",
+      "title": "Рада Искра",
+      "name": "Калибровка ретранслятора",
+      "initialState": "available",
+      "requirements": {
+        "items": {
+          "energyCell": 20,
+          "repairKit": 1
+        },
+        "labels": {
+          "energyCell": "Энергозаряды",
+          "repairKit": "Ремкомплект"
+        }
+      },
+      "reward": {
+        "xp": 95,
+        "silver": 90,
+        "items": []
+      },
+      "panel": {
+        "active": "Подготовьте расходники для ретранслятора.",
+        "done": "Ретранслятор откалиброван."
+      }
+    }
+  }
+}

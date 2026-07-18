@@ -1,0 +1,151 @@
+{
+  "schema": "realm.traders.v1",
+  "version": 1,
+  "profiles": {
+    "oldKlim": {
+      "name": "Old Klim",
+      "dialogueProfile": "oldKlim",
+      "caps": 720,
+      "restockHours": 24,
+      "quests": ["klimSupplies", "klimTerminal"],
+      "buyInterests": ["materials", "tools", "weapons", "armor", "aid", "ammo"],
+      "stock": [
+        { "id": "ammo9", "price": 2, "qty": 90 },
+        { "id": "ammo556", "price": 4, "qty": 75 },
+        { "id": "shotgunShell", "price": 5, "qty": 36 },
+        { "id": "stim", "price": 12, "qty": 8 },
+        { "id": "medkit", "price": 22, "qty": 5 },
+        { "id": "doctorBag", "price": 38, "qty": 2 },
+        { "id": "antibiotics", "price": 28, "qty": 4 },
+        { "id": "water", "price": 5, "qty": 10 },
+        { "id": "oil", "price": 9, "qty": 6 },
+        { "id": "repairKit", "price": 20, "qty": 4 },
+        { "id": "pickaxe", "price": 18, "qty": 2 },
+        { "id": "axe", "price": 16, "qty": 2 },
+        { "id": "handPump", "price": 24, "qty": 1 },
+        { "id": "rifle", "price": 80, "qty": 2 },
+        { "id": "shotgun", "price": 150, "qty": 1 },
+        { "id": "leather", "price": 28, "qty": 2 },
+        { "id": "ballisticVest", "price": 86, "qty": 1 },
+        { "id": "helmet", "price": 18, "qty": 2 },
+        { "id": "backpack", "price": 34, "qty": 1 }
+      ]
+    },
+    "caravan": {
+      "name": "Caravan merchant",
+      "dialogueProfile": "caravan",
+      "caps": 520,
+      "restockHours": 24,
+      "buyInterests": ["ammo", "aid", "tools", "materials", "weapons"],
+      "stock": [
+        { "id": "water", "price": 6, "qty": 12 },
+        { "id": "oil", "price": 10, "qty": 5 },
+        { "id": "stim", "price": 13, "qty": 6 },
+        { "id": "medkit", "price": 24, "qty": 3 },
+        { "id": "ammo9", "price": 3, "qty": 90 },
+        { "id": "ammo556", "price": 5, "qty": 60 },
+        { "id": "shotgunShell", "price": 6, "qty": 24 },
+        { "id": "repairKit", "price": 22, "qty": 2 },
+        { "id": "handPump", "price": 26, "qty": 1 },
+        { "id": "leather", "price": 30, "qty": 1 },
+        { "id": "backpack", "price": 36, "qty": 1 }
+      ]
+    },
+    "guardKlimPatrol": {
+      "name": "Old Klim patrol",
+      "dialogueProfile": "guardKlimPatrol",
+      "caps": 90,
+      "restockHours": 24,
+      "buyInterests": ["ammo", "weapons", "armor", "aid"],
+      "stock": [
+        { "id": "ammo556", "price": 5, "qty": 28 },
+        { "id": "shotgunShell", "price": 6, "qty": 14 },
+        { "id": "ammo9", "price": 3, "qty": 24 },
+        { "id": "stim", "price": 13, "qty": 2 },
+        { "id": "water", "price": 6, "qty": 2 }
+      ]
+    },
+    "guardCaravan": {
+      "name": "Caravan guard",
+      "dialogueProfile": "guardCaravan",
+      "caps": 70,
+      "restockHours": 24,
+      "buyInterests": ["ammo", "aid", "tools", "materials"],
+      "stock": [
+        { "id": "ammo9", "price": 3, "qty": 30 },
+        { "id": "ammo556", "price": 5, "qty": 24 },
+        { "id": "water", "price": 6, "qty": 2 },
+        { "id": "stim", "price": 13, "qty": 2 }
+      ]
+    },
+    "outpostMachine": {
+      "name": "Outpost vending machine",
+      "dialogueProfile": "tradeMachine",
+      "caps": 350,
+      "restockHours": 24,
+      "buyInterests": ["materials", "tools", "aid", "ammo"],
+      "stock": [
+        { "id": "water", "price": 6, "qty": 12 },
+        { "id": "stim", "price": 13, "qty": 6 },
+        { "id": "medkit", "price": 24, "qty": 3 },
+        { "id": "ammo9", "price": 3, "qty": 90 },
+        { "id": "ammo556", "price": 5, "qty": 60 },
+        { "id": "shotgunShell", "price": 6, "qty": 24 },
+        { "id": "repairKit", "price": 22, "qty": 3 },
+        { "id": "oil", "price": 10, "qty": 5 }
+      ]
+    },
+    "scrap": {
+      "name": "Scrap post trader",
+      "dialogueProfile": "scrap",
+      "caps": 460,
+      "restockHours": 24,
+      "quests": ["scrapParts"],
+      "buyInterests": ["materials", "tools", "weapons", "armor"],
+      "stock": [
+        { "id": "repairKit", "price": 18, "qty": 4 },
+        { "id": "pickaxe", "price": 16, "qty": 2 },
+        { "id": "axe", "price": 15, "qty": 2 },
+        { "id": "handPump", "price": 22, "qty": 2 },
+        { "id": "scrap", "price": 3, "qty": 18 },
+        { "id": "oil", "price": 8, "qty": 8 },
+        { "id": "ammo9", "price": 2, "qty": 90 },
+        { "id": "ammo556", "price": 4, "qty": 80 },
+        { "id": "shotgunShell", "price": 5, "qty": 28 },
+        { "id": "pistol", "price": 48, "qty": 1 },
+        { "id": "rifle", "price": 78, "qty": 1 },
+        { "id": "shotgun", "price": 138, "qty": 1 },
+        { "id": "metalArmor", "price": 54, "qty": 1 },
+        { "id": "ballisticVest", "price": 82, "qty": 1 },
+        { "id": "scoutBoots", "price": 20, "qty": 1 },
+        { "id": "backpack", "price": 32, "qty": 1 },
+        { "id": "water", "price": 6, "qty": 5 }
+      ]
+    },
+    "relay": {
+      "name": "Relay station trader",
+      "dialogueProfile": "relay",
+      "caps": 640,
+      "restockHours": 24,
+      "quests": ["relayCalibration"],
+      "buyInterests": ["tools", "ammo", "weapons", "armor"],
+      "stock": [
+        { "id": "energyCell", "price": 4, "qty": 120 },
+        { "id": "laserPistol", "price": 128, "qty": 1 },
+        { "id": "plasmaRifle", "price": 232, "qty": 1 },
+        { "id": "flamethrower", "price": 198, "qty": 1 },
+        { "id": "oil", "price": 9, "qty": 14 },
+        { "id": "repairKit", "price": 18, "qty": 3 },
+        { "id": "hazmatSuit", "price": 88, "qty": 1 },
+        { "id": "energySuit", "price": 138, "qty": 1 },
+        { "id": "tacticalHelmet", "price": 32, "qty": 1 },
+        { "id": "assaultHelmet", "price": 50, "qty": 1 },
+        { "id": "doctorBag", "price": 36, "qty": 2 },
+        { "id": "antibiotics", "price": 26, "qty": 4 },
+        { "id": "medkit", "price": 21, "qty": 4 },
+        { "id": "rocketAmmo", "price": 22, "qty": 4 },
+        { "id": "water", "price": 6, "qty": 4 }
+      ]
+    }
+  }
+}

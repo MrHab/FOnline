@@ -1,0 +1,234 @@
+{
+  "schema": "realm.location.v1",
+  "version": 1,
+  "id": "resourceSiliconRidge",
+  "name": "Кремниевая гряда",
+  "seed": 20260710,
+  "safe": false,
+  "pvpMode": "pvp",
+  "kind": "resource",
+  "randomTemplate": false,
+  "noRespawn": true,
+  "enemyCap": 0,
+  "spawnCount": 0,
+  "ground": {
+    "preset": "rockyHills",
+    "label": "Каменистая гряда"
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 24
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 24
+  },
+  "worldZones": [
+    {
+      "id": "world_exit_edges",
+      "label": "Уйти на глобальную карту",
+      "tx": 19,
+      "tz": 2,
+      "radius": 4
+    }
+  ],
+  "containers": [],
+  "objects": [
+    {
+      "id": "silicon_ore_01",
+      "model": "oreOutcrop",
+      "name": "Кремниевая жила",
+      "url": "/assets/models/wasteland/ore_outcrop.glb",
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": -7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "ore"
+      ],
+      "resourceType": "ore",
+      "hp": 6,
+      "maxHp": 6,
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "silicon_relay_01",
+      "model": "relayAntenna",
+      "name": "Разобранная антенна",
+      "url": "/assets/models/wasteland/relay_antenna.glb",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 0.8,
+        "y": 0.8,
+        "z": 0.8
+      },
+      "collision": "cover",
+      "tags": [
+        "cover",
+        "electronics"
+      ],
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "silicon_scrap_01",
+      "model": "scrapHeap",
+      "name": "Электронный лом",
+      "url": "/assets/models/wasteland/scrap_heap.glb",
+      "position": {
+        "x": 5,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "resource",
+      "tags": [
+        "resource",
+        "scrap"
+      ],
+      "resourceType": "scrap",
+      "hp": 5,
+      "maxHp": 5
+    },
+    {
+      "id": "rest_campfire_01",
+      "model": "campfireRest",
+      "name": "Место отдыха",
+      "url": "/assets/models/wasteland/campfire_rest.glb",
+      "position": {
+        "x": -13,
+        "y": 0,
+        "z": 16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [
+        "rest",
+        "social",
+        "campfire"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "tx": 12,
+      "tz": 27,
+      "x": -13,
+      "z": 16,
+      "objectId": "rest_campfire_01",
+      "objectModel": "campfireRest",
+      "authoredObject": true,
+      "vision": {
+        "mode": "none"
+      },
+      "role": "campfire"
+    },
+    {
+      "id": "resourceSiliconRidge_job_board",
+      "model": "jobBoard",
+      "name": "????? ?????",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": -24,
+        "y": 0,
+        "z": -16
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        },
+        "groundSnap": true
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard",
+        "boardSiteId": "siliconRidge"
+      }
+    }
+  ]
+}

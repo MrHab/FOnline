@@ -13,13 +13,11 @@
     return;
   }
 
-  // ===== YANDEX GAMES / ONLINE SAVE =====
-  const SAVE_KEY = 'realm_of_ashes_save_v1';
+  // ===== PLATFORM SERVICES / SERVER CHARACTER SAVE =====
   const LEADERBOARD_NAME = 'wasteland_xp';
   let ysdk = null;
   let yandexPlayer = null;
   let yandexPlayerName = '';
-  let onlineSaveAvailable = false;
   let gameStarted = false;
   let characterProfile = null;
   let saveDirty = false;
@@ -43,6 +41,7 @@
   const SERVER_URL_KEY = 'realm_of_ashes_server_url_v1';
   const SERVER_DEVICE_KEY = 'realm_of_ashes_device_id_v1';
   const SERVER_CLIENT_INSTANCE_KEY = 'realm_of_ashes_client_instance_v1';
+  try { localStorage.removeItem('realm_of_ashes_save_v1'); } catch (_) {}
   const PAGE_CLIENT_INSTANCE_ID = (() => {
     const rnd = (window.crypto && crypto.getRandomValues) ? Array.from(crypto.getRandomValues(new Uint8Array(18)), b => b.toString(16).padStart(2, '0')).join('') : Math.random().toString(36).slice(2) + Date.now().toString(36);
     return `tab_${rnd}`.slice(0, 64);
@@ -222,18 +221,15 @@
       try { ysdk.features?.LoadingAPI?.ready(); } catch (_) {}
       try {
         yandexPlayer = await ysdk.getPlayer();
-        onlineSaveAvailable = true;
         yandexPlayerName = yandexPlayer.isAuthorized && yandexPlayer.isAuthorized() ? (yandexPlayer.getName() || '') : '';
-        setOnlineStatus(yandexPlayerName ? `Профиль: облако · ${yandexPlayerName}` : 'Профиль: облако · без входа');
+        setOnlineStatus(yandexPlayerName ? `Платформа: Яндекс · ${yandexPlayerName}` : 'Платформа: Яндекс · без входа');
       } catch (e) {
-        onlineSaveAvailable = false;
-        setOnlineStatus('Профиль: локально');
+        setOnlineStatus('Сохранение: игровой сервер');
       }
     } catch (err) {
       ysdk = null;
       yandexPlayer = null;
-      onlineSaveAvailable = false;
-      setOnlineStatus('Профиль: локально');
+      setOnlineStatus('Сохранение: игровой сервер');
     }
   }
 
@@ -245,15 +241,14 @@
     try {
       await ysdk.auth.openAuthDialog();
       yandexPlayer = await ysdk.getPlayer();
-      onlineSaveAvailable = true;
       yandexPlayerName = yandexPlayer.getName ? (yandexPlayer.getName() || '') : '';
-      setOnlineStatus(yandexPlayerName ? `Профиль: облако · ${yandexPlayerName}` : 'Профиль: облако');
+      setOnlineStatus(yandexPlayerName ? `Платформа: Яндекс · ${yandexPlayerName}` : 'Платформа: Яндекс');
       const nameInput = document.getElementById('char-name-input');
       if (nameInput && !nameInput.value.trim() && yandexPlayerName) {
         nameInput.value = yandexPlayerName.slice(0, 18);
       }
     } catch (e) {
-      setReadout('Вход отменён. Можно играть с локальным профилем.');
+      setReadout('Вход в Яндекс отменён. Сохранение персонажа остаётся на игровом сервере.');
     }
   }
 
@@ -263,6 +258,7 @@
   let selectedServerCharacterId = localStorage.getItem(SERVER_CHARACTER_KEY) || '';
   let activeCharacterLeaseId = '';
   let serverCharacters = [];
+  let characterDeletePendingId = '';
   let authScreenStep = 'login';
 
   function escapeHtml(value) {
@@ -289,7 +285,7 @@
     } else if (step === 'select') {
       setCharacterScreenTitle('Выбор персонажа', 'Выберите существующего персонажа или создайте нового.');
     } else if (step === 'create') {
-      setCharacterScreenTitle('Создание персонажа', 'Введите имя, распределите SPECIAL и выберите до двух стартовых черт. После повышения уровня очки распределяются в отдельные навыки.');
+      setCharacterScreenTitle('Создание персонажа', 'Введите имя, распределите SPECIAL и обязательно выберите 1–2 профильных навыка и 1–2 стартовых перка.');
       renderCharacterCreator();
     }
   }
@@ -439,6 +435,12 @@
   function renderCharacterSelect() {
     const list = document.getElementById('character-list');
     if (!list) return;
+    const controlsLocked = !!characterDeletePendingId;
+    const createButton = document.getElementById('create-new-character-btn');
+    const logoutButton = document.getElementById('server-logout-btn');
+    if (createButton) createButton.disabled = controlsLocked;
+    if (logoutButton) logoutButton.disabled = controlsLocked;
+    list.setAttribute('aria-busy', controlsLocked ? 'true' : 'false');
     list.innerHTML = '';
     if (!serverCharacters.length) {
       const empty = document.createElement('div');
@@ -451,16 +453,90 @@
       const row = document.createElement('div');
       row.className = 'character-card-row';
       const updated = ch.updatedAt ? new Date(ch.updatedAt).toLocaleString() : 'нет даты';
+      const deletingThisCharacter = characterDeletePendingId === ch.id;
       row.innerHTML = `
         <div>
           <div class="character-card-name">☢ ${escapeHtml(ch.name || 'Без имени')}</div>
           <div class="character-card-meta">Уровень ${Number(ch.level || 1)} · Локация: ${escapeHtml(serverCharacterLocationLabel(ch.locationId))} · обновлён: ${escapeHtml(updated)}</div>
         </div>
-        <button class="char-action-btn">Играть</button>
+        <div class="character-card-actions">
+          <button type="button" class="char-action-btn" data-character-play data-character-id="${escapeHtml(ch.id)}" ${controlsLocked ? 'disabled' : ''}>Играть</button>
+          <button type="button" class="char-action-btn character-delete-btn" data-character-delete data-character-id="${escapeHtml(ch.id)}" aria-label="Удалить персонажа ${escapeHtml(ch.name || 'Без имени')}" ${controlsLocked ? 'disabled' : ''}>${deletingThisCharacter ? 'Удаление…' : 'Удалить'}</button>
+        </div>
       `;
-      row.querySelector('button').addEventListener('click', () => selectServerCharacter(ch.id));
+      row.querySelector('[data-character-play]')?.addEventListener('click', () => selectServerCharacter(ch.id));
+      row.querySelector('[data-character-delete]')?.addEventListener('click', () => requestDeleteServerCharacter(ch));
       list.appendChild(row);
     });
+  }
+
+  async function clearDeletedCharacterClientState(characterId) {
+    const id = String(characterId || '');
+    const deletingSelected = selectedServerCharacterId === id || characterProfile?.serverCharacterId === id;
+    if (!deletingSelected) return;
+    selectedServerCharacterId = '';
+    activeCharacterLeaseId = '';
+    characterProfile = null;
+    saveDirty = false;
+    saveTimer = 0;
+    localStorage.removeItem(SERVER_CHARACTER_KEY);
+    if (typeof multiplayer === 'object' && multiplayer) {
+      multiplayer.characterLeaseId = '';
+      multiplayer.joined = false;
+    }
+  }
+
+  async function deleteServerCharacter(character = {}) {
+    const characterId = String(character.id || '');
+    if (!characterId || characterDeletePendingId) return;
+    let deleted = false;
+    characterDeletePendingId = characterId;
+    renderCharacterSelect();
+    setCharacterSelectStatus(`Удаляю персонажа «${character.name || 'Без имени'}»...`);
+    try {
+      const data = await serverApi(`/api/characters/${encodeURIComponent(characterId)}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ confirmCharacterId: characterId })
+      });
+      await clearDeletedCharacterClientState(characterId);
+      serverCharacters = Array.isArray(data.characters) ? data.characters : [];
+      deleted = true;
+      setCharacterSelectStatus(
+        serverCharacters.length
+          ? `Персонаж «${character.name || 'Без имени'}» удалён.`
+          : 'Персонаж удалён. На аккаунте больше нет персонажей.',
+        'ok'
+      );
+    } catch (err) {
+      setCharacterSelectStatus(`Не удалось удалить персонажа: ${err.message}`, 'err');
+    } finally {
+      characterDeletePendingId = '';
+      renderCharacterSelect();
+      const retryDelete = !deleted
+        ? [...document.querySelectorAll('#character-list [data-character-delete]')]
+          .find(button => button.dataset.characterId === characterId)
+        : null;
+      const nextAction = retryDelete
+        || document.querySelector('#character-list [data-character-play]')
+        || document.getElementById('create-new-character-btn');
+      setTimeout(() => nextAction?.focus(), 0);
+    }
+  }
+
+  function requestDeleteServerCharacter(character = {}) {
+    if (!character.id || characterDeletePendingId) return;
+    const opened = openGameConfirmPanel({
+      kicker: 'Удаление персонажа',
+      title: 'Удалить персонажа навсегда?',
+      itemName: character.name || 'Без имени',
+      body: `Уровень ${Number(character.level || 1)}. Всё серверное сохранение этого персонажа будет удалено.`,
+      note: 'Действие необратимо. Инвентарь, прогресс, карта и задания восстановить нельзя.',
+      iconText: '☠',
+      confirmLabel: 'Удалить',
+      cancelLabel: 'Оставить',
+      onConfirm: () => deleteServerCharacter(character)
+    });
+    if (!opened) setCharacterSelectStatus('Не удалось открыть подтверждение удаления.', 'err');
   }
 
   async function showCharacterSelect(message = '') {
@@ -479,6 +555,10 @@
   }
 
   async function selectServerCharacter(characterId) {
+    if (characterDeletePendingId) {
+      setCharacterSelectStatus('Дождитесь завершения удаления персонажа.', '');
+      return;
+    }
     if (!serverSession.token) {
       setAuthStep('login');
       setServerAuthStatus('Сначала войдите в аккаунт.', 'err');
@@ -545,6 +625,7 @@
 
   function resetCharacterCreationForm() {
     creatorStats = Object.fromEntries(specialStatDefs().map(s => [s.key, 5]));
+    creatorSkills = [];
     creatorTraits = [];
     const nameInput = document.getElementById('char-name-input');
     if (nameInput) nameInput.value = '';
@@ -552,6 +633,10 @@
   }
 
   function startNewCharacterCreation() {
+    if (characterDeletePendingId) {
+      setCharacterSelectStatus('Дождитесь завершения удаления персонажа.', '');
+      return;
+    }
     if (!serverSession.token) {
       setAuthStep('login');
       setServerAuthStatus('Сначала войдите или зарегистрируйтесь.', 'err');
@@ -564,6 +649,10 @@
   }
 
   async function serverLogout() {
+    if (characterDeletePendingId) {
+      setCharacterSelectStatus('Дождитесь завершения удаления персонажа.', '');
+      return;
+    }
     try { saveGame(true); } catch (_) {}
     try {
       if (serverSession.token) await serverApi('/api/auth/logout', { method: 'POST' });
@@ -581,6 +670,7 @@
     characterProfile = null;
     selectedServerCharacterId = '';
     activeCharacterLeaseId = '';
+    characterDeletePendingId = '';
     const screen = document.getElementById('character-screen');
     if (screen) screen.classList.add('visible');
     setAuthStep('login');
@@ -651,7 +741,7 @@
   }
 
   async function saveServerState(state) {
-    if (!serverSession.token || !state) return false;
+    if (!serverSession.token || !selectedServerCharacterId || !state) return false;
     if (!activeCharacterLeaseId) {
       // v7.74.67: a tab that has not received the server character lease must
       // never write an online character. This blocks duplicate/background tabs
@@ -659,8 +749,8 @@
       return false;
     }
     try {
-      let characterId = characterIdForState(state);
-      if (!characterId) characterId = makeNewCharacterId();
+      const characterId = characterIdForState(state);
+      if (!characterId || characterId !== selectedServerCharacterId) return false;
       selectedServerCharacterId = characterId;
       if (!state.characterProfile) state.characterProfile = {};
       state.characterProfile.serverCharacterId = characterId;

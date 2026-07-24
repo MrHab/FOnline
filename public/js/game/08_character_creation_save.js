@@ -19,7 +19,10 @@
     { id: 'craftsmanStart', icon: '⚒️', name: 'Ремесленник', desc: 'Стартовый ремкомплект и бонус к сбору ресурсов.' },
     { id: 'educatedStart', icon: '📚', name: 'Образованный', desc: '+5 свободных очков навыков после создания персонажа.' }
   ];
+  const CREATOR_MAX_SKILLS = 2;
+  const CREATOR_MAX_PERKS = 2;
   let creatorStats = Object.fromEntries(STAT_DEFS.map(s => [s.key, 5]));
+  let creatorSkills = [];
   let creatorTraits = [];
 
   function effectiveSpecialStats(profile = characterProfile) {
@@ -92,7 +95,11 @@
 
   function creatorSkillBasePreview(stats = creatorStats) {
     const calc = id => {
-      if (typeof skillBasePercent === 'function') return skillBasePercent(id, { special: stats, traits: creatorTraits });
+      if (typeof skillBasePercent === 'function') return skillBasePercent(id, {
+        special: stats,
+        traits: creatorTraits,
+        taggedSkills: creatorSkills
+      });
       return 20;
     };
     const rows = [
@@ -109,11 +116,13 @@
   function renderCharacterCreator() {
     const statBox = document.getElementById('char-stats');
     const pointsEl = document.getElementById('char-points-left');
+    const skillsEl = document.getElementById('creator-skill-list');
+    const skillCount = document.getElementById('creator-skill-count');
     const traitsEl = document.getElementById('trait-list');
     const traitCount = document.getElementById('trait-count');
     const derivedEl = document.getElementById('char-derived');
     const startBtn = document.getElementById('char-start-btn');
-    if (!statBox || !traitsEl || !derivedEl) return;
+    if (!statBox || !skillsEl || !traitsEl || !derivedEl) return;
     const points = creatorPointsLeft();
     statBox.innerHTML = '';
     STAT_DEFS.forEach(def => {
@@ -142,21 +151,45 @@
       statBox.appendChild(row);
     });
     if (pointsEl) pointsEl.textContent = points;
+    skillsEl.innerHTML = '';
+    SKILLS.forEach(skill => {
+      const selected = creatorSkills.includes(skill.id);
+      const baseWithoutTag = skillBasePercent(skill.id, { special: creatorStats, traits: creatorTraits, taggedSkills: [] });
+      const baseWithTag = skillBasePercent(skill.id, { special: creatorStats, traits: creatorTraits, taggedSkills: [skill.id] });
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'trait-card creator-skill-card' + (selected ? ' selected' : '');
+      card.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      card.innerHTML = `
+        <div class="trait-title">${escapeHtml(skill.icon)} ${escapeHtml(skill.name)}</div>
+        <div class="trait-desc">${escapeHtml(skill.group)} · база ${baseWithoutTag}% → ${baseWithTag}%</div>
+      `;
+      card.addEventListener('click', () => {
+        if (selected) creatorSkills = creatorSkills.filter(id => id !== skill.id);
+        else if (creatorSkills.length < CREATOR_MAX_SKILLS) creatorSkills.push(skill.id);
+        else setReadout(`Можно выбрать не больше ${CREATOR_MAX_SKILLS} профильных навыков.`);
+        renderCharacterCreator();
+      });
+      skillsEl.appendChild(card);
+    });
+    if (skillCount) skillCount.textContent = `${creatorSkills.length}/${CREATOR_MAX_SKILLS}`;
     traitsEl.innerHTML = '';
     START_TRAITS.forEach(trait => {
       const selected = creatorTraits.includes(trait.id);
-      const card = document.createElement('div');
+      const card = document.createElement('button');
+      card.type = 'button';
       card.className = 'trait-card' + (selected ? ' selected' : '');
+      card.setAttribute('aria-pressed', selected ? 'true' : 'false');
       card.innerHTML = `<div class="trait-title">${trait.icon} ${trait.name}</div><div class="trait-desc">${trait.desc}</div>`;
       card.addEventListener('click', () => {
         if (selected) creatorTraits = creatorTraits.filter(id => id !== trait.id);
-        else if (creatorTraits.length < 2) creatorTraits.push(trait.id);
-        else setReadout('Можно выбрать не больше двух стартовых черт.');
+        else if (creatorTraits.length < CREATOR_MAX_PERKS) creatorTraits.push(trait.id);
+        else setReadout(`Можно выбрать не больше ${CREATOR_MAX_PERKS} стартовых перков.`);
         renderCharacterCreator();
       });
       traitsEl.appendChild(card);
     });
-    if (traitCount) traitCount.textContent = `${creatorTraits.length}/2`;
+    if (traitCount) traitCount.textContent = `${creatorTraits.length}/${CREATOR_MAX_PERKS}`;
     const d = derivedFromStats(creatorStats, creatorTraits);
     derivedEl.innerHTML = `
       <div>ОЗ: <b>${d.maxHp}</b></div>
@@ -173,15 +206,24 @@
     `;
     const name = (document.getElementById('char-name-input')?.value || '').trim();
     if (startBtn) {
-      startBtn.disabled = false;
+      const ready = !!serverSession.token
+        && points === 0
+        && name.length >= 2
+        && creatorSkills.length > 0
+        && creatorTraits.length > 0;
+      startBtn.disabled = !ready;
       startBtn.dataset.gameHint = !serverSession.token
         ? 'Сначала войдите или зарегистрируйтесь на сервере.'
         : (points !== 0
           ? `Нужно распределить ещё ${points} очк.`
-          : (name.length < 2 ? 'Введите имя персонажа.' : 'Начать игру'));
+          : (name.length < 2
+            ? 'Введите имя персонажа.'
+            : (!creatorSkills.length
+              ? 'Выберите хотя бы один профильный навык.'
+              : (!creatorTraits.length ? 'Выберите хотя бы один стартовый перк.' : 'Начать игру'))));
       startBtn.removeAttribute('title');
     }
-    if (points === 0 && name.length >= 2) setCharacterNotice('');
+    if (points === 0 && name.length >= 2 && creatorSkills.length > 0 && creatorTraits.length > 0) setCharacterNotice('');
   }
 
   function applyCharacterProfile(profile, resetVitals = false) {
@@ -240,10 +282,21 @@
       renderCharacterCreator();
       return;
     }
+    if (!creatorSkills.length) {
+      setCharacterNotice('Выберите хотя бы один профильный навык.');
+      renderCharacterCreator();
+      return;
+    }
+    if (!creatorTraits.length) {
+      setCharacterNotice('Выберите хотя бы один стартовый перк.');
+      renderCharacterCreator();
+      return;
+    }
     const profile = {
       name: rawName.slice(0, 18),
       special: { ...creatorStats },
-      traits: creatorTraits.slice(0, 2),
+      taggedSkills: creatorSkills.slice(0, CREATOR_MAX_SKILLS),
+      traits: creatorTraits.slice(0, CREATOR_MAX_PERKS),
       createdAt: Date.now(),
       yandexName: yandexPlayerName || '',
       lastVisitedSettlementId: 'settlement',
@@ -543,29 +596,19 @@
 
   async function loadPersistedState(options = {}) {
     if (!options.skipServer && serverSession.token && selectedServerCharacterId) {
-      const serverState = await loadServerState();
-      if (serverState) return serverState;
+      return await loadServerState();
     }
-    try {
-      if (onlineSaveAvailable && yandexPlayer && yandexPlayer.getData) {
-        const data = await yandexPlayer.getData([SAVE_KEY]);
-        if (data && data[SAVE_KEY]) return data[SAVE_KEY];
-      }
-    } catch (e) {}
-    try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+    return null;
   }
 
   async function saveGame(flush = false) {
     const state = serializeGameState();
     if (!state) return;
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
-    await saveServerState(state);
-    if (onlineSaveAvailable && yandexPlayer && yandexPlayer.setData) {
-      try { await yandexPlayer.setData({ [SAVE_KEY]: state }, !!flush); } catch (e) {}
-    }
+    const savingCharacterId = String(state.characterProfile?.serverCharacterId || '');
+    const saved = await saveServerState(state);
+    if (!saved) return;
+    const currentCharacterId = String(characterProfile?.serverCharacterId || '');
+    if (savingCharacterId && savingCharacterId !== currentCharacterId) return;
     if (ysdk && ysdk.leaderboards && player.level > 1) {
       try {
         const ok = ysdk.isAvailableMethod ? await ysdk.isAvailableMethod('leaderboards.setScore') : true;
@@ -612,4 +655,3 @@
     }
     renderUI();
   }
-

@@ -482,15 +482,8 @@ async function assertAuthApiLifecycle() {
     fail('characters response is incomplete', characters.body);
   }
 
-  const save = await request('/api/save', { headers });
-  assertStatus(save, 200, 'GET /api/save');
-  const saveData = parseJsonResponse(save, 'GET /api/save');
-  if (!saveData.ok || !Array.isArray(saveData.characters)) {
-    fail('save response is incomplete', save.body);
-  }
-
   const characterId = `c_smoke_${suffix}`;
-  const blockedSave = await request('/api/save', {
+  const blockedSave = await request(`/api/characters/${encodeURIComponent(characterId)}/save`, {
     method: 'POST',
     headers,
     json: {
@@ -504,10 +497,10 @@ async function assertAuthApiLifecycle() {
       }
     }
   });
-  assertStatus(blockedSave, 409, 'POST /api/save without character lease');
-  const blockedSaveData = parseJsonResponse(blockedSave, 'POST /api/save without character lease');
+  assertStatus(blockedSave, 404, 'POST save for missing character');
+  const blockedSaveData = parseJsonResponse(blockedSave, 'POST save for missing character');
   if (blockedSaveData.ok || !blockedSaveData.error) {
-    fail('save without character lease was not rejected with an error', blockedSave.body);
+    fail('save for missing character was not rejected with an error', blockedSave.body);
   }
 
   const afterBlockedSave = await request('/api/characters', { headers });
@@ -516,11 +509,6 @@ async function assertAuthApiLifecycle() {
   if (!afterBlockedList.ok || afterBlockedList.characters.length !== 0) {
     fail('blocked save changed the character list', afterBlockedSave.body);
   }
-
-  const reset = await request('/api/save/reset', { method: 'POST', headers });
-  assertStatus(reset, 200, 'POST /api/save/reset');
-  const resetData = parseJsonResponse(reset, 'POST /api/save/reset');
-  if (!resetData.ok) fail('save reset response is incomplete', reset.body);
 
   const logout = await request('/api/auth/logout', { method: 'POST', headers });
   assertStatus(logout, 200, 'POST /api/auth/logout');
@@ -601,8 +589,76 @@ async function joinSocketCharacter(socket, account) {
     characterId: account.characterId,
     name: account.name,
     special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 },
-    traits: []
+    traits: ['trainedEye'],
+    taggedSkills: ['lightWeapons']
   });
+}
+
+async function assertCharacterDeletionLifecycle(account) {
+  const headers = authHeaders(account.token, account.deviceId, {
+    clientInstanceId: account.clientInstanceId
+  });
+  const pathname = `/api/characters/${encodeURIComponent(account.characterId)}`;
+
+  const missingConfirmation = await request(pathname, {
+    method: 'DELETE',
+    headers
+  });
+  assertStatus(missingConfirmation, 400, 'DELETE character without confirmation');
+
+  const wrongConfirmation = await request(pathname, {
+    method: 'DELETE',
+    headers,
+    json: { confirmCharacterId: `${account.characterId}_wrong` }
+  });
+  assertStatus(wrongConfirmation, 400, 'DELETE character with wrong confirmation');
+
+  const activeDeletion = await request(pathname, {
+    method: 'DELETE',
+    headers,
+    json: { confirmCharacterId: account.characterId }
+  });
+  assertStatus(activeDeletion, 409, 'DELETE active character');
+
+  const retained = await request('/api/characters', { headers });
+  assertStatus(retained, 200, 'GET /api/characters after rejected deletion');
+  const retainedData = parseJsonResponse(retained, 'GET /api/characters after rejected deletion');
+  if (!retainedData.ok
+    || !Array.isArray(retainedData.characters)
+    || !retainedData.characters.some(row => row.id === account.characterId)) {
+    fail('rejected character deletion removed the character', retained.body);
+  }
+
+  account.socket.close();
+  await delay(250);
+
+  const deleted = await request(pathname, {
+    method: 'DELETE',
+    headers,
+    json: { confirmCharacterId: account.characterId }
+  });
+  assertStatus(deleted, 200, 'DELETE disconnected character');
+  const deletedData = parseJsonResponse(deleted, 'DELETE disconnected character');
+  if (!deletedData.ok || !Array.isArray(deletedData.characters) || deletedData.characters.length !== 0) {
+    fail('character deletion response did not contain an empty character list', deleted.body);
+  }
+
+  const characters = await request('/api/characters', { headers });
+  assertStatus(characters, 200, 'GET /api/characters after deletion');
+  const characterList = parseJsonResponse(characters, 'GET /api/characters after deletion');
+  if (!characterList.ok || !Array.isArray(characterList.characters) || characterList.characters.length !== 0) {
+    fail('deleted character remained in the character list', characters.body);
+  }
+
+  const deletedCharacter = await request(pathname, { headers });
+  assertStatus(deletedCharacter, 404, 'GET deleted character');
+
+  const repeatedDeletion = await request(pathname, {
+    method: 'DELETE',
+    headers,
+    json: { confirmCharacterId: account.characterId }
+  });
+  assertStatus(repeatedDeletion, 404, 'repeated DELETE character');
 }
 
 async function assertSocketMultiplayerLifecycle() {
@@ -618,9 +674,41 @@ async function assertSocketMultiplayerLifecycle() {
       socket.on('enemySnapshot', payload => {
         if (Array.isArray(payload?.enemies)) account.enemySnapshots.push(payload.enemies);
       });
+      if (account === accounts[0]) {
+        const invalidJoin = await socketAck(socket, 'join', {
+          token: account.token,
+          deviceId: account.deviceId,
+          clientInstanceId: account.clientInstanceId,
+          deviceType: 'desktop',
+          controlType: 'keyboard_mouse',
+          characterId: account.characterId,
+          name: account.name,
+          special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 }
+        });
+        if (invalidJoin.ok) {
+          fail('new character join without traits and tagged skills was accepted', JSON.stringify(invalidJoin));
+        }
+        const invalidJoinCharacters = await request('/api/characters', {
+          headers: authHeaders(account.token, account.deviceId, {
+            clientInstanceId: account.clientInstanceId
+          })
+        });
+        assertStatus(invalidJoinCharacters, 200, 'GET /api/characters after invalid join');
+        const invalidJoinList = parseJsonResponse(invalidJoinCharacters, 'GET /api/characters after invalid join');
+        if (!invalidJoinList.ok
+          || !Array.isArray(invalidJoinList.characters)
+          || invalidJoinList.characters.length !== 0) {
+          fail('invalid character join changed the character list', invalidJoinCharacters.body);
+        }
+      }
       account.join = await joinSocketCharacter(socket, account);
       if (!account.join.ok || !account.join.self || !account.join.characterLeaseId) {
         fail(`multiplayer join failed for ${account.name}`, JSON.stringify(account.join));
+      }
+      if (!Array.isArray(account.join.self.taggedSkills)
+        || account.join.self.taggedSkills.length !== 1
+        || account.join.self.taggedSkills[0] !== 'lightWeapons') {
+        fail('multiplayer join did not preserve tagged skills', JSON.stringify(account.join.self));
       }
       if (!Array.isArray(account.join.self.worldTaskRecords)) {
         fail('authoritative player state is missing personal world-task records', JSON.stringify(account.join.self));
@@ -754,6 +842,8 @@ async function assertSocketMultiplayerLifecycle() {
     if (!rejoin.ok || !firstFriends.some(row => row.id === second.characterId)) {
       fail('friend state did not survive reconnect', JSON.stringify(rejoin));
     }
+
+    await assertCharacterDeletionLifecycle(accounts[2]);
   } finally {
     sockets.forEach(socket => {
       try { socket.close(); } catch (_) {}

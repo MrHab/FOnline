@@ -571,7 +571,7 @@
   }
   #character-screen.visible { display: flex; }
   #character-card {
-    width: min(980px, calc(100vw - 28px));
+    width: min(1180px, calc(100vw - 28px));
     max-height: calc(100vh - 28px);
     padding: 18px;
     overflow: auto;
@@ -605,7 +605,7 @@
   .char-error-note.visible { display: block; }
   .char-layout {
     display: grid;
-    grid-template-columns: 1.1fr 1fr 1fr;
+    grid-template-columns: 1.1fr 0.95fr 0.95fr 1fr;
     gap: 12px;
   }
   .char-block {
@@ -701,6 +701,17 @@
     background: rgba(24, 27, 24, 0.88);
   }
   .character-card-row:hover { border-color: #c09645; background: rgba(38, 37, 30, 0.96); }
+  .character-card-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+  .character-card-actions .char-action-btn.character-delete-btn {
+    border-color: rgba(196, 91, 66, 0.72);
+    color: #e8a084;
+    background: rgba(65, 25, 20, 0.82);
+  }
+  .character-card-actions .char-action-btn.character-delete-btn:hover {
+    border-color: #e07b5f;
+    color: #ffd0bc;
+    background: rgba(91, 34, 25, 0.94);
+  }
   .character-card-name { color: #f0d28a; font-weight: 900; font-size: 14px; margin-bottom: 4px; }
   .character-card-meta { color: #91a07b; font-size: 11px; line-height: 1.35; }
   .character-empty { color: #8ea07d; font-size: 12px; padding: 12px; border: 1px dashed rgba(137, 112, 67, 0.42); border-radius: 8px; }
@@ -732,6 +743,7 @@
   .char-stat-btn:disabled, .char-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .char-points { font-size: 12px; color: #94b981; margin: 8px 0 2px; }
   .trait-card {
+    width: 100%;
     min-height: 68px;
     margin-bottom: 7px;
     border: 1px solid rgba(87, 82, 60, 0.55);
@@ -740,11 +752,32 @@
     padding: 8px;
     cursor: pointer;
     pointer-events: all;
+    text-align: left;
+    font: inherit;
   }
   .trait-card:hover { border-color: #c09645; }
   .trait-card.selected { border-color: #7fb24b; box-shadow: inset 0 0 0 1px rgba(127,178,75,0.24); }
   .trait-title { color: #efd18c; font-size: 12px; font-weight: 800; margin-bottom: 4px; }
   .trait-desc { color: #9d9b7e; font-size: 10.5px; line-height: 1.25; }
+  .char-block h3 small { color: #91a07b; font-size: 10px; letter-spacing: 0; }
+  .char-choice-note { margin: -2px 0 8px; }
+  .creator-skill-list {
+    display: grid;
+    gap: 6px;
+    max-height: 360px;
+    overflow: auto;
+    padding-right: 3px;
+  }
+  .creator-skill-card {
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 7px 8px;
+    text-align: left;
+    font: inherit;
+  }
+  .creator-skill-card .trait-title { margin-bottom: 2px; }
+  .creator-skill-card .trait-desc { font-size: 9.5px; }
   .char-derived { font-size: 12px; color: #b9ad86; line-height: 1.65; }
   .char-derived b { color: #f0d28a; }
   .char-actions {
@@ -759,6 +792,12 @@
   @media (max-width: 860px) {
     .char-layout { grid-template-columns: 1fr; }
     .char-title { flex-direction: column; }
+    .creator-skill-list { max-height: 240px; }
+  }
+  @media (max-width: 520px) {
+    .character-card-row { grid-template-columns: 1fr; }
+    .character-card-actions { justify-content: stretch; }
+    .character-card-actions .char-action-btn { flex: 1; }
   }
 
   #tooltip {

@@ -87,6 +87,7 @@
   const SKILL_BASE_MAX_PERCENT = 45;
   const SKILL_MAX_PERCENT = 100;
   const SKILL_STEP_PERCENT = 5;
+  const TAGGED_SKILL_BONUS_PERCENT = 5;
   const SKILLS = [
     { id: 'lightWeapons', icon: '🔫', name: 'Лёгкое оружие', group: 'Боевые', desc: 'Шанс попадания и снижение штрафа точности автоматической стрельбы из лёгкого оружия.' },
     { id: 'heavyWeapons', icon: '🧨', name: 'Тяжёлое оружие', group: 'Боевые', desc: 'Шанс попадания и снижение штрафа точности автоматической стрельбы из тяжёлого оружия.' },
@@ -190,7 +191,9 @@
       barter: 10 + s.cha * 2 + s.int,
       wanderer: 10 + s.end + s.per + s.luck * 2
     };
-    return Math.max(SKILL_MIN_PERCENT, Math.min(SKILL_BASE_MAX_PERCENT, Math.round(formulas[id] ?? SKILL_MIN_PERCENT)));
+    const base = Math.max(SKILL_MIN_PERCENT, Math.min(SKILL_BASE_MAX_PERCENT, Math.round(formulas[id] ?? SKILL_MIN_PERCENT)));
+    const tagged = Array.isArray(profile?.taggedSkills) && profile.taggedSkills.includes(id);
+    return Math.min(SKILL_BASE_MAX_PERCENT + TAGGED_SKILL_BONUS_PERCENT, base + (tagged ? TAGGED_SKILL_BONUS_PERCENT : 0));
   }
 
   function skillPercent(id) {

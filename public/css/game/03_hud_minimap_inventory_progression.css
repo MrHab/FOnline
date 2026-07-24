@@ -1031,6 +1031,16 @@
   .qty-max-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
   .qty-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
+  .game-confirm-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 15019;
+    pointer-events: all;
+    background: rgba(0, 0, 0, 0.52);
+  }
+  .game-confirm-backdrop.visible { display: block; }
+
   .game-confirm-panel {
     display: none;
     position: fixed;
@@ -1041,7 +1051,7 @@
     padding: 14px;
     z-index: 15020;
     pointer-events: all;
-    box-shadow: 0 0 0 9999px rgba(0,0,0,.42), 0 26px 80px rgba(0,0,0,.66);
+    box-shadow: 0 26px 80px rgba(0,0,0,.66);
   }
   .game-confirm-panel.visible { display: grid; gap: 10px; }
   .game-confirm-kicker {

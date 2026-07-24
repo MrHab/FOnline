@@ -134,6 +134,7 @@
       if (snapshot.name) characterProfile.name = String(snapshot.name).slice(0, 24);
       if (snapshot.special && typeof snapshot.special === 'object') characterProfile.special = { ...snapshot.special };
       if (Array.isArray(snapshot.traits)) characterProfile.traits = snapshot.traits.slice(0, 2);
+      if (Array.isArray(snapshot.taggedSkills)) characterProfile.taggedSkills = snapshot.taggedSkills.slice(0, 2);
       if (typeof snapshot.worldFactionId === 'string') {
         characterProfile.worldFactionId = snapshot.worldFactionId;
         characterProfile.factionId = snapshot.worldFactionId;
@@ -232,6 +233,7 @@
       skillRanks: multiplayerSkillSnapshot(),
       talentRanks: multiplayerTalentSnapshot(),
       traits: multiplayerTraitSnapshot(),
+      taggedSkills: multiplayerTaggedSkillsSnapshot(),
       level: player.level,
       weapon: multiplayerWeaponId(),
       equipment: multiplayerEquipmentSnapshot(),

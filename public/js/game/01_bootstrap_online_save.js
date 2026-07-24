@@ -153,9 +153,10 @@
       const isLanHost = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|::1$)/.test(host);
       const isLocal = !host || isLanHost;
       const isYandexRuntime = host.includes('yandex') || host.includes('ya.') || location.pathname.includes('/games/');
+      const isStandaloneProduction = host === 'rangir.ru' || host === 'www.rangir.ru' || /(^|\.)github\.io$/i.test(host);
       // На локальном/LAN сервере SDK Яндекса не нужен. Иначе браузер пытается загрузить /sdk.js,
       // получает 404/text/html и пишет ошибку MIME. Для нашей серверной авторизации сразу работаем локально.
-      if (isLocal && !isYandexRuntime) throw new Error('LAN launch: use server/local save fallback');
+      if ((isLocal || isStandaloneProduction) && !isYandexRuntime) throw new Error('Standalone launch: use game server profile');
       const sources = isYandexRuntime
         ? ['/sdk.js', 'https://sdk.games.s3.yandex.net/sdk.js']
         : ['https://sdk.games.s3.yandex.net/sdk.js'];

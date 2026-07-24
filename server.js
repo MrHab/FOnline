@@ -45,7 +45,8 @@ const DT = 1 / TICK_RATE;
 // В клиенте 1 реальный час = 1 игровые сутки. Сервер использует тот же ритм
 // для обновления содержимого ящиков.
 const GAME_DAY_REAL_MS = 60 * 60 * 1000;
-const WASTELAND_SIM_TICK_MS = 1000;
+const WASTELAND_SIM_TICK_MS = Math.max(1000, Number(process.env.WASTELAND_SIM_TICK_MS || 5000));
+const WASTELAND_SIM_SAVE_INTERVAL_MS = Math.max(3000, Number(process.env.WASTELAND_SIM_SAVE_INTERVAL_MS || 15000));
 const MAP_SIZE = 140;
 const PLAYER_SPEED = 7.0;
 const PLAYER_COLLISION_RADIUS = 0.48;
@@ -1142,9 +1143,19 @@ app.use('/api/dev', requireDevAccess);
 
 // Клиент вынесен в public/index.html, CSS и JS лежат в public/css и public/js.
 app.use(express.static(path.join(__dirname, 'public'), {
-  etag: false,
-  maxAge: 0,
-  setHeaders(res) { res.setHeader('Cache-Control', 'no-cache'); }
+  etag: true,
+  lastModified: true,
+  setHeaders(res) {
+    const requestPath = String(res.req?.path || '');
+    const versioned = /[?&]v=/.test(String(res.req?.originalUrl || ''));
+    if (requestPath === '/' || requestPath.endsWith('/index.html') || requestPath.endsWith('/js/game.js') || requestPath.endsWith('/css/game.css')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (versioned) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
 }));
 
 app.get('/api/dev/locations', (_, res) => {
@@ -2861,6 +2872,7 @@ const SERVER_TRADER_PROFILES = loadServerTraderProfiles();
 const WASTELAND_SIM = createWastelandSimulation({
   stateFile: WASTELAND_SIM_FILE,
   gameDayRealMs: GAME_DAY_REAL_MS,
+  saveIntervalMs: WASTELAND_SIM_SAVE_INTERVAL_MS,
   getGlobalMap: () => GLOBAL_MAP,
   itemIds: SERVER_ITEM_IDS
 });
@@ -17029,14 +17041,28 @@ io.on('connection', (socket) => {
 });
 
 setInterval(() => {
+  const startedAt = Date.now();
   try {
     WASTELAND_SIM.tick(Date.now());
     syncWorldSiteLocationDefinitions();
-    syncWorldCaravanPlayerTransfers();
   } catch (err) {
     console.error('Wasteland simulation tick failed:', err);
+  } finally {
+    const durationMs = Date.now() - startedAt;
+    if (durationMs > Math.max(500, WASTELAND_SIM_TICK_MS * 0.5)) {
+      console.warn(`Slow wasteland simulation tick: ${durationMs}ms`);
+    }
   }
 }, WASTELAND_SIM_TICK_MS);
+
+setInterval(() => {
+  if (!players.size) return;
+  try {
+    syncWorldCaravanPlayerTransfers();
+  } catch (err) {
+    console.error('World caravan player sync failed:', err);
+  }
+}, 1000);
 
 setInterval(() => {
   // 1) Сначала двигаем игроков.

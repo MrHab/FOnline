@@ -1,10 +1,10 @@
 // Realm of Ashes client loader.
 // The original game.js body was split mechanically into ordered files under /js/game/.
 // The loader concatenates the parts and executes the exact reconstructed script without changing game logic.
-(() => {
+(async () => {
   'use strict';
 
-  const GAME_CLIENT_VERSION = '7.76.0-pages-server-selector';
+  const GAME_CLIENT_VERSION = '7.76.0-performance';
   const MODEL_COLLIDER_CATALOG_URL = '/assets/models/wasteland/model-colliders.json';
   const GAME_SCRIPT_PARTS = [
     '/js/game/01_bootstrap_online_save.js',
@@ -79,29 +79,32 @@
     if (note) note.textContent = message;
   }
 
-  function loadTextResource(src, mimeType) {
-    const xhr = new XMLHttpRequest();
+  async function loadTextResource(src, mimeType) {
     const url = `${src}${src.includes('?') ? '&' : '?'}v=${encodeURIComponent(GAME_CLIENT_VERSION)}`;
-    xhr.open('GET', url, false);
-    if (xhr.overrideMimeType) xhr.overrideMimeType(mimeType);
-    xhr.send(null);
-    if ((xhr.status >= 200 && xhr.status < 300) || (xhr.status === 0 && xhr.responseText)) {
-      return xhr.responseText;
-    }
-    throw new Error(`Не удалось загрузить часть клиента: ${src} (${xhr.status})`);
+    const response = await fetch(url, {
+      cache: 'default',
+      credentials: 'same-origin',
+      headers: { Accept: mimeType }
+    });
+    if (!response.ok) throw new Error(`Не удалось загрузить часть клиента: ${src} (${response.status})`);
+    return await response.text();
   }
 
-  function loadScriptPart(src) {
+  async function loadScriptPart(src) {
     return loadTextResource(src, 'application/javascript; charset=utf-8');
   }
 
   try {
-    const colliderManifest = JSON.parse(loadTextResource(MODEL_COLLIDER_CATALOG_URL, 'application/json; charset=utf-8'));
+    const [colliderText, ...scriptParts] = await Promise.all([
+      loadTextResource(MODEL_COLLIDER_CATALOG_URL, 'application/json; charset=utf-8'),
+      ...GAME_SCRIPT_PARTS.map(loadScriptPart)
+    ]);
+    const colliderManifest = JSON.parse(colliderText);
     if (colliderManifest?.schema !== 'realm.model-colliders.v1' || !colliderManifest.models) {
       throw new Error('Invalid 3D model collider catalog.');
     }
     const catalogSource = `const MODEL_COLLIDER_CATALOG = Object.freeze(${JSON.stringify(colliderManifest.models)});\n`;
-    const source = catalogSource + GAME_SCRIPT_PARTS.map(loadScriptPart).join('\n');
+    const source = catalogSource + scriptParts.join('\n');
     new Function(source)();
   } catch (error) {
     showLoaderError(error && error.message ? error.message : String(error));

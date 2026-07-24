@@ -3179,6 +3179,7 @@ function normalizeState(input, globalMap = {}) {
 function createWastelandSimulation(options = {}) {
   const stateFile = options.stateFile || path.join(options.dataDir || process.cwd(), 'wasteland-sim.json');
   const gameDayRealMs = Math.max(60000, Number(options.gameDayRealMs || DEFAULT_GAME_DAY_REAL_MS));
+  const saveIntervalMs = Math.max(3000, Number(options.saveIntervalMs || 15000));
   const getGlobalMap = typeof options.getGlobalMap === 'function' ? options.getGlobalMap : () => ({});
   const itemIds = options.itemIds instanceof Set ? options.itemIds : new Set(options.itemIds || []);
   let state = normalizeState(readJson(stateFile, defaultState(getGlobalMap())), getGlobalMap());
@@ -3188,7 +3189,7 @@ function createWastelandSimulation(options = {}) {
 
   function save(force = false) {
     const now = Date.now();
-    if (!force && (!dirty || now - lastSaveAt < 3000)) return false;
+    if (!force && (!dirty || now - lastSaveAt < saveIntervalMs)) return false;
     state.updatedAt = now;
     writeJsonAtomic(stateFile, state);
     dirty = false;

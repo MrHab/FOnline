@@ -69,7 +69,21 @@ function assertRequiredFiles() {
     if (!fs.existsSync(file)) fail(`required file is missing: ${path.relative(PROJECT_ROOT, file)}`);
   }
   const serverSource = fs.readFileSync(SERVER_FILE, 'utf8');
+  const clientLoaderSource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game.js'), 'utf8');
   const simulationSource = fs.readFileSync(path.join(PROJECT_ROOT, 'src', 'server', 'wasteland-sim.js'), 'utf8');
+  if (clientLoaderSource.includes("open('GET', url, false)")
+    || clientLoaderSource.includes('open("GET", url, false)')) {
+    fail('client loader still uses synchronous XMLHttpRequest');
+  }
+  if (!clientLoaderSource.includes('Promise.all([') || !clientLoaderSource.includes('GAME_SCRIPT_PARTS.map(loadScriptPart)')) {
+    fail('client script parts are not loaded in parallel');
+  }
+  if (!serverSource.includes('max-age=31536000, immutable')) {
+    fail('versioned static resources do not use immutable caching');
+  }
+  if (!serverSource.includes('WASTELAND_SIM_SAVE_INTERVAL_MS')) {
+    fail('wasteland simulation save interval is not configurable');
+  }
   if (serverSource.includes('ROOM_CAPACITY') || serverSource.includes('roomCapacity:')) {
     fail('server still exposes or enforces a per-location player capacity');
   }

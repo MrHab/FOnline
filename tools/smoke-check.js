@@ -207,8 +207,11 @@ async function assertStaticAssets(health) {
   if (health.version && !html.body.includes(`Realm of Ashes v${health.version}`)) {
     fail('root page version is not synced with /health', html.body.slice(0, 500));
   }
-  if (!html.body.includes('id="server-url-input"') || !html.body.includes('/vendor/socket.io.min.js')) {
-    fail('root page is missing the GitHub Pages server selector or vendored Socket.IO client', html.body.slice(0, 800));
+  if (html.body.includes('id="server-url-input"')
+    || !html.body.includes('id="register-email-input"')
+    || !html.body.includes('id="password-reset-panel"')
+    || !html.body.includes('/vendor/socket.io.min.js')) {
+    fail('root page server authentication controls are incomplete', html.body.slice(0, 800));
   }
   if (html.body.includes('/socket.io/socket.io.js')) {
     fail('root page still depends on the Node-only Socket.IO client route', html.body.slice(0, 800));
@@ -452,7 +455,7 @@ async function assertAuthApiLifecycle() {
 
   const register = await request('/api/auth/register', {
     method: 'POST',
-    json: { login, password, deviceId, deviceType: 'desktop', controlType: 'keyboard_mouse' }
+    json: { login, email: `${login}@example.test`, password, deviceId, deviceType: 'desktop', controlType: 'keyboard_mouse' }
   });
   assertStatus(register, 200, 'POST /api/auth/register');
   const registered = parseJsonResponse(register, 'POST /api/auth/register');
@@ -462,7 +465,7 @@ async function assertAuthApiLifecycle() {
 
   const duplicate = await request('/api/auth/register', {
     method: 'POST',
-    json: { login, password, deviceId, deviceType: 'desktop', controlType: 'keyboard_mouse' }
+    json: { login, email: `${login}@example.test`, password, deviceId, deviceType: 'desktop', controlType: 'keyboard_mouse' }
   });
   assertStatus(duplicate, 409, 'duplicate POST /api/auth/register');
 
@@ -481,6 +484,14 @@ async function assertAuthApiLifecycle() {
   if (!characterList.ok || !Array.isArray(characterList.characters)) {
     fail('characters response is incomplete', characters.body);
   }
+
+  const unknownReset = await request('/api/auth/password-reset/request', {
+    method: 'POST',
+    json: { email: `missing-${suffix}@example.test` }
+  });
+  assertStatus(unknownReset, 200, 'POST password reset for unknown email');
+  const unknownResetData = parseJsonResponse(unknownReset, 'POST password reset for unknown email');
+  if (!unknownResetData.ok) fail('password reset response is incomplete', unknownReset.body);
 
   const characterId = `c_smoke_${suffix}`;
   const blockedSave = await request(`/api/characters/${encodeURIComponent(characterId)}/save`, {
@@ -564,7 +575,7 @@ async function registerSocketTestAccount(index, suffix) {
   const clientInstanceId = `multi_client_${index}_${suffix}`;
   const response = await request('/api/auth/register', {
     method: 'POST',
-    json: { login, password, deviceId, deviceType: 'desktop', controlType: 'keyboard_mouse' }
+    json: { login, email: `${login}@example.test`, password, deviceId, deviceType: 'desktop', controlType: 'keyboard_mouse' }
   });
   assertStatus(response, 200, `multiplayer register ${index}`);
   const data = parseJsonResponse(response, `multiplayer register ${index}`);

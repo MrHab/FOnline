@@ -567,6 +567,18 @@
   });
   document.getElementById('open-register-btn').addEventListener('click', () => { setAuthStep('register'); setServerRegisterStatus('После регистрации откроется выбор персонажа.'); });
   document.getElementById('back-login-btn').addEventListener('click', () => { setAuthStep('login'); setServerAuthStatus('Введите логин и пароль для входа.'); });
+  document.getElementById('open-password-reset-btn').addEventListener('click', () => { setAuthStep('password-reset'); setPasswordResetStatus('password-reset-status', 'Введите email, указанный при регистрации.'); });
+  document.getElementById('password-reset-back-btn').addEventListener('click', () => { setAuthStep('login'); setServerAuthStatus('Введите логин и пароль для входа.'); });
+  document.getElementById('password-reset-send-btn').addEventListener('click', handlePasswordResetRequest);
+  document.getElementById('password-reset-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    handlePasswordResetRequest();
+  });
+  document.getElementById('password-reset-confirm-btn').addEventListener('click', handlePasswordResetConfirm);
+  document.getElementById('password-reset-confirm-form')?.addEventListener('submit', e => {
+    e.preventDefault();
+    handlePasswordResetConfirm();
+  });
   document.getElementById('server-register-btn').addEventListener('click', handleServerRegistration);
   document.getElementById('server-register-form')?.addEventListener('submit', e => {
     e.preventDefault();
@@ -592,7 +604,7 @@
     }
   });
 
-  setAuthStep('login');
+  if (!openPasswordResetFromUrl()) setAuthStep('login');
   renderCharacterCreator();
   renderInventory();
   renderQuickbar();

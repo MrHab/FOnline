@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Realm of Ashes v7.76.0</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/css/game.css?v=7.76.0-network-ping">
+<link rel="stylesheet" href="/css/game.css?v=7.76.0-pages-server-selector">
 
 </head>
 <body>
@@ -471,6 +471,8 @@
           </div>
           <form id="server-login-form" class="auth-form" autocomplete="on">
             <div class="auth-form-grid">
+              <input id="server-url-input" class="char-input server-url-input" maxlength="240" type="url" inputmode="url" autocomplete="url" placeholder="Адрес игрового сервера, например https://game.example.com" aria-label="Адрес игрового сервера" />
+              <div class="server-url-help">На локальном Node-сервере поле можно оставить пустым. Для GitHub Pages укажите публичный HTTPS-адрес сервера.</div>
               <input id="server-login-input" class="char-input" maxlength="32" autocomplete="username" placeholder="Логин" />
               <input id="server-password-input" class="char-input" maxlength="128" type="password" autocomplete="current-password" placeholder="Пароль" />
             </div>
@@ -594,8 +596,8 @@
 
 <script src="/vendor/three.min.js"></script>
 <script src="/vendor/GLTFLoader.js"></script>
-<script src="/socket.io/socket.io.js"></script>
-<script src="/js/game.js?v=7.76.0-network-ping"></script>
+<script src="/vendor/socket.io.min.js"></script>
+<script src="/js/game.js?v=7.76.0-pages-server-selector"></script>
 
 </body>
 </html>

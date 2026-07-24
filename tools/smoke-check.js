@@ -207,6 +207,12 @@ async function assertStaticAssets(health) {
   if (health.version && !html.body.includes(`Realm of Ashes v${health.version}`)) {
     fail('root page version is not synced with /health', html.body.slice(0, 500));
   }
+  if (!html.body.includes('id="server-url-input"') || !html.body.includes('/vendor/socket.io.min.js')) {
+    fail('root page is missing the GitHub Pages server selector or vendored Socket.IO client', html.body.slice(0, 800));
+  }
+  if (html.body.includes('/socket.io/socket.io.js')) {
+    fail('root page still depends on the Node-only Socket.IO client route', html.body.slice(0, 800));
+  }
   if (!html.body.includes('id="network-ping"')) {
     fail('root page is missing the network ping HUD indicator', html.body.slice(0, 500));
   }
@@ -227,6 +233,12 @@ async function assertStaticAssets(health) {
   assertStatus(three, 200, 'GET /vendor/three.min.js');
   if (!three.body.includes('THREE')) {
     fail('Three.js vendor route did not serve the browser bundle', three.body.slice(0, 500));
+  }
+
+  const socketIoClient = await request('/vendor/socket.io.min.js');
+  assertStatus(socketIoClient, 200, 'GET /vendor/socket.io.min.js');
+  if (!socketIoClient.body.includes('Socket.IO')) {
+    fail('vendored Socket.IO browser client was not served', socketIoClient.body.slice(0, 500));
   }
 }
 

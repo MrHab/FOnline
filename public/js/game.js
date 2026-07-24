@@ -4,7 +4,7 @@
 (() => {
   'use strict';
 
-  const GAME_CLIENT_VERSION = '7.76.0-network-ping';
+  const GAME_CLIENT_VERSION = '7.76.0-pages-server-selector';
   const MODEL_COLLIDER_CATALOG_URL = '/assets/models/wasteland/model-colliders.json';
   const GAME_SCRIPT_PARTS = [
     '/js/game/01_bootstrap_online_save.js',

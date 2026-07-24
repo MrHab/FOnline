@@ -79,7 +79,6 @@ const clientQuickInteraction = readText(path.join('public', 'js', 'game', '08b_i
 const clientWorldContext = readText(path.join('public', 'js', 'game', '08d_world_context_targets.js'));
 const clientMobileInteraction = readText(path.join('public', 'js', 'game', '08e_mobile_player_action_menus.js'));
 const clientGlobalMap = readText(path.join('public', 'js', 'game', '10_global_map_state_logs_config.js'));
-const wastelandState = readJson('data/wasteland-sim.json');
 const quests = readJson('data/quests.json');
 const locationDir = path.join(ROOT, 'data', 'locations');
 
@@ -186,21 +185,6 @@ for (const [questId, quest] of Object.entries(quests.quests || {})) {
   if (rewardItems.length) errors.push(`quest ${questId}: item rewards must stay empty in the closed economy.`);
 }
 
-const harvestableSiteResources = new Set(['ore', 'wood', 'scrap', 'water', 'oil', 'chemicals', 'medicine', 'food', 'electronics', 'ammoParts', 'weaponParts']);
-for (const site of Object.values(wastelandState.sites || {})) {
-  if (String(site?.type || '').toLowerCase() !== 'resource') continue;
-  const output = Object.entries(site.output || {}).filter(([, amount]) => Number(amount || 0) > 0);
-  if (!output.length) {
-    errors.push(`world resource site ${site.id || 'unknown'}: missing positive output resources`);
-    continue;
-  }
-  for (const [resourceId] of output) {
-    if (!harvestableSiteResources.has(resourceId)) {
-      errors.push(`world resource site ${site.id || 'unknown'}: unsupported harvest resource ${resourceId}`);
-    }
-  }
-}
-
 function defaultSiteRows() {
   const body = functionBody(wastelandSim, 'defaultSites');
   const rows = [];
@@ -215,11 +199,23 @@ function defaultSiteRows() {
       owner: ((block.match(/owner:\s*'([^']+)'/) || [])[1] || '').toLowerCase(),
       locationId: (block.match(/locationId:\s*'([^']+)'/) || [])[1] || '',
       production: /production:\s*{/.test(block),
-      output: /output:\s*{/.test(block),
+      output: siteOutputRows(block),
       workerSpawnCount: siteWorkerSpawnCount(block)
     });
   }
   return rows;
+}
+
+function siteOutputRows(siteBlock = '') {
+  const outputBlock = (siteBlock.match(/output:\s*{([^}]*)}/) || [])[1] || '';
+  const output = {};
+  const outputRegex = /(?:'([^']+)'|"([^"]+)"|([a-zA-Z0-9_]+))\s*:\s*(-?\d+(?:\.\d+)?)/g;
+  let match;
+  while ((match = outputRegex.exec(outputBlock))) {
+    const resourceId = match[1] || match[2] || match[3] || '';
+    if (resourceId) output[resourceId] = Number(match[4]);
+  }
+  return output;
 }
 
 function siteWorkerSpawnCount(siteBlock = '') {
@@ -388,6 +384,21 @@ function locationSleepShelterProblem(loc = {}) {
 const defaultSitesList = defaultSiteRows();
 const workerSleepersByLocation = new Map();
 const hostileOwners = new Set(['raiders', 'mutants', 'wild', 'wildlife', 'ghouls', 'radscorpions', 'mutant_ants', 'geckos', 'super_mutants']);
+const harvestableSiteResources = new Set(['ore', 'wood', 'scrap', 'water', 'oil', 'chemicals', 'medicine', 'food', 'electronics', 'ammoParts', 'weaponParts']);
+
+for (const site of defaultSitesList) {
+  if (site.type !== 'resource') continue;
+  const output = Object.entries(site.output || {}).filter(([, amount]) => Number(amount || 0) > 0);
+  if (!output.length) {
+    errors.push(`world resource site ${site.id || 'unknown'}: missing positive output resources`);
+    continue;
+  }
+  for (const [resourceId] of output) {
+    if (!harvestableSiteResources.has(resourceId)) {
+      errors.push(`world resource site ${site.id || 'unknown'}: unsupported harvest resource ${resourceId}`);
+    }
+  }
+}
 
 for (const site of defaultSitesList) {
   if (site.locationId && site.workerSpawnCount > 0 && !hostileOwners.has(site.owner)) {

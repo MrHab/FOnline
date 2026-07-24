@@ -38,7 +38,6 @@
 
   const SERVER_TOKEN_KEY = 'realm_of_ashes_server_token_v1';
   const SERVER_LOGIN_KEY = 'realm_of_ashes_server_login_v1';
-  const SERVER_URL_KEY = 'realm_of_ashes_server_url_v1';
   const SERVER_DEVICE_KEY = 'realm_of_ashes_device_id_v1';
   const SERVER_CLIENT_INSTANCE_KEY = 'realm_of_ashes_client_instance_v1';
   try { localStorage.removeItem('realm_of_ashes_save_v1'); } catch (_) {}
@@ -99,68 +98,16 @@
     el.innerHTML = `Устройство: <b>${deviceInfo.label}</b> · управление: ${deviceInfo.controlLabel}${suffix}`;
   }
 
-  function sameHostServerApiBase() {
-    if (location.protocol === 'http:' || location.protocol === 'https:') {
-      return '';
-    }
-    return 'http://localhost:3000';
-  }
-
-  function defaultPortServerApiBase() {
-    if (location.protocol === 'http:' || location.protocol === 'https:') {
-      if (location.port === '3000') return '';
-      return `${location.protocol}//${location.hostname || 'localhost'}:3000`;
-    }
-    return 'http://localhost:3000';
-  }
-
+  const PRODUCTION_SERVER_API_BASE = 'https://rangir.ru';
   function defaultServerApiBase() {
-    const sameHost = sameHostServerApiBase();
-    const configured = (localStorage.getItem(SERVER_URL_KEY) || '').replace(/\/+$/, '');
-    // Если игра открыта прямо с Node-сервера на :3000, всегда используем текущий адрес.
-    // Это защищает от старого сохранённого IP/порта в localStorage после смены Wi‑Fi/IP.
-    if (location.port === '3000') {
-      if (configured) localStorage.removeItem(SERVER_URL_KEY);
-      return '';
+    const host = String(location.hostname || '').toLowerCase();
+    if (/(^|\.)github\.io$/.test(host)) return PRODUCTION_SERVER_API_BASE;
+    if (location.protocol !== 'http:' && location.protocol !== 'https:') return 'http://localhost:3000';
+    if (location.port === '3000' || host === 'rangir.ru' || host === 'www.rangir.ru') return '';
+    if (host === 'localhost' || host === '127.0.0.1' || /^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) {
+      return `${location.protocol}//${host}:3000`;
     }
-    if (configured) return configured;
-    return sameHost;
-  }
-
-  function requiresExplicitServerApiBase() {
-    return /(^|\.)github\.io$/i.test(String(location.hostname || ''));
-  }
-
-  function applyServerApiBaseFromAuthInput() {
-    const input = document.getElementById('server-url-input');
-    const raw = String(input?.value || '').trim();
-    if (!raw) {
-      if (requiresExplicitServerApiBase()) {
-        throw new Error('Укажите публичный HTTPS-адрес игрового сервера. GitHub Pages запускает только клиент игры.');
-      }
-      SERVER_API_BASE = defaultServerApiBase();
-      localStorage.removeItem(SERVER_URL_KEY);
-      return SERVER_API_BASE;
-    }
-
-    let parsed = null;
-    try { parsed = new URL(raw); } catch (_) {
-      throw new Error('Некорректный адрес игрового сервера. Используйте полный URL вида https://game.example.com.');
-    }
-    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
-      throw new Error('Адрес игрового сервера должен использовать HTTP или HTTPS и не содержать логин/пароль.');
-    }
-    if (location.protocol === 'https:' && parsed.protocol !== 'https:') {
-      throw new Error('Страница открыта по HTTPS, поэтому игровой сервер тоже должен использовать HTTPS.');
-    }
-    const normalized = parsed.origin.replace(/\/+$/, '');
-    if (requiresExplicitServerApiBase() && normalized === location.origin) {
-      throw new Error('Укажите адрес Node-сервера, а не адрес GitHub Pages.');
-    }
-    SERVER_API_BASE = normalized;
-    localStorage.setItem(SERVER_URL_KEY, normalized);
-    if (input) input.value = normalized;
-    return normalized;
+    return '';
   }
 
   let SERVER_API_BASE = defaultServerApiBase();
@@ -274,7 +221,7 @@
 
   function setAuthStep(step) {
     authScreenStep = step;
-    ['login-panel', 'register-panel', 'character-select-panel', 'character-creator-panel'].forEach(id => {
+    ['login-panel', 'register-panel', 'password-reset-panel', 'password-reset-confirm-panel', 'character-select-panel', 'character-creator-panel'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle('active', id === `${step}-panel` || (step === 'select' && id === 'character-select-panel') || (step === 'create' && id === 'character-creator-panel'));
     });
@@ -282,6 +229,10 @@
       setCharacterScreenTitle('Вход в игру', 'Войдите в серверный аккаунт, чтобы выбрать уже созданного персонажа или создать нового.');
     } else if (step === 'register') {
       setCharacterScreenTitle('Регистрация', 'Создайте аккаунт. После регистрации откроется выбор персонажа.');
+    } else if (step === 'password-reset') {
+      setCharacterScreenTitle('Восстановление пароля', 'Мы отправим одноразовую ссылку на email, указанный при регистрации.');
+    } else if (step === 'password-reset-confirm') {
+      setCharacterScreenTitle('Новый пароль', 'Установите новый пароль для серверного аккаунта.');
     } else if (step === 'select') {
       setCharacterScreenTitle('Выбор персонажа', 'Выберите существующего персонажа или создайте нового.');
     } else if (step === 'create') {
@@ -306,6 +257,14 @@
     el.classList.toggle('err', type === 'err');
   }
 
+  function setPasswordResetStatus(id, text, type = '') {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle('ok', type === 'ok');
+    el.classList.toggle('err', type === 'err');
+  }
+
   function setCharacterSelectStatus(text, type = '') {
     const el = document.getElementById('character-select-status');
     if (!el) return;
@@ -317,12 +276,10 @@
   function updateServerAuthUI() {
     const loginText = document.getElementById('server-current-login');
     const selectLogin = document.getElementById('character-select-login');
-    const serverUrlInput = document.getElementById('server-url-input');
     const loginInput = document.getElementById('server-login-input');
     const passInput = document.getElementById('server-password-input');
     if (loginText) loginText.textContent = serverSession.token ? `вход: ${serverSession.login}` : 'не выполнен вход';
     if (selectLogin) selectLogin.textContent = serverSession.token ? `аккаунт: ${serverSession.login}` : 'аккаунт';
-    if (serverUrlInput && !serverUrlInput.value) serverUrlInput.value = SERVER_API_BASE || '';
     if (loginInput && serverSession.login && !loginInput.value) loginInput.value = serverSession.login;
     if (passInput && serverSession.token) passInput.value = '';
   }
@@ -345,8 +302,7 @@
   }
 
   function serverApiBaseCandidates() {
-    const list = [SERVER_API_BASE, sameHostServerApiBase(), defaultPortServerApiBase()];
-    if (location.port === '3000') list.unshift('');
+    const list = [SERVER_API_BASE];
     return Array.from(new Set(list.map(v => String(v || '').replace(/\/+$/, ''))));
   }
 
@@ -387,13 +343,11 @@
       if (!response.ok || !data.ok) throw new Error(data.error || `Ошибка сервера ${response.status}`);
       if (base !== SERVER_API_BASE) {
         SERVER_API_BASE = base;
-        if (base) localStorage.setItem(SERVER_URL_KEY, base);
-        else localStorage.removeItem(SERVER_URL_KEY);
       }
       return data;
     }
 
-    const host = SERVER_API_BASE || defaultPortServerApiBase() || location.origin || 'текущий адрес';
+    const host = SERVER_API_BASE || location.origin || 'текущий адрес';
     const errText = lastNetworkError?.message || 'Failed to fetch';
     throw new Error(`Нет соединения с сервером (${host}). Проверьте, что запущен node server.js и открыта правильная ссылка. ${errText}`);
   }
@@ -686,10 +640,6 @@
       setServerAuthStatus('Введите логин от 3 символов и пароль от 4 символов.', 'err');
       return;
     }
-    try { applyServerApiBaseFromAuthInput(); } catch (err) {
-      setServerAuthStatus(err.message || 'Проверьте адрес игрового сервера.', 'err');
-      return;
-    }
     setServerAuthStatus('Вход...');
     try {
       const data = await serverApi('/api/auth/login', { method: 'POST', body: JSON.stringify({ login, password, deviceId: getDeviceId(), clientInstanceId: getClientInstanceId(), deviceType: getDeviceType(), controlType: getDeviceControlType() }) });
@@ -703,29 +653,89 @@
 
   async function handleServerRegistration() {
     const login = (document.getElementById('register-login-input')?.value || '').trim();
+    const email = (document.getElementById('register-email-input')?.value || '').trim();
     const password = document.getElementById('register-password-input')?.value || '';
     const password2 = document.getElementById('register-password2-input')?.value || '';
-    if (login.length < 3 || password.length < 4) {
-      setServerRegisterStatus('Логин от 3 символов, пароль от 4 символов.', 'err');
+    if (login.length < 3 || !email || password.length < 8) {
+      setServerRegisterStatus('Введите логин, корректный email и пароль от 8 символов.', 'err');
       return;
     }
     if (password !== password2) {
       setServerRegisterStatus('Пароли не совпадают.', 'err');
       return;
     }
-    try { applyServerApiBaseFromAuthInput(); } catch (err) {
-      setServerRegisterStatus(err.message || 'Проверьте адрес игрового сервера.', 'err');
-      return;
-    }
     setServerRegisterStatus('Регистрация...');
     try {
-      const data = await serverApi('/api/auth/register', { method: 'POST', body: JSON.stringify({ login, password, deviceId: getDeviceId(), clientInstanceId: getClientInstanceId(), deviceType: getDeviceType(), controlType: getDeviceControlType() }) });
+      const data = await serverApi('/api/auth/register', { method: 'POST', body: JSON.stringify({ login, email, password, deviceId: getDeviceId(), clientInstanceId: getClientInstanceId(), deviceType: getDeviceType(), controlType: getDeviceControlType() }) });
       setServerSession(data.token, data.user?.login || login);
       setServerRegisterStatus('Аккаунт создан.', 'ok');
       await showCharacterSelect('Аккаунт создан. Создайте первого персонажа.');
     } catch (err) {
       setServerRegisterStatus(err.message || 'Ошибка регистрации.', 'err');
     }
+  }
+
+  async function handlePasswordResetRequest() {
+    const email = (document.getElementById('password-reset-email-input')?.value || '').trim();
+    if (!email || !email.includes('@')) {
+      setPasswordResetStatus('password-reset-status', 'Введите корректный email.', 'err');
+      return;
+    }
+    setPasswordResetStatus('password-reset-status', 'Отправка ссылки...');
+    try {
+      const data = await serverApi('/api/auth/password-reset/request', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      });
+      setPasswordResetStatus('password-reset-status', data.message || 'Если email зарегистрирован, ссылка отправлена.', 'ok');
+    } catch (err) {
+      setPasswordResetStatus('password-reset-status', err.message || 'Не удалось отправить ссылку.', 'err');
+    }
+  }
+
+  async function handlePasswordResetConfirm() {
+    const query = new URLSearchParams(location.search);
+    const token = query.get('resetToken') || '';
+    const login = (document.getElementById('password-reset-login-input')?.value || query.get('login') || '').trim();
+    const password = document.getElementById('password-reset-new-input')?.value || '';
+    const password2 = document.getElementById('password-reset-new2-input')?.value || '';
+    if (!token || login.length < 3) {
+      setPasswordResetStatus('password-reset-confirm-status', 'Ссылка восстановления неполная или повреждена.', 'err');
+      return;
+    }
+    if (password.length < 8) {
+      setPasswordResetStatus('password-reset-confirm-status', 'Пароль должен содержать не менее 8 символов.', 'err');
+      return;
+    }
+    if (password !== password2) {
+      setPasswordResetStatus('password-reset-confirm-status', 'Пароли не совпадают.', 'err');
+      return;
+    }
+    setPasswordResetStatus('password-reset-confirm-status', 'Сохранение нового пароля...');
+    try {
+      const data = await serverApi('/api/auth/password-reset/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ login, token, password })
+      });
+      history.replaceState(null, '', `${location.pathname}${location.hash}`);
+      setAuthStep('login');
+      const loginInput = document.getElementById('server-login-input');
+      if (loginInput) loginInput.value = login;
+      setServerAuthStatus(data.message || 'Пароль изменён. Теперь можно войти.', 'ok');
+    } catch (err) {
+      setPasswordResetStatus('password-reset-confirm-status', err.message || 'Не удалось изменить пароль.', 'err');
+    }
+  }
+
+  function openPasswordResetFromUrl() {
+    const query = new URLSearchParams(location.search);
+    const token = query.get('resetToken') || '';
+    const login = query.get('login') || '';
+    if (!token) return false;
+    const input = document.getElementById('password-reset-login-input');
+    if (input) input.value = login;
+    setAuthStep('password-reset-confirm');
+    return true;
   }
 
   async function loadServerState() {

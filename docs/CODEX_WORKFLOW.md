@@ -109,3 +109,37 @@ curl -fsS https://rangir.ru/health
 ```
 
 Обычный `git pull` их не затрагивает.
+
+## Email и восстановление пароля
+
+Регистрация требует уникальный email. Ссылки восстановления отправляются через SMTP,
+настроенный только на production-сервере. Добавьте в окружение systemd-службы:
+
+```text
+PUBLIC_GAME_URL=https://rangir.ru
+SMTP_URL=smtps://SMTP_USER:URL_ENCODED_PASSWORD@smtp.example.com:465
+MAIL_FROM=Realm of Ashes <noreply@example.com>
+```
+
+После изменения окружения выполните:
+
+```bash
+systemctl daemon-reload
+systemctl restart realm-of-ashes
+```
+
+Для старого аккаунта без email или при утерянном пароле администратор может назначить
+email и пароль непосредственно на VPS, не помещая пароль в историю команд:
+
+```bash
+read -rsp "Новый пароль: " REALM_NEW_PASSWORD
+echo
+export REALM_NEW_PASSWORD
+runuser -u realm -- env HOME=/var/lib/realm-of-ashes \
+  DATA_DIR=/var/lib/realm-of-ashes/data \
+  REALM_NEW_PASSWORD="$REALM_NEW_PASSWORD" \
+  npm --prefix /opt/realm-of-ashes run admin:account -- \
+  --login MrHab --email owner@example.com
+unset REALM_NEW_PASSWORD
+systemctl restart realm-of-ashes
+```

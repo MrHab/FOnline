@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
+const nodemailer = require('nodemailer');
 const { version: GAME_VERSION } = require('./package.json');
 const {
   createWastelandSimulation,
@@ -90,6 +91,11 @@ const allowedOrigins = (process.env.ORIGINS || defaultLocalServerOrigins(PORT))
 const DEV_ADMIN_TOKEN = String(process.env.DEV_ADMIN_TOKEN || '').trim();
 const AUTH_RATE_WINDOW_MS = Math.max(60000, Number(process.env.AUTH_RATE_WINDOW_MS || 10 * 60 * 1000));
 const AUTH_RATE_MAX_ATTEMPTS = Math.max(5, Number(process.env.AUTH_RATE_MAX_ATTEMPTS || 20));
+const PASSWORD_RESET_TTL_MS = Math.max(5 * 60 * 1000, Number(process.env.PASSWORD_RESET_TTL_MS || 60 * 60 * 1000));
+const PUBLIC_GAME_URL = String(process.env.PUBLIC_GAME_URL || 'https://rangir.ru').replace(/\/+$/, '');
+const SMTP_URL = String(process.env.SMTP_URL || '').trim();
+const MAIL_FROM = String(process.env.MAIL_FROM || '').trim();
+const mailTransport = SMTP_URL ? nodemailer.createTransport(SMTP_URL) : null;
 
 const BUNDLED_DATA_DIR = path.join(__dirname, 'data');
 const BUNDLED_LOCATIONS_DIR = path.join(BUNDLED_DATA_DIR, 'locations');
@@ -773,6 +779,37 @@ function validatePassword(password) {
   return typeof password === 'string' && password.length >= 8 && password.length <= 128;
 }
 
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u.test(email) && email.length <= 254;
+}
+
+function userForEmail(email) {
+  const normalized = normalizeEmail(email);
+  return Object.values(usersDb.users || {}).find(user => normalizeEmail(user?.email) === normalized) || null;
+}
+
+function passwordResetTokenHash(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+async function sendPasswordResetEmail(user, token) {
+  if (!mailTransport || !MAIL_FROM) throw new Error('SMTP is not configured');
+  const resetUrl = new URL(PUBLIC_GAME_URL);
+  resetUrl.searchParams.set('resetToken', token);
+  resetUrl.searchParams.set('login', user.login);
+  await mailTransport.sendMail({
+    from: MAIL_FROM,
+    to: user.email,
+    subject: 'Realm of Ashes — восстановление пароля',
+    text: `Для установки нового пароля откройте ссылку:\n${resetUrl}\n\nСсылка действует 1 час. Если вы не запрашивали восстановление, проигнорируйте письмо.`,
+    html: `<p>Для установки нового пароля откройте ссылку:</p><p><a href="${resetUrl}">Восстановить пароль</a></p><p>Ссылка действует 1 час. Если вы не запрашивали восстановление, проигнорируйте письмо.</p>`
+  });
+}
+
 function makeUserId() {
   return `u_${crypto.randomBytes(12).toString('hex')}`;
 }
@@ -1271,6 +1308,7 @@ app.get('/health', (_, res) => {
 
 app.post('/api/auth/register', authRateLimit, (req, res) => {
   const login = normalizeLogin(req.body.login);
+  const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
   const deviceId = getDeviceIdFromRequest(req);
   const deviceType = getDeviceTypeFromRequest(req);
@@ -1281,13 +1319,20 @@ app.post('/api/auth/register', authRateLimit, (req, res) => {
   if (!validatePassword(password)) {
     return res.status(400).json({ ok: false, error: 'Пароль должен быть от 8 до 128 символов.' });
   }
+  if (!validateEmail(email)) {
+    return res.status(400).json({ ok: false, error: 'Введите корректный email для восстановления пароля.' });
+  }
   if (usersDb.users[login]) {
     return res.status(409).json({ ok: false, error: 'Такой логин уже зарегистрирован.' });
+  }
+  if (userForEmail(email)) {
+    return res.status(409).json({ ok: false, error: 'Этот email уже используется другим аккаунтом.' });
   }
   const { salt, hash } = hashPassword(password);
   const user = {
     id: makeUserId(),
     login,
+    email,
     salt,
     passwordHash: hash,
     createdAt: Date.now(),
@@ -1296,7 +1341,7 @@ app.post('/api/auth/register', authRateLimit, (req, res) => {
   usersDb.users[login] = user;
   const token = createSession(login, user, deviceId, deviceType, controlType);
   clearAuthRateLimit(req);
-  res.json({ ok: true, token, user: { login }, hasSave: false, characters: [] });
+  res.json({ ok: true, token, user: { login, email }, hasSave: false, characters: [] });
 });
 
 app.post('/api/auth/login', authRateLimit, (req, res) => {
@@ -1317,6 +1362,62 @@ app.post('/api/auth/login', authRateLimit, (req, res) => {
   clearAuthRateLimit(req);
   const characters = listUserCharacters(user, login);
   res.json({ ok: true, token, user: { login }, hasSave: characters.length > 0, characters });
+});
+
+app.post('/api/auth/password-reset/request', authRateLimit, async (req, res) => {
+  const email = normalizeEmail(req.body.email);
+  if (!validateEmail(email)) {
+    return res.status(400).json({ ok: false, error: 'Введите корректный email.' });
+  }
+  const user = userForEmail(email);
+  if (user) {
+    const token = crypto.randomBytes(32).toString('hex');
+    user.passwordReset = {
+      tokenHash: passwordResetTokenHash(token),
+      expiresAt: Date.now() + PASSWORD_RESET_TTL_MS
+    };
+    persistUsers();
+    try {
+      await sendPasswordResetEmail(user, token);
+    } catch (err) {
+      delete user.passwordReset;
+      persistUsers();
+      console.error('Password reset email failed:', err.message);
+      return res.status(503).json({ ok: false, error: 'Отправка писем временно недоступна. Обратитесь к администратору.' });
+    }
+  }
+  clearAuthRateLimit(req);
+  res.json({ ok: true, message: 'Если этот email зарегистрирован, ссылка для восстановления отправлена.' });
+});
+
+app.post('/api/auth/password-reset/confirm', authRateLimit, (req, res) => {
+  const login = normalizeLogin(req.body.login);
+  const token = String(req.body.token || '').trim();
+  const password = String(req.body.password || '');
+  const user = usersDb.users[login];
+  const reset = user?.passwordReset;
+  if (!validatePassword(password)) {
+    return res.status(400).json({ ok: false, error: 'Пароль должен быть от 8 до 128 символов.' });
+  }
+  const suppliedHash = passwordResetTokenHash(token);
+  const storedHash = String(reset?.tokenHash || '');
+  const validHash = suppliedHash.length === storedHash.length
+    && storedHash
+    && crypto.timingSafeEqual(Buffer.from(suppliedHash), Buffer.from(storedHash));
+  if (!user || !reset || Number(reset.expiresAt || 0) < Date.now() || !validHash) {
+    return res.status(400).json({ ok: false, error: 'Ссылка восстановления недействительна или устарела.' });
+  }
+  const { salt, hash } = hashPassword(password);
+  user.salt = salt;
+  user.passwordHash = hash;
+  user.passwordChangedAt = Date.now();
+  delete user.passwordReset;
+  for (const [sessionToken, session] of Object.entries(usersDb.sessions || {})) {
+    if (session?.login === login) delete usersDb.sessions[sessionToken];
+  }
+  persistUsers();
+  clearAuthRateLimit(req);
+  res.json({ ok: true, message: 'Пароль изменён. Теперь можно войти.' });
 });
 
 app.get('/api/auth/me', requireAuth, (req, res) => {

@@ -471,13 +471,12 @@
           </div>
           <form id="server-login-form" class="auth-form" autocomplete="on">
             <div class="auth-form-grid">
-              <input id="server-url-input" class="char-input server-url-input" maxlength="240" type="url" inputmode="url" autocomplete="url" placeholder="Адрес игрового сервера, например https://game.example.com" aria-label="Адрес игрового сервера" />
-              <div class="server-url-help">На локальном Node-сервере поле можно оставить пустым. Для GitHub Pages укажите публичный HTTPS-адрес сервера.</div>
               <input id="server-login-input" class="char-input" maxlength="32" autocomplete="username" placeholder="Логин" />
               <input id="server-password-input" class="char-input" maxlength="128" type="password" autocomplete="current-password" placeholder="Пароль" />
             </div>
           </form>
           <div class="auth-buttons">
+            <button id="open-password-reset-btn" class="char-action-btn auth-link-btn">Забыли пароль?</button>
             <button id="open-register-btn" class="char-action-btn auth-link-btn">Зарегистрироваться</button>
             <button id="server-login-btn" class="char-action-btn">Войти</button>
           </div>
@@ -492,6 +491,7 @@
           <form id="server-register-form" class="auth-form" autocomplete="on">
             <div class="auth-form-grid">
               <input id="register-login-input" class="char-input" maxlength="32" autocomplete="username" placeholder="Логин" />
+              <input id="register-email-input" class="char-input" maxlength="254" type="email" inputmode="email" autocomplete="email" placeholder="Email для восстановления пароля" />
               <input id="register-password-input" class="char-input" maxlength="128" type="password" autocomplete="new-password" placeholder="Пароль" />
               <input id="register-password2-input" class="char-input" maxlength="128" type="password" autocomplete="new-password" placeholder="Повторите пароль" />
             </div>
@@ -501,6 +501,35 @@
             <button id="server-register-btn" class="char-action-btn">Создать аккаунт</button>
           </div>
           <div id="server-register-status" class="server-auth-status">После регистрации откроется выбор персонажа.</div>
+        </div>
+
+        <div id="password-reset-panel" class="auth-step auth-window-panel">
+          <div class="server-auth-title"><span>Восстановление пароля</span><small>ссылка придёт на email</small></div>
+          <form id="password-reset-form" class="auth-form" autocomplete="on">
+            <div class="auth-form-grid">
+              <input id="password-reset-email-input" class="char-input" maxlength="254" type="email" inputmode="email" autocomplete="email" placeholder="Email аккаунта" />
+            </div>
+          </form>
+          <div class="auth-buttons">
+            <button id="password-reset-back-btn" class="char-action-btn auth-link-btn">Назад ко входу</button>
+            <button id="password-reset-send-btn" class="char-action-btn">Отправить ссылку</button>
+          </div>
+          <div id="password-reset-status" class="server-auth-status">Введите email, указанный при регистрации.</div>
+        </div>
+
+        <div id="password-reset-confirm-panel" class="auth-step auth-window-panel">
+          <div class="server-auth-title"><span>Новый пароль</span><small>одноразовая ссылка</small></div>
+          <form id="password-reset-confirm-form" class="auth-form" autocomplete="on">
+            <div class="auth-form-grid">
+              <input id="password-reset-login-input" class="char-input" maxlength="32" autocomplete="username" placeholder="Логин" />
+              <input id="password-reset-new-input" class="char-input" maxlength="128" type="password" autocomplete="new-password" placeholder="Новый пароль" />
+              <input id="password-reset-new2-input" class="char-input" maxlength="128" type="password" autocomplete="new-password" placeholder="Повторите новый пароль" />
+            </div>
+          </form>
+          <div class="auth-buttons">
+            <button id="password-reset-confirm-btn" class="char-action-btn">Сохранить новый пароль</button>
+          </div>
+          <div id="password-reset-confirm-status" class="server-auth-status">Введите новый пароль длиной не менее 8 символов.</div>
         </div>
 
         <div id="character-select-panel" class="auth-step auth-window-panel">

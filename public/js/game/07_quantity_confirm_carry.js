@@ -69,14 +69,31 @@
   }
 
   // ===== GAME-STYLE CONFIRMATION PANEL =====
-  const gameConfirmPanelState = { onConfirm: null, onCancel: null };
+  const gameConfirmPanelState = { onConfirm: null, onCancel: null, previousFocus: null };
 
   function ensureGameConfirmPanel() {
+    let backdrop = document.getElementById('game-confirm-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'game-confirm-backdrop';
+      backdrop.className = 'game-confirm-backdrop';
+      backdrop.setAttribute('aria-hidden', 'true');
+      const stopBackdrop = e => {
+        e.stopPropagation();
+        if (e.type === 'pointerdown') e.preventDefault();
+      };
+      backdrop.addEventListener('pointerdown', stopBackdrop, { passive: false });
+      backdrop.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+      document.body.appendChild(backdrop);
+    }
     let panel = document.getElementById('game-confirm-panel');
     if (panel) return panel;
     panel = document.createElement('div');
     panel.id = 'game-confirm-panel';
     panel.className = 'ui-panel game-confirm-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    panel.setAttribute('aria-labelledby', 'game-confirm-title');
     panel.setAttribute('aria-hidden', 'true');
     panel.innerHTML = `
       <div class="game-confirm-kicker" id="game-confirm-kicker">Подтверждение</div>
@@ -114,11 +131,24 @@
         e.preventDefault();
         closeGameConfirmPanel(true);
       }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const cancel = panel.querySelector('#game-confirm-cancel');
+        const confirm = panel.querySelector('#game-confirm-confirm');
+        if (e.shiftKey) {
+          (document.activeElement === cancel ? confirm : cancel)?.focus();
+        } else {
+          (document.activeElement === confirm ? cancel : confirm)?.focus();
+        }
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
-        const cb = gameConfirmPanelState.onConfirm;
-        closeGameConfirmPanel(false);
-        if (cb) cb();
+        const focused = panel.contains(document.activeElement) ? document.activeElement : null;
+        if (focused?.id === 'game-confirm-confirm') {
+          focused.click();
+        } else {
+          panel.querySelector('#game-confirm-cancel')?.click();
+        }
       }
     });
     return panel;
@@ -126,14 +156,26 @@
 
   function closeGameConfirmPanel(runCancel = false) {
     const panel = document.getElementById('game-confirm-panel');
+    const backdrop = document.getElementById('game-confirm-backdrop');
     const cancelCb = gameConfirmPanelState.onCancel;
+    const previousFocus = gameConfirmPanelState.previousFocus;
     gameConfirmPanelState.onConfirm = null;
     gameConfirmPanelState.onCancel = null;
+    gameConfirmPanelState.previousFocus = null;
     if (panel) {
       panel.classList.remove('visible');
       panel.setAttribute('aria-hidden', 'true');
     }
+    if (backdrop) {
+      backdrop.classList.remove('visible');
+      backdrop.setAttribute('aria-hidden', 'true');
+    }
     if (runCancel && cancelCb) cancelCb();
+    if (previousFocus?.isConnected) {
+      setTimeout(() => {
+        if (!panel?.classList.contains('visible')) previousFocus.focus();
+      }, 0);
+    }
     if (typeof updateMobilePanelState === 'function') updateMobilePanelState();
   }
 
@@ -144,6 +186,7 @@
     hideTooltip();
     hideItemContextMenu();
     if (typeof hideWorldContextMenu === 'function') hideWorldContextMenu();
+    gameConfirmPanelState.previousFocus = document.activeElement;
     gameConfirmPanelState.onConfirm = typeof onConfirm === 'function' ? onConfirm : null;
     gameConfirmPanelState.onCancel = typeof onCancel === 'function' ? onCancel : null;
     const item = itemId ? ITEMS[itemId] : null;
@@ -171,6 +214,11 @@
     setText('#game-confirm-note', note);
     setText('#game-confirm-cancel', cancelLabel);
     setText('#game-confirm-confirm', confirmLabel);
+    const backdrop = document.getElementById('game-confirm-backdrop');
+    if (backdrop) {
+      backdrop.classList.add('visible');
+      backdrop.setAttribute('aria-hidden', 'false');
+    }
     panel.classList.add('visible');
     panel.setAttribute('aria-hidden', 'false');
     setTimeout(() => panel.querySelector('#game-confirm-cancel')?.focus(), 0);
@@ -255,4 +303,3 @@
     }
     return onConfirm(1);
   }
-

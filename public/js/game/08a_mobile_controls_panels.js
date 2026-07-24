@@ -364,10 +364,16 @@
   async function switchCharacterFromMenu() {
     closeGameMenu(false);
     closeTutorialWindow(false);
-    try { saveGame(true); } catch (_) {}
+    try { await saveGame(true); } catch (_) {}
     if (multiplayer.socket) { try { multiplayer.socket.disconnect(); } catch (_) {} multiplayer.socket = null; }
+    multiplayer.joined = false;
+    multiplayer.characterLeaseId = '';
+    activeCharacterLeaseId = '';
     clearRemotePlayers();
     gameStarted = false;
+    characterProfile = null;
+    saveDirty = false;
+    saveTimer = 0;
     const screen = document.getElementById('character-screen');
     if (screen) screen.classList.add('visible');
     if (serverSession.token) await showCharacterSelect('Выберите персонажа. Текущий прогресс синхронизирован.');

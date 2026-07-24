@@ -724,11 +724,15 @@ function publicLocationFileSummary(loc, file = '') {
 }
 
 const usersDb = readJson(USERS_FILE, { version: 1, users: {}, sessions: {} });
-const savesDb = readJson(SAVES_FILE, { version: 1, saves: {} });
+const savesDb = readJson(SAVES_FILE, { version: 2, characters: {} });
 if (!usersDb.users) usersDb.users = {};
 if (!usersDb.sessions) usersDb.sessions = {};
-if (!savesDb.saves) savesDb.saves = {};
 if (!savesDb.characters) savesDb.characters = {};
+if (Object.prototype.hasOwnProperty.call(savesDb, 'saves')) {
+  delete savesDb.saves;
+  savesDb.version = Math.max(2, Number(savesDb.version || 0));
+  persistSaves();
+}
 
 // Живые блокировки нужны, чтобы один аккаунт/персонаж не был открыт с двух устройств.
 const activeAccountSockets = new Map(); // login -> socket.id
@@ -959,42 +963,23 @@ function ensureUserCharacterStore(userId) {
   return savesDb.characters[userId];
 }
 
-function migrateLegacySaveToCharacter(user, login) {
-  const store = ensureUserCharacterStore(user.id);
-  const legacy = savesDb.saves[user.id];
-  if (!legacy || !legacy.state || Object.keys(store).length > 0) return false;
-  const state = legacy.state;
-  const existingId = normalizeCharacterId(state?.characterProfile?.serverCharacterId);
-  const characterId = existingId || makeCharacterId();
-  if (state.characterProfile) state.characterProfile.serverCharacterId = characterId;
-  const updatedAt = Number(legacy.updatedAt || Date.now());
-  store[characterId] = {
-    id: characterId,
-    login,
-    createdAt: Number(state?.characterProfile?.createdAt || updatedAt),
-    updatedAt,
-    summary: summarizeState(state, characterId),
-    state
-  };
-  persistSaves();
-  return true;
-}
-
-function listUserCharacters(user, login) {
-  migrateLegacySaveToCharacter(user, login);
-  const store = ensureUserCharacterStore(user.id);
+function listStoredUserCharacters(store = {}, userId = '') {
   return Object.values(store)
     .map(row => ({
       id: row.id,
       name: row.summary?.name || row.state?.characterProfile?.name || 'Без имени',
       level: Number(row.summary?.level || row.state?.player?.level || 1),
       xp: Number(row.summary?.xp || row.state?.player?.xp || 0),
-      factionId: row.summary?.factionId || savedCharacterWorldFaction(user.id, row.id || row.state?.characterProfile?.serverCharacterId || ''),
+      factionId: row.summary?.factionId || savedCharacterWorldFaction(userId, row.id || row.state?.characterProfile?.serverCharacterId || ''),
       locationId: row.summary?.locationId || row.state?.currentLocationId || 'settlement',
       createdAt: Number(row.createdAt || row.summary?.createdAt || Date.now()),
       updatedAt: Number(row.updatedAt || row.summary?.savedAt || Date.now())
     }))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+    .sort((a, b) => b.updatedAt - a.updatedAt || String(a.id || '').localeCompare(String(b.id || '')));
+}
+
+function listUserCharacters(user) {
+  return listStoredUserCharacters(ensureUserCharacterStore(user.id), user.id);
 }
 
 function saveCharacterState(user, login, characterId, state) {
@@ -1014,8 +999,6 @@ function saveCharacterState(user, login, characterId, state) {
     summary: summarizeState(state, id),
     state
   };
-  // Старое поле оставляем как последнее активное сохранение, чтобы старые HTML-версии не ломались.
-  savesDb.saves[user.id] = { login, updatedAt: now, state };
   persistSaves();
   return store[id];
 }
@@ -1040,7 +1023,6 @@ function updateSavedCharacterWorldFaction(userId, login, characterId, factionId)
   row.state.characterProfile.factionJoinedAt = row.state.characterProfile.factionJoinedAt || Date.now();
   row.updatedAt = Date.now();
   row.summary = summarizeState(row.state, id);
-  savesDb.saves[userId] = { login, updatedAt: row.updatedAt, state: row.state };
   persistSaves();
   return true;
 }
@@ -1283,7 +1265,6 @@ app.get('/health', (_, res) => {
     locationRealities: rooms.size,
     playerLimitPerLocation: null,
     users: Object.keys(usersDb.users).length,
-    saves: Object.keys(savesDb.saves).length,
     characters: Object.values(savesDb.characters).reduce((sum, row) => sum + Object.keys(row || {}).length, 0)
   });
 });
@@ -1493,6 +1474,8 @@ app.get('/api/characters/:characterId', requireAuth, (req, res) => {
 app.post('/api/characters/:characterId/save', requireAuth, (req, res) => {
   const characterId = normalizeCharacterId(req.params.characterId);
   if (!characterId) return res.status(400).json({ ok: false, error: 'Некорректный ID персонажа.' });
+  const store = ensureUserCharacterStore(req.auth.user.id);
+  if (!store[characterId]) return res.status(404).json({ ok: false, error: 'Персонаж не найден.' });
   const state = safeSaveState(req.body.state);
   if (!state) return res.status(400).json({ ok: false, error: 'Некорректное состояние игры.' });
   const saveBlockReason = characterSaveBlocked(characterId, req.auth.token, req.clientInstanceId, req.characterLeaseId);
@@ -1504,39 +1487,36 @@ app.post('/api/characters/:characterId/save', requireAuth, (req, res) => {
 app.delete('/api/characters/:characterId', requireAuth, (req, res) => {
   const characterId = normalizeCharacterId(req.params.characterId);
   if (!characterId) return res.status(400).json({ ok: false, error: 'Некорректный ID персонажа.' });
-  const store = ensureUserCharacterStore(req.auth.user.id);
-  if (!store[characterId]) return res.status(404).json({ ok: false, error: 'Персонаж не найден.' });
-  delete store[characterId];
-  persistSaves();
-  res.json({ ok: true, characters: listUserCharacters(req.auth.user, req.auth.login) });
-});
-
-app.get('/api/save', requireAuth, (req, res) => {
-  const characters = listUserCharacters(req.auth.user, req.auth.login);
-  if (characters.length) {
-    const store = ensureUserCharacterStore(req.auth.user.id);
-    const row = store[characters[0].id];
-    return res.json({ ok: true, save: row?.state || null, updatedAt: row?.updatedAt || null, characterId: row?.id || null, characters });
+  if (String(req.body?.confirmCharacterId || '') !== characterId) {
+    return res.status(400).json({ ok: false, error: 'Подтвердите удаление, передав точный ID персонажа.' });
   }
-  const saveRow = savesDb.saves[req.auth.user.id] || null;
-  res.json({ ok: true, save: saveRow?.state || null, updatedAt: saveRow?.updatedAt || null, characters: [] });
-});
+  const store = ensureUserCharacterStore(req.auth.user.id);
+  const row = store[characterId];
+  if (!row) return res.status(404).json({ ok: false, error: 'Персонаж не найден.' });
+  if (getActiveCharacterLock(characterId)) {
+    return res.status(409).json({ ok: false, error: 'Нельзя удалить персонажа, пока он находится в игре.' });
+  }
 
-app.post('/api/save', requireAuth, (req, res) => {
-  const state = safeSaveState(req.body.state);
-  if (!state) return res.status(400).json({ ok: false, error: 'Некорректное состояние игры.' });
-  const requestedId = normalizeCharacterId(req.body.characterId || state?.characterProfile?.serverCharacterId) || makeCharacterId();
-  const saveBlockReason = characterSaveBlocked(requestedId, req.auth.token, req.clientInstanceId, req.characterLeaseId);
-  if (saveBlockReason) return res.status(409).json({ ok: false, error: saveBlockReason });
-  const row = saveCharacterState(req.auth.user, req.auth.login, requestedId, state);
-  res.json({ ok: true, characterId: row.id, updatedAt: row.updatedAt, character: row.summary });
-});
+  removeDeletedCharacterSocialReferences(characterId);
 
-app.post('/api/save/reset', requireAuth, (req, res) => {
-  delete savesDb.saves[req.auth.user.id];
-  delete savesDb.characters[req.auth.user.id];
+  try {
+    if (WASTELAND_SIM && typeof WASTELAND_SIM.leaveWorldParty === 'function') {
+      WASTELAND_SIM.leaveWorldParty({
+        playerId: characterId,
+        characterId,
+        name: row.summary?.name || row.state?.characterProfile?.name || 'Игрок'
+      });
+    }
+  } catch (err) {
+    console.error('Failed to remove deleted character from wasteland party:', err);
+  }
+
+  delete store[characterId];
+  activeCharacterSockets.delete(characterId);
+  recentCharacterLeases.delete(characterId);
+
   persistSaves();
-  res.json({ ok: true });
+  res.json({ ok: true, characters: listStoredUserCharacters(store, req.auth.user.id) });
 });
 
 
@@ -1619,7 +1599,7 @@ function findClientHtml() {
 function sendClientHtml(_, res) {
   const clientHtml = findClientHtml();
   if (clientHtml) return res.sendFile(clientHtml);
-  return res.type('text/plain').send(`${GAME_NAME} v${GAME_VERSION} server is running, but client HTML was not found. Put the HTML file in public/index.html or set CLIENT_HTML=path/to/game.html. API: /health, /api/auth/login, /api/auth/register, /api/characters, /api/save.`);
+  return res.type('text/plain').send(`${GAME_NAME} v${GAME_VERSION} server is running, but client HTML was not found. Put the HTML file in public/index.html or set CLIENT_HTML=path/to/game.html. API: /health, /api/auth/login, /api/auth/register, /api/characters.`);
 }
 
 app.get('/', sendClientHtml);
@@ -1757,11 +1737,6 @@ function setServerSocialStateForRecord(record = null, state = {}) {
   record.row.state.socialState = next;
   record.row.updatedAt = Date.now();
   record.row.summary = summarizeState(record.row.state, record.characterId);
-  savesDb.saves[record.userId] = {
-    login: record.row.login || savesDb.saves?.[record.userId]?.login || '',
-    updatedAt: record.row.updatedAt,
-    state: record.row.state
-  };
   persistSaves();
   return true;
 }
@@ -1944,6 +1919,40 @@ function performServerSocialStateAction(player = {}, data = {}) {
   return { ok: false, error: 'Неизвестное социальное действие.' };
 }
 
+function removeDeletedCharacterSocialReferences(characterId = '') {
+  const id = String(characterId || '').trim().slice(0, 96);
+  if (!id) return 0;
+  const records = [...serverSocialCharacterRecords().values()];
+  const deletedRecord = records.find(record => record.characterId === id);
+  const deletedClan = serverSocialStateForRecord(deletedRecord).clan;
+  const remaining = records.filter(record => record.characterId !== id);
+  const remainingClan = deletedClan.id
+    ? remaining.filter(record => serverSocialStateForRecord(record).clan.id === deletedClan.id)
+    : [];
+  const remainingClanEntries = remainingClan.map(serverSocialEntryForRecord).filter(Boolean);
+  const nextFounderId = deletedClan.role === 'Основатель' ? (remainingClan[0]?.characterId || '') : '';
+  let changed = 0;
+
+  for (const record of remaining) {
+    const state = serverSocialStateForRecord(record);
+    const before = JSON.stringify(state);
+    state.friends = state.friends.filter(entry => entry.id !== id);
+    state.friendRequests = state.friendRequests.filter(entry => entry.id !== id);
+    state.clanInvites = state.clanInvites.filter(entry => entry.id !== id);
+    if (state.clan.id && state.clan.id === deletedClan.id) {
+      state.clan.members = remainingClanEntries.filter(entry => entry.id !== record.characterId);
+      if (record.characterId === nextFounderId) state.clan.role = 'Основатель';
+    } else {
+      state.clan.members = state.clan.members.filter(entry => entry.id !== id);
+    }
+    if (JSON.stringify(state) === before) continue;
+    setServerSocialStateForRecord(record, state);
+    serverSocialNotify(record, 'Удалённый персонаж исключён из социальных списков.');
+    changed += 1;
+  }
+  return changed;
+}
+
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function clampPlayerVelocity(v) {
   const n = Number(v || 0);
@@ -2025,7 +2034,22 @@ function sanitizeTraits(input = [], fallback = []) {
   const src = Array.isArray(input) ? input : [];
   const base = Array.isArray(fallback) ? fallback : [];
   const picked = src.length ? src : base;
-  return picked.map(x => String(x || '').slice(0, 32)).filter(x => SERVER_START_TRAITS.has(x)).slice(0, 2);
+  const seen = new Set();
+  return picked
+    .map(x => String(x || '').slice(0, 32))
+    .filter(x => SERVER_START_TRAITS.has(x) && !seen.has(x) && seen.add(x))
+    .slice(0, 2);
+}
+
+function sanitizeTaggedSkills(input = [], fallback = []) {
+  const src = Array.isArray(input) ? input : [];
+  const base = Array.isArray(fallback) ? fallback : [];
+  const picked = src.length ? src : base;
+  const seen = new Set();
+  return picked
+    .map(x => String(x || '').slice(0, 32))
+    .filter(x => SERVER_SKILL_IDS.has(x) && !seen.has(x) && seen.add(x))
+    .slice(0, 2);
 }
 
 function serverSkillBudgetFor(level = 1, traits = []) {
@@ -2105,6 +2129,7 @@ function limitTalentRanksByBudget(ranks = {}, budget = 0, p = {}) {
 function enforceServerProgressionBudget(p = {}) {
   p.level = Math.max(1, Math.min(200, Math.floor(Number(p.level || 1))));
   p.traits = sanitizeTraits(p.traits || []);
+  p.taggedSkills = sanitizeTaggedSkills(p.taggedSkills || []);
   const perkBudget = serverPerkBudgetFor(p.level);
   p.talentRanks = limitTalentRanksByBudget(p.talentRanks || {}, perkBudget, p);
   p.skillRanks = limitSkillRanksByBudget(p.skillRanks || {}, serverSkillBudgetFor(p.level, p.traits), p);
@@ -3644,6 +3669,7 @@ const SERVER_NPC_AMMO_ITEM_IDS = new Set(['ammo9', 'ammo556', 'energyCell', 'nap
 const SERVER_NPC_WEAPON_ITEM_IDS = new Set(Object.keys(SERVER_WEAPONS).filter(id => id !== 'fists'));
 const SERVER_SKILL_POINTS_PER_LEVEL = 5;
 const SERVER_PERK_LEVEL_INTERVAL = 3;
+const SERVER_TAGGED_SKILL_BONUS_PERCENT = 5;
 const SERVER_SKILL_IDS = new Set(['lightWeapons','heavyWeapons','energyWeapons','throwing','melee','unarmed','doctor','firstAid','stealth','lockpick','traps','science','repair','speech','barter','wanderer']);
 const SERVER_TALENT_IDS = new Set(['gunslinger','automaticMan','heavyShooter','machineGunner','pyromaniac','energyTech','grenadier','meleeBreaker','unarmedFighter','sharpshooter','ambush','vigilance','nightVision','awareness','ghost','fieldMedic','quickTreatment','surgeon','immunologist','fieldSurgeon','quickHands','engineer','merchant','diplomat','scrounger','cacheSense','weaponSmith','recycler','actionBoy','toughness','armorTraining','steadfastness','lucky','secondChance','ironBones','specialStr','specialPer','specialEnd','specialCha','specialInt','specialAgi','specialLuck']);
 const SERVER_TALENT_MAX_RANKS = {
@@ -3959,9 +3985,6 @@ function normalizePersistedSaveRowNaturalCreatures(row = {}) {
 
 function migratePersistedNaturalCreatureSaves() {
   let changed = false;
-  for (const row of Object.values(savesDb.saves || {})) {
-    changed = normalizePersistedSaveRowNaturalCreatures(row) || changed;
-  }
   for (const store of Object.values(savesDb.characters || {})) {
     if (!store || typeof store !== 'object') continue;
     for (const row of Object.values(store)) {
@@ -5138,6 +5161,7 @@ function activePlayerForCharacter(userId = '', characterId = '') {
 function initialServerCharacterState(data = {}, characterId = '') {
   const id = normalizeCharacterId(characterId) || makeCharacterId();
   const traits = sanitizeTraits(data.traits || []);
+  const taggedSkills = sanitizeTaggedSkills(data.taggedSkills || []);
   const special = sanitizeSpecial(data.special || {});
   const equipment = { weapon: 'knife', armor: '', helmet: '', boots: '', backpack: '' };
   const inventory = serverInventoryRowsToObject(serverStarterInventoryRows(traits));
@@ -5151,6 +5175,7 @@ function initialServerCharacterState(data = {}, characterId = '') {
       name: safeName(data.name || 'Странник'),
       special,
       traits,
+      taggedSkills,
       createdAt: now,
       lastVisitedSettlementId: 'settlement',
       serverCharacterId: id
@@ -5209,9 +5234,23 @@ function ensureServerCharacterForJoin(auth = {}, data = {}, characterId = '') {
     summary: summarizeState(state, id),
     state
   };
-  savesDb.saves[auth.user.id] = { login: auth.login, updatedAt: now, state };
   persistSaves();
   return store[id];
+}
+
+function newServerCharacterSelectionError(data = {}) {
+  const rawTaggedSkills = Array.isArray(data.taggedSkills) ? data.taggedSkills : [];
+  const taggedSkills = sanitizeTaggedSkills(rawTaggedSkills);
+  if (rawTaggedSkills.length < 1 || rawTaggedSkills.length > 2 || taggedSkills.length !== rawTaggedSkills.length) {
+    return 'При создании персонажа выберите от одного до двух разных основных навыков.';
+  }
+
+  const rawTraits = Array.isArray(data.traits) ? data.traits : [];
+  const traits = sanitizeTraits(rawTraits);
+  if (rawTraits.length < 1 || rawTraits.length > 2 || traits.length !== rawTraits.length) {
+    return 'При создании персонажа выберите от одного до двух разных стартовых перков.';
+  }
+  return '';
 }
 
 function equipmentPresentationMatchesAuthority(state = {}, player = {}) {
@@ -5368,6 +5407,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   const previousProfile = previousState?.characterProfile || {};
   const clientProfile = clientState?.characterProfile || {};
   const profile = { ...previousProfile, ...clientProfile, serverCharacterId: id };
+  profile.taggedSkills = sanitizeTaggedSkills(previousProfile.taggedSkills || clientProfile.taggedSkills || []);
   if (!player) {
     next.characterProfile = profile;
     next.inventory = previousState.inventory || {};
@@ -5395,6 +5435,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   profile.name = safeName(player.name || profile.name || 'Странник');
   profile.special = sanitizeSpecial(player.special || profile.special || {});
   profile.traits = sanitizeTraits(player.traits || profile.traits || []);
+  profile.taggedSkills = sanitizeTaggedSkills(player.taggedSkills || profile.taggedSkills || []);
   profile.factionId = serverWorldFactionKey(player.worldFactionId || player.factionId || '');
   profile.worldFactionId = profile.factionId;
   next.characterProfile = profile;
@@ -5489,7 +5530,11 @@ function serverSkillBasePercent(p = {}, id = '') {
     barter: 10 + s.cha * 2 + s.int,
     wanderer: 10 + s.end + s.per + s.luck * 2
   };
-  return clamp(Math.round(formulas[id] ?? 20), 20, 45);
+  const base = clamp(Math.round(formulas[id] ?? 20), 20, 45);
+  const taggedBonus = sanitizeTaggedSkills(p.taggedSkills || []).includes(id)
+    ? SERVER_TAGGED_SKILL_BONUS_PERCENT
+    : 0;
+  return clamp(base + taggedBonus, 20, 50);
 }
 
 function serverSkillNorm(p = {}, id = '') {
@@ -7970,6 +8015,7 @@ function serverActionProgressionPlayer(p = {}, data = {}) {
     ...p,
     level: Math.max(1, Math.min(200, Math.floor(Number(p.level || 1)))),
     traits: sanitizeTraits(p.traits || []),
+    taggedSkills: sanitizeTaggedSkills(p.taggedSkills || []),
     special: sanitizeSpecial(p.special || p.stats || {}),
     skillRanks: sanitizeSkillRanks(data.skillRanks || p.skillRanks || {}),
     talentRanks: sanitizeTalentRanks(data.talentRanks || p.talentRanks || {})
@@ -7980,6 +8026,7 @@ function syncServerActionProgressionPlayer(p = {}, data = {}) {
   const actor = serverActionProgressionPlayer(p, data);
   p.level = actor.level;
   p.traits = actor.traits;
+  p.taggedSkills = actor.taggedSkills;
   p.special = actor.special;
   p.skillRanks = actor.skillRanks;
   p.talentRanks = actor.talentRanks;
@@ -8113,6 +8160,7 @@ function serverPrepareSecurityActionAp(p = {}, actor = {}, data = {}, kind = 'lo
   if (actor && typeof actor === 'object') {
     p.level = actor.level;
     p.traits = actor.traits;
+    p.taggedSkills = actor.taggedSkills;
     p.special = actor.special;
     p.skillRanks = actor.skillRanks;
     p.talentRanks = actor.talentRanks;
@@ -13772,6 +13820,7 @@ function publicAuthoritativePlayerState(p = {}) {
     skillPoints: Math.max(0, Math.floor(Number(p.skillPoints || 0))),
     special: sanitizeSpecial(p.special || {}),
     traits: sanitizeTraits(p.traits || []),
+    taggedSkills: sanitizeTaggedSkills(p.taggedSkills || []),
     skillRanks: sanitizeSkillRanks(p.skillRanks || {}),
     talentRanks: sanitizeTalentRanks(p.talentRanks || {}),
     inventory: syncServerInventorySnapshot(p),
@@ -13810,7 +13859,6 @@ function persistActivePlayerState(p = {}) {
   row.state = state;
   row.updatedAt = now;
   row.summary = summarizeState(state, characterId);
-  savesDb.saves[userId] = { login: p.accountLogin || row.login || '', updatedAt: now, state };
   persistSaves();
   return true;
 }
@@ -14450,6 +14498,12 @@ io.on('connection', (socket) => {
       return rejectJoin(socket, ack, 'Этот персонаж уже находится в игре в другой вкладке или на другом устройстве.');
     }
 
+    const characterStore = ensureUserCharacterStore(auth.user.id);
+    if (!characterStore[characterId]) {
+      const selectionError = newServerCharacterSelectionError(data);
+      if (selectionError) return rejectJoin(socket, ack, selectionError);
+    }
+
     const characterRow = ensureServerCharacterForJoin(auth, data, characterId);
     if (!characterRow?.state) return rejectJoin(socket, ack, 'Сервер не смог загрузить персонажа.');
     const savedState = characterRow.state;
@@ -14571,6 +14625,7 @@ io.on('connection', (socket) => {
       skillRanks: sanitizeSkillRanks(savedState.skillRanks || {}),
       talentRanks: sanitizeTalentRanks(savedState.talentRanks || {}),
       traits: sanitizeTraits(savedProfile.traits || []),
+      taggedSkills: sanitizeTaggedSkills(savedProfile.taggedSkills || []),
       hp: clampPlayerHp(savedPlayer.hp ?? savedPlayer.maxHp ?? 100, savedPlayer.maxHp || 100),
       dead: false,
       equipment: savedEquipment,

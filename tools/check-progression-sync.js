@@ -548,10 +548,9 @@ if (!safeSaveStateBody.includes('normalizePersistedGameStateNaturalCreatures(sta
   fail('Incoming saves must normalize persisted natural creatures before writing user state');
 }
 const persistedNaturalCreatureSaveBody = functionSlice(server, 'function migratePersistedNaturalCreatureSaves', '\nfunction ');
-if (!persistedNaturalCreatureSaveBody.includes('savesDb.saves')
-  || !persistedNaturalCreatureSaveBody.includes('savesDb.characters')
+if (!persistedNaturalCreatureSaveBody.includes('savesDb.characters')
   || !persistedNaturalCreatureSaveBody.includes('persistSaves()')) {
-  fail('Persisted saves must migrate old natural creature snapshots in both legacy and character stores');
+  fail('Persisted saves must migrate old natural creature snapshots in character stores');
 }
 const persistedNaturalCreatureEnemyBody = functionSlice(server, 'function normalizePersistedNaturalCreatureEnemy', '\nfunction ');
 if (!persistedNaturalCreatureEnemyBody.includes('enemy.canDialogue = false')

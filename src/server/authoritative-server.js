@@ -74,11 +74,15 @@ function writeJsonAtomic(file, data) {
 }
 
 const usersDb = readJson(USERS_FILE, { version: 1, users: {}, sessions: {} });
-const savesDb = readJson(SAVES_FILE, { version: 1, saves: {} });
+const savesDb = readJson(SAVES_FILE, { version: 2, characters: {} });
 if (!usersDb.users) usersDb.users = {};
 if (!usersDb.sessions) usersDb.sessions = {};
-if (!savesDb.saves) savesDb.saves = {};
 if (!savesDb.characters) savesDb.characters = {};
+if (Object.prototype.hasOwnProperty.call(savesDb, 'saves')) {
+  delete savesDb.saves;
+  savesDb.version = Math.max(2, Number(savesDb.version || 0));
+  persistSaves();
+}
 
 // Живые блокировки нужны, чтобы один аккаунт/персонаж не был открыт с двух устройств.
 const activeAccountSockets = new Map(); // login -> socket.id
@@ -282,29 +286,7 @@ function ensureUserCharacterStore(userId) {
   return savesDb.characters[userId];
 }
 
-function migrateLegacySaveToCharacter(user, login) {
-  const store = ensureUserCharacterStore(user.id);
-  const legacy = savesDb.saves[user.id];
-  if (!legacy || !legacy.state || Object.keys(store).length > 0) return false;
-  const state = legacy.state;
-  const existingId = normalizeCharacterId(state?.characterProfile?.serverCharacterId);
-  const characterId = existingId || makeCharacterId();
-  if (state.characterProfile) state.characterProfile.serverCharacterId = characterId;
-  const updatedAt = Number(legacy.updatedAt || Date.now());
-  store[characterId] = {
-    id: characterId,
-    login,
-    createdAt: Number(state?.characterProfile?.createdAt || updatedAt),
-    updatedAt,
-    summary: summarizeState(state, characterId),
-    state
-  };
-  persistSaves();
-  return true;
-}
-
-function listUserCharacters(user, login) {
-  migrateLegacySaveToCharacter(user, login);
+function listUserCharacters(user) {
   const store = ensureUserCharacterStore(user.id);
   return Object.values(store)
     .map(row => ({
@@ -334,8 +316,6 @@ function saveCharacterState(user, login, characterId, state) {
     summary: summarizeState(state, id),
     state
   };
-  // Старое поле оставляем как последнее активное сохранение, чтобы старые HTML-версии не ломались.
-  savesDb.saves[user.id] = { login, updatedAt: now, state };
   persistSaves();
   return store[id];
 }
@@ -390,7 +370,6 @@ app.get('/health', (_, res) => {
     locationRealities: rooms.size,
     playerLimitPerLocation: null,
     users: Object.keys(usersDb.users).length,
-    saves: Object.keys(savesDb.saves).length,
     characters: Object.values(savesDb.characters).reduce((sum, row) => sum + Object.keys(row || {}).length, 0)
   });
 });
@@ -503,6 +482,8 @@ app.get('/api/characters/:characterId', requireAuth, (req, res) => {
 app.post('/api/characters/:characterId/save', requireAuth, (req, res) => {
   const characterId = normalizeCharacterId(req.params.characterId);
   if (!characterId) return res.status(400).json({ ok: false, error: 'Некорректный ID персонажа.' });
+  const store = ensureUserCharacterStore(req.auth.user.id);
+  if (!store[characterId]) return res.status(404).json({ ok: false, error: 'Персонаж не найден.' });
   const state = safeSaveState(req.body.state);
   if (!state) return res.status(400).json({ ok: false, error: 'Некорректное состояние игры.' });
   if (characterLockedByOtherToken(characterId, req.auth.token)) return res.status(409).json({ ok: false, error: 'Этот персонаж сейчас открыт на другом устройстве. Синхронизация отклонена, чтобы не раздвоить прогресс.' });
@@ -518,32 +499,6 @@ app.delete('/api/characters/:characterId', requireAuth, (req, res) => {
   delete store[characterId];
   persistSaves();
   res.json({ ok: true, characters: listUserCharacters(req.auth.user, req.auth.login) });
-});
-
-app.get('/api/save', requireAuth, (req, res) => {
-  const characters = listUserCharacters(req.auth.user, req.auth.login);
-  if (characters.length) {
-    const store = ensureUserCharacterStore(req.auth.user.id);
-    const row = store[characters[0].id];
-    return res.json({ ok: true, save: row?.state || null, updatedAt: row?.updatedAt || null, characterId: row?.id || null, characters });
-  }
-  const saveRow = savesDb.saves[req.auth.user.id] || null;
-  res.json({ ok: true, save: saveRow?.state || null, updatedAt: saveRow?.updatedAt || null, characters: [] });
-});
-
-app.post('/api/save', requireAuth, (req, res) => {
-  const state = safeSaveState(req.body.state);
-  if (!state) return res.status(400).json({ ok: false, error: 'Некорректное состояние игры.' });
-  const requestedId = normalizeCharacterId(req.body.characterId || state?.characterProfile?.serverCharacterId) || makeCharacterId();
-  const row = saveCharacterState(req.auth.user, req.auth.login, requestedId, state);
-  res.json({ ok: true, characterId: row.id, updatedAt: row.updatedAt, character: row.summary });
-});
-
-app.post('/api/save/reset', requireAuth, (req, res) => {
-  delete savesDb.saves[req.auth.user.id];
-  delete savesDb.characters[req.auth.user.id];
-  persistSaves();
-  res.json({ ok: true });
 });
 
 
@@ -626,7 +581,7 @@ function findClientHtml() {
 function sendClientHtml(_, res) {
   const clientHtml = findClientHtml();
   if (clientHtml) return res.sendFile(clientHtml);
-  return res.type('text/plain').send(`${GAME_NAME} v${GAME_VERSION} server is running, but client HTML was not found. Put the HTML file in public/index.html or set CLIENT_HTML=path/to/game.html. API: /health, /api/auth/login, /api/auth/register, /api/characters, /api/save.`);
+  return res.type('text/plain').send(`${GAME_NAME} v${GAME_VERSION} server is running, but client HTML was not found. Put the HTML file in public/index.html or set CLIENT_HTML=path/to/game.html. API: /health, /api/auth/login, /api/auth/register, /api/characters.`);
 }
 
 app.get('/', sendClientHtml);

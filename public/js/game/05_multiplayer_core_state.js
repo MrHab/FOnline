@@ -211,6 +211,16 @@
     catch (_) { return []; }
   }
 
+  function multiplayerTaggedSkillsSnapshot() {
+    try {
+      const known = new Set(SKILLS.map(skill => skill.id));
+      return Array.isArray(characterProfile?.taggedSkills)
+        ? characterProfile.taggedSkills.filter(id => known.has(id)).slice(0, 2)
+        : [];
+    }
+    catch (_) { return []; }
+  }
+
 
   function sendImmediateMultiplayerState(reason = 'state') {
     if (!multiplayer.socket || !multiplayer.socket.connected || !multiplayer.joined) return;
@@ -240,6 +250,7 @@
       skillRanks: multiplayerSkillSnapshot(),
       talentRanks: multiplayerTalentSnapshot(),
       traits: multiplayerTraitSnapshot(),
+      taggedSkills: multiplayerTaggedSkillsSnapshot(),
       level: player.level,
       name: characterProfile?.name || serverSession.login || 'Игрок',
       deviceType: getDeviceType(),
@@ -249,4 +260,3 @@
       injuries: multiplayerInjurySnapshot()
     });
   }
-

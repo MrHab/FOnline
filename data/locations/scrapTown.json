@@ -175,7 +175,7 @@
     {
       "id": "scrapTown_job_board_01",
       "model": "jobBoard",
-      "name": "????? ???????",
+      "name": "Доска заданий",
       "url": "/assets/models/wasteland/job_board.glb",
       "position": {
         "x": 9,
@@ -629,7 +629,7 @@
     {
       "id": "capital_storage_scrap_union",
       "model": "storageChest",
-      "name": "????????? ?????????? ?????",
+      "name": "Хранилище Свалочного союза",
       "url": "/assets/models/wasteland/storage_chest.glb",
       "position": {
         "x": -5,

@@ -215,7 +215,7 @@
     {
       "id": "relayStation_job_board_01",
       "model": "jobBoard",
-      "name": "????? ???????",
+      "name": "Доска заданий",
       "url": "/assets/models/wasteland/job_board.glb",
       "position": {
         "x": 0,
@@ -567,7 +567,7 @@
     {
       "id": "capital_storage_relay_order",
       "model": "storageChest",
-      "name": "????????? ?????? ?????????????",
+      "name": "Хранилище Ордена ретранслятора",
       "url": "/assets/models/wasteland/storage_chest.glb",
       "position": {
         "x": 5,

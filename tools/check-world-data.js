@@ -25,10 +25,60 @@ const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const clientWorldSyncSource = fs.readFileSync(path.join(root, 'public', 'js', 'game', '05e_ground_items_world_sync.js'), 'utf8');
 const locationEditorFile = path.join(root, 'public', 'dev-location-editor.html');
 const locationEditorSource = fs.existsSync(locationEditorFile) ? fs.readFileSync(locationEditorFile, 'utf8') : '';
+const authoredDataFiles = new Set([
+  'encounters.json',
+  'global-map.json',
+  'loot-tables.json',
+  'quests.json',
+  'traders.json'
+]);
+
+function isAuthoredJsonFile(file) {
+  const rel = path.relative(dataDir, file).replace(/\\/g, '/');
+  return rel.startsWith('locations/') || authoredDataFiles.has(rel);
+}
+
+function collectCorruptedAuthoredText(value, trail = '$', found = []) {
+  if (typeof value === 'string') {
+    if (value.includes('\uFFFD')) found.push({ trail, reason: 'contains the Unicode replacement character' });
+    if (/\?{2,}/u.test(value)) found.push({ trail, reason: 'contains repeated "?" characters' });
+    return found;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => collectCorruptedAuthoredText(entry, `${trail}[${index}]`, found));
+    return found;
+  }
+  if (!value || typeof value !== 'object') return found;
+  for (const [key, entry] of Object.entries(value)) {
+    const keyTrail = /^[a-zA-Z_$][a-zA-Z0-9_$-]*$/.test(key)
+      ? `${trail}.${key}`
+      : `${trail}[${JSON.stringify(key)}]`;
+    collectCorruptedAuthoredText(entry, keyTrail, found);
+  }
+  return found;
+}
+
+const authoredTextValidationProbe = collectCorruptedAuthoredText({
+  validQuestion: 'Кто оставил эту запись?',
+  brokenQuestionMarks: '????',
+  brokenReplacement: 'Повреждённый \uFFFD текст'
+});
+if (authoredTextValidationProbe.length !== 2
+  || !authoredTextValidationProbe.some(row => row.trail === '$.brokenQuestionMarks')
+  || !authoredTextValidationProbe.some(row => row.trail === '$.brokenReplacement')) {
+  errors.push('tools/check-world-data.js: authored text validation contract failed');
+}
 
 function readJson(file) {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (isAuthoredJsonFile(file)) {
+      const rel = path.relative(root, file);
+      collectCorruptedAuthoredText(parsed).forEach(row => {
+        errors.push(`${rel}: ${row.trail} ${row.reason}`);
+      });
+    }
+    return parsed;
   } catch (err) {
     errors.push(`${path.relative(root, file)}: invalid JSON (${err.message})`);
     return null;

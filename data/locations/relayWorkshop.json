@@ -420,7 +420,7 @@
     {
       "id": "relayWorkshop_job_board",
       "model": "jobBoard",
-      "name": "????? ?????",
+      "name": "Доска работ",
       "url": "/assets/models/wasteland/job_board.glb",
       "position": {
         "x": -24,

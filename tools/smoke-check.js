@@ -84,6 +84,15 @@ function assertRequiredFiles() {
   if (!serverSource.includes('WASTELAND_SIM_SAVE_INTERVAL_MS')) {
     fail('wasteland simulation save interval is not configurable');
   }
+  if (!serverSource.includes('function shouldTickEmptyRoomAi(')
+    || !serverSource.includes('room.emptyRoomAiUntil = Math.max(')
+    || !serverSource.includes('let emptyRoomAiBudget = 1;')
+    || !serverSource.includes('updateServerEnemies(room, dt, { players: [], allowSpawn: false });')) {
+    fail('ordinary empty rooms are not put to sleep with a bounded AI budget');
+  }
+  if (!serverSource.includes("finishEmptyPartyEncounterRoom(room, reason);")) {
+    fail('empty party encounters are not finalized before room AI sleeps');
+  }
   if (serverSource.includes('ROOM_CAPACITY') || serverSource.includes('roomCapacity:')) {
     fail('server still exposes or enforces a per-location player capacity');
   }

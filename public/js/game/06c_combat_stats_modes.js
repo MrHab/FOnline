@@ -522,10 +522,12 @@
     if (!combat || typeof combat !== 'object') return false;
     if (Number.isFinite(Number(combat.ap))) player.ap = Math.min(player.maxAp, Math.max(0, Number(combat.ap)));
     const w = currentWeapon();
-    if (w && combat.weapon && weaponBaseId(w) === String(combat.weapon) && w.ammoType && Number.isFinite(Number(combat.loaded))) {
+    const currentRuntimeId = String(equipment?.weapon || w?.id || '');
+    const runtimeMatches = !combat.weaponRuntimeId || String(combat.weaponRuntimeId) === currentRuntimeId;
+    if (w && runtimeMatches && combat.weapon && weaponBaseId(w) === String(combat.weapon) && w.ammoType && Number.isFinite(Number(combat.loaded))) {
       w.loaded = Math.max(0, Math.min(Number(w.magSize || combat.magSize || 0), Math.round(Number(combat.loaded))));
     }
-    if (w && combat.weapon && weaponBaseId(w) === String(combat.weapon) && Number.isFinite(Number(combat.condition))) {
+    if (w && runtimeMatches && combat.weapon && weaponBaseId(w) === String(combat.weapon) && Number.isFinite(Number(combat.condition))) {
       w.condition = Math.max(1, Math.min(100, Number(combat.condition)));
     }
     renderQuickbar();

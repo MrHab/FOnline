@@ -178,7 +178,7 @@
       if (!apSpent) return false;
       const dropX = player.x + Math.sin(player.angle || 0) * 1.15;
       const dropZ = player.z + Math.cos(player.angle || 0) * 1.15;
-      multiplayer.socket.emit('dropItem', { itemId: baseItemId(id), qty: dropQty, inventoryQtyBefore: currentAvailable, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null, x: dropX, z: dropZ }, ack => {
+      multiplayer.socket.emit('dropItem', { itemId: baseItemId(id), itemRuntimeId: String(id || '').slice(0, 96), qty: dropQty, inventoryQtyBefore: currentAvailable, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null, x: dropX, z: dropZ }, ack => {
         if (!ack || !ack.ok) {
           if (typeof refundInventoryManipulationAp === 'function') refundInventoryManipulationAp(apSpent);
           setReadout(ack?.error || 'Не удалось выбросить предмет.');

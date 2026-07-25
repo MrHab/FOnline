@@ -1,45 +1,95 @@
 # Realm of Ashes — Wiki
 
-Эта wiki описывает текущее состояние проекта, а не журнал патчей.
+Актуально для **v7.76.1**. Последняя сверка с кодом: **25 июля 2026 года**.
 
-## Актуальные ключевые решения
+Эта wiki описывает текущее устройство проекта. История релизов хранится в
+[`CHANGELOG.md`](CHANGELOG.md), а файлы `PATCH_NOTES_*.md` считаются архивом
+конкретных визуальных итераций и не являются источником текущих контрактов.
 
-- В игре один источник видимости: `isPointVisibleForGameplay(worldX, worldZ, options)`.
-- Эту функцию используют крыша, NPC, игроки, враги, лут и интерактивные объекты.
-- Здание торговца не имеет отдельной indoor-системы обзора.
-- Крыша торговца — двухскатная деревянная крыша без отдельного конька.
-- Крыша не исчезает геометрически: закрытые ячейки непрозрачные, видимые ячейки почти прозрачные.
-- Статическое окружение под крышей остаётся отрисованным; fog-of-war скрывает только динамические и интерактивные сущности.
-- Настоящие shadow-map тени временно отключены, используются дешёвые псевдо-тени.
+## Быстрый старт
 
-## Основные страницы
+Требуются Node.js 22 и npm:
 
-- `PROJECT_OVERVIEW.md` — общий обзор проекта.
-- `ARCHITECTURE.md` — структура клиента и сервера.
-- `CLIENT_FILES.md` — разбиение клиентского JavaScript.
-- `SERVER_FILES.md` — структура сервера.
-- `CAMERA_AND_VISION.md` — камера, единая видимость, fog-of-war и line-of-sight.
-- `ROOF_CUTAWAY_PERFORMANCE.md` — крыша торговца и производительность.
-- `GRAPHICS_SETTINGS.md` — качество графики, render scale, тени.
-- `KNOWN_BUGS.md` — актуальные ограничения и известные проблемы.
-- `ROADMAP.md` — дальнейшие задачи.
+```bash
+npm ci
+npm start
+```
 
+Локальный клиент и сервер доступны по адресу `http://127.0.0.1:3000`.
+Базовая проверка после запуска — `GET /health`.
 
-## v7.74.95: tile-sized trader building blocks
+## Ключевые инварианты
 
-The trader building shell is now rebuilt on the same `TILE` grid used by gameplay visibility. Wall visuals, wall collision, roof-mask cells and LOS blockers use matching 2m modules. The roof remains a simple two-slope shell; no separate ridge mesh is used. Static interior props remain rendered under the roof while dynamic/interactable objects use `isPointVisibleForGameplay()`.
+- `server.js` — единственная production-точка входа и источник истины для
+  многопользовательского состояния.
+- Аккаунты, персонажи и живая симуляция хранятся в `DATA_DIR`; эти runtime-файлы
+  не входят в авторские данные репозитория.
+- Авторские локации имеют уникальные `id` и лежат в `data/locations/`. Их нельзя
+  заменять сгенерированным состоянием живого мира.
+- У локаций нет настроенного лимита игроков: обычная локация использует общую
+  серверную реальность, а встречи и отдельные точки мира получают собственный
+  `roomId`.
+- Полный snapshot определяет состав комнаты, а частый `playerState` отвечает
+  только за плавность движения удалённых игроков.
+- Боевые ресурсы авторитетны на сервере: сохранённый магазин нельзя заполнить
+  клиентским снимком, темп атак ограничен `fireRate`, а действие принимается
+  только при наличии полной стоимости в AP.
+- Единая клиентская проверка видимости —
+  `isPointVisibleForGameplay(worldX, worldZ, options)`.
+- Настоящие солнечные shadow-map тени включены на desktop High/Ultra. Low,
+  Medium и мобильные устройства используют облегчённый путь без солнечного
+  shadow pass.
+- `public/js/game.js` параллельно загружает части клиента и collider-каталог,
+  затем исполняет JS-части строго в порядке `GAME_SCRIPT_PARTS`.
 
+## Навигация
 
-## v7.74.96: square wall blocks and transparent window LOS
+### Архитектура и эксплуатация
 
-Trader wall modules now use a square `TILE x TILE` footprint in top-down space, not a thin wall strip. Collision follows the same square block footprint. Window cells remain physical wall/window modules for movement, but they are excluded from `traderBuildingVisionWalls()` so windows do not block the single gameplay visibility function. The roof mask, NPCs, players, loot and interactable objects continue to ask `isPointVisibleForGameplay()`.
+- [Обзор проекта](PROJECT_OVERVIEW.md)
+- [Архитектура](ARCHITECTURE.md)
+- [Серверные файлы](SERVER_FILES.md)
+- [Серверный runtime и производительность](SERVER_RUNTIME.md)
+- [Аккаунты и персонажи](AUTH_AND_CHARACTERS.md)
+- [Клиентские файлы](CLIENT_FILES.md)
+- [Socket.IO события](SOCKET_EVENTS.md)
+- [Авторитетные правила сервера](SERVER_AUTHORITATIVE_RULES.md)
 
-## v7.74.97: trader building 10 × 8 grid
+### Мир и игровые системы
 
-Trader building footprint is now exactly **10 × 8 world tiles**. The building origin is placed on a world tile corner so all wall blocks, collision boxes, roof-mask cells and LOS blockers align to the same `TILE` grid. Wall modules are full square `TILE × TILE` blocks in top-down space. The perimeter includes all corner cells; there are no half cells or empty grid corners. Window cells are physical window/wall cells for movement collision, but they are excluded from LOS blockers so they do not block `isPointVisibleForGameplay()`.
+- [Локации и глобальный мир](LOCATIONS_AND_WORLD.md)
+- [Игрок](PLAYER_SYSTEM.md)
+- [Враги](ENEMY_SYSTEM.md)
+- [Инвентарь](INVENTORY_SYSTEM.md)
+- [Лут и трупы](LOOT_SYSTEM.md)
+- [Предметы на земле](GROUND_ITEMS_SYSTEM.md)
+- [Контейнеры мира](WORLD_CONTAINERS_SYSTEM.md)
+- [Торговля](TRADER_SYSTEM.md)
 
+### Рендеринг
 
+- [Камера и видимость](CAMERA_AND_VISION.md)
+- [Настройки графики](GRAPHICS_SETTINGS.md)
+- [Динамические тени](DYNAMIC_SHADOWS.md)
+- [Инициализация и бюджет теней](SHADOWS_INIT_AND_BUDGET.md)
+- [Производительность roof cutaway](ROOF_CUTAWAY_PERFORMANCE.md)
+- [Инварианты крыши и теней](STABLE_ROOF_AND_SHADOWS.md)
+- [Освещение здания торговца](TRADER_BUILDING_LIGHTING.md)
 
-## Мобильная кнопка быстрого доступа v7.75.64
+### Планирование и история
 
-Кнопка ⚡ в правом боевом блоке открывает радиальное меню сразу по тапу, без удержания. Раскладка правого блока стала компактной: атака по центру, действие и автоприцел слева, перезарядка/режим/быстрый доступ справа вертикальной колонкой без пересечений.
+- [Технический долг и известные проблемы](KNOWN_BUGS.md)
+- [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md)
+
+## Как поддерживать wiki
+
+1. Сначала сверять утверждение с production-кодом, авторскими JSON или
+   `package.json`.
+2. Описывать текущее поведение в тематической странице; историю изменения
+   добавлять только в changelog.
+3. После правок запускать узкую проверку, а перед передачей существенного
+   обновления — `npm run check`.
+4. Для production-настройки использовать
+   [инструкцию по производительности](../PERFORMANCE_DEPLOYMENT.md) и
+   [workflow развёртывания](../CODEX_WORKFLOW.md).

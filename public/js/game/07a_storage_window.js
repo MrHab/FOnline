@@ -40,10 +40,14 @@
       setReadout('Хранилище недоступно без соединения с сервером мира.');
       return false;
     }
-    const normalized = rows.map(row => ({
-      id: baseItemId(row?.id || ''),
-      qty: Math.max(0, Math.floor(Number(row?.qty || 0)))
-    })).filter(row => row.id && row.id !== 'silver' && row.qty > 0);
+    const normalized = rows.map(row => {
+      const rawId = String(row?.id || '').trim();
+      return {
+        id: baseItemId(rawId),
+        itemRuntimeId: rawId,
+        qty: Math.max(0, Math.floor(Number(row?.qty || 0)))
+      };
+    }).filter(row => row.id && row.id !== 'silver' && row.qty > 0);
     if (!normalized.length) return false;
     storageTransferPending = true;
     multiplayer.socket.emit('storageTransfer', { direction, rows: normalized }, ack => {

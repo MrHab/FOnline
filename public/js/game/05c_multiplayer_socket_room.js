@@ -105,20 +105,68 @@
 
   function applyServerAuthoritativePlayerState(snapshot = {}) {
     if (!snapshot || typeof snapshot !== 'object') return false;
+    if (Number.isFinite(Number(snapshot.equipmentRevision))) {
+      multiplayer.equipmentRevision = Math.max(0, Math.floor(Number(snapshot.equipmentRevision)));
+    }
     if (snapshot.equipment && typeof snapshot.equipment === 'object') {
       ['weapon', 'armor', 'helmet', 'boots', 'backpack'].forEach(slot => {
         const fallback = slot === 'weapon' ? 'fists' : '';
-        equipment[slot] = clientEquipmentIdForServerBase(slot, snapshot.equipment[slot] || fallback);
+        const serverBaseId = typeof baseItemId === 'function'
+          ? baseItemId(snapshot.equipment[slot] || fallback)
+          : String(snapshot.equipment[slot] || fallback);
+        const runtimeId = String(snapshot.equipmentRuntime?.[slot] || '');
+        if (runtimeId
+          && (typeof baseItemId !== 'function' || baseItemId(runtimeId) === serverBaseId)) {
+          if (!ITEMS[runtimeId] && typeof ensureSavedRuntimeItem === 'function') {
+            ensureSavedRuntimeItem(runtimeId, { baseId: serverBaseId });
+          }
+          equipment[slot] = ITEMS[runtimeId]
+            ? runtimeId
+            : clientEquipmentIdForServerBase(slot, serverBaseId);
+        } else {
+          equipment[slot] = clientEquipmentIdForServerBase(slot, serverBaseId);
+        }
       });
     }
     if (Array.isArray(snapshot.inventory) && typeof applyServerInventorySnapshot === 'function') {
       applyServerInventorySnapshot(snapshot.inventory);
+    }
+    if (Array.isArray(snapshot.weaponInventoryRuntime)) {
+      const rows = snapshot.weaponInventoryRuntime.slice(0, 80);
+      const weaponBases = new Set(rows.map(row => String(row?.baseId || '')).filter(Boolean));
+      const equippedWeaponId = String(equipment?.weapon || '');
+      for (const [itemId] of Array.from(inventory.entries())) {
+        if (itemId === equippedWeaponId) continue;
+        const baseId = typeof baseItemId === 'function' ? baseItemId(itemId) : itemId;
+        if (weaponBases.has(String(baseId))) inventory.delete(itemId);
+      }
+      rows.forEach(row => {
+        const rawId = String(row?.id || '');
+        const baseId = String(row?.baseId || '');
+        const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
+        if (!rawId || !baseId || qty <= 0) return;
+        if (!ITEMS[rawId] && typeof ensureSavedRuntimeItem === 'function') {
+          ensureSavedRuntimeItem(rawId, {
+            baseId,
+            loaded: Number(row.loaded || 0),
+            condition: Number(row.condition || 100)
+          });
+        }
+        if (!ITEMS[rawId]) return;
+        if (Number.isFinite(Number(row.loaded))) ITEMS[rawId].loaded = Math.max(0, Math.round(Number(row.loaded)));
+        if (Number.isFinite(Number(row.condition))) ITEMS[rawId].condition = Math.max(1, Math.min(100, Number(row.condition)));
+        inventory.set(rawId, qty);
+      });
+      if (typeof normalizeUniqueEquipmentState === 'function') normalizeUniqueEquipmentState();
     }
     if (Array.isArray(snapshot.storage) && typeof applyServerStorageSnapshot === 'function') {
       applyServerStorageSnapshot(snapshot.storage);
     }
     if (snapshot.itemConditions && typeof applyServerItemConditions === 'function') {
       applyServerItemConditions(snapshot.itemConditions);
+    }
+    if (snapshot.combat && typeof applyServerCombatState === 'function') {
+      applyServerCombatState(snapshot.combat);
     }
     if (Number.isFinite(Number(snapshot.hp))) player.hp = Math.max(0, Number(snapshot.hp));
     if (Number.isFinite(Number(snapshot.maxHp))) player.maxHp = Math.max(1, Number(snapshot.maxHp));
@@ -302,6 +350,7 @@
       multiplayer.connected = false;
       multiplayer.joined = false;
       multiplayer.serverAuthoritativeEnemies = false;
+      if (multiplayer.pendingEquipmentSlots?.clear) multiplayer.pendingEquipmentSlots.clear();
       resetNetworkPingMeasurement('offline');
       resolveMultiplayerJoinWaiters(false);
       setOnlineStatus('Сеть: отключено от сервера');

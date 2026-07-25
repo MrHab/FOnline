@@ -48,6 +48,7 @@
     if (enemiesAreServerAuthoritative()) {
       multiplayer.socket.emit('explosionAttack', {
         ...multiplayerProgressionSnapshot(),
+        equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
         weapon: weaponBaseId(w),
         mode: modeInfo.id,
         attackToken: options.spend?.token || '',

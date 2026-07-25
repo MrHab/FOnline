@@ -3760,6 +3760,9 @@ const SERVER_WEAPONS = {
   handPump: { id: 'handPump', name: 'Ручной насос', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, dmg: [7, 12], range: 1.8, ammoType: null, magSize: 0, fireRate: 0.72, apCost: 3 },
   fists: { id: 'fists', name: 'Кулаки', weaponSkill: 'unarmed', damageType: 'ballistic', requiredStrength: 1, dmg: [2, 4], range: 1.35, ammoType: null, magSize: 0, fireRate: 0.62, apCost: 2 }
 };
+const SERVER_COMBAT_AP_EPSILON = 0.0001;
+const SERVER_COMBAT_COOLDOWN_EPSILON_MS = 2;
+const SERVER_EQUIPMENT_SLOT_AP_COST = 1;
 const SERVER_REPAIRABLE_ITEM_IDS = new Set([
   ...Object.keys(SERVER_WEAPONS).filter(id => id !== 'fists'),
   'leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit', 'heavyArmor', 'energySuit',
@@ -4554,14 +4557,16 @@ function sanitizePersistedEconomyState(state = {}) {
 function syncServerInventorySnapshot(p = {}, data = {}) {
   // Inventory is server-owned after join. Legacy callers keep using this helper,
   // but client snapshots can no longer replace the authoritative collection.
-  return sanitizeServerInventorySnapshot(p?.inventory || [], { equipment: p?.equipment || {}, includeEquipped: false });
+  // Live player.inventory is already bag-only. Filtering it by the equipped base
+  // id would also erase a second, unequipped instance of the same weapon.
+  return sanitizeServerInventorySnapshot(p?.inventory || [], { includeEquipped: true });
 }
 
 function serverInventoryAdd(p = {}, itemId = '', qty = 1) {
   const id = serverBaseItemId(itemId);
   const count = Math.max(0, Math.floor(Number(qty || 0)));
   if (!p || !id || id === 'fists' || !SERVER_ITEM_IDS.has(id) || count <= 0) return;
-  const rows = sanitizeServerInventorySnapshot(p.inventory || [], { equipment: p.equipment || {}, includeEquipped: false });
+  const rows = sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: true });
   const found = rows.find(row => row.id === id);
   if (found) found.qty = Math.min(serverItemStackLimit(id), Number(found.qty || 0) + count);
   else rows.push({ id, qty: Math.min(serverItemStackLimit(id), count) });
@@ -4573,7 +4578,7 @@ function serverInventoryRemove(p = {}, itemId = '', qty = 1) {
   const id = serverBaseItemId(itemId);
   const count = Math.max(0, Math.floor(Number(qty || 0)));
   if (!p || !id || id === 'fists' || !SERVER_ITEM_IDS.has(id) || count <= 0) return;
-  const rows = sanitizeServerInventorySnapshot(p.inventory || [], { equipment: p.equipment || {}, includeEquipped: false });
+  const rows = sanitizeServerInventorySnapshot(p.inventory || [], { includeEquipped: true });
   const found = rows.find(row => row.id === id);
   if (found) found.qty = Math.max(0, Number(found.qty || 0) - count);
   p.inventory = rows.filter(row => Number(row.qty || 0) > 0);
@@ -4657,9 +4662,13 @@ function serverStorageTransferRows(rows = []) {
     const id = serverBaseItemId(row?.id || row?.itemId || '');
     const qty = Math.max(0, Math.floor(Number(row?.qty ?? row?.count ?? 0)));
     if (!id || id === 'fists' || id === 'silver' || !SERVER_ITEM_IDS.has(id) || qty <= 0) continue;
-    totals.set(id, Math.min(999999, Number(totals.get(id) || 0) + qty));
+    const current = totals.get(id) || { id, qty: 0, itemRuntimeIds: [] };
+    current.qty = Math.min(999999, Number(current.qty || 0) + qty);
+    current.itemRuntimeIds.push(...serverRequestedWeaponRuntimeIds(row, id));
+    current.itemRuntimeIds = [...new Set(current.itemRuntimeIds)].slice(0, current.qty);
+    totals.set(id, current);
   }
-  return [...totals.entries()].map(([id, qty]) => ({ id, qty }));
+  return [...totals.values()];
 }
 
 function serverStorageFactionKey(value = '') {
@@ -4703,13 +4712,19 @@ function performServerStorageTransfer(player = {}, data = {}, factionId = '') {
   const rows = serverStorageTransferRows(data.rows || [{ id: data.itemId || data.id, qty: data.qty }]);
   if (!rows.length) return { ok: false, error: 'Выберите предметы для переноса.' };
 
-  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { equipment: player.equipment || {}, includeEquipped: false });
+  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
   let nextStorage = sanitizeServerInventorySnapshot(serverFactionStorageRows(player, storageFaction), { includeEquipped: true });
   const source = direction === 'deposit' ? nextInventory : nextStorage;
   const destination = direction === 'deposit' ? nextStorage : nextInventory;
+  const runtimeRemovals = [];
   for (const row of rows) {
     if (serverInventoryQty(source, row.id) < row.qty) {
       return { ok: false, error: 'Часть выбранных предметов уже недоступна.' };
+    }
+    if (direction === 'deposit') {
+      const validation = serverValidateWeaponRuntimeRemoval(player, row);
+      if (!validation.ok) return { ok: false, error: validation.error };
+      runtimeRemovals.push({ row, validation });
     }
     if (serverInventoryQty(destination, row.id) + row.qty > serverItemStackLimit(row.id)) {
       return { ok: false, error: 'Для одного из предметов достигнут предел стака.' };
@@ -4736,6 +4751,9 @@ function performServerStorageTransfer(player = {}, data = {}, factionId = '') {
   player.storage = nextStorage;
   player.storageFaction = storageFaction;
   player.inventoryUpdatedAt = Date.now();
+  for (const removal of runtimeRemovals) {
+    serverFinalizeWeaponRuntimeRemoval(player, removal.row, removal.validation);
+  }
   player.carry = {
     weight: Number(weight.toFixed(3)),
     capacity: Number(capacity.toFixed(3)),
@@ -4858,6 +4876,12 @@ function performServerSalvageItem(player = {}, data = {}) {
   const rule = SERVER_SALVAGE_RULES[id];
   if (!rule || serverInventoryQty(player.inventory || [], id) <= 0) return { ok: false, error: 'Этот предмет нельзя разобрать или его нет в рюкзаке.' };
   if (serverTalentLevel(player, 'recycler') <= 0) return { ok: false, error: 'Для разбора нужен перк «Утилизация».' };
+  const runtimeRemoval = serverValidateWeaponRuntimeRemoval(player, {
+    id,
+    qty: 1,
+    itemRuntimeId: data.itemRuntimeId
+  });
+  if (!runtimeRemoval.ok) return { ok: false, error: runtimeRemoval.error };
   const chance = serverSalvageChance(player, id);
   const success = Math.random() < chance;
   const yields = Object.entries(rule.out || {}).map(([outId, qty]) => ({ id: serverBaseItemId(outId), qty: Math.max(0, Math.floor(Number(qty || 0))) })).filter(row => row.id && row.qty > 0);
@@ -4872,16 +4896,22 @@ function performServerSalvageItem(player = {}, data = {}) {
   }
   player.inventory = next;
   player.inventoryUpdatedAt = Date.now();
+  serverFinalizeWeaponRuntimeRemoval(player, { id, qty: 1 }, runtimeRemoval);
   if (!serverPlayerOwnsBaseItem(player, id)) delete player.itemConditions?.[id];
   sanitizeCarrySnapshot(player);
   return { ok: true, action: 'salvage', itemId: id, success, chance, yields: success ? yields : [], inventory: player.inventory, self: publicAuthoritativePlayerState(player) };
 }
 
 function performServerUnloadWeapon(player = {}, data = {}) {
-  const id = serverBaseItemId(data.itemId || data.weapon || data.id || '');
+  const requestedRawId = String(data.itemRuntimeId || data.itemId || data.weapon || data.id || '').trim();
+  const id = serverBaseItemId(requestedRawId);
   if (id !== serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists')) return { ok: false, error: 'Это оружие не экипировано.' };
   const weapon = serverWeaponDef(id);
   if (!weapon.ammoType) return { ok: false, error: 'Это оружие не использует боеприпасы.' };
+  const equippedRuntimeId = serverCombatWeaponStateKey(player, weapon);
+  if (data.itemRuntimeId && serverRuntimeItemKey(requestedRawId, id) !== equippedRuntimeId) {
+    return { ok: false, error: 'Этот экземпляр оружия не экипирован.' };
+  }
   const row = serverWeaponState(player, weapon, {}, Date.now());
   const loaded = Math.max(0, Math.floor(Number(row.loaded || 0)));
   if (loaded <= 0) return { ok: false, error: 'Магазин уже пуст.' };
@@ -4893,7 +4923,7 @@ function performServerUnloadWeapon(player = {}, data = {}) {
   row.reserve = serverInventoryQty(player.inventory, weapon.ammoType);
   row.updatedAt = Date.now();
   sanitizeCarrySnapshot(player);
-  return { ok: true, action: 'unload', itemId: id, loaded, inventory: player.inventory, combat: serverCombatAck(player, weapon), self: publicAuthoritativePlayerState(player) };
+  return { ok: true, action: 'unload', itemId: id, itemRuntimeId: equippedRuntimeId, loaded, inventory: player.inventory, combat: serverCombatAck(player, weapon), self: publicAuthoritativePlayerState(player) };
 }
 
 function serverNpcQuestActor(player = {}, enemyId = '', questId = '') {
@@ -4976,7 +5006,7 @@ function performServerNpcQuestAction(player = {}, actor = {}, data = {}) {
   if (quest.requirements.event && !state[quest.requirements.event]) return { ok: false, error: 'Условие задания ещё не выполнено.' };
   if (!serverInventoryHasRequirements(player.inventory || [], quest.requirements.items || {})) return { ok: false, error: 'Не хватает предметов для выполнения задания.' };
 
-  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { equipment: player.equipment || {}, includeEquipped: false });
+  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
   for (const [id, qty] of Object.entries(quest.requirements.items || {})) {
     nextInventory = serverInventorySetRows(nextInventory, id, serverInventoryQty(nextInventory, id) - Math.max(0, Math.floor(Number(qty || 0))));
   }
@@ -5149,7 +5179,7 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     const plan = serverWorldTaskDeliveryPlan(player, task);
     if (!plan.canDeliver) return { ok: false, error: 'Не хватает припасов для доставки.', missing: plan.missing };
     const previous = player.inventory;
-    let next = sanitizeServerInventorySnapshot(previous || [], { equipment: player.equipment || {}, includeEquipped: false });
+    let next = sanitizeServerInventorySnapshot(previous || [], { includeEquipped: true });
     for (const [itemId, qty] of Object.entries(plan.cost)) next = serverInventorySetRows(next, itemId, serverInventoryQty(next, itemId) - qty);
     player.inventory = next;
     const result = WASTELAND_SIM.completeWorldTaskDelivery(id, { playerId: player.characterId || player.id, characterId: player.characterId || '', delivered: plan.cost });
@@ -5202,26 +5232,317 @@ function serverSavedEquipment(state = {}) {
   return sanitizeEquipment(state?.equipment || {}, { weapon: 'fists' });
 }
 
-function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = []) {
-  const now = Date.now();
-  const rawWeaponId = String(state?.equipment?.weapon || '');
-  const weapon = serverWeaponDef(equipment?.weapon || rawWeaponId || 'fists');
-  const runtime = state?.itemRuntime && typeof state.itemRuntime === 'object' ? state.itemRuntime[rawWeaponId] : null;
-  const loaded = weapon.ammoType
-    ? clamp(Math.floor(Number(runtime?.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
-    : 0;
-  return {
-    weapons: {
-      [weapon.id]: {
-        loaded,
-        reserve: weapon.ammoType ? serverInventoryQty(inventory, weapon.ammoType) : 0,
+function serverRuntimeItemKey(rawId = '', expectedBaseId = '') {
+  const expectedBase = serverBaseItemId(expectedBaseId || '');
+  const raw = String(rawId || '').trim();
+  if (!expectedBase) return '';
+  if (raw === expectedBase) return expectedBase;
+  if (raw.length > 96 || !/^ui_[a-zA-Z0-9]+_[a-z0-9]+_[a-z0-9]+$/.test(raw)) return expectedBase;
+  return serverBaseItemId(raw) === expectedBase ? raw : expectedBase;
+}
+
+function serverRequestedWeaponRuntimeIds(row = {}, baseId = '') {
+  const base = serverBaseItemId(baseId || row?.id || row?.itemId || '');
+  const rawIds = [
+    row?.itemRuntimeId,
+    ...(Array.isArray(row?.itemRuntimeIds) ? row.itemRuntimeIds : [])
+  ];
+  return [...new Set(rawIds
+    .map(rawId => serverRuntimeItemKey(rawId, base))
+    .filter(itemKey => itemKey && itemKey !== base))];
+}
+
+function serverValidateWeaponRuntimeRemoval(player = {}, row = {}) {
+  const baseId = serverBaseItemId(row?.id || row?.itemId || '');
+  const weapon = SERVER_WEAPONS[baseId];
+  if (!weapon?.ammoType) return { ok: true, baseId, runtimeIds: [] };
+  const combat = serverEnsureCombatState(player, Date.now());
+  const equippedBaseId = serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists');
+  const equippedKey = equippedBaseId === baseId
+    ? serverCombatWeaponStateKey(player, weapon)
+    : '';
+  const candidates = Object.entries(combat.weapons || {})
+    .filter(([rawId, state]) => serverBaseItemId(state?.weaponId || rawId) === baseId)
+    .map(([rawId, state]) => ({ itemKey: serverRuntimeItemKey(rawId, baseId), state }))
+    .filter(entry => entry.itemKey && entry.itemKey !== equippedKey);
+  const trustedBagIds = new Set(serverWeaponInventoryRuntimeSnapshot(player)
+    .filter(entry => serverBaseItemId(entry?.baseId || entry?.id || '') === baseId)
+    .map(entry => serverRuntimeItemKey(entry.id, baseId)));
+  const requestedIds = serverRequestedWeaponRuntimeIds(row, baseId);
+  const knownRequestedIds = requestedIds.filter(itemKey => (
+    trustedBagIds.has(itemKey) && candidates.some(entry => entry.itemKey === itemKey)
+  ));
+  const requestedLoaded = candidates.find(entry => (
+    knownRequestedIds.includes(entry.itemKey) && Number(entry.state?.loaded || 0) > 0
+  ));
+  if (requestedLoaded) {
+    return {
+      ok: false,
+      error: 'Сначала возьмите это оружие в руки и разрядите его.',
+      baseId,
+      runtimeIds: knownRequestedIds
+    };
+  }
+
+  const qty = Math.max(1, Math.floor(Number(row?.qty ?? row?.count ?? 1)));
+  const unresolvedQty = Math.max(0, qty - knownRequestedIds.length);
+  if (unresolvedQty > 0) {
+    const otherLoaded = candidates.find(entry => (
+      !knownRequestedIds.includes(entry.itemKey) && Number(entry.state?.loaded || 0) > 0
+    ));
+    if (otherLoaded) {
+      return {
+        ok: false,
+        error: 'Сначала разрядите оружие этого типа, которое покидает рюкзак.',
+        baseId,
+        runtimeIds: knownRequestedIds
+      };
+    }
+  }
+  return { ok: true, baseId, runtimeIds: knownRequestedIds };
+}
+
+function serverPruneWeaponRuntimeToOwnership(player = {}, baseId = '') {
+  const weapon = SERVER_WEAPONS[serverBaseItemId(baseId || '')];
+  if (!weapon) return;
+  const combat = serverEnsureCombatState(player, Date.now());
+  const ownedCount = serverOwnedItemQty(player, weapon.id);
+  const equippedBaseId = serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists');
+  const equippedKey = equippedBaseId === weapon.id
+    ? serverCombatWeaponStateKey(player, weapon)
+    : '';
+  const keys = Object.entries(combat.weapons || {})
+    .filter(([rawId, state]) => serverBaseItemId(state?.weaponId || rawId) === weapon.id)
+    .map(([rawId]) => serverRuntimeItemKey(rawId, weapon.id))
+    .filter(Boolean);
+  let excess = Math.max(0, new Set(keys).size - ownedCount);
+  const removable = [...new Set(keys)]
+    .filter(itemKey => itemKey !== equippedKey && Number(combat.weapons?.[itemKey]?.loaded || 0) <= 0)
+    .sort((a, b) => b.localeCompare(a));
+  for (const itemKey of removable) {
+    if (excess <= 0) break;
+    delete combat.weapons[itemKey];
+    excess--;
+  }
+}
+
+function serverFinalizeWeaponRuntimeRemoval(player = {}, row = {}, validation = null) {
+  const baseId = serverBaseItemId(validation?.baseId || row?.id || row?.itemId || '');
+  if (!SERVER_WEAPONS[baseId]) return;
+  const combat = serverEnsureCombatState(player, Date.now());
+  for (const itemKey of validation?.runtimeIds || []) {
+    if (itemKey && itemKey !== serverCombatWeaponStateKey(player, serverWeaponDef(baseId))) {
+      delete combat.weapons[itemKey];
+    }
+  }
+  serverPruneWeaponRuntimeToOwnership(player, baseId);
+}
+
+function serverReleaseBagWeaponMagazineAmmo(player = {}) {
+  const combat = serverEnsureCombatState(player, Date.now());
+  const totals = new Map();
+  for (const row of serverWeaponInventoryRuntimeSnapshot(player)) {
+    const weapon = SERVER_WEAPONS[serverBaseItemId(row?.baseId || row?.id || '')];
+    const loaded = Math.max(0, Math.floor(Number(row?.loaded || 0)));
+    if (!weapon?.ammoType || loaded <= 0) continue;
+    totals.set(weapon.ammoType, Number(totals.get(weapon.ammoType) || 0) + loaded);
+    const itemKey = serverRuntimeItemKey(row.id, weapon.id);
+    if (combat.weapons?.[itemKey]) {
+      combat.weapons[itemKey].loaded = 0;
+      combat.weapons[itemKey].updatedAt = Date.now();
+    }
+  }
+  return [...totals.entries()].map(([id, qty]) => ({ id, qty }));
+}
+
+function serverEquipmentRuntimeFromRequest(requested = {}, equipment = {}, fallback = {}) {
+  const source = requested && typeof requested === 'object' ? requested : {};
+  const previous = fallback && typeof fallback === 'object' ? fallback : {};
+  const out = {};
+  for (const slot of Object.keys(VALID_EQUIPMENT)) {
+    const baseId = serverBaseItemId(equipment?.[slot] || '');
+    if (!baseId) {
+      out[slot] = '';
+      continue;
+    }
+    const hasRequested = Object.prototype.hasOwnProperty.call(source, slot);
+    const previousId = serverRuntimeItemKey(previous[slot], baseId);
+    const requestedId = hasRequested ? String(source[slot] || '').trim() : '';
+    // Legacy clients only send the base id in their frequent profile packets.
+    // Treat that as "identity unchanged" when the server already knows the
+    // concrete runtime instance; otherwise the first sync would select a fresh
+    // empty base-id magazine.
+    const rawId = hasRequested && requestedId === baseId && previousId !== baseId
+      ? previousId
+      : (hasRequested ? requestedId : previousId);
+    out[slot] = serverRuntimeItemKey(rawId, baseId);
+  }
+  if (!out.weapon) out.weapon = 'fists';
+  return out;
+}
+
+function serverSavedEquipmentRuntime(state = {}, equipment = serverSavedEquipment(state)) {
+  return serverEquipmentRuntimeFromRequest(state?.equipment || {}, equipment, equipment);
+}
+
+function serverEquipmentRuntimePresentation(player = {}) {
+  const equipment = sanitizeEquipment(player.equipment || {}, { weapon: 'fists' });
+  return serverEquipmentRuntimeFromRequest(player.equipmentRuntime || {}, equipment, equipment);
+}
+
+function serverResolveWeaponRuntimeRequest(player = {}, requestedRawId = '', currentRawId = '', baseId = '', options = {}) {
+  const weapon = SERVER_WEAPONS[serverBaseItemId(baseId || '')];
+  if (!weapon) return serverRuntimeItemKey(requestedRawId, baseId);
+  const mutate = options.mutate !== false;
+  const strict = options.strict === true;
+  const combat = serverEnsureCombatState(player, Date.now());
+  const requestedKey = serverRuntimeItemKey(requestedRawId, weapon.id);
+  const currentKey = serverRuntimeItemKey(currentRawId, weapon.id);
+  const currentMatchesBase = serverBaseItemId(currentRawId) === weapon.id;
+  if (currentMatchesBase && requestedKey === currentKey) return currentKey;
+
+  // The first unique-id profile packet migrates a legacy base-id row instead
+  // of manufacturing a second magazine for the same physical weapon.
+  const legacyKey = combat.weapons?.[weapon.id] ? weapon.id : '';
+  if (requestedKey !== weapon.id && legacyKey) {
+    if (mutate) {
+      combat.weapons[requestedKey] = { ...combat.weapons[legacyKey], weaponId: weapon.id };
+      delete combat.weapons[legacyKey];
+    }
+    return requestedKey;
+  }
+
+  const knownKeys = Object.entries(combat.weapons || {})
+    .filter(([rawId, row]) => serverBaseItemId(row?.weaponId || rawId) === weapon.id)
+    .map(([rawId]) => serverRuntimeItemKey(rawId, weapon.id))
+    .filter(Boolean);
+  const ownedCount = serverOwnedItemQty(player, weapon.id);
+  const uniqueKnownKeys = [...new Set(knownKeys)];
+  const runtimeOwnershipAmbiguous = uniqueKnownKeys.length > ownedCount;
+  const allowedKnownKeys = uniqueKnownKeys
+    .sort((a, b) => {
+      if (currentMatchesBase && a === currentKey) return -1;
+      if (currentMatchesBase && b === currentKey) return 1;
+      if (a === weapon.id) return 1;
+      if (b === weapon.id) return -1;
+      return a.localeCompare(b);
+    })
+    .slice(0, ownedCount);
+  // Base-only economy operations cannot always identify which of several
+  // same-base runtime items left the bag. In that ambiguous state only the
+  // already equipped instance remains trusted; a stored/stale magazine must
+  // never become selectable merely because its base type is still owned.
+  if (!runtimeOwnershipAmbiguous && allowedKnownKeys.includes(requestedKey)) return requestedKey;
+  if (knownKeys.length < ownedCount) {
+    if (mutate) {
+      combat.weapons[requestedKey] = {
+        weaponId: weapon.id,
+        loaded: 0,
+        reserve: weapon.ammoType ? serverInventoryQty(player.inventory || [], weapon.ammoType) : 0,
         ammoType: weapon.ammoType || '',
-        updatedAt: now
-      }
-    },
+        updatedAt: Date.now()
+      };
+    }
+    return requestedKey;
+  }
+  if (strict) return '';
+  return currentMatchesBase ? currentKey : weapon.id;
+}
+
+function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = [], equipmentRuntime = serverSavedEquipmentRuntime(state, equipment)) {
+  const now = Date.now();
+  const runtime = state?.itemRuntime && typeof state.itemRuntime === 'object' ? state.itemRuntime : {};
+  const carriedItemIds = new Set([
+    ...Object.keys(state?.inventory && typeof state.inventory === 'object' ? state.inventory : {}),
+    ...Object.values(state?.equipment && typeof state.equipment === 'object' ? state.equipment : {}).filter(Boolean)
+  ].map(String));
+  const weapons = {};
+  for (const [rawId, savedRow] of Object.entries(runtime).slice(0, 260)) {
+    if (!carriedItemIds.has(String(rawId)) || !savedRow || typeof savedRow !== 'object') continue;
+    const baseId = serverBaseItemId(savedRow.baseId || rawId);
+    const weapon = SERVER_WEAPONS[baseId];
+    if (!weapon) continue;
+    const itemKey = serverRuntimeItemKey(rawId, baseId);
+    if (!itemKey || weapons[itemKey]) continue;
+    weapons[itemKey] = {
+      weaponId: weapon.id,
+      loaded: weapon.ammoType
+        ? clamp(Math.floor(Number(savedRow.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
+        : 0,
+      reserve: weapon.ammoType ? serverInventoryQty(inventory, weapon.ammoType) : 0,
+      ammoType: weapon.ammoType || '',
+      updatedAt: now
+    };
+  }
+  const weapon = serverWeaponDef(equipment?.weapon || 'fists');
+  const activeWeaponKey = serverRuntimeItemKey(equipmentRuntime?.weapon || equipment?.weapon || weapon.id, weapon.id);
+  if (!weapons[activeWeaponKey]) {
+    weapons[activeWeaponKey] = {
+      weaponId: weapon.id,
+      loaded: 0,
+      reserve: weapon.ammoType ? serverInventoryQty(inventory, weapon.ammoType) : 0,
+      ammoType: weapon.ammoType || '',
+      updatedAt: now
+    };
+  }
+  return {
+    weapons,
     spentTokens: {},
-    lastApAt: now
+    lastApAt: now,
+    lastAttackAt: 0,
+    nextAttackAt: 0
   };
+}
+
+function serverCombatRuntimeForSave(runtime = {}, player = {}) {
+  const source = runtime && typeof runtime === 'object' ? runtime : {};
+  const out = {};
+  for (const [rawId, savedRow] of Object.entries(source).slice(0, 260)) {
+    if (!savedRow || typeof savedRow !== 'object') continue;
+    out[String(rawId || '')] = { ...savedRow };
+  }
+
+  const equippedWeapon = serverWeaponDef(player.equipment?.weapon || player.weapon || 'fists');
+  serverWeaponState(player, equippedWeapon, {}, Date.now());
+  const combat = serverEnsureCombatState(player, Date.now());
+
+  // A client may introduce a new runtime id for newly acquired equipment, but it
+  // may not introduce ammunition with it. Every persisted weapon row is therefore
+  // rewritten from a server-known combat row, or starts with an empty magazine.
+  for (const [rawId, savedRow] of Object.entries(out)) {
+    const baseId = serverBaseItemId(savedRow?.baseId || rawId);
+    const weapon = SERVER_WEAPONS[baseId];
+    if (!weapon) continue;
+    const itemKey = serverRuntimeItemKey(rawId, baseId);
+    const combatRow = combat.weapons?.[itemKey];
+    out[rawId] = {
+      ...savedRow,
+      baseId,
+      condition: Number(serverPlayerItemCondition(player, baseId) ?? savedRow.condition ?? 100),
+      loaded: weapon.ammoType
+        ? clamp(Math.round(Number(combatRow?.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
+        : 0,
+      createdAt: Number.isFinite(Number(savedRow.createdAt)) ? Number(savedRow.createdAt) : Date.now()
+    };
+  }
+
+  for (const [rawId, combatRow] of Object.entries(combat.weapons || {})) {
+    const baseId = serverBaseItemId(combatRow?.weaponId || rawId);
+    const weapon = SERVER_WEAPONS[baseId];
+    if (!weapon) continue;
+    const itemKey = serverRuntimeItemKey(rawId, baseId);
+    const savedRow = out[itemKey] && typeof out[itemKey] === 'object' ? out[itemKey] : {};
+    out[itemKey] = {
+      ...savedRow,
+      baseId,
+      condition: Number(serverPlayerItemCondition(player, baseId) ?? savedRow.condition ?? 100),
+      loaded: weapon.ammoType
+        ? clamp(Math.round(Number(combatRow.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
+        : 0,
+      createdAt: Number.isFinite(Number(savedRow.createdAt)) ? Number(savedRow.createdAt) : Date.now()
+    };
+  }
+  return out;
 }
 
 function serverBagInventoryFromSavedState(state = {}) {
@@ -5384,27 +5705,129 @@ function inventoryPresentationMatchesAuthority(state = {}, player = {}) {
   return true;
 }
 
+function serverCanonicalWeaponInventoryPresentation(player = {}, sourceInventory = {}) {
+  const rows = sourceInventory && typeof sourceInventory === 'object' && !Array.isArray(sourceInventory)
+    ? sourceInventory
+    : serverInventoryRowsToObject(sourceInventory || []);
+  const out = {};
+  for (const [rawId, qty] of Object.entries(rows)) {
+    const baseId = serverBaseItemId(rawId);
+    if (SERVER_WEAPONS[baseId] && baseId !== 'fists') continue;
+    const safeQty = Math.max(0, Math.floor(Number(qty || 0)));
+    if (safeQty > 0) out[rawId] = safeQty;
+  }
+
+  const combat = serverEnsureCombatState(player, Date.now());
+  const equipmentRuntime = serverEquipmentRuntimePresentation(player);
+  const equippedWeaponBase = serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists');
+  const equippedWeaponKey = serverRuntimeItemKey(equipmentRuntime.weapon || equippedWeaponBase, equippedWeaponBase);
+  for (const baseId of Object.keys(SERVER_WEAPONS)) {
+    if (baseId === 'fists') continue;
+    const equippedCount = equippedWeaponBase === baseId ? 1 : 0;
+    const totalOwned = serverInventoryQty(player.inventory || [], baseId) + equippedCount;
+    if (totalOwned <= 0) continue;
+    const knownKeys = Object.entries(combat.weapons || {})
+      .filter(([rawId, row]) => serverBaseItemId(row?.weaponId || rawId) === baseId)
+      .map(([rawId]) => serverRuntimeItemKey(rawId, baseId))
+      .filter(Boolean)
+      .sort((a, b) => {
+        if (a === equippedWeaponKey) return -1;
+        if (b === equippedWeaponKey) return 1;
+        if (a === baseId) return 1;
+        if (b === baseId) return -1;
+        return a.localeCompare(b);
+      });
+    const uniqueKnownKeys = [...new Set(knownKeys)];
+    const runtimeOwnershipAmbiguous = uniqueKnownKeys.length > totalOwned;
+    const selected = runtimeOwnershipAmbiguous
+      ? uniqueKnownKeys.filter(itemKey => itemKey === equippedWeaponKey).slice(0, 1)
+      : uniqueKnownKeys.slice(0, totalOwned);
+    for (const itemKey of selected) {
+      out[itemKey] = itemKey === baseId
+        ? Math.max(1, Number(out[itemKey] || 0) + 1)
+        : 1;
+    }
+    const missing = totalOwned - selected.length;
+    if (missing > 0) out[baseId] = Math.max(0, Number(out[baseId] || 0)) + missing;
+  }
+  return out;
+}
+
+function serverWeaponInventoryRuntimeSnapshot(player = {}) {
+  const fullInventory = serverCanonicalWeaponInventoryPresentation(player, {});
+  const equipmentRuntime = serverEquipmentRuntimePresentation(player);
+  const equippedKey = String(equipmentRuntime.weapon || '');
+  if (equippedKey && equippedKey !== 'fists' && Number(fullInventory[equippedKey] || 0) > 0) {
+    fullInventory[equippedKey] = Math.max(0, Number(fullInventory[equippedKey] || 0) - 1);
+    if (fullInventory[equippedKey] <= 0) delete fullInventory[equippedKey];
+  }
+  const combat = serverEnsureCombatState(player, Date.now());
+  return Object.entries(fullInventory)
+    .filter(([rawId, qty]) => SERVER_WEAPONS[serverBaseItemId(rawId)] && serverBaseItemId(rawId) !== 'fists' && Number(qty || 0) > 0)
+    .map(([rawId, qty]) => {
+      const baseId = serverBaseItemId(rawId);
+      const weapon = SERVER_WEAPONS[baseId];
+      const combatRow = combat.weapons?.[serverRuntimeItemKey(rawId, baseId)];
+      return {
+        id: rawId,
+        baseId,
+        qty: Math.max(1, Math.floor(Number(qty || 0))),
+        loaded: weapon.ammoType
+          ? clamp(Math.round(Number(combatRow?.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
+          : 0,
+        condition: Number(serverPlayerItemCondition(player, baseId) ?? 100)
+      };
+    });
+}
+
 function authoritativeInventoryPresentation(state = {}, previousState = {}, player = {}) {
   if (inventoryPresentationMatchesAuthority(state, player)) {
     return {
-      inventory: state.inventory,
-      equipment: state.equipment,
-      itemRuntime: previousState.itemRuntime || state.itemRuntime || {}
+      inventory: serverCanonicalWeaponInventoryPresentation(player, state.inventory),
+      // HTTP autosave may arrive after a newer Socket.IO equipment packet.
+      // Preserve the server's live runtime identity while keeping the client's
+      // already validated per-instance inventory presentation.
+      equipment: serverEquipmentRuntimePresentation(player),
+      itemRuntime: {
+        ...(state.itemRuntime && typeof state.itemRuntime === 'object' ? state.itemRuntime : {}),
+        ...(previousState.itemRuntime && typeof previousState.itemRuntime === 'object' ? previousState.itemRuntime : {})
+      }
     };
   }
-  const inventory = serverInventoryRowsToObject(player.inventory || []);
-  const equipment = sanitizeEquipment(player.equipment || {}, { weapon: 'fists' });
-  for (const itemId of Object.values(equipment)) {
-    const id = serverBaseItemId(itemId);
-    if (id && id !== 'fists') inventory[id] = Math.max(1, Number(inventory[id] || 0) + 1);
+  let inventory = serverInventoryRowsToObject(player.inventory || []);
+  const equipment = serverEquipmentRuntimePresentation(player);
+  for (const [slot, rawItemId] of Object.entries(equipment)) {
+    if (slot === 'weapon') continue;
+    const id = serverBaseItemId(rawItemId);
+    if (id && id !== 'fists') inventory[rawItemId] = Math.max(1, Number(inventory[rawItemId] || 0) + 1);
   }
-  return { inventory, equipment, itemRuntime: previousState.itemRuntime || {} };
+  inventory = serverCanonicalWeaponInventoryPresentation(player, inventory);
+  return {
+    inventory,
+    equipment,
+    itemRuntime: {
+      ...(state.itemRuntime && typeof state.itemRuntime === 'object' ? state.itemRuntime : {}),
+      ...(previousState.itemRuntime && typeof previousState.itemRuntime === 'object' ? previousState.itemRuntime : {})
+    }
+  };
 }
 
-function serverApplyEquipmentRequest(player = {}, requested = {}) {
-  if (!player || !requested || typeof requested !== 'object') return false;
+function serverApplyEquipmentRequest(player = {}, requested = {}, now = Date.now()) {
+  const reject = error => ({
+    ok: false,
+    changed: false,
+    changedSlots: [],
+    chargedSlots: [],
+    apCost: 0,
+    error
+  });
+  if (!player || !requested || typeof requested !== 'object') {
+    return reject('Сервер: неверный запрос экипировки.');
+  }
   const current = sanitizeEquipment(player.equipment || {}, { weapon: 'fists' });
+  const currentRuntime = serverEquipmentRuntimeFromRequest(player.equipmentRuntime || {}, current, current);
   const desired = sanitizeEquipment(requested, current);
+  const desiredRuntime = serverEquipmentRuntimeFromRequest(requested, desired, currentRuntime);
   const available = new Map();
   for (const row of sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true })) {
     available.set(row.id, (available.get(row.id) || 0) + Number(row.qty || 0));
@@ -5417,18 +5840,188 @@ function serverApplyEquipmentRequest(player = {}, requested = {}) {
     const id = serverBaseItemId(rawId);
     if (!id || id === 'fists') continue;
     const count = Number(available.get(id) || 0);
-    if (count <= 0) return false;
+    if (count <= 0) return reject('Сервер: предмет экипировки недоступен.');
     available.set(id, count - 1);
   }
   const rows = [];
   for (const [id, qty] of available.entries()) {
     if (qty > 0) rows.push({ id, qty });
   }
+  desiredRuntime.weapon = serverResolveWeaponRuntimeRequest(
+    player,
+    desiredRuntime.weapon,
+    currentRuntime.weapon,
+    desired.weapon || 'fists',
+    { mutate: false }
+  );
+  const changedSlots = Object.keys(VALID_EQUIPMENT).filter(slot => {
+    const currentBaseId = serverBaseItemId(current[slot] || (slot === 'weapon' ? 'fists' : ''));
+    const desiredBaseId = serverBaseItemId(desired[slot] || (slot === 'weapon' ? 'fists' : ''));
+    const currentKey = serverRuntimeItemKey(currentRuntime[slot], currentBaseId);
+    const desiredKey = serverRuntimeItemKey(desiredRuntime[slot], desiredBaseId);
+    return currentBaseId !== desiredBaseId || currentKey !== desiredKey;
+  });
+  if (!changedSlots.length) {
+    return {
+      ok: true,
+      changed: false,
+      changedSlots: [],
+      chargedSlots: [],
+      apCost: 0
+    };
+  }
+  const chargedSlots = changedSlots.slice();
+  const apCost = chargedSlots.length * SERVER_EQUIPMENT_SLOT_AP_COST;
+  if (apCost > 0) {
+    serverRegenPlayerAp(player, now);
+    if (Number(player.ap || 0) + SERVER_COMBAT_AP_EPSILON < apCost) {
+      return reject(`Сервер: для изменения экипировки нужно ${apCost} ОД.`);
+    }
+  }
+  desiredRuntime.weapon = serverResolveWeaponRuntimeRequest(
+    player,
+    desiredRuntime.weapon,
+    currentRuntime.weapon,
+    desired.weapon || 'fists'
+  );
+  if (apCost > 0) player.ap = Math.max(0, Number(player.ap || 0) - apCost);
   player.inventory = sanitizeServerInventorySnapshot(rows, { includeEquipped: true });
   player.equipment = desired;
+  player.equipmentRuntime = desiredRuntime;
   player.weapon = desired.weapon || 'fists';
-  player.inventoryUpdatedAt = Date.now();
-  return JSON.stringify(current) !== JSON.stringify(desired);
+  player.inventoryUpdatedAt = now;
+  return {
+    ok: true,
+    changed: true,
+    changedSlots,
+    chargedSlots,
+    apCost
+  };
+}
+
+function serverEquipmentSnapshotMatchesAuthority(player = {}, requested = {}) {
+  if (!requested || typeof requested !== 'object') return true;
+  const current = sanitizeEquipment(player.equipment || {}, { weapon: 'fists' });
+  const currentRuntime = serverEquipmentRuntimeFromRequest(player.equipmentRuntime || {}, current, current);
+  const presented = sanitizeEquipment(requested, current);
+  const presentedRuntime = serverEquipmentRuntimeFromRequest(requested, presented, currentRuntime);
+  return Object.keys(VALID_EQUIPMENT).every(slot => {
+    const fallback = slot === 'weapon' ? 'fists' : '';
+    const currentBaseId = serverBaseItemId(current[slot] || fallback);
+    const presentedBaseId = serverBaseItemId(presented[slot] || fallback);
+    if (currentBaseId !== presentedBaseId) return false;
+    return serverRuntimeItemKey(currentRuntime[slot], currentBaseId)
+      === serverRuntimeItemKey(presentedRuntime[slot], presentedBaseId);
+  });
+}
+
+function serverPruneEquipmentActionRequests(player = {}, now = Date.now()) {
+  if (!player.serverEquipmentRequests || typeof player.serverEquipmentRequests !== 'object') {
+    player.serverEquipmentRequests = {};
+  }
+  for (const [requestId, row] of Object.entries(player.serverEquipmentRequests)) {
+    if (!row || now - Number(row.t || 0) > 15000) delete player.serverEquipmentRequests[requestId];
+  }
+  const entries = Object.entries(player.serverEquipmentRequests);
+  if (entries.length > 64) {
+    entries
+      .sort((a, b) => Number(a[1]?.t || 0) - Number(b[1]?.t || 0))
+      .slice(0, entries.length - 64)
+      .forEach(([requestId]) => { delete player.serverEquipmentRequests[requestId]; });
+  }
+  return player.serverEquipmentRequests;
+}
+
+function serverApplyEquipmentAction(player = {}, data = {}, now = Date.now()) {
+  const requestId = serverCombatToken(data.requestId || '');
+  if (!requestId) return { ok: false, error: 'Сервер: отсутствует id действия экипировки.' };
+  const slot = String(data.slot || '').trim();
+  const rawItemRuntimeId = String(data.itemRuntimeId || '').trim();
+  const expectedRevision = Math.max(0, Math.floor(Number(data.expectedRevision || 0)));
+  const fingerprint = `${expectedRevision}\u001f${slot}\u001f${rawItemRuntimeId}`;
+  const requests = serverPruneEquipmentActionRequests(player, now);
+  const existing = requests[requestId];
+  if (existing) {
+    if (existing.fingerprint !== fingerprint) {
+      return { ok: false, error: 'Сервер: id действия экипировки уже использован с другими данными.' };
+    }
+    return {
+      ok: existing.ok !== false,
+      reused: true,
+      changed: false,
+      apCost: 0,
+      error: existing.error || ''
+    };
+  }
+  const finish = result => {
+    requests[requestId] = {
+      fingerprint,
+      ok: result.ok !== false,
+      error: result.error || '',
+      t: now
+    };
+    return result;
+  };
+
+  const currentRevision = Math.max(0, Math.floor(Number(player.equipmentRevision || 0)));
+  if (!Number.isFinite(Number(data.expectedRevision)) || expectedRevision !== currentRevision) {
+    return finish({ ok: false, error: 'Сервер: экипировка уже изменилась; состояние обновлено.' });
+  }
+  if (!Object.prototype.hasOwnProperty.call(VALID_EQUIPMENT, slot)) {
+    return finish({ ok: false, error: 'Сервер: неизвестный слот экипировки.' });
+  }
+  const fallback = slot === 'weapon' ? 'fists' : '';
+  const desiredBaseId = serverBaseItemId(rawItemRuntimeId || fallback);
+  if (!VALID_EQUIPMENT[slot].has(desiredBaseId)) {
+    return finish({ ok: false, error: 'Сервер: предмет не подходит для этого слота.' });
+  }
+  if (rawItemRuntimeId && serverRuntimeItemKey(rawItemRuntimeId, desiredBaseId) !== rawItemRuntimeId) {
+    return finish({ ok: false, error: 'Сервер: неверный id экземпляра экипировки.' });
+  }
+  if (slot === 'weapon') {
+    const currentEquipment = sanitizeEquipment(player.equipment || {}, { weapon: 'fists' });
+    const currentRuntime = serverEquipmentRuntimeFromRequest(
+      player.equipmentRuntime || {},
+      currentEquipment,
+      currentEquipment
+    );
+    const requestedKey = serverRuntimeItemKey(rawItemRuntimeId || fallback, desiredBaseId);
+    const resolvedKey = serverResolveWeaponRuntimeRequest(
+      player,
+      rawItemRuntimeId || fallback,
+      currentRuntime.weapon,
+      desiredBaseId,
+      { mutate: false, strict: true }
+    );
+    if (!resolvedKey || requestedKey !== resolvedKey) {
+      return finish({ ok: false, error: 'Сервер: выбранный экземпляр предмета недоступен.' });
+    }
+  }
+
+  const requested = {
+    ...serverEquipmentRuntimePresentation(player),
+    [slot]: rawItemRuntimeId || fallback
+  };
+  const result = serverApplyEquipmentRequest(player, requested, now);
+  if (!result.ok) return finish(result);
+
+  const authoritativeRuntime = serverEquipmentRuntimePresentation(player);
+  const authoritativeBaseId = serverBaseItemId(player.equipment?.[slot] || fallback);
+  const requestedKey = serverRuntimeItemKey(rawItemRuntimeId || fallback, desiredBaseId);
+  const authoritativeKey = serverRuntimeItemKey(authoritativeRuntime[slot], authoritativeBaseId);
+  if (desiredBaseId !== authoritativeBaseId || requestedKey !== authoritativeKey) {
+    return finish({ ok: false, error: 'Сервер: выбранный экземпляр предмета недоступен.' });
+  }
+
+  if (result.changed) {
+    player.equipmentRevision = currentRevision + 1;
+    persistActivePlayerState(player);
+  }
+  return finish({
+    ...result,
+    reused: false,
+    equipmentRevision: Math.max(0, Math.floor(Number(player.equipmentRevision || 0)))
+  });
 }
 
 function serverApplyProgressionRequest(player = {}, data = {}) {
@@ -5575,7 +6168,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   };
   next.inventory = presentation.inventory;
   next.equipment = presentation.equipment;
-  next.itemRuntime = presentation.itemRuntime;
+  next.itemRuntime = serverCombatRuntimeForSave(presentation.itemRuntime, player);
   const activeStorageFaction = serverPlayerStorageFaction(player);
   next.factionStorages = serverFactionStoragesToState(ensureServerFactionStorages(player));
   next.storage = serverInventoryRowsToObject(
@@ -5892,13 +6485,13 @@ function serverAutomaticApCost(p = {}, w = SERVER_WEAPONS.fists) {
 }
 
 function serverWeaponModes(p = {}, w = SERVER_WEAPONS.fists) {
-  if (!w || !w.ammoType) return [{ id: 'melee', label: 'Ближний бой', apCost: w?.apCost || 2, shots: 1, hitBonus: 0, damageMul: 1 }];
+  if (!w || !w.ammoType) return [{ id: 'melee', label: 'Ближний бой', apCost: w?.apCost || 2, shots: 1, hitBonus: 0, damageMul: 1, fireRateMul: 1 }];
   const baseAp = Math.max(1, Math.round(Number(w.apCost || 3)));
   const modes = [
-    { id: 'single', label: 'Одиночный', apCost: baseAp, shots: 1, hitBonus: 0, damageMul: 1 },
-    { id: 'aimed', label: 'Прицельный', apCost: baseAp + 2, shots: 1, hitBonus: 0.24, damageMul: 1.05 }
+    { id: 'single', label: 'Одиночный', apCost: baseAp, shots: 1, hitBonus: 0, damageMul: 1, fireRateMul: 1 },
+    { id: 'aimed', label: 'Прицельный', apCost: baseAp + 2, shots: 1, hitBonus: 0.24, damageMul: 1.05, fireRateMul: 1.12 }
   ];
-  if (w.automatic) modes.push({ id: 'auto', label: 'Автоматический', apCost: serverAutomaticApCost(p, w), shots: 1, hitBonus: 0, damageMul: 1 });
+  if (w.automatic) modes.push({ id: 'auto', label: 'Автоматический', apCost: serverAutomaticApCost(p, w), shots: 1, hitBonus: 0, damageMul: 1, fireRateMul: 0.72 });
   return modes;
 }
 
@@ -6221,13 +6814,15 @@ function serverCombatApRegenRate(p = {}) {
 }
 
 function serverEnsureCombatState(p = {}, now = Date.now()) {
-  if (!p.serverCombat || typeof p.serverCombat !== 'object') p.serverCombat = { weapons: {}, spentTokens: {}, lastApAt: now };
+  if (!p.serverCombat || typeof p.serverCombat !== 'object') p.serverCombat = { weapons: {}, spentTokens: {}, lastApAt: now, lastAttackAt: 0, nextAttackAt: 0 };
   if (!p.serverCombat.weapons || typeof p.serverCombat.weapons !== 'object') p.serverCombat.weapons = {};
   if (!p.serverCombat.spentTokens || typeof p.serverCombat.spentTokens !== 'object') p.serverCombat.spentTokens = {};
   const maxAp = clamp(Number(p.maxAp || 0), 0, 99);
   if (!Number.isFinite(Number(p.ap))) p.ap = maxAp;
   p.ap = clamp(Number(p.ap || 0), 0, maxAp);
   if (!Number.isFinite(Number(p.serverCombat.lastApAt))) p.serverCombat.lastApAt = now;
+  if (!Number.isFinite(Number(p.serverCombat.lastAttackAt))) p.serverCombat.lastAttackAt = 0;
+  if (!Number.isFinite(Number(p.serverCombat.nextAttackAt))) p.serverCombat.nextAttackAt = 0;
   return p.serverCombat;
 }
 
@@ -6264,28 +6859,45 @@ function serverPruneSpentTokens(p = {}, now = Date.now()) {
   }
 }
 
+function serverCombatWeaponStateKey(p = {}, weapon = SERVER_WEAPONS.fists) {
+  const rawId = p.equipmentRuntime?.weapon || p.equipment?.weapon || p.weapon || weapon.id;
+  return serverBaseItemId(rawId) === weapon.id
+    ? serverRuntimeItemKey(rawId, weapon.id)
+    : weapon.id;
+}
+
 function serverWeaponState(p = {}, weapon = SERVER_WEAPONS.fists, client = {}, now = Date.now()) {
   const combat = serverEnsureCombatState(p, now);
-  const id = weapon.id || 'fists';
-  if (!combat.weapons[id]) combat.weapons[id] = { loaded: 0, reserve: 0, ammoType: weapon.ammoType || '', updatedAt: now };
+  const id = serverCombatWeaponStateKey(p, weapon);
+  if (!combat.weapons[id]) combat.weapons[id] = { weaponId: weapon.id || 'fists', loaded: 0, reserve: 0, ammoType: weapon.ammoType || '', updatedAt: now };
   const row = combat.weapons[id];
+  row.weaponId = weapon.id || 'fists';
   row.loaded = clamp(Number(row.loaded || 0), 0, Math.max(0, Number(weapon.magSize || 0)));
   row.reserve = weapon.ammoType ? serverInventoryQty(p.inventory || [], weapon.ammoType) : 0;
   row.ammoType = weapon.ammoType || '';
   return row;
 }
 
+function serverWeaponCooldownMs(weapon = SERVER_WEAPONS.fists, modeInfo = {}) {
+  const fireRateSeconds = Math.max(0.045, Number(weapon?.fireRate || 0.62));
+  const modeMultiplier = Math.max(0.1, Number(modeInfo?.fireRateMul || 1));
+  return Math.max(45, Math.round(fireRateSeconds * modeMultiplier * 1000));
+}
+
 function serverCombatAck(p = {}, weapon = SERVER_WEAPONS.fists, now = Date.now()) {
+  const combat = serverEnsureCombatState(p, now);
   const row = serverWeaponState(p, weapon, {}, now);
   return {
     ap: Number(Number(p.ap || 0).toFixed(2)),
     maxAp: Math.round(Number(p.maxAp || 0)),
     weapon: weapon.id,
+    weaponRuntimeId: serverCombatWeaponStateKey(p, weapon),
     ammoType: weapon.ammoType || '',
     loaded: Math.round(Number(row.loaded || 0)),
     magSize: Math.round(Number(weapon.magSize || 0)),
     reserveAmmo: Math.round(Number(row.reserve || 0)),
-    condition: serverCombatWeaponCondition(p, weapon)
+    condition: serverCombatWeaponCondition(p, weapon),
+    cooldownRemainingMs: Math.max(0, Math.ceil(Number(combat.nextAttackAt || 0) - now))
   };
 }
 
@@ -6293,33 +6905,54 @@ function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS
   const client = data.combat && typeof data.combat === 'object' ? data.combat : data;
   const token = serverCombatToken(data.attackToken || client.token || '');
   const combat = serverEnsureCombatState(p, now);
+  const weaponRuntimeId = serverCombatWeaponStateKey(p, weapon);
   serverPruneSpentTokens(p, now);
+  serverRegenPlayerAp(p, now);
   if (token && combat.spentTokens[token]) {
     const prev = combat.spentTokens[token];
-    if (prev.weapon === weapon.id && prev.mode === modeInfo.id) return { ok: true, reused: true, token, spent: prev, combat: serverCombatAck(p, weapon, now) };
-    return { ok: false, error: 'Сервер: устаревшая атака.' };
+    if (prev.weapon === weapon.id && prev.weaponRuntimeId === weaponRuntimeId && prev.mode === modeInfo.id) {
+      return { ok: true, reused: true, token, spent: prev, combat: serverCombatAck(p, weapon, now) };
+    }
+    return { ok: false, error: 'Сервер: устаревшая атака.', combat: serverCombatAck(p, weapon, now) };
   }
 
-  serverRegenPlayerAp(p, now);
+  const cooldownMs = serverWeaponCooldownMs(weapon, modeInfo);
+  const retryAfterMs = Math.max(0, Math.ceil(Number(combat.nextAttackAt || 0) - now));
+  if (retryAfterMs > SERVER_COMBAT_COOLDOWN_EPSILON_MS) {
+    return {
+      ok: false,
+      error: `Сервер: оружие ещё не готово к следующей атаке (${retryAfterMs} мс).`,
+      retryAfterMs,
+      combat: serverCombatAck(p, weapon, now)
+    };
+  }
   const apCost = serverAttackApCost(p, weapon, modeInfo);
-  if (Number(p.ap || 0) + 0.85 < apCost) return { ok: false, error: `Недостаточно очков действий. Нужно ${apCost.toFixed(Number.isInteger(apCost) ? 0 : 1)} ОД.` };
+  if (Number(p.ap || 0) + SERVER_COMBAT_AP_EPSILON < apCost) {
+    return {
+      ok: false,
+      error: `Недостаточно очков действий. Нужно ${apCost.toFixed(Number.isInteger(apCost) ? 0 : 1)} ОД.`,
+      combat: serverCombatAck(p, weapon, now)
+    };
+  }
 
   const shots = Math.max(1, Math.floor(Number(modeInfo.shots || client.shots || 1)));
   let weaponRow = null;
   if (weapon.ammoType) {
     weaponRow = serverWeaponState(p, weapon, client, now);
-    if (Number(weaponRow.loaded || 0) < shots) return { ok: false, error: 'Сервер: магазин пуст. Перезарядитесь.' };
+    if (Number(weaponRow.loaded || 0) < shots) return { ok: false, error: 'Сервер: магазин пуст. Перезарядитесь.', combat: serverCombatAck(p, weapon, now) };
     weaponRow.loaded = Math.max(0, Number(weaponRow.loaded || 0) - shots);
     weaponRow.updatedAt = now;
   }
   p.ap = Math.max(0, Number(p.ap || 0) - apCost);
   p.serverCombat.lastApAt = now;
+  combat.lastAttackAt = now;
+  combat.nextAttackAt = now + cooldownMs;
   if (weapon.ammoType) {
     const wear = Math.max(0.25, 0.55 - serverTalentLevel(p, 'weaponSmith') * 0.12);
     serverWearPlayerItem(p, weapon.id, wear * shots);
   }
-  if (token) combat.spentTokens[token] = { t: now, weapon: weapon.id, mode: modeInfo.id, apCost, shots };
-  return { ok: true, reused: false, token, spent: token ? combat.spentTokens[token] : null, apCost, shots, combat: serverCombatAck(p, weapon, now) };
+  if (token) combat.spentTokens[token] = { t: now, weapon: weapon.id, weaponRuntimeId, mode: modeInfo.id, apCost, shots, cooldownMs };
+  return { ok: true, reused: false, token, spent: token ? combat.spentTokens[token] : null, apCost, shots, cooldownMs, combat: serverCombatAck(p, weapon, now) };
 }
 
 function serverApplyReload(p = {}, data = {}, now = Date.now()) {
@@ -6329,7 +6962,7 @@ function serverApplyReload(p = {}, data = {}, now = Date.now()) {
   serverRegenPlayerAp(p, now);
   const client = data.combat && typeof data.combat === 'object' ? data.combat : data;
   const apCost = serverReloadApCost(p, weapon);
-  if (Number(p.ap || 0) + 0.85 < apCost) return { ok: false, error: `Сервер: не хватает ОД на перезарядку. Нужно ${apCost.toFixed(Number.isInteger(apCost) ? 0 : 1)}.` };
+  if (Number(p.ap || 0) + SERVER_COMBAT_AP_EPSILON < apCost) return { ok: false, error: `Сервер: не хватает ОД на перезарядку. Нужно ${apCost.toFixed(Number.isInteger(apCost) ? 0 : 1)}.` };
   const row = serverWeaponState(p, weapon, client, now);
   const loadedBefore = Number(row.loaded || 0);
   const reserveBefore = serverInventoryQty(p.inventory || [], weapon.ammoType);
@@ -6348,7 +6981,11 @@ function serverApplyReload(p = {}, data = {}, now = Date.now()) {
 
 function serverDropPvpInventory(room, target, killer, now = Date.now()) {
   if (!room || !target) return [];
-  const drops = sanitizeServerInventorySnapshot(target.inventory || [], { equipment: target.equipment || {}, includeEquipped: false });
+  const drops = sanitizeServerInventorySnapshot(target.inventory || [], { includeEquipped: true });
+  // Ground items currently carry base ids, not per-instance magazines. Preserve
+  // ammunition integrity on forced full-loot death by dropping bag magazines as
+  // loose ammo instead of silently deleting (or later resurrecting) their load.
+  drops.push(...serverReleaseBagWeaponMagazineAmmo(target));
   if (!drops.length) return [];
   const created = [];
   let index = 0;
@@ -8862,9 +9499,13 @@ function serverTradeMachineRows(rows = []) {
     const id = serverBaseItemId(row?.id || row?.itemId || '');
     const qty = clamp(Math.floor(Number(row?.qty ?? row?.count ?? 0)), 0, 9999);
     if (!id || id === 'silver' || !SERVER_ITEM_IDS.has(id) || qty <= 0) continue;
-    merged.set(id, Math.min(9999, (merged.get(id) || 0) + qty));
+    const current = merged.get(id) || { id, qty: 0, itemRuntimeIds: [] };
+    current.qty = Math.min(9999, Number(current.qty || 0) + qty);
+    current.itemRuntimeIds.push(...serverRequestedWeaponRuntimeIds(row, id));
+    current.itemRuntimeIds = [...new Set(current.itemRuntimeIds)].slice(0, current.qty);
+    merged.set(id, current);
   }
-  return Array.from(merged.entries()).map(([id, qty]) => ({ id, qty }));
+  return Array.from(merged.values());
 }
 
 function serverTradeMachineItemCategory(itemId = '') {
@@ -8925,11 +9566,15 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
 
   syncServerActionProgressionPlayer(player, data);
   syncServerInventorySnapshot(player, data);
-  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { equipment: player.equipment || {}, includeEquipped: false });
+  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
+  const runtimeRemovals = [];
   for (const rowToSell of sells) {
     if (serverInventoryQty(nextInventory, rowToSell.id) < rowToSell.qty) {
       return { ok: false, error: 'В инвентаре больше нет части выбранных товаров.', market };
     }
+    const validation = serverValidateWeaponRuntimeRemoval(player, rowToSell);
+    if (!validation.ok) return { ok: false, error: validation.error, market };
+    runtimeRemovals.push({ row: rowToSell, validation });
   }
   let buyTotal = 0;
   for (const rowToBuy of buys) {
@@ -8983,6 +9628,9 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
 
   player.inventory = nextInventory;
   player.inventoryUpdatedAt = Date.now();
+  for (const removal of runtimeRemovals) {
+    serverFinalizeWeaponRuntimeRemoval(player, removal.row, removal.validation);
+  }
   player.carry = {
     weight: Number(inventoryWeight.toFixed(3)),
     capacity: Number(capacity.toFixed(3)),
@@ -9088,8 +9736,12 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   if (!buys.length && !sells.length) return { ok: false, error: 'Выберите товары для обмена.' };
   syncServerActionProgressionPlayer(player, data);
   let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
+  const runtimeRemovals = [];
   for (const row of sells) {
     if (serverInventoryQty(nextInventory, row.id) < row.qty) return { ok: false, error: 'В инвентаре больше нет части выбранных товаров.' };
+    const validation = serverValidateWeaponRuntimeRemoval(player, row);
+    if (!validation.ok) return { ok: false, error: validation.error };
+    runtimeRemovals.push({ row, validation });
   }
   let buyTotal = 0;
   for (const row of buys) {
@@ -9132,6 +9784,9 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   actor.inventoryUpdatedAt = Date.now();
   player.inventory = nextInventory;
   player.inventoryUpdatedAt = Date.now();
+  for (const removal of runtimeRemovals) {
+    serverFinalizeWeaponRuntimeRemoval(player, removal.row, removal.validation);
+  }
   player.carry = { weight: Number(weight.toFixed(3)), capacity: Number(capacity.toFixed(3)), serverCapacity: Number(capacity.toFixed(3)), updatedAt: Date.now() };
 
   const stockContext = {
@@ -13948,6 +14603,7 @@ function serverAuthoritativeGlobalMapState(p = {}) {
 
 function publicAuthoritativePlayerState(p = {}) {
   const globalMap = serverAuthoritativeGlobalMapState(p);
+  const combat = serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now());
   const storageFaction = serverPlayerStorageFaction(p);
   const storage = storageFaction ? serverFactionStorageRows(p, storageFaction) : [];
   const worldTaskAccepted = sanitizeServerWorldTaskIds(p.worldTaskAccepted || []);
@@ -13970,6 +14626,9 @@ function publicAuthoritativePlayerState(p = {}) {
     skillRanks: sanitizeSkillRanks(p.skillRanks || {}),
     talentRanks: sanitizeTalentRanks(p.talentRanks || {}),
     inventory: syncServerInventorySnapshot(p),
+    equipmentRuntime: serverEquipmentRuntimePresentation(p),
+    equipmentRevision: Math.max(0, Math.floor(Number(p.equipmentRevision || 0))),
+    weaponInventoryRuntime: serverWeaponInventoryRuntimeSnapshot(p),
     storage: sanitizeServerInventorySnapshot(storage, { includeEquipped: true }),
     storageFaction,
     itemConditions: sanitizeServerItemConditions(p.itemConditions || {}),
@@ -13979,6 +14638,7 @@ function publicAuthoritativePlayerState(p = {}) {
     worldTaskRecords,
     worldTaskRewardClaims: sanitizeServerWorldTaskIds(p.worldTaskRewardClaims || []),
     socialState: sanitizeServerSocialState(p.socialState || {}),
+    combat,
     onGlobalMap: !!p.onGlobalMap,
     globalWorldPoint: { x: globalMap.playerX, y: globalMap.playerY },
     currentWorldSiteId: globalMap.currentWorldSiteId,
@@ -14630,6 +15290,18 @@ io.on('connection', (socket) => {
     const controlType = normalizeControlType(data.controlType || socket.handshake?.auth?.controlType || '', deviceType);
     const auth = getUserByToken(token, deviceId);
     if (!auth) return rejectJoin(socket, ack, 'Не выполнен вход или сессия открыта на другом устройстве.');
+    const joinedPlayer = players.get(socket.id);
+    if (joinedPlayer) {
+      if (typeof ack === 'function') {
+        ack({
+          ok: false,
+          error: 'Этот сокет уже присоединился к миру.',
+          self: publicAuthoritativePlayerState(joinedPlayer),
+          combat: serverCombatAck(joinedPlayer, serverWeaponDef(joinedPlayer.equipment?.weapon || joinedPlayer.weapon || 'fists'), Date.now())
+        });
+      }
+      return;
+    }
     if (liveOtherSessionForLogin(auth.login, deviceId, token, socket.id)) return rejectJoin(socket, ack, 'Этот аккаунт уже авторизован на другом устройстве.');
 
     const currentSocketId = activeAccountSockets.get(auth.login);
@@ -14740,6 +15412,7 @@ io.on('connection', (socket) => {
     const savedWorldFactionId = savedCharacterWorldFaction(auth.user.id, characterId);
     const worldFactionId = savedWorldFactionId;
     const savedEquipment = serverSavedEquipment(savedState);
+    const savedEquipmentRuntime = serverSavedEquipmentRuntime(savedState, savedEquipment);
     const savedInventory = serverBagInventoryFromSavedState(savedState);
     const savedFactionStorages = serverFactionStoragesFromState(savedState);
     const savedStorageFaction = serverStorageFactionKey(locationCapitalFaction(room.locationId));
@@ -14766,7 +15439,7 @@ io.on('connection', (socket) => {
       maxHp: clamp(Number(savedPlayer.maxHp || 100), 1, 9999),
       maxAp: clamp(Number(savedPlayer.maxAp || 0), 0, 99),
       ap: clamp(Number(savedPlayer.ap ?? savedPlayer.maxAp ?? 0), 0, clamp(Number(savedPlayer.maxAp || 0), 0, 99)),
-      serverCombat: serverCombatStateFromSaved(savedState, savedEquipment, savedInventory),
+      serverCombat: serverCombatStateFromSaved(savedState, savedEquipment, savedInventory, savedEquipmentRuntime),
       special: sanitizeSpecial(savedProfile.special || {}),
       skillRanks: sanitizeSkillRanks(savedState.skillRanks || {}),
       talentRanks: sanitizeTalentRanks(savedState.talentRanks || {}),
@@ -14775,6 +15448,9 @@ io.on('connection', (socket) => {
       hp: clampPlayerHp(savedPlayer.hp ?? savedPlayer.maxHp ?? 100, savedPlayer.maxHp || 100),
       dead: false,
       equipment: savedEquipment,
+      equipmentRuntime: savedEquipmentRuntime,
+      equipmentRevision: 0,
+      serverEquipmentRequests: {},
       weapon: savedEquipment.weapon,
       level: Math.max(1, Math.floor(Number(savedPlayer.level || 1))),
       xp: Math.max(0, Math.floor(Number(savedPlayer.xp || 0))),
@@ -14867,6 +15543,7 @@ io.on('connection', (socket) => {
         characterLeaseId,
         x: Number(p.x.toFixed(3)),
         z: Number(p.z.toFixed(3)),
+        combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()),
         self: publicAuthoritativePlayerState(p),
         players: [],
         worldState: null,
@@ -14878,7 +15555,7 @@ io.on('connection', (socket) => {
 
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     refreshRoomWorldState(room);
-    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), self: publicAuthoritativePlayerState(p), players: others, worldState: room.worldState || publicWorldState(room, true), serverAuthoritativeEnemies: true });
+    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: room.worldState || publicWorldState(room, true), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemySnapshot(room, true);
     emitGroundItemsSnapshot(room, true);
@@ -14915,13 +15592,16 @@ io.on('connection', (socket) => {
     const progressionChanged = serverApplyProgressionRequest(p, data);
     p.deviceType = normalizeDeviceType(data.deviceType || p.deviceType || 'desktop');
     p.controlType = normalizeControlType(data.controlType || p.controlType || '', p.deviceType);
-    const equipmentChanged = data.equipment && typeof data.equipment === 'object'
-      ? serverApplyEquipmentRequest(p, data.equipment)
+    const equipmentMismatch = data.equipment && typeof data.equipment === 'object'
+      ? !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)
       : false;
     serverRegenPlayerAp(p, Date.now());
-    if ((progressionChanged || equipmentChanged) && Date.now() - Number(p.lastProfileAckAt || 0) > 100) {
+    if ((progressionChanged || equipmentMismatch) && Date.now() - Number(p.lastProfileAckAt || 0) > 100) {
       p.lastProfileAckAt = Date.now();
-      emitAuthoritativePlayerState(p, { reason: equipmentChanged ? 'equipment' : 'progression' });
+      emitAuthoritativePlayerState(p, {
+        reason: equipmentMismatch ? 'equipmentMismatch' : 'progression',
+        error: equipmentMismatch ? 'Сервер: экипировка изменяется только подтверждённым действием.' : undefined
+      });
     }
     p.lastInputAt = Date.now();
     if (p.token && usersDb.sessions[p.token]) usersDb.sessions[p.token].lastSeenAt = Date.now();
@@ -14956,6 +15636,24 @@ io.on('connection', (socket) => {
         });
       }
     }
+  });
+
+  socket.on('equipmentAction', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const respond = result => {
+      if (typeof ack !== 'function') return;
+      const self = p ? publicAuthoritativePlayerState(p) : null;
+      ack({
+        ...result,
+        equipmentRevision: p ? Math.max(0, Math.floor(Number(p.equipmentRevision || 0))) : 0,
+        self,
+        combat: self?.combat || null
+      });
+    };
+    if (!p || p.dead || Number(p.hp || 0) <= 0) {
+      return respond({ ok: false, error: 'Игрок недоступен.' });
+    }
+    respond(serverApplyEquipmentAction(p, data, Date.now()));
   });
 
   socket.on('input', (data = {}) => {
@@ -15522,7 +16220,13 @@ io.on('connection', (socket) => {
     let result = null;
     if (action === 'repair') result = performServerRepairItem(p, data);
     else if (action === 'salvage') result = performServerSalvageItem(p, data);
-    else if (action === 'unload') result = performServerUnloadWeapon(p, data);
+    else if (action === 'unload') {
+      if (data.equipment && typeof data.equipment === 'object'
+        && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
+        return fail('Сервер: экипировка изменилась; повторите действие после сверки.');
+      }
+      result = performServerUnloadWeapon(p, data);
+    }
     else return fail('Неизвестное действие с предметом.');
     if (!result?.ok) return fail(result?.error || 'Сервер отклонил действие с предметом.');
     persistActivePlayerState(p);
@@ -15765,9 +16469,51 @@ io.on('connection', (socket) => {
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     serverApplyProgressionRequest(p, data);
+    if (data.equipment && typeof data.equipment === 'object'
+      && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
+      const weapon = serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists');
+      return fail('Сервер: экипировка изменилась; повторите перезарядку после сверки.', {
+        inventory: syncServerInventorySnapshot(p),
+        self: publicAuthoritativePlayerState(p),
+        combat: serverCombatAck(p, weapon, Date.now())
+      });
+    }
     const result = serverApplyReload(p, data, Date.now());
     if (!result.ok) return fail(result.error || 'Сервер: перезарядка отклонена.', { inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()) });
     if (typeof ack === 'function') ack({ ok: true, ...result, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
+  });
+
+  socket.on('combatAttack', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
+    if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    syncServerActionProgressionPlayer(p, data);
+    const equippedWeaponId = serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists');
+    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
+    const weapon = serverWeaponDef(equippedWeaponId);
+    const currentCombat = () => ({
+      combat: serverCombatAck(p, weapon, Date.now()),
+      self: publicAuthoritativePlayerState(p)
+    });
+    if (data.equipment && typeof data.equipment === 'object'
+      && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
+      return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', currentCombat());
+    }
+    if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.', currentCombat());
+    const attackToken = serverCombatToken(data.attackToken || data.combat?.token || '');
+    if (!attackToken) return fail('Сервер: отсутствует токен атаки.', currentCombat());
+    const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || data.combat?.mode || 'single'));
+    const spend = serverValidateAndSpendAttack(p, { ...data, attackToken }, weapon, modeInfo, Date.now());
+    if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.', {
+      ...currentCombat(),
+      retryAfterMs: Number(spend.retryAfterMs || 0)
+    });
+    if (typeof ack === 'function') ack({
+      ok: true,
+      reused: !!spend.reused,
+      combat: spend.combat,
+      self: publicAuthoritativePlayerState(p)
+    });
   });
 
   socket.on('explosionAttack', (data = {}, ack) => {
@@ -15778,12 +16524,17 @@ io.on('connection', (socket) => {
     if (!room) return fail('Локация не найдена.');
     ensureRoomWorld(room);
     syncServerActionProgressionPlayer(p, data);
-    const weaponId = serverBaseItemId(data.weapon || p.equipment?.weapon || p.weapon || 'fists');
-    if (weaponId !== serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists')) return fail('Сервер: это оружие не экипировано.');
-    const weapon = serverWeaponDef(weaponId);
-    if (weapon.id !== 'rocketLauncher') return fail('Это действие доступно только для ракетницы.');
-    const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || 'single'));
+    const equippedWeaponId = serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists');
+    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
+    const weapon = serverWeaponDef(equippedWeaponId);
     const currentCombat = () => ({ combat: serverCombatAck(p, weapon, Date.now()), self: publicAuthoritativePlayerState(p) });
+    if (data.equipment && typeof data.equipment === 'object'
+      && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
+      return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', currentCombat());
+    }
+    if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.', currentCombat());
+    if (weapon.id !== 'rocketLauncher') return fail('Это действие доступно только для ракетницы.', currentCombat());
+    const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || 'single'));
     const attackToken = serverCombatToken(data.attackToken || data.combat?.token || '');
     if (!attackToken) return fail('Сервер: отсутствует токен выстрела.', currentCombat());
 
@@ -15814,11 +16565,9 @@ io.on('connection', (socket) => {
     }
 
     const now = Date.now();
-    if (p.lastEnemyHitAt && now - p.lastEnemyHitAt < 45) return fail('Слишком частые атаки.', currentCombat());
     const spend = serverValidateAndSpendAttack(p, { ...data, attackToken }, weapon, modeInfo, now);
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.', currentCombat());
     if (spend.reused) return fail('Сервер: этот взрыв уже обработан.', currentCombat());
-    p.lastEnemyHitAt = now;
     addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, 'combat');
 
     const baseRaw = serverDamageRoll(p, weapon, modeInfo);
@@ -15951,6 +16700,10 @@ io.on('connection', (socket) => {
       combat: serverCombatAck(p, equippedWeapon, Date.now()),
       self: publicAuthoritativePlayerState(p)
     });
+    if (data.equipment && typeof data.equipment === 'object'
+      && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
+      return fail('Сервер: экипировка изменилась; повторите атаку после сверки.');
+    }
     if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.');
     const weapon = serverWeaponDef(weaponId);
     if (weapon.id === 'rocketLauncher' || data.explosive) return fail('Взрыв обрабатывается отдельным серверным действием.');
@@ -15965,7 +16718,6 @@ io.on('connection', (socket) => {
 
     const now = Date.now();
     const isMultiTargetHit = !!data.multiTarget;
-    if (!isMultiTargetHit && p.lastEnemyHitAt && now - p.lastEnemyHitAt < 45) return fail('Слишком частые атаки.');
     const spend = serverValidateAndSpendAttack(p, data, weapon, modeInfo, now);
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.');
     if (!isMultiTargetHit && spend.reused) return fail('Сервер: эта атака уже обработана.');
@@ -15973,7 +16725,6 @@ io.on('connection', (socket) => {
       ? serverValidateMultiTargetHit(spend, p, weapon, modeInfo, origin, targetProxy, data)
       : null;
     if (multiTarget && !multiTarget.ok) return fail(multiTarget.error || 'Сервер: цель вне области атаки.');
-    if (!isMultiTargetHit) p.lastEnemyHitAt = now;
 
     addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, weapon.ammoType ? 'combat' : 'melee');
     if (enemy.hostileToPlayer === false) setEncounterFactionHostileToPlayer(room, enemy.faction, p, now);
@@ -16060,6 +16811,14 @@ io.on('connection', (socket) => {
     if (!target || target.id === attacker.id || target.roomId !== room.id || target.dead || Number(target.hp || 0) <= 0) return fail('Цель недоступна.');
 
     syncServerActionProgressionPlayer(attacker, data);
+    const currentWeapon = serverWeaponDef(attacker.equipment?.weapon || attacker.weapon || 'fists');
+    if (data.equipment && typeof data.equipment === 'object'
+      && !serverEquipmentSnapshotMatchesAuthority(attacker, data.equipment)) {
+      return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', {
+        combat: serverCombatAck(attacker, currentWeapon, Date.now()),
+        self: publicAuthoritativePlayerState(attacker)
+      });
+    }
     const weaponId = serverBaseItemId(data.weapon || attacker.equipment?.weapon || attacker.weapon || 'fists');
     if (weaponId !== serverBaseItemId(attacker.equipment?.weapon || attacker.weapon || 'fists')) return fail('Сервер: это оружие не экипировано.');
     const weapon = serverWeaponDef(weaponId);
@@ -16082,10 +16841,9 @@ io.on('connection', (socket) => {
     if (!serverLineOfFireClearFrom(room, origin.x, origin.z, targetProxy, { shooterCrouching: !!attacker.crouching })) return fail('Линия атаки перекрыта.');
 
     const now = Date.now();
-    if (attacker.lastPlayerHitAt && now - attacker.lastPlayerHitAt < 45) return fail('Слишком частые атаки.');
     const spend = serverValidateAndSpendAttack(attacker, data, weapon, modeInfo, now);
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.', spend.combat ? { combat: spend.combat } : {});
-    attacker.lastPlayerHitAt = now;
+    if (spend.reused) return fail('Сервер: эта атака уже обработана.', spend.combat ? { combat: spend.combat } : {});
 
     addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(attacker, ENEMY_HEARING_SHOT_RANGE), socket.id, weapon.ammoType ? 'combat' : 'melee');
     const clientCombat = data.combat && typeof data.combat === 'object' ? data.combat : data;
@@ -16477,6 +17235,15 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Предмета уже нет в рюкзаке.' });
       return;
     }
+    const runtimeRemoval = serverValidateWeaponRuntimeRemoval(p, {
+      id: itemId,
+      qty,
+      itemRuntimeId: data.itemRuntimeId
+    });
+    if (!runtimeRemoval.ok) {
+      if (typeof ack === 'function') ack({ ok: false, error: runtimeRemoval.error, self: publicAuthoritativePlayerState(p) });
+      return;
+    }
     const spend = serverPrepareFixedActionAp(p, {}, 1, Date.now(), 'выбрасывание предмета');
     if (!spend.ok) {
       if (typeof ack === 'function') ack({ ok: false, error: spend.error, ...serverMedicalApAck(p) });
@@ -16501,6 +17268,7 @@ io.on('connection', (socket) => {
     };
     room.groundItems.set(groundItem.id, groundItem);
     serverInventoryRemove(p, itemId, qty);
+    serverFinalizeWeaponRuntimeRemoval(p, { id: itemId, qty }, runtimeRemoval);
     refreshRoomWorldState(room);
     const pub = publicGroundItem(groundItem);
     if (typeof ack === 'function') ack({ ok: true, item: pub, apCost: spend.apCost, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });

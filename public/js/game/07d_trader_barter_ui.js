@@ -253,8 +253,8 @@
       setReadout('Торговый автомат не может провести обмен без сервера мира.');
       return false;
     }
-    const buys = Array.from(buyQueue.entries()).map(([id, qty]) => ({ id, qty: Math.max(0, Math.floor(Number(qty || 0))) })).filter(row => row.qty > 0);
-    const sells = Array.from(saleQueue.entries()).map(([id, qty]) => ({ id, qty: Math.max(0, Math.floor(Number(qty || 0))) })).filter(row => row.qty > 0);
+    const buys = Array.from(buyQueue.entries()).map(([id, qty]) => ({ id: baseItemId(id), qty: Math.max(0, Math.floor(Number(qty || 0))) })).filter(row => row.qty > 0);
+    const sells = Array.from(saleQueue.entries()).map(([id, qty]) => ({ id: baseItemId(id), itemRuntimeId: String(id || '').slice(0, 96), qty: Math.max(0, Math.floor(Number(qty || 0))) })).filter(row => row.qty > 0);
     machine.tradePending = true;
     renderTraderWindow();
     multiplayer.socket.emit('tradeMachineExchange', {
@@ -313,7 +313,11 @@
     }
     const sourceBuys = requested?.buys || Array.from(buyQueue.entries()).map(([id, qty]) => ({ id, qty }));
     const sourceSells = requested?.sells || Array.from(saleQueue.entries()).map(([id, qty]) => ({ id, qty }));
-    const normalizeRows = rows => rows.map(row => ({ id: baseItemId(row.id), qty: Math.max(0, Math.floor(Number(row.qty || 0))) })).filter(row => row.id && row.qty > 0);
+    const normalizeRows = rows => rows.map(row => ({
+      id: baseItemId(row.id),
+      itemRuntimeId: String(row.id || '').slice(0, 96),
+      qty: Math.max(0, Math.floor(Number(row.qty || 0)))
+    })).filter(row => row.id && row.qty > 0);
     const buys = normalizeRows(sourceBuys);
     const sells = normalizeRows(sourceSells);
     trader.tradePending = true;

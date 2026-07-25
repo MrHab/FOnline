@@ -1,66 +1,72 @@
 # Локации и мир
 
-## Текущие локации
+## Источники данных
 
-### Караванный двор Старого Клима
+Авторский мир хранится отдельно от runtime-состояния:
 
-Стартовая безопасная локация. Здесь находится здание торговца, точка торговли, хранилище и переход в пустошь. Локация развивается как поселение караванщиков, но текущий фокус — правильная работа здания, обзора, крыши, света и теней.
+- [`data/global-map.json`](../../data/global-map.json) — глобальная карта со схемой `realm.globalMap.v1`;
+- [`data/locations/`](../../data/locations/) — определения локальных карт со схемой `realm.location.v1`;
+- [`data/encounters.json`](../../data/encounters.json) — типы встреч;
+- [`data/quests.json`](../../data/quests.json), [`data/traders.json`](../../data/traders.json) и [`data/loot-tables.json`](../../data/loot-tables.json) — связанный игровой контент.
 
-### Пепельный лес
+Все 29 файлов в `data/locations/` используют версию схемы `1`. Их `id` — стабильные авторские идентификаторы: менять или повторно использовать их для другой локации нельзя. Состояние глобальной симуляции, аккаунтов и персонажей не является авторским контентом и не должно попадать в эти файлы.
 
-Опасная локация с врагами, ресурсами, контейнерами и переходом обратно в поселение.
+## Текущее устройство мира
 
-## Переходы
+Проверка `node tools/check-world-data.js` подтверждает **29 авторских определений локаций**. Среди них:
 
-Переход между локациями идёт через серверное событие `changeRoom`. На клиенте показывается экран загрузки, чтобы игрок не видел момент пересборки сцены.
+- три безопасные столицы: `settlement` — «Караванная стоянка Старого Клима», `scrapTown` — «Свалочный пост» и `relayStation` — «Станция Ретранслятор»;
+- аванпосты, производственные точки, ресурсные участки, логова и другие точки интереса;
+- три шаблона случайных мест: `randomAshGrove`, `randomDryBasin` и `randomRuinedRoad`;
+- отдельный шаблон события `randomEncounter`;
+- базовая опасная локация `wasteland` — «Пепельный лес».
 
-## Террейн
+`data/global-map.json` описывает сетку **30 × 30** клеток, три узла столиц, пять объектов инфраструктуры, пять ориентиров, двенадцать типов встреч и три случайных шаблона. Серверная симуляция в `src/server/wasteland-sim.js` разворачивает поверх авторских шаблонов уникальные точки мира с устойчивыми ID, названиями, размерами и seed.
 
-Земля строится как слоёный PBR-террейн:
-- базовый материал;
-- песок;
-- трещины;
-- гравий;
-- следы шин;
-- гарь/грязь;
-- AO/контактные слои.
+На 2026-07-25 команда:
 
-Карта может использовать технические клетки, но визуально не должна быть расчерчена квадратами.
+```text
+node tools/check-world-location-instances.js
+```
+
+подтверждает **117 уникальных доступных точек глобального мира**. Это сгенерированные экземпляры, а не ещё 117 файлов в `data/locations/`.
+
+## Переходы и комнаты
+
+Сервер остаётся источником истины для комнаты, координат и результата перехода.
+
+- Обычный переход между локальными картами клиент запрашивает событием `changeLocation`.
+- `changeRoom` сохранён на сервере только как совместимый alias того же обработчика.
+- Путешествие по глобальной карте использует `globalTravelStart`, `globalTravelCancel`, `globalTravelEncounterDecision` и `globalTravelArrive`.
+- Обычная авторская локация образует одну общую реальность по `locationId`; случайные встречи и экземпляры глобальных точек получают отдельный устойчивый `roomId`.
+
+Во время применения новой комнаты клиент показывает полноэкранную загрузку, чтобы первичная сборка сцены, стартовый `worldState` и стабилизация камеры не были видны игроку.
+
+## Террейн и видимость
+
+Локальная карта использует техническую сетку `TILE = 2`, но визуально не должна выглядеть шахматной доской. Земля сочетает PBR-материал, normal/roughness/AO-карты и авторские слои деталей.
+
+Для объектов используются вложенные правила `vision`, например `vision.mode: "block"`, `"cover"` или `"none"`. Старые поля `blocksVision` и `visionPortal` не являются текущей авторской схемой. Динамические и интерактивные сущности проверяют единую игровую видимость через `isPointVisibleForGameplay(worldX, worldZ, options)`.
+
+## Коллизии моделей
+
+Авторский объект задаёт режим `collision`, footprint и масштаб. Геометрия GLB не проверяется пополигонно во время каждого шага:
+
+1. [`tools/build-model-colliders.js`](../../tools/build-model-colliders.js) читает модели из `public/assets/models/wasteland/`.
+2. Проекция геометрии на высоту движения преобразуется в один или несколько простых AABB-фрагментов.
+3. Результат сохраняется в `public/assets/models/wasteland/model-colliders.json` со схемой `realm.model-colliders.v1`, версия `2`.
+
+Текущий каталог содержит **76 моделей**. Его нельзя править вручную; после изменения GLB нужно выполнить `npm run build:colliders`, затем `npm run check:assets` и `npm run check:data`.
 
 ## Здание торговца
 
-Здание торговца — полноценная постройка со стенами, полом, окнами с решётками, дверным проёмом, крышей по сетке и интерьером.
+Здание торговца пока остаётся специальной реализацией и тестовой площадкой для общей системы зданий:
 
-Ключевые правила:
-- потолков нет, чтобы крыша могла открывать помещение;
-- крыша разделена на квадратные ячейки;
-- интерьер скрывается fog-of-war, если игрок не видит его через line-of-sight;
-- стены блокируют обзор так же, как деревья;
-- освещение интерьера не раскрывает комнату через стены.
+- footprint равен **10 × 8** мировых тайлов;
+- стены, коллизии, LOS-блокеры и маска крыши привязаны к одной сетке `TILE`;
+- крыша — одна плоская непрерывная плоскость по footprint здания, без скатов, конька и свеса;
+- открытые ячейки маски используют opacity `0.24`, но геометрия крыши не удаляется;
+- окна остаются физическими препятствиями, но не перекрывают LOS;
+- статический интерьер остаётся отрисованным, а NPC, игроки, враги, лут и интерактивные объекты подчиняются единой игровой видимости.
 
-## Коллизии
-
-Для крупных объектов используются простые AABB-боксы. Нельзя использовать тяжёлые mesh-collision для мелкого декора.
-
-Игрок не должен проходить через:
-- стены;
-- прилавок;
-- крупные полки;
-- контейнеры;
-- заборы;
-- ворота и большие объекты.
-
-
-## v7.74.95: tile-sized trader building blocks
-
-The trader building shell is now rebuilt on the same `TILE` grid used by gameplay visibility. Wall visuals, wall collision, roof-mask cells and LOS blockers use matching 2m modules. The roof remains a simple two-slope shell; no separate ridge mesh is used. Static interior props remain rendered under the roof while dynamic/interactable objects use `isPointVisibleForGameplay()`.
-
-
-## v7.74.96: square wall blocks and transparent window LOS
-
-Trader wall modules now use a square `TILE x TILE` footprint in top-down space, not a thin wall strip. Collision follows the same square block footprint. Window cells remain physical wall/window modules for movement, but they are excluded from `traderBuildingVisionWalls()` so windows do not block the single gameplay visibility function. The roof mask, NPCs, players, loot and interactable objects continue to ask `isPointVisibleForGameplay()`.
-
-## v7.74.97: trader building 10 × 8 grid
-
-Trader building footprint is now exactly **10 × 8 world tiles**. The building origin is placed on a world tile corner so all wall blocks, collision boxes, roof-mask cells and LOS blockers align to the same `TILE` grid. Wall modules are full square `TILE × TILE` blocks in top-down space. The perimeter includes all corner cells; there are no half cells or empty grid corners. Window cells are physical window/wall cells for movement collision, but they are excluded from LOS blockers so they do not block `isPointVisibleForGameplay()`.
-
+Перенос этих правил в общий building framework остаётся задачей из [ROADMAP.md](ROADMAP.md).

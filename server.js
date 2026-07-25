@@ -6678,9 +6678,15 @@ const ENEMY_HIT_AGGRO_SEARCH_MS = 6200;
 const ENEMY_NOISE_MAX_INVESTIGATE_MS = 15500;
 const ENEMY_RETURN_HOME_DISTANCE = 10.0;
 const ENEMY_IDLE_HOME_RADIUS = 5.0;
-// Empty rooms keep living on the server. They tick less often than observed rooms,
-// but faction battles, patrols, workers, respawns and cleanup never pause.
-const EMPTY_ROOM_AI_TICK_MS = Math.max(100, Number(process.env.EMPTY_ROOM_AI_TICK_MS || 250));
+// Observed rooms keep the full server tick. An empty room only gets a short
+// settling window, or keeps ticking while a real-time battle / physical party
+// departure still needs local actors. The authoritative wasteland simulation
+// continues handling the rest of the world while ordinary empty rooms sleep.
+const EMPTY_ROOM_AI_TICK_MS = Math.max(250, Number(process.env.EMPTY_ROOM_AI_TICK_MS || 1000));
+const EMPTY_ROOM_AI_SETTLE_MS = Math.max(
+  EMPTY_ROOM_AI_TICK_MS,
+  Number(process.env.EMPTY_ROOM_AI_SETTLE_MS || 15000)
+);
 const EMPTY_ROOM_AI_MAX_DT = 0.5;
 const SITE_RESOURCE_RESPAWN_MS = Math.max(60000, Number(process.env.SITE_RESOURCE_RESPAWN_MS || 15 * 60 * 1000));
 
@@ -7292,6 +7298,23 @@ function wakeEmptyRoomAi(room, reason = 'empty') {
   const now = Date.now();
   room.emptyRoomAiReason = String(reason || 'empty').slice(0, 32);
   room.lastEmptyAiTickAt = now;
+  room.emptyRoomAiUntil = Math.max(Number(room.emptyRoomAiUntil || 0), now + EMPTY_ROOM_AI_SETTLE_MS);
+}
+
+function roomHasDepartingOnsiteParty(room) {
+  if (!room || !(room.onsiteWorldZoneIds instanceof Set)) return false;
+  for (const rawZoneId of room.onsiteWorldZoneIds) {
+    const zone = serverActiveWorldZoneById(rawZoneId);
+    if (zone?.details?.onsiteParty && zone.details.departureRequested === true) return true;
+  }
+  return false;
+}
+
+function shouldTickEmptyRoomAi(room, now = Date.now()) {
+  if (!room || !room.worldReady || room.sockets?.size > 0) return false;
+  if (Number(room.emptyRoomAiUntil || 0) > Number(now || 0)) return true;
+  if (roomHasActiveRealTimeBattle(room)) return true;
+  return roomHasDepartingOnsiteParty(room);
 }
 
 function settleEnemiesWhenRoomBecomesEmpty(room, reason = 'empty') {
@@ -17099,6 +17122,7 @@ setInterval(() => {
   // 2) Потом серверный AI мобов. Здесь игрок может умереть и сменить комнату.
   // Поэтому snapshots игроков собираем только после этого шага, иначе старый room
   // может повторно добавить модель умершего игрока после события playerLeft.
+  let emptyRoomAiBudget = 1;
   for (const room of rooms.values()) {
     const beforeCleanupSize = room.sockets.size;
     for (const sid of [...room.sockets]) if (!socketIsLive(sid)) room.sockets.delete(sid);
@@ -17121,11 +17145,17 @@ setInterval(() => {
       }
       emitEnemySnapshot(room);
     } else if (room.worldReady && roomNow - Number(room.lastEmptyAiTickAt || 0) >= EMPTY_ROOM_AI_TICK_MS) {
+      if (!shouldTickEmptyRoomAi(room, roomNow)) {
+        room.lastEmptyAiTickAt = roomNow;
+        continue;
+      }
+      if (emptyRoomAiBudget <= 0) continue;
+      emptyRoomAiBudget -= 1;
       const previousTickAt = Number(room.lastEmptyAiTickAt || roomNow - EMPTY_ROOM_AI_TICK_MS);
       const elapsed = Math.max(0, (roomNow - previousTickAt) / 1000);
       room.lastEmptyAiTickAt = roomNow;
       const dt = Math.min(EMPTY_ROOM_AI_MAX_DT, elapsed || DT);
-      updateServerEnemies(room, dt, { players: [], allowSpawn: true });
+      updateServerEnemies(room, dt, { players: [], allowSpawn: false });
       syncWorldBattleRoomActors(room);
       restockRoomWorldContainersIfNeeded(room);
       if (cleanupGroundItems(room, roomNow)) refreshRoomWorldState(room);

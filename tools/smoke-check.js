@@ -90,8 +90,34 @@ function assertRequiredFiles() {
     || !serverSource.includes('updateServerEnemies(room, dt, { players: [], allowSpawn: false });')) {
     fail('ordinary empty rooms are not put to sleep with a bounded AI budget');
   }
+  if (!serverSource.includes('ACTIVE_ROOM_AI_TICK_MS')
+    || !serverSource.includes('let activeRoomAiBudget = 1;')
+    || !serverSource.includes('const enemyDt = Math.min(ACTIVE_ROOM_AI_MAX_DT')
+    || !serverSource.includes('updateServerEnemies(room, enemyDt);')
+    || serverSource.includes('updateServerEnemies(room, DT);')) {
+    fail('active-room NPC AI is not decoupled from the player movement tick');
+  }
   if (!serverSource.includes("finishEmptyPartyEncounterRoom(room, reason);")) {
     fail('empty party encounters are not finalized before room AI sleeps');
+  }
+  const arrivalTransferStart = serverSource.indexOf('function syncWorldCaravanArrivalTransfers(');
+  const arrivalTransferEnd = serverSource.indexOf('function syncWorldOnsitePartyTransfers(', arrivalTransferStart);
+  const arrivalTransferBody = serverSource.slice(arrivalTransferStart, arrivalTransferEnd);
+  const eligibilityCheck = arrivalTransferBody.indexOf('worldTaskRewardMatchesPlayer(task, p)');
+  const publicStateRead = arrivalTransferBody.indexOf('WASTELAND_SIM.publicState()');
+  const roomCreation = arrivalTransferBody.indexOf('chooseRoomForLocation(locationId)');
+  if (arrivalTransferStart < 0
+    || arrivalTransferEnd < 0
+    || eligibilityCheck < 0
+    || publicStateRead < eligibilityCheck
+    || roomCreation < eligibilityCheck) {
+    fail('caravan arrival polling still materializes public state or rooms without an eligible player');
+  }
+  const siteLookupStart = serverSource.indexOf('function wastelandSitesForLocation(');
+  const siteLookupEnd = serverSource.indexOf('function wastelandLocationOccupantKey(', siteLookupStart);
+  const siteLookupBody = serverSource.slice(siteLookupStart, siteLookupEnd);
+  if (siteLookupBody.includes('WASTELAND_SIM.publicState()')) {
+    fail('location initialization still rebuilds the complete public wasteland state');
   }
   if (serverSource.includes('ROOM_CAPACITY') || serverSource.includes('roomCapacity:')) {
     fail('server still exposes or enforces a per-location player capacity');

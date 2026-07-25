@@ -47,6 +47,9 @@ const DT = 1 / TICK_RATE;
 const GAME_DAY_REAL_MS = 60 * 60 * 1000;
 const WASTELAND_SIM_TICK_MS = Math.max(1000, Number(process.env.WASTELAND_SIM_TICK_MS || 5000));
 const WASTELAND_SIM_SAVE_INTERVAL_MS = Math.max(3000, Number(process.env.WASTELAND_SIM_SAVE_INTERVAL_MS || 15000));
+const ACTIVE_ROOM_AI_TICK_MS = Math.max(50, Number(process.env.ACTIVE_ROOM_AI_TICK_MS || 200));
+const ACTIVE_ROOM_AI_MAX_DT = Math.max(0.05, Number(process.env.ACTIVE_ROOM_AI_MAX_DT || 0.25));
+const ACTIVE_ROOM_HOUSEKEEPING_MS = Math.max(250, Number(process.env.ACTIVE_ROOM_HOUSEKEEPING_MS || 1000));
 const MAP_SIZE = 140;
 const PLAYER_SPEED = 7.0;
 const PLAYER_COLLISION_RADIUS = 0.48;
@@ -10122,8 +10125,8 @@ function wastelandSitesForLocation(loc = {}, room = null) {
   const locId = String(loc?.id || '').trim();
   if (!locId) return [];
   try {
-    const sim = WASTELAND_SIM.publicState();
-    const sites = Array.isArray(sim.sites) ? sim.sites : [];
+    const sim = typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null;
+    const sites = Object.values(sim?.sites || {});
     const explicitSiteIds = [
       room?.worldSiteId,
       worldSiteIdFromRoomId(room?.id || '', room?.locationId || locId),
@@ -13457,6 +13460,8 @@ function getOrCreateRoom(roomId = 'settlement', locationId = '') {
       lastPlayerSnapshotAt: 0,
       lastGroundSnapshotAt: 0,
       lastContainerSnapshotAt: 0,
+      lastActiveEnemyAiTickAt: 0,
+      lastActiveHousekeepingAt: 0,
       emptyRoomAiUntil: 0,
       lastEmptyAiTickAt: 0,
       emptyRoomAiReason: '',
@@ -13757,16 +13762,14 @@ function syncWorldCaravanArrivalTransfers(state = null) {
     ...(Array.isArray(simState?.worldTasks) ? simState.worldTasks : []),
     ...(Array.isArray(simState?.worldTaskHistory) ? simState.worldTaskHistory : [])
   ];
-  const publicSim = typeof WASTELAND_SIM.publicState === 'function' ? WASTELAND_SIM.publicState() : null;
+  let publicSim = null;
   for (const task of tasks) {
     if (!task || task.type !== 'escort_caravan' || task.status !== 'completed') continue;
     const details = task.details && typeof task.details === 'object' ? task.details : {};
-    const publicTask = Array.isArray(publicSim?.worldTasks)
-      ? publicSim.worldTasks.find(row => String(row?.id || '') === String(task.id || '')) || null
-      : null;
     const locationId = normalizeLocationId(details.arrivalLocationId || simState.sites?.[details.arrivalSiteId || task.targetSiteId || '']?.locationId || task.locationId || 'settlement');
     if (!LOCATIONS[locationId]) continue;
-    const room = chooseRoomForLocation(locationId);
+    let room = null;
+    let publicTask = null;
     for (const p of players.values()) {
       if (!p || p.dead || !socketIsLive(p.id) || !worldTaskRewardMatchesPlayer(task, p)) continue;
       const persistentPlayerId = worldTransferId(p.characterId || p.userId || p.id);
@@ -13776,6 +13779,13 @@ function syncWorldCaravanArrivalTransfers(state = null) {
       if (persistentPlayerId && transferredPlayerIds.includes(persistentPlayerId)) continue;
       const key = `${worldTransferId(task.id)}:${persistentPlayerId || p.id}`;
       if (!transferSetAddLimited(WORLD_ESCORT_ARRIVAL_TRANSFERS, key)) continue;
+      if (!publicSim && typeof WASTELAND_SIM.publicState === 'function') {
+        publicSim = WASTELAND_SIM.publicState();
+      }
+      if (!publicTask && Array.isArray(publicSim?.worldTasks)) {
+        publicTask = publicSim.worldTasks.find(row => String(row?.id || '') === String(task.id || '')) || null;
+      }
+      room = room || chooseRoomForLocation(locationId);
       const transferred = transferPlayerToServerRoom(p, room, {
         reason: 'caravanArrived',
         message: 'Караван дошел до пункта назначения. Сопровождение прибыло вместе с ним.',
@@ -17122,6 +17132,7 @@ setInterval(() => {
   // 2) Потом серверный AI мобов. Здесь игрок может умереть и сменить комнату.
   // Поэтому snapshots игроков собираем только после этого шага, иначе старый room
   // может повторно добавить модель умершего игрока после события playerLeft.
+  let activeRoomAiBudget = 1;
   let emptyRoomAiBudget = 1;
   for (const room of rooms.values()) {
     const beforeCleanupSize = room.sockets.size;
@@ -17131,19 +17142,29 @@ setInterval(() => {
     if (room.sockets.size > 0) {
       room.emptyRoomAiUntil = 0;
       room.lastEmptyAiTickAt = roomNow;
-      updateServerEnemies(room, DT);
-      syncWorldBattleRoomActors(room);
-      if (restockRoomWorldContainersIfNeeded(room)) {
-        // Ящики обновились по игровым суткам; снимок уже отправлен внутри функции.
+      const previousActiveAiTickAt = Number(room.lastActiveEnemyAiTickAt || roomNow - ACTIVE_ROOM_AI_TICK_MS);
+      const activeAiElapsedMs = Math.max(0, roomNow - previousActiveAiTickAt);
+      if (activeRoomAiBudget > 0 && activeAiElapsedMs >= ACTIVE_ROOM_AI_TICK_MS) {
+        activeRoomAiBudget -= 1;
+        room.lastActiveEnemyAiTickAt = roomNow;
+        const enemyDt = Math.min(ACTIVE_ROOM_AI_MAX_DT, Math.max(DT, activeAiElapsedMs / 1000));
+        updateServerEnemies(room, enemyDt);
+        syncWorldBattleRoomActors(room);
+        emitEnemySnapshot(room);
       }
-      if (cleanupGroundItems(room)) {
-        refreshRoomWorldState(room);
-        emitGroundItemsSnapshot(room, true);
+      if (roomNow - Number(room.lastActiveHousekeepingAt || 0) >= ACTIVE_ROOM_HOUSEKEEPING_MS) {
+        room.lastActiveHousekeepingAt = roomNow;
+        if (restockRoomWorldContainersIfNeeded(room)) {
+          // Ящики обновились по игровым суткам; снимок уже отправлен внутри функции.
+        }
+        if (cleanupGroundItems(room)) {
+          refreshRoomWorldState(room);
+          emitGroundItemsSnapshot(room, true);
+        }
+        if (updateRoomResourceRespawns(room, roomNow)) {
+          io.to(room.id).emit('worldState', { reason: 'resourceRespawn', state: room.worldState || publicWorldState(room, true) });
+        }
       }
-      if (updateRoomResourceRespawns(room, roomNow)) {
-        io.to(room.id).emit('worldState', { reason: 'resourceRespawn', state: room.worldState || publicWorldState(room, true) });
-      }
-      emitEnemySnapshot(room);
     } else if (room.worldReady && roomNow - Number(room.lastEmptyAiTickAt || 0) >= EMPTY_ROOM_AI_TICK_MS) {
       if (!shouldTickEmptyRoomAi(room, roomNow)) {
         room.lastEmptyAiTickAt = roomNow;

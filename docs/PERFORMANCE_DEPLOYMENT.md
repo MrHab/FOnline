@@ -26,7 +26,7 @@ include /etc/nginx/snippets/realm-of-ashes.locations.conf;
 ```bash
 nginx -t
 systemctl reload nginx
-curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.76.0-performance
+curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.76.1-combat-integrity
 curl -fsS https://rangir.ru/health
 ```
 

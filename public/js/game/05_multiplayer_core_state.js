@@ -36,7 +36,10 @@
     lastGroundItemsSnapshotT: 0,
     lastWorldContainersSnapshotT: 0,
     lastHeavyProfileSent: 0,
-    movementSeq: 0
+    movementSeq: 0,
+    equipmentRevision: 0,
+    equipmentActionSeq: 0,
+    pendingEquipmentSlots: new Set()
   };
 
   function resolveMultiplayerJoinWaiters(ok) {
@@ -179,11 +182,14 @@
 
   function multiplayerEquipmentSnapshot() {
     return {
-      weapon: multiplayerWeaponId(),
-      armor: networkEquipmentBaseId(equipment.armor),
-      helmet: networkEquipmentBaseId(equipment.helmet),
-      boots: networkEquipmentBaseId(equipment.boots),
-      backpack: networkEquipmentBaseId(equipment.backpack)
+      // The authoritative server still normalizes these ids before exposing
+      // equipment to other players, but it needs the local runtime id to keep
+      // each physical weapon's magazine separate.
+      weapon: String(equipment.weapon || 'fists').slice(0, 96),
+      armor: String(equipment.armor || '').slice(0, 96),
+      helmet: String(equipment.helmet || '').slice(0, 96),
+      boots: String(equipment.boots || '').slice(0, 96),
+      backpack: String(equipment.backpack || '').slice(0, 96)
     };
   }
 

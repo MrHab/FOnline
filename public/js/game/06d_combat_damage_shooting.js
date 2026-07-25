@@ -52,6 +52,23 @@
     return spend;
   }
 
+  function submitUntargetedServerAttack(w, modeInfo, spend) {
+    if (!multiplayer.socket || !multiplayer.socket.connected || !multiplayer.joined || !spend) return false;
+    multiplayer.socket.emit('combatAttack', {
+      ...multiplayerProgressionSnapshot(),
+      equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
+      weapon: weaponBaseId(w),
+      mode: modeInfo?.id || player.fireMode || 'single',
+      attackToken: spend.token || '',
+      combat: combatResourceSnapshot(w, modeInfo, spend)
+    }, ack => {
+      if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
+      if (ack?.combat) applyServerCombatState(ack.combat);
+      if (ack && !ack.ok && ack.error) setReadout(ack.error);
+    });
+    return true;
+  }
+
   function applyWeaponDamage(enemy, dist, w, modeInfo = getWeaponModeInfo(w), options = {}) {
     if (!currentLocationAllowsNpcCombat()) return rejectPeacefulNpcCombat();
     const hitChance = calculateHitChance(enemy, dist, w, modeInfo, options);
@@ -65,6 +82,7 @@
       multiplayer.socket.emit('enemyHit', {
         enemyId: enemy.id,
         ...multiplayerProgressionSnapshot(),
+        equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
         clientPredictedDamage: raw,
         clientHitChance: Math.round(hitChance * 100),
         weapon: weaponBaseId(w),
@@ -362,6 +380,7 @@
     multiplayer.socket.emit('playerHit', {
       targetId: target.id,
       ...multiplayerProgressionSnapshot(),
+      equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
       inventory: typeof multiplayerInventorySnapshot === 'function' ? multiplayerInventorySnapshot() : null,
       clientHitChance: Math.round(hitChance * 100),
       weapon: weaponBaseId(w),
@@ -471,6 +490,7 @@
     }
     if (isMultiTargetConeWeapon(w)) {
       if (!coneTargets.length && !pvpTarget) {
+        submitUntargetedServerAttack(w, modeInfo, spend);
         setReadout(`${w.name} (${modeInfo.label}): зона поражения пуста.`);
         renderInventoryIfVisibleDeferred();
         return false;
@@ -488,6 +508,7 @@
       return hit;
     }
     if (!effectiveEnemy) {
+      submitUntargetedServerAttack(w, modeInfo, spend);
       if (w.ammoType) setReadout(`${w.name} (${modeInfo.label}): выстрел на ${Math.round(clearRange)} м. Цели нет.`);
       else setReadout('Удар пришёлся по воздуху.');
       renderInventoryIfVisibleDeferred();

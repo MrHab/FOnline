@@ -5,14 +5,22 @@
 
   function submitServerInventoryItemAction(action, id, onSuccess) {
     const itemId = baseItemId(id);
-    const key = `${action}:${itemId}`;
+    const itemRuntimeId = String(id || '').trim().slice(0, 96);
+    const key = `${action}:${itemRuntimeId || itemId}`;
     if (pendingInventoryItemActions.has(key)) return false;
     if (typeof multiplayer === 'undefined' || !multiplayer?.socket?.connected || !multiplayer.joined) {
       setReadout('Действие с предметом недоступно без соединения с сервером мира.');
       return false;
     }
     pendingInventoryItemActions.add(key);
-    multiplayer.socket.emit('inventoryItemAction', { action, itemId }, ack => {
+    multiplayer.socket.emit('inventoryItemAction', {
+      action,
+      itemId,
+      itemRuntimeId,
+      equipment: typeof multiplayerEquipmentSnapshot === 'function'
+        ? multiplayerEquipmentSnapshot()
+        : { ...equipment }
+    }, ack => {
       pendingInventoryItemActions.delete(key);
       if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
       if (ack?.combat && typeof applyServerCombatState === 'function') applyServerCombatState(ack.combat);
@@ -228,7 +236,9 @@
     if (equippedSlot) addCtxOption(menu, equippedSlot === 'weapon' ? 'Снять из рук' : 'Снять', () => unequipSlot(equippedSlot));
     else if (equipSlot) addCtxOption(menu, equipSlot === 'weapon' ? 'В руки' : 'Надеть', () => equipItem(id));
     if (itemHasInventoryUseAction(item)) addCtxOption(menu, 'Использовать', () => useInventoryItem(id));
-    if (item.type === 'weapon' && item.ammoType) addCtxOption(menu, 'Разрядить', () => unloadWeapon(id), (item.loaded || 0) <= 0);
+    if (equippedSlot === 'weapon' && item.type === 'weapon' && item.ammoType) {
+      addCtxOption(menu, 'Разрядить', () => unloadWeapon(id), (item.loaded || 0) <= 0);
+    }
     if (item.type === 'weapon' || item.slot || item.type === 'tool') addCtxOption(menu, 'Починить', () => repairItem(id));
     if (isSalvageCandidateItem(id)) {
       const reason = salvageUnavailableReason(id);

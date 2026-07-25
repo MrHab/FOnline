@@ -1,59 +1,127 @@
 # Серверные файлы
 
-## `server.js`
+## Production entry point
 
-Основной рабочий сервер. Текущая серверная версия объявлена в константах `GAME_NAME` и `GAME_VERSION`, а `/health` возвращает имя, версию, uptime, количество игроков, комнат, пользователей, персонажей и лимит комнаты.
+`server.js` — единственная production-точка входа. Версия берётся из
+`package.json`; `/health` возвращает `name`, `version`, `uptimeSec`, число
+игроков, число активных `locationRealities`, число пользователей и персонажей.
+Поле `playerLimitPerLocation` сейчас равно `null`.
 
-Содержит:
-- Express;
-- REST API авторизации;
-- хранение пользователей и персонажей;
-- Socket.IO;
-- комнаты игроков;
-- генерацию мира;
-- серверных врагов;
-- серверный лут;
-- предметы на земле;
-- контейнеры мира;
-- переходы между локациями;
-- смерть, респавн и лечение.
+В `server.js` находятся:
 
-При ошибке чтения `data/users.json` или `data/saves.json` сервер сохраняет копию повреждённого файла рядом как `*.corrupt-*`, а затем использует fallback-структуру. Это не заменяет полноценные резервные копии, но не даёт следующей записи молча уничтожить единственный повреждённый файл.
+- Express, CORS, раздача статики и `/health`;
+- REST API auth и персонажей;
+- загрузка и нормализация авторских данных;
+- Socket.IO и блокировки активного аккаунта/персонажа;
+- комнаты, движение, бой, прогрессия и серверный инвентарь;
+- NPC, AI, лут, контейнеры, ресурсы, торговля и крафт;
+- локальные/глобальные переходы и связь с живой пустошью;
+- интервалы симуляции, housekeeping и snapshots.
+
+Файл большой, поэтому новые независимые алгоритмы следует выносить в
+`src/server/`, сохраняя `server.js` как слой интеграции.
+
+## Активные модули `src/server/`
+
+| Файл | Назначение |
+|---|---|
+| `wasteland-sim.js` | автономная глобальная симуляция, точки, отряды, экономика, конфликты, задания и world zones |
+| `global-infrastructure.js` | нормализация дорог/трубопроводов, проверка суши и поиск маршрутов |
+| `global-exit-direction.js` | направление выхода из локальной карты и точка продолжения на глобальной карте |
+| `model-colliders.js` | загрузка collider-каталога и преобразование bounds/parts в серверные blockers |
+| `npc-inventory.js` | фракционные запасы, доктрины экипировки, личный инвентарь NPC, боеприпасы, торговый и трупный лут |
+
+Их импорты находятся в начале `server.js`; именно этот список определяет
+активные production-модули.
 
 ## `src/server/authoritative-server.js`
 
-Подготовленная зона для дальнейшего выноса серверной логики. Основной рабочий сервер пока остаётся в `server.js`, чтобы не ломать стабильность.
+Это исторический reference-файл, а не второй сервер и не модуль production
+entry point. `server.js` его не импортирует. Несколько проверок всё ещё читают
+его текст для сверки отдельных контрактов, поэтому файл нельзя считать
+безопасной копией текущего runtime и нельзя запускать вместо `server.js`.
 
-## Рекомендуемый будущий split
+До удаления reference-файла нужно сначала перенести зависящие от него проверки
+на production-код.
 
-```text
-src/server/config.js
-src/server/auth.js
-src/server/saves.js
-src/server/rooms.js
-src/server/players.js
-src/server/enemies.js
-src/server/loot.js
-src/server/containers.js
-src/server/socket-handlers.js
-```
+## Авторские и runtime-данные
 
-## Проверка сервера
+| Путь | Содержимое |
+|---|---|
+| `data/locations/*.json` | авторские локальные карты и объекты |
+| `data/global-map.json` | сетка, узлы, инфраструктура, объекты и encounter weights |
+| `data/encounters.json` | состав шаблонных встреч |
+| `data/quests.json` | квесты |
+| `data/traders.json` | торговые профили |
+| `data/loot-tables.json` | таблицы контейнеров и врагов |
+| `DATA_DIR/users.json` | аккаунты, email и сессии |
+| `DATA_DIR/saves.json` | персонажи по user id |
+| `DATA_DIR/wasteland-sim.json` | runtime-состояние живой пустоши |
 
-Синтаксис сервера:
+Если `DATA_DIR` не задан, используется каталог `data/` в рабочей копии.
+Runtime-файлы игнорируются Git.
+
+Запись выполняется через временный файл и rename. При ошибке чтения
+`users.json` или `saves.json` исходник сохраняется рядом как
+`*.corrupt-<timestamp>`.
+
+## HTTP API
+
+Основные публичные группы:
+
+- `/health`;
+- `/api/auth/*`;
+- `/api/characters*`;
+- `/api/locations`, `/api/quests`, `/api/global-map`, `/api/wasteland`;
+- `/socket.io/`.
+
+Маршруты `/api/dev/*` разрешены с loopback, если `DEV_ADMIN_TOKEN` не задан.
+При настроенном токене нужен заголовок `X-Dev-Token`.
+
+В production `DEV_ADMIN_TOKEN` обязателен. Nginx проксирует `/api/` на loopback,
+а `requireDevAccess()` проверяет адрес TCP-соединения с Node.js и не использует
+`X-Real-IP`; без токена внешний `/api/dev/*` может выглядеть как локальный
+запрос.
+
+Подробнее об auth и персонажах:
+[Аккаунты и персонажи](AUTH_AND_CHARACTERS.md).
+
+## Генераторы и проверки
+
+- `tools/build-wasteland-models.js` создаёт процедурные GLB.
+- `tools/build-model-colliders.js` пересобирает collider-каталог.
+- `tools/account-admin.js` обновляет email/пароль runtime-аккаунта.
+- `tools/check-*.js` проверяют код, контент и синхронизационные контракты.
+- `tools/smoke-check.js` запускает изолированный end-to-end smoke.
+
+Основные команды:
 
 ```bash
-node --check server.js
-```
-
-Полная статическая проверка проекта: проверяет оба серверных файла, согласованность публичных версий, клиентский JS-загрузчик, CSS-загрузчик, отсутствие неподключённых JS/CSS-частей, существование локальных URL ассетов из `public/` и ссылки на файлы внутри asset manifest JSON.
-
-```bash
+npm run check:server
+npm run check:data
+npm run check:npc
+npm run check:economy
+npm run smoke
 npm run check
 ```
 
-Smoke-проверка после `npm install`: запускает сервер на временном порту и временной папке данных, проверяет `/health`, HTML, CSS/JS/Three.js статику, REST CORS preflight и базовый цикл auth API без записи в реальные `data/*.json`. Smoke также проверяет, что сохранение персонажа без `characterLeaseId` отклоняется и не меняет список персонажей.
+Smoke использует временный порт и временный `DATA_DIR`. Среди прочего он
+проверяет версию `/health`, cache headers, auth lifecycle, блокировку
+персонажа, создание/удаление персонажа, Socket.IO и совместную комнату трёх
+игроков.
 
-```bash
-npm run smoke
+## Куда выносить следующий код
+
+При дальнейшем разбиении приоритетны границы с минимальным скрытым состоянием:
+
+```text
+src/server/auth.js
+src/server/characters.js
+src/server/rooms.js
+src/server/combat.js
+src/server/inventory.js
+src/server/socket-handlers/
 ```
+
+Перенос должен быть поэтапным: сначала чистая функция/подсистема и тесты, затем
+подключение из `server.js`, затем удаление дубликата.

@@ -1,6 +1,6 @@
 # Realm of Ashes
 
-Текущая версия проекта: **7.76.0-graphics-upgrade**.
+Текущая версия проекта: **7.76.1-combat-integrity**.
 
 Публичная версия: [rangir.ru](https://rangir.ru).
 

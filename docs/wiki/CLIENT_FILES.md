@@ -2,7 +2,11 @@
 
 ## `public/js/game.js`
 
-Загрузчик клиентских частей. Он собирает игру из файлов в `public/js/game/` строго в порядке `GAME_SCRIPT_PARTS`.
+`public/index.html` сначала подключает локальные vendor-сборки Three.js, `GLTFLoader` и Socket.IO, а затем запускает этот загрузчик.
+
+Загрузчик параллельно получает каталог коллайдеров и все 59 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
+
+При добавлении, удалении или переименовании JS-части нужно обязательно синхронно обновить `GAME_SCRIPT_PARTS`: каталог не сканируется автоматически.
 
 ## JS-части
 
@@ -29,7 +33,7 @@
 | `05_multiplayer_core_state.js` | multiplayer state, room guards, outgoing character snapshots |
 | `05a_remote_actor_equipment.js` | remote actor names, equipment visuals, muzzle helpers |
 | `05b_remote_player_locomotion.js` | remote player interpolation and visual locomotion |
-| `05c_multiplayer_socket_room.js` | Socket.IO connect/events, room changes, transfer handlers |
+| `05c_multiplayer_socket_room.js` | Socket.IO connect/events, room changes, transfer handlers, измерение сетевого ping |
 | `05d_world_containers_security.js` | server containers, lock/terminal UI and loot window actions |
 | `05e_ground_items_world_sync.js` | ground items, resources, world/enemy network snapshots |
 | `05f_enemy_models_location_flow.js` | enemy model builders, local spawn/restore and location loading |
@@ -46,8 +50,8 @@
 | `07d_trader_barter_ui.js` | сетки бартера, очереди покупки/продажи и принятие обмена |
 | `07e_loot_interaction.js` | окна обыска трупов/контейнеров и ближайшее взаимодействие |
 | `07f_quickbar_drag_slots.js` | быстрые слоты, назначение, drag/drop и очистка слотов |
-| `08_character_creation_save.js` | character creator, SPECIAL/traits, save/load/bootstrap |
-| `08a_mobile_controls_panels.js` | input globals, touch movement/aim, fullscreen and game menu panels |
+| `08_character_creation_save.js` | character creator, SPECIAL, traits, tagged skills, starting perks, save/load/bootstrap |
+| `08a_mobile_controls_panels.js` | input globals, touch movement, fullscreen and game menu panels |
 | `08b_interaction_quick_access.js` | universal interaction, held items, resource tools, quick access radial |
 | `08c_hud_edit_windows_touch.js` | HUD editor, mobile control binding, Pip-Boy/window toggles |
 | `08d_world_context_targets.js` | pointer picking, context target detection and world context options |
@@ -66,11 +70,11 @@
 | `12b_global_map_panel_window.js` | панель глобальной карты, runtime frame, окно карты и выход на карту из локации |
 | `12c_global_map_travel_encounters.js` | старт/отмена маршрута, встречи, входы в локальные локации, завершение travel |
 | `12d_global_map_entry_ambush_controls.js` | вход в поселения, засады и инициализация контролов глобальной карты |
-| `13_minimap_hud_loop.js` | миникарта, HUD, оружейный UI, render guard, главный loop |
+| `13_minimap_hud_loop.js` | миникарта, HUD, оружейный UI, auth/bootstrap bindings, render guard, главный loop |
 
 ## CSS-части
 
-CSS разделён по функциональным зонам: базовый HUD, мобильный режим, инвентарь, торговля, графические настройки, перки, постоянные HUD-окна, консоль оружия, загрузочный экран.
+`public/css/game.css` — единая точка входа, которая последовательно импортирует 19 CSS-частей. Порядок `@import` является частью контракта каскада: поздние слои интерфейса и адаптивные переопределения могут уточнять ранние базовые стили. При добавлении или переносе CSS-части нужно обновлять этот список явно.
 
 ## Проверка клиента
 
@@ -89,6 +93,11 @@ node tools/check-client-css.js
 
 Это касается крыши торговца, боевых трассеров и защитного ремонта геометрий перед рендером.
 
-## Radial Use Menu v7.75.56
+## Быстрый доступ
 
-Mobile quick access changed from the always-visible HUD quickbar to a hold-to-use radial wheel bound to `#touch-loot`. The quickbar data and inventory assignment flow remain unchanged; only the in-game mobile activation UI changed.
+Данные быстрого доступа состоят из восьми логических слотов и используются общим потоком назначения предметов из инвентаря.
+
+- На мобильных устройствах `#quickbar` отображается как восемь постоянных кнопок: касание сразу активирует назначенный слот.
+- На desktop обычная панель скрыта. Короткое нажатие `E` выполняет универсальное взаимодействие, а удержание `E` открывает radial-меню быстрого доступа.
+
+Мобильная панель не привязана к `#touch-loot` и не требует удержания.

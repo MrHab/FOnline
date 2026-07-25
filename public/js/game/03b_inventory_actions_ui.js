@@ -337,6 +337,51 @@
     refreshInventoryManipulationApUi();
   }
 
+  function requestServerEquipmentAction(slot = '', itemRuntimeId = '', options = {}) {
+    if (!multiplayer.socket || !multiplayer.socket.connected || !multiplayer.joined) {
+      setReadout('Изменение экипировки требует соединения с сервером.');
+      return false;
+    }
+    if (!multiplayer.pendingEquipmentSlots?.add) multiplayer.pendingEquipmentSlots = new Set();
+    if (multiplayer.pendingEquipmentSlots.has(slot)) {
+      setReadout('Предыдущее изменение этого слота ещё подтверждается сервером.');
+      return false;
+    }
+    if (!canSpendInventoryManipulationAp('equipment')) return false;
+
+    multiplayer.equipmentActionSeq = Math.max(0, Number(multiplayer.equipmentActionSeq || 0)) + 1;
+    const requestId = `equipment_${Date.now().toString(36)}_${multiplayer.equipmentActionSeq.toString(36)}`;
+    multiplayer.pendingEquipmentSlots.add(slot);
+    multiplayer.socket.emit('equipmentAction', {
+      requestId,
+      expectedRevision: Math.max(0, Math.floor(Number(multiplayer.equipmentRevision || 0))),
+      slot,
+      itemRuntimeId: String(itemRuntimeId || '').slice(0, 96)
+    }, ack => {
+      multiplayer.pendingEquipmentSlots.delete(slot);
+      if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') {
+        applyServerAuthoritativePlayerState(ack.self);
+      } else if (Number.isFinite(Number(ack?.equipmentRevision))) {
+        multiplayer.equipmentRevision = Math.max(0, Math.floor(Number(ack.equipmentRevision)));
+      }
+      if (!ack?.ok) {
+        setReadout(ack?.error || 'Сервер отклонил изменение экипировки.');
+        renderInventory();
+        renderQuickbar();
+        renderWeaponReadout();
+        return;
+      }
+      if (ack.changed !== false && options.logText) addLog(options.logText, null, 'system');
+      if (options.readoutText) setReadout(options.readoutText);
+      updatePlayerEquipmentVisuals();
+      renderInventory();
+      renderQuickbar();
+      renderWeaponReadout();
+      queueSave(true);
+    });
+    return true;
+  }
+
   function requestServerSelfMedical(itemId = '', medicalKind = 'aid') {
     const id = baseItemId(itemId);
     if (!multiplayer.socket || !multiplayer.socket.connected || !multiplayer.joined) {
@@ -491,15 +536,11 @@
       setReadout(`${item.name}: уже экипировано.`);
       return;
     }
-    if (!spendInventoryManipulationAp('equip')) return;
-    equipment[slot] = id;
     const actionText = slot === 'weapon' ? 'В руках' : 'Надето';
-    addLog(`${actionText}: ${item.name}. Потрачено ${INVENTORY_MANIPULATION_AP_COST} ОД.`, null, 'system');
-    updatePlayerEquipmentVisuals();
-    renderInventory();
-    renderQuickbar();
-    renderWeaponReadout();
-    queueSave();
+    requestServerEquipmentAction(slot, id, {
+      logText: `${actionText}: ${item.name}. Потрачено ${INVENTORY_MANIPULATION_AP_COST} ОД.`,
+      readoutText: `${actionText}: ${item.name}.`
+    });
   }
 
 
@@ -507,14 +548,10 @@
     const id = equipment[slot];
     if (!id) return;
     const item = ITEMS[id];
-    if (!spendInventoryManipulationAp('unequip')) return;
-    equipment[slot] = null;
-    if (item) addLog(`Снято: ${item.name}. Потрачено ${INVENTORY_MANIPULATION_AP_COST} ОД.`, null, 'system');
-    updatePlayerEquipmentVisuals();
-    renderInventory();
-    renderQuickbar();
-    renderWeaponReadout();
-    queueSave();
+    requestServerEquipmentAction(slot, '', {
+      logText: item ? `Снято: ${item.name}. Потрачено ${INVENTORY_MANIPULATION_AP_COST} ОД.` : '',
+      readoutText: item ? `Снято: ${item.name}.` : 'Предмет снят.'
+    });
   }
 
   function equippedSlotForItem(id) {

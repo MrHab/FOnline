@@ -550,10 +550,10 @@ if (siteSelectionStart < 0 || siteSelectionEnd < 0) {
   }
   try {
     const selectSites = new Function('WASTELAND_SIM', 'worldSiteIdFromRoomId', `${body}; return wastelandSitesForLocation;`)(
-      { publicState: () => ({ sites: [
-        { id: 'shared_a', locationId: 'randomDryBasin', owner: 'raiders', type: 'pointOfInterest' },
-        { id: 'shared_b', locationId: 'randomDryBasin', owner: 'relay_order', type: 'pointOfInterest' }
-      ] }) },
+      { state: () => ({ sites: {
+        shared_a: { id: 'shared_a', locationId: 'randomDryBasin', owner: 'raiders', type: 'pointOfInterest' },
+        shared_b: { id: 'shared_b', locationId: 'randomDryBasin', owner: 'relay_order', type: 'pointOfInterest' }
+      } }) },
       () => ''
     );
     const selected = selectSites({ id: 'randomDryBasin' }, { id: 'randomDryBasin#site_shared_b', locationId: 'randomDryBasin', worldSiteId: 'shared_b' });

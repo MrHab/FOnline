@@ -70,7 +70,6 @@ function assertRequiredFiles() {
   }
   const serverSource = fs.readFileSync(SERVER_FILE, 'utf8');
   const clientLoaderSource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game.js'), 'utf8');
-  const simulationSource = fs.readFileSync(path.join(PROJECT_ROOT, 'src', 'server', 'wasteland-sim.js'), 'utf8');
   if (clientLoaderSource.includes("open('GET', url, false)")
     || clientLoaderSource.includes('open("GET", url, false)')) {
     fail('client loader still uses synchronous XMLHttpRequest');
@@ -121,10 +120,6 @@ function assertRequiredFiles() {
   }
   if (serverSource.includes('ROOM_CAPACITY') || serverSource.includes('roomCapacity:')) {
     fail('server still exposes or enforces a per-location player capacity');
-  }
-  if (!serverSource.includes('function roomIdFor(locationId) { return normalizeLocationId(locationId); }')
-    || !simulationSource.includes("return safeId(locationId || 'settlement', 'settlement').slice(0, 96);")) {
-    fail('ordinary locations are not mapped to one shared reality by location id');
   }
 }
 

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { normalizeWorldTask } = require('../src/server/wasteland-world-tasks');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -103,7 +104,10 @@ requireText('server inventory sanitizer', functionBody(server, 'sanitizeServerIn
 requireText('client enemy loot', functionBody(clientNetwork, 'rollEnemyLoot'), 'return [];');
 requireText('client base storage restock', functionBody(clientTradeStorage, 'restockBaseStorage'), 'return false;');
 requireText('npc quest caps', functionBody(clientTradeStorage, 'awardNpcQuest'), 'const paidMoney = payNpcQuestCaps(money);');
-requireText('world task rewards', functionBody(wastelandSim, 'normalizeWorldTask'), 'reward.caps ?? reward.silver');
+const legacyWorldTaskReward = normalizeWorldTask({ id: 'legacy_reward', reward: { silver: 37.9 } }, 0);
+if (legacyWorldTaskReward?.reward?.caps !== 37) {
+  errors.push('world task rewards: legacy silver reward is not normalized into integer caps');
+}
 requireText('world task rewards', functionBody(wastelandSim, 'fundWorldTaskCapsRewardFromSite'), 'stock.silver = Math.max(0, available - deducted);');
 requireText('world task reward delivery', functionBody(clientNetwork, 'applyServerWorldTransferState'), 'claimWorldTaskReward(data.completedWorldTaskId)');
 requireText('client crafting station search', functionBody(clientInventory, 'craftRecipe'), 'const station = nearbyCraftingStation(recipe);');

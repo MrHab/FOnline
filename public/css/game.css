@@ -1,7 +1,7 @@
 /* Realm of Ashes CSS loader.
    The original game.css body was split mechanically into ordered files under /css/game/.
    Loading these imports in order reconstructs the same stylesheet cascade without changing styles. */
-@import url("/css/game/01_base_layout_hud.css?v=7.76.1-combat-integrity");
+@import url("/css/game/01_base_layout_hud.css?v=7.76.2-data-integrity");
 @import url("/css/game/02_mobile_fullscreen_touch.css");
 @import url("/css/game/03_hud_minimap_inventory_progression.css");
 @import url("/css/game/04_mobile_inventory_trade_quality.css");
@@ -18,5 +18,5 @@
 @import url("/css/game/15_location_loading_screen.css");
 @import url("/css/game/16_mobile_custom_icons.css");
 @import url("/css/game/16_mobile_ui_icons.css");
-@import url("/css/game/17_player_frame_hud.css?v=7.76.1-combat-integrity");
-@import url("/css/game/18_hud_readability.css?v=7.76.1-combat-integrity");
+@import url("/css/game/17_player_frame_hud.css?v=7.76.2-data-integrity");
+@import url("/css/game/18_hud_readability.css?v=7.76.2-data-integrity");

@@ -41,6 +41,7 @@ const {
   createDevAccessPolicy,
   devEditorIsAvailable
 } = require('./src/server/dev-access');
+const { createCoalescedWriter } = require('./src/server/coalesced-writer');
 const {
   buildPasswordResetEmail,
   createPasswordResetRecord,
@@ -132,6 +133,7 @@ const DEV_ACCESS_POLICY = createDevAccessPolicy({
 });
 const AUTH_RATE_CONFIG = normalizeAuthRateLimitConfig(process.env);
 const PASSWORD_HASH_CONFIG = normalizePasswordHashConfig(process.env);
+const USER_SESSION_TOUCH_PERSIST_MS = 1000;
 const PASSWORD_RESET_TTL_MS = normalizePasswordResetTtlMs(process.env.PASSWORD_RESET_TTL_MS);
 const PUBLIC_GAME_URL = String(process.env.PUBLIC_GAME_URL || 'https://rangir.ru').replace(/\/+$/, '');
 const SMTP_URL = String(process.env.SMTP_URL || '').trim();
@@ -775,6 +777,13 @@ const savesDb = readJson(SAVES_FILE, { version: 2, characters: {} });
 if (!usersDb.users) usersDb.users = {};
 if (!usersDb.sessions) usersDb.sessions = {};
 if (!savesDb.characters) savesDb.characters = {};
+const usersPersistWriter = createCoalescedWriter(
+  () => writeJsonAtomic(USERS_FILE, usersDb),
+  {
+    delayMs: USER_SESSION_TOUCH_PERSIST_MS,
+    onDeferredError: error => console.error('Deferred users persistence failed:', error)
+  }
+);
 if (Object.prototype.hasOwnProperty.call(savesDb, 'saves')) {
   delete savesDb.saves;
   savesDb.version = Math.max(2, Number(savesDb.version || 0));
@@ -805,7 +814,8 @@ function pruneStaleSessions(login = '') {
   if (changed) persistUsers();
 }
 
-function persistUsers() { writeJsonAtomic(USERS_FILE, usersDb); }
+function persistUsers() { return usersPersistWriter.flush(); }
+function schedulePersistUsers() { return usersPersistWriter.schedule(); }
 function persistSaves() { writeJsonAtomic(SAVES_FILE, savesDb); }
 
 function normalizeLogin(login) {
@@ -1582,13 +1592,13 @@ app.post('/api/auth/password-reset/confirm', authRateLimit, async (req, res, nex
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
   const characters = listUserCharacters(req.auth.user, req.auth.login);
-  persistUsers();
+  schedulePersistUsers();
   res.json({ ok: true, user: { login: req.auth.login }, hasSave: characters.length > 0, characters });
 });
 
 app.post('/api/auth/heartbeat', requireAuth, (req, res) => {
   req.auth.session.lastSeenAt = Date.now();
-  persistUsers();
+  schedulePersistUsers();
   res.json({ ok: true, now: req.auth.session.lastSeenAt });
 });
 

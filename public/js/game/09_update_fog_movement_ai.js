@@ -956,7 +956,6 @@
         || touchAimFireHeld
         || virtualMove.active
         || Object.keys(keys).some(code => !!keys[code])
-        || !!(player.targetPath && player.targetPath.length)
         || !!player.attackTarget;
       if (blockedInputArmed && typeof clearAllGameplayInput === 'function') {
         clearAllGameplayInput('authority-blocked', { sendIdle: false });
@@ -972,8 +971,6 @@
       Object.keys(keys).forEach(code => { keys[code] = false; });
       if (typeof stopAutoFire === 'function') stopAutoFire();
       if (typeof stopTouchAim === 'function') stopTouchAim();
-      player.targetPath = [];
-      if (marker) marker.visible = false;
       updateEffects(dt);
       updateCamera(dt);
       updateRemotePlayers(dt);
@@ -984,8 +981,6 @@
       Object.keys(keys).forEach(code => { keys[code] = false; });
       stopAutoFire();
       stopTouchAim();
-      player.targetPath = [];
-      if (marker) marker.visible = false;
       updateEffects(dt);
       updateCamera(dt);
       updateRemotePlayers(dt);
@@ -1170,21 +1165,10 @@
     return { x: mx / len, z: mz / len, intensity: hasVirtual ? 1 : 1, speedFactor: backwardFactor, autoTurn: mobileAutoTurn };
   }
 
-  function currentPlayerPathDestination() {
-    if (!Array.isArray(player?.targetPath) || !player.targetPath.length) return null;
-    const last = player.targetPath[player.targetPath.length - 1];
-    const x = Number(last?.x);
-    const z = Number(last?.z);
-    return Number.isFinite(x) && Number.isFinite(z) ? { x, z } : null;
-  }
-
   function updatePlayerMovement(dt) {
     playerDynamicObstacleFrameToken++;
     refreshPointerWorldFromLastScreen();
-    const pathDestination = currentPlayerPathDestination();
-    if (pathDestination && Math.hypot(pathDestination.x - player.x, pathDestination.z - player.z) > 0.18) {
-      facePoint(pathDestination.x, pathDestination.z);
-    } else if (!isMobileControlsEnabled() && pointerHasWorld) {
+    if (!isMobileControlsEnabled() && pointerHasWorld) {
       const lookDx = pointerWorld.x - player.x;
       const lookDz = pointerWorld.z - player.z;
       if (Math.hypot(lookDx, lookDz) > 0.18) facePoint(pointerWorld.x, pointerWorld.z);
@@ -1194,7 +1178,6 @@
     const keyboardMoving = !!move;
     const speed = (player.speed + speedBonus()) * injurySpeedMultiplier() * (player.crouching ? 0.62 : 1);
     if (keyboardMoving) {
-      player.targetPath = [];
       const autoTarget = isMobileControlsEnabled() ? getActiveAutoTarget() : null;
       // При активном мобильном стике направление стика всегда главнее автоцели.
       // Так персонаж смотрит туда, куда ведёт левый стик.
@@ -1203,7 +1186,6 @@
       const moveIntensity = move.intensity || 1;
       const moveSpeedFactor = move.speedFactor || 1;
       movePlayerBy(move.x * speed * moveIntensity * moveSpeedFactor * dt, move.z * speed * moveIntensity * moveSpeedFactor * dt);
-      marker.visible = false;
     }
 
     playerGroup.position.set(player.x, 0, player.z);
@@ -1637,10 +1619,6 @@
       }
     }
     if (typeof updateNpcSpeechBubbles === 'function') updateNpcSpeechBubbles(dt);
-    if (marker.visible) {
-      marker.rotation.z += dt * 1.8;
-      marker.material.opacity = 0.38 + Math.sin(performance.now() / 180) * 0.15;
-    }
   }
 
   let lastCameraFocusX = NaN;

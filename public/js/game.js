@@ -33,7 +33,6 @@
     '/js/game/05d_world_containers_security.js',
     '/js/game/05e_ground_items_world_sync.js',
     '/js/game/05f_enemy_models_location_flow.js',
-    '/js/game/06_pathfinding_movement.js',
     '/js/game/06a_combat_visual_fx.js',
     '/js/game/06b_explosions_speech.js',
     '/js/game/06c_combat_stats_modes.js',

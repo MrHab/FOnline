@@ -4,6 +4,8 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+require('./check-client-endpoint-selection');
+require('./check-client-text-integrity');
 
 const ROOT = path.resolve(__dirname, '..');
 

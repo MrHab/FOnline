@@ -22,6 +22,11 @@ Auth-endpoints ограничены in-memory rate limit. Значения по 
 20 попыток на пару `IP + login` за 10 минут. Они настраиваются через
 `AUTH_RATE_MAX_ATTEMPTS` и `AUTH_RATE_WINDOW_MS`.
 
+Клиент, отданный самим игровым сервером, сначала использует API текущего origin,
+включая нестандартный `PORT`. Для отдельного локального static-сервера
+same-origin `404` или не-JSON ответ разрешает fallback на порт `3000`.
+GitHub Pages использует `https://rangir.ru`.
+
 ## HTTP-сессия
 
 Клиент передаёт token как `Authorization: Bearer ...` или `X-Auth-Token`.
@@ -67,8 +72,11 @@ MAIL_FROM=Realm of Ashes <noreply@example.com>
 PASSWORD_RESET_TTL_MS=3600000
 ```
 
-TTL по умолчанию — 60 минут. Если SMTP не настроен или отправка завершилась
-ошибкой, временный reset token удаляется, а API отвечает `503`.
+TTL по умолчанию — 60 минут, минимальное значение — 5 минут. Text- и
+HTML-версии письма показывают фактический срок из `PASSWORD_RESET_TTL_MS`; при
+некорректном значении используется TTL по умолчанию. Если SMTP не настроен или
+отправка завершилась ошибкой, временный reset token удаляется, а API отвечает
+`503`.
 
 ## Персонажи
 

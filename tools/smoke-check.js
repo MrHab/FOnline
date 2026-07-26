@@ -8,6 +8,8 @@ const http = require('http');
 const os = require('os');
 const path = require('path');
 const { io: createSocketClient } = require('socket.io-client');
+require('./check-password-reset');
+const { passwordResetTokenHash } = require('../src/server/password-reset');
 const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
@@ -711,6 +713,9 @@ async function assertAuthApiLifecycle() {
   const password = `smoke-pass-${suffix}`;
   const deviceId = `smoke_${suffix}`;
   const clientInstanceId = `smoke_client_${suffix}`;
+  const resetLogin = `reset_${suffix}`;
+  const resetPassword = `reset-pass-${suffix}`;
+  const resetDeviceId = `reset_device_${suffix}`;
 
   const unauthenticated = await request('/api/auth/me');
   assertStatus(unauthenticated, 401, 'GET /api/auth/me without token');
@@ -730,6 +735,28 @@ async function assertAuthApiLifecycle() {
     json: { login, email: `${login}@example.test`, password, deviceId, deviceType: 'desktop', controlType: 'keyboard_mouse' }
   });
   assertStatus(duplicate, 409, 'duplicate POST /api/auth/register');
+
+  const resetRegister = await request('/api/auth/register', {
+    method: 'POST',
+    json: {
+      login: resetLogin,
+      email: `${resetLogin}@example.test`,
+      password: resetPassword,
+      deviceId: resetDeviceId,
+      deviceType: 'desktop',
+      controlType: 'keyboard_mouse'
+    }
+  });
+  assertStatus(resetRegister, 200, 'POST /api/auth/register for password reset lifecycle');
+  const resetRegistered = parseJsonResponse(resetRegister, 'POST /api/auth/register for password reset lifecycle');
+  if (!resetRegistered.ok || !resetRegistered.token) {
+    fail('password reset lifecycle registration response is incomplete', resetRegister.body);
+  }
+  const resetLogout = await request('/api/auth/logout', {
+    method: 'POST',
+    headers: authHeaders(resetRegistered.token, resetDeviceId)
+  });
+  assertStatus(resetLogout, 200, 'POST /api/auth/logout for password reset lifecycle');
 
   const headers = authHeaders(registered.token, deviceId, { clientInstanceId });
 
@@ -790,6 +817,94 @@ async function assertAuthApiLifecycle() {
 
   const afterLogout = await request('/api/auth/me', { headers });
   assertStatus(afterLogout, 401, 'GET /api/auth/me after logout');
+  return {
+    expired: {
+      login,
+      token: `expired-token-${suffix}`,
+      oldPassword: password,
+      newPassword: `expired-new-pass-${suffix}`
+    },
+    oneTime: {
+      login: resetLogin,
+      token: `valid-token-${suffix}`,
+      oldPassword: resetPassword,
+      newPassword: `valid-new-pass-${suffix}`,
+      deviceId: resetDeviceId
+    }
+  };
+}
+
+function seedPasswordResetLifecycle(accounts) {
+  const usersFile = path.join(DATA_DIR, 'users.json');
+  const users = readJsonForTest(usersFile);
+  const expiredUser = users.users?.[accounts.expired.login];
+  const oneTimeUser = users.users?.[accounts.oneTime.login];
+  if (!expiredUser || !oneTimeUser) {
+    fail('password reset smoke accounts were not persisted before restart', JSON.stringify(Object.keys(users.users || {})));
+  }
+  expiredUser.passwordReset = {
+    tokenHash: passwordResetTokenHash(accounts.expired.token),
+    expiresAt: Date.now() - 1000
+  };
+  oneTimeUser.passwordReset = {
+    tokenHash: passwordResetTokenHash(accounts.oneTime.token),
+    expiresAt: Date.now() + 60 * 1000
+  };
+  fs.writeFileSync(usersFile, JSON.stringify(users, null, 2));
+}
+
+async function assertPasswordResetLifecycle(accounts) {
+  const expired = await request('/api/auth/password-reset/confirm', {
+    method: 'POST',
+    json: {
+      login: accounts.expired.login,
+      token: accounts.expired.token,
+      password: accounts.expired.newPassword
+    }
+  });
+  assertStatus(expired, 400, 'POST expired password reset token');
+
+  const valid = await request('/api/auth/password-reset/confirm', {
+    method: 'POST',
+    json: {
+      login: accounts.oneTime.login,
+      token: accounts.oneTime.token,
+      password: accounts.oneTime.newPassword
+    }
+  });
+  assertStatus(valid, 200, 'POST valid password reset token');
+  const validData = parseJsonResponse(valid, 'POST valid password reset token');
+  if (!validData.ok) fail('valid password reset response is incomplete', valid.body);
+
+  const reused = await request('/api/auth/password-reset/confirm', {
+    method: 'POST',
+    json: {
+      login: accounts.oneTime.login,
+      token: accounts.oneTime.token,
+      password: `${accounts.oneTime.newPassword}-again`
+    }
+  });
+  assertStatus(reused, 400, 'POST reused password reset token');
+
+  const oldLogin = await request('/api/auth/login', {
+    method: 'POST',
+    json: {
+      login: accounts.oneTime.login,
+      password: accounts.oneTime.oldPassword,
+      deviceId: accounts.oneTime.deviceId
+    }
+  });
+  assertStatus(oldLogin, 401, 'POST login with old password after reset');
+
+  const newLogin = await request('/api/auth/login', {
+    method: 'POST',
+    json: {
+      login: accounts.oneTime.login,
+      password: accounts.oneTime.newPassword,
+      deviceId: accounts.oneTime.deviceId
+    }
+  });
+  assertStatus(newLogin, 200, 'POST login with new password after reset');
 }
 
 function delay(ms) {
@@ -1324,17 +1439,19 @@ async function main() {
     await assertStaticAssets(health);
     await assertRestCorsPreflight();
     await assertEditorAndWorldDataApis();
-    await assertAuthApiLifecycle();
+    const resetAccounts = await assertAuthApiLifecycle();
     await assertSocketMultiplayerLifecycle();
     assertLegacyDuplicateMigration(legacyRemappedId);
     await stopSmokeServer(proc);
     serverProc = null;
+    seedPasswordResetLifecycle(resetAccounts);
     const restartLogs = [];
     proc = spawnSmokeServer(restartLogs);
     serverProc = proc;
     await waitForHealth(proc, restartLogs);
     assertLegacyDuplicateMigration(legacyRemappedId);
     assertPendingMigrationJournalRecovery();
+    await assertPasswordResetLifecycle(resetAccounts);
     if (restartLogs.join('').includes('duplicate legacy character id(s)')) {
       fail('server remapped an already migrated character again after restart', restartLogs.join(''));
     }

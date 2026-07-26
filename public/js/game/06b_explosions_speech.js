@@ -121,13 +121,13 @@
         }, ack => {
           if (ack && ack.ok && ack.enemy) {
             if (ack.hit === false) {
-              createFloatingText(enemy.x, enemy.z, 'РјРёРјРѕ', '#b7b7b7');
+              createFloatingText(enemy.x, enemy.z, 'мимо', '#b7b7b7');
             } else {
               const serverDamage = Math.max(0, Number(ack.damage || 0));
               const serverAbsorbed = Math.max(0, Number(ack.absorbed || 0));
-              const serverAbsorbedText = serverAbsorbed > 0 ? `, Р±СЂРѕРЅСЏ РїРѕРіР»РѕС‚РёР»Р° ${serverAbsorbed}` : '';
+              const serverAbsorbedText = serverAbsorbed > 0 ? `, броня поглотила ${serverAbsorbed}` : '';
               if (serverDamage > 0) createFloatingText(enemy.x, enemy.z, '-' + serverDamage, '#ff9b5a');
-              addLog(`${w.icon} ${w.name}: ${enemy.name} РїРѕР»СѓС‡Р°РµС‚ ${serverDamage} РІР·СЂС‹РІРЅРѕРіРѕ СѓСЂРѕРЅР°${serverAbsorbedText}.`, null, 'combat');
+              addLog(`${w.icon} ${w.name}: ${enemy.name} получает ${serverDamage} взрывного урона${serverAbsorbedText}.`, null, 'combat');
             }
             applyNetworkEnemies([ack.enemy], { allowPositionSync: true, fromServer: true });
             if (ack.combat) applyServerCombatState(ack.combat);

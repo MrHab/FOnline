@@ -59,7 +59,7 @@ JS-части и vendor-библиотеки пока загружаются д�
 | `07e_loot_interaction.js` | окна обыска трупов/контейнеров и ближайшее взаимодействие |
 | `07f_quickbar_drag_slots.js` | быстрые слоты, назначение, drag/drop и очистка слотов |
 | `08_character_creation_save.js` | character creator, SPECIAL, traits, tagged skills, starting perks, save/load/bootstrap |
-| `08a_mobile_controls_panels.js` | input globals, touch movement, fullscreen and game menu panels |
+| `08a_mobile_controls_panels.js` | input globals, touch movement, fullscreen, game menu panels and event-driven panel-state observer |
 | `08b_interaction_quick_access.js` | universal interaction, held items, resource tools, quick access radial |
 | `08c_hud_edit_windows_touch.js` | HUD editor, mobile control binding, Pip-Boy/window toggles |
 | `08d_world_context_targets.js` | pointer picking, context target detection and world context options |
@@ -78,7 +78,7 @@ JS-части и vendor-библиотеки пока загружаются д�
 | `12b_global_map_panel_window.js` | панель глобальной карты, runtime frame, окно карты и guarded-выход из локации |
 | `12c_global_map_travel_encounters.js` | fail-closed старт/отмена маршрута, решения встреч, входы и завершение travel |
 | `12d_global_map_entry_ambush_controls.js` | ранний guard входа в поселения, засады и контролы глобальной карты |
-| `13_minimap_hud_loop.js` | миникарта, HUD, оружейный UI, auth/bootstrap bindings, render guard, главный loop |
+| `13_minimap_hud_loop.js` | миникарта, HUD, оружейный UI, auth/bootstrap bindings, render guard и главный loop без UI polling |
 
 ## CSS-части
 

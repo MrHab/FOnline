@@ -48,6 +48,14 @@ function functionBody(source, name) {
   return fn.slice(fn.indexOf('{') + 1, -1);
 }
 
+function statementSource(source, marker) {
+  const start = source.indexOf(marker);
+  assert(start >= 0, `Missing statement ${marker}`);
+  const end = source.indexOf(';\n', start);
+  assert(end > start, `Cannot extract statement ${marker}`);
+  return source.slice(start, end + 1);
+}
+
 function arrowDeclarationSource(source, marker) {
   const start = source.indexOf(marker);
   assert(start >= 0, `Missing declaration ${marker}`);
@@ -84,6 +92,8 @@ const quests = read('public/js/game/07c_trader_dialogues_quests.js');
 const loot = read('public/js/game/07e_loot_interaction.js');
 const input = read('public/js/game/08f_input_events_proximity.js');
 const interaction = read('public/js/game/08b_interaction_quick_access.js');
+const mobilePanels = read('public/js/game/08a_mobile_controls_panels.js');
+const mobileControls = read('public/js/game/08c_hud_edit_windows_touch.js');
 const updateLoop = read('public/js/game/09_update_fog_movement_ai.js');
 const globalMapState = read('public/js/game/10_global_map_state_logs_config.js');
 const globalMapWorldStatus = read('public/js/game/12a_global_map_world_status.js');
@@ -1141,6 +1151,129 @@ function assertServerAuthoritativeWorldStateRequests() {
     'an addressable world-state resync still broadcasts to the whole room');
 }
 
+function assertEventDrivenMobilePanelState() {
+  const updateBody = functionBody(mobilePanels, 'updateMobilePanelState');
+  assertContainsAll('mobile panel state deduplication', updateBody, [
+    'const signature = [',
+    'if (signature === mobilePanelStateSignature) return false',
+    'mobilePanelStateSignature = signature'
+  ]);
+  assert(!updateBody.includes("getElementById('player-action-window')"),
+    'mobile panel state still queries the non-blocking player action window');
+
+  const observerBody = functionBody(mobilePanels, 'initMobilePanelStateObserver');
+  assertContainsAll('mobile panel mutation observer', observerBody, [
+    'new MutationObserver(() => updateMobilePanelState())',
+    "attributeFilter: ['class', 'style']",
+    "mobilePanelStateSignature = ''",
+    'updateMobilePanelState()'
+  ]);
+  assertContainsAll(
+    'mobile panel observer initialization',
+    functionBody(mobileControls, 'initMobileControls'),
+    ['initMobilePanelStateObserver()']
+  );
+  assert(!mobileControls.includes('setInterval(updateMobilePanelState'),
+    'mobile controls still poll panel state on a fixed interval');
+  assert(!hudLoop.includes('mobilePanelStateTimer'),
+    'the render loop still polls mobile panel state');
+
+  const runtime = new Function([
+    "'use strict';",
+    'function makeClassList(initial = []) {',
+    '  const values = new Set(initial);',
+    '  return {',
+    '    writes: 0,',
+    '    add(...names) { this.writes += 1; names.forEach(name => values.add(name)); },',
+    '    remove(...names) { this.writes += 1; names.forEach(name => values.delete(name)); },',
+    '    contains(name) { return values.has(name); },',
+    '    toggle(name, force) {',
+    '      this.writes += 1;',
+    "      const next = typeof force === 'boolean' ? force : !values.has(name);",
+    '      if (next) values.add(name); else values.delete(name);',
+    '      return next;',
+    '    }',
+    '  };',
+    '}',
+    "function makeElement(id) { return { id, style: { display: 'none' }, classList: makeClassList() }; }",
+    'const elementIds = [',
+    "  'loot-window', 'trader-window', 'storage-window', 'character-screen',",
+    "  'game-settings-panel', 'tutorial-window', 'inventory-window', 'talents-window',",
+    "  'craft-window', 'map-window', 'global-map-window', 'game-confirm-panel'",
+    '];',
+    'const elements = Object.fromEntries(elementIds.map(id => [id, makeElement(id)]));',
+    'const body = { classList: makeClassList() };',
+    'const document = { body, getElementById(id) { return elements[id] || null; } };',
+    'const uiWindows = {',
+    "  inventory: elements['inventory-window'], talents: elements['talents-window'],",
+    "  craft: elements['craft-window'], map: elements['map-window'], globalMap: elements['global-map-window']",
+    '};',
+    'let traderWindowOpen = false;',
+    'let storageWindowOpen = false;',
+    'let mobileControls = true;',
+    'let crouchSyncCalls = 0;',
+    'function isMobileControlsEnabled() { return mobileControls; }',
+    'function syncMobileCrouchButton() { crouchSyncCalls += 1; }',
+    'const observerInstances = [];',
+    'class MutationObserver {',
+    '  constructor(callback) { this.callback = callback; this.observed = []; observerInstances.push(this); }',
+    '  observe(target, options) { this.observed.push({ target, options }); }',
+    '  disconnect() { this.observed = []; }',
+    '  fire() { this.callback([]); }',
+    '}',
+    "let mobilePanelStateSignature = '';",
+    'let mobilePanelStateObserver = null;',
+    statementSource(mobilePanels, 'const MOBILE_PANEL_STATE_OBSERVED_IDS'),
+    functionSource(mobilePanels, 'updateMobilePanelState'),
+    functionSource(mobilePanels, 'initMobilePanelStateObserver'),
+    'return {',
+    '  init: initMobilePanelStateObserver,',
+    '  update: updateMobilePanelState,',
+    '  setPanel(id, visible) { elements[id].classList.toggle("visible", !!visible); },',
+    '  setMobile(value) { mobileControls = !!value; },',
+    '  fire() { observerInstances[0].fire(); },',
+    '  bodyHas(name) { return body.classList.contains(name); },',
+    '  bodyWrites() { return body.classList.writes; },',
+    '  crouchSyncCalls() { return crouchSyncCalls; },',
+    '  observed() { return observerInstances[0]?.observed || []; }',
+    '};'
+  ].join('\n'))();
+
+  runtime.init();
+  assert.strictEqual(runtime.observed().length, 11,
+    'mobile panel observer does not cover every static blocking panel');
+  assert(runtime.observed().every(row => row.options?.attributes === true
+    && row.options?.attributeFilter?.join(',') === 'class,style'),
+  'mobile panel observer watches more than class/style attributes');
+  const initialWrites = runtime.bodyWrites();
+  const initialCrouchSyncCalls = runtime.crouchSyncCalls();
+  assert.strictEqual(runtime.update(), false,
+    'unchanged mobile panel state was not deduplicated');
+  assert.strictEqual(runtime.bodyWrites(), initialWrites,
+    'unchanged mobile panel state still wrote body classes');
+  assert.strictEqual(runtime.crouchSyncCalls(), initialCrouchSyncCalls,
+    'unchanged mobile panel state still rewrote the crouch control');
+
+  runtime.setPanel('inventory-window', true);
+  runtime.fire();
+  assert(runtime.bodyHas('game-ui-panel-open') && runtime.bodyHas('mobile-ui-panel-open'),
+    'opening an observed mobile panel did not update body state');
+  const openWrites = runtime.bodyWrites();
+  runtime.fire();
+  assert.strictEqual(runtime.bodyWrites(), openWrites,
+    'a repeated observer callback rewrote unchanged body state');
+
+  runtime.setPanel('inventory-window', false);
+  runtime.fire();
+  assert(!runtime.bodyHas('game-ui-panel-open') && !runtime.bodyHas('mobile-ui-panel-open'),
+    'closing the last observed mobile panel did not clear body state');
+  runtime.setMobile(false);
+  runtime.setPanel('inventory-window', true);
+  runtime.fire();
+  assert(runtime.bodyHas('game-ui-panel-open') && !runtime.bodyHas('mobile-ui-panel-open'),
+    'desktop panel state incorrectly enables the mobile-only body class');
+}
+
 async function main() {
   assertAuthorityModes();
   assertAuthorityTransitionCleanup();
@@ -1153,7 +1286,8 @@ async function main() {
   assertBlockedGameplayGates();
   assertDeferredWorldRuntime();
   assertServerAuthoritativeWorldStateRequests();
-  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync and dead-man switch.');
+  assertEventDrivenMobilePanelState();
+  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
 }
 
 main().catch(error => {

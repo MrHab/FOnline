@@ -555,7 +555,6 @@
     }
   }
 
-  let mobilePanelStateTimer = 0;
   const MAX_RENDER_FPS = 60;
   const MIN_RENDER_FRAME_MS = 1000 / MAX_RENDER_FPS;
   let nextRenderTs = 0;
@@ -575,11 +574,6 @@
     updateFpsCounter(dt);
     if (typeof updateAdaptiveRenderScale === 'function') updateAdaptiveRenderScale(dt);
     applyDayNightLighting(false);
-    mobilePanelStateTimer -= dt;
-    if (mobilePanelStateTimer <= 0 && typeof updateMobilePanelState === 'function') {
-      mobilePanelStateTimer = IS_MOBILE_DEVICE ? 0.22 : 0.30;
-      updateMobilePanelState();
-    }
     update(dt);
     maybeAutoOpenGlobalMapForPerfTest();
     maybeDrawHudMinimaps(dt);

@@ -461,8 +461,7 @@
 
     window.addEventListener('resize', syncMobileOrientationState);
     window.addEventListener('orientationchange', () => setTimeout(syncMobileOrientationState, 220));
-    setInterval(updateMobilePanelState, 180);
-    updateMobilePanelState();
+    initMobilePanelStateObserver();
     syncMobileOrientationState();
   }
 

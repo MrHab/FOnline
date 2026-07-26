@@ -1,4 +1,4 @@
-// Realm of Ashes v7.76.4 client bootstrap
+// Realm of Ashes v7.76.5 client bootstrap
 (() => {
   'use strict';
 
@@ -22,6 +22,7 @@
   let characterProfile = null;
   let saveDirty = false;
   let saveTimer = 0;
+  let clientContextTransitionInFlight = false;
   let gameplayMarked = false;
 
   // v7.74.92: gameplay visibility state must exist before world/roof creation.
@@ -207,7 +208,71 @@
   let activeCharacterLeaseId = '';
   let serverCharacters = [];
   let characterDeletePendingId = '';
+  let characterSelectionInFlight = false;
+  let characterSelectionEpoch = 0;
   let authScreenStep = 'login';
+  let clientSaveContextEpoch = 0;
+
+  function advanceClientSaveContextEpoch() {
+    clientSaveContextEpoch += 1;
+    return clientSaveContextEpoch;
+  }
+
+  function setSelectedServerCharacterForSaveContext(characterId = '', options = {}) {
+    const nextId = String(characterId || '');
+    const changed = nextId !== selectedServerCharacterId;
+    if (changed) advanceClientSaveContextEpoch();
+    selectedServerCharacterId = nextId;
+    if (changed
+      && typeof multiplayer === 'object'
+      && multiplayer
+      && (multiplayer.joined || multiplayer.joinInFlight)
+      && options.preserveMultiplayerJoin !== true
+      && typeof invalidateMultiplayerSessionContext === 'function') {
+      invalidateMultiplayerSessionContext('character-context-changed', {
+        disconnect: true,
+        clearWorld: !!gameStarted
+      });
+    }
+    return selectedServerCharacterId;
+  }
+
+  function currentClientSaveContext(characterId = selectedServerCharacterId) {
+    return {
+      epoch: clientSaveContextEpoch,
+      token: String(serverSession.token || ''),
+      characterId: String(characterId || ''),
+      leaseId: String(activeCharacterLeaseId || ''),
+      clientInstanceId: getClientInstanceId()
+    };
+  }
+
+  function clientSaveContextMatches(context = {}) {
+    return Number(context.epoch) === clientSaveContextEpoch
+      && String(context.token || '') === String(serverSession.token || '')
+      && String(context.characterId || '') === String(selectedServerCharacterId || '')
+      && String(context.characterId || '') === String(characterProfile?.serverCharacterId || '')
+      && String(context.leaseId || '') === String(activeCharacterLeaseId || '')
+      && String(context.clientInstanceId || '') === getClientInstanceId();
+  }
+
+  const saveDrainFactory = window.RealmSaveGenerationDrain?.createSaveGenerationDrain;
+  if (typeof saveDrainFactory !== 'function') throw new Error('Не загрузился координатор сохранений.');
+  const clientSaveDrain = saveDrainFactory({
+    capture: generation => captureClientSaveJob(generation),
+    persist: job => persistClientSaveJob(job),
+    onCommit: ({ generation, result }) => {
+      const state = clientSaveDrain.snapshot();
+      if (result?.contextCurrent !== false && state.requestedGeneration === generation) {
+        saveDirty = false;
+        saveTimer = 0;
+      }
+    },
+    onFailure: () => {
+      saveDirty = true;
+      saveTimer = 0;
+    }
+  });
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
@@ -286,8 +351,25 @@
   }
 
   function setServerSession(token, login) {
+    const previousToken = String(serverSession.token || '');
     serverSession.token = token || '';
     serverSession.login = login || '';
+    const sessionChanged = previousToken !== String(serverSession.token || '');
+    if (sessionChanged) {
+      advanceClientSaveContextEpoch();
+      characterSelectionEpoch += 1;
+      characterSelectionInFlight = false;
+      if (typeof multiplayer === 'object' && multiplayer) {
+        if (serverSession.token) multiplayer.onlineSessionRequired = true;
+        else if (!gameStarted) multiplayer.onlineSessionRequired = false;
+      }
+      if (typeof invalidateMultiplayerSessionContext === 'function') {
+        invalidateMultiplayerSessionContext('session-context-changed', {
+          disconnect: true,
+          clearWorld: !!gameStarted
+        });
+      }
+    }
     serverSaveAvailable = !!serverSession.token;
     if (serverSession.token) {
       localStorage.setItem(SERVER_TOKEN_KEY, serverSession.token);
@@ -296,10 +378,19 @@
       localStorage.removeItem(SERVER_TOKEN_KEY);
       localStorage.removeItem(SERVER_LOGIN_KEY);
       localStorage.removeItem(SERVER_CHARACTER_KEY);
-      selectedServerCharacterId = '';
+      setSelectedServerCharacterForSaveContext('');
       serverCharacters = [];
     }
     updateServerAuthUI();
+    if (typeof setClientAuthorityMode === 'function') {
+      const requiresServerWorld = typeof clientWorldRequiresServer === 'function'
+        ? clientWorldRequiresServer()
+        : !!serverSession.token;
+      setClientAuthorityMode(requiresServerWorld ? 'blocked' : 'offline-local', serverSession.token ? 'sessionAuthenticated' : 'sessionCleared', {
+        force: true,
+        clearWorld: !!gameStarted
+      });
+    }
   }
 
   function serverApiBaseCandidates() {
@@ -309,12 +400,13 @@
 
   async function serverApi(path, options = {}) {
     const headers = { ...(options.headers || {}) };
+    const requestSessionToken = String(serverSession.token || '');
     headers['X-Device-Id'] = getDeviceId();
     headers['X-Client-Instance-Id'] = getClientInstanceId();
     if (activeCharacterLeaseId) headers['X-Character-Lease-Id'] = activeCharacterLeaseId;
     headers['X-Device-Type'] = getDeviceType();
     if (options.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
-    if (serverSession.token) headers.Authorization = `Bearer ${serverSession.token}`;
+    if (requestSessionToken) headers.Authorization = `Bearer ${requestSessionToken}`;
 
     let lastNetworkError = null;
     const candidates = serverApiBaseCandidates();
@@ -337,9 +429,16 @@
         && (!validJson || response.status === 404 || response.status === 405);
       if (canTryDefaultPort) continue;
       if (response.status === 401) {
-        setServerSession('', '');
-        setOnlineStatus('Сервер: нужен вход');
-        setAuthStep('login');
+        // A response from an obsolete save/auth context must not clear a newer
+        // login that was established while the request was in flight.
+        if (requestSessionToken === String(serverSession.token || '')) {
+          setServerSession('', '');
+          setOnlineStatus('Сервер: нужен вход');
+          setAuthStep('login');
+          const characterScreen = document.getElementById('character-screen');
+          if (characterScreen) characterScreen.classList.add('visible');
+          setServerAuthStatus('Сессия истекла. Войдите снова и откройте персонажа заново.', 'err');
+        }
       }
       if (!response.ok || !data.ok) throw new Error(data.error || `Ошибка сервера ${response.status}`);
       if (base !== SERVER_API_BASE) {
@@ -390,7 +489,7 @@
   function renderCharacterSelect() {
     const list = document.getElementById('character-list');
     if (!list) return;
-    const controlsLocked = !!characterDeletePendingId;
+    const controlsLocked = !!characterDeletePendingId || characterSelectionInFlight;
     const createButton = document.getElementById('create-new-character-btn');
     const logoutButton = document.getElementById('server-logout-btn');
     if (createButton) createButton.disabled = controlsLocked;
@@ -429,7 +528,7 @@
     const id = String(characterId || '');
     const deletingSelected = selectedServerCharacterId === id || characterProfile?.serverCharacterId === id;
     if (!deletingSelected) return;
-    selectedServerCharacterId = '';
+    setSelectedServerCharacterForSaveContext('');
     activeCharacterLeaseId = '';
     characterProfile = null;
     saveDirty = false;
@@ -519,12 +618,26 @@
       setServerAuthStatus('Сначала войдите в аккаунт.', 'err');
       return;
     }
+    if (characterSelectionInFlight) {
+      setCharacterSelectStatus('Дождитесь завершения загрузки выбранного персонажа.', '');
+      return;
+    }
+    const selectionEpoch = characterSelectionEpoch + 1;
+    const selectionToken = String(serverSession.token || '');
+    characterSelectionEpoch = selectionEpoch;
+    characterSelectionInFlight = true;
+    const selectionIsCurrent = () => characterSelectionInFlight
+      && characterSelectionEpoch === selectionEpoch
+      && String(serverSession.token || '') === selectionToken;
+    renderCharacterSelect();
     try {
       setCharacterSelectStatus('Загружаю персонажа...', '');
       const data = await serverApi(`/api/characters/${encodeURIComponent(characterId)}`, { method: 'GET' });
+      if (!selectionIsCurrent()) return;
       if (!data.save) throw new Error('Данные персонажа повреждены или пустые.');
       const targetLocation = LOCATIONS[data.save.currentLocationId] || LOCATIONS.settlement;
       const loadWorld = () => {
+        if (!selectionIsCurrent()) throw new Error('Загрузка персонажа была отменена.');
         if (!applySavedState(data.save)) throw new Error('Данные персонажа повреждены или пустые.');
         return true;
       };
@@ -538,14 +651,24 @@
           beforeRevealStep: 'Синхронизирую локацию с сервером...',
           beforeRevealProgress: 90,
           beforeReveal: async () => {
-            selectedServerCharacterId = characterId;
+            if (!selectionIsCurrent()) throw new Error('Загрузка персонажа была отменена.');
+            setSelectedServerCharacterForSaveContext(characterId);
             if (characterProfile) characterProfile.serverCharacterId = characterId;
             localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
             const networkReady = await connectMultiplayer({ waitForJoin: true, timeoutMs: 4500 });
+            if (!selectionIsCurrent()) throw new Error('Загрузка персонажа была отменена.');
             if (networkReady === false) {
               gameStarted = false;
               activeCharacterLeaseId = '';
-              if (multiplayer.socket) { try { multiplayer.socket.disconnect(); } catch (_) {} multiplayer.socket = null; }
+              if (typeof invalidateMultiplayerSessionContext === 'function') {
+                invalidateMultiplayerSessionContext('character-join-failed', {
+                  disconnect: true,
+                  clearWorld: true
+                });
+              } else if (multiplayer.socket) {
+                try { multiplayer.socket.disconnect(); } catch (_) {}
+                multiplayer.socket = null;
+              }
               throw new Error('Сервер не разрешил открыть этого персонажа. Возможно, он уже открыт в другой вкладке.');
             }
             // v7.74.67: do not reveal/start the world until the server has
@@ -558,7 +681,8 @@
       } else {
         loaded = loadWorld();
         if (loaded) {
-          selectedServerCharacterId = characterId;
+          if (!selectionIsCurrent()) return;
+          setSelectedServerCharacterForSaveContext(characterId);
           if (characterProfile) characterProfile.serverCharacterId = characterId;
           localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
           hideCharacterCreatorAndStart();
@@ -570,7 +694,14 @@
       renderUI();
     } catch (err) {
       console.warn('Character load failed:', err);
-      setCharacterSelectStatus(`Не удалось загрузить персонажа: ${err.message}`, 'err');
+      if (selectionIsCurrent()) {
+        setCharacterSelectStatus(`Не удалось загрузить персонажа: ${err.message}`, 'err');
+      }
+    } finally {
+      if (characterSelectionEpoch === selectionEpoch) {
+        characterSelectionInFlight = false;
+        renderCharacterSelect();
+      }
     }
   }
 
@@ -597,10 +728,41 @@
       setServerAuthStatus('Сначала войдите или зарегистрируйтесь.', 'err');
       return;
     }
-    selectedServerCharacterId = makeNewCharacterId();
+    setSelectedServerCharacterForSaveContext(makeNewCharacterId());
     localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
     resetCharacterCreationForm();
     setAuthStep('create');
+  }
+
+  async function confirmClientSaveBeforeContextTransition(kind = 'switch') {
+    if (!characterProfile) return true;
+    if (clientContextTransitionInFlight) {
+      setReadout('Переход уже ожидает подтверждения сохранения.');
+      return false;
+    }
+    clientContextTransitionInFlight = true;
+    try {
+      if (typeof clearAllGameplayInput === 'function') {
+        clearAllGameplayInput(`save-${kind}`, { sendIdle: true });
+      }
+    } catch (_) {}
+    let saveConfirmed = false;
+    try { saveConfirmed = (await saveGame(true)) !== false; } catch (_) {}
+    if (!saveConfirmed) {
+      clientContextTransitionInFlight = false;
+      const logout = kind === 'logout';
+      const message = logout
+        ? 'Выход отменён: сервер не подтвердил последнее сохранение. Проверьте соединение и повторите попытку.'
+        : 'Смена персонажа отменена: сервер не подтвердил последнее сохранение. Проверьте соединение и повторите попытку.';
+      setReadout(message);
+      setOnlineStatus(logout
+        ? 'Сервер: выход отложен до подтверждения сохранения'
+        : 'Сервер: смена персонажа отложена до подтверждения сохранения');
+      if (logout) setServerAuthStatus(message, 'err');
+      else setCharacterSelectStatus(message, 'err');
+      return false;
+    }
+    return true;
   }
 
   async function serverLogout() {
@@ -608,7 +770,7 @@
       setCharacterSelectStatus('Дождитесь завершения удаления персонажа.', '');
       return;
     }
-    try { saveGame(true); } catch (_) {}
+    if (!await confirmClientSaveBeforeContextTransition('logout')) return false;
     try {
       if (serverSession.token) await serverApi('/api/auth/logout', { method: 'POST' });
     } catch (_) {}
@@ -623,15 +785,21 @@
     setServerSession('', '');
     gameStarted = false;
     characterProfile = null;
-    selectedServerCharacterId = '';
+    clientContextTransitionInFlight = false;
+    if (typeof multiplayer === 'object' && multiplayer) multiplayer.onlineSessionRequired = false;
+    setSelectedServerCharacterForSaveContext('');
     activeCharacterLeaseId = '';
     characterDeletePendingId = '';
     const screen = document.getElementById('character-screen');
     if (screen) screen.classList.add('visible');
     setAuthStep('login');
     setOnlineStatus('Сервер: войдите или зарегистрируйтесь');
-    setServerAuthStatus('Вы вышли из аккаунта.', 'ok');
+    setServerAuthStatus(
+      'Вы вышли из аккаунта.',
+      'ok'
+    );
     updateMobilePanelState();
+    return true;
   }
 
   async function handleServerAuth() {
@@ -751,41 +919,104 @@
     }
   }
 
-  async function saveServerState(state) {
-    if (!serverSession.token || !selectedServerCharacterId || !state) return false;
-    if (!activeCharacterLeaseId) {
+  function captureClientSaveJob(generation) {
+    if (!serverSession.token || !selectedServerCharacterId || !activeCharacterLeaseId || !characterProfile) return null;
+    const state = serializeGameState();
+    if (!state) return null;
+    const characterId = String(characterIdForState(state) || '');
+    if (!characterId || characterId !== selectedServerCharacterId) return null;
+    const context = currentClientSaveContext(characterId);
+    const body = JSON.stringify({
+      state,
+      saveGeneration: generation,
+      characterLeaseId: context.leaseId,
+      clientInstanceId: context.clientInstanceId
+    });
+    return {
+      generation,
+      characterId,
+      context,
+      body,
+      leaderboardEligible: Number(player.level || 1) > 1,
+      leaderboardScore: Math.max(0, Number(player.xp || 0) + (Math.max(1, Number(player.level || 1)) - 1) * 1000),
+      leaderboardName: String(characterProfile.name || '')
+    };
+  }
+
+  async function saveServerState(job) {
+    if (!job?.body || !job.characterId || !job.context?.token) {
+      return { ok: false, error: new Error('Контекст сохранения неполный.'), contextCurrent: false };
+    }
+    if (!clientSaveContextMatches(job.context)) {
+      return { ok: false, error: new Error('Контекст персонажа изменился до сохранения.'), contextCurrent: false };
+    }
+    if (!job.context.leaseId) {
       // v7.74.67: a tab that has not received the server character lease must
       // never write an online character. This blocks duplicate/background tabs
       // even if they still have local UI state or copied localStorage.
-      return false;
+      return { ok: false, error: new Error('Нет активной сессии персонажа.'), contextCurrent: true };
     }
     try {
-      const characterId = characterIdForState(state);
-      if (!characterId || characterId !== selectedServerCharacterId) return false;
-      selectedServerCharacterId = characterId;
-      if (!state.characterProfile) state.characterProfile = {};
-      state.characterProfile.serverCharacterId = characterId;
-      localStorage.setItem(SERVER_CHARACTER_KEY, characterId);
-      const data = await serverApi(`/api/characters/${encodeURIComponent(characterId)}/save`, { method: 'POST', body: JSON.stringify({ state, characterLeaseId: activeCharacterLeaseId, clientInstanceId: getClientInstanceId() }) });
-      if (data.characterId && characterProfile) {
-        selectedServerCharacterId = data.characterId;
+      const data = await serverApi(`/api/characters/${encodeURIComponent(job.characterId)}/save`, {
+        method: 'POST',
+        body: job.body
+      });
+      const contextCurrent = clientSaveContextMatches(job.context);
+      if (contextCurrent && data.characterId && characterProfile) {
+        setSelectedServerCharacterForSaveContext(data.characterId);
         characterProfile.serverCharacterId = data.characterId;
         localStorage.setItem(SERVER_CHARACTER_KEY, data.characterId);
       }
-      setOnlineStatus(`Сервер: ${serverSession.login} · данные синхронизированы`);
-      setCharacterSelectStatus(`Данные синхронизированы: ${new Date().toLocaleTimeString()}.`, 'ok');
-      return true;
+      if (contextCurrent) {
+        setOnlineStatus(`Сервер: ${serverSession.login} · данные синхронизированы`);
+        setCharacterSelectStatus(`Данные синхронизированы: ${new Date().toLocaleTimeString()}.`, 'ok');
+      }
+      return { ok: true, data, contextCurrent };
     } catch (err) {
       console.warn('Server save failed:', err);
-      setOnlineStatus('Сервер: ошибка синхронизации');
-      setCharacterSelectStatus(`Ошибка синхронизации с сервером: ${err.message}`, 'err');
-      if (/открыт|сессии|lease|Синхронизация отклонена/i.test(String(err.message || ''))) {
-        activeCharacterLeaseId = '';
-        if (multiplayer) multiplayer.characterLeaseId = '';
-        setReadout('Сессия персонажа недействительна. Откройте персонажа заново.');
+      const contextCurrent = clientSaveContextMatches(job.context);
+      if (contextCurrent) {
+        setOnlineStatus('Сервер: ошибка синхронизации');
+        setCharacterSelectStatus(`Ошибка синхронизации с сервером: ${err.message}`, 'err');
+        if (/открыт|сессии|lease|Синхронизация отклонена/i.test(String(err.message || ''))) {
+          advanceClientSaveContextEpoch();
+          activeCharacterLeaseId = '';
+          if (multiplayer) multiplayer.characterLeaseId = '';
+          setReadout('Сессия персонажа недействительна. Откройте персонажа заново.');
+        }
       }
-      return false;
+      return { ok: false, error: err, contextCurrent };
     }
+  }
+
+  async function persistClientSaveJob(job) {
+    const saved = await saveServerState(job);
+    if (!saved.ok) return saved;
+    // The old HTTP write may have reached the server, but it cannot satisfy the
+    // current character/session. Keep this generation dirty so a later bounded
+    // drain captures the new context instead of clearing or mutating its UI.
+    if (!saved.contextCurrent) return { ...saved, ok: false, staleContext: true };
+    // Leaderboards are best-effort metadata, not part of the authoritative
+    // character commit. Run them detached so a stalled platform SDK cannot
+    // block logout, character switching or the save generation drain.
+    if (ysdk && ysdk.leaderboards && job.leaderboardEligible) {
+      Promise.resolve().then(async () => {
+        if (!clientSaveContextMatches(job.context)) return;
+        try {
+          const ok = ysdk.isAvailableMethod ? await ysdk.isAvailableMethod('leaderboards.setScore') : true;
+          if (ok && clientSaveContextMatches(job.context)) {
+            await ysdk.leaderboards.setScore(LEADERBOARD_NAME, job.leaderboardScore, job.leaderboardName);
+          }
+        } catch (_) {}
+      });
+    }
+    const contextCurrent = clientSaveContextMatches(job.context);
+    return {
+      ...saved,
+      ok: contextCurrent,
+      contextCurrent,
+      staleContext: !contextCurrent
+    };
   }
 
   async function continueAfterServerAuth() {

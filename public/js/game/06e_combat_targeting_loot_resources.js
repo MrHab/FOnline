@@ -185,9 +185,10 @@
   function ensureCorpseLoot(enemy) {
     if (!enemy || !enemy.dead) return;
     if (!Array.isArray(enemy.loot)) enemy.loot = [];
-    if (typeof enemiesAreServerAuthoritative === 'function' && enemiesAreServerAuthoritative()) {
-      return;
-    }
+    const canGenerateLocalLoot = typeof clientEnemyStateMayUseLocalFallback === 'function'
+      ? clientEnemyStateMayUseLocalFallback()
+      : !(typeof enemiesAreServerAuthoritative === 'function' && enemiesAreServerAuthoritative());
+    if (!canGenerateLocalLoot) return;
     if (!corpseHasLoot(enemy)) {
       const inventoryLoot = typeof normalizeNpcInventoryRows === 'function'
         ? normalizeNpcInventoryRows(enemy.inventory || [])
@@ -231,7 +232,10 @@
     const midx = enemyMeshes.indexOf(enemy.mesh);
     if (midx >= 0) enemyMeshes.splice(midx, 1);
     scene.remove(enemy.mesh);
-    if (!enemiesAreServerAuthoritative()) {
+    const canMutateLocalEnemies = typeof clientEnemyStateMayUseLocalFallback === 'function'
+      ? clientEnemyStateMayUseLocalFallback()
+      : !enemiesAreServerAuthoritative();
+    if (canMutateLocalEnemies) {
       syncWorldStateToServer('removeCorpse');
       spawnEnemy();
     }
@@ -239,7 +243,10 @@
 
   function killEnemy(enemy) {
     if (!enemy || enemy.dead) return;
-    if (enemiesAreServerAuthoritative()) return;
+    const canMutateLocalEnemies = typeof clientEnemyStateMayUseLocalFallback === 'function'
+      ? clientEnemyStateMayUseLocalFallback()
+      : !enemiesAreServerAuthoritative();
+    if (!canMutateLocalEnemies) return;
     if (player.attackTarget === enemy) { player.attackTarget = null; hoveredEnemy = null; hideTargetHint(); }
     makeCorpse(enemy);
     player.xp += enemy.xp;
@@ -307,7 +314,9 @@
   }
 
   function resourcesAreServerAuthoritative() {
-    return !!(typeof multiplayer !== 'undefined' && multiplayer.socket && multiplayer.socket.connected && multiplayer.joined);
+    return typeof clientAuthorityMode === 'function'
+      ? clientAuthorityMode() === 'server'
+      : !!(typeof multiplayer !== 'undefined' && multiplayer.socket && multiplayer.socket.connected && multiplayer.joined);
   }
 
   const HARVEST_AP_COST = 2;
@@ -355,6 +364,10 @@
 
   function interactResource(res) {
     if (!res || res.hp <= 0) return;
+    if (typeof clientGameplayIsBlocked === 'function' && clientGameplayIsBlocked()) {
+      setReadout('Связь с сервером восстанавливается. Добыча временно недоступна.');
+      return;
+    }
     clearPostResourceActionState();
     const resourceDef = clientResourceDef(res.type);
     const pos = tileToWorld(res.tx, res.tz);
@@ -401,11 +414,13 @@
       const takeQty = Math.max(1, Math.floor(Number(qty || 1)));
       if (serverAck?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(serverAck.self);
       else if (serverAck && Array.isArray(serverAck.inventory) && typeof applyServerInventorySnapshot === 'function') applyServerInventorySnapshot(serverAck.inventory);
-      if (!serverAck) player.ap = Math.max(0, player.ap - HARVEST_AP_COST);
-      tool.condition = Math.max(0, (tool.condition ?? 100) - 1.5);
-      if (!serverAck && !addItem(itemId, takeQty)) {
-        setReadout(`${ITEMS[itemId].name}: нет места. Сложите лишнее в хранилище.`);
-        return false;
+      if (!serverAck) {
+        player.ap = Math.max(0, player.ap - HARVEST_AP_COST);
+        tool.condition = Math.max(0, (tool.condition ?? 100) - 1.5);
+        if (!addItem(itemId, takeQty)) {
+          setReadout(`${ITEMS[itemId].name}: нет места. Сложите лишнее в хранилище.`);
+          return false;
+        }
       }
       createFloatingText(pos.x, pos.z, `+${takeQty}`, '#e0be5c');
       addLog(`${tool.icon} ${ITEMS[itemId].icon} Получено: ${ITEMS[itemId].name} x${takeQty}. Потрачено ${serverAck?.apCost ?? HARVEST_AP_COST} ОД.`, null, 'loot');
@@ -425,7 +440,7 @@
       }
       res._harvestPending = true;
       syncPlayerVisualAfterResourceAction();
-      multiplayer.socket.emit('harvestResource', {
+      const harvestEmitted = emitGuardedMultiplayerGameplayAction('harvestResource', {
         id: res.id || `res_${res.tx}_${res.tz}_${res.type || 'node'}`,
         ...multiplayerProgressionSnapshot(),
         tx: res.tx,
@@ -459,6 +474,11 @@
         clearPostResourceActionState();
         syncPlayerVisualAfterResourceAction();
       });
+      if (!harvestEmitted) {
+        res._harvestPending = false;
+        clearPostResourceActionState();
+        syncPlayerVisualAfterResourceAction();
+      }
       return;
     }
 

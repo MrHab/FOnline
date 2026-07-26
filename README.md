@@ -1,6 +1,6 @@
 # Realm of Ashes
 
-Текущая версия проекта: **7.76.4-world-party-integrity**.
+Текущая версия проекта: **7.76.5-client-state-integrity**.
 
 Публичная версия: [rangir.ru](https://rangir.ru).
 

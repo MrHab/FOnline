@@ -29,6 +29,7 @@
   }
 
   function robEncounterActor(actor) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (!actor || actor.dead || actor._removed) {
       setReadout('Цель уже недоступна.');
       return false;

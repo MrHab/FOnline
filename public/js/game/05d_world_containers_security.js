@@ -395,7 +395,7 @@
       setReadout(blocked);
       return false;
     }
-    multiplayer.socket.emit('pickLock', { id: container.id, ...multiplayerProgressionSnapshot() }, ack => {
+    return emitGuardedMultiplayerGameplayAction('pickLock', { id: container.id, ...multiplayerProgressionSnapshot() }, ack => {
       if (ack?.container) upsertWorldContainer(ack.container);
       if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
       if (ack) applySecurityActionAck(ack);
@@ -421,7 +421,6 @@
         addLog(`Замок не поддался: ${fresh.name || 'контейнер'} (${chanceText}%).`, null, 'combat');
       }
     });
-    return true;
   }
 
   function attemptHackTerminal(container) {
@@ -440,7 +439,7 @@
       setReadout(blocked);
       return false;
     }
-    multiplayer.socket.emit('hackTerminal', { id: container.id, ...multiplayerProgressionSnapshot() }, ack => {
+    return emitGuardedMultiplayerGameplayAction('hackTerminal', { id: container.id, ...multiplayerProgressionSnapshot() }, ack => {
       if (ack?.container) upsertWorldContainer(ack.container);
       if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
       if (ack) applySecurityActionAck(ack);
@@ -469,10 +468,10 @@
         addLog(`Терминал отклонил доступ: ${fresh.terminalName || fresh.name || 'контейнер'} (${chanceText}%).`, null, 'combat');
       }
     });
-    return true;
   }
 
   function openWorldContainerWindow(container) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (!container) return false;
     if (!worldContainersAreServerAuthoritative()) {
       setReadout('Серверные контейнеры работают в сетевой игре.');
@@ -485,7 +484,7 @@
     }
     if (container.terminalLocked) return attemptHackTerminal(container);
     if (container.locked) return attemptPickLock(container);
-    multiplayer.socket.emit('openWorldContainer', { id: container.id, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
+    return emitGuardedMultiplayerGameplayAction('openWorldContainer', { id: container.id, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
       if (!ack || !ack.ok) {
         if (ack?.container) upsertWorldContainer(ack.container);
         const fresh = ack?.container ? (multiplayer.worldContainers.get(ack.container.id) || ack.container) : container;
@@ -504,7 +503,6 @@
       renderLootWindow();
       if (typeof updateMobilePanelState === 'function') updateMobilePanelState();
     });
-    return true;
   }
 
   function openNearestWorldContainer() {
@@ -514,6 +512,7 @@
   }
 
   function takeWorldContainerItem(id, qty = null) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (!activeWorldContainer || !activeWorldContainer.loot) return;
     const entry = activeWorldContainer.loot.find(x => x.id === id && x.qty > 0);
     if (!entry) return;
@@ -529,7 +528,7 @@
         return false;
       }
       const container = activeWorldContainer;
-      multiplayer.socket.emit('lootWorldContainer', { id: container.id, itemId: entry.id, qty: takeQty, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
+      return emitGuardedMultiplayerGameplayAction('lootWorldContainer', { id: container.id, itemId: entry.id, qty: takeQty, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
         if (!ack || !ack.ok) { setReadout(ack?.error || 'Не удалось забрать предмет.'); return; }
         if (ack.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
         else if (Array.isArray(ack.inventory) && typeof applyServerInventorySnapshot === 'function') applyServerInventorySnapshot(ack.inventory);
@@ -544,13 +543,13 @@
         renderLootWindow();
         queueSave(true);
       });
-      return true;
     };
     if (qty && qty > 0) return doTake(qty);
     return prepareTakeQuantity(entry.id, available, 'Забрать из контейнера', doTake);
   }
 
   function takeAllWorldContainerLoot() {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (typeof hideTooltip === 'function') hideTooltip();
     if (!activeWorldContainer || !activeWorldContainer.loot) return;
     const container = activeWorldContainer;
@@ -562,7 +561,7 @@
       return;
     }
     const requested = loot.map(entry => ({ id: entry.id, qty: entry.qty }));
-    multiplayer.socket.emit('lootWorldContainer', { id: container.id, mode: 'all', requested, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
+    return emitGuardedMultiplayerGameplayAction('lootWorldContainer', { id: container.id, mode: 'all', requested, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
       if (!ack || !ack.ok) { setReadout(ack?.error || 'Не удалось забрать предметы.'); return; }
       if (ack.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
       else if (Array.isArray(ack.inventory) && typeof applyServerInventorySnapshot === 'function') applyServerInventorySnapshot(ack.inventory);

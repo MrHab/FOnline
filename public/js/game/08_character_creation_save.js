@@ -302,7 +302,7 @@
       lastVisitedSettlementId: 'settlement',
       serverCharacterId: selectedServerCharacterId || makeNewCharacterId()
     };
-    selectedServerCharacterId = profile.serverCharacterId;
+    setSelectedServerCharacterForSaveContext(profile.serverCharacterId);
     localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
     const startNewWorld = () => {
       resetNewGameInventory();
@@ -395,7 +395,7 @@
     const screen = document.getElementById('character-screen');
     if (screen) screen.classList.add('visible');
     if (serverSession.token) {
-      if (!selectedServerCharacterId) selectedServerCharacterId = makeNewCharacterId();
+      if (!selectedServerCharacterId) setSelectedServerCharacterForSaveContext(makeNewCharacterId());
       const nameInput = document.getElementById('char-name-input');
       if (nameInput && !nameInput.value && yandexPlayerName) nameInput.value = yandexPlayerName.slice(0, 18);
       setAuthStep('create');
@@ -602,33 +602,33 @@
   }
 
   async function saveGame(flush = false) {
-    const state = serializeGameState();
-    if (!state) return;
-    const savingCharacterId = String(state.characterProfile?.serverCharacterId || '');
-    const saved = await saveServerState(state);
-    if (!saved) return;
-    const currentCharacterId = String(characterProfile?.serverCharacterId || '');
-    if (savingCharacterId && savingCharacterId !== currentCharacterId) return;
-    if (ysdk && ysdk.leaderboards && player.level > 1) {
-      try {
-        const ok = ysdk.isAvailableMethod ? await ysdk.isAvailableMethod('leaderboards.setScore') : true;
-        if (ok) await ysdk.leaderboards.setScore(LEADERBOARD_NAME, Math.max(0, player.xp + (player.level - 1) * 1000), characterProfile.name);
-      } catch (e) {}
+    if (!characterProfile) return false;
+    // A flush captures the current state even if no gameplay action explicitly
+    // marked it dirty (for example position changes before tab hide/logout).
+    if (flush || !saveDirty) {
+      saveDirty = true;
+      clientSaveDrain.markDirty();
     }
-    saveDirty = false;
     saveTimer = 0;
+    return await clientSaveDrain.drain();
   }
 
   function queueSave(immediate = false) {
     if (!characterProfile) return;
+    if (typeof clientContextTransitionInFlight !== 'undefined' && clientContextTransitionInFlight) return false;
     saveDirty = true;
-    if (immediate) saveGame(true);
+    clientSaveDrain.markDirty();
+    if (immediate) return saveGame(false);
   }
 
   function updateAutosave(dt) {
     if (!gameStarted || !characterProfile || !saveDirty) return;
+    if (clientSaveDrain.isRunning()) return;
     saveTimer += dt;
-    if (saveTimer >= 8) saveGame(false);
+    if (saveTimer >= 8) {
+      saveTimer = 0;
+      saveGame(false);
+    }
   }
 
   async function bootstrapProfile() {

@@ -950,6 +950,24 @@
   function update(dt) {
     if (!gameStarted || paused) return;
 
+    if (typeof clientGameplayIsBlocked === 'function' && clientGameplayIsBlocked()) {
+      const blockedInputArmed = mouseFireHeld
+        || touchFireHeld
+        || touchAimFireHeld
+        || virtualMove.active
+        || Object.keys(keys).some(code => !!keys[code])
+        || !!(player.targetPath && player.targetPath.length)
+        || !!player.attackTarget;
+      if (blockedInputArmed && typeof clearAllGameplayInput === 'function') {
+        clearAllGameplayInput('authority-blocked', { sendIdle: false });
+      }
+      updateEffects(dt);
+      updateCamera(dt);
+      updateRemotePlayers(dt);
+      maybeRenderUI(dt);
+      return;
+    }
+
     if (locationTransitionActive) {
       Object.keys(keys).forEach(code => { keys[code] = false; });
       if (typeof stopAutoFire === 'function') stopAutoFire();
@@ -1453,6 +1471,7 @@
       });
       return;
     }
+    if (typeof clientEnemyStateMayUseLocalFallback === 'function' && !clientEnemyStateMayUseLocalFallback()) return;
     enemies.forEach(e => {
       if (e.dead || (e.mesh && e.mesh.visible === false)) return;
       const dist = Math.hypot(player.x - e.x, player.z - e.z);

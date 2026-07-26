@@ -681,6 +681,10 @@
   }
 
   function openGlobalMapWorldPartyEncounter(partyId = '', options = {}) {
+    if (typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Контакты на глобальной карте временно недоступны.')) {
+      return false;
+    }
     const knownParty = (Array.isArray(WASTELAND_SIM_STATE.parties) ? WASTELAND_SIM_STATE.parties : [])
       .find(row => row && String(row.id || '') === String(partyId || '').trim());
     if (String(knownParty?.state || '').toLowerCase() === 'forming') {

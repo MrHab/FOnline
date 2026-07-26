@@ -76,18 +76,23 @@ function socketEventSlice(source, eventName) {
 }
 
 function assertEmitCarries(source, eventName, requiredSnippets) {
-  const marker = `socket.emit('${eventName}'`;
-  let index = 0;
   let count = 0;
-  while ((index = source.indexOf(marker, index)) >= 0) {
-    const end = source.indexOf('}, ack =>', index);
-    if (end < 0) fail(`Cannot find ack payload end for emit: ${eventName}`);
-    const block = source.slice(index, end);
-    for (const snippet of requiredSnippets) {
-      if (!block.includes(snippet)) fail(`${eventName} emit missing required progression payload: ${snippet}`);
+  const markers = [
+    `socket.emit('${eventName}'`,
+    `emitGuardedMultiplayerGameplayAction('${eventName}'`
+  ];
+  for (const marker of markers) {
+    let index = 0;
+    while ((index = source.indexOf(marker, index)) >= 0) {
+      const end = source.indexOf('}, ack =>', index);
+      if (end < 0) fail(`Cannot find ack payload end for emit: ${eventName}`);
+      const block = source.slice(index, end);
+      for (const snippet of requiredSnippets) {
+        if (!block.includes(snippet)) fail(`${eventName} emit missing required progression payload: ${snippet}`);
+      }
+      count += 1;
+      index = end + 1;
     }
-    count += 1;
-    index = end + 1;
   }
   if (!count) fail(`Missing socket emit: ${eventName}`);
 }
@@ -767,7 +772,9 @@ if (!inspectCorpseBody.includes('serverTouchCorpseLootHold(enemy, socket.id') ||
 if (lootEnemyBody.includes('if (enemy.looted) room.enemies.delete(enemy.id)') || !lootEnemyBody.includes('const removed = serverShouldRemoveCorpse(enemy, now)')) {
   fail('lootEnemy must not delete a looted corpse while its loot window is held open');
 }
-if (!windows.includes('startCorpseLootHold(enemy)') || !windows.includes("socket.emit('inspectCorpse'") || !windows.includes("socket.emit('releaseCorpseLoot'")) {
+if (!windows.includes('startCorpseLootHold(enemy)')
+  || !windows.includes("emitGuardedMultiplayerGameplayAction('inspectCorpse'")
+  || !windows.includes("emitGuardedMultiplayerGameplayAction('releaseCorpseLoot'")) {
   fail('Loot window must refresh and release corpse cleanup holds');
 }
 const serverAuthGuardIndex = ensureCorpseLootBody.indexOf('enemiesAreServerAuthoritative');

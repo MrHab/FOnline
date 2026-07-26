@@ -109,7 +109,8 @@
 
   window.addEventListener('pointerup', e => { stopAutoFire(); stopTouchAim(e.pointerId); });
   window.addEventListener('pointercancel', e => { stopAutoFire(); stopTouchAim(e.pointerId); });
-  window.addEventListener('blur', stopAutoFire);
+  window.addEventListener('blur', () => clearAllGameplayInput('blur'));
+  window.addEventListener('pagehide', () => clearAllGameplayInput('pagehide'));
   canvas.addEventListener('contextmenu', e => {
     e.preventDefault();
     e.stopPropagation();
@@ -250,7 +251,7 @@
     keys[e.code] = false;
   });
 
-  function clearMovementInputForHudEdit() {
+  function clearAllGameplayInput(reason = 'lifecycle', options = {}) {
     Object.keys(keys).forEach(k => { keys[k] = false; });
     stopAutoFire();
     touchFireHeld = false;
@@ -258,6 +259,38 @@
     touchFireTimer = 0;
     resetVirtualMove();
     stopTouchAim();
+    try {
+      if (typeof clearGlobalMapCameraKeys === 'function') clearGlobalMapCameraKeys();
+      if (typeof GLOBAL_MAP_3D === 'object' && GLOBAL_MAP_3D) {
+        GLOBAL_MAP_3D.dragging = false;
+        GLOBAL_MAP_3D.dragX = 0;
+        GLOBAL_MAP_3D.dragY = 0;
+      }
+    } catch (_) {}
+    try {
+      document.querySelectorAll('.touch-btn.active').forEach(button => button.classList.remove('active'));
+    } catch (_) {}
+    try {
+      if (quickUseRadialState) cancelQuickUseRadial();
+    } catch (_) {}
+    try {
+      if (player) {
+        player.targetPath = [];
+        player.attackTarget = null;
+      }
+      if (marker) marker.visible = false;
+    } catch (_) {}
+    if (options.sendIdle !== false
+      && typeof sendImmediateMultiplayerState === 'function'
+      && multiplayer?.socket?.connected
+      && multiplayer.joined) {
+      try { sendImmediateMultiplayerState('idle'); } catch (_) {}
+    }
+    return reason;
+  }
+
+  function clearMovementInputForHudEdit() {
+    clearAllGameplayInput('hud-edit');
   }
 
 

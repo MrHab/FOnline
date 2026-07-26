@@ -103,7 +103,7 @@
     return baseId;
   }
 
-  function applyServerAuthoritativePlayerState(snapshot = {}) {
+  function applyServerAuthoritativePlayerState(snapshot = {}, options = {}) {
     if (!snapshot || typeof snapshot !== 'object') return false;
     if (Number.isFinite(Number(snapshot.equipmentRevision))) {
       multiplayer.equipmentRevision = Math.max(0, Math.floor(Number(snapshot.equipmentRevision)));
@@ -223,7 +223,10 @@
         || (typeof globalMapState === 'object' && globalMapState?.onWorldMap && snapshot.onGlobalMap === false);
       if (shouldApplyGlobalMap) applySavedGlobalMapState(snapshot.globalMap);
     }
-    applyServerLocalPositionAck(snapshot);
+    const positionMode = String(options.positionMode || '');
+    if (positionMode === 'transition' || positionMode === 'correction') {
+      applyServerLocalPositionAck(snapshot);
+    }
     if (typeof updatePlayerEquipmentVisuals === 'function') updatePlayerEquipmentVisuals();
     if (typeof renderInventory === 'function') renderInventory();
     if (typeof renderCharacterWindow === 'function') renderCharacterWindow();
@@ -240,11 +243,70 @@
     if (typeof renderInjuryStatusPanels === 'function') renderInjuryStatusPanels();
   }
 
-  function joinMultiplayerRoom() {
-    if (!multiplayer.socket || !serverSession.token || !selectedServerCharacterId || !characterProfile) {
-      resolveMultiplayerJoinWaiters(false);
-      return;
+  function multiplayerSocketGenerationMatches(socket, generation) {
+    return !!(
+      socket
+      && multiplayer.socket === socket
+      && Number(multiplayer.socketGeneration || 0) === Number(generation || 0)
+    );
+  }
+
+  function cancelMultiplayerJoinAttempt(reason = 'cancelled') {
+    if (multiplayer.joinTimer) {
+      clearTimeout(multiplayer.joinTimer);
+      multiplayer.joinTimer = null;
     }
+    const resolve = multiplayer.joinAttemptResolve;
+    multiplayer.joinAttemptId = Number(multiplayer.joinAttemptId || 0) + 1;
+    multiplayer.joinInFlight = false;
+    multiplayer.joinPromise = null;
+    multiplayer.joinAttemptResolve = null;
+    multiplayer.joinSocketId = '';
+    multiplayer.joinSessionToken = '';
+    multiplayer.joinCharacterId = '';
+    multiplayer.joinClientInstanceId = '';
+    if (typeof resolve === 'function') {
+      try { resolve(false); } catch (_) {}
+    }
+    return reason;
+  }
+
+  function joinMultiplayerRoom() {
+    const socket = multiplayer.socket;
+    const socketGeneration = Number(multiplayer.socketGeneration || 0);
+    const joinContext = typeof currentMultiplayerJoinContext === 'function'
+      ? currentMultiplayerJoinContext()
+      : {
+          sessionToken: String(serverSession.token || ''),
+          characterId: String(selectedServerCharacterId || ''),
+          clientInstanceId: String(getClientInstanceId() || '')
+        };
+    if (!socket || !socket.connected || !serverSession.token || !selectedServerCharacterId || !characterProfile) {
+      resolveMultiplayerJoinWaiters(false);
+      return Promise.resolve(false);
+    }
+    if (multiplayerJoinedContextMatchesCurrent(socket)) {
+      multiplayer.transportState = 'joined';
+      if (typeof setClientAuthorityMode === 'function') {
+        setClientAuthorityMode('server', 'join-current-socket');
+      }
+      resolveMultiplayerJoinWaiters(true);
+      return Promise.resolve(true);
+    }
+    if (multiplayer.joinInFlight
+      && multiplayerJoinAttemptMatchesCurrent(socket)
+      && multiplayer.joinPromise) {
+      return multiplayer.joinPromise;
+    }
+    cancelMultiplayerJoinAttempt('superseded');
+    const joinAttemptId = Number(multiplayer.joinAttemptId || 0) + 1;
+    multiplayer.joinAttemptId = joinAttemptId;
+    multiplayer.joinInFlight = true;
+    multiplayer.joinSocketId = socket.id;
+    multiplayer.joinSessionToken = joinContext.sessionToken;
+    multiplayer.joinCharacterId = joinContext.characterId;
+    multiplayer.joinClientInstanceId = joinContext.clientInstanceId;
+    multiplayer.transportState = 'joining';
     const payload = {
       token: serverSession.token,
       deviceId: getDeviceId(),
@@ -298,36 +360,127 @@
       equipment: multiplayerEquipmentSnapshot(),
       injuries: multiplayerInjurySnapshot()
     };
-    multiplayer.socket.emit('join', payload, ack => {
-      if (!ack || !ack.ok) {
-        const msg = ack?.error || 'Сервер отклонил вход в сетевую игру.';
+    let resolveJoinAttempt = null;
+    let joinAttemptSettled = false;
+    let joinTimer = null;
+    const joinPromise = new Promise(resolve => { resolveJoinAttempt = resolve; });
+    multiplayer.joinPromise = joinPromise;
+    multiplayer.joinAttemptResolve = resolveJoinAttempt;
+    const finishJoinAttempt = (ok, nextTransportState) => {
+      if (joinAttemptSettled) return false;
+      joinAttemptSettled = true;
+      if (joinTimer) {
+        clearTimeout(joinTimer);
+        if (multiplayer.joinTimer === joinTimer) multiplayer.joinTimer = null;
+        joinTimer = null;
+      }
+      const current = multiplayerSocketGenerationMatches(socket, socketGeneration)
+        && Number(multiplayer.joinAttemptId || 0) === joinAttemptId;
+      if (current) {
+        multiplayer.joinInFlight = false;
+        multiplayer.joinPromise = null;
+        multiplayer.joinAttemptResolve = null;
+        multiplayer.joinSocketId = '';
+        multiplayer.joinSessionToken = '';
+        multiplayer.joinCharacterId = '';
+        multiplayer.joinClientInstanceId = '';
+        multiplayer.transportState = nextTransportState;
+      }
+      try { resolveJoinAttempt(!!ok && current); } catch (_) {}
+      return current;
+    };
+    joinTimer = setTimeout(() => {
+      if (!finishJoinAttempt(false, socket.connected ? 'connected' : 'connecting')) return;
+      clearMultiplayerJoinedContext();
+      if (typeof setClientAuthorityMode === 'function') {
+        setClientAuthorityMode('blocked', 'join-timeout', { force: true, clearWorld: true });
+      }
+      resolveMultiplayerJoinWaiters(false);
+      setOnlineStatus('Сеть: сервер не подтвердил вход в игровую сессию');
+      if (multiplayerSocketGenerationMatches(socket, socketGeneration)
+        && typeof socket.disconnect === 'function'
+        && typeof socket.connect === 'function') {
+        try { socket.disconnect(); } catch (_) {}
+        if (multiplayerSocketGenerationMatches(socket, socketGeneration)) {
+          socket.auth = {
+            token: serverSession.token,
+            deviceId: getDeviceId(),
+            clientInstanceId: getClientInstanceId(),
+            deviceType: getDeviceType(),
+            controlType: getDeviceControlType()
+          };
+          multiplayer.transportState = 'connecting';
+          try { socket.connect(); } catch (_) {}
+        }
+      }
+    }, 5000);
+    multiplayer.joinTimer = joinTimer;
+    socket.emit('join', payload, ack => {
+      if (!multiplayerSocketGenerationMatches(socket, socketGeneration)
+        || Number(multiplayer.joinAttemptId || 0) !== joinAttemptId
+        || !multiplayerJoinContextIsCurrent(joinContext)) {
+        finishJoinAttempt(false, 'blocked');
+        return;
+      }
+      const ackTopLevelCharacterId = String(ack?.characterId || '');
+      const ackSelfCharacterId = String(ack?.self?.characterId || '');
+      const ackCharacterId = ackTopLevelCharacterId || ackSelfCharacterId || joinContext.characterId;
+      const inconsistentAckCharacter = !!(
+        ackTopLevelCharacterId
+        && ackSelfCharacterId
+        && ackTopLevelCharacterId !== ackSelfCharacterId
+      );
+      const characterWasRemapped = ackCharacterId !== joinContext.characterId;
+      const unprovenCharacterRemap = characterWasRemapped && ackSelfCharacterId !== ackCharacterId;
+      if (!ack || !ack.ok || !ackCharacterId || inconsistentAckCharacter || unprovenCharacterRemap) {
+        finishJoinAttempt(false, 'blocked');
+        const msg = ack?.error
+          || (inconsistentAckCharacter || unprovenCharacterRemap
+            ? 'Сервер вернул несогласованный идентификатор персонажа. Подключение остановлено.'
+            : 'Сервер отклонил вход в сетевую игру.');
         setReadout(msg);
         setOnlineStatus(`Сеть: ${msg}`);
         activeCharacterLeaseId = '';
         multiplayer.characterLeaseId = '';
-        multiplayer.joined = false;
+        clearMultiplayerJoinedContext();
+        if (typeof setClientAuthorityMode === 'function') {
+          setClientAuthorityMode('blocked', 'join-rejected', { force: true, clearWorld: true });
+        }
         resetNetworkPingMeasurement('offline');
-        try { multiplayer.socket?.disconnect(); } catch (_) {}
+        try { socket.disconnect(); } catch (_) {}
         resolveMultiplayerJoinWaiters(false);
         return;
       }
-      multiplayer.joined = true;
+      multiplayer.transportState = 'joined';
       resetNetworkPingMeasurement('waiting');
       multiplayer.roomId = ack.roomId || '';
       multiplayer.characterLeaseId = ack.characterLeaseId || '';
       activeCharacterLeaseId = multiplayer.characterLeaseId || activeCharacterLeaseId || '';
-      if (ack.characterId && characterProfile) {
-        selectedServerCharacterId = String(ack.characterId);
+      if (characterWasRemapped && typeof remapMultiplayerPendingJoinContext === 'function') {
+        remapMultiplayerPendingJoinContext(joinContext, ackCharacterId);
+      }
+      if (characterProfile) {
+        setSelectedServerCharacterForSaveContext(ackCharacterId, { preserveMultiplayerJoin: true });
         characterProfile.serverCharacterId = selectedServerCharacterId;
         localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
       }
+      multiplayer.joined = true;
+      multiplayer.joinedSocketId = socket.id;
+      multiplayer.joinedSessionToken = joinContext.sessionToken;
+      multiplayer.joinedCharacterId = selectedServerCharacterId;
+      multiplayer.joinedClientInstanceId = joinContext.clientInstanceId;
+      multiplayer.onlineSessionRequired = true;
       if (ack.lastVisitedSettlementId && characterProfile) {
         characterProfile.lastVisitedSettlementId = typeof normalizeLastVisitedSettlementId === 'function'
           ? normalizeLastVisitedSettlementId(ack.lastVisitedSettlementId)
           : ack.lastVisitedSettlementId;
       }
       multiplayer.serverAuthoritativeEnemies = ack.serverAuthoritativeEnemies !== false;
-      applyServerAuthoritativePlayerState(ack.self || ack);
+      if (typeof setClientAuthorityMode === 'function') {
+        setClientAuthorityMode('server', ack.alreadyJoined ? 'join-idempotent' : 'join-accepted');
+      }
+      finishJoinAttempt(true, 'joined');
+      applyServerAuthoritativePlayerState(ack.self || ack, { positionMode: 'transition' });
       multiplayer.pendingEntryKey = '';
       resetNetworkSnapshotStamps();
       markStartupNetworkEvent('worldState');
@@ -339,54 +492,119 @@
       setOnlineStatus(`Сеть: ${locationLabel} · игроков в локации: ${(ack.players || []).length + 1}`);
       addLog(`Вы вошли в общую локацию «${locationLabel}». Ограничения количества игроков нет.`, null, 'system');
     });
+    return joinPromise;
   }
 
   function connectMultiplayer(options = {}) {
-    const waitPromise = options && options.waitForJoin ? waitForMultiplayerJoin(options.timeoutMs || 4500) : null;
+    const shouldWaitForJoin = !!(options && options.waitForJoin);
     if (!serverSession.token || !selectedServerCharacterId || !characterProfile) {
       resolveMultiplayerJoinWaiters(false);
-      return waitPromise || undefined;
+      return shouldWaitForJoin ? Promise.resolve(false) : undefined;
     }
     if (!window.io) {
       setOnlineStatus('Сеть: socket.io не загрузился. Откройте игру через Node-сервер, не через отдельный HTML.');
       resolveMultiplayerJoinWaiters(false);
-      return waitPromise || undefined;
+      return shouldWaitForJoin ? Promise.resolve(false) : undefined;
     }
     if (multiplayer.socket) {
-      if (multiplayer.socket.connected) joinMultiplayerRoom();
+      const socket = multiplayer.socket;
+      const joinedContextConflict = multiplayer.joined
+        && multiplayer.joinedSocketId === socket.id
+        && !multiplayerJoinedContextMatchesCurrent(socket);
+      const joiningContextConflict = multiplayer.joinInFlight
+        && multiplayer.joinSocketId === socket.id
+        && !multiplayerJoinAttemptMatchesCurrent(socket);
+      if (joinedContextConflict || joiningContextConflict) {
+        invalidateMultiplayerSessionContext('join-context-changed', {
+          disconnect: true,
+          clearWorld: !!gameStarted
+        });
+      }
+    }
+    const waitPromise = shouldWaitForJoin ? waitForMultiplayerJoin(options.timeoutMs || 4500) : null;
+    if (multiplayer.socket) {
+      const socket = multiplayer.socket;
+      if (socket.connected) {
+        multiplayer.connected = true;
+        if (multiplayerJoinedContextMatchesCurrent(socket)) {
+          multiplayer.transportState = 'joined';
+          if (typeof setClientAuthorityMode === 'function') {
+            setClientAuthorityMode('server', 'connect-current-socket');
+          }
+          resolveMultiplayerJoinWaiters(true);
+        } else {
+          joinMultiplayerRoom();
+        }
+      } else if (!socket.active && typeof socket.connect === 'function') {
+        socket.auth = {
+          token: serverSession.token,
+          deviceId: getDeviceId(),
+          clientInstanceId: getClientInstanceId(),
+          deviceType: getDeviceType(),
+          controlType: getDeviceControlType()
+        };
+        multiplayer.transportState = 'connecting';
+        socket.connect();
+      }
       return waitPromise || undefined;
     }
     const base = SERVER_API_BASE || location.origin;
-    multiplayer.socket = window.io(base, { transports: ['websocket', 'polling'], auth: { token: serverSession.token, deviceId: getDeviceId(), clientInstanceId: getClientInstanceId(), deviceType: getDeviceType(), controlType: getDeviceControlType() } });
-    multiplayer.socket.on('connect', () => {
+    const socket = window.io(base, { transports: ['websocket', 'polling'], auth: { token: serverSession.token, deviceId: getDeviceId(), clientInstanceId: getClientInstanceId(), deviceType: getDeviceType(), controlType: getDeviceControlType() } });
+    const socketGeneration = Number(multiplayer.socketGeneration || 0) + 1;
+    multiplayer.socket = socket;
+    multiplayer.socketGeneration = socketGeneration;
+    multiplayer.transportState = 'connecting';
+    socket.on('connect', () => {
+      if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
       multiplayer.connected = true;
+      multiplayer.transportState = 'connected';
       joinMultiplayerRoom();
     });
-    multiplayer.socket.on('disconnect', () => {
+    socket.on('disconnect', () => {
+      if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
+      cancelMultiplayerJoinAttempt('disconnect');
       multiplayer.connected = false;
-      multiplayer.joined = false;
+      clearMultiplayerJoinedContext();
+      multiplayer.transportState = socket.active ? 'connecting' : 'blocked';
       multiplayer.serverAuthoritativeEnemies = false;
       if (multiplayer.pendingEquipmentSlots?.clear) multiplayer.pendingEquipmentSlots.clear();
+      if (typeof setClientAuthorityMode === 'function') {
+        setClientAuthorityMode('blocked', 'disconnect', { force: true, clearWorld: true });
+      }
       resetNetworkPingMeasurement('offline');
       resolveMultiplayerJoinWaiters(false);
       setOnlineStatus('Сеть: отключено от сервера');
     });
-    multiplayer.socket.on('connect_error', err => {
+    socket.on('connect_error', err => {
+      if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
+      cancelMultiplayerJoinAttempt('connect-error');
+      multiplayer.connected = false;
+      clearMultiplayerJoinedContext();
+      multiplayer.transportState = 'connecting';
+      if (typeof setClientAuthorityMode === 'function') {
+        setClientAuthorityMode('blocked', 'connect-error', { force: true, clearWorld: true });
+      }
       resetNetworkPingMeasurement('offline');
       resolveMultiplayerJoinWaiters(false);
       setOnlineStatus(`Сеть: ошибка подключения ${err?.message || ''}`.trim());
     });
-    multiplayer.socket.on('sessionRejected', data => {
+    socket.on('sessionRejected', data => {
+      if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
+      cancelMultiplayerJoinAttempt('session-rejected');
       const msg = data?.error || 'Сессия отклонена сервером.';
       setReadout(msg);
       setOnlineStatus(`Сеть: ${msg}`);
       activeCharacterLeaseId = '';
       multiplayer.characterLeaseId = '';
-      multiplayer.joined = false;
+      clearMultiplayerJoinedContext();
+      multiplayer.transportState = 'blocked';
+      if (typeof setClientAuthorityMode === 'function') {
+        setClientAuthorityMode('blocked', 'session-rejected', { force: true, clearWorld: true });
+      }
       resetNetworkPingMeasurement('offline');
       // v7.74.67: rejected duplicate tab must not keep a live socket that can
       // reconnect later and take over the character after the real tab closes.
-      try { multiplayer.socket?.disconnect(); } catch (_) {}
+      try { socket.disconnect(); } catch (_) {}
       resolveMultiplayerJoinWaiters(false);
     });
     multiplayer.socket.on('playerJoined', data => upsertRemotePlayer(data, { source: 'join', forceSnap: true }));
@@ -637,7 +855,10 @@
       if (traderWindowOpen && activeTraderActor && activeTraderActor.id === data.enemyId) renderTraderWindow();
     });
     multiplayer.socket.on('authoritativePlayerState', data => {
-      applyServerAuthoritativePlayerState(data || {});
+      const reason = String(data?.reason || '');
+      const positionMode = reason === 'movementCorrection' ? 'correction' : 'preserve';
+      if (positionMode === 'correction' && !networkPayloadIsForCurrentRoom(data || {})) return;
+      applyServerAuthoritativePlayerState(data || {}, { positionMode });
     });
     multiplayer.socket.on('tradeMachineMarketUpdated', data => {
       if (typeof handleTradeMachineMarketUpdated === 'function') handleTradeMachineMarketUpdated(data || {});
@@ -1051,7 +1272,7 @@
           : ack.lastVisitedSettlementId;
       }
       multiplayer.serverAuthoritativeEnemies = ack.serverAuthoritativeEnemies !== false;
-      applyServerAuthoritativePlayerState(ack.self || ack);
+      applyServerAuthoritativePlayerState(ack.self || ack, { positionMode: 'transition' });
       multiplayer.pendingEntryKey = '';
       resetNetworkSnapshotStamps();
       markStartupNetworkEvent('worldState');
@@ -1154,7 +1375,7 @@
             : ack.lastVisitedSettlementId;
         }
         multiplayer.serverAuthoritativeEnemies = ack.serverAuthoritativeEnemies !== false;
-        applyServerAuthoritativePlayerState(ack.self || ack);
+        applyServerAuthoritativePlayerState(ack.self || ack, { positionMode: 'transition' });
         multiplayer.pendingEntryKey = '';
         resetNetworkSnapshotStamps();
         markStartupNetworkEvent('worldState');

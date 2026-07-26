@@ -298,8 +298,8 @@ function seedCharacterState(account, options, usersDb, savesDb) {
   // oldDepot's authored spawn is tile (19, 25), or world (1, 13).
   // Starting from that known-walkable point keeps the PvP fixture independent
   // of wall/collider changes elsewhere in the location.
-  const spawnX = 1;
-  const spawnZ = 13;
+  const spawnX = Number.isFinite(Number(options.spawnX)) ? Number(options.spawnX) : 1;
+  const spawnZ = Number.isFinite(Number(options.spawnZ)) ? Number(options.spawnZ) : 13;
 
   state.characterProfile.special = special;
   state.currentLocationId = 'oldDepot';
@@ -364,6 +364,16 @@ function seedCharacterState(account, options, usersDb, savesDb) {
     }
   }
 
+  for (const item of Array.isArray(options.carriedItems) ? options.carriedItems : []) {
+    const itemId = String(item?.id || '');
+    const qty = Math.max(0, Math.floor(Number(item?.qty || 0)));
+    if (!itemId || qty <= 0) continue;
+    state.inventory[itemId] = Math.max(qty, Number(state.inventory[itemId] || 0));
+    if (Number.isFinite(Number(item.condition))) {
+      state.player.itemConditions[itemId] = Number(item.condition);
+    }
+  }
+
   row.summary = {
     ...(row.summary || {}),
     level,
@@ -425,6 +435,17 @@ function seedCombatFixtures(accounts) {
     loaded: 1,
     reserveAmmo: 0,
     initialAp: 0
+  }, usersDb, savesDb);
+  seedCharacterState(accounts.harvest, {
+    special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 10, luck: 5 },
+    weapon: 'pistol',
+    weaponRuntimeId: 'ui_pistol_harvest_1',
+    ammoType: 'ammo9',
+    loaded: 1,
+    reserveAmmo: 0,
+    spawnX: 1,
+    spawnZ: 11,
+    carriedItems: [{ id: 'pickaxe', qty: 1, condition: 100 }]
   }, usersDb, savesDb);
 
   fs.writeFileSync(savesFile, JSON.stringify(savesDb, null, 2));
@@ -535,6 +556,12 @@ function runtimeEquipmentSnapshot(weaponId) {
   };
 }
 
+function inventoryRowQty(rows, itemId) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter(row => String(row?.id || '') === String(itemId || ''))
+    .reduce((sum, row) => sum + Math.max(0, Math.floor(Number(row?.qty || 0))), 0);
+}
+
 function attackPayload(attackerJoin, targetSocket, mode = 'single', weaponRuntimeId = '') {
   const token = `combat_runtime_${Date.now().toString(36)}_${++attackSequence}`;
   const payload = {
@@ -623,6 +650,7 @@ async function bootstrapCharacters(accounts) {
     ['untargeted', 'air'],
     ['strictAp', 'strict'],
     ['equipmentAp', 'equipment'],
+    ['harvest', 'harvest'],
     ['target', 'target']
   ]) {
     accounts[key] = await registerAccount(role, suffix);
@@ -738,8 +766,12 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     'join',
     joinPayload(accounts.persistence)
   );
-  invariant(duplicateJoin.ok === false,
-    'Server accepted a duplicate join on an already joined socket', duplicateJoin);
+  invariant(duplicateJoin.ok === true
+    && duplicateJoin.alreadyJoined === true
+    && duplicateJoin.characterId === accounts.persistence.join.characterId
+    && duplicateJoin.characterLeaseId === accounts.persistence.join.characterLeaseId
+    && duplicateJoin.roomId === accounts.persistence.join.roomId,
+  'Same-socket duplicate join was not an idempotent view of the live session', duplicateJoin);
   const duplicateJoinCombat = assertCombat(duplicateJoin.combat, {
     weapon: 'pistol',
     weaponRuntimeId: pistolB,
@@ -747,13 +779,30 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     magSize: 8,
     reserveAmmo: 8,
     ap: Number(switchedShot.combat.ap)
-  }, 'duplicate-join rejection combat');
+  }, 'idempotent duplicate-join combat');
   invariant(Number(duplicateJoinCombat.cooldownRemainingMs) > 0
     && Number(duplicateJoinCombat.cooldownRemainingMs) <= Number(switchedShot.combat.cooldownRemainingMs),
-  'Duplicate join reset or extended the active weapon cooldown', {
+  'Idempotent duplicate join reset or extended the active weapon cooldown', {
     shot: switchedShot.combat,
     duplicateJoin: duplicateJoinCombat
   });
+
+  const conflictingJoin = await socketAck(
+    accounts.persistence.socket,
+    'join',
+    { ...joinPayload(accounts.persistence), characterId: `${accounts.persistence.characterId}_conflict` }
+  );
+  invariant(conflictingJoin.ok === false
+    && conflictingJoin.self?.characterId === accounts.persistence.characterId,
+  'Same socket was allowed to switch identity through a repeated join', conflictingJoin);
+  assertCombat(conflictingJoin.combat, {
+    weapon: 'pistol',
+    weaponRuntimeId: pistolB,
+    loaded: 3,
+    magSize: 8,
+    reserveAmmo: 8,
+    ap: Number(duplicateJoinCombat.ap)
+  }, 'conflicting duplicate-join combat');
 
   const loadedRuntimeDrop = await socketAck(accounts.persistence.socket, 'dropItem', {
     itemId: 'pistol',
@@ -1120,6 +1169,125 @@ async function assertStrictServerAp(accounts) {
   assertCombat(funded.combat, { loaded: 7, reserveAmmo: 0, maxAp: 6 }, 'funded aimed shot');
 }
 
+async function assertHarvestRequiresEquippedTool(accounts) {
+  const account = accounts.harvest;
+  await connectAndJoin(account);
+  invariant(account.join.roomId === 'oldDepot',
+    'Harvest fixture did not join oldDepot', account.join);
+  invariant(account.join.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
+    'Harvest fixture did not start with the wrong weapon equipped', account.join.self);
+
+  const resource = (Array.isArray(account.join.worldState?.resources)
+    ? account.join.worldState.resources
+    : []).find(row => row?.id === 'depot_scrap_01');
+  invariant(resource && resource.type === 'scrap' && Number(resource.hp) > 0,
+    'Harvest fixture is missing the authored scrap resource', account.join.worldState?.resources);
+  const resourceX = (Number(resource.tx) - 19 + 0.5) * 2;
+  const resourceZ = (Number(resource.tz) - 19 + 0.5) * 2;
+  invariant(Math.hypot(Number(account.join.x) - resourceX, Number(account.join.z) - resourceZ) <= 3.2,
+    'Harvest fixture joined outside interaction range', {
+      player: { x: account.join.x, z: account.join.z },
+      resource: { x: resourceX, z: resourceZ, ...resource }
+    });
+
+  const initialAp = Number(account.join.self?.combat?.ap);
+  const initialCondition = Number(account.join.self?.itemConditions?.pickaxe);
+  const initialScrap = inventoryRowQty(account.join.self?.inventory, 'scrap');
+  invariant(inventoryRowQty(account.join.self?.inventory, 'pickaxe') === 1
+    && initialCondition === 100,
+  'Harvest fixture does not carry one full-condition pickaxe in its bag', account.join.self);
+
+  const resourceUpdates = [];
+  const onResourceUpdated = payload => resourceUpdates.push(payload);
+  account.socket.on('resourceUpdated', onResourceUpdated);
+  try {
+    const rejected = await socketAck(account.socket, 'harvestResource', {
+      id: resource.id,
+      toolId: 'pickaxe',
+      baseToolId: 'pickaxe',
+      skillRanks: {},
+      talentRanks: {}
+    });
+    invariant(rejected.ok === false,
+      'Server allowed harvesting with a pistol equipped and a pickaxe only in the bag', rejected);
+
+    const afterRejected = await socketAck(account.socket, 'join', joinPayload(account));
+    const rejectedResource = (Array.isArray(afterRejected.worldState?.resources)
+      ? afterRejected.worldState.resources
+      : []).find(row => row?.id === resource.id);
+    invariant(afterRejected.ok === true
+      && afterRejected.alreadyJoined === true
+      && afterRejected.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
+    'Rejected harvest changed the live equipped weapon or joined session', afterRejected);
+    invariant(Number(afterRejected.self?.combat?.ap) === initialAp,
+      'Rejected harvest spent authoritative AP', {
+        before: initialAp,
+        after: afterRejected.self?.combat?.ap
+      });
+    invariant(Number(afterRejected.self?.itemConditions?.pickaxe) === initialCondition,
+      'Rejected harvest wore the bagged pickaxe', afterRejected.self?.itemConditions);
+    invariant(inventoryRowQty(afterRejected.self?.inventory, 'scrap') === initialScrap,
+      'Rejected harvest granted resource loot', afterRejected.self?.inventory);
+    invariant(rejectedResource && Number(rejectedResource.hp) === Number(resource.hp),
+      'Rejected harvest damaged the resource node', {
+        before: resource,
+        after: rejectedResource
+      });
+    invariant(resourceUpdates.length === 0,
+      'Rejected harvest emitted a resource mutation', resourceUpdates);
+
+    const equipped = await sendEquipmentAction(account, 'pickaxe');
+    invariant(equipped.ack.ok === true
+      && equipped.ack.changed === true
+      && equipped.ack.self?.equipmentRuntime?.weapon === 'pickaxe',
+    'Harvest fixture could not equip its carried pickaxe', equipped.ack);
+    const beforeSuccessAp = Number(equipped.ack.self?.combat?.ap);
+    const beforeSuccessCondition = Number(equipped.ack.self?.itemConditions?.pickaxe);
+
+    const harvested = await socketAck(account.socket, 'harvestResource', {
+      id: resource.id,
+      toolId: 'pickaxe',
+      baseToolId: 'pickaxe',
+      skillRanks: {},
+      talentRanks: {}
+    });
+    invariant(harvested.ok === true && harvested.item?.id === 'scrap',
+      'Server rejected harvesting with the required tool equipped', harvested);
+    invariant(Number(resource.hp) - Number(harvested.resource?.hp) === 1,
+      'Successful harvest did not damage the resource exactly once', {
+        before: resource,
+        after: harvested.resource
+      });
+    invariant(Number(harvested.self?.itemConditions?.pickaxe) === beforeSuccessCondition - 1.5,
+      'Successful harvest did not apply exactly one tool wear', {
+        before: beforeSuccessCondition,
+        after: harvested.self?.itemConditions?.pickaxe
+      });
+    invariant(inventoryRowQty(harvested.inventory, 'scrap')
+      === initialScrap + Number(harvested.item?.qty || 0),
+    'Successful harvest did not grant exactly its acknowledged loot', {
+      before: initialScrap,
+      item: harvested.item,
+      inventory: harvested.inventory
+    });
+    const spentAp = beforeSuccessAp - Number(harvested.ap);
+    invariant(spentAp >= 1.85 && spentAp <= 2.05,
+      'Successful harvest did not spend one 2-AP action', {
+        before: beforeSuccessAp,
+        after: harvested.ap,
+        spent: spentAp
+      });
+    await delay(80);
+    invariant(resourceUpdates.length === 1
+      && resourceUpdates[0]?.resource?.id === resource.id
+      && Number(resourceUpdates[0]?.resource?.hp) === Number(resource.hp) - 1,
+    'Successful harvest did not emit exactly one matching resource update', resourceUpdates);
+  } finally {
+    account.socket.off('resourceUpdated', onResourceUpdated);
+    closeSocket(account);
+  }
+}
+
 async function assertEquipmentActionAuthority(accounts) {
   const account = accounts.equipmentAp;
   const pistolRuntimeId = account.weaponRuntimeId;
@@ -1189,7 +1357,8 @@ async function assertEquipmentActionAuthority(accounts) {
   });
   await delay(100);
   const afterProfileSpoof = await socketAck(account.socket, 'join', joinPayload(account));
-  invariant(afterProfileSpoof.ok === false
+  invariant(afterProfileSpoof.ok === true
+    && afterProfileSpoof.alreadyJoined === true
     && afterProfileSpoof.self?.equipmentRuntime?.weapon === 'knife'
     && Number(afterProfileSpoof.self?.equipmentRevision) === 1,
   'Legacy state packet changed authoritative equipment for free', afterProfileSpoof);
@@ -1248,6 +1417,7 @@ async function main() {
     await assertUntargetedAttack(accounts);
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
+    await assertHarvestRequiresEquippedTool(accounts);
     await assertEquipmentActionAuthority(accounts);
 
     console.log(
@@ -1255,6 +1425,7 @@ async function main() {
       + 'same-base magazines stayed separate, stale save did not roll back live equipment, '
       + 'duplicate joins and loaded-runtime drops preserved live combat state, '
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
+      + 'harvest required the matching equipped tool and applied one authoritative wear, '
       + 'equipment changes were revisioned/idempotent and spent exactly 1 server AP, '
       + 'and insufficient AP or unavailable runtime ids caused no mutation'
     );

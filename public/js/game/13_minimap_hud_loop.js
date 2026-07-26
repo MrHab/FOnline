@@ -597,6 +597,9 @@
   window.addEventListener('beforeunload', () => { try { saveGame(true); } catch (_) {} });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      try {
+        if (typeof clearAllGameplayInput === 'function') clearAllGameplayInput('visibility-hidden');
+      } catch (_) {}
       try { ysdk?.features?.GameplayAPI?.stop(); gameplayMarked = false; } catch (_) {}
       saveGame(true);
     } else if (gameStarted && ysdk && !gameplayMarked) {
@@ -609,7 +612,7 @@
   renderInventory();
   renderQuickbar();
   updateCamera(1);
-  addLog('Добро пожаловать в Realm of Ashes v7.76.4.', null, 'system');
+  addLog('Добро пожаловать в Realm of Ashes v7.76.5.', null, 'system');
   addLog('Войдите или зарегистрируйтесь на сервере: персонаж, карта, локации, инвентарь и хранилище привязаны к логину.', null, 'system');
   addLog('Стартовая локация: Поселение. Рядом есть торговец и выход в Пепельный лес.', null, 'system');
   addLog('TAB — Пип-бой/статус, I — инвентарь, B — навыки/перки, P — крафт, X — режим стрельбы, C — присесть/встать, M — карта, F — обыск тела, G/E — поднять предмет с земли, E — торговля/переход, Space — забрать весь лут, F1 — подсказки.', null, 'system');

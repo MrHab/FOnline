@@ -26,12 +26,17 @@ include /etc/nginx/snippets/realm-of-ashes.locations.conf;
 ```bash
 nginx -t
 systemctl reload nginx
-curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.76.2-data-integrity
+curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.76.3-closed-dev-api
 curl -fsS https://rangir.ru/health
 ```
 
 У первого ответа должны появиться долгий `max-age` и `immutable`, а `/health`
 должен вернуть JSON с `"ok":true`.
+
+Snippet также возвращает `404` для `/api/dev/*`,
+`/dev-location-editor.html` и `/dev-global-map-editor.html`, включая варианты
+регистра и URL-кодирования API/имени файла. Production не должен публиковать
+редакторы через общий API или статический `location`.
 
 ## Нагрузка фоновой симуляции
 

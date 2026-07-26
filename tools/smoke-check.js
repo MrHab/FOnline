@@ -342,6 +342,7 @@ async function assertRestCorsPreflight() {
 }
 
 async function assertEditorAndWorldDataApis() {
+  const localDevHeaders = { 'X-Dev-Local': '1' };
   const locationEditor = await request('/dev-location-editor.html');
   assertStatus(locationEditor, 200, 'GET /dev-location-editor.html');
   if (!locationEditor.body.includes('/api/dev/locations') || !locationEditor.body.includes('dev-location-editor.html')) {
@@ -360,7 +361,17 @@ async function assertEditorAndWorldDataApis() {
     fail('global map editor page is missing the file:// redirect guard', globalMapEditor.body.slice(0, 500));
   }
 
-  const locations = await request('/api/dev/locations');
+  const proxiedLocalDevRequest = await request('/api/dev/locations', {
+    headers: {
+      ...localDevHeaders,
+      'X-Real-IP': '203.0.113.40',
+      'X-Forwarded-For': '203.0.113.40',
+      'X-Forwarded-Proto': 'https'
+    }
+  });
+  assertStatus(proxiedLocalDevRequest, 403, 'proxied local dev API request');
+
+  const locations = await request('/api/dev/locations', { headers: localDevHeaders });
   assertStatus(locations, 200, 'GET /api/dev/locations');
   const locationsData = parseJsonResponse(locations, 'GET /api/dev/locations');
   if (!locationsData.ok
@@ -370,14 +381,14 @@ async function assertEditorAndWorldDataApis() {
     fail('fresh DATA_DIR did not inherit the bundled location definitions', locations.body);
   }
 
-  const settlement = await request('/api/dev/locations/settlement');
+  const settlement = await request('/api/dev/locations/settlement', { headers: localDevHeaders });
   assertStatus(settlement, 200, 'GET /api/dev/locations/settlement');
   const settlementData = parseJsonResponse(settlement, 'GET /api/dev/locations/settlement');
   if (!settlementData.ok || settlementData.location?.id !== 'settlement') {
     fail('dev settlement API response is incomplete', settlement.body);
   }
 
-  const globalMap = await request('/api/dev/global-map');
+  const globalMap = await request('/api/dev/global-map', { headers: localDevHeaders });
   assertStatus(globalMap, 200, 'GET /api/dev/global-map');
   const globalMapData = parseJsonResponse(globalMap, 'GET /api/dev/global-map');
   if (!globalMapData.ok
@@ -923,6 +934,9 @@ async function main() {
       ...process.env,
       PORT: String(PORT),
       DATA_DIR,
+      NODE_ENV: 'test',
+      DEV_API_MODE: 'local',
+      DEV_ADMIN_TOKEN: '',
       ROOM_CAPACITY: '1'
     },
     stdio: ['ignore', 'pipe', 'pipe']

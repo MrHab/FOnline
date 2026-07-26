@@ -30,6 +30,7 @@
 | `global-exit-direction.js` | направление выхода из локальной карты и точка продолжения на глобальной карте |
 | `model-colliders.js` | загрузка collider-каталога и преобразование bounds/parts в серверные blockers |
 | `npc-inventory.js` | фракционные запасы, доктрины экипировки, личный инвентарь NPC, боеприпасы, торговый и трупный лут |
+| `dev-access.js` | startup-политика и middleware для закрытого dev API |
 
 Их импорты находятся в начале `server.js`; именно этот список определяет
 активные production-модули.
@@ -75,13 +76,21 @@ Runtime-файлы игнорируются Git.
 - `/api/locations`, `/api/quests`, `/api/global-map`, `/api/wasteland`;
 - `/socket.io/`.
 
-Маршруты `/api/dev/*` разрешены с loopback, если `DEV_ADMIN_TOKEN` не задан.
-При настроенном токене нужен заголовок `X-Dev-Token`.
+Маршруты `/api/dev/*` по умолчанию закрыты:
 
-В production `DEV_ADMIN_TOKEN` обязателен. Nginx проксирует `/api/` на loopback,
-а `requireDevAccess()` проверяет адрес TCP-соединения с Node.js и не использует
-`X-Real-IP`; без токена внешний `/api/dev/*` может выглядеть как локальный
-запрос.
+- `DEV_API_MODE=disabled` возвращает `404`;
+- `DEV_API_MODE=local` разрешён только вне production, только для прямого
+  loopback с локальными Host/Origin, заголовком `X-Dev-Local: 1` и без
+  `Forwarded`, `X-Forwarded-*` и `X-Real-IP`;
+- `DEV_API_MODE=token` требует `DEV_ADMIN_TOKEN` длиной не менее 32 UTF-8 байт
+  и заголовок `X-Dev-Token`;
+- `POST`, `PUT`, `PATCH` и `DELETE` dev API принимают только
+  `Content-Type: application/json`.
+
+Production Nginx отдельно возвращает `404` для dev API и HTML-редакторов до
+общего `/api/` и static routing, включая варианты регистра и URL-кодирования.
+Для административного token-доступа нужен непубличный прямой канал, например
+SSH-туннель; штатный public Nginx его не пропускает.
 
 Подробнее об auth и персонажах:
 [Аккаунты и персонажи](AUTH_AND_CHARACTERS.md).
@@ -98,6 +107,7 @@ Runtime-файлы игнорируются Git.
 
 ```bash
 npm run check:server
+npm run check:dev-access
 npm run check:data
 npm run check:npc
 npm run check:economy

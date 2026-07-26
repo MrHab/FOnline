@@ -36,6 +36,11 @@ const {
   globalExitDirectionFromTile,
   directedGlobalExitPoint
 } = require('./src/server/global-exit-direction');
+const {
+  createDevAccessMiddleware,
+  createDevAccessPolicy,
+  devEditorIsAvailable
+} = require('./src/server/dev-access');
 
 const GAME_NAME = 'Realm of Ashes';
 
@@ -92,7 +97,11 @@ const allowedOrigins = (process.env.ORIGINS || defaultLocalServerOrigins(PORT))
   .split(',')
   .map(v => v.trim())
   .filter(Boolean);
-const DEV_ADMIN_TOKEN = String(process.env.DEV_ADMIN_TOKEN || '').trim();
+const DEV_ACCESS_POLICY = createDevAccessPolicy({
+  mode: process.env.DEV_API_MODE,
+  nodeEnv: process.env.NODE_ENV,
+  token: process.env.DEV_ADMIN_TOKEN
+});
 const AUTH_RATE_WINDOW_MS = Math.max(60000, Number(process.env.AUTH_RATE_WINDOW_MS || 10 * 60 * 1000));
 const AUTH_RATE_MAX_ATTEMPTS = Math.max(5, Number(process.env.AUTH_RATE_MAX_ATTEMPTS || 20));
 const PASSWORD_RESET_TTL_MS = Math.max(5 * 60 * 1000, Number(process.env.PASSWORD_RESET_TTL_MS || 60 * 60 * 1000));
@@ -1081,19 +1090,23 @@ function requestAddress(req = {}) {
   return String(req.socket?.remoteAddress || req.ip || '').trim().toLowerCase();
 }
 
-function isLoopbackAddress(address = '') {
-  const value = String(address || '').trim().toLowerCase();
-  return value === '127.0.0.1' || value === '::1' || value === '::ffff:127.0.0.1';
-}
+const requireDevAccess = createDevAccessMiddleware(DEV_ACCESS_POLICY);
+const DEV_EDITOR_PATHS = new Set(['/dev-location-editor.html', '/dev-global-map-editor.html']);
 
-function requireDevAccess(req, res, next) {
-  const supplied = String(req.headers['x-dev-token'] || '').trim();
-  const tokenAccepted = DEV_ADMIN_TOKEN && supplied
-    && supplied.length === DEV_ADMIN_TOKEN.length
-    && crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(DEV_ADMIN_TOKEN));
-  if (tokenAccepted || (!DEV_ADMIN_TOKEN && isLoopbackAddress(requestAddress(req)))) return next();
-  return res.status(403).json({ ok: false, error: 'Доступ к инструментам мира запрещен.' });
-}
+app.use('/api/dev', requireDevAccess);
+app.use((req, res, next) => {
+  let requestedPath = String(req.path || '');
+  try {
+    requestedPath = decodeURIComponent(requestedPath);
+  } catch (_) {
+    // Malformed paths are left to the regular HTTP error handling.
+  }
+  requestedPath = requestedPath.toLowerCase();
+  if (!DEV_EDITOR_PATHS.has(requestedPath)) return next();
+  if (devEditorIsAvailable(DEV_ACCESS_POLICY)) return next();
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(404).type('text/plain').send('Not Found');
+});
 
 function authRateLimit(req, res, next) {
   const now = Date.now();
@@ -1141,8 +1154,6 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: JSON_LIMIT }));
 app.use(express.urlencoded({ extended: false, limit: JSON_LIMIT }));
-
-app.use('/api/dev', requireDevAccess);
 
 // Клиент вынесен в public/index.html, CSS и JS лежат в public/css и public/js.
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -17989,6 +18000,7 @@ function getLanUrls(port) {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`${GAME_NAME} v${GAME_VERSION} server listening on :${PORT}`);
+  console.log(`Dev API mode: ${DEV_ACCESS_POLICY.mode}`);
   console.log(`Local: http://localhost:${PORT}`);
   const lanUrls = getLanUrls(PORT);
   if (lanUrls.length) console.log(`LAN: ${lanUrls.join('  |  ')}`);

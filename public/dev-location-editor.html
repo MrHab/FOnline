@@ -826,7 +826,78 @@
       const TILE = 2;
       const MAP_TILES = 38;
       const API_BASE = '/api/dev/locations';
+      const DEV_TOKEN_STORAGE_KEY = 'realm-of-ashes-dev-token';
+      let devTokenRequestInFlight = null;
       const FIXED_LOCATION_GRID_STEP = 2;
+
+      function storedDevToken() {
+        try {
+          return String(window.sessionStorage.getItem(DEV_TOKEN_STORAGE_KEY) || '').trim();
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function requestDevToken(currentToken = '') {
+        if (devTokenRequestInFlight) return devTokenRequestInFlight;
+        devTokenRequestInFlight = new Promise(resolve => {
+          const overlay = document.createElement('div');
+          overlay.className = 'editor-confirm-overlay dev-token-overlay';
+          overlay.innerHTML = `
+            <form class="editor-confirm-panel" role="dialog" aria-modal="true" aria-label="Доступ к dev API">
+              <div class="editor-confirm-title">Доступ к dev API</div>
+              <label class="editor-confirm-message">
+                DEV_ADMIN_TOKEN
+                <input type="password" autocomplete="off" data-token-input>
+              </label>
+              <div class="editor-confirm-actions">
+                <button type="button" data-cancel>Отмена</button>
+                <button type="submit" data-accept>Подключить</button>
+              </div>
+            </form>
+          `;
+          const input = overlay.querySelector('[data-token-input]');
+          input.value = currentToken;
+          const finish = value => {
+            overlay.remove();
+            devTokenRequestInFlight = null;
+            resolve(String(value || '').trim());
+          };
+          overlay.addEventListener('click', event => {
+            if (event.target === overlay) finish('');
+          });
+          overlay.addEventListener('keydown', event => {
+            if (event.key === 'Escape') finish('');
+          });
+          overlay.querySelector('[data-cancel]').addEventListener('click', () => finish(''));
+          overlay.querySelector('form').addEventListener('submit', event => {
+            event.preventDefault();
+            finish(input.value);
+          });
+          document.body.appendChild(overlay);
+          input.focus();
+          input.select();
+        });
+        return devTokenRequestInFlight;
+      }
+
+      async function devApiFetch(url, options = {}) {
+        const send = token => {
+          const headers = { ...(options.headers || {}) };
+          headers['X-Dev-Local'] = '1';
+          if (token) headers['X-Dev-Token'] = token;
+          return fetch(url, { ...options, headers });
+        };
+        let token = storedDevToken();
+        let response = await send(token);
+        if (response.status !== 403) return response;
+        const entered = await requestDevToken(token);
+        if (!entered || entered === token) return response;
+        try { window.sessionStorage.setItem(DEV_TOKEN_STORAGE_KEY, entered); } catch (_) {}
+        token = entered;
+        response = await send(token);
+        return response;
+      }
 
       const COLLISION_INFO = {
         solid: {
@@ -3300,7 +3371,7 @@
 
       async function refreshLocationFiles() {
         try {
-          const res = await fetch(API_BASE);
+          const res = await devApiFetch(API_BASE);
           const data = await res.json();
           if (!data.ok) throw new Error(data.error || 'Ошибка списка локаций');
           state.locationSummaries = data.locations || [];
@@ -3338,7 +3409,7 @@
         const id = dom.locationFileSelect.value;
         if (!id) return toast('Файл локации не выбран');
         try {
-          const res = await fetch(API_BASE + '/' + encodeURIComponent(id));
+          const res = await devApiFetch(API_BASE + '/' + encodeURIComponent(id));
           const data = await res.json();
           if (!data.ok) throw new Error(data.error || 'Ошибка загрузки');
           importLocation(data.location);
@@ -3352,7 +3423,7 @@
         refreshExport();
         const location = JSON.parse(dom.jsonOutput.value);
         try {
-          const res = await fetch(API_BASE + '/' + encodeURIComponent(location.id), {
+          const res = await devApiFetch(API_BASE + '/' + encodeURIComponent(location.id), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ location })

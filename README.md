@@ -1,6 +1,6 @@
 # Realm of Ashes
 
-Текущая версия проекта: **7.76.2-data-integrity**.
+Текущая версия проекта: **7.76.3-closed-dev-api**.
 
 Публичная версия: [rangir.ru](https://rangir.ru).
 

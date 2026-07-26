@@ -2,6 +2,27 @@
 
 Актуальная версия проекта определяется в [`package.json`](../../package.json). Ниже сначала перечислено обслуживание текущей версии, затем сохранён исторический архив из первоначального импорта репозитория.
 
+## v7.76.3 — Закрытый dev-контур — 2026-07-26
+
+- Dev API переведён на явные режимы `disabled`, `local` и `token`. Без
+  `DEV_API_MODE` он закрыт; `local` работает только вне production, с прямого
+  loopback-соединения, локального Host/Origin, без proxy-заголовков и только с
+  non-simple заголовком `X-Dev-Local: 1`. Cross-site form-запросы и DNS
+  rebinding не проходят, а мутации принимают только `application/json`.
+- `DEV_API_MODE=token` не запускается с `DEV_ADMIN_TOKEN` короче 32 UTF-8 байт
+  и сравнивает заголовок `X-Dev-Token` без утечки значения. Небезопасный
+  `local` при `NODE_ENV=production` также останавливает startup.
+- Production Nginx возвращает `404` для `/api/dev`, `/api/dev/*` и двух
+  HTML-редакторов до общего `/api/` и static routing; dev API и имена
+  редакторов блокируются без учёта регистра.
+- Редакторы поддерживают токен только в `sessionStorage` текущей вкладки и
+  добавляют к dev-запросам token/local proof; значение секрета не встраивается
+  в URL или исходники.
+- `check:dev-access` запускает сервер в disabled/local/token-конфигурациях,
+  проверяет proxy/CSRF/DNS-rebinding bypass, слабый и правильный токен,
+  production editor paths, JSON-only мутации, startup guards, Nginx-правила и
+  неизменность временного `DATA_DIR` после запрещённых POST/reset.
+
 ## v7.76.2 — Целостность данных — 2026-07-26
 
 - Восстановлены 19 повреждённых пользовательских подписей в 16 авторских

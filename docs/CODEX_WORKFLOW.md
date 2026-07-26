@@ -94,6 +94,11 @@ runuser -u realm -- env HOME=/var/lib/realm-of-ashes \
   npm --prefix /opt/realm-of-ashes ci --omit=dev
 runuser -u realm -- env HOME=/var/lib/realm-of-ashes \
   npm --prefix /opt/realm-of-ashes run check:server
+install -m 644 \
+  /opt/realm-of-ashes/deploy/nginx/realm-of-ashes.locations.conf \
+  /etc/nginx/snippets/realm-of-ashes.locations.conf
+nginx -t
+systemctl reload nginx
 systemctl restart realm-of-ashes
 systemctl is-active realm-of-ashes
 curl -fsS https://rangir.ru/health
@@ -109,6 +114,18 @@ curl -fsS https://rangir.ru/health
 ```
 
 Обычный `git pull` их не затрагивает.
+
+В `/etc/realm-of-ashes.env` явно оставляйте production dev-контур закрытым:
+
+```text
+NODE_ENV=production
+DEV_API_MODE=disabled
+```
+
+Штатный Nginx дополнительно возвращает `404` для `/api/dev/*` и HTML-редакторов.
+Если для непубличного прямого канала используется token-режим,
+`DEV_ADMIN_TOKEN` должен содержать не менее 32 UTF-8 байт. Не добавляйте его в
+репозиторий или команды shell history.
 
 ## Email и восстановление пароля
 

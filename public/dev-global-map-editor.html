@@ -341,6 +341,47 @@
       color: var(--gold);
     }
 
+    .editor-confirm-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.56);
+    }
+
+    .editor-confirm-panel {
+      width: min(420px, calc(100vw - 48px));
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid rgba(240, 212, 127, 0.7);
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(21, 28, 15, 0.98), rgba(5, 9, 6, 0.98));
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72);
+    }
+
+    .editor-confirm-title {
+      color: var(--gold);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .editor-confirm-message {
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .editor-confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
     .toast {
       position: fixed;
       left: 50%;
@@ -799,11 +840,83 @@
       });
     }
 
+    const DEV_TOKEN_STORAGE_KEY = 'realm-of-ashes-dev-token';
+    let devTokenRequestInFlight = null;
+
+    function storedDevToken() {
+      try {
+        return String(window.sessionStorage.getItem(DEV_TOKEN_STORAGE_KEY) || '').trim();
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function requestDevToken(currentToken = '') {
+      if (devTokenRequestInFlight) return devTokenRequestInFlight;
+      devTokenRequestInFlight = new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'editor-confirm-overlay dev-token-overlay';
+        overlay.innerHTML = `
+          <form class="editor-confirm-panel" role="dialog" aria-modal="true" aria-label="Доступ к dev API">
+            <div class="editor-confirm-title">Доступ к dev API</div>
+            <label class="editor-confirm-message">
+              DEV_ADMIN_TOKEN
+              <input type="password" autocomplete="off" data-token-input>
+            </label>
+            <div class="editor-confirm-actions">
+              <button type="button" data-cancel>Отмена</button>
+              <button type="submit" data-accept>Подключить</button>
+            </div>
+          </form>
+        `;
+        const input = overlay.querySelector('[data-token-input]');
+        input.value = currentToken;
+        const finish = value => {
+          overlay.remove();
+          devTokenRequestInFlight = null;
+          resolve(String(value || '').trim());
+        };
+        overlay.addEventListener('click', event => {
+          if (event.target === overlay) finish('');
+        });
+        overlay.addEventListener('keydown', event => {
+          if (event.key === 'Escape') finish('');
+        });
+        overlay.querySelector('[data-cancel]').addEventListener('click', () => finish(''));
+        overlay.querySelector('form').addEventListener('submit', event => {
+          event.preventDefault();
+          finish(input.value);
+        });
+        document.body.appendChild(overlay);
+        input.focus();
+        input.select();
+      });
+      return devTokenRequestInFlight;
+    }
+
+    async function devApiFetch(path, options = {}) {
+      const send = token => {
+        const headers = { ...(options.headers || {}) };
+        headers['X-Dev-Local'] = '1';
+        if (token) headers['X-Dev-Token'] = token;
+        return fetch(path, { ...options, headers });
+      };
+      let token = storedDevToken();
+      let response = await send(token);
+      if (response.status !== 403) return response;
+      const entered = await requestDevToken(token);
+      if (!entered || entered === token) return response;
+      try { window.sessionStorage.setItem(DEV_TOKEN_STORAGE_KEY, entered); } catch (_) {}
+      token = entered;
+      response = await send(token);
+      return response;
+    }
+
     async function api(path, options = {}) {
-      const res = await fetch(path, {
+      const res = await devApiFetch(path, {
+        ...options,
         cache: 'no-store',
-        headers: { 'Content-Type': 'application/json' },
-        ...options
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
       });
       const text = await res.text();
       let data = {};

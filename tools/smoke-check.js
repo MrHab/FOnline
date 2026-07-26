@@ -1177,6 +1177,18 @@ async function assertSocketMultiplayerLifecycle() {
       }
     }
 
+    const worldResync = await socketAck(accounts[0].socket, 'requestWorldState', { reason: 'smoke' });
+    if (!worldResync.ok
+      || worldResync.reason !== 'smoke'
+      || worldResync.state?.roomId !== accounts[0].join.roomId
+      || worldResync.state?.locationId !== 'settlement'
+      || worldResync.state?.serverAuthoritative !== true
+      || !Array.isArray(worldResync.state?.map)
+      || !Array.isArray(worldResync.state?.resources)
+      || !Array.isArray(worldResync.state?.enemies)) {
+      fail('requestWorldState did not return an authoritative room snapshot', JSON.stringify(worldResync));
+    }
+
     if (!Array.isArray(accounts[2].join.players) || accounts[2].join.players.length < 2) {
       fail('three joined players did not share the single settlement reality', JSON.stringify(accounts[2].join));
     }

@@ -236,7 +236,6 @@
       ? clientEnemyStateMayUseLocalFallback()
       : !enemiesAreServerAuthoritative();
     if (canMutateLocalEnemies) {
-      syncWorldStateToServer('removeCorpse');
       spawnEnemy();
     }
   }
@@ -255,7 +254,6 @@
     if (isMobileControlsEnabled()) setReadout(`☠ ${enemy.name}: тело можно обыскать.`);
     checkLevelUp();
     ensureCorpseLoot(enemy);
-    syncWorldStateToServer('killEnemy');
     if (!corpseHasLoot(enemy)) {
       addLog(`${enemy.name}: ничего ценного.`, null, 'loot');
       setTimeout(() => removeCorpse(enemy), 3500);

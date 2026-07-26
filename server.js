@@ -16004,36 +16004,6 @@ function liveOtherSessionForLogin(login, deviceId, token, currentSocketId = '') 
 }
 
 
-function sanitizeWorldState(input, locationId = 'settlement') {
-  if (!input || typeof input !== 'object') return null;
-  const loc = normalizeLocationId(input.locationId || locationId);
-  const safeRow = row => Array.isArray(row) ? row.slice(0, 64).map(v => Number.isFinite(Number(v)) ? Number(v) : 0) : [];
-  const map = Array.isArray(input.map) ? input.map.slice(0, 64).map(safeRow) : undefined;
-  const resources = Array.isArray(input.resources) ? input.resources.slice(0, 256).map(r => ({
-    id: String(r.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || `res_${Number(r.tx)||0}_${Number(r.tz)||0}`,
-    tx: clamp(Number(r.tx || 0), 0, 1000),
-    tz: clamp(Number(r.tz || 0), 0, 1000),
-    type: String(r.type || 'wood').slice(0, 16),
-    hp: clamp(Number(r.hp ?? 0), 0, 999),
-    maxHp: clamp(Number(r.maxHp ?? 3), 1, 999)
-  })) : undefined;
-  // Клиентские enemies больше не принимаются как источник истины. Это поле оставлено
-  // только для совместимости с устаревшими HTML, но сервер его не использует.
-  const enemies = Array.isArray(input.enemies) ? input.enemies.slice(0, 128).map(e => ({
-    id: String(e.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || `enemy_${Math.random().toString(36).slice(2,8)}`,
-    typeIndex: clamp(Number(e.typeIndex || 0), 0, 99),
-    x: clamp(Number(e.x || 0), -MAP_SIZE, MAP_SIZE),
-    z: clamp(Number(e.z || 0), -MAP_SIZE, MAP_SIZE),
-    hp: clamp(Number(e.hp ?? 0), 0, 10000),
-    maxHp: clamp(Number(e.maxHp ?? 1), 1, 10000),
-    dead: !!e.dead,
-    inventory: sanitizeServerInventorySnapshot(e.inventory || [], { includeEquipped: true }),
-    loot: Array.isArray(e.loot) ? e.loot.slice(0, 64).map(x => ({ id: String(x.id || '').slice(0, 64), qty: clamp(Number(x.qty || 0), 0, 9999) })) : [],
-    looted: !!e.looted
-  })) : undefined;
-  return { locationId: loc, map, resources, enemies, updatedAt: Date.now() };
-}
-
 io.on('connection', (socket) => {
   socket.on('networkPing', (data = {}, ack) => {
     if (typeof ack !== 'function') return;
@@ -18587,25 +18557,25 @@ io.on('connection', (socket) => {
   socket.on('changeLocation', changeLocationHandler);
   socket.on('changeRoom', changeLocationHandler);
 
-  socket.on('worldState', (data = {}) => {
+  socket.on('requestWorldState', (data = {}, ack) => {
+    if (typeof ack !== 'function') return;
     const p = players.get(socket.id);
-    if (!p || !p.roomId) return;
+    if (!p || !p.roomId) {
+      ack({ ok: false, error: 'Сначала войдите персонажем в локацию.' });
+      return;
+    }
     const room = rooms.get(p.roomId);
-    if (!room) return;
+    if (!room) {
+      ack({ ok: false, error: 'Локация недоступна.' });
+      return;
+    }
     ensureRoomWorld(room);
-    const reason = String(data.reason || 'update').slice(0, 32);
-    const incoming = sanitizeWorldState(data.state || data, room.locationId);
-    if (!incoming || incoming.locationId !== room.locationId) return;
-
-    // В MMO-режиме клиенты больше не могут перетирать mobs/enemies/resources комнаты.
-    // Добыча ресурсов проходит только через harvestResource, где сервер проверяет
-    // дистанцию, состояние узла и сам уменьшает hp ресурса. Клиентский worldState
-    // оставлен только как сигнал совместимости и не меняет карту комнаты.
     refreshRoomWorldState(room);
-
-    if (reason === 'init' || reason === 'periodic' || reason === 'resource') return;
-    io.to(room.id).emit('worldState', { reason, state: room.worldState || publicWorldState(room, true) });
-    emitEnemySnapshot(room, true);
+    ack({
+      ok: true,
+      reason: String(data?.reason || 'resync').slice(0, 32),
+      state: room.worldState || publicWorldState(room, true)
+    });
   });
 
   socket.on('disconnect', () => {

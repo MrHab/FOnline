@@ -1039,7 +1039,6 @@
     if (typeof updateNetworkRevealTransitions === 'function') updateNetworkRevealTransitions(dt);
     if (typeof updateTraderBuildingRoofCutaway === 'function') updateTraderBuildingRoofCutaway(dt);
     sendMultiplayerState(dt);
-    maybeSyncWorldState(dt);
 
     const canSpawnLocalEnemies = typeof clientEnemyStateMayUseLocalFallback === 'function'
       ? clientEnemyStateMayUseLocalFallback()
@@ -1664,4 +1663,3 @@
     // HP-бары над игроками и мобами отключены. Функция оставлена пустой,
     // чтобы не ломать существующий цикл обновления.
   }
-

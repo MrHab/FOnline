@@ -185,7 +185,6 @@
       addLog(`Получено: ${item.name} x${takeQty}.`, null, 'loot');
       entry.qty = Math.max(0, entry.qty - takeQty);
       if (!corpseHasLoot(activeLootEnemy)) activeLootEnemy._looted = true;
-      syncWorldStateToServer('lootItem');
       renderLootWindow();
       if (!corpseHasLoot(activeLootEnemy)) {
         const corpse = activeLootEnemy;
@@ -264,7 +263,6 @@
     corpse._looted = true;
     addLog(`Обыск завершён: ${corpse.name}.`, null, 'loot');
     setReadout(`${corpse.name}: всё забрано.`);
-    syncWorldStateToServer('lootAll');
     closeLootWindow();
     setTimeout(() => removeCorpse(corpse), 350);
   }
@@ -326,5 +324,4 @@
     }
     setReadout('Рядом нет цели для взаимодействия.');
   }
-
 

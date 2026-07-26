@@ -593,7 +593,7 @@ const clientSilentCreatureBody = functionSlice(gameMechanicsSource, 'function is
 if (!clientSilentCreatureBody.includes('actor.role') || !clientSilentCreatureBody.includes('actor.modelKey') || !clientSilentCreatureBody.includes('friendlybrahmin')) {
   fail('Client dialogue/trade gating must treat role/modelKey brahmins as silent creatures');
 }
-['function createEnemyFromNetworkSnapshot', 'function applyNetworkEnemies', 'function serializeWorldState', 'function saveCurrentLocationState', 'function restoreEnemiesFromState'].forEach(marker => {
+['function createEnemyFromNetworkSnapshot', 'function applyNetworkEnemies', 'function saveCurrentLocationState', 'function restoreEnemiesFromState'].forEach(marker => {
   const body = functionSlice(network, marker, '\n  function ');
   if (!body.includes('naturalCreature')
     || (!body.includes('canDialogue: naturalCreature ? false') && !body.includes('enemy.canDialogue = naturalCreature ? false'))) {

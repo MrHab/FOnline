@@ -280,89 +280,24 @@
 
 
 
-  let worldSyncTimer = 0;
   let applyingNetworkWorldState = false;
   let authoritativeResourceSnapshotLocationId = '';
   function makeEntityId(prefix = 'e') { return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`; }
   function ensureEnemyId(e) { if (e && !e.id) e.id = makeEntityId('enemy'); return e?.id || ''; }
   function ensureResourceId(r) { if (r && !r.id) r.id = `res_${r.tx}_${r.tz}_${r.type || 'node'}`; return r?.id || ''; }
 
-  function serializeWorldState(options = {}) {
-    const includeMap = options.includeMap !== false;
-    const includeResources = options.includeResources !== false;
-    const includeEnemies = options.includeEnemies !== false;
-    const state = {
-      locationId: currentLocation?.id || 'settlement',
-      environmentVersion: typeof WORLD_ENVIRONMENT_VERSION !== 'undefined' ? WORLD_ENVIRONMENT_VERSION : '',
-      updatedAt: Date.now()
-    };
-    if (includeResources) {
-      state.resources = resourceNodes.map(r => ({ id: ensureResourceId(r), tx: r.tx, tz: r.tz, type: r.type, hp: r.hp, maxHp: r.maxHp || 3 }));
-    }
-    if (includeEnemies) {
-      state.enemies = enemies.filter(e => e && !e._removed).map(e => {
-        const naturalCreature = isNaturalCreatureEnemy(e);
-        return ({
-        id: ensureEnemyId(e),
-        typeIndex: Number.isInteger(e.typeIndex) ? e.typeIndex : Math.max(0, ENEMY_TYPES.findIndex(t => t.name === e.name)),
-        x: Number(e.x || 0), z: Number(e.z || 0), hp: Number(e.hp || 0), maxHp: Number(e.maxHp || e.hp || 1), dead: !!e.dead,
-        name: e.name || '',
-        visual: e.visual || e.mesh?.userData?.enemyVisual || '',
-        modelKey: e.modelKey || '',
-        species: e.species || '',
-        canDialogue: naturalCreature ? false : e.canDialogue !== false,
-        baseSpeed: Number(e.speed || 0),
-        scale: Number(e.scale || 1),
-        xp: Number(e.xp || 0),
-        atk: Number(e.atk || 0),
-        variantId: e.variantId || 'normal',
-        variantName: e.variantName || '',
-        role: e.role || e.encounterRole || '',
-        encounterRole: e.encounterRole || '',
-        profile: e.profile || '',
-        statProfile: e.statProfile || '',
-        equipmentProfile: e.equipmentProfile || '',
-        lootProfile: e.lootProfile || '',
-        tradeProfile: e.tradeProfile || '',
-        loot: (e.loot || []).map(x => ({ id: x.id, qty: x.qty })),
-        looted: !!e._looted
-      });
-      });
-    }
-    if (includeMap) state.map = map.map(row => row.slice());
-    return state;
-  }
-
-  function syncWorldStateToServer(reason = 'update') {
-    if (applyingNetworkWorldState) return;
-    if (!multiplayer.socket || !multiplayer.socket.connected || !multiplayer.joined) return;
-    // Полная карта уходит только при первом init комнаты. Дальше отправляем дельты:
-    // добыча — только ресурсы, бой/лут — только враги. Это убирает дергание карты
-    // и телепортацию монстров от параллельных локальных симуляций разных игроков.
-    const includeMap = reason === 'init' || reason === 'full' || reason === 'locationFull';
-    const resourceOnly = reason === 'resource';
-    const enemyOnly = reason === 'enemyDamage' || reason === 'killEnemy' || reason === 'removeCorpse' || reason === 'lootItem' || reason === 'lootAll' || reason === 'spawnEnemy';
-    // Ресурсы теперь сервер-авторитетные: клиент не отправляет снимок карты/узлов
-    // после добычи, чтобы один игрок не мог перетереть состояние комнаты.
-    if (resourceOnly) return;
-    if (enemiesAreServerAuthoritative() && enemyOnly) return;
-    multiplayer.socket.emit('worldState', {
-      reason,
-      state: serializeWorldState({
-        includeMap,
-        includeResources: includeMap || !enemyOnly,
-        includeEnemies: includeMap || !resourceOnly
-      })
+  function requestWorldStateFromServer(reason = 'resync') {
+    const socket = multiplayer.socket;
+    const requestedRoomId = String(multiplayer.roomId || '');
+    if (!socket || !socket.connected || !multiplayer.joined) return false;
+    socket.emit('requestWorldState', { reason: String(reason || 'resync').slice(0, 32) }, ack => {
+      if (socket !== multiplayer.socket || !socket.connected || !multiplayer.joined) return;
+      if (requestedRoomId && requestedRoomId !== String(multiplayer.roomId || '')) return;
+      if (!ack?.ok || !ack.state || !networkPayloadIsForCurrentRoom(ack.state)) return;
+      markStartupNetworkEvent('worldState');
+      applyNetworkWorldState(ack.state, ack.reason || reason);
     });
-  }
-
-  function maybeSyncWorldState(dt) {
-    // Раньше здесь каждые 1.4 секунды отправлялось полное состояние мира.
-    // В комнате с несколькими игроками это заставляло мобильные клиенты регулярно
-    // пересоздавать локацию. Периодический full-sync отключён: мир синхронизируется
-    // при входе/смене локации и точечными событиями добычи, лута и боя.
-    if (!multiplayer.socket || !multiplayer.socket.connected || !multiplayer.joined) return;
-    worldSyncTimer += dt;
+    return true;
   }
 
   function findResourceNode(snapshot) {
@@ -1016,6 +951,6 @@
     if (worldState && networkPayloadIsForCurrentRoom(worldState)) {
       applyNetworkWorldState(worldState, 'serverInit');
     } else {
-      syncWorldStateToServer('init');
+      requestWorldStateFromServer('serverInitFallback');
     }
   }

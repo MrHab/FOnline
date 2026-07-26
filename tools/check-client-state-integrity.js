@@ -79,6 +79,7 @@ const explosions = read('public/js/game/06b_explosions_speech.js');
 const combat = read('public/js/game/06d_combat_damage_shooting.js');
 const resources = read('public/js/game/06e_combat_targeting_loot_resources.js');
 const containers = read('public/js/game/05d_world_containers_security.js');
+const worldSync = read('public/js/game/05e_ground_items_world_sync.js');
 const quests = read('public/js/game/07c_trader_dialogues_quests.js');
 const loot = read('public/js/game/07e_loot_interaction.js');
 const input = read('public/js/game/08f_input_events_proximity.js');
@@ -1102,6 +1103,44 @@ function assertDeferredWorldRuntime() {
     'the auth shell still builds or fetches world state before character selection');
 }
 
+function assertServerAuthoritativeWorldStateRequests() {
+  const requestBody = functionBody(worldSync, 'requestWorldStateFromServer');
+  assertContainsAll('authoritative world-state request', requestBody, [
+    "socket.emit('requestWorldState'",
+    'networkPayloadIsForCurrentRoom(ack.state)',
+    'applyNetworkWorldState(ack.state'
+  ]);
+  assertContainsAll(
+    'world-state init fallback',
+    functionBody(worldSync, 'initWorldSyncFromServer'),
+    ["requestWorldStateFromServer('serverInitFallback')"]
+  );
+  assert(!worldSync.includes("socket.emit('worldState'"),
+    'the client still uploads worldState snapshots');
+  assert(!worldSync.includes('function serializeWorldState'),
+    'the client still serializes authoritative world state for upload');
+  assert(!updateLoop.includes('maybeSyncWorldState'),
+    'the update loop still schedules obsolete world-state uploads');
+  assert(!server.includes("socket.on('worldState'"),
+    'the production server still accepts client worldState uploads');
+  assert(!server.includes('function sanitizeWorldState'),
+    'the production server still keeps the obsolete client world-state sanitizer');
+
+  const serverRequest = socketEventSource(server, 'requestWorldState');
+  assertContainsAll('server world-state request contract', serverRequest, [
+    "if (typeof ack !== 'function') return",
+    'ensureRoomWorld(room)',
+    'refreshRoomWorldState(room)',
+    'state: room.worldState || publicWorldState(room, true)'
+  ]);
+  assert(!serverRequest.includes('data.state'),
+    'requestWorldState still ingests a client-provided world snapshot');
+  assert(!serverRequest.includes("socket.emit('worldState'"),
+    'requestWorldState still has a non-ACK response path');
+  assert(!serverRequest.includes('io.to('),
+    'an addressable world-state resync still broadcasts to the whole room');
+}
+
 async function main() {
   assertAuthorityModes();
   assertAuthorityTransitionCleanup();
@@ -1113,7 +1152,8 @@ async function main() {
   assertGlobalMapMotionIntegrity();
   assertBlockedGameplayGates();
   assertDeferredWorldRuntime();
-  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map motion, deferred world bootstrap, input lifecycle, harvest and dead-man switch.');
+  assertServerAuthoritativeWorldStateRequests();
+  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync and dead-man switch.');
 }
 
 main().catch(error => {

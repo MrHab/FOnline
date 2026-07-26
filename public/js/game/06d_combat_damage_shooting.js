@@ -149,7 +149,6 @@
 
     enemy.hp -= dmg;
     if (enemy.hp <= 0) killEnemy(enemy);
-    else syncWorldStateToServer('enemyDamage');
     renderInventoryIfVisibleDeferred();
     updateTargetHintFromHover();
     return true;

@@ -756,7 +756,6 @@
     enemies.push(enemy);
     enemyMeshes.push(mesh);
     applyNetworkFogVisibilityNow(mesh, enemy.x, enemy.z);
-    syncWorldStateToServer('spawnEnemy');
   }
 
 

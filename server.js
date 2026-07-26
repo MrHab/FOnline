@@ -6448,7 +6448,22 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   const profile = { ...previousProfile, ...clientProfile, serverCharacterId: id };
   profile.taggedSkills = sanitizeTaggedSkills(previousProfile.taggedSkills || clientProfile.taggedSkills || []);
   if (!player) {
-    next.characterProfile = profile;
+    const worldFactionId = serverWorldFactionKey(
+      previousProfile.worldFactionId || previousProfile.factionId || ''
+    );
+    next.characterProfile = {
+      ...previousProfile,
+      serverCharacterId: id,
+      name: safeName(previousProfile.name || 'РЎС‚СЂР°РЅРЅРёРє'),
+      special: sanitizeSpecial(previousProfile.special || {}),
+      traits: sanitizeTraits(previousProfile.traits || []),
+      taggedSkills: sanitizeTaggedSkills(previousProfile.taggedSkills || []),
+      factionId: worldFactionId,
+      worldFactionId,
+      worldFactionReputation: sanitizeServerWorldFactionReputation(
+        previousState.worldFactionReputation || previousProfile.worldFactionReputation || {}
+      )
+    };
     next.inventory = previousState.inventory || {};
     next.storage = previousState.storage || {};
     next.factionStorages = previousState.factionStorages || {};
@@ -6456,6 +6471,9 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     next.itemRuntime = previousState.itemRuntime || {};
     next.player = previousState.player || clientState.player || {};
     next.currentLocationId = previousState.currentLocationId || clientState.currentLocationId || 'settlement';
+    next.lastVisitedSettlementId = normalizeRespawnSettlementId(
+      previousState.lastVisitedSettlementId || 'settlement'
+    );
     next.skillRanks = previousState.skillRanks || {};
     next.talentRanks = previousState.talentRanks || {};
     next.socialState = sanitizeServerSocialState(previousState.socialState || {});

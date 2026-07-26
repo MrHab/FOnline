@@ -1404,6 +1404,40 @@ async function assertSocketMultiplayerLifecycle() {
 
     first.socket.close();
     await delay(250);
+    const recentLeaseHeaders = authHeaders(first.token, first.deviceId, {
+      clientInstanceId: first.clientInstanceId,
+      characterLeaseId: first.join.characterLeaseId
+    });
+    const disconnectedStateResponse = await request(
+      `/api/characters/${encodeURIComponent(first.characterId)}`,
+      { headers: recentLeaseHeaders }
+    );
+    assertStatus(disconnectedStateResponse, 200, 'GET recently disconnected character');
+    const disconnectedState = parseJsonResponse(
+      disconnectedStateResponse,
+      'GET recently disconnected character'
+    ).save;
+    const forgedInactiveState = JSON.parse(JSON.stringify(disconnectedState));
+    forgedInactiveState.characterProfile = {
+      ...(forgedInactiveState.characterProfile || {}),
+      name: 'Forged Inactive',
+      special: { str: 10, per: 10, end: 10, cha: 7, int: 1, agi: 1, luck: 1 },
+      traits: ['bruiser', 'educatedStart'],
+      taggedSkills: ['science', 'repair'],
+      factionId: 'scrap_union',
+      worldFactionId: 'scrap_union'
+    };
+    forgedInactiveState.lastVisitedSettlementId = 'roadOutpost';
+    const forgedInactiveSave = await request(
+      `/api/characters/${encodeURIComponent(first.characterId)}/save`,
+      {
+        method: 'POST',
+        headers: recentLeaseHeaders,
+        json: { state: forgedInactiveState }
+      }
+    );
+    assertStatus(forgedInactiveSave, 200, 'POST recently disconnected forged profile save');
+
     const reconnected = await connectSocketClient();
     sockets.push(reconnected);
     first.socket = reconnected;
@@ -1414,6 +1448,14 @@ async function assertSocketMultiplayerLifecycle() {
     }
     if (Number(rejoin.self?.worldFactionReputation?.old_klim || 0) !== 3) {
       fail('world-task reputation did not survive reconnect', JSON.stringify(rejoin.self));
+    }
+    if (rejoin.self?.name !== first.name
+      || Object.values(rejoin.self?.special || {}).some(value => Number(value) !== 5)
+      || JSON.stringify(rejoin.self?.traits || []) !== JSON.stringify(['trainedEye'])
+      || JSON.stringify(rejoin.self?.taggedSkills || []) !== JSON.stringify(['lightWeapons'])
+      || rejoin.self?.worldFactionId !== 'old_klim'
+      || rejoin.lastVisitedSettlementId !== 'settlement') {
+      fail('inactive HTTP save replaced authoritative identity or character creation choices', JSON.stringify(rejoin.self));
     }
     if (rejoin.roomId
       || rejoin.self?.globalMap?.attachedPartyId !== 'smoke_world_party'

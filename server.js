@@ -15168,6 +15168,7 @@ function publicPlayer(p) {
 
 function serverAuthoritativeGlobalMapState(p = {}) {
   const session = globalTravelSessionForMember(p.id || '');
+  const serverNow = Date.now();
   const attachedPartyId = worldTransferId(p.attachedPartyId || '');
   const attachedPartyTaskId = worldTransferRecordId(p.attachedPartyTaskId || '');
   const simState = attachedPartyId && typeof WASTELAND_SIM?.state === 'function' ? WASTELAND_SIM.state() : null;
@@ -15175,7 +15176,7 @@ function serverAuthoritativeGlobalMapState(p = {}) {
   const point = sanitizeServerGlobalMapPoint(
     attachedParty
       ? { x: attachedParty.x, y: attachedParty.y }
-      : (session ? serverGlobalTravelCurrentPoint(session, Date.now()) : p.globalWorldPoint)
+      : (session ? serverGlobalTravelCurrentPoint(session, serverNow) : p.globalWorldPoint)
   ) || serverGlobalPointForPlayer(p);
   const siteId = String(p.currentWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   return {
@@ -15196,7 +15197,7 @@ function serverAuthoritativeGlobalMapState(p = {}) {
     attachedPartyId,
     attachedPartyTaskId,
     lastEntryCircle: null,
-    travel: null,
+    travel: serverGlobalTravelPublicDescriptor(session, serverNow),
     encounter: null
   };
 }
@@ -15439,6 +15440,41 @@ function serverGlobalTravelCurrentPoint(session = null, now = Date.now()) {
     x: fromPoint.x + (targetPoint.x - fromPoint.x) * progress,
     y: fromPoint.y + (targetPoint.y - fromPoint.y) * progress
   });
+}
+
+function serverGlobalTravelPublicDescriptor(session = null, now = Date.now()) {
+  if (!session || session.terminating) return null;
+  const serverNow = Number(now || Date.now());
+  const durationMs = Math.max(0, Number(session.durationMs || 0));
+  const elapsedMs = durationMs > 0
+    ? clamp(serverNow - Number(session.startedAt || serverNow), 0, durationMs)
+    : durationMs;
+  const fromPoint = sanitizeServerGlobalMapPoint(session.fromPoint || session.worldPoint || null);
+  const toPoint = sanitizeServerGlobalMapPoint(session.targetPoint || fromPoint);
+  const routePoints = (Array.isArray(session.routePoints) ? session.routePoints : [])
+    .map(point => sanitizeServerGlobalMapPoint(point))
+    .filter(Boolean);
+  return {
+    travelId: String(session.id || ''),
+    fromPoint,
+    toPoint,
+    currentPoint: serverGlobalTravelCurrentPoint(session, serverNow),
+    routePoints,
+    targetSettlementId: session.targetSiteId ? '' : normalizeLocationId(session.targetLocationId || ''),
+    targetWorldSiteId: String(session.targetSiteId || ''),
+    progress: durationMs > 0 ? clamp(elapsedMs / durationMs, 0, 1) : 1,
+    duration: durationMs / 1000,
+    durationMs,
+    distanceKm: Math.max(0, Number(session.distanceKm || 0)),
+    speedKmh: Math.max(0, Number(session.speedKmh || 0)),
+    worldHours: Math.max(0, Number(session.worldHours || 0)),
+    wandererSkill: 0,
+    serverAuthoritative: true,
+    startedAt: Number(session.startedAt || serverNow),
+    arrivalAt: Number(session.arrivalAt || serverNow),
+    serverNow,
+    elapsedMs
+  };
 }
 
 function serverGlobalWorldPartyRadius(party = {}) {
@@ -15733,6 +15769,7 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     party: session.memberIds.map(id => players.get(id)).filter(Boolean).map(member => publicTravelPartyMember(member, socket.id))
   };
 
+  session.terminating = true;
   for (const id of session.memberIds) {
     const member = players.get(id);
     if (!member) continue;
@@ -15777,6 +15814,7 @@ function cleanupGlobalTravelSessionsForSocket(socketId = '') {
       continue;
     }
     if (String(leaderId || '') === id || String(session.leaderId || '') === id) {
+      session.terminating = true;
       const point = serverGlobalTravelCurrentPoint(session, Date.now());
       for (const memberId of (Array.isArray(session.memberIds) ? session.memberIds : [])) {
         const member = players.get(memberId);
@@ -16649,7 +16687,9 @@ io.on('connection', (socket) => {
       member.pendingLocationTransition = null;
     }
     const publicParty = members.map(member => publicTravelPartyMember(member, socket.id));
+    const serverNow = Date.now();
     const payload = {
+      travelId: session.id,
       leaderId: socket.id,
       leaderName: session.leaderName,
       fromLocationId,
@@ -16666,7 +16706,9 @@ io.on('connection', (socket) => {
       duration: timing.durationMs / 1000,
       party: publicParty,
       startedAt: session.startedAt,
-      arrivalAt: session.arrivalAt
+      arrivalAt: session.arrivalAt,
+      serverNow,
+      elapsedMs: Math.max(0, Math.min(session.durationMs, serverNow - session.startedAt))
     };
     emitGlobalTravelToParty(session, 'globalTravelStarted', payload, false);
     if (typeof ack === 'function') ack({ ok: true, ...payload });
@@ -16756,6 +16798,7 @@ io.on('connection', (socket) => {
       worldPoint,
       party: session.memberIds.map(id => players.get(id)).filter(Boolean).map(member => publicTravelPartyMember(member, socket.id))
     };
+    session.terminating = true;
     for (const id of session.memberIds) {
       const member = players.get(id);
       if (!member) continue;

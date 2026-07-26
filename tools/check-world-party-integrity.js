@@ -824,6 +824,45 @@ function assertPublicIdentityRedaction() {
     'public world-party roster reused the stable character id as its row id');
 }
 
+function assertPublicMotionSnapshot() {
+  const { sim, state } = simulation('public-motion-snapshot');
+  const firstSampleAt = Date.now() - 6000;
+  state.lastTickAt = firstSampleAt;
+  state.parties.motion_party = {
+    ...party('motion_party'),
+    x: 30,
+    y: 30,
+    infrastructureRouteIndex: 2,
+    infrastructureRoutePoints: [
+      { x: 30, y: 30 },
+      { x: 45, y: 30 },
+      { x: 45, y: 45 },
+      { x: 60, y: 45 }
+    ]
+  };
+
+  const first = sim.publicState();
+  const publicParty = first.parties.find(row => row.id === 'motion_party');
+  assert.strictEqual(first.sampledAt, firstSampleAt,
+    'public motion snapshot is not anchored to the authoritative simulation tick');
+  assert(first.serverNow >= first.sampledAt,
+    'public motion snapshot does not expose a comparable server clock');
+  assert.deepStrictEqual(publicParty.movementRoutePoints, [
+    { x: 30, y: 30 },
+    { x: 32.12, y: 32.12 }
+  ], 'public motion snapshot does not preserve the authoritative near-term route segment');
+  assert(publicParty.movementRoutePoints.every(point => point.x < 45 && point.y < 45),
+    'public motion snapshot leaked route geometry beyond the interpolation horizon');
+
+  const repeated = sim.publicState();
+  assert.strictEqual(repeated.sampledAt, first.sampledAt,
+    'reading public state without a simulation tick changed the motion sample');
+  const nextSampleAt = Date.now() - 1000;
+  sim.tick(nextSampleAt, { hours: 0.01, force: true });
+  assert.strictEqual(sim.publicState().sampledAt, nextSampleAt,
+    'a simulation tick did not advance the public motion sample');
+}
+
 function assertUnrelatedEncounterCannotFinishEscorts() {
   const { sim, state } = simulation('unrelated-raider-victory');
   state.parties.caravan_a = party('caravan_a', 'caravan', 'caravans', {
@@ -1291,6 +1330,29 @@ function assertSocketAndClientContract() {
   );
   assert(arrivalHandler.includes('find(member => serverPlayerActiveWorldPartyTask(member) || member.attachedPartyTaskId)'),
     'a legacy independent route can arrive with a member attached to a world party');
+  const travelDescriptor = serverSource.slice(
+    serverSource.indexOf('function serverGlobalTravelPublicDescriptor('),
+    serverSource.indexOf('function serverGlobalWorldPartyRadius(', serverSource.indexOf('function serverGlobalTravelPublicDescriptor('))
+  );
+  assert(travelDescriptor.includes('session.terminating'),
+    'terminal global travel can still be serialized as an active route');
+  assert(arrivalHandler.indexOf('session.terminating = true') >= 0
+    && arrivalHandler.indexOf('session.terminating = true') < arrivalHandler.indexOf('persistActivePlayerState(member)'),
+  'global travel arrival persists players before suppressing the completed route descriptor');
+  const travelCleanup = serverSource.slice(
+    serverSource.indexOf('function cleanupGlobalTravelSessionsForSocket('),
+    serverSource.indexOf('function publicPlayerMovement(', serverSource.indexOf('function cleanupGlobalTravelSessionsForSocket('))
+  );
+  assert(travelCleanup.indexOf('session.terminating = true') >= 0
+    && travelCleanup.indexOf('session.terminating = true') < travelCleanup.indexOf('persistActivePlayerState(member)'),
+  'leader disconnect persists players before suppressing the cancelled route descriptor');
+  const travelCancel = serverSource.slice(
+    serverSource.indexOf("socket.on('globalTravelCancel'"),
+    serverSource.indexOf("socket.on('globalMapCreateAmbush'", serverSource.indexOf("socket.on('globalTravelCancel'"))
+  );
+  assert(travelCancel.indexOf('session.terminating = true') >= 0
+    && travelCancel.indexOf('session.terminating = true') < travelCancel.indexOf('persistActivePlayerState(member)'),
+  'global travel cancellation persists players before suppressing the cancelled route descriptor');
   assert(serverSource.includes('syncWorldPartyPlayerAttachments(simState);'),
     'world-party attachment is not reconciled on the server tick');
   assert(serverSource.includes('if (!p.attachedPartyTaskId) {')
@@ -1407,11 +1469,12 @@ try {
   assertReputationFactionBackfill();
   assertClaimLedgerContract();
   assertPublicIdentityRedaction();
+  assertPublicMotionSnapshot();
   assertUnrelatedEncounterCannotFinishEscorts();
   assertServerPersistenceFaultRecovery();
   assertServerWorldTransferFaultRecovery();
   assertSocketAndClientContract();
-  console.log('World-party integrity check passed: authoritative attachment, late-join patrol duty, bounded claims, trusted rewards, and public redaction.');
+  console.log('World-party integrity check passed: authoritative attachment, motion snapshots, late-join patrol duty, bounded claims, trusted rewards, and public redaction.');
 } finally {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 }

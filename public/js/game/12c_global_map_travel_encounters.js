@@ -49,6 +49,7 @@
     addLog(`Глобальная карта: движение к ${targetSettlement ? globalMapLocationName(targetSettlement.id) : (targetWorldSite ? globalMapWorldSiteTitle(targetWorldSite) : 'точке пустоши')}.`, null, 'system');
     if (multiplayer?.socket?.connected && multiplayer.joined) {
       const targetLocationId = targetSettlement?.id || targetWorldSite?.locationId || 'wasteland';
+      const requestStartedAt = performance.now();
       multiplayer.socket.emit('globalTravelStart', {
         fromLocationId: globalMapState.fromLocationId || currentLocation?.id || 'settlement',
         targetLocationId,
@@ -65,6 +66,7 @@
         }
         const activeTravel = globalMapState.travel;
         if (activeTravel) {
+          const optimisticProgress = Math.max(0, Math.min(1, Number(activeTravel.progress || 0)));
           if (ack.fromPoint) activeTravel.fromPoint = globalMapSavedPoint(ack.fromPoint);
           if (ack.targetPoint) activeTravel.toPoint = globalMapSavedPoint(ack.targetPoint);
           if (Array.isArray(ack.routePoints) && ack.routePoints.length >= 2) {
@@ -79,8 +81,13 @@
             ? ack.targetLocationId
             : activeTravel.targetSettlementId;
           activeTravel.targetWorldSiteId = ack.targetSiteId || activeTravel.targetWorldSiteId || '';
-          const elapsed = Math.max(0, Date.now() - Number(ack.startedAt || Date.now()));
-          activeTravel.progress = Math.max(0, Math.min(1, elapsed / Math.max(100, activeTravel.duration * 1000)));
+          activeTravel.travelId = String(ack.travelId || activeTravel.travelId || '');
+          activeTravel.progress = globalMapServerTravelProgress(
+            ack,
+            activeTravel.duration,
+            Math.max(0, performance.now() - requestStartedAt),
+            optimisticProgress
+          );
           activeTravel.prevProgress = activeTravel.progress;
           const serverPoint = globalMapTravelCurrentPoint(activeTravel);
           globalMapState.playerX = serverPoint.x;
@@ -570,8 +577,7 @@
         : planGlobalMapInfrastructureRoute(fromPoint, toPoint)
     );
     const duration = Math.max(0.1, Number(data.duration ?? (Number(data.durationMs || 0) / 1000)) || 0.1);
-    const elapsed = Math.max(0, Date.now() - Number(data.startedAt || Date.now()));
-    const progress = Math.max(0, Math.min(1, elapsed / Math.max(100, duration * 1000)));
+    const progress = globalMapServerTravelProgress(data, duration);
     globalMapState.onWorldMap = true;
     globalMapState.encounter = null;
     globalMapState.travel = {
@@ -580,6 +586,7 @@
       routePoints,
       targetSettlementId: GLOBAL_MAP_NODES.some(node => node.id === data.targetLocationId) ? data.targetLocationId : '',
       targetWorldSiteId: data.targetSiteId || '',
+      travelId: String(data.travelId || ''),
       progress,
       prevProgress: progress,
       duration,
@@ -700,4 +707,3 @@
     const entryKey = data.entryKey || (LOCATIONS[targetLocationId]?.entryFromWorld ? 'entryFromWorld' : 'spawn');
     loadLocation(targetLocationId, entryKey);
   }
-

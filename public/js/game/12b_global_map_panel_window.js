@@ -51,7 +51,7 @@
       } else if (globalMapState.attachedPartyId) {
         const attached = globalMapAttachedParty();
         if (attached) {
-          const point = clampGlobalMapPoint(attached.x, attached.y);
+          const point = globalMapWorldPartyDisplayPoint(attached);
           const cell = globalMapPointCell(point.x, point.y);
           const destinationName = attached.destinationSiteName || globalMapWorldSiteById(attached.destinationSiteId)?.name || globalMapLocationName(attached.destinationSiteId) || 'маршруту';
           const rosterRows = globalMapAttachedPartyRosterRows(attached);
@@ -162,7 +162,7 @@
 
     const pan = GLOBAL_MAP_3D?.keyPan || {};
     const cameraActive = !!GLOBAL_MAP_3D?.dragging || !!(pan.KeyW || pan.KeyA || pan.KeyS || pan.KeyD);
-    const worldActive = !!(globalMapState.travel || globalMapState.encounter);
+    const worldActive = !!(globalMapState.travel || globalMapState.encounter || globalMapState.attachedPartyId);
     // Keep the 3D global map rendering at normal speed even while the player is
     // standing still. Heavy marker rebuilds are throttled inside
     // updateGlobalMap3DDynamic(), so this only restores smooth camera/party motion.
@@ -458,4 +458,3 @@
       localPerfGlobalMapAutoOpenDone = !!openGlobalMapFromLocationExit();
     } catch (_) {}
   }
-

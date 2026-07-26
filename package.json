@@ -1,6 +1,6 @@
 {
   "name": "realm-of-ashes",
-  "version": "7.76.5",
+  "version": "7.76.6",
   "private": true,
   "main": "server.js",
   "scripts": {

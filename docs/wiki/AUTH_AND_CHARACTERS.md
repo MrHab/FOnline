@@ -68,8 +68,11 @@ GitHub Pages использует `https://rangir.ru`.
 `SESSION_LOCK_MS` — по умолчанию 120 секунд. На том же `deviceId` новый вход
 заменяет старые токены этого устройства.
 
-`POST /api/auth/heartbeat` обновляет `lastSeenAt`, а
-`POST /api/auth/logout` отключает активный socket и удаляет token.
+`POST /api/auth/heartbeat` обновляет `lastSeenAt`. Частые heartbeat и
+`GET /api/auth/me` объединяют запись `users.json` в окно до одной секунды;
+login, logout, reset и Socket.IO join/disconnect по-прежнему сбрасывают
+ожидающую запись немедленно. `POST /api/auth/logout` отключает активный socket
+и удаляет token.
 Перед logout клиент дожидается финального сохранения. Если сервер его не
 подтвердил, logout отменяется до HTTP-запроса и disconnect, текущая сессия
 остаётся открытой, а dirty-состояние можно отправить повторно.

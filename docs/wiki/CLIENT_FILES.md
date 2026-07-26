@@ -6,6 +6,13 @@
 
 Загрузчик параллельно получает каталог коллайдеров и все 60 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
 
+JS-части и vendor-библиотеки пока загружаются до авторизации, но тяжёлый
+3D-runtime отделён от auth shell: данные мира, PBR-материалы, текстуры,
+модель игрока и GLB начинают загружаться только после выбора или создания
+персонажа. Состояния `data-world-runtime` (`deferred`, `loading`, `ready`,
+`error`) и `data-world-materials="ready"` на `<body>` используются для
+диагностики этой границы.
+
 При добавлении, удалении или переименовании JS-части нужно обязательно синхронно обновить `GAME_SCRIPT_PARTS`: каталог не сканируется автоматически.
 
 ## JS-части
@@ -89,7 +96,8 @@ npm run check:client-state
 отмену logout/switch при неудачном финальном save и single-flight выбора
 персонажа. `check-client-state-integrity.js` исполняет authority cleanup,
 context-aware join-waiters, same-room ack guard, позиционную политику, полный
-input/camera reset, добычу и server deadman. Fake socket и fake timers исполняют
+input/camera reset, добычу, server deadman и контракт отложенного world
+bootstrap. Fake socket и fake timers исполняют
 сам single-flight join, поздние callback/timeout и управляемый reconnect.
 Ранние action guards дополнительно закреплены анализом исходного контракта;
 проверка не является полной браузерной симуляцией.

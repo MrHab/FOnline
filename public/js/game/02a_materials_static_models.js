@@ -462,7 +462,9 @@
   const useReliefLayerNormals = !!reliefTextureBudget.layerNormals;
   const useReliefDisplacement = !!reliefTextureBudget.displacement;
   const reliefGroundDisplacementScale = useReliefDisplacement ? (graphicsQuality === 'ultra' ? 0.155 : 0.112) : 0.0;
-  const mats = {
+  // Keep texture-backed world materials out of the lightweight auth shell.
+  function createWorldMaterialSet() {
+    const created = {
     // v7.52: гамма переведена в сухую диорамную пустошь как на референсе.
     // Разные технические типы клеток больше не дают шахматный рисунок: базовая
     // земля почти единая, а различия создаются декалями, дорогами, водой и объектами.
@@ -591,11 +593,43 @@
     realScaleMixedFloor: matWoodBricksMaterial('wood_bricks_floor', { repeat: 2.2, normalAmount: 0.78, bumpScale: 0.034, roughness: 0.93 }),
     red: new THREE.MeshBasicMaterial({ color: 0xd64a35 }),
     green: new THREE.MeshBasicMaterial({ color: 0x74bf47 }),
-    black: new THREE.MeshBasicMaterial({ color: 0x090909 }),
-    marker: new THREE.MeshBasicMaterial({ color: 0xd8bd6e, transparent: true, opacity: 0.55, depthWrite: false })
-  };
+    black: new THREE.MeshBasicMaterial({ color: 0x090909 })
+    };
+    Object.values(created).forEach(markSharedMaterial);
+    return created;
+  }
 
-  Object.values(mats).forEach(markSharedMaterial);
+  let worldMaterialSet = null;
+  function ensureWorldMaterials() {
+    if (worldMaterialSet) return worldMaterialSet;
+    const created = createWorldMaterialSet();
+    registerDayNightWorldMaterials(created);
+    worldMaterialSet = created;
+    document.body.dataset.worldMaterials = 'ready';
+    return worldMaterialSet;
+  }
+
+  const mats = new Proxy(Object.create(null), {
+    get(_target, key) {
+      return ensureWorldMaterials()[key];
+    },
+    has(_target, key) {
+      return key in ensureWorldMaterials();
+    },
+    ownKeys() {
+      return Reflect.ownKeys(ensureWorldMaterials());
+    },
+    getOwnPropertyDescriptor(_target, key) {
+      const materialSet = ensureWorldMaterials();
+      if (!(key in materialSet)) return undefined;
+      return {
+        configurable: true,
+        enumerable: true,
+        value: materialSet[key],
+        writable: false
+      };
+    }
+  });
 
   const STATIC_MODEL_URLS = {
     barrel: '/assets/models/wasteland/rust_barrel_v1.glb',
@@ -814,10 +848,17 @@
   }
 
   function staticModelState(key) {
-    if (!staticModelStates[key]) {
-      staticModelStates[key] = { source: null, loading: false, failed: false, pending: [] };
+    const stateKey = STATIC_MODEL_URLS[key] || key;
+    if (!staticModelStates[stateKey]) {
+      staticModelStates[stateKey] = {
+        source: null,
+        loading: false,
+        failed: false,
+        pending: [],
+        promise: null
+      };
     }
-    return staticModelStates[key];
+    return staticModelStates[stateKey];
   }
 
   function staticModelMaterialProfile(name = '') {
@@ -1197,38 +1238,51 @@ varying float vInstanceOpacity;`
     }
     const state = staticModelState(key);
     if (!state.pending.some(entry => entry.holder === holder)) {
-      state.pending.push({ holder, opts });
+      state.pending.push({ holder, key, opts });
     }
     requestStaticModel(key);
   }
 
   function requestStaticModel(key) {
-    if (usesFastModuleBlockRenderer(key)) return;
+    if (usesFastModuleBlockRenderer(key)) return Promise.resolve(null);
     const url = STATIC_MODEL_URLS[key];
-    if (!url) return;
+    if (!url) return Promise.resolve(null);
     const state = staticModelState(key);
-    if (state.source || state.loading || state.failed) return;
+    if (state.source) return Promise.resolve(state.source);
+    if (state.promise) return state.promise;
+    if (state.failed) return Promise.resolve(null);
     if (!THREE.GLTFLoader) {
       state.failed = true;
       console.warn('GLTFLoader is unavailable; static GLB models cannot be loaded.');
-      return;
+      return Promise.resolve(null);
     }
     state.loading = true;
     const loader = new THREE.GLTFLoader();
-    loader.load(url, gltf => {
-      const source = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
-      state.source = prepareStaticModelObject(source || null);
-      state.loading = false;
-      const pending = state.pending.splice(0);
-      pending.forEach(entry => {
-        if (entry && entry.holder && entry.holder.parent) applyStaticModel(entry.holder, key, entry.opts || {});
+    state.promise = new Promise(resolve => {
+      loader.load(url, gltf => {
+        const source = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
+        state.source = prepareStaticModelObject(source || null);
+        state.loading = false;
+        const pending = state.pending.splice(0);
+        pending.forEach(entry => {
+          if (entry && entry.holder && entry.holder.parent) {
+            applyStaticModel(entry.holder, entry.key || key, entry.opts || {});
+          }
+        });
+        resolve(state.source);
+      }, undefined, err => {
+        state.loading = false;
+        state.failed = true;
+        state.pending.length = 0;
+        console.warn('Failed to load static GLB model:', key, err);
+        resolve(null);
       });
-    }, undefined, err => {
-      state.loading = false;
-      state.failed = true;
-      state.pending.length = 0;
-      console.warn('Failed to load static GLB model:', key, err);
     });
+    return state.promise;
+  }
+
+  function preloadStaticWorldModels() {
+    return Promise.all(Object.keys(STATIC_MODEL_URLS).map(requestStaticModel));
   }
 
   function makeStaticModelGroup(key, x, z, angle = 0, kind = key, opts = {}) {
@@ -1910,29 +1964,29 @@ varying float vInstanceOpacity;`
     return true;
   }
 
-  Object.keys(STATIC_MODEL_URLS).forEach(requestStaticModel);
-
   // v7.74.40: terrain-specific moonlit night response. The base relief ground, road/dust
   // decals and baked AO now get a mild warm moonlit tint at night. This is not
   // a heavy fullscreen darkener; only terrain layers are corrected, so the
   // lокация remains playable and brighter than the old black-night variant.
-  registerDayNightTerrainMaterial(mats.settlementBack, { dayColor: 0xffffff, nightColor: 0xb99b70 });
-  registerDayNightTerrainMaterial(mats.wastelandBack, { dayColor: 0xffffff, nightColor: 0xb79a70 });
-  registerDayNightTerrainMaterial(mats.grassA, { nightColor: 0xb6986d });
-  registerDayNightTerrainMaterial(mats.grassB, { nightColor: 0xb69970 });
-  registerDayNightTerrainMaterial(mats.darkGrass, { nightColor: 0x8f7355 });
-  registerDayNightTerrainMaterial(mats.path, { nightColor: 0xb99667 });
-  registerDayNightTerrainMaterial(mats.traderLayerSand, { dayColor: 0xffffff, nightColor: 0xb69a72, nightOpacity: 0.78 });
-  registerDayNightTerrainMaterial(mats.traderLayerCracks, { dayColor: 0xffffff, nightColor: 0xa78a67, nightOpacity: 0.68 });
-  registerDayNightTerrainMaterial(mats.traderLayerGravel, { dayColor: 0xffffff, nightColor: 0xa98e6b, nightOpacity: 0.74 });
-  registerDayNightTerrainMaterial(mats.traderLayerTire, { dayColor: 0xffffff, nightColor: 0x907861, nightOpacity: 0.66 });
-  registerDayNightTerrainMaterial(mats.traderLayerOil, { dayColor: 0xffffff, nightColor: 0x766452, nightOpacity: 0.52 });
-  registerDayNightTerrainMaterial(mats.traderLayerRoad, { dayColor: 0xffffff, nightColor: 0xb49a72, nightOpacity: 0.64 });
-  registerDayNightTerrainMaterial(mats.traderLayerShadow, { dayColor: 0xffffff, nightColor: 0xc0a37a, nightOpacity: 0.46 });
-  registerDayNightTerrainMaterial(mats.traderContactAO, { dayColor: 0xffffff, nightColor: 0xbda17a, nightOpacity: 0.64 });
-  // The lantern glow becomes more visible at night, instead of being dimmed
-  // together with the ground. It gives the trader yard a readable focal point.
-  registerDayNightTerrainMaterial(mats.traderWarmGlow, { dayColor: 0xffb45d, nightColor: 0xffd18a, dayOpacity: 0.42, nightOpacity: 0.72 });
+  function registerDayNightWorldMaterials(materialSet) {
+    registerDayNightTerrainMaterial(materialSet.settlementBack, { dayColor: 0xffffff, nightColor: 0xb99b70 });
+    registerDayNightTerrainMaterial(materialSet.wastelandBack, { dayColor: 0xffffff, nightColor: 0xb79a70 });
+    registerDayNightTerrainMaterial(materialSet.grassA, { nightColor: 0xb6986d });
+    registerDayNightTerrainMaterial(materialSet.grassB, { nightColor: 0xb69970 });
+    registerDayNightTerrainMaterial(materialSet.darkGrass, { nightColor: 0x8f7355 });
+    registerDayNightTerrainMaterial(materialSet.path, { nightColor: 0xb99667 });
+    registerDayNightTerrainMaterial(materialSet.traderLayerSand, { dayColor: 0xffffff, nightColor: 0xb69a72, nightOpacity: 0.78 });
+    registerDayNightTerrainMaterial(materialSet.traderLayerCracks, { dayColor: 0xffffff, nightColor: 0xa78a67, nightOpacity: 0.68 });
+    registerDayNightTerrainMaterial(materialSet.traderLayerGravel, { dayColor: 0xffffff, nightColor: 0xa98e6b, nightOpacity: 0.74 });
+    registerDayNightTerrainMaterial(materialSet.traderLayerTire, { dayColor: 0xffffff, nightColor: 0x907861, nightOpacity: 0.66 });
+    registerDayNightTerrainMaterial(materialSet.traderLayerOil, { dayColor: 0xffffff, nightColor: 0x766452, nightOpacity: 0.52 });
+    registerDayNightTerrainMaterial(materialSet.traderLayerRoad, { dayColor: 0xffffff, nightColor: 0xb49a72, nightOpacity: 0.64 });
+    registerDayNightTerrainMaterial(materialSet.traderLayerShadow, { dayColor: 0xffffff, nightColor: 0xc0a37a, nightOpacity: 0.46 });
+    registerDayNightTerrainMaterial(materialSet.traderContactAO, { dayColor: 0xffffff, nightColor: 0xbda17a, nightOpacity: 0.64 });
+    // The lantern glow becomes more visible at night, instead of being dimmed
+    // together with the ground. It gives the trader yard a readable focal point.
+    registerDayNightTerrainMaterial(materialSet.traderWarmGlow, { dayColor: 0xffb45d, nightColor: 0xffd18a, dayOpacity: 0.42, nightOpacity: 0.72 });
+  }
 
   const detailPlaneGeom = markSharedGeometry(new THREE.PlaneGeometry(1, 1));
   const pebbleGeom = markSharedGeometry(new THREE.DodecahedronGeometry(0.075, 0));

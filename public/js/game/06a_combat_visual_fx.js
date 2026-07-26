@@ -1,5 +1,13 @@
   // ===== MARKERS / EFFECTS =====
-  const marker = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.34, 28), mats.marker);
+  const marker = new THREE.Mesh(
+    new THREE.RingGeometry(0.28, 0.34, 28),
+    markSharedMaterial(new THREE.MeshBasicMaterial({
+      color: 0xd8bd6e,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false
+    }))
+  );
   marker.rotation.x = -Math.PI / 2;
   marker.position.y = 0.035;
   marker.visible = false;

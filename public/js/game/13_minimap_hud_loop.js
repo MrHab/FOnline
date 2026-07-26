@@ -365,6 +365,44 @@
     if (forceMinimap) maybeDrawHudMinimaps(dt, true);
   }
 
+  let worldDataReadyPromise = null;
+  let worldRuntimeReadyPromise = null;
+  document.body.dataset.worldRuntime = 'deferred';
+
+  // Auth and character selection only need UI code. World data, textures and
+  // models enter through this single-flight boundary after character choice.
+  function ensureWorldDataReady() {
+    if (!worldDataReadyPromise) {
+      worldDataReadyPromise = Promise.resolve()
+        .then(() => loadWorldDataConfig())
+        .catch(error => {
+          worldDataReadyPromise = null;
+          throw error;
+        });
+    }
+    return worldDataReadyPromise;
+  }
+
+  function ensureWorldRuntimeReady() {
+    if (!worldRuntimeReadyPromise) {
+      document.body.dataset.worldRuntime = 'loading';
+      worldRuntimeReadyPromise = ensureWorldDataReady()
+        .then(async () => {
+          ensureWorldMaterials();
+          createPlayerModel();
+          await preloadStaticWorldModels();
+          document.body.dataset.worldRuntime = 'ready';
+          return true;
+        })
+        .catch(error => {
+          worldRuntimeReadyPromise = null;
+          document.body.dataset.worldRuntime = 'error';
+          throw error;
+        });
+    }
+    return worldRuntimeReadyPromise;
+  }
+
   // ===== LOOP =====
   let renderRecoveryWarned = false;
   let renderRetryFailedWarned = false;
@@ -618,13 +656,9 @@
   addLog('TAB — Пип-бой/статус, I — инвентарь, B — навыки/перки, P — крафт, X — режим стрельбы, C — присесть/встать, M — карта, F — обыск тела, G/E — поднять предмет с земли, E — торговля/переход, Space — забрать весь лут, F1 — подсказки.', null, 'system');
   addLog('Быстрые слоты: перетащите предмет из инвентаря, перенесите между кнопками или вытащите за границы кнопки, чтобы очистить.', null, 'system');
   initQuantityPanel();
-  const worldDataReady = loadWorldDataConfig();
   initGlobalMapControls();
   initMobileControls();
-  worldDataReady.finally(() => {
-    buildWorld();
-    return bootstrapProfile();
-  });
+  bootstrapProfile();
   setTimeout(resize, 80);
   setTimeout(resize, 350);
   requestAnimationFrame(loop);

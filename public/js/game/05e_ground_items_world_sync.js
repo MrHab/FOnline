@@ -211,14 +211,14 @@
   const enemies = [];
   const enemyMeshes = [];
   const ENEMY_TYPES = [
-    { name: 'Рейдер', hp: 55, atk: 9, speed: 2.45, xp: 25, money: 5, mat: mats.enemy2, scale: 1.0, visual: 'raider' },
-    { name: 'Гуль', hp: 42, atk: 7, speed: 2.85, xp: 18, money: 2, mat: mats.enemy, scale: 0.92, visual: 'ghoul' },
-    { name: 'Супермутант', hp: 120, atk: 18, speed: 1.75, xp: 70, money: 14, mat: mats.enemy3, scale: 1.32, visual: 'mutant' },
-    { name: 'Пепельный волк', hp: 36, atk: 8, speed: 3.15, xp: 20, money: 1, mat: mats.enemy, scale: 0.82, visual: 'wolf' },
-    { name: 'Радскорпион', hp: 76, atk: 14, speed: 1.9, xp: 36, money: 2, mat: mats.enemy3, scale: 1.05, visual: 'radscorpion' },
-    { name: 'Большой мутировавший муравей', hp: 52, atk: 10, speed: 2.55, xp: 24, money: 1, mat: mats.enemy, scale: 0.9, visual: 'mutantAnt' },
-    { name: 'Геккон пустоши', hp: 46, atk: 9, speed: 2.7, xp: 22, money: 1, mat: mats.enemy2, scale: 0.92, visual: 'gecko' },
-    { name: 'Огненный геккон', hp: 62, atk: 12, speed: 2.42, xp: 34, money: 2, mat: mats.enemy3, scale: 1.02, visual: 'fireGecko' }
+    { name: 'Рейдер', hp: 55, atk: 9, speed: 2.45, xp: 25, money: 5, scale: 1.0, visual: 'raider' },
+    { name: 'Гуль', hp: 42, atk: 7, speed: 2.85, xp: 18, money: 2, scale: 0.92, visual: 'ghoul' },
+    { name: 'Супермутант', hp: 120, atk: 18, speed: 1.75, xp: 70, money: 14, scale: 1.32, visual: 'mutant' },
+    { name: 'Пепельный волк', hp: 36, atk: 8, speed: 3.15, xp: 20, money: 1, scale: 0.82, visual: 'wolf' },
+    { name: 'Радскорпион', hp: 76, atk: 14, speed: 1.9, xp: 36, money: 2, scale: 1.05, visual: 'radscorpion' },
+    { name: 'Большой мутировавший муравей', hp: 52, atk: 10, speed: 2.55, xp: 24, money: 1, scale: 0.9, visual: 'mutantAnt' },
+    { name: 'Геккон пустоши', hp: 46, atk: 9, speed: 2.7, xp: 22, money: 1, scale: 0.92, visual: 'gecko' },
+    { name: 'Огненный геккон', hp: 62, atk: 12, speed: 2.42, xp: 34, money: 2, scale: 1.02, visual: 'fireGecko' }
   ];
 
   function enemyVisualFromNetworkSnapshot(saved = {}, fallback = '') {

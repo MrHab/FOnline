@@ -64,11 +64,33 @@ function buildPasswordResetEmail({ publicGameUrl, login, token, ttlMs }) {
   };
 }
 
+function createPasswordResetRecord(token, ttlMs, now = Date.now()) {
+  return {
+    tokenHash: passwordResetTokenHash(token),
+    expiresAt: Number(now) + normalizePasswordResetTtlMs(ttlMs)
+  };
+}
+
+function passwordResetRecordIsValid(reset, token, now = Date.now()) {
+  if (!reset || !token) return false;
+  const expiresAt = Number(reset.expiresAt);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Number(now)) return false;
+  const suppliedHash = passwordResetTokenHash(token);
+  const storedHash = String(reset.tokenHash || '').toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(storedHash)) return false;
+  return crypto.timingSafeEqual(
+    Buffer.from(suppliedHash, 'hex'),
+    Buffer.from(storedHash, 'hex')
+  );
+}
+
 module.exports = {
   DEFAULT_PASSWORD_RESET_TTL_MS,
   MIN_PASSWORD_RESET_TTL_MS,
   buildPasswordResetEmail,
+  createPasswordResetRecord,
   formatPasswordResetTtl,
   normalizePasswordResetTtlMs,
+  passwordResetRecordIsValid,
   passwordResetTokenHash
 };

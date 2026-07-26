@@ -1328,6 +1328,15 @@ function assertSocketAndClientContract() {
     serverSource.indexOf('function handleServerGlobalTravelArrival('),
     serverSource.indexOf('function globalTravelMemberIsFollower(', serverSource.indexOf('function handleServerGlobalTravelArrival('))
   );
+  const arrivalSocketHandler = serverSource.slice(
+    serverSource.indexOf("socket.on('globalTravelArrive'"),
+    serverSource.indexOf("socket.on('shoot'", serverSource.indexOf("socket.on('globalTravelArrive'"))
+  );
+  assert(arrivalSocketHandler.includes('handleServerGlobalTravelArrival(socket, data, ack)')
+    && !arrivalSocketHandler.includes('globalTravelSessions')
+    && !arrivalSocketHandler.includes('emitGlobalTravelToParty')
+    && !arrivalSocketHandler.includes('pendingLocationTransition'),
+  'globalTravelArrive socket handler contains a second unreachable implementation instead of one authoritative delegate');
   assert(arrivalHandler.includes('find(member => serverPlayerActiveWorldPartyTask(member) || member.attachedPartyTaskId)'),
     'a legacy independent route can arrive with a member attached to a world party');
   const travelDescriptor = serverSource.slice(

@@ -136,6 +136,39 @@ for (const file of partNames) {
 const combined = partFiles.map(file => fs.readFileSync(file, 'utf8')).join('\n');
 new Function(combined);
 
+const topLevelFunctionDeclarations = [];
+for (const file of partFiles.slice(1)) {
+  const relative = path.relative(root, file);
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = lines[index].match(/^(?: {2})?function\s+([A-Za-z_$][\w$]*)\s*\(/);
+    if (!match) continue;
+    topLevelFunctionDeclarations.push({
+      name: match[1],
+      file: relative,
+      line: index + 1
+    });
+  }
+}
+const duplicateTopLevelFunctions = [...new Set(
+  topLevelFunctionDeclarations
+    .filter((entry, index, rows) => rows.findIndex(candidate => candidate.name === entry.name) !== index)
+    .map(entry => entry.name)
+)].sort();
+assert.deepStrictEqual(
+  duplicateTopLevelFunctions,
+  [],
+  `Duplicate top-level client function declaration(s): ${
+    duplicateTopLevelFunctions.map(name => {
+      const locations = topLevelFunctionDeclarations
+        .filter(entry => entry.name === name)
+        .map(entry => `${entry.file}:${entry.line}`)
+        .join(', ');
+      return `${name} (${locations})`;
+    }).join('; ')
+  }`
+);
+
 const nativeDialogCallPattern = /\b(?:window\s*\.\s*)?(?:confirm|alert|prompt)\s*\(/g;
 const publicUiFiles = walkFiles(publicDir)
   .filter(file => /\.(?:html|js)$/i.test(file))
@@ -564,6 +597,7 @@ Promise.all([
   .then(() => {
     console.log('Client JS loader syntax OK:', loaderFile);
     console.log('Client JS reconstructed bundle syntax OK:', partFiles.length, 'parts');
+    console.log('Client JS top-level function names are unique');
     console.log('Client JS native dialog guard OK');
     console.log('Client save generation drain OK');
     console.log('Client save transition abort policy OK');

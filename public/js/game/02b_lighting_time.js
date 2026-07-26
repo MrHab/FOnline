@@ -311,12 +311,12 @@
   let lastLightingSecond = -1;
   let gameClockHour = 12;
 
-  function clamp01(v) {
+  function clampLighting01(v) {
     return Math.max(0, Math.min(1, Number(v) || 0));
   }
 
   function smooth01(v) {
-    v = clamp01(v);
+    v = clampLighting01(v);
     return v * v * (3 - 2 * v);
   }
 
@@ -336,7 +336,7 @@
     const sunAltitude = Math.sin((hourFloat - 6) / 24 * Math.PI * 2);
     const daylight = smooth01((sunAltitude + 0.18) / 0.83);
     const twilight = smooth01(1 - Math.abs(hourFloat - 6) / 2.2) + smooth01(1 - Math.abs(hourFloat - 18) / 2.2);
-    return { daylight, night: 1 - daylight, twilight: clamp01(twilight) };
+    return { daylight, night: 1 - daylight, twilight: clampLighting01(twilight) };
   }
 
   function updateTraderInteriorLightLevels(force = false) {
@@ -403,7 +403,7 @@
     const sunAltitude = Math.sin((info.hourFloat - 6) / 24 * Math.PI * 2);
     const daylight = smooth01((sunAltitude + 0.18) / 0.83);
     const twilight = smooth01(1 - Math.abs(info.hourFloat - 6) / 2.2) + smooth01(1 - Math.abs(info.hourFloat - 18) / 2.2);
-    const twilightClamped = clamp01(twilight);
+    const twilightClamped = clampLighting01(twilight);
     const night = 1 - daylight;
 
     _timeColorA.copy(dayNightColors.skyNight).lerp(dayNightColors.skyDay, daylight);

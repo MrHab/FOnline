@@ -123,6 +123,7 @@ const WORLD_PARTY_SPEED_CAPS = {
   monster: 48,
   default: 50
 };
+const PUBLIC_PARTY_MOTION_LOOKAHEAD_MS = 7500;
 const CARAVAN_PUBLIC_THREAT_RISK = 48;
 const PARTY_CLASH_ENGAGE_DISTANCE_KM = 5;
 const PARTY_CLASH_SITE_LINK_DISTANCE_KM = 9;
@@ -6405,6 +6406,45 @@ function createWastelandSimulation(options = {}) {
     })).slice(0, worldPartyPlayerLimit(party)) : [];
   }
 
+  function publicPartyMovementRoutePoints(party = {}) {
+    const routeIndex = Math.max(1, Math.floor(Number(party.infrastructureRouteIndex || 1)));
+    const route = [{ x: party.x, y: party.y }, ...(
+      Array.isArray(party.infrastructureRoutePoints) ? party.infrastructureRoutePoints : []
+    ).slice(routeIndex, routeIndex + 64)]
+      .map(point => ({ x: Number(point?.x || 0), y: Number(point?.y || 0) }))
+      .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y));
+    if (!route.length) return [{ x: 0, y: 0 }];
+
+    const pointKm = Math.max(0.001, mapPointKm(getGlobalMap()));
+    const lookaheadWorldHours = PUBLIC_PARTY_MOTION_LOOKAHEAD_MS / gameDayRealMs * 24;
+    let remainingPoints = Math.max(0, effectiveWorldPartySpeedKmh(party) * lookaheadWorldHours / pointKm);
+    const visibleRoute = [route[0]];
+    for (let index = 1; index < route.length && remainingPoints > 0.001; index++) {
+      const from = visibleRoute[visibleRoute.length - 1];
+      const to = route[index];
+      const distance = Math.hypot(to.x - from.x, to.y - from.y);
+      if (distance <= 0.001) continue;
+      if (distance <= remainingPoints + 0.001) {
+        visibleRoute.push(to);
+        remainingPoints = Math.max(0, remainingPoints - distance);
+        continue;
+      }
+      const progress = remainingPoints / distance;
+      visibleRoute.push({
+        x: from.x + (to.x - from.x) * progress,
+        y: from.y + (to.y - from.y) * progress
+      });
+      remainingPoints = 0;
+    }
+    return visibleRoute
+      .map(point => ({
+        x: Number(point.x.toFixed(2)),
+        y: Number(point.y.toFixed(2))
+      }))
+      .filter((point, index, rows) => index === 0
+        || Math.hypot(point.x - rows[index - 1].x, point.y - rows[index - 1].y) > 0.01);
+  }
+
   function publicParty(party = {}) {
     const threat = partyThreatInfo(party);
     const destination = state.sites[party.destinationSiteId];
@@ -6416,6 +6456,7 @@ function createWastelandSimulation(options = {}) {
     const playerMembers = partyPlayerPublicMembers(party);
     const playerMemberLimit = worldPartyPlayerLimit(party);
     const npcMemberCount = Math.max(1, Math.round(Number(party.members || 1)));
+    const movementRoutePoints = publicPartyMovementRoutePoints(party);
     return {
       id: party.id,
       name: party.name,
@@ -6431,6 +6472,7 @@ function createWastelandSimulation(options = {}) {
       x: Number(Number(party.x || 0).toFixed(2)),
       y: Number(Number(party.y || 0).toFixed(2)),
       speedKmh: Number(effectiveWorldPartySpeedKmh(party).toFixed(1)),
+      movementRoutePoints,
       homeSiteId: party.homeSiteId || '',
       homeSiteName: home?.name || '',
       destinationSiteId: party.destinationSiteId || '',
@@ -11641,6 +11683,7 @@ function createWastelandSimulation(options = {}) {
 
   function publicState() {
     cleanupWorldZonesForSingleReality();
+    const serverNow = Date.now();
     const publicTask = task => {
       const target = task?.siteId ? state.sites[task.siteId] : null;
       const targetParty = task?.partyId ? state.parties[task.partyId] : null;
@@ -11721,6 +11764,8 @@ function createWastelandSimulation(options = {}) {
       worldHour: Number(Number(state.worldHour || 0).toFixed(2)),
       gameDayRealMs,
       updatedAt: state.updatedAt,
+      sampledAt: Math.min(serverNow, Math.max(0, Number(state.lastTickAt || serverNow))),
+      serverNow,
       factions: state.factions,
       sites: Object.values(state.sites).filter(siteVisibleOnPublicGlobalMap).map(site => {
         const productionNeedReason = resourceSiteSupportReason(site);

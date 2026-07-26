@@ -837,6 +837,155 @@ function assertInputDeadman() {
   ]);
 }
 
+function assertGlobalMapMotionIntegrity() {
+  const motionRuntime = new Function([
+    'let now = 100;',
+    'const performance = { now: () => now };',
+    'const GLOBAL_MAP_POINT_KM = 1 / 3;',
+    'const GLOBAL_MAP_WORLD_DAY_REAL_MS = 60000;',
+    'const WASTELAND_SIM_MAX_EXTRAPOLATION_MS = 7500;',
+    'let wastelandSimLastAppliedAt = 0;',
+    'let WASTELAND_SIM_STATE = { gameDayRealMs: 60000, sampledAt: 0, serverNow: 0, sampleAgeMs: 0 };',
+    'function clampGlobalMapPoint(x, y) {',
+    '  const point = x && typeof x === "object" ? x : { x, y };',
+    '  return { x: Number(point?.x || 0), y: Number(point?.y || 0) };',
+    '}',
+    'function globalMapPointDistance(left, right) {',
+    '  return Math.hypot(Number(left?.x || 0) - Number(right?.x || 0), Number(left?.y || 0) - Number(right?.y || 0));',
+    '}',
+    'function globalMapWorldPartyDestroyed() { return false; }',
+    'function globalMapWorldPartyDestinationPoint() { return { x: 140, y: 140 }; }',
+    functionSource(globalMapState, 'globalMapRouteDistance'),
+    functionSource(globalMapState, 'globalMapPointAtRouteProgress'),
+    functionSource(globalMapState, 'globalMapWastelandSnapshotIsStale'),
+    functionSource(globalMapState, 'globalMapWastelandMotionClock'),
+    functionSource(globalMapWorldStatus, 'globalMapEstimatedWorldHoursSinceSimUpdate'),
+    functionSource(globalMapWorldStatus, 'globalMapWorldPartyMotionRoute'),
+    functionSource(globalMapWorldStatus, 'globalMapWorldPartyDisplayPoint'),
+    'function apply(sim) {',
+    '  if (globalMapWastelandSnapshotIsStale(WASTELAND_SIM_STATE, sim)) return false;',
+    '  const clock = globalMapWastelandMotionClock(WASTELAND_SIM_STATE, sim, wastelandSimLastAppliedAt, performance.now());',
+    '  wastelandSimLastAppliedAt = clock.appliedAt;',
+    '  WASTELAND_SIM_STATE = { ...WASTELAND_SIM_STATE, ...sim, ...clock };',
+    '  return true;',
+    '}',
+    'return {',
+    '  setNow: value => { now = Number(value || 0); },',
+    '  apply,',
+    '  display: party => globalMapWorldPartyDisplayPoint(party),',
+    '  clock: () => ({ ...WASTELAND_SIM_STATE, appliedAt: wastelandSimLastAppliedAt })',
+    '};'
+  ].join('\n'))();
+  const movingParty = {
+    x: 100,
+    y: 100,
+    speedKmh: 1,
+    state: 'moving',
+    movementRoutePoints: [
+      { x: 100, y: 100 },
+      { x: 106, y: 100 },
+      { x: 106, y: 110 }
+    ]
+  };
+
+  assert.strictEqual(motionRuntime.apply({ gameDayRealMs: 60000 }), true,
+    'an initial legacy wasteland snapshot without motion clocks was rejected');
+  motionRuntime.setNow(4000);
+  assert.deepStrictEqual(motionRuntime.display(movingParty), { x: 100, y: 100 },
+    'pure legacy wasteland mode still extrapolates and resets its marker');
+  motionRuntime.setNow(4100);
+  assert.strictEqual(
+    motionRuntime.apply({ sampledAt: 1000, serverNow: 1000, gameDayRealMs: 60000 }),
+    true,
+    'a fresh wasteland snapshot was rejected'
+  );
+  assert.deepStrictEqual(motionRuntime.display(movingParty), { x: 100, y: 100 },
+    'a fresh world-party sample must start at its authoritative point');
+  motionRuntime.setNow(9100);
+  assert.deepStrictEqual(motionRuntime.display(movingParty), { x: 106, y: 100 },
+    'attached world-party motion does not reach the authoritative waypoint smoothly');
+  assert.strictEqual(
+    motionRuntime.apply({ sampledAt: 1000, serverNow: 6000, gameDayRealMs: 60000 }),
+    true,
+    'a newer read of the same wasteland sample was rejected'
+  );
+  assert.deepStrictEqual(motionRuntime.display(movingParty), { x: 106, y: 100 },
+    'a duplicate wasteland snapshot rewound attached world-party motion');
+  const acceptedClock = motionRuntime.clock();
+  assert.strictEqual(motionRuntime.apply({ sampledAt: 900, serverNow: 7000, gameDayRealMs: 60000 }), false,
+    'an out-of-order wasteland snapshot was accepted');
+  assert.deepStrictEqual(motionRuntime.clock(), acceptedClock,
+    'rejecting an out-of-order wasteland snapshot still mutated its motion clock');
+  assert.strictEqual(motionRuntime.apply({ sampledAt: 1000, serverNow: 5000, gameDayRealMs: 60000 }), false,
+    'an older server read of the same wasteland sample was accepted');
+  assert.deepStrictEqual(motionRuntime.clock(), acceptedClock,
+    'rejecting an older server read still rewound its motion clock');
+  motionRuntime.setNow(11100);
+  const afterTurn = motionRuntime.display(movingParty);
+  assert(Math.abs(afterTurn.x - 106) < 0.0001 && Math.abs(afterTurn.y - 102.4) < 0.0001,
+    'attached world-party motion cut across an authoritative route turn');
+  assert.deepStrictEqual(motionRuntime.display({
+    ...movingParty,
+    movementRoutePoints: [{ x: 100, y: 100 }]
+  }), { x: 100, y: 100 }, 'an explicit stopped world-party route extrapolated toward a legacy destination');
+  const modernClock = motionRuntime.clock();
+  assert.strictEqual(motionRuntime.apply({ gameDayRealMs: 60000 }), false,
+    'a legacy wasteland snapshot downgraded an established timestamped stream');
+  assert.deepStrictEqual(motionRuntime.clock(), modernClock,
+    'rejecting a legacy schema downgrade still mutated the motion clock');
+  motionRuntime.setNow(12000);
+  assert.deepStrictEqual(motionRuntime.display(movingParty), { x: 106, y: 103 },
+    'a rejected legacy schema downgrade still rolled the marker back');
+
+  const playerPointRuntime = new Function([
+    'const globalMapState = { playerX: 0, playerY: 0, selectedX: 0, selectedY: 0 };',
+    'const attached = { x: 10, y: 20 };',
+    'function globalMapAttachedParty() { return attached; }',
+    'function globalMapWorldPartyDisplayPoint() { return { x: 11, y: 22 }; }',
+    'function clampGlobalMapPoint(x, y) { return { x: Number(x || 0), y: Number(y || 0) }; }',
+    functionSource(globalMapState, 'globalMapPlayerPoint'),
+    'return { point: globalMapPlayerPoint(), state: globalMapState };'
+  ].join('\n'))();
+  assert.deepStrictEqual(playerPointRuntime.point, { x: 11, y: 22 },
+    'attached player marker still uses raw world-party coordinates');
+  assert.strictEqual(playerPointRuntime.state.playerX, 11,
+    'attached display point was not retained as the player world point');
+
+  const progressRuntime = new Function([
+    functionSource(globalMapState, 'globalMapClamp01'),
+    functionSource(globalMapState, 'globalMapSafeNumber'),
+    functionSource(globalMapState, 'globalMapServerTravelProgress'),
+    'return globalMapServerTravelProgress;'
+  ].join('\n'))();
+  assert.strictEqual(progressRuntime({
+    durationMs: 2000,
+    elapsedMs: 200,
+    serverNow: 900000,
+    startedAt: 100
+  }, 2, 200, 0), 0.15, 'travel ACK progress ignored authoritative elapsed time plus half-RTT');
+  assert.strictEqual(progressRuntime({ durationMs: 2000, elapsedMs: 200 }, 2, 0, 0.25), 0.25,
+    'travel ACK progress rewound optimistic client movement');
+
+  const startTravelBody = functionBody(globalMapTravel, 'startGlobalTravel');
+  const followerTravelBody = functionBody(globalMapTravel, 'handleGlobalTravelStarted');
+  assertContainsAll('global travel timing handshake', startTravelBody, [
+    'const requestStartedAt = performance.now()',
+    'globalMapServerTravelProgress(',
+    'optimisticProgress'
+  ]);
+  assert(!startTravelBody.includes('Date.now() - Number(ack.startedAt'),
+    'leader travel ACK still depends on browser/server wall-clock equality');
+  assert(followerTravelBody.includes('globalMapServerTravelProgress(data, duration)')
+    && !followerTravelBody.includes('Date.now() - Number(data.startedAt'),
+  'follower travel start still depends on browser/server wall-clock equality');
+  assert(functionBody(globalMapPanel, 'renderGlobalMapRuntimeFrame')
+    .includes('globalMapState.attachedPartyId'),
+  'attached world-party movement does not keep active snapshot polling');
+  assert(functionBody(server, 'serverAuthoritativeGlobalMapState')
+    .includes('travel: serverGlobalTravelPublicDescriptor(session, serverNow)'),
+  'authoritative player snapshots can still erase an active global travel session');
+}
+
 function assertBlockedGameplayGates() {
   const updateBody = functionBody(updateLoop, 'update');
   const blockedIndex = updateBody.indexOf('clientGameplayIsBlocked()');
@@ -906,8 +1055,9 @@ async function main() {
   assertInputLifecycle();
   assertHarvestIntegrity();
   assertInputDeadman();
+  assertGlobalMapMotionIntegrity();
   assertBlockedGameplayGates();
-  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, input lifecycle, harvest and dead-man switch.');
+  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map motion, input lifecycle, harvest and dead-man switch.');
 }
 
 main().catch(error => {

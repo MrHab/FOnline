@@ -76,10 +76,34 @@
   }
 
   function globalMapEstimatedWorldHoursSinceSimUpdate() {
-    if (!wastelandSimLastAppliedAt) return 0;
-    const elapsedMs = Math.max(0, performance.now() - wastelandSimLastAppliedAt);
+    if (!wastelandSimLastAppliedAt || Number(WASTELAND_SIM_STATE.sampledAt || 0) <= 0) return 0;
+    const elapsedMs = Math.min(
+      WASTELAND_SIM_MAX_EXTRAPOLATION_MS,
+      Math.max(
+        0,
+        Number(WASTELAND_SIM_STATE.sampleAgeMs || 0)
+          + Math.max(0, performance.now() - wastelandSimLastAppliedAt)
+      )
+    );
     const dayMs = Math.max(60000, Number(WASTELAND_SIM_STATE.gameDayRealMs || GLOBAL_MAP_WORLD_DAY_REAL_MS));
     return Math.max(0, elapsedMs / dayMs * 24);
+  }
+
+  function globalMapWorldPartyMotionRoute(row = {}) {
+    const base = clampGlobalMapPoint(row.x, row.y);
+    if (Array.isArray(row.movementRoutePoints)) {
+      const route = row.movementRoutePoints
+        .map(point => clampGlobalMapPoint(point?.x, point?.y))
+        .filter((point, index, rows) => index === 0 || globalMapPointDistance(rows[index - 1], point) > 0.01);
+      if (!route.length) return [base];
+      if (globalMapPointDistance(base, route[0]) > 0.05) route.unshift(base);
+      else route[0] = base;
+      return route;
+    }
+    const destination = globalMapWorldPartyDestinationPoint(row);
+    return destination && globalMapPointDistance(base, destination) > 0.001
+      ? [base, destination]
+      : [base];
   }
 
   function globalMapWorldPartyDisplayPoint(row = {}) {
@@ -87,18 +111,14 @@
     if (!row || globalMapWorldPartyDestroyed(row)) return base;
     const stateKey = String(row.state || '').toLowerCase();
     if (['engaged', 'onsite', 'staging', 'recovering', 'forming', 'destroyed'].includes(stateKey)) return base;
-    const destination = globalMapWorldPartyDestinationPoint(row);
-    if (!destination) return base;
-    const distPoints = globalMapPointDistance(base, destination);
+    const route = globalMapWorldPartyMotionRoute(row);
+    const distPoints = globalMapRouteDistance(route);
     if (distPoints <= 0.001) return base;
     const speedKmh = Math.max(0, Number(row.speedKmh || 0));
     if (speedKmh <= 0) return base;
     const travelKm = Math.min(distPoints * GLOBAL_MAP_POINT_KM, speedKmh * globalMapEstimatedWorldHoursSinceSimUpdate());
     const t = Math.max(0, Math.min(1, travelKm / Math.max(0.001, distPoints * GLOBAL_MAP_POINT_KM)));
-    return {
-      x: base.x + (destination.x - base.x) * t,
-      y: base.y + (destination.y - base.y) * t
-    };
+    return globalMapPointAtRouteProgress(route, t);
   }
 
   function globalMapProductionNeedLabel(reason = '') {
@@ -1092,4 +1112,3 @@
       });
     });
   }
-

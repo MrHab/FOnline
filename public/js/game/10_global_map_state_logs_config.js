@@ -78,6 +78,7 @@
   const GLOBAL_MAP_WORLD_DAY_REAL_MS = 60 * 60 * 1000;
   const WASTELAND_SIM_ACTIVE_FETCH_MS = 1000;
   const WASTELAND_SIM_IDLE_FETCH_MS = 5000;
+  const WASTELAND_SIM_MAX_EXTRAPOLATION_MS = 7500;
   const GLOBAL_MAP_MIN_SPEED_KMH = 16;
   const GLOBAL_MAP_MAX_SPEED_KMH = 24;
   const GLOBAL_MAP_COASTLINE = [
@@ -141,7 +142,7 @@
   ];
   let GLOBAL_MAP_CELL_OVERRIDES = new Map();
   let globalMapConfigLoaded = false;
-  let WASTELAND_SIM_STATE = { worldHour: 0, gameDayRealMs: GLOBAL_MAP_WORLD_DAY_REAL_MS, updatedAt: 0, factions: {}, sites: [], parties: [], threatZones: [], territories: [], worldZones: [], worldContacts: [], events: [], worldTasks: [], stats: {} };
+  let WASTELAND_SIM_STATE = { worldHour: 0, gameDayRealMs: GLOBAL_MAP_WORLD_DAY_REAL_MS, updatedAt: 0, sampledAt: 0, serverNow: 0, sampleAgeMs: 0, factions: {}, sites: [], parties: [], threatZones: [], territories: [], worldZones: [], worldContacts: [], events: [], worldTasks: [], stats: {} };
   let wastelandSimFetchPending = false;
   let wastelandSimLastFetchAt = 0;
   let wastelandSimLastAppliedAt = 0;
@@ -464,8 +465,47 @@
     return clearGlobalMapWorldPartyAttachmentLocal(lastParty);
   }
 
+  function globalMapWastelandSnapshotIsStale(previousState = {}, sim = {}) {
+    const previousSampledAt = Number(previousState.sampledAt);
+    const sampledAt = Number(sim.sampledAt);
+    const hasPreviousSample = Number.isFinite(previousSampledAt) && previousSampledAt > 0;
+    const hasSample = Number.isFinite(sampledAt) && sampledAt > 0;
+    if (!hasPreviousSample) return false;
+    if (!hasSample) return true;
+    if (sampledAt !== previousSampledAt) return sampledAt < previousSampledAt;
+    const previousServerNow = Number(previousState.serverNow);
+    const serverNow = Number(sim.serverNow);
+    return Number.isFinite(previousServerNow) && previousServerNow > 0
+      && Number.isFinite(serverNow) && serverNow > 0
+      && serverNow < previousServerNow;
+  }
+
+  function globalMapWastelandMotionClock(previousState = {}, sim = {}, previousAppliedAt = 0, appliedAt = performance.now()) {
+    const previousSampledAt = Math.max(0, Number(previousState.sampledAt || 0));
+    const sampledAt = Math.max(0, Number(sim.sampledAt || 0));
+    const serverNow = Math.max(sampledAt, Number(sim.serverNow || sampledAt || 0));
+    const sameSample = sampledAt > 0 && sampledAt === previousSampledAt;
+    const previousAgeMs = sameSample && previousAppliedAt
+      ? Math.max(0, Number(previousState.sampleAgeMs || 0) + Math.max(0, appliedAt - previousAppliedAt))
+      : 0;
+    const serverAgeMs = sampledAt > 0 ? Math.max(0, serverNow - sampledAt) : 0;
+    return {
+      sampledAt,
+      serverNow,
+      sampleAgeMs: sameSample ? Math.max(previousAgeMs, serverAgeMs) : serverAgeMs,
+      appliedAt
+    };
+  }
+
   function applyWastelandSimState(sim = {}) {
-    wastelandSimLastAppliedAt = performance.now();
+    if (globalMapWastelandSnapshotIsStale(WASTELAND_SIM_STATE, sim)) return false;
+    const motionClock = globalMapWastelandMotionClock(
+      WASTELAND_SIM_STATE,
+      sim,
+      wastelandSimLastAppliedAt,
+      performance.now()
+    );
+    wastelandSimLastAppliedAt = motionClock.appliedAt;
     const previousVisualSignature = WASTELAND_SIM_STATE?.visualSignature || '';
     const previousAttachedParty = Array.isArray(WASTELAND_SIM_STATE?.parties)
       ? WASTELAND_SIM_STATE.parties.find(row => String(row?.id || '') === String(globalMapState.attachedPartyId || '')) || null
@@ -474,6 +514,9 @@
       worldHour: Number(sim.worldHour || 0),
       gameDayRealMs: Math.max(60000, Number(sim.gameDayRealMs || GLOBAL_MAP_WORLD_DAY_REAL_MS)),
       updatedAt: Number(sim.updatedAt || Date.now()),
+      sampledAt: motionClock.sampledAt,
+      serverNow: motionClock.serverNow,
+      sampleAgeMs: motionClock.sampleAgeMs,
       factions: sim.factions && typeof sim.factions === 'object' ? sim.factions : {},
       sites: Array.isArray(sim.sites)
         ? sim.sites.filter(site => site && typeof site === 'object').map(site => ({ ...site, ...globalMapCellCenterPoint(site) }))
@@ -494,6 +537,7 @@
       GLOBAL_MAP_3D.dynamicHeavyReady = false;
       GLOBAL_MAP_3D.dynamicHeavyNextAt = 0;
     }
+    return true;
   }
 
   async function loadWastelandSimState(options = {}) {
@@ -1183,7 +1227,9 @@
   function globalMapPlayerPoint() {
     const attached = globalMapAttachedParty();
     if (attached) {
-      const p = clampGlobalMapPoint(attached.x, attached.y);
+      const p = typeof globalMapWorldPartyDisplayPoint === 'function'
+        ? globalMapWorldPartyDisplayPoint(attached)
+        : clampGlobalMapPoint(attached.x, attached.y);
       globalMapState.playerX = p.x;
       globalMapState.playerY = p.y;
       globalMapState.selectedX = p.x;
@@ -1432,6 +1478,26 @@
     return Number.isFinite(n) ? n : fallback;
   }
 
+  function globalMapServerTravelProgress(payload = {}, durationSeconds = 0, transportMs = 0, progressFloor = 0) {
+    const durationMs = Math.max(
+      100,
+      globalMapSafeNumber(payload.durationMs, globalMapSafeNumber(durationSeconds, 0) * 1000)
+    );
+    const directProgress = globalMapClamp01(payload.progress);
+    const explicitElapsedMs = Number(payload.elapsedMs);
+    const serverNow = Number(payload.serverNow);
+    const startedAt = Number(payload.startedAt);
+    const elapsedMs = Number.isFinite(explicitElapsedMs)
+      ? Math.max(0, explicitElapsedMs)
+      : (Number.isFinite(serverNow) && Number.isFinite(startedAt)
+        ? Math.max(0, serverNow - startedAt)
+        : directProgress * durationMs);
+    const projectedProgress = globalMapClamp01(
+      (elapsedMs + Math.max(0, globalMapSafeNumber(transportMs, 0)) * 0.5) / durationMs
+    );
+    return Math.max(globalMapClamp01(progressFloor), directProgress, projectedProgress);
+  }
+
   function serializeGlobalMapTravel(travel = globalMapState.travel) {
     if (!travel) return null;
     const fromPoint = globalMapSavedPoint(travel.fromPoint || globalMapPlayerPoint());
@@ -1444,12 +1510,16 @@
       routePoints: (Array.isArray(travel.routePoints) ? travel.routePoints : [fromPoint, toPoint]).map(globalMapSavedPoint),
       targetSettlementId: travel.targetSettlementId || '',
       targetWorldSiteId: travel.targetWorldSiteId || '',
+      travelId: travel.travelId || '',
       progress: globalMapClamp01(travel.progress),
       duration: globalMapSafeNumber(travel.duration, 0),
+      durationMs: Math.max(0, globalMapSafeNumber(travel.duration, 0) * 1000),
       distanceKm: globalMapSafeNumber(travel.distanceKm, 0),
       speedKmh: globalMapSafeNumber(travel.speedKmh, 0),
       worldHours: globalMapSafeNumber(travel.worldHours, 0),
-      wandererSkill: globalMapSafeNumber(travel.wandererSkill, 0)
+      wandererSkill: globalMapSafeNumber(travel.wandererSkill, 0),
+      serverAuthoritative: !!travel.serverAuthoritative,
+      elapsedMs: Math.max(0, globalMapSafeNumber(travel.duration, 0) * 1000 * globalMapClamp01(travel.progress))
     };
   }
 
@@ -1460,7 +1530,6 @@
     const dist = globalMapPointDistance(fromPoint, toPoint);
     if (dist <= 0.35) return null;
     if (globalMapPointIsWater(fromPoint.x, fromPoint.y) || globalMapPointIsWater(toPoint.x, toPoint.y)) return null;
-    const progress = globalMapClamp01(saved.progress);
     const routePoints = globalMapSimplifyRoutePoints(
       Array.isArray(saved.routePoints) && saved.routePoints.length >= 2
         ? saved.routePoints
@@ -1469,20 +1538,24 @@
     if (routePoints.length < 2 || globalMapPathWaterBlock(routePoints)) return null;
     const routeDist = globalMapRouteDistance(routePoints);
     const routeTravelInfo = globalMapTravelInfoByDistance(routeDist);
+    const duration = Math.max(0.1, globalMapSafeNumber(saved.duration, routeTravelInfo.realSeconds));
+    const progress = globalMapServerTravelProgress(saved, duration, 0, saved.progress);
     return {
       fromPoint,
       toPoint,
       routePoints,
       targetSettlementId: saved.targetSettlementId || globalMapSettlementAt(toPoint.x, toPoint.y)?.id || '',
       targetWorldSiteId: saved.targetWorldSiteId || globalMapWorldSiteAt(toPoint.x, toPoint.y)?.id || '',
+      travelId: String(saved.travelId || ''),
       progress,
       prevProgress: progress,
-      duration: Math.max(0.1, globalMapSafeNumber(saved.duration, routeTravelInfo.realSeconds)),
+      duration,
       distanceKm: Math.max(0, globalMapSafeNumber(saved.distanceKm, routeTravelInfo.distanceKm)),
       speedKmh: Math.max(0, globalMapSafeNumber(saved.speedKmh, routeTravelInfo.speedKmh)),
       worldHours: Math.max(0, globalMapSafeNumber(saved.worldHours, routeTravelInfo.worldHours)),
       wandererSkill: Math.max(0, globalMapSafeNumber(saved.wandererSkill, routeTravelInfo.wanderer)),
-      routeProfile: globalMapRouteProfileAlongPoints(routePoints)
+      routeProfile: globalMapRouteProfileAlongPoints(routePoints),
+      serverAuthoritative: !!saved.serverAuthoritative
     };
   }
 
@@ -1579,6 +1652,7 @@
       renderGlobalEncounterPanel();
       return false;
     }
+    const previousTravel = globalMapState.travel;
     const fallbackPoint = globalMapLocationPoint(saved.fromLocationId || currentLocation?.id || 'settlement');
     let playerPoint = globalMapSavedPoint({ x: saved.playerX, y: saved.playerY });
     playerPoint = nearestGlobalMapLandPoint(playerPoint, fallbackPoint);
@@ -1604,7 +1678,17 @@
     globalMapState.attachedPartyId = String(saved.attachedPartyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     globalMapState.attachedPartyTaskId = String(saved.attachedPartyTaskId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120);
     globalMapState.lastEntryCircle = sanitizeGlobalMapEntryCircle(saved.lastEntryCircle);
-    globalMapState.travel = restoreGlobalMapTravel(saved.travel);
+    const restoredTravel = restoreGlobalMapTravel(saved.travel);
+    if (restoredTravel
+      && previousTravel
+      && restoredTravel.serverAuthoritative
+      && previousTravel.serverAuthoritative
+      && restoredTravel.travelId
+      && restoredTravel.travelId === previousTravel.travelId) {
+      restoredTravel.progress = Math.max(restoredTravel.progress, globalMapClamp01(previousTravel.progress));
+      restoredTravel.prevProgress = restoredTravel.progress;
+    }
+    globalMapState.travel = restoredTravel;
     globalMapState.encounter = globalMapState.travel ? restoreGlobalMapEncounter(saved.encounter) : null;
     globalMapState.party = globalMapPartySnapshot();
 

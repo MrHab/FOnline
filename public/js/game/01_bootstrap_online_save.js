@@ -1,4 +1,4 @@
-// Realm of Ashes v7.76.5 client bootstrap
+// Realm of Ashes v7.76.6 client bootstrap
 (() => {
   'use strict';
 

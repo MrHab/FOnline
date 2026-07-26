@@ -73,19 +73,6 @@
     ].join('|');
   }
 
-  function buildTargetHintHtmlLegacyUnused(enemy) {
-    const info = getTargetHitInfo(enemy);
-    const cls = hitChanceClass(info.chance);
-    const aware = talentLevel('awareness') > 0;
-    const state = enemyHealthStateText(enemy);
-    const attitude = enemy.hostileToPlayer === false ? 'РќРµР№С‚СЂР°Р»СЊРЅС‹Р№' : 'Р’СЂР°Р¶РґРµР±РЅС‹Р№';
-    const hpLine = aware
-      ? `HP ${Math.max(0, Math.ceil(enemy.hp))}/${enemy.maxHp}<br>РЎРѕСЃС‚РѕСЏРЅРёРµ: ${state}`
-      : `РЎРѕСЃС‚РѕСЏРЅРёРµ: ${state}`;
-    const damageLine = aware ? `<br>РџСЂРµРґРї. СѓСЂРѕРЅ: <span class="target-note">${estimatedWeaponDamageText(enemy, info)}</span>` : '';
-    return `<b>${enemy.name}</b><br>${attitude}<br>${hpLine}<br>РЁР°РЅСЃ РїРѕРїР°РґР°РЅРёСЏ: <span class="${cls}">${info.chance}%</span>${damageLine}<br><span class="target-note">${info.note}</span>`;
-  }
-
   function buildTargetHintHtml(enemy) {
     const info = getTargetHitInfo(enemy);
     const cls = hitChanceClass(info.chance);
@@ -147,31 +134,6 @@
       targetHintRenderCache.top = y;
     }
     el.style.display = 'block';
-    return;
-    {
-      // Legacy path kept unreachable; this block scopes its old const declarations.
-    if (enemy.dead) {
-      hideTargetHint();
-      return;
-    } else {
-      const info = getTargetHitInfo(enemy);
-      const cls = hitChanceClass(info.chance);
-      const aware = talentLevel('awareness') > 0;
-      const state = enemyHealthStateText(enemy);
-      const attitude = enemy.hostileToPlayer === false ? 'Нейтральный' : 'Враждебный';
-      const hpLine = aware
-        ? `HP ${Math.max(0, Math.ceil(enemy.hp))}/${enemy.maxHp}<br>Состояние: ${state}`
-        : `Состояние: ${state}`;
-      const damageLine = aware ? `<br>Предп. урон: <span class="target-note">${estimatedWeaponDamageText(enemy, info)}</span>` : '';
-      el.innerHTML = `<b>${enemy.name}</b><br>${attitude}<br>${hpLine}<br>Шанс попадания: <span class="${cls}">${info.chance}%</span>${damageLine}<br><span class="target-note">${info.note}</span>`;
-    }
-    const pad = 14;
-    const x = Math.min(window.innerWidth - 190, Math.max(8, (clientX || 0) + pad));
-    const y = Math.min(window.innerHeight - 92, Math.max(8, (clientY || 0) + pad));
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    el.style.display = 'block';
-    }
   }
 
   function updateTargetHintFromHover() {

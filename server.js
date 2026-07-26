@@ -42,6 +42,11 @@ const {
   devEditorIsAvailable
 } = require('./src/server/dev-access');
 const {
+  buildPasswordResetEmail,
+  normalizePasswordResetTtlMs,
+  passwordResetTokenHash
+} = require('./src/server/password-reset');
+const {
   WORLD_TASK_CLAIM_LIMIT: SERVER_WORLD_TASK_CLAIM_LIMIT,
   isWorldPartyTask,
   migrateDuplicateCharacterIds,
@@ -113,7 +118,7 @@ const DEV_ACCESS_POLICY = createDevAccessPolicy({
 });
 const AUTH_RATE_WINDOW_MS = Math.max(60000, Number(process.env.AUTH_RATE_WINDOW_MS || 10 * 60 * 1000));
 const AUTH_RATE_MAX_ATTEMPTS = Math.max(5, Number(process.env.AUTH_RATE_MAX_ATTEMPTS || 20));
-const PASSWORD_RESET_TTL_MS = Math.max(5 * 60 * 1000, Number(process.env.PASSWORD_RESET_TTL_MS || 60 * 60 * 1000));
+const PASSWORD_RESET_TTL_MS = normalizePasswordResetTtlMs(process.env.PASSWORD_RESET_TTL_MS);
 const PUBLIC_GAME_URL = String(process.env.PUBLIC_GAME_URL || 'https://rangir.ru').replace(/\/+$/, '');
 const SMTP_URL = String(process.env.SMTP_URL || '').trim();
 const MAIL_FROM = String(process.env.MAIL_FROM || '').trim();
@@ -814,21 +819,17 @@ function userForEmail(email) {
   return Object.values(usersDb.users || {}).find(user => normalizeEmail(user?.email) === normalized) || null;
 }
 
-function passwordResetTokenHash(token) {
-  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
-}
-
 async function sendPasswordResetEmail(user, token) {
   if (!mailTransport || !MAIL_FROM) throw new Error('SMTP is not configured');
-  const resetUrl = new URL(PUBLIC_GAME_URL);
-  resetUrl.searchParams.set('resetToken', token);
-  resetUrl.searchParams.set('login', user.login);
   await mailTransport.sendMail({
     from: MAIL_FROM,
     to: user.email,
-    subject: 'Realm of Ashes — восстановление пароля',
-    text: `Для установки нового пароля откройте ссылку:\n${resetUrl}\n\nСсылка действует 1 час. Если вы не запрашивали восстановление, проигнорируйте письмо.`,
-    html: `<p>Для установки нового пароля откройте ссылку:</p><p><a href="${resetUrl}">Восстановить пароль</a></p><p>Ссылка действует 1 час. Если вы не запрашивали восстановление, проигнорируйте письмо.</p>`
+    ...buildPasswordResetEmail({
+      publicGameUrl: PUBLIC_GAME_URL,
+      login: user.login,
+      token,
+      ttlMs: PASSWORD_RESET_TTL_MS
+    })
   });
 }
 
@@ -16399,7 +16400,6 @@ io.on('connection', (socket) => {
     else p.turning = false;
     p.vx = p.moving ? clampPlayerVelocity(data.vx) : 0;
     p.vz = p.moving ? clampPlayerVelocity(data.vz) : 0;
-    if (typeof data.crouching !== 'undefined') p.crouching = !!data.crouching;
     if (typeof data.crouching !== 'undefined') p.crouching = !!data.crouching;
     p.deviceType = normalizeDeviceType(data.deviceType || p.deviceType || 'desktop');
     p.controlType = normalizeControlType(data.controlType || p.controlType || '', p.deviceType);

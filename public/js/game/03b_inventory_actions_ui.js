@@ -1491,67 +1491,6 @@
     return formulas[id] || 'Формула: эффект применяется по текущему рангу перка.';
   }
 
-  function renderSkillTreeLegacyUnused() {
-    const grid = document.getElementById('skill-grid');
-    const pointsEl = document.getElementById('skill-points');
-    if (!grid) return;
-    if (typeof prunePendingSkillPlan === 'function') prunePendingSkillPlan();
-    const plannedSpent = typeof pendingSkillPointsSpent === 'function' ? pendingSkillPointsSpent() : 0;
-    const pointsLeft = typeof pendingSkillPointsRemaining === 'function' ? pendingSkillPointsRemaining() : player.skillPoints;
-    if (pointsEl) pointsEl.textContent = pointsLeft;
-    grid.innerHTML = '';
-    const controls = document.createElement('div');
-    controls.className = 'skill-plan-controls';
-    controls.innerHTML = `
-      <div class="skill-plan-readout">
-        <span>Свободно</span><b>${pointsLeft}</b>
-        <span>В плане</span><b>${plannedSpent}</b>
-      </div>
-      <div class="skill-plan-actions">
-        <button type="button" class="skill-plan-reset" ${plannedSpent > 0 ? '' : 'disabled'}>Сбросить</button>
-        <button type="button" class="skill-plan-apply" ${plannedSpent > 0 ? '' : 'disabled'}>Применить</button>
-      </div>`;
-    controls.querySelector('.skill-plan-reset')?.addEventListener('click', e => { e.preventDefault(); resetPendingSkillPlan(); });
-    controls.querySelector('.skill-plan-apply')?.addEventListener('click', e => { e.preventDefault(); applyPendingSkillPlan(); });
-    grid.appendChild(controls);
-    let lastGroup = '';
-    SKILLS.forEach(s => {
-      if (s.group && s.group !== lastGroup) {
-        lastGroup = s.group;
-        const groupTitle = document.createElement('div');
-        groupTitle.className = 'skill-group-title';
-        groupTitle.textContent = s.group;
-        grid.appendChild(groupTitle);
-      }
-      const value = skillPercent(s.id);
-      const plannedSteps = typeof pendingSkillSteps === 'function' ? pendingSkillSteps(s.id) : 0;
-      const preview = typeof skillPreviewPercent === 'function' ? skillPreviewPercent(s.id) : value;
-      const maxed = preview >= SKILL_MAX_PERCENT;
-      const locked = pointsLeft <= 0 && !maxed;
-      const card = document.createElement('div');
-      card.className = 'talent-card skill-card' + (maxed ? ' maxed' : '') + (locked ? ' locked' : '') + (plannedSteps > 0 ? ' planned' : '');
-      const formula = skillFormulaText(s.id);
-      card.innerHTML = `<div class="talent-name">${escapeHtml(s.icon)} ${escapeHtml(s.name)}</div><div class="talent-desc skill-effect">${escapeHtml(s.desc)}</div><div class="skill-formula">${escapeHtml(formula)}</div><div class="talent-rank">Навык ${value}% / ${SKILL_MAX_PERCENT}%${maxed ? ' · максимум' : ''}</div><button type="button" class="skill-plus" ${maxed || player.skillPoints <= 0 ? 'disabled' : ''}>+${SKILL_STEP_PERCENT}%</button>`;
-      card.addEventListener('click', e => { e.preventDefault(); requestSkillUpgradeConfirmation(s); });
-      card.addEventListener('mouseenter', e => showTooltip(e, { name: s.name, desc: s.desc, type: 'skill', stat: `${skillCurrentEffect(s.id)} ${formula} Требуется 1 очко навыка для повышения на ${SKILL_STEP_PERCENT}%.` }));
-      card.addEventListener('mousemove', moveTooltip);
-      card.addEventListener('mouseleave', hideTooltip);
-      grid.appendChild(card);
-    });
-  }
-
-  function requestSkillUpgradeConfirmationLegacyUnused(skill) {
-    if (!skill) return;
-    const current = skillPercent(skill.id);
-    if (current >= SKILL_MAX_PERCENT || player.skillPoints <= 0) {
-      learnSkill(skill.id);
-      return;
-    }
-    queueSkillUpgrade(skill.id);
-  }
-
-
-
   function renderSkillTree() {
     const grid = document.getElementById('skill-grid');
     const pointsEl = document.getElementById('skill-points');

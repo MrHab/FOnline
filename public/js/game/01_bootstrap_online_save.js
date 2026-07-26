@@ -104,10 +104,6 @@
     const host = String(location.hostname || '').toLowerCase();
     if (/(^|\.)github\.io$/.test(host)) return PRODUCTION_SERVER_API_BASE;
     if (location.protocol !== 'http:' && location.protocol !== 'https:') return 'http://localhost:3000';
-    if (location.port === '3000' || host === 'rangir.ru' || host === 'www.rangir.ru') return '';
-    if (host === 'localhost' || host === '127.0.0.1' || /^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) {
-      return `${location.protocol}//${host}:3000`;
-    }
     return '';
   }
 
@@ -395,6 +391,19 @@
 
   function serverApiBaseCandidates() {
     const list = [SERVER_API_BASE];
+    const host = String(location.hostname || '').toLowerCase();
+    const localNetworkHost = host === 'localhost'
+      || host === '127.0.0.1'
+      || /^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+    if ((location.protocol === 'http:' || location.protocol === 'https:')
+      && localNetworkHost
+      && location.port !== '3000') {
+      // npm start serves the API on the page's current origin even when PORT
+      // is customized. A separate local static server can still fall back to
+      // the conventional backend port after a same-origin 404/non-JSON reply.
+      list.push('');
+      list.push(`${location.protocol}//${host}:3000`);
+    }
     return Array.from(new Set(list.map(v => String(v || '').replace(/\/+$/, ''))));
   }
 

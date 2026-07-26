@@ -47,7 +47,6 @@ function functionBody(source, name) {
 
 const errors = [];
 const server = readText('server.js');
-const authServer = readText('src/server/authoritative-server.js');
 const wastelandSim = readText('src/server/wasteland-sim.js');
 const clientInventory = [
   '03_items_inventory_core.js',
@@ -95,7 +94,6 @@ requireText('server economy rules', server, 'randomLootTables: false');
 requireText('server economy rules', server, 'progressionLootBonus: false');
 requireText('server economy rules', server, 'dailyContainerRestock: false');
 requireText('server enemy loot', functionBody(server, 'rollEnemyLootServer'), 'if (!ECONOMY_RULES.randomLootTables) return [];');
-requireText('authoritative server enemy loot', functionBody(authServer, 'rollEnemyLootServer'), 'return [];');
 requireText('server progression loot', functionBody(server, 'addServerProgressionLootBonus'), 'if (!ECONOMY_RULES.progressionLootBonus) return false;');
 requireText('server container restock', functionBody(server, 'restockRoomWorldContainersIfNeeded'), 'if (!ECONOMY_RULES.dailyContainerRestock && !force) return false;');
 requireText('server inventory limits', server, 'SERVER_ITEM_STACK_LIMITS');
@@ -174,7 +172,6 @@ rejectText('client startup inventory', clientInventory, 'inventory.set(id, start
 rejectText('client startup inventory', clientInventory, 'ammo9: 42');
 rejectText('client startup inventory', clientInventory, 'rocketAmmo: 6');
 rejectText('npc quest caps', functionBody(clientTradeStorage, 'awardNpcQuest'), "addItem('silver', money");
-rejectText('authoritative server enemy loot', functionBody(authServer, 'rollEnemyLootServer'), "addLootStack(loot");
 rejectText('world npc ammo overproduction', functionBody(wastelandSim, 'produceAtSettlements'), '24 * cycles');
 rejectText('world artificial time cap', functionBody(wastelandSim, 'tick'), 'cappedHours');
 rejectText('client crafting local resource removal', functionBody(clientInventory, 'craftRecipe'), 'Object.entries(recipe.cost).forEach(([id, qty]) => removeItem(id, qty))');

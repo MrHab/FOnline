@@ -41,6 +41,7 @@ const pkg = JSON.parse(read('package.json'));
 const lock = JSON.parse(read('package-lock.json'));
 const expectedName = pkg.name;
 const expectedVersion = pkg.version;
+const removedServerReference = path.join(root, 'src', 'server', 'authoritative-server.js');
 
 if (!expectedName) fail('package.json name is empty');
 if (!/^\d+\.\d+\.\d+$/.test(expectedVersion)) {
@@ -62,9 +63,11 @@ if (lock.packages[''].name !== expectedName) {
 if (lock.packages[''].version !== expectedVersion) {
   fail(`package-lock root version mismatch: expected ${expectedVersion}, got ${lock.packages[''].version}`);
 }
+if (fs.existsSync(removedServerReference)) {
+  fail('Historical src/server/authoritative-server.js must not duplicate the production entry point');
+}
 
 assertGameVersion('server.js', expectedVersion, './package.json');
-assertGameVersion(path.join('src', 'server', 'authoritative-server.js'), expectedVersion, '../../package.json');
 assertIncludes(path.join('public', 'index.html'), `<title>Realm of Ashes v${expectedVersion}</title>`, 'HTML title version');
 assertIncludes(path.join('public', 'js', 'game', '01_bootstrap_online_save.js'), `Realm of Ashes v${expectedVersion} client bootstrap`, 'client bootstrap version');
 assertIncludes(path.join('public', 'js', 'game', '13_minimap_hud_loop.js'), `Realm of Ashes v${expectedVersion}.`, 'welcome log version');

@@ -48,6 +48,7 @@ function functionBody(source, name) {
 const errors = [];
 const server = readText('server.js');
 const wastelandSim = readText('src/server/wasteland-sim.js');
+const wastelandPartySpeed = readText('src/server/wasteland-party-speed.js');
 const clientInventory = [
   '03_items_inventory_core.js',
   '03a_pipboy_social_world_tasks.js',
@@ -147,8 +148,8 @@ requireText('world caravan battle recovery', functionBody(wastelandSim, 'complet
 requireText('world caravan battle recovery delay', functionBody(wastelandSim, 'completeBattleZone'), 'realMinutesToWorldHours(CARAVAN_POST_BATTLE_REAL_MINUTES)');
 requireText('world caravan route recovery hold', functionBody(wastelandSim, 'moveParty'), "String(party.state || '').toLowerCase() === 'recovering'");
 requireText('world surplus trade caravan creates physical onsite staging', functionBody(wastelandSim, 'createSurplusTradeCaravan'), 'beginCaravanStagingOnsite(party, source)');
-requireText('world caravan minimum speed constant', wastelandSim, 'const CARAVAN_MIN_SPEED_KMH = 4;');
-requireText('world caravan minimum speed normalization', functionBody(wastelandSim, 'normalizeWorldPartySpeedKmh'), 'worldPartyMinimumSpeedKmh(party, defaults)');
+requireText('world caravan minimum speed constant', wastelandPartySpeed, 'const CARAVAN_MIN_SPEED_KMH = 4;');
+requireText('world caravan minimum speed normalization', functionBody(wastelandPartySpeed, 'normalizeWorldPartySpeedKmh'), 'worldPartyMinimumSpeedKmh(party, defaults)');
 requireText('world caravan minimum movement speed', functionBody(wastelandSim, 'moveParty'), 'effectiveWorldPartySpeedKmh(party)');
 requireText('world caravan minimum published speed', functionBody(wastelandSim, 'publicParty'), 'effectiveWorldPartySpeedKmh(party)');
 requireText('world resource export threshold', wastelandSim, 'const RESOURCE_EXPORT_THRESHOLD = 42;');

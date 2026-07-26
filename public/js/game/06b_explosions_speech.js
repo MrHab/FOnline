@@ -39,6 +39,7 @@
   }
 
   function applyExplosionDamage(centerX, centerZ, w, modeInfo, options = {}) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (!currentLocationAllowsNpcCombat() && explosionWouldAffectNpc(centerX, centerZ, w)) {
       return rejectPeacefulNpcCombat();
     }
@@ -46,7 +47,7 @@
     const rawBase = Math.max(1, Math.round((damageRoll(w) + talentLevel('sharpshooter') * 2) * (modeInfo.damageMul || 1)));
     let anyHit = false;
     if (enemiesAreServerAuthoritative()) {
-      multiplayer.socket.emit('explosionAttack', {
+      return emitGuardedMultiplayerGameplayAction('explosionAttack', {
         ...multiplayerProgressionSnapshot(),
         equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
         weapon: weaponBaseId(w),
@@ -81,7 +82,6 @@
         renderUI();
         updateTargetHintFromHover();
       });
-      return true;
     }
     enemies.forEach(enemy => {
       if (!enemy || enemy.dead || enemy._removed) return;
@@ -100,7 +100,7 @@
       }
       anyHit = true;
       if (enemiesAreServerAuthoritative()) {
-        multiplayer.socket.emit('enemyHit', {
+        emitGuardedMultiplayerGameplayAction('enemyHit', {
           enemyId: enemy.id,
           ...multiplayerProgressionSnapshot(),
           clientPredictedDamage: dmg,
@@ -342,4 +342,3 @@
       if (!liveIds.has(id)) disposeNpcSpeechBubble(id, row);
     }
   }
-

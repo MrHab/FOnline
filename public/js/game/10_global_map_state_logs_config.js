@@ -1011,6 +1011,9 @@
   }
 
   function detachGlobalMapWorldParty(reason = '', options = {}) {
+    if (!options.skipServerCancel
+      && typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Выход из группы временно недоступен.')) return false;
     const party = globalMapAttachedParty();
     if (!globalMapState.attachedPartyId) return false;
     const p = party ? clampGlobalMapPoint(party.x, party.y) : clampGlobalMapPoint(globalMapState.playerX, globalMapState.playerY);
@@ -2399,4 +2402,3 @@
     }
     return xp;
   }
-

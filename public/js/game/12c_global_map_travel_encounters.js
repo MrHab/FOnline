@@ -1,4 +1,6 @@
   function startGlobalTravel() {
+    if (typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Маршрут временно недоступен.')) return false;
     if (blockGlobalMapGroupMovement()) return false;
     const serverRequired = typeof clientWorldRequiresServer === 'function' && clientWorldRequiresServer();
     if (serverRequired && !(multiplayer?.socket?.connected && multiplayer.joined)) {
@@ -95,6 +97,8 @@
   }
 
   function cancelGlobalTravel() {
+    if (typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Маршрут временно нельзя изменить.')) return false;
     if (globalMapState.attachedPartyId) {
       detachGlobalMapWorldParty();
       return;
@@ -152,6 +156,8 @@
   }
 
   function selectGlobalMapDestination(x, y) {
+    if (typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Выбор маршрута временно недоступен.')) return false;
     if (globalMapState.encounter) return false;
     if (blockGlobalMapGroupMovement()) return false;
     if (globalMapState.attachedPartyId) {
@@ -195,6 +201,8 @@
   }
 
   function resolveGlobalEncounter(decision = 'skip') {
+    if (typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Решение по встрече временно недоступно.')) return false;
     const encounter = globalMapState.encounter;
     if (!encounter) return;
     if (encounter.forced && decision !== 'enter') decision = 'enter';
@@ -283,6 +291,8 @@
   }
 
   function enterGlobalLocalLocation(targetLocationId, options = {}) {
+    if (typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Вход в локацию временно недоступен.')) return false;
     const entryCircle = options.entryCircle
       ? sanitizeGlobalMapEntryCircle(options.entryCircle)
       : globalMapEntryCircleForTarget(targetLocationId, options);

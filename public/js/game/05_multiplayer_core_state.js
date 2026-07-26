@@ -3,6 +3,22 @@
     socket: null,
     connected: false,
     joined: false,
+    authorityMode: (typeof serverSession !== 'undefined' && serverSession?.token) ? 'blocked' : 'offline-local',
+    authorityReason: 'startup',
+    transportState: 'idle',
+    socketGeneration: 0,
+    joinAttemptId: 0,
+    joinInFlight: false,
+    joinPromise: null,
+    joinSocketId: '',
+    joinSessionToken: '',
+    joinCharacterId: '',
+    joinClientInstanceId: '',
+    joinedSocketId: '',
+    joinedSessionToken: '',
+    joinedCharacterId: '',
+    joinedClientInstanceId: '',
+    onlineSessionRequired: !!(typeof serverSession !== 'undefined' && serverSession?.token),
     roomId: '',
     worldSiteId: '',
     worldSiteOwner: '',
@@ -42,19 +58,175 @@
     pendingEquipmentSlots: new Set()
   };
 
+  function currentMultiplayerJoinContext() {
+    return {
+      sessionToken: String((typeof serverSession !== 'undefined' && serverSession?.token) || ''),
+      characterId: String((typeof selectedServerCharacterId !== 'undefined' && selectedServerCharacterId) || ''),
+      clientInstanceId: typeof getClientInstanceId === 'function' ? String(getClientInstanceId() || '') : ''
+    };
+  }
+
+  function multiplayerJoinContextIsCurrent(context = {}) {
+    const current = currentMultiplayerJoinContext();
+    return !!current.sessionToken
+      && !!current.characterId
+      && !!current.clientInstanceId
+      && String(context.sessionToken || '') === current.sessionToken
+      && String(context.characterId || '') === current.characterId
+      && String(context.clientInstanceId || '') === current.clientInstanceId;
+  }
+
+  function remapMultiplayerPendingJoinContext(fromContext = {}, characterId = '') {
+    const nextCharacterId = String(characterId || '');
+    if (!nextCharacterId) return false;
+    const matches = context => !!context
+      && String(context.sessionToken || '') === String(fromContext.sessionToken || '')
+      && String(context.characterId || '') === String(fromContext.characterId || '')
+      && String(context.clientInstanceId || '') === String(fromContext.clientInstanceId || '');
+    if (matches({
+      sessionToken: multiplayer.joinSessionToken,
+      characterId: multiplayer.joinCharacterId,
+      clientInstanceId: multiplayer.joinClientInstanceId
+    })) {
+      multiplayer.joinCharacterId = nextCharacterId;
+    }
+    (Array.isArray(multiplayer.joinWaiters) ? multiplayer.joinWaiters : []).forEach(waiter => {
+      if (matches(waiter?.context)) waiter.context.characterId = nextCharacterId;
+    });
+    return true;
+  }
+
+  function multiplayerJoinAttemptMatchesCurrent(socket = multiplayer.socket) {
+    return !!socket
+      && multiplayer.joinSocketId === socket.id
+      && multiplayerJoinContextIsCurrent({
+        sessionToken: multiplayer.joinSessionToken,
+        characterId: multiplayer.joinCharacterId,
+        clientInstanceId: multiplayer.joinClientInstanceId
+      });
+  }
+
+  function multiplayerJoinedContextMatchesCurrent(socket = multiplayer.socket) {
+    return !!socket
+      && !!socket.connected
+      && multiplayer.joined
+      && multiplayer.joinedSocketId === socket.id
+      && multiplayerJoinContextIsCurrent({
+        sessionToken: multiplayer.joinedSessionToken,
+        characterId: multiplayer.joinedCharacterId,
+        clientInstanceId: multiplayer.joinedClientInstanceId
+      })
+      && String(multiplayer.characterLeaseId || '') === String(
+        (typeof activeCharacterLeaseId !== 'undefined' && activeCharacterLeaseId) || ''
+      )
+      && !!multiplayer.characterLeaseId;
+  }
+
+  function clearMultiplayerJoinedContext() {
+    multiplayer.joined = false;
+    multiplayer.joinedSocketId = '';
+    multiplayer.joinedSessionToken = '';
+    multiplayer.joinedCharacterId = '';
+    multiplayer.joinedClientInstanceId = '';
+    multiplayer.characterLeaseId = '';
+  }
+
+  function captureMultiplayerGameplayAckContext(socket = multiplayer.socket) {
+    if (!socket
+      || typeof socket.emit !== 'function'
+      || !multiplayerJoinedContextMatchesCurrent(socket)) return null;
+    return {
+      socket,
+      socketGeneration: Number(multiplayer.socketGeneration || 0),
+      socketId: String(socket.id || ''),
+      roomId: String(multiplayer.roomId || ''),
+      joinContext: currentMultiplayerJoinContext(),
+      joinedSocketId: String(multiplayer.joinedSocketId || ''),
+      joinedSessionToken: String(multiplayer.joinedSessionToken || ''),
+      joinedCharacterId: String(multiplayer.joinedCharacterId || ''),
+      joinedClientInstanceId: String(multiplayer.joinedClientInstanceId || ''),
+      characterLeaseId: String(multiplayer.characterLeaseId || '')
+    };
+  }
+
+  function multiplayerGameplayAckContextIsCurrent(context) {
+    const socket = context?.socket;
+    return !!socket
+      && socket === multiplayer.socket
+      && !!socket.connected
+      && Number(context.socketGeneration) === Number(multiplayer.socketGeneration || 0)
+      && String(context.socketId || '') === String(socket.id || '')
+      && String(context.roomId || '') === String(multiplayer.roomId || '')
+      && String(context.joinedSocketId || '') === String(multiplayer.joinedSocketId || '')
+      && String(context.joinedSessionToken || '') === String(multiplayer.joinedSessionToken || '')
+      && String(context.joinedCharacterId || '') === String(multiplayer.joinedCharacterId || '')
+      && String(context.joinedClientInstanceId || '') === String(multiplayer.joinedClientInstanceId || '')
+      && String(context.characterLeaseId || '') === String(multiplayer.characterLeaseId || '')
+      && multiplayerJoinContextIsCurrent(context.joinContext)
+      && multiplayerJoinedContextMatchesCurrent(socket);
+  }
+
+  function emitGuardedMultiplayerGameplayAction(eventName, payload, onAck) {
+    const socket = multiplayer.socket;
+    const ackContext = captureMultiplayerGameplayAckContext(socket);
+    if (!ackContext) return false;
+    socket.emit(eventName, payload, (...ackArgs) => {
+      if (!multiplayerGameplayAckContextIsCurrent(ackContext)) return false;
+      if (typeof onAck === 'function') onAck(...ackArgs);
+      return true;
+    });
+    return true;
+  }
+
+  function invalidateMultiplayerSessionContext(reason = 'session-context-changed', options = {}) {
+    const socket = multiplayer.socket;
+    try {
+      if (typeof cancelMultiplayerJoinAttempt === 'function') cancelMultiplayerJoinAttempt(reason);
+    } catch (_) {}
+    multiplayer.socketGeneration = Number(multiplayer.socketGeneration || 0) + 1;
+    multiplayer.socket = null;
+    multiplayer.connected = false;
+    clearMultiplayerJoinedContext();
+    multiplayer.transportState = 'blocked';
+    multiplayer.serverAuthoritativeEnemies = false;
+    if (multiplayer.pendingEquipmentSlots?.clear) multiplayer.pendingEquipmentSlots.clear();
+    try {
+      if (typeof activeCharacterLeaseId !== 'undefined') activeCharacterLeaseId = '';
+    } catch (_) {}
+    if (typeof setClientAuthorityMode === 'function') {
+      setClientAuthorityMode('blocked', reason, {
+        force: true,
+        clearWorld: options.clearWorld !== false
+      });
+    }
+    try {
+      if (typeof resetNetworkPingMeasurement === 'function') resetNetworkPingMeasurement('offline');
+    } catch (_) {}
+    resolveMultiplayerJoinWaiters(false);
+    if (socket && options.disconnect !== false) {
+      try { socket.disconnect(); } catch (_) {}
+    }
+    return !!socket;
+  }
+
   function resolveMultiplayerJoinWaiters(ok) {
     const waiters = Array.isArray(multiplayer.joinWaiters) ? multiplayer.joinWaiters.splice(0) : [];
     waiters.forEach(waiter => {
       try { if (waiter.timer) clearTimeout(waiter.timer); } catch (_) {}
-      try { waiter.resolve(!!ok); } catch (_) {}
+      const contextAccepted = !!ok
+        && multiplayerJoinContextIsCurrent(waiter.context)
+        && multiplayerJoinedContextMatchesCurrent(multiplayer.socket);
+      try { waiter.resolve(contextAccepted); } catch (_) {}
     });
   }
 
   function waitForMultiplayerJoin(timeoutMs = 4500) {
-    if (multiplayer.joined && multiplayer.roomId) return Promise.resolve(true);
+    if (multiplayerJoinedContextMatchesCurrent(multiplayer.socket)) {
+      return Promise.resolve(true);
+    }
     if (!Array.isArray(multiplayer.joinWaiters)) multiplayer.joinWaiters = [];
     return new Promise(resolve => {
-      const waiter = { resolve, timer: null };
+      const waiter = { resolve, timer: null, context: currentMultiplayerJoinContext() };
       waiter.timer = setTimeout(() => {
         const idx = multiplayer.joinWaiters.indexOf(waiter);
         if (idx >= 0) multiplayer.joinWaiters.splice(idx, 1);
@@ -91,25 +263,91 @@
     });
   }
 
-
-  function enemiesAreServerAuthoritative() {
-    return !!(multiplayer.socket && multiplayer.socket.connected && multiplayer.joined && multiplayer.serverAuthoritativeEnemies);
+  function clientWorldRequiresServer() {
+    const authenticated = !!(typeof serverSession !== 'undefined' && serverSession && serverSession.token);
+    const boundServerCharacter = !!(
+      typeof gameStarted !== 'undefined'
+      && gameStarted
+      && typeof characterProfile !== 'undefined'
+      && characterProfile?.serverCharacterId
+    );
+    return authenticated || !!multiplayer.onlineSessionRequired || boundServerCharacter;
   }
 
-  function clientWorldRequiresServer() {
-    return !!(typeof serverSession !== 'undefined' && serverSession && serverSession.token);
+  function clientAuthorityMode() {
+    if (!clientWorldRequiresServer()) return 'offline-local';
+    const serverReady = multiplayer.authorityMode === 'server'
+      && multiplayerJoinedContextMatchesCurrent(multiplayer.socket);
+    return serverReady ? 'server' : 'blocked';
+  }
+
+  function clientGameplayIsBlocked() {
+    const contextTransitionPending = !!(
+      typeof clientContextTransitionInFlight !== 'undefined'
+      && clientContextTransitionInFlight
+    );
+    return contextTransitionPending || clientAuthorityMode() === 'blocked';
+  }
+
+  function rejectBlockedGameplayAction(message = 'Связь с сервером восстанавливается. Действие временно недоступно.') {
+    if (!clientGameplayIsBlocked()) return false;
+    try { setReadout(message); } catch (_) {}
+    return true;
+  }
+
+  function clearClientGameplayInput(reason = 'authority') {
+    try {
+      if (typeof clearAllGameplayInput === 'function') {
+        clearAllGameplayInput(reason, { sendIdle: false });
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (typeof keys === 'object' && keys) Object.keys(keys).forEach(code => { keys[code] = false; });
+      if (typeof stopAutoFire === 'function') stopAutoFire();
+      if (typeof stopTouchAim === 'function') stopTouchAim();
+      if (typeof resetVirtualMove === 'function') resetVirtualMove();
+      if (typeof player === 'object' && player) {
+        player.targetPath = [];
+        player.attackTarget = null;
+      }
+      if (typeof marker !== 'undefined' && marker) marker.visible = false;
+    } catch (_) {}
+  }
+
+  function setClientAuthorityMode(mode = 'blocked', reason = 'network', options = {}) {
+    const next = ['server', 'offline-local', 'blocked'].includes(mode) ? mode : 'blocked';
+    const previous = multiplayer.authorityMode;
+    multiplayer.authorityMode = next;
+    multiplayer.authorityReason = String(reason || 'network').slice(0, 48);
+    try {
+      if (document?.body) document.body.dataset.authorityMode = next;
+    } catch (_) {}
+    if (next !== 'blocked') return previous !== next;
+    if (previous === next && options.force !== true) return false;
+    multiplayer.serverAuthoritativeEnemies = false;
+    clearClientGameplayInput(reason);
+    if (options.clearWorld !== false) {
+      try { clearNetworkRoomEntities({ keepPlayer: true }); } catch (_) {}
+      try { resetNetworkSnapshotStamps(); } catch (_) {}
+    }
+    return previous !== next;
+  }
+
+  function enemiesAreServerAuthoritative() {
+    return clientAuthorityMode() === 'server' && multiplayer.serverAuthoritativeEnemies;
   }
 
   function clientEnemyStateMayUseLocalFallback() {
-    return !enemiesAreServerAuthoritative() && !multiplayer.socket && !clientWorldRequiresServer();
+    return clientAuthorityMode() === 'offline-local';
   }
 
   function groundItemsAreServerAuthoritative() {
-    return !!(multiplayer.socket && multiplayer.socket.connected && multiplayer.joined);
+    return clientAuthorityMode() === 'server';
   }
 
   function worldContainersAreServerAuthoritative() {
-    return !!(multiplayer.socket && multiplayer.socket.connected && multiplayer.joined);
+    return clientAuthorityMode() === 'server';
   }
 
   function networkPayloadIsForCurrentRoom(data) {
@@ -139,6 +377,21 @@
 
   function clearNetworkRoomEntities(options = {}) {
     const keepPlayer = options.keepPlayer !== false;
+    try {
+      if (activeLootEnemy || activeWorldContainer) {
+        if (typeof closeLootWindow === 'function') closeLootWindow();
+        else {
+          activeLootEnemy = null;
+          activeWorldContainer = null;
+        }
+      }
+    } catch (_) {}
+    try {
+      if (traderWindowOpen && typeof closeTraderWindow === 'function') closeTraderWindow();
+    } catch (_) {}
+    try {
+      if (storageWindowOpen && typeof closeStorageWindow === 'function') closeStorageWindow();
+    } catch (_) {}
     try { clearRemotePlayers(); } catch (_) {}
     try { clearEnemies(); } catch (_) {}
     try { clearWorldContainersVisuals(); } catch (_) {}

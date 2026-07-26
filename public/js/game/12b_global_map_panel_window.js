@@ -274,6 +274,8 @@
   }
 
   function openGlobalMapFromLocationExit() {
+    if (typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Выход в пустошь временно недоступен.')) return false;
     if (globalMapState.onWorldMap || globalMapState.travel || locationTransitionActive) return false;
     const exitLocationId = currentLocation?.id || 'settlement';
     const settlementNode = GLOBAL_MAP_NODES.find(node => node.id === exitLocationId && node.kind === 'settlement');

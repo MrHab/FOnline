@@ -4,7 +4,7 @@
 
 `public/index.html` сначала подключает локальные vendor-сборки Three.js, `GLTFLoader` и Socket.IO, а затем запускает этот загрузчик.
 
-Загрузчик параллельно получает каталог коллайдеров и все 59 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
+Загрузчик параллельно получает каталог коллайдеров и все 60 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
 
 При добавлении, удалении или переименовании JS-части нужно обязательно синхронно обновить `GAME_SCRIPT_PARTS`: каталог не сканируется автоматически.
 
@@ -12,7 +12,8 @@
 
 | Файл | Назначение |
 |---|---|
-| `01_bootstrap_online_save.js` | запуск, устройство, авторизация, профиль, выбор персонажа |
+| `00_save_generation_drain.js` | изолированный bounded generation-drain: coalescing снимков, не более двух single-flight записей за запуск и повтор после ошибки |
+| `01_bootstrap_online_save.js` | запуск, авторизация, single-flight выбора персонажа, save-context и detached leaderboard |
 | `02_renderer_world_map.js` | базовый renderer, scene/camera, viewport, visibility shell |
 | `02a_materials_static_models.js` | материалы, текстуры, static model registry, authored objects |
 | `02b_lighting_time.js` | свет, тени, время суток, day/night lighting |
@@ -30,10 +31,10 @@
 | `03c_skills_perks_tooltips.js` | SPECIAL, skills, perks, tooltips |
 | `03d_item_context_repair_crafting.js` | item context menu, repair, salvage, crafting |
 | `04_player_model_visuals.js` | модель игрока, оружие, броня, визуал экипировки |
-| `05_multiplayer_core_state.js` | multiplayer state, room guards, outgoing character snapshots |
+| `05_multiplayer_core_state.js` | режимы authority, sticky online requirement, context-bound join/waiters, same-room gameplay ack guard и исходящие снимки |
 | `05a_remote_actor_equipment.js` | remote actor names, equipment visuals, muzzle helpers |
 | `05b_remote_player_locomotion.js` | remote player interpolation and visual locomotion |
-| `05c_multiplayer_socket_room.js` | Socket.IO connect/events, room changes, transfer handlers, измерение сетевого ping |
+| `05c_multiplayer_socket_room.js` | generation-safe Socket.IO lifecycle, single-flight join, controlled reconnect/timeout, room changes, transfer handlers и сетевой ping |
 | `05d_world_containers_security.js` | server containers, lock/terminal UI and loot window actions |
 | `05e_ground_items_world_sync.js` | ground items, resources, world/enemy network snapshots |
 | `05f_enemy_models_location_flow.js` | enemy model builders, local spawn/restore and location loading |
@@ -56,8 +57,8 @@
 | `08c_hud_edit_windows_touch.js` | HUD editor, mobile control binding, Pip-Boy/window toggles |
 | `08d_world_context_targets.js` | pointer picking, context target detection and world context options |
 | `08e_mobile_player_action_menus.js` | mobile treatment/social action windows and remote player menus |
-| `08f_input_events_proximity.js` | canvas/keyboard events, automatic fire, proximity hints |
-| `09_update_fog_movement_ai.js` | update, fog-of-war, culling, графика, движение, AI, эффекты, камера |
+| `08f_input_events_proximity.js` | canvas/keyboard events, полный lifecycle-сброс input и global-map camera drag/keyPan, automatic fire и proximity hints |
+| `09_update_fog_movement_ai.js` | authority guard главного update, fog-of-war, culling, графика, движение, AI, эффекты и камера |
 | `10_global_map_state_logs_config.js` | системный журнал, состояние и конфиг глобальной карты |
 | `11_global_map_terrain_core.js` | координаты глобальной карты, вода/берег, высоты, texture canvas и базовые линии |
 | `11a_global_map_player_models.js` | модель игрока на глобальной карте, оружие и направление движения |
@@ -66,10 +67,10 @@
 | `11d_global_map_contacts_parties.js` | контакты мира, бродячие отряды и их мини-модели |
 | `11e_global_map_tasks_dynamic_render.js` | маркеры заданий, динамическое обновление и render global map 3D |
 | `12_global_map_canvas_controls.js` | колесо/перетаскивание карты и 2D canvas fallback глобальной карты |
-| `12a_global_map_world_status.js` | подписи отрядов, ресурсные точки, задачи мира, контакты и доска работ |
-| `12b_global_map_panel_window.js` | панель глобальной карты, runtime frame, окно карты и выход на карту из локации |
-| `12c_global_map_travel_encounters.js` | старт/отмена маршрута, встречи, входы в локальные локации, завершение travel |
-| `12d_global_map_entry_ambush_controls.js` | вход в поселения, засады и инициализация контролов глобальной карты |
+| `12a_global_map_world_status.js` | подписи отрядов, ресурсные точки, задачи мира, guarded-контакты и доска работ |
+| `12b_global_map_panel_window.js` | панель глобальной карты, runtime frame, окно карты и guarded-выход из локации |
+| `12c_global_map_travel_encounters.js` | fail-closed старт/отмена маршрута, решения встреч, входы и завершение travel |
+| `12d_global_map_entry_ambush_controls.js` | ранний guard входа в поселения, засады и контролы глобальной карты |
 | `13_minimap_hud_loop.js` | миникарта, HUD, оружейный UI, auth/bootstrap bindings, render guard, главный loop |
 
 ## CSS-части
@@ -81,7 +82,17 @@
 ```bash
 node tools/check-client-js.js
 node tools/check-client-css.js
+npm run check:client-state
 ```
+
+`check-client-js.js` исполняет generation-drain, смену save-контекста,
+отмену logout/switch при неудачном финальном save и single-flight выбора
+персонажа. `check-client-state-integrity.js` исполняет authority cleanup,
+context-aware join-waiters, same-room ack guard, позиционную политику, полный
+input/camera reset, добычу и server deadman. Fake socket и fake timers исполняют
+сам single-flight join, поздние callback/timeout и управляемый reconnect.
+Ранние action guards дополнительно закреплены анализом исходного контракта;
+проверка не является полной браузерной симуляцией.
 
 ## Правило изменения клиента
 

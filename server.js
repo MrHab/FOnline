@@ -66,6 +66,7 @@ const ACTIVE_ROOM_HOUSEKEEPING_MS = Math.max(250, Number(process.env.ACTIVE_ROOM
 const MAP_SIZE = 140;
 const PLAYER_SPEED = 7.0;
 const PLAYER_COLLISION_RADIUS = 0.48;
+const LEGACY_INPUT_DEADMAN_MS = Math.max(500, Number(process.env.LEGACY_INPUT_DEADMAN_MS || 1250));
 const NPC_INVENTORY_VERSION = 2;
 const SESSION_LOCK_MS = Number(process.env.SESSION_LOCK_MS || 120000);
 const JSON_LIMIT = process.env.JSON_LIMIT || '12mb';
@@ -2177,6 +2178,18 @@ function clampPlayerVelocity(v) {
   // Ограничиваем их примерно игровой скоростью, чтобы пакет скорости не мог вызвать
   // визуальный рывок/телепорт на принимающей стороне.
   return clamp(n, -PLAYER_SPEED * 1.35, PLAYER_SPEED * 1.35);
+}
+function expireLegacyPlayerInput(p, now = Date.now()) {
+  if (!p || !p.input || typeof p.input !== 'object') return false;
+  const active = Math.abs(Number(p.input.forward || 0)) + Math.abs(Number(p.input.right || 0)) > 0.01;
+  if (!active || now - Number(p.lastLegacyInputAt || 0) <= LEGACY_INPUT_DEADMAN_MS) return false;
+  p.input.forward = 0;
+  p.input.right = 0;
+  p.moving = false;
+  p.turning = false;
+  p.vx = 0;
+  p.vz = 0;
+  return true;
 }
 function currentGameDayIndex(now = Date.now()) { return Math.floor(Number(now || Date.now()) / GAME_DAY_REAL_MS); }
 function currentGameHour(now = Date.now()) {
@@ -15854,6 +15867,32 @@ function rejectJoin(socket, ack, error) {
   socket.emit('sessionRejected', { error });
 }
 
+function currentJoinedSocketAck(p, options = {}) {
+  const room = p?.roomId ? rooms.get(p.roomId) : null;
+  const others = room
+    ? [...players.values()]
+      .filter(other => other.roomId === room.id && other.id !== p.id)
+      .map(publicPlayer)
+    : [];
+  return {
+    ok: true,
+    alreadyJoined: options.alreadyJoined === true,
+    id: p.id,
+    roomId: p.roomId || '',
+    locationId: p.locationId || room?.locationId || 'settlement',
+    lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement',
+    characterId: p.characterId || '',
+    characterLeaseId: p.characterLeaseId || '',
+    x: Number(Number(p.x || 0).toFixed(3)),
+    z: Number(Number(p.z || 0).toFixed(3)),
+    combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()),
+    self: publicAuthoritativePlayerState(p),
+    players: others,
+    worldState: room ? (room.worldState || publicWorldState(room, true)) : null,
+    serverAuthoritativeEnemies: true
+  };
+}
+
 function liveOtherSessionForLogin(login, deviceId, token, currentSocketId = '') {
   pruneStaleSessions(login);
   const now = Date.now();
@@ -15923,10 +15962,20 @@ io.on('connection', (socket) => {
     if (!auth) return rejectJoin(socket, ack, 'Не выполнен вход или сессия открыта на другом устройстве.');
     const joinedPlayer = players.get(socket.id);
     if (joinedPlayer) {
-      if (typeof ack === 'function') {
+      const requestedCharacterId = normalizeCharacterId(data.characterId || data.serverCharacterId || '');
+      const sameJoinedIdentity = (
+        String(joinedPlayer.userId || '') === String(auth.user.id || '')
+        && String(joinedPlayer.token || '') === token
+        && String(joinedPlayer.deviceId || '') === deviceId
+        && normalizeClientInstanceId(joinedPlayer.clientInstanceId || '') === clientInstanceId
+        && normalizeCharacterId(joinedPlayer.characterId || '') === requestedCharacterId
+      );
+      if (typeof ack === 'function' && sameJoinedIdentity) {
+        ack(currentJoinedSocketAck(joinedPlayer, { alreadyJoined: true }));
+      } else if (typeof ack === 'function') {
         ack({
           ok: false,
-          error: 'Этот сокет уже присоединился к миру.',
+          error: 'Этот сокет уже присоединён к другому персонажу или игровой сессии.',
           self: publicAuthoritativePlayerState(joinedPlayer),
           combat: serverCombatAck(joinedPlayer, serverWeaponDef(joinedPlayer.equipment?.weapon || joinedPlayer.weapon || 'fists'), Date.now())
         });
@@ -16318,6 +16367,7 @@ io.on('connection', (socket) => {
     p.controlType = normalizeControlType(data.controlType || p.controlType || '', p.deviceType);
     serverRegenPlayerAp(p, Date.now());
     p.lastInputAt = Date.now();
+    p.lastLegacyInputAt = p.lastInputAt;
   });
 
 
@@ -17606,7 +17656,7 @@ io.on('connection', (socket) => {
       return fail(resourceDef.needTool);
     }
     const equippedToolId = serverBaseItemId(p.equipment?.weapon || '');
-    if (equippedToolId !== expectedTool && serverInventoryQty(p.inventory || [], expectedTool) <= 0) {
+    if (equippedToolId !== expectedTool) {
       return fail(resourceDef.needTool);
     }
 
@@ -17620,7 +17670,7 @@ io.on('connection', (socket) => {
     const rng = room.rng || Math.random;
     const intVal = serverStatValue(p, 'int');
     const luckVal = serverStatValue(p, 'luck');
-    const condition = 100;
+    const condition = Number(serverPlayerItemCondition(p, expectedTool) ?? 100);
     const bonusChance = clamp(
       0.18 +
       Math.max(0, intVal - 5) * 0.025 +
@@ -18500,6 +18550,7 @@ setInterval(() => {
   for (const p of players.values()) {
     if (p.dead) continue;
     const playerTickNow = Date.now();
+    expireLegacyPlayerInput(p, playerTickNow);
     serverRegenPlayerAp(p, playerTickNow);
     updateServerPlayerMedicalEffects(p, playerTickNow);
     const fwdX = Math.sin(p.angle);

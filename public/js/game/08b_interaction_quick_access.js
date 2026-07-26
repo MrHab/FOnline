@@ -1,5 +1,6 @@
   function performUniversalInteract() {
     if (!gameStarted) return;
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return;
     const lootWin = document.getElementById('loot-window');
     if (activeLootEnemy && lootWin && lootWin.style.display === 'block') {
       takeAllLoot();

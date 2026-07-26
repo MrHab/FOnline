@@ -29,7 +29,7 @@
     if (!corpse || !corpse.dead || !corpse.id) return;
     touchLocalCorpseLootHold(corpse);
     if (!enemiesAreServerAuthoritative() || !multiplayer?.socket?.connected || !multiplayer.joined) return;
-    multiplayer.socket.emit('inspectCorpse', { enemyId: corpse.id, reason }, ack => {
+    emitGuardedMultiplayerGameplayAction('inspectCorpse', { enemyId: corpse.id, reason }, ack => {
       if (!ack || !ack.ok) return;
       if (ack.enemy && typeof applyNetworkEnemies === 'function') {
         applyNetworkEnemies([ack.enemy], { allowPositionSync: true, fromServer: true, pruneMissing: false });
@@ -66,12 +66,13 @@
       removeLootedCorpseAfterWindow(corpse);
       return;
     }
-    multiplayer.socket.emit('releaseCorpseLoot', { enemyId: corpse.id }, ack => {
+    emitGuardedMultiplayerGameplayAction('releaseCorpseLoot', { enemyId: corpse.id }, ack => {
       if (ack?.removed) removeLootedCorpseAfterWindow(corpse);
     });
   }
 
   function openLootWindow(enemy) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (!enemy || !enemy.dead) return;
     const dist = Math.hypot(enemy.x - player.x, enemy.z - player.z);
     if (dist > 3.2) {
@@ -142,6 +143,7 @@
   }
 
   function takeLootItem(id, qty = null) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (activeWorldContainer) return takeWorldContainerItem(id, qty);
     if (!activeLootEnemy || !activeLootEnemy.loot) return;
     const entry = activeLootEnemy.loot.find(x => x.id === id && x.qty > 0);
@@ -159,7 +161,7 @@
       }
       if (enemiesAreServerAuthoritative()) {
         const corpse = activeLootEnemy;
-        multiplayer.socket.emit('lootEnemy', { enemyId: corpse.id, itemId: entry.id, qty: takeQty, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
+        return emitGuardedMultiplayerGameplayAction('lootEnemy', { enemyId: corpse.id, itemId: entry.id, qty: takeQty, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
           if (!ack || !ack.ok) { setReadout(ack?.error || 'Не удалось забрать добычу.'); return; }
           if (ack.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
           else if (Array.isArray(ack.inventory) && typeof applyServerInventorySnapshot === 'function') applyServerInventorySnapshot(ack.inventory);
@@ -178,7 +180,6 @@
           }
           queueSave(true);
         });
-        return true;
       }
       if (!addItem(entry.id, takeQty)) return false;
       addLog(`Получено: ${item.name} x${takeQty}.`, null, 'loot');
@@ -199,6 +200,7 @@
   }
 
   function takeAllLoot() {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     hideLootWindowTooltip();
     if (activeWorldContainer) return takeAllWorldContainerLoot();
     if (!activeLootEnemy || !activeLootEnemy.loot) return;
@@ -212,7 +214,7 @@
         return;
       }
       const requested = loot.map(entry => ({ id: entry.id, qty: entry.qty }));
-      multiplayer.socket.emit('lootEnemy', { enemyId: corpse.id, mode: 'all', requested, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
+      return emitGuardedMultiplayerGameplayAction('lootEnemy', { enemyId: corpse.id, mode: 'all', requested, carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null }, ack => {
         if (!ack || !ack.ok) { setReadout(ack?.error || 'Не удалось забрать добычу.'); return; }
         if (ack.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
         else if (Array.isArray(ack.inventory) && typeof applyServerInventorySnapshot === 'function') applyServerInventorySnapshot(ack.inventory);
@@ -238,7 +240,6 @@
         }
         queueSave(true);
       });
-      return;
     }
     const loot = (corpse.loot || []).filter(entry => entry.qty > 0 && ITEMS[entry.id]);
     if (!loot.length) return;

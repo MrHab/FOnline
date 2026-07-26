@@ -54,7 +54,7 @@
 
   function submitUntargetedServerAttack(w, modeInfo, spend) {
     if (!multiplayer.socket || !multiplayer.socket.connected || !multiplayer.joined || !spend) return false;
-    multiplayer.socket.emit('combatAttack', {
+    return emitGuardedMultiplayerGameplayAction('combatAttack', {
       ...multiplayerProgressionSnapshot(),
       equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
       weapon: weaponBaseId(w),
@@ -66,10 +66,10 @@
       if (ack?.combat) applyServerCombatState(ack.combat);
       if (ack && !ack.ok && ack.error) setReadout(ack.error);
     });
-    return true;
   }
 
   function applyWeaponDamage(enemy, dist, w, modeInfo = getWeaponModeInfo(w), options = {}) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (!currentLocationAllowsNpcCombat()) return rejectPeacefulNpcCombat();
     const hitChance = calculateHitChance(enemy, dist, w, modeInfo, options);
     const shotgunDamageMul = shotgunDamageMultiplierAt(w, dist, options.conePerp || 0, options.coneWidth);
@@ -79,7 +79,7 @@
       const rawBase = (damageRoll(w) + (w.ammoType ? talentLevel('sharpshooter') * 2 : 0)) * fireDamageMultiplier(w);
       const raw = Math.max(1, Math.round(rawBase * (modeInfo.damageMul || 1) * ambushDamageMultiplier(enemy) * shotgunDamageMul));
       const preservedTargetId = isMobileControlsEnabled() ? mobileAutoTargetId(player.attackTarget || enemy) : '';
-      multiplayer.socket.emit('enemyHit', {
+      const emitted = emitGuardedMultiplayerGameplayAction('enemyHit', {
         enemyId: enemy.id,
         ...multiplayerProgressionSnapshot(),
         equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
@@ -129,7 +129,7 @@
       });
       renderInventoryIfVisibleDeferred();
       updateTargetHintFromHover();
-      return true;
+      return emitted;
     }
 
     if (Math.random() > hitChance) {
@@ -377,7 +377,7 @@
     }
     triggerRemotePlayerHitFeedback(target);
     const hitChance = calculateHitChance({ x: target.x, z: target.z, dead: false, scale: 1 }, dist, w, modeInfo, options);
-    multiplayer.socket.emit('playerHit', {
+    const emitted = emitGuardedMultiplayerGameplayAction('playerHit', {
       targetId: target.id,
       ...multiplayerProgressionSnapshot(),
       equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
@@ -422,10 +422,11 @@
     });
     renderInventoryIfVisibleDeferred();
     updateTargetHintFromHover();
-    return true;
+    return emitted;
   }
 
   function shootAtPoint(x, z) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     const w = currentWeapon();
     const modeInfo = ensureWeaponMode(w);
     let dx = x - player.x;
@@ -522,6 +523,7 @@
   }
 
   function tryAttack(enemy, fromAuto = false) {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     if (!enemy || enemy.dead) return false;
     if (!currentLocationAllowsNpcCombat()) return rejectPeacefulNpcCombat();
     const w = currentWeapon();
@@ -583,6 +585,7 @@
   }
 
   function reloadWeapon() {
+    if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     const w = currentWeapon();
     const preservedAutoTarget = isMobileControlsEnabled() ? player.attackTarget : null;
     if (!w.ammoType) {
@@ -633,7 +636,7 @@
     addLog(`⟳ Перезарядка: +${take} патр. в ${w.name}. Потрачено ${formatActionCost(apCost)} ОД.`, null, 'system');
     setReadout(`Перезарядка: -${formatActionCost(apCost)} ОД.`);
     if (multiplayer.socket && multiplayer.socket.connected && multiplayer.joined) {
-      multiplayer.socket.emit('reloadWeapon', {
+      emitGuardedMultiplayerGameplayAction('reloadWeapon', {
         weapon: weaponBaseId(w),
         equipment: multiplayerEquipmentSnapshot(),
         inventory: typeof multiplayerInventorySnapshot === 'function' ? multiplayerInventorySnapshot() : null,
@@ -657,4 +660,3 @@
     queueSave();
     restoreMobileAutoTargetAfterReload(preservedAutoTarget);
   }
-

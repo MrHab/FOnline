@@ -364,19 +364,31 @@
   async function switchCharacterFromMenu() {
     closeGameMenu(false);
     closeTutorialWindow(false);
-    try { await saveGame(true); } catch (_) {}
-    if (multiplayer.socket) { try { multiplayer.socket.disconnect(); } catch (_) {} multiplayer.socket = null; }
-    multiplayer.joined = false;
-    multiplayer.characterLeaseId = '';
+    if (!await confirmClientSaveBeforeContextTransition('switch')) {
+      updateMobilePanelState();
+      return false;
+    }
+    if (typeof invalidateMultiplayerSessionContext === 'function') {
+      invalidateMultiplayerSessionContext('character-switch', { disconnect: true, clearWorld: true });
+    } else {
+      if (multiplayer.socket) { try { multiplayer.socket.disconnect(); } catch (_) {} multiplayer.socket = null; }
+      multiplayer.joined = false;
+      multiplayer.characterLeaseId = '';
+    }
+    advanceClientSaveContextEpoch();
     activeCharacterLeaseId = '';
     clearRemotePlayers();
     gameStarted = false;
     characterProfile = null;
+    clientContextTransitionInFlight = false;
     saveDirty = false;
     saveTimer = 0;
     const screen = document.getElementById('character-screen');
     if (screen) screen.classList.add('visible');
-    if (serverSession.token) await showCharacterSelect('Выберите персонажа. Текущий прогресс синхронизирован.');
+    if (serverSession.token) {
+      await showCharacterSelect('Выберите персонажа. Текущий прогресс синхронизирован.');
+    }
     else setAuthStep('login');
     updateMobilePanelState();
+    return true;
   }

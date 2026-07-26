@@ -1,4 +1,8 @@
   function enterCurrentGlobalSettlement() {
+    if (typeof rejectBlockedGameplayAction === 'function'
+      && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Вход с глобальной карты временно недоступен.')) {
+      return false;
+    }
     if (!globalMapState.onWorldMap || globalMapState.travel || globalMapState.encounter) return false;
     if (blockGlobalMapGroupMovement()) return false;
     let point = globalMapPlayerPoint();

@@ -276,6 +276,11 @@ function closeSocket(account) {
   account.socket = null;
 }
 
+async function closeFixtureSockets(accounts, keys, settleMs = 200) {
+  for (const key of keys) closeSocket(accounts[key]);
+  await delay(Math.max(0, Number(settleMs || 0)));
+}
+
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -1174,6 +1179,8 @@ async function assertHarvestRequiresEquippedTool(accounts) {
   await connectAndJoin(account);
   invariant(account.join.roomId === 'oldDepot',
     'Harvest fixture did not join oldDepot', account.join);
+  invariant((Array.isArray(account.join.players) ? account.join.players : []).length === 0,
+    'Harvest fixture inherited players from the preceding combat phase', account.join.players);
   invariant(account.join.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
     'Harvest fixture did not start with the wrong weapon equipped', account.join.self);
 
@@ -1187,7 +1194,7 @@ async function assertHarvestRequiresEquippedTool(accounts) {
   invariant(Math.hypot(Number(account.join.x) - resourceX, Number(account.join.z) - resourceZ) <= 3.2,
     'Harvest fixture joined outside interaction range', {
       player: { x: account.join.x, z: account.join.z },
-      resource: { x: resourceX, z: resourceZ, ...resource }
+      resource: { ...resource, x: resourceX, z: resourceZ }
     });
 
   const initialAp = Number(account.join.self?.combat?.ap);
@@ -1417,8 +1424,19 @@ async function main() {
     await assertUntargetedAttack(accounts);
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
-    await assertHarvestRequiresEquippedTool(accounts);
     await assertEquipmentActionAuthority(accounts);
+    // The shooter fixtures intentionally share one oldDepot room so they can
+    // target each other. They must not influence the safe-spawn search for the
+    // following single-player harvest contract.
+    await closeFixtureSockets(accounts, [
+      'persistence',
+      'cadence',
+      'untargeted',
+      'strictAp',
+      'equipmentAp',
+      'target'
+    ]);
+    await assertHarvestRequiresEquippedTool(accounts);
 
     console.log(
       'Combat runtime OK: runtime-id profile sync and reload/fire survived save + reconnect, '

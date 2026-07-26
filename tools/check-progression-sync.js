@@ -487,11 +487,24 @@ if (!npcRobServerBody.includes('locationAllowsNpcCombat(loc)') || npcRobServerBo
   const body = socketEventSlice(server, eventName);
   const blockIndex = body.indexOf('locationAllowsNpcCombat(roomLocation(room))');
   const emitIndex = body.indexOf(`emit('${eventName === 'shoot' ? 'shot' : 'melee'}'`);
-  const noiseIndex = body.indexOf('addRoomNoise');
-  if (blockIndex < 0 || (emitIndex >= 0 && blockIndex > emitIndex) || (noiseIndex >= 0 && blockIndex > noiseIndex)) {
-    fail(`${eventName} visual combat event must be suppressed in peaceful locations before FX broadcast/noise`);
+  if (blockIndex < 0
+    || (emitIndex >= 0 && blockIndex > emitIndex)
+    || body.includes('addRoomNoise')) {
+    fail(`${eventName} visual combat event must be suppressed in peaceful locations and must not mutate authoritative AI noise`);
   }
 });
+
+const combatAttackServerBody = socketEventSlice(server, 'combatAttack');
+const combatAttackPeacefulIndex = combatAttackServerBody.indexOf('locationAllowsNpcCombat(loc)');
+const combatAttackSpendIndex = combatAttackServerBody.indexOf('serverValidateAndSpendAttack');
+const combatAttackNoiseIndex = combatAttackServerBody.indexOf('addRoomNoise');
+if (combatAttackPeacefulIndex < 0
+  || combatAttackSpendIndex < 0
+  || combatAttackPeacefulIndex > combatAttackSpendIndex
+  || combatAttackNoiseIndex < combatAttackSpendIndex
+  || !combatAttackServerBody.includes('if (!spend.reused)')) {
+  fail('combatAttack must reject peaceful use before spending and create AI noise only after a new authoritative spend');
+}
 
 const playerHitServerBody = socketEventSlice(server, 'playerHit');
 if (!playerHitServerBody.includes('locationAllowsPvp(loc)')) {

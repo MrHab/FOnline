@@ -17228,7 +17228,6 @@ io.on('connection', (socket) => {
       t: Date.now()
     };
     (socket.to(p.roomId).volatile || socket.to(p.roomId)).emit('shot', shot);
-    if (room) addRoomNoise(room, p.x, p.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, 'shot');
   });
 
   socket.on('melee', (data = {}) => {
@@ -17254,7 +17253,6 @@ io.on('connection', (socket) => {
       t: Date.now()
     };
     (socket.to(p.roomId).volatile || socket.to(p.roomId)).emit('melee', payload);
-    if (room) addRoomNoise(room, p.x, p.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_HARVEST_RANGE), socket.id, 'melee');
   });
 
 
@@ -17281,14 +17279,21 @@ io.on('connection', (socket) => {
     const p = players.get(socket.id);
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
-    syncServerActionProgressionPlayer(p, data);
+    const room = rooms.get(p.roomId);
+    if (!room) return fail('Локация не найдена.');
+    const loc = roomLocation(room);
     const equippedWeaponId = serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists');
-    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     const weapon = serverWeaponDef(equippedWeaponId);
     const currentCombat = () => ({
       combat: serverCombatAck(p, weapon, Date.now()),
       self: publicAuthoritativePlayerState(p)
     });
+    if (locationIsFactionCapital(loc)
+      || (!locationAllowsNpcCombat(loc) && !room.locationWorldEvent)) {
+      return fail('В этой локации нельзя использовать оружие.', currentCombat());
+    }
+    syncServerActionProgressionPlayer(p, data);
+    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', currentCombat());
@@ -17302,6 +17307,19 @@ io.on('connection', (socket) => {
       ...currentCombat(),
       retryAfterMs: Number(spend.retryAfterMs || 0)
     });
+    if (!spend.reused) {
+      const noiseRadius = weapon.ammoType
+        ? ENEMY_HEARING_SHOT_RANGE
+        : ENEMY_HEARING_HARVEST_RANGE;
+      addRoomNoise(
+        room,
+        p.x,
+        p.z,
+        serverPlayerNoiseRadius(p, noiseRadius),
+        socket.id,
+        weapon.ammoType ? 'combat' : 'melee'
+      );
+    }
     if (typeof ack === 'function') ack({
       ok: true,
       reused: !!spend.reused,

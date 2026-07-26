@@ -90,6 +90,11 @@ const globalMapPanel = read('public/js/game/12b_global_map_panel_window.js');
 const globalMapTravel = read('public/js/game/12c_global_map_travel_encounters.js');
 const globalMapEntry = read('public/js/game/12d_global_map_entry_ambush_controls.js');
 const hudLoop = read('public/js/game/13_minimap_hud_loop.js');
+const authBootstrap = read('public/js/game/01_bootstrap_online_save.js');
+const worldMaterials = read('public/js/game/02a_materials_static_models.js');
+const locationLoading = read('public/js/game/02c_map_locations_collision.js');
+const playerVisuals = read('public/js/game/04_player_model_visuals.js');
+const characterCreation = read('public/js/game/08_character_creation_save.js');
 const server = read('server.js');
 
 function authorityRuntime() {
@@ -1049,6 +1054,54 @@ function assertBlockedGameplayGates() {
   ]);
 }
 
+function assertDeferredWorldRuntime() {
+  const runtimeBody = functionBody(hudLoop, 'ensureWorldRuntimeReady');
+  assertContainsAll('deferred world runtime bootstrap', runtimeBody, [
+    'ensureWorldDataReady()',
+    'ensureWorldMaterials()',
+    'createPlayerModel()',
+    'await preloadStaticWorldModels()',
+    "document.body.dataset.worldRuntime = 'ready'"
+  ]);
+
+  const startupBody = functionBody(locationLoading, 'runGameStartupLoading');
+  assert(
+    startupBody.indexOf('await ensureWorldRuntimeReady()') >= 0
+      && startupBody.indexOf('await ensureWorldRuntimeReady()') < startupBody.indexOf('await preloadLocationAssets('),
+    'startup loading does not initialize the deferred world runtime before location assets'
+  );
+  assert(
+    functionBody(authBootstrap, 'selectServerCharacter').includes('await ensureWorldDataReady()'),
+    'existing characters can resolve their saved location before world data is ready'
+  );
+  assert(
+    functionBody(characterCreation, 'createCharacterFromForm').includes('await ensureWorldDataReady()'),
+    'new characters can start before authored world data is ready'
+  );
+
+  assert(worldMaterials.includes('function createWorldMaterialSet()'),
+    'world materials are not isolated behind a lazy factory');
+  assert(worldMaterials.includes('function preloadStaticWorldModels()'),
+    'static GLB preloading is not controlled by the world runtime bootstrap');
+  assert(worldMaterials.includes('const stateKey = STATIC_MODEL_URLS[key] || key;'),
+    'static model aliases do not share state by their resolved GLB URL');
+  assert(worldMaterials.includes('state.pending.push({ holder, key, opts });')
+    && worldMaterials.includes('applyStaticModel(entry.holder, entry.key || key, entry.opts || {});'),
+  'shared GLB state does not retain each pending holder alias');
+  assert(!worldMaterials.includes('Object.keys(STATIC_MODEL_URLS).forEach(requestStaticModel);'),
+    'all static GLB models are still requested while the auth shell loads');
+  assert(!worldMaterials.includes('registerDayNightTerrainMaterial(mats.'),
+    'terrain registration still forces all world materials during auth bootstrap');
+  assert(!playerVisuals.includes('\n  createPlayerModel();'),
+    'the player model is still built before a character enters the world');
+
+  const authShellTail = hudLoop.slice(hudLoop.lastIndexOf("addLog('Быстрые слоты:"));
+  assert(authShellTail.includes('bootstrapProfile();'),
+    'the lightweight auth profile bootstrap is missing');
+  assert(!authShellTail.includes('buildWorld();') && !authShellTail.includes('loadWorldDataConfig();'),
+    'the auth shell still builds or fetches world state before character selection');
+}
+
 async function main() {
   assertAuthorityModes();
   assertAuthorityTransitionCleanup();
@@ -1059,7 +1112,8 @@ async function main() {
   assertInputDeadman();
   assertGlobalMapMotionIntegrity();
   assertBlockedGameplayGates();
-  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map motion, input lifecycle, harvest and dead-man switch.');
+  assertDeferredWorldRuntime();
+  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map motion, deferred world bootstrap, input lifecycle, harvest and dead-man switch.');
 }
 
 main().catch(error => {

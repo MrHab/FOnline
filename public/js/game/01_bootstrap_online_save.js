@@ -644,6 +644,8 @@
       const data = await serverApi(`/api/characters/${encodeURIComponent(characterId)}`, { method: 'GET' });
       if (!selectionIsCurrent()) return;
       if (!data.save) throw new Error('Данные персонажа повреждены или пустые.');
+      await ensureWorldDataReady();
+      if (!selectionIsCurrent()) return;
       const targetLocation = LOCATIONS[data.save.currentLocationId] || LOCATIONS.settlement;
       const loadWorld = () => {
         if (!selectionIsCurrent()) throw new Error('Загрузка персонажа была отменена.');

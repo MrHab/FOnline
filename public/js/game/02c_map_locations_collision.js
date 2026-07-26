@@ -635,6 +635,10 @@
       const characterScreen = document.getElementById('character-screen');
       if (characterScreen) characterScreen.classList.remove('visible');
 
+      setLocationLoadingProgress('Подготавливаю графику и модели мира...', 12);
+      await ensureWorldRuntimeReady();
+      if (token !== locationTransitionToken) return false;
+
       setLocationLoadingProgress('Загружаю текстуры и материалы...', 18);
       await preloadLocationAssets(targetLocation.id, (done, total) => {
         const p = 18 + (done / Math.max(1, total)) * 34;

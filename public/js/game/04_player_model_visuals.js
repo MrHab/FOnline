@@ -1458,8 +1458,6 @@
     renderWeaponReadout();
     updateTargetHintFromHover();
   }
-  createPlayerModel();
-
   function setPlayerCrouching(enabled, notify = true) {
     const next = !!enabled;
     if (player.crouching === next) return;

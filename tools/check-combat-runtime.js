@@ -1155,7 +1155,8 @@ async function assertStrictServerAp(accounts) {
     'playerHit',
     attackPayload(accounts.strictAp.join, accounts.target.socket, 'aimed')
   );
-  invariant(insufficient.ok === false, 'Server accepted a 5-AP aimed shot with less than 5 AP', insufficient);
+  invariant(insufficient.ok === false,
+    'Server accepted an aimed shot below its uninjured 5-AP minimum', insufficient);
   const rejectedCombat = assertCombat(insufficient.combat, {
     loaded: 8,
     reserveAmmo: 0,
@@ -1164,14 +1165,31 @@ async function assertStrictServerAp(accounts) {
   invariant(Number(rejectedCombat.ap) < 5 && Number(rejectedCombat.ap) >= 4.65,
     'Strict-AP rejection returned an unexpected AP value', rejectedCombat);
 
-  await delay(120);
+  // Fill to the acknowledged cap rather than guessing that another fixed
+  // 120ms is enough. A nearby NPC can add a broken-arm AP penalty between the
+  // rejection and retry, increasing this aimed shot from 5 to 6 AP.
+  const refillWaitMs = Math.ceil(
+    Math.max(0, Number(rejectedCombat.maxAp) - Number(rejectedCombat.ap)) / 1.8 * 1000
+  ) + 150;
+  await delay(refillWaitMs);
   const funded = await socketAck(
     accounts.strictAp.socket,
     'playerHit',
     attackPayload(accounts.strictAp.join, accounts.target.socket, 'aimed')
   );
   invariant(funded.ok, 'Aimed shot was rejected after authoritative AP reached its cost', funded);
-  assertCombat(funded.combat, { loaded: 7, reserveAmmo: 0, maxAp: 6 }, 'funded aimed shot');
+  const fundedCombat = assertCombat(
+    funded.combat,
+    { loaded: 7, reserveAmmo: 0, maxAp: 6 },
+    'funded aimed shot'
+  );
+  const inferredFundedCost = Number(rejectedCombat.maxAp) - Number(fundedCombat.ap);
+  invariant(inferredFundedCost >= 4.95 && inferredFundedCost <= 6.05,
+    'Funded aimed shot did not spend its expected AP cost from the full cap', {
+    before: rejectedCombat,
+    inferredCost: inferredFundedCost,
+    after: fundedCombat
+  });
 }
 
 async function assertHarvestRequiresEquippedTool(accounts) {
@@ -1249,7 +1267,20 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       && equipped.ack.self?.equipmentRuntime?.weapon === 'pickaxe',
     'Harvest fixture could not equip its carried pickaxe', equipped.ack);
     const beforeSuccessAp = Number(equipped.ack.self?.combat?.ap);
+    const maxSuccessAp = Number(equipped.ack.self?.combat?.maxAp);
     const beforeSuccessCondition = Number(equipped.ack.self?.itemConditions?.pickaxe);
+    invariant(Number.isFinite(maxSuccessAp)
+      && Math.abs(maxSuccessAp - beforeSuccessAp - 1) <= 0.05,
+    'Equipping the harvest tool did not leave exactly one AP to regenerate', {
+      before: initialAp,
+      after: beforeSuccessAp,
+      max: maxSuccessAp
+    });
+
+    // Equipment switching spends one AP. Let the authoritative 1.8 AP/s
+    // regeneration fill that single-point deficit before measuring harvest:
+    // otherwise request latency is indistinguishable from a partial refund.
+    await delay(750);
 
     const harvested = await socketAck(account.socket, 'harvestResource', {
       id: resource.id,
@@ -1277,12 +1308,15 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       item: harvested.item,
       inventory: harvested.inventory
     });
-    const spentAp = beforeSuccessAp - Number(harvested.ap);
-    invariant(spentAp >= 1.85 && spentAp <= 2.05,
+    invariant(Number(harvested.apCost) === 2,
+      'Successful harvest acknowledged an unexpected AP cost', harvested);
+    const expectedAfterAp = maxSuccessAp - Number(harvested.apCost);
+    invariant(Math.abs(Number(harvested.ap) - expectedAfterAp) <= 0.05,
       'Successful harvest did not spend one 2-AP action', {
-        before: beforeSuccessAp,
+        before: maxSuccessAp,
         after: harvested.ap,
-        spent: spentAp
+        cost: harvested.apCost,
+        expectedAfter: expectedAfterAp
       });
     await delay(80);
     invariant(resourceUpdates.length === 1

@@ -43,7 +43,9 @@ const {
 } = require('./src/server/dev-access');
 const {
   buildPasswordResetEmail,
+  createPasswordResetRecord,
   normalizePasswordResetTtlMs,
+  passwordResetRecordIsValid,
   passwordResetTokenHash
 } = require('./src/server/password-reset');
 const {
@@ -1523,10 +1525,7 @@ app.post('/api/auth/password-reset/request', authRateLimit, async (req, res) => 
   const user = userForEmail(email);
   if (user) {
     const token = crypto.randomBytes(32).toString('hex');
-    user.passwordReset = {
-      tokenHash: passwordResetTokenHash(token),
-      expiresAt: Date.now() + PASSWORD_RESET_TTL_MS
-    };
+    user.passwordReset = createPasswordResetRecord(token, PASSWORD_RESET_TTL_MS);
     persistUsers();
     try {
       await sendPasswordResetEmail(user, token);
@@ -1550,12 +1549,8 @@ app.post('/api/auth/password-reset/confirm', authRateLimit, async (req, res, nex
   if (!validatePassword(password)) {
     return res.status(400).json({ ok: false, error: 'Пароль должен быть от 8 до 128 символов.' });
   }
-  const suppliedHash = passwordResetTokenHash(token);
   const storedHash = String(reset?.tokenHash || '');
-  const validHash = suppliedHash.length === storedHash.length
-    && storedHash
-    && crypto.timingSafeEqual(Buffer.from(suppliedHash), Buffer.from(storedHash));
-  if (!user || !reset || Number(reset.expiresAt || 0) < Date.now() || !validHash) {
+  if (!user || !passwordResetRecordIsValid(reset, token)) {
     return res.status(400).json({ ok: false, error: 'Ссылка восстановления недействительна или устарела.' });
   }
   let passwordRecord;

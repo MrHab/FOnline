@@ -38,6 +38,7 @@
 | `global-exit-direction.js` | направление выхода из локальной карты и точка продолжения на глобальной карте |
 | `model-colliders.js` | загрузка collider-каталога и преобразование bounds/parts в серверные blockers |
 | `npc-inventory.js` | фракционные запасы, доктрины экипировки, личный инвентарь NPC, боеприпасы, торговый и трупный лут |
+| `password-reset.js` | нормализация TTL, хеш и проверка одноразового reset token, человекочитаемый срок и безопасный email-контент |
 | `dev-access.js` | startup-политика и middleware для закрытого dev API |
 | `world-party-integrity.js` | общий контракт task/party, account+character identity, доверенный снимок групповой награды и чистые функции целостности мировых групп |
 

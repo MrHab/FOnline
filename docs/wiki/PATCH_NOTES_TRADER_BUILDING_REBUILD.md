@@ -33,13 +33,13 @@
 
 ```text
 PSXBuildings/PSX_Buildings.fbx
-PSXBuildings/T_Buildings_Textures.png
+source-assets/psx-buildings/T_Buildings_Textures.png
 ```
 
 В проект добавлены:
 
 ```text
-public/assets/textures/psx_buildings/T_Buildings_Textures.png
+source-assets/psx-buildings/T_Buildings_Textures.png
 public/assets/models/psx_buildings/PSX_Buildings.fbx
 public/assets/textures/psx_buildings/*_base_v769.webp
 public/assets/textures/psx_buildings/*_normal_v769.webp

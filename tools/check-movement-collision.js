@@ -23,7 +23,8 @@ const clientProps = fs.readFileSync(path.join(ROOT, 'public/js/game/02d_trader_s
 const clientContainers = fs.readFileSync(path.join(ROOT, 'public/js/game/05d_world_containers_security.js'), 'utf8');
 const clientGroundItems = fs.readFileSync(path.join(ROOT, 'public/js/game/05e_ground_items_world_sync.js'), 'utf8');
 const clientMovement = fs.readFileSync(path.join(ROOT, 'public/js/game/09_update_fog_movement_ai.js'), 'utf8');
-const catalogFile = path.join(ROOT, 'public/assets/models/wasteland/model-colliders.json');
+const modelsDir = path.join(ROOT, 'public/assets/models/wasteland');
+const catalogFile = path.join(modelsDir, 'model-colliders.json');
 const catalog = loadModelColliderCatalog(catalogFile);
 
 function functionBody(source, name) {
@@ -64,7 +65,9 @@ function functionSource(source, name) {
   return '';
 }
 
-assert.strictEqual(Object.keys(catalog).length, 76, 'not every GLB has generated bounds');
+const modelFiles = fs.readdirSync(modelsDir).filter(file => file.endsWith('.glb')).sort();
+const catalogFiles = Object.keys(catalog).sort();
+assert.deepStrictEqual(catalogFiles, modelFiles, 'collider catalog does not exactly match the shipped GLB files');
 assert(Object.values(catalog).every(entry => ['solid', 'none'].includes(entry?.collision?.mode)),
   'not every GLB has an explicit physical collision mode');
 assert(clientLoader.includes('MODEL_COLLIDER_CATALOG_URL'), 'client does not load the shared collider catalog');

@@ -21,10 +21,13 @@ const parts = [
   '13_fallout_weapon_console.css',
   '14_wasteland_actor_cards.css',
   '15_location_loading_screen.css',
-  '16_mobile_custom_icons.css',
   '16_mobile_ui_icons.css',
   '17_player_frame_hud.css',
   '18_hud_readability.css'
+];
+
+const retiredParts = [
+  '16_mobile_custom_icons.css'
 ];
 
 for (const file of parts) {
@@ -41,9 +44,19 @@ if (unlisted.length) {
 }
 
 const loader = fs.readFileSync(loaderPath, 'utf8');
-for (const file of parts) {
-  if (!loader.includes(`/css/game/${file}`)) {
-    throw new Error(`CSS loader does not import: ${file}`);
+const importedParts = Array.from(
+  loader.matchAll(/@import\s+url\(["']?\/css\/game\/([^"'?;)]+)(?:\?[^"')]+)?["']?\);/g),
+  match => match[1]
+);
+if (importedParts.length !== parts.length || importedParts.some((file, index) => file !== parts[index])) {
+  throw new Error(
+    `CSS loader import order mismatch.\nExpected: ${parts.join(', ')}\nActual: ${importedParts.join(', ')}`
+  );
+}
+
+for (const file of retiredParts) {
+  if (fs.existsSync(path.join(cssDir, file)) || loader.includes(`/css/game/${file}`)) {
+    throw new Error(`Retired CSS part returned: ${file}`);
   }
 }
 

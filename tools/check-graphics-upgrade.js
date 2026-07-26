@@ -44,7 +44,7 @@ requireText(modelBuilder, 'bevelSegments: 2', 'model bevel quality regressed');
 requireText(modelBuilder, 'Math.max(12, Number(segments || 12))', 'cylinder smoothing floor regressed');
 requireText(modelBuilder, 'new THREE.SphereBufferGeometry(radius, 20, 14)', 'sphere smoothing quality regressed');
 
-const pngPath = path.join(root, 'public/assets/textures/wasteland/wasteland_ground_albedo_v777.png');
+const pngPath = path.join(root, 'source-assets/wasteland/wasteland_ground_albedo_v777.png');
 const webpPath = path.join(root, 'public/assets/textures/wasteland/wasteland_ground_albedo_v777.webp');
 const provenancePath = path.join(root, 'public/assets/textures/wasteland/GENERATED_TEXTURES.md');
 for (const file of [pngPath, webpPath, provenancePath]) {

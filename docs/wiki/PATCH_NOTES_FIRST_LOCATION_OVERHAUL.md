@@ -22,7 +22,7 @@
 ## Земля
 
 - Добавлена отдельная hand-authored текстура земли первой локации:
-  `public/assets/textures/wasteland/trader_yard_ground_v757.png`
+  `source-assets/wasteland/trader_yard_ground_v757.png`
 - На текстуре вручную размечены дорога, центральная площадь, пятна под объектами, следы шин, трещины, мусор и затемнённые края.
 - Для этой локации используется отдельный backplate-материал `settlementBack`, а не общий повторяемый материал пустоши.
 

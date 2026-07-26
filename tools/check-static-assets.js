@@ -3,6 +3,8 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const publicDir = path.join(root, 'public');
+const authoredDataDir = path.join(root, 'data');
+const serverSourceDir = path.join(root, 'src', 'server');
 const checkedExtensions = new Set(['.html', '.css', '.js']);
 const manifestListKeys = new Set(['files', 'bundled_files']);
 const manifestAssetKeys = new Set([
@@ -18,6 +20,23 @@ const manifestAssetKeys = new Set([
   'map',
   'file',
   'url'
+]);
+const runtimeAssetExtensions = new Set([
+  '.avif',
+  '.fbx',
+  '.gif',
+  '.glb',
+  '.gltf',
+  '.ico',
+  '.jpeg',
+  '.jpg',
+  '.mp3',
+  '.ogg',
+  '.png',
+  '.svg',
+  '.webp',
+  '.woff',
+  '.woff2'
 ]);
 const knownDynamicRoutes = new Set([
   '/sdk.js',
@@ -49,11 +68,17 @@ function shouldCheck(url) {
   if (!url || knownDynamicRoutes.has(url)) return false;
   if (/^(?:data:|https?:|blob:|mailto:|javascript:)/i.test(url)) return false;
   if (url.includes('${') || url.includes('`')) return false;
-  return url.startsWith('/') || url.startsWith('./') || url.startsWith('../');
+  return url.startsWith('/')
+    || url.startsWith('./')
+    || url.startsWith('../')
+    || /^(?:assets|css|js)\//.test(url);
 }
 
 function publicPathFor(url, sourceFile) {
   if (url.startsWith('/')) return path.join(publicDir, url.slice(1).replace(/[\\/]+/g, path.sep));
+  if (/^(?:assets|css|js)\//.test(url)) {
+    return path.join(publicDir, url.replace(/[\\/]+/g, path.sep));
+  }
   return path.resolve(path.dirname(sourceFile), url);
 }
 
@@ -74,7 +99,7 @@ function collectRefs(file, source) {
   }
 
   if (ext === '.js') {
-    addMatches(/['"`](\/(?:assets|css|js)\/[^'"`]+)['"`]/g);
+    addMatches(/['"`](\/?(?:assets|css|js)\/[^'"`]+)['"`]/g);
     addMatches(/['"`](\/(?:sdk\.js|vendor\/three\.min\.js|vendor\/GLTFLoader\.js|socket\.io\/socket\.io\.js))['"`]/g);
   }
 
@@ -113,8 +138,19 @@ function manifestFiles() {
 }
 
 const missing = [];
+const referencedAssets = new Set();
 let refCount = 0;
 let manifestRefCount = 0;
+let authoredRefCount = 0;
+let serverRefCount = 0;
+
+function rememberAssetReference(target) {
+  const resolved = path.resolve(target);
+  const assetsDir = path.join(publicDir, 'assets');
+  if (resolved === assetsDir || resolved.startsWith(assetsDir + path.sep)) {
+    referencedAssets.add(resolved.toLowerCase());
+  }
+}
 
 for (const file of walkFiles(publicDir)) {
   const source = fs.readFileSync(file, 'utf8');
@@ -127,6 +163,51 @@ for (const file of walkFiles(publicDir)) {
     }
     if (!fs.existsSync(target)) {
       missing.push(`${path.relative(root, file)} -> ${ref}`);
+    } else {
+      rememberAssetReference(target);
+    }
+  }
+}
+
+for (const file of [
+  path.join(root, 'server.js'),
+  ...walkFiles(serverSourceDir, [], new Set(['.js']))
+]) {
+  const source = fs.readFileSync(file, 'utf8');
+  for (const ref of collectRefs(file, source)) {
+    serverRefCount += 1;
+    const target = publicPathFor(ref, file);
+    if (!target.startsWith(publicDir + path.sep) && target !== publicDir) {
+      missing.push(`${path.relative(root, file)} -> ${ref} escapes public/`);
+      continue;
+    }
+    if (!fs.existsSync(target)) {
+      missing.push(`${path.relative(root, file)} -> ${ref}`);
+    } else {
+      rememberAssetReference(target);
+    }
+  }
+}
+
+for (const file of walkFiles(authoredDataDir, [], new Set(['.json']))) {
+  let authoredData;
+  try {
+    authoredData = JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (err) {
+    missing.push(`${path.relative(root, file)} is not valid JSON: ${err.message}`);
+    continue;
+  }
+  for (const ref of collectManifestRefs(authoredData)) {
+    authoredRefCount += 1;
+    const target = publicPathFor(ref, file);
+    if (!target.startsWith(publicDir + path.sep) && target !== publicDir) {
+      missing.push(`${path.relative(root, file)} -> ${ref} escapes public/`);
+      continue;
+    }
+    if (!fs.existsSync(target)) {
+      missing.push(`${path.relative(root, file)} -> ${ref}`);
+    } else {
+      rememberAssetReference(target);
     }
   }
 }
@@ -148,6 +229,8 @@ for (const file of manifestFiles()) {
     }
     if (!fs.existsSync(target)) {
       missing.push(`${path.relative(root, file)} -> ${ref}`);
+    } else {
+      rememberAssetReference(target);
     }
   }
 }
@@ -156,4 +239,28 @@ if (missing.length) {
   throw new Error(`Missing static asset reference(s):\n${missing.map(row => `- ${row}`).join('\n')}`);
 }
 
-console.log(`Static asset references OK: ${refCount} local URL(s), ${manifestRefCount} manifest file reference(s) checked`);
+const assetFiles = walkFiles(path.join(publicDir, 'assets'), [], null);
+const emptyAssets = assetFiles
+  .filter(file => fs.statSync(file).size === 0)
+  .map(file => path.relative(root, file));
+const orphanedRuntimeAssets = assetFiles
+  .filter(file => runtimeAssetExtensions.has(path.extname(file).toLowerCase()))
+  .filter(file => !referencedAssets.has(path.resolve(file).toLowerCase()))
+  .map(file => path.relative(root, file));
+
+if (emptyAssets.length || orphanedRuntimeAssets.length) {
+  const rows = [];
+  if (emptyAssets.length) {
+    rows.push('Empty asset file(s):', ...emptyAssets.map(file => `- ${file}`));
+  }
+  if (orphanedRuntimeAssets.length) {
+    rows.push('Unreferenced runtime asset file(s):', ...orphanedRuntimeAssets.map(file => `- ${file}`));
+  }
+  throw new Error(rows.join('\n'));
+}
+
+console.log(
+  `Static asset references OK: ${refCount} public URL(s), ${serverRefCount} server URL(s), `
+  + `${authoredRefCount} authored-data reference(s), ${manifestRefCount} manifest reference(s), `
+  + `${referencedAssets.size} runtime asset file(s) checked`
+);

@@ -64,6 +64,7 @@ Three.js/WebGL, HTTP-часть — на Express, realtime-синхрониза�
 | Контент | `data/encounters.json`, `quests.json`, `traders.json`, `loot-tables.json` | проверяется специализированными `check:*` |
 | Runtime | `DATA_DIR/users.json`, `saves.json`, `wasteland-sim.json` | не коммитить и не использовать в тестах production-данные |
 | Статика | `public/` | отправляется браузеру |
+| Исходные материалы | `source-assets/` | хранить мастера и референсы, не ссылаться на них из браузера |
 | Collider-каталог | `public/assets/models/wasteland/model-colliders.json` | генерировать инструментом, не редактировать вручную |
 
 ## Критические принципы

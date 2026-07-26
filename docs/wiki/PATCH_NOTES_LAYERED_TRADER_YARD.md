@@ -1,5 +1,10 @@
 # Realm of Ashes v7.58.0 — Layered Trader Yard
 
+> Current repository note: the original v7.58 sand, crack, gravel, tire, oil
+> and road WebP layers were superseded by the relief/material-ground set and
+> removed from the shipped assets. The active shadow/AO/glow layers remain in
+> `public/assets/textures/wasteland/layers/`.
+
 ## Главная идея
 Первая локация с торговцем переведена на новый визуальный подход: базовая земля больше не является одной растянутой картинкой. Теперь основа — спокойный цветной террейн, а детализация создаётся отдельными слоями высокого разрешения и отдельными 3D-объектами.
 

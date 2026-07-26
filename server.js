@@ -47,6 +47,18 @@ const {
   passwordResetTokenHash
 } = require('./src/server/password-reset');
 const {
+  clientAddressFromRequest,
+  createAuthRateLimiter,
+  isTrustedProxyAddress,
+  normalizeAuthRateLimitConfig
+} = require('./src/server/auth-rate-limit');
+const {
+  DUMMY_PASSWORD_RECORD,
+  createPasswordHasher,
+  isPasswordHashBusyError,
+  normalizePasswordHashConfig
+} = require('./src/server/password-hashing');
+const {
   WORLD_TASK_CLAIM_LIMIT: SERVER_WORLD_TASK_CLAIM_LIMIT,
   isWorldPartyTask,
   migrateDuplicateCharacterIds,
@@ -116,8 +128,8 @@ const DEV_ACCESS_POLICY = createDevAccessPolicy({
   nodeEnv: process.env.NODE_ENV,
   token: process.env.DEV_ADMIN_TOKEN
 });
-const AUTH_RATE_WINDOW_MS = Math.max(60000, Number(process.env.AUTH_RATE_WINDOW_MS || 10 * 60 * 1000));
-const AUTH_RATE_MAX_ATTEMPTS = Math.max(5, Number(process.env.AUTH_RATE_MAX_ATTEMPTS || 20));
+const AUTH_RATE_CONFIG = normalizeAuthRateLimitConfig(process.env);
+const PASSWORD_HASH_CONFIG = normalizePasswordHashConfig(process.env);
 const PASSWORD_RESET_TTL_MS = normalizePasswordResetTtlMs(process.env.PASSWORD_RESET_TTL_MS);
 const PUBLIC_GAME_URL = String(process.env.PUBLIC_GAME_URL || 'https://rangir.ru').replace(/\/+$/, '');
 const SMTP_URL = String(process.env.SMTP_URL || '').trim();
@@ -841,20 +853,6 @@ function makeToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
-  const hash = crypto.pbkdf2Sync(String(password), salt, 120000, 64, 'sha512').toString('hex');
-  return { salt, hash };
-}
-
-function verifyPassword(password, user) {
-  const { hash } = hashPassword(password, user.salt);
-  try {
-    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(user.passwordHash, 'hex'));
-  } catch (_) {
-    return false;
-  }
-}
-
 function normalizeDeviceId(value) {
   const id = String(value || '').trim();
   return /^[a-zA-Z0-9_-]{8,96}$/.test(id) ? id : '';
@@ -1174,11 +1172,17 @@ function corsOrigin(origin, cb) {
 }
 
 const app = express();
+app.set('trust proxy', isTrustedProxyAddress);
 
-const authRateBuckets = new Map();
+const authRateLimiter = createAuthRateLimiter(AUTH_RATE_CONFIG);
+const passwordHasher = createPasswordHasher(PASSWORD_HASH_CONFIG);
 
 function requestAddress(req = {}) {
-  return String(req.socket?.remoteAddress || req.ip || '').trim().toLowerCase();
+  return clientAddressFromRequest(req);
+}
+
+function authRateIdentity(req = {}) {
+  return normalizeLogin(req.body?.login || '') || normalizeEmail(req.body?.email || '');
 }
 
 const requireDevAccess = createDevAccessMiddleware(DEV_ACCESS_POLICY);
@@ -1200,24 +1204,27 @@ app.use((req, res, next) => {
 });
 
 function authRateLimit(req, res, next) {
-  const now = Date.now();
-  const login = normalizeLogin(req.body?.login || '');
-  const key = `${requestAddress(req) || 'unknown'}:${login || '-'}`;
-  const previous = authRateBuckets.get(key);
-  const bucket = previous && previous.resetAt > now
-    ? previous
-    : { attempts: 0, resetAt: now + AUTH_RATE_WINDOW_MS };
-  bucket.attempts += 1;
-  authRateBuckets.set(key, bucket);
-  if (bucket.attempts <= AUTH_RATE_MAX_ATTEMPTS) return next();
-  const retryAfterSec = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
-  res.setHeader('Retry-After', String(retryAfterSec));
-  return res.status(429).json({ ok: false, error: `Слишком много попыток. Повторите через ${retryAfterSec} сек.` });
+  const result = authRateLimiter.consume(requestAddress(req), authRateIdentity(req));
+  if (result.allowed) return next();
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Retry-After', String(result.retryAfterSec));
+  return res.status(429).json({
+    ok: false,
+    error: `Слишком много попыток. Повторите через ${result.retryAfterSec} сек.`
+  });
 }
 
 function clearAuthRateLimit(req = {}) {
-  const login = normalizeLogin(req.body?.login || '');
-  authRateBuckets.delete(`${requestAddress(req) || 'unknown'}:${login || '-'}`);
+  authRateLimiter.clearIdentity(requestAddress(req), authRateIdentity(req));
+}
+
+function passwordHashBusyResponse(res) {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Retry-After', '2');
+  return res.status(503).json({
+    ok: false,
+    error: 'Сервер занят обработкой входа. Повторите через несколько секунд.'
+  });
 }
 
 function getRestCorsOrigin(origin) {
@@ -1422,7 +1429,7 @@ app.get('/health', (_, res) => {
   });
 });
 
-app.post('/api/auth/register', authRateLimit, (req, res) => {
+app.post('/api/auth/register', authRateLimit, async (req, res, next) => {
   const login = normalizeLogin(req.body.login);
   const email = normalizeEmail(req.body.email);
   const password = String(req.body.password || '');
@@ -1444,13 +1451,27 @@ app.post('/api/auth/register', authRateLimit, (req, res) => {
   if (userForEmail(email)) {
     return res.status(409).json({ ok: false, error: 'Этот email уже используется другим аккаунтом.' });
   }
-  const { salt, hash } = hashPassword(password);
+  let passwordRecord;
+  try {
+    passwordRecord = await passwordHasher.hashPassword(password);
+  } catch (error) {
+    if (isPasswordHashBusyError(error)) return passwordHashBusyResponse(res);
+    return next(error);
+  }
+  // The asynchronous hash leaves a small race window. Recheck both unique
+  // constraints before committing the new account.
+  if (usersDb.users[login]) {
+    return res.status(409).json({ ok: false, error: 'Такой логин уже зарегистрирован.' });
+  }
+  if (userForEmail(email)) {
+    return res.status(409).json({ ok: false, error: 'Этот email уже используется другим аккаунтом.' });
+  }
   const user = {
     id: makeUserId(),
     login,
     email,
-    salt,
-    passwordHash: hash,
+    salt: passwordRecord.salt,
+    passwordHash: passwordRecord.hash,
     createdAt: Date.now(),
     lastLoginAt: Date.now()
   };
@@ -1460,14 +1481,28 @@ app.post('/api/auth/register', authRateLimit, (req, res) => {
   res.json({ ok: true, token, user: { login, email }, hasSave: false, characters: [] });
 });
 
-app.post('/api/auth/login', authRateLimit, (req, res) => {
+app.post('/api/auth/login', authRateLimit, async (req, res, next) => {
   const login = normalizeLogin(req.body.login);
   const password = String(req.body.password || '');
   const deviceId = getDeviceIdFromRequest(req);
   const deviceType = getDeviceTypeFromRequest(req);
   const controlType = getControlTypeFromRequest(req);
-  const user = usersDb.users[login];
-  if (!user || !verifyPassword(password, user)) {
+  const user = usersDb.users[login] || null;
+  const passwordSnapshot = user
+    ? { salt: String(user.salt || ''), passwordHash: String(user.passwordHash || '') }
+    : DUMMY_PASSWORD_RECORD;
+  let passwordValid = false;
+  try {
+    passwordValid = await passwordHasher.verifyPassword(password, passwordSnapshot);
+  } catch (error) {
+    if (isPasswordHashBusyError(error)) return passwordHashBusyResponse(res);
+    return next(error);
+  }
+  if (!user
+    || usersDb.users[login] !== user
+    || String(user.salt || '') !== passwordSnapshot.salt
+    || String(user.passwordHash || '') !== passwordSnapshot.passwordHash
+    || !passwordValid) {
     return res.status(401).json({ ok: false, error: 'Неверный логин или пароль.' });
   }
   const conflict = sessionConflictForLogin(login, deviceId);
@@ -1506,7 +1541,7 @@ app.post('/api/auth/password-reset/request', authRateLimit, async (req, res) => 
   res.json({ ok: true, message: 'Если этот email зарегистрирован, ссылка для восстановления отправлена.' });
 });
 
-app.post('/api/auth/password-reset/confirm', authRateLimit, (req, res) => {
+app.post('/api/auth/password-reset/confirm', authRateLimit, async (req, res, next) => {
   const login = normalizeLogin(req.body.login);
   const token = String(req.body.token || '').trim();
   const password = String(req.body.password || '');
@@ -1523,9 +1558,23 @@ app.post('/api/auth/password-reset/confirm', authRateLimit, (req, res) => {
   if (!user || !reset || Number(reset.expiresAt || 0) < Date.now() || !validHash) {
     return res.status(400).json({ ok: false, error: 'Ссылка восстановления недействительна или устарела.' });
   }
-  const { salt, hash } = hashPassword(password);
-  user.salt = salt;
-  user.passwordHash = hash;
+  let passwordRecord;
+  try {
+    passwordRecord = await passwordHasher.hashPassword(password);
+  } catch (error) {
+    if (isPasswordHashBusyError(error)) return passwordHashBusyResponse(res);
+    return next(error);
+  }
+  const currentReset = user.passwordReset;
+  const resetStillValid = usersDb.users[login] === user
+    && currentReset === reset
+    && Number(currentReset?.expiresAt || 0) >= Date.now()
+    && String(currentReset?.tokenHash || '') === storedHash;
+  if (!resetStillValid) {
+    return res.status(400).json({ ok: false, error: 'Ссылка восстановления недействительна или устарела.' });
+  }
+  user.salt = passwordRecord.salt;
+  user.passwordHash = passwordRecord.hash;
   user.passwordChangedAt = Date.now();
   delete user.passwordReset;
   for (const [sessionToken, session] of Object.entries(usersDb.sessions || {})) {

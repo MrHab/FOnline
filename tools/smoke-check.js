@@ -221,15 +221,19 @@ function seedSmokeWorldPartyTask() {
     kind: 'patrol',
     faction: 'old_klim',
     state: 'moving',
-    x: Number(settlement.x || 255),
-    y: Number(settlement.y || 615),
+    // Keep the fixture between settlement and oldKlimFarm, outside both site
+    // footprints. Otherwise a slower test run can materialize an onsite zone
+    // and legitimately keep the attached player in a local room.
+    x: Number(settlement.x || 255) + 60,
+    y: Number(settlement.y || 615) + 15,
     speedKmh: 18,
     baseSpeedKmh: 18,
     strength: 30,
     members: 4,
     homeSiteId: 'settlement',
-    destinationSiteId: '',
-    route: [],
+    destinationSiteId: 'oldKlimFarm',
+    route: ['oldKlimFarm', 'settlement'],
+    routeIndex: 0,
     cargo: {},
     playerMembers: []
   };
@@ -758,6 +762,23 @@ async function assertAuthApiLifecycle() {
   });
   assertStatus(resetLogout, 200, 'POST /api/auth/logout for password reset lifecycle');
 
+  const raceLogin = `race_${suffix}`;
+  const raceResponses = await Promise.all([1, 2].map(index => request('/api/auth/register', {
+    method: 'POST',
+    json: {
+      login: raceLogin,
+      email: `${raceLogin}@example.test`,
+      password: `race-pass-${suffix}`,
+      deviceId: `race_device_${index}_${suffix}`,
+      deviceType: 'desktop',
+      controlType: 'keyboard_mouse'
+    }
+  })));
+  const raceStatuses = raceResponses.map(response => response.statusCode).sort((a, b) => a - b);
+  if (raceStatuses[0] !== 200 || raceStatuses[1] !== 409) {
+    fail('concurrent registration did not preserve unique login/email constraints', JSON.stringify(raceResponses));
+  }
+
   const headers = authHeaders(registered.token, deviceId, { clientInstanceId });
 
   const me = await request('/api/auth/me', { headers });
@@ -905,6 +926,38 @@ async function assertPasswordResetLifecycle(accounts) {
     }
   });
   assertStatus(newLogin, 200, 'POST login with new password after reset');
+}
+
+async function assertAuthRateLimitLifecycle() {
+  async function failedLogin(address, login) {
+    return request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'X-Forwarded-For': address },
+      json: { login, password: 'wrong-password', deviceId: 'rate_limit_device' }
+    });
+  }
+
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    const response = await failedLogin('198.51.100.10', 'rate-known');
+    assertStatus(response, 401, `identity rate-limit attempt ${attempt}`);
+  }
+  const identityLimited = await failedLogin('198.51.100.10', 'rate-known');
+  assertStatus(identityLimited, 429, 'identity rate-limit overflow');
+  if (!Number(identityLimited.headers['retry-after'] || 0)) {
+    fail('identity rate-limit response omitted Retry-After', identityLimited.body);
+  }
+
+  const separateAddress = await failedLogin('198.51.100.11', 'rate-known');
+  assertStatus(separateAddress, 401, 'trusted proxy client IP separation');
+
+  for (let attempt = 1; attempt <= 12; attempt += 1) {
+    const response = await failedLogin('198.51.100.20', `rate-random-${attempt}`);
+    assertStatus(response, 401, `IP rate-limit random identity ${attempt}`);
+  }
+  const ipLimited = await failedLogin('198.51.100.20', 'rate-random-13');
+  assertStatus(ipLimited, 429, 'IP rate-limit random-identity overflow');
+  const otherIp = await failedLogin('198.51.100.21', 'rate-random-13');
+  assertStatus(otherIp, 401, 'IP rate-limit isolation');
 }
 
 function delay(ms) {
@@ -1389,6 +1442,8 @@ function spawnSmokeServer(logs = []) {
       NODE_ENV: 'test',
       DEV_API_MODE: 'local',
       DEV_ADMIN_TOKEN: '',
+      AUTH_RATE_MAX_ATTEMPTS: '5',
+      AUTH_RATE_IP_MAX_ATTEMPTS: '12',
       ROOM_CAPACITY: '1'
     },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -1439,6 +1494,7 @@ async function main() {
     await assertStaticAssets(health);
     await assertRestCorsPreflight();
     await assertEditorAndWorldDataApis();
+    await assertAuthRateLimitLifecycle();
     const resetAccounts = await assertAuthApiLifecycle();
     await assertSocketMultiplayerLifecycle();
     assertLegacyDuplicateMigration(legacyRemappedId);

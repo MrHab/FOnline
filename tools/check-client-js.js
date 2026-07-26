@@ -136,6 +136,10 @@ for (const file of partNames) {
 const combined = partFiles.map(file => fs.readFileSync(file, 'utf8')).join('\n');
 new Function(combined);
 
+for (const forbiddenMarker of ['LegacyUnused', 'Legacy path kept unreachable']) {
+  assert(!combined.includes(forbiddenMarker), `Shipped client contains dead legacy code marker: ${forbiddenMarker}`);
+}
+
 const nativeDialogCallPattern = /\b(?:window\s*\.\s*)?(?:confirm|alert|prompt)\s*\(/g;
 const publicUiFiles = walkFiles(publicDir)
   .filter(file => /\.(?:html|js)$/i.test(file))

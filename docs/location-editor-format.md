@@ -3,6 +3,31 @@
 Редактор `public/dev-location-editor.html` сохраняет локацию в JSON в папку `data/locations/`.
 Сервер читает эти файлы при старте и перекрывает ими встроенные резервные описания локаций.
 
+Dev API по умолчанию закрыт. Для локального редактора запустите сервер из
+PowerShell так:
+
+```powershell
+$env:DEV_API_MODE='local'
+npm start
+```
+
+Открывайте <http://127.0.0.1:3000/dev-location-editor.html>. Local-режим не
+принимает LAN-, proxy-, DNS-rebinding и cross-site form-запросы, запрещён при
+`NODE_ENV=production` и принимает изменения только как JSON. Редактор
+автоматически добавляет защищающий от CSRF заголовок `X-Dev-Local: 1`.
+
+Для непубличного token-режима задайте `DEV_API_MODE=token` и случайный
+`DEV_ADMIN_TOKEN` длиной не менее 32 UTF-8 байт. Например, в PowerShell:
+
+```powershell
+$env:DEV_ADMIN_TOKEN = node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+$env:DEV_API_MODE = 'token'
+npm start
+```
+
+Редактор запросит токен и сохранит его только в `sessionStorage` текущей
+вкладки. Штатный production Nginx token-режим наружу не публикует.
+
 Минимальная структура:
 
 ```json

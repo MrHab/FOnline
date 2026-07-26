@@ -4,7 +4,7 @@
 (async () => {
   'use strict';
 
-  const GAME_CLIENT_VERSION = '7.76.3-closed-dev-api';
+  const GAME_CLIENT_VERSION = '7.76.4-world-party-integrity';
   const MODEL_COLLIDER_CATALOG_URL = '/assets/models/wasteland/model-colliders.json';
   const GAME_SCRIPT_PARTS = [
     '/js/game/01_bootstrap_online_save.js',

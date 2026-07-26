@@ -420,9 +420,56 @@
     ].join('||');
   }
 
+  function clearGlobalMapWorldPartyAttachmentLocal(party = null, options = {}) {
+    const attachedPartyId = String(globalMapState.attachedPartyId || '').trim();
+    const attachedTaskId = String(globalMapState.attachedPartyTaskId || '').trim();
+    if (!attachedPartyId && !attachedTaskId) return false;
+    const pointSource = party && Number.isFinite(Number(party.x)) && Number.isFinite(Number(party.y))
+      ? party
+      : null;
+    if (pointSource) {
+      const p = clampGlobalMapPoint(pointSource.x, pointSource.y);
+      globalMapState.playerX = p.x;
+      globalMapState.playerY = p.y;
+      globalMapState.selectedX = p.x;
+      globalMapState.selectedY = p.y;
+    }
+    globalMapState.attachedPartyId = '';
+    globalMapState.attachedPartyTaskId = '';
+    if (options.save !== false && typeof queueSave === 'function') queueSave(true);
+    return true;
+  }
+
+  function reconcileGlobalMapWorldPartyAttachment(nextState = {}, previousParty = null) {
+    const attachedPartyId = String(globalMapState.attachedPartyId || '').trim();
+    const attachedTaskId = String(globalMapState.attachedPartyTaskId || '').trim();
+    if (!attachedPartyId && !attachedTaskId) return false;
+    const parties = Array.isArray(nextState.parties) ? nextState.parties : [];
+    const tasks = Array.isArray(nextState.worldTasks) ? nextState.worldTasks : [];
+    const party = parties.find(row => String(row?.id || '') === attachedPartyId) || null;
+    const task = tasks.find(row => String(row?.id || '') === attachedTaskId) || null;
+    const attachmentValid = !!(
+      party
+      && (!task || (
+        task.status === 'active'
+        && String(task.partyId || '') === attachedPartyId
+      ))
+    );
+    if (attachmentValid) return false;
+    const lastParty = party || (
+      previousParty && String(previousParty.id || '') === attachedPartyId
+        ? previousParty
+        : null
+    );
+    return clearGlobalMapWorldPartyAttachmentLocal(lastParty);
+  }
+
   function applyWastelandSimState(sim = {}) {
     wastelandSimLastAppliedAt = performance.now();
     const previousVisualSignature = WASTELAND_SIM_STATE?.visualSignature || '';
+    const previousAttachedParty = Array.isArray(WASTELAND_SIM_STATE?.parties)
+      ? WASTELAND_SIM_STATE.parties.find(row => String(row?.id || '') === String(globalMapState.attachedPartyId || '')) || null
+      : null;
     const nextState = {
       worldHour: Number(sim.worldHour || 0),
       gameDayRealMs: Math.max(60000, Number(sim.gameDayRealMs || GLOBAL_MAP_WORLD_DAY_REAL_MS)),
@@ -442,6 +489,7 @@
     };
     nextState.visualSignature = wastelandSimVisualSignatureFromState(nextState);
     WASTELAND_SIM_STATE = nextState;
+    reconcileGlobalMapWorldPartyAttachment(nextState, previousAttachedParty);
     if (previousVisualSignature !== nextState.visualSignature && typeof GLOBAL_MAP_3D !== 'undefined' && GLOBAL_MAP_3D) {
       GLOBAL_MAP_3D.dynamicHeavyReady = false;
       GLOBAL_MAP_3D.dynamicHeavyNextAt = 0;
@@ -962,7 +1010,7 @@
     return `${body}${hidden ? `<div class="global-party-row muted"><b>Еще ${hidden}</b><small>в составе</small></div>` : ''}`;
   }
 
-  function detachGlobalMapWorldParty(reason = '') {
+  function detachGlobalMapWorldParty(reason = '', options = {}) {
     const party = globalMapAttachedParty();
     if (!globalMapState.attachedPartyId) return false;
     const p = party ? clampGlobalMapPoint(party.x, party.y) : clampGlobalMapPoint(globalMapState.playerX, globalMapState.playerY);
@@ -971,11 +1019,13 @@
     globalMapState.selectedX = p.x;
     globalMapState.selectedY = p.y;
     const label = party?.name || 'группа';
-    const leavingPartyId = globalMapState.attachedPartyId || '';
+    const leavingTaskId = String(globalMapState.attachedPartyTaskId || '').trim();
     const socket = typeof multiplayer === 'object' ? multiplayer.socket : null;
-    if (leavingPartyId && socket?.connected && typeof socket.emit === 'function') {
-      socket.emit('worldTaskLeaveParty', { partyId: leavingPartyId }, ack => {
+    if (!options.skipServerCancel && leavingTaskId && socket?.connected && typeof multiplayer === 'object' && multiplayer.joined && typeof socket.emit === 'function') {
+      socket.emit('worldTaskAction', { action: 'cancel', taskId: leavingTaskId }, ack => {
+        if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
         if (ack?.sim && typeof applyWastelandSimState === 'function') applyWastelandSimState(ack.sim);
+        if (ack?.ok === false) addLog(ack.error || 'Сервер не подтвердил выход из группы.', null, 'quest');
       });
     }
     globalMapState.attachedPartyId = '';
@@ -1518,6 +1568,8 @@
       globalMapState.pendingEncounterWorldZoneId = '';
       globalMapState.pendingEncounterWorldPartyId = '';
       globalMapState.pendingWorldDrop = null;
+      globalMapState.attachedPartyId = '';
+      globalMapState.attachedPartyTaskId = '';
       clearGlobalMapEntryCircle();
       globalMapSetTravelLeader('', '');
       setGlobalMapMiniGameActive(false);
@@ -1547,7 +1599,7 @@
     globalMapState.pendingWorldDrop = sanitizeGlobalMapPendingDrop(saved.pendingWorldDrop);
     globalMapState.currentWorldSiteId = String(saved.currentWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     globalMapState.attachedPartyId = String(saved.attachedPartyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-    globalMapState.attachedPartyTaskId = String(saved.attachedPartyTaskId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    globalMapState.attachedPartyTaskId = String(saved.attachedPartyTaskId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120);
     globalMapState.lastEntryCircle = sanitizeGlobalMapEntryCircle(saved.lastEntryCircle);
     globalMapState.travel = restoreGlobalMapTravel(saved.travel);
     globalMapState.encounter = globalMapState.travel ? restoreGlobalMapEncounter(saved.encounter) : null;

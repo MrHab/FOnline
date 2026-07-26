@@ -11,6 +11,10 @@ const {
   worldSiteLocationSeed,
   ensureUniqueWorldSiteLocalProfiles
 } = require('../src/server/wasteland-sim');
+const {
+  normalizeGlobalInfrastructure,
+  pointToInfrastructureDistance
+} = require('../src/server/global-infrastructure');
 
 const ROOT = path.resolve(__dirname, '..');
 const stateFile = path.join(os.tmpdir(), `realm-world-location-check-${process.pid}-${Date.now()}.json`);
@@ -25,6 +29,8 @@ try {
   const enterableSites = sites.filter(site => site.locationId);
   const locationIds = enterableSites.map(site => site.locationId);
   const districtSites = sites.filter(site => site.districtInterest);
+  const roads = normalizeGlobalInfrastructure(globalMap.infrastructure || [], globalMap)
+    .filter(row => row.type === 'road');
 
   assert(districtSites.length >= 80, 'district locations were not generated');
   assert.strictEqual(new Set(locationIds).size, locationIds.length,
@@ -48,6 +54,11 @@ try {
     'two global map locations still share the same local size profile');
   assert(districtSites.every(site => Number(site.identityVersion || 0) > 0 && site.landmark && site.sectorCode),
     'a district site is missing its unique landmark identity');
+  assert(districtSites.every(site => Number(site.roadLayoutVersion || 0) > 0),
+    'a district site is missing its road-clearance layout version');
+  assert(districtSites.every(site => roads.every(road => (
+    pointToInfrastructureDistance(site, road) > 20 + Number(road.width || 0) * 0.5
+  ))), 'a generated district site overlaps a road corridor');
 
   const coordinateKeys = sites.map(site => `${Number(site.x).toFixed(2)}:${Number(site.y).toFixed(2)}`);
   assert.strictEqual(new Set(coordinateKeys).size, coordinateKeys.length,
@@ -76,7 +87,21 @@ try {
   }
 
   sim.save(true);
+  const legacyState = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+  const legacyDistrict = Object.values(legacyState.sites || {}).find(site => site?.districtInterest);
+  const firstRoadPoint = roads[0]?.points?.[0];
+  assert(legacyDistrict && firstRoadPoint, 'road-layout migration fixture could not be prepared');
+  legacyDistrict.x = firstRoadPoint.x;
+  legacyDistrict.y = firstRoadPoint.y;
+  legacyDistrict.roadLayoutVersion = 0;
+  fs.writeFileSync(stateFile, JSON.stringify(legacyState));
   const reloaded = createWastelandSimulation({ stateFile, getGlobalMap: () => globalMap });
+  const migratedDistrict = reloaded.state().sites[legacyDistrict.id];
+  assert(migratedDistrict
+    && (migratedDistrict.x !== firstRoadPoint.x || migratedDistrict.y !== firstRoadPoint.y)
+    && roads.every(road => (
+      pointToInfrastructureDistance(migratedDistrict, road) > 20 + Number(road.width || 0) * 0.5
+    )), 'legacy district site was not migrated away from a road corridor');
   assert.deepStrictEqual(
     Object.values(reloaded.state().sites || {}).filter(site => site.districtInterest).map(site => site.locationId).sort(),
     districtSites.map(site => site.locationId).sort(),

@@ -241,10 +241,28 @@ function assertStagingCaravanLeavesThroughLocalExit() {
   const zone = state.worldZones.find(row => row.id === caravan.onsiteZoneId);
   assert.strictEqual(caravan.state, 'onsite', 'legacy/global-only staging caravan did not materialize inside the staging location');
   assert(zone?.details?.onsiteParty, 'staging caravan has no local actor zone');
+  const escortTaskId = 'escort_caravan_test';
+  caravan.stagingTaskId = escortTaskId;
+  state.worldTasks.push({
+    id: escortTaskId,
+    key: escortTaskId,
+    type: 'escort_caravan',
+    status: 'active',
+    title: 'Test escort',
+    siteId: 'staging',
+    issuerSiteId: 'staging',
+    partyId: caravan.id,
+    createdHour: state.worldHour,
+    expiresHour: state.worldHour + 24,
+    reward: { xp: 1, caps: 1, reputation: 0 },
+    details: {}
+  });
 
   const joined = sim.joinWorldParty({
+    taskId: escortTaskId,
     partyId: caravan.id,
     playerId: 'escort-player',
+    userId: 'escort-account',
     characterId: 'escort-character',
     name: 'Escort',
     factionId: 'old_klim'

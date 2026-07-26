@@ -41,6 +41,14 @@ const {
   createDevAccessPolicy,
   devEditorIsAvailable
 } = require('./src/server/dev-access');
+const {
+  WORLD_TASK_CLAIM_LIMIT: SERVER_WORLD_TASK_CLAIM_LIMIT,
+  isWorldPartyTask,
+  migrateDuplicateCharacterIds,
+  sanitizeWorldTaskClaimIds: sanitizeServerWorldTaskClaimIds,
+  worldPartyMemberIdentityKey,
+  worldTaskClaimEligible
+} = require('./src/server/world-party-integrity');
 
 const GAME_NAME = 'Realm of Ashes';
 
@@ -992,6 +1000,87 @@ function normalizeCharacterId(id) {
   return /^[a-zA-Z0-9_-]{3,64}$/.test(value) ? value : '';
 }
 
+function characterIdOwnerUserIds(characterId = '') {
+  const id = normalizeCharacterId(characterId);
+  if (!id) return [];
+  return Object.entries(savesDb.characters || {})
+    .filter(([, store]) => Object.entries(store && typeof store === 'object' ? store : {})
+      .some(([storeId, row]) => [
+        row?.id,
+        row?.state?.characterProfile?.serverCharacterId,
+        row?.summary?.id,
+        storeId
+      ].some(value => normalizeCharacterId(value) === id)))
+    .map(([userId]) => String(userId || ''))
+    .filter(Boolean);
+}
+
+function makeGloballyUniqueCharacterId() {
+  let id = makeCharacterId();
+  while (characterIdOwnerUserIds(id).length > 0) id = makeCharacterId();
+  return id;
+}
+
+function sanitizeLegacyCharacterIdRemaps(input = []) {
+  return (Array.isArray(input) ? input : []).map(row => {
+    const userId = normalizeCharacterId(row?.userId || row?.accountId || '');
+    const previousCharacterId = normalizeCharacterId(row?.previousCharacterId || row?.oldCharacterId || '');
+    const characterId = normalizeCharacterId(row?.characterId || row?.newCharacterId || '');
+    if (!userId || !previousCharacterId || !characterId || previousCharacterId === characterId) return null;
+    return {
+      userId,
+      previousCharacterId,
+      characterId,
+      previousMemberKeyAmbiguous: !!row?.previousMemberKeyAmbiguous
+    };
+  }).filter(Boolean);
+}
+
+function mergeLegacyCharacterIdRemaps(...groups) {
+  const merged = new Map();
+  for (const row of sanitizeLegacyCharacterIdRemaps(groups.flat())) {
+    const key = `${row.userId}:${row.previousCharacterId}:${row.characterId}`;
+    const previous = merged.get(key);
+    merged.set(key, {
+      ...row,
+      previousMemberKeyAmbiguous: !!(
+        row.previousMemberKeyAmbiguous
+        || previous?.previousMemberKeyAmbiguous
+      )
+    });
+  }
+  return [...merged.values()];
+}
+
+const JOURNALED_CHARACTER_ID_REMAPS = sanitizeLegacyCharacterIdRemaps(
+  savesDb.characterIdMigrationJournal?.remaps || []
+);
+const NEW_LEGACY_CHARACTER_ID_REMAPS = migrateDuplicateCharacterIds(
+  savesDb,
+  makeCharacterId,
+  normalizeCharacterId
+);
+const CANONICALIZED_CHARACTER_STORE_KEYS = Math.max(
+  0,
+  Number(NEW_LEGACY_CHARACTER_ID_REMAPS.canonicalizedStoreKeys || 0)
+);
+const LEGACY_CHARACTER_ID_REMAPS = mergeLegacyCharacterIdRemaps(
+  JOURNALED_CHARACTER_ID_REMAPS,
+  NEW_LEGACY_CHARACTER_ID_REMAPS
+);
+if (LEGACY_CHARACTER_ID_REMAPS.length > 0) {
+  savesDb.characterIdMigrationJournal = {
+    version: 1,
+    remaps: LEGACY_CHARACTER_ID_REMAPS
+  };
+}
+if (LEGACY_CHARACTER_ID_REMAPS.length > 0 || CANONICALIZED_CHARACTER_STORE_KEYS > 0) {
+  persistSaves();
+}
+if (NEW_LEGACY_CHARACTER_ID_REMAPS.length > 0) {
+  console.warn(`Remapped ${NEW_LEGACY_CHARACTER_ID_REMAPS.length} duplicate legacy character id(s).`);
+}
+
 function summarizeState(state, fallbackId = '') {
   const profile = state?.characterProfile || {};
   const player = state?.player || {};
@@ -1629,6 +1718,7 @@ app.delete('/api/characters/:characterId', requireAuth, (req, res) => {
     if (WASTELAND_SIM && typeof WASTELAND_SIM.leaveWorldParty === 'function') {
       WASTELAND_SIM.leaveWorldParty({
         playerId: characterId,
+        userId: req.auth.user.id,
         characterId,
         name: row.summary?.name || row.state?.characterProfile?.name || 'Игрок'
       });
@@ -2637,6 +2727,17 @@ function serverWorldFactionKey(faction = '') {
   return SERVER_JOINABLE_WORLD_FACTIONS.has(key) ? key : '';
 }
 
+function sanitizeServerWorldFactionReputation(input = {}) {
+  const out = {};
+  const source = input && typeof input === 'object' && !Array.isArray(input) ? input : {};
+  for (const [rawFaction, rawValue] of Object.entries(source)) {
+    const factionId = serverWorldFactionKey(rawFaction);
+    if (!factionId) continue;
+    out[factionId] = clamp(Math.floor(Number(rawValue || 0)), 0, 9999);
+  }
+  return out;
+}
+
 const SERVER_ALWAYS_HOSTILE_FACTION_GROUPS = new Set([
   'raiders',
   'mutants',
@@ -2890,6 +2991,37 @@ const WASTELAND_SIM = createWastelandSimulation({
   getGlobalMap: () => GLOBAL_MAP,
   itemIds: SERVER_ITEM_IDS
 });
+
+function reconcileSavedWorldPartyMembers() {
+  if (typeof WASTELAND_SIM.reconcileWorldPartyMembers !== 'function') return { removed: 0, kept: 0 };
+  const characters = [];
+  for (const [userId, store] of Object.entries(savesDb.characters || {})) {
+    if (!store || typeof store !== 'object') continue;
+    for (const row of Object.values(store)) {
+      const state = row?.state && typeof row.state === 'object' ? row.state : {};
+      const characterId = normalizeCharacterId(row?.id || state.characterProfile?.serverCharacterId || '');
+      if (!characterId) continue;
+      characters.push({
+        userId,
+        characterId,
+        factionId: serverWorldFactionKey(state.characterProfile?.worldFactionId || state.characterProfile?.factionId || ''),
+        acceptedTaskIds: sanitizeServerWorldTaskIds(state.worldTaskAccepted || [])
+      });
+    }
+  }
+  return WASTELAND_SIM.reconcileWorldPartyMembers(characters, {
+    legacyCharacterIdRemaps: LEGACY_CHARACTER_ID_REMAPS
+  });
+}
+
+const WORLD_PARTY_RECONCILIATION = reconcileSavedWorldPartyMembers();
+if (LEGACY_CHARACTER_ID_REMAPS.length > 0 && savesDb.characterIdMigrationJournal) {
+  delete savesDb.characterIdMigrationJournal;
+  persistSaves();
+}
+if (Number(WORLD_PARTY_RECONCILIATION.removed || 0) > 0) {
+  console.warn(`Wasteland party reconciliation removed ${WORLD_PARTY_RECONCILIATION.removed} invalid player member(s).`);
+}
 
 function normalizedLocationPlayableBounds(loc = {}) {
   const raw = loc.playableBounds && typeof loc.playableBounds === 'object' ? loc.playableBounds : {};
@@ -5078,6 +5210,50 @@ function serverPlayerHasActiveFactionCommitment(player = {}) {
   return tasks.some(task => accepted.includes(String(task?.id || '')) && task?.status === 'active' && serverWorldTaskRequiredFaction(task, WASTELAND_SIM.state()));
 }
 
+function serverPlayerActiveWorldPartyTask(player = {}, exceptTaskId = '') {
+  const accepted = new Set(sanitizeServerWorldTaskIds(player.worldTaskAccepted || []));
+  const exceptId = String(exceptTaskId || '');
+  const tasks = Array.isArray(WASTELAND_SIM.state()?.worldTasks) ? WASTELAND_SIM.state().worldTasks : [];
+  return tasks.find(task => (
+    task
+    && String(task.id || '') !== exceptId
+    && task.status === 'active'
+    && isWorldPartyTask(task)
+    && accepted.has(String(task.id || ''))
+  )) || null;
+}
+
+function detachServerPlayerFromActiveWorldParties(player = {}) {
+  const state = WASTELAND_SIM.state();
+  const accepted = new Set(sanitizeServerWorldTaskIds(player.worldTaskAccepted || []));
+  const tasks = (Array.isArray(state?.worldTasks) ? state.worldTasks : []).filter(task => (
+    task
+    && task.status === 'active'
+    && isWorldPartyTask(task)
+    && accepted.has(String(task.id || ''))
+  ));
+  const detachedIds = new Set();
+  for (const task of tasks) {
+    WASTELAND_SIM.leaveWorldParty({
+      partyId: task.partyId || '',
+      socketId: player.id || '',
+      playerId: player.id || '',
+      userId: player.userId || '',
+      characterId: player.characterId || '',
+      name: player.name || ''
+    });
+    detachedIds.add(String(task.id || ''));
+  }
+  if (detachedIds.size > 0) {
+    player.worldTaskAccepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || [])
+      .filter(id => !detachedIds.has(id));
+    if (detachedIds.has(String(player.worldTaskTrackedId || ''))) player.worldTaskTrackedId = '';
+  }
+  syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
+  removePlayerFromIndependentGlobalTravelSessions(player.id);
+  return [...detachedIds];
+}
+
 function serverWorldTaskById(taskId = '') {
   const id = String(taskId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120);
   const state = WASTELAND_SIM.state();
@@ -5095,18 +5271,20 @@ function serverWorldTaskSite(state = {}, siteId = '') {
 function serverPlayerAtWorldSite(player = {}, site = null) {
   if (!player || !site) return false;
   const siteId = String(site.id || '');
-  if (siteId && String(player.currentWorldSiteId || '') === siteId) return true;
-  const point = sanitizeServerGlobalMapPoint(player.globalWorldPoint || null);
-  if (point && Number.isFinite(Number(site.x)) && Number.isFinite(Number(site.y))) {
-    const radius = Math.max(10, Number(site.radius || site.interactionRadius || 0));
-    if (Math.hypot(point.x - Number(site.x), point.y - Number(site.y)) <= radius) return true;
+  if (player.onGlobalMap) {
+    if (siteId && String(player.currentWorldSiteId || '') === siteId) return true;
+    const point = sanitizeServerGlobalMapPoint(player.globalWorldPoint || null);
+    if (point && Number.isFinite(Number(site.x)) && Number.isFinite(Number(site.y))) {
+      const radius = Math.max(10, Number(site.radius || site.interactionRadius || 0));
+      return Math.hypot(point.x - Number(site.x), point.y - Number(site.y)) <= radius;
+    }
+    return false;
   }
   const locationId = normalizeLocationId(site.locationId || '');
-  if (locationId && locationId === normalizeLocationId(player.locationId || '')) {
-    const node = (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : []).find(row => String(row?.id || '') === siteId || normalizeLocationId(row?.locationId || row?.id || '') === locationId);
-    if (node && (String(node.id || '') === siteId || String(player.currentWorldSiteId || '') === String(node.id || ''))) return true;
-  }
-  return false;
+  if (!locationId || locationId !== normalizeLocationId(player.locationId || '')) return false;
+  const room = rooms.get(String(player.roomId || '')) || null;
+  const roomSiteId = String(room?.worldSiteId || '');
+  return roomSiteId ? roomSiteId === siteId : true;
 }
 
 function serverWorldTaskRequiredFaction(task = {}, state = {}) {
@@ -5115,6 +5293,22 @@ function serverWorldTaskRequiredFaction(task = {}, state = {}) {
   const party = task.partyId ? state?.parties?.[task.partyId] : null;
   const issuer = serverWorldTaskSite(state, task.issuerSiteId || task.siteId || '');
   return serverWorldFactionKey(party?.faction || issuer?.owner || task.faction || '');
+}
+
+function serverWorldTaskReputationFaction(task = {}, state = {}) {
+  const frozenFactionId = serverWorldFactionKey(task?.details?.rewardFactionId || '');
+  if (SERVER_JOINABLE_WORLD_FACTIONS.has(frozenFactionId)) return frozenFactionId;
+  const party = task.partyId ? state?.parties?.[task.partyId] : null;
+  const issuer = serverWorldTaskSite(state, task.issuerSiteId || task.siteId || '');
+  const target = serverWorldTaskSite(state, task.siteId || '');
+  const candidates = isWorldPartyTask(task)
+    ? [party?.faction, issuer?.owner, issuer?.faction, target?.owner, target?.faction, task.faction]
+    : [issuer?.owner, issuer?.faction, target?.owner, target?.faction, task.faction, party?.faction];
+  for (const candidate of candidates) {
+    const factionId = serverWorldFactionKey(candidate || '');
+    if (SERVER_JOINABLE_WORLD_FACTIONS.has(factionId)) return factionId;
+  }
+  return '';
 }
 
 function serverWorldTaskDeliveryPlan(player = {}, task = {}) {
@@ -5144,7 +5338,7 @@ function performServerWorldTaskAction(player = {}, data = {}) {
   const { id, state, task } = serverWorldTaskById(data.taskId || data.worldTaskId || '');
   if (!id || !task) return { ok: false, error: 'Работа пустоши больше не найдена.' };
   player.worldTaskAccepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []);
-  player.worldTaskRewardClaims = sanitizeServerWorldTaskIds(player.worldTaskRewardClaims || []);
+  player.worldTaskRewardClaims = sanitizeServerWorldTaskClaimIds(player.worldTaskRewardClaims || []);
   const accepted = player.worldTaskAccepted.includes(id);
   const publicState = () => WASTELAND_SIM.publicState();
 
@@ -5155,25 +5349,44 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     if (!serverPlayerAtWorldSite(player, issuer)) return { ok: false, error: 'Нужно подойти к доске работ в точке выдачи.' };
     const requiredFaction = serverWorldTaskRequiredFaction(task, state);
     if (requiredFaction && serverWorldFactionKey(player.worldFactionId || player.factionId || '') !== requiredFaction) return { ok: false, error: 'Эта работа доступна только участникам нужной фракции.' };
-    if (['escort_caravan', 'join_patrol'].includes(String(task.type || '').toLowerCase()) && task.partyId) {
+    if (isWorldPartyTask(task)) {
+      const activeGroupTask = serverPlayerActiveWorldPartyTask(player, id);
+      if (activeGroupTask) return { ok: false, error: 'Сначала отмените текущую работу с отрядом пустоши.' };
+      if (globalTravelSessionForMember(player.id) || player.onGlobalMap) {
+        return { ok: false, error: 'Сначала завершите собственный маршрут и вернитесь к доске работ.' };
+      }
       const joined = WASTELAND_SIM.joinWorldParty({
         taskId: id, partyId: task.partyId, socketId: player.id, playerId: player.id,
-        characterId: player.characterId || '', factionId: player.worldFactionId || '', worldFactionId: player.worldFactionId || '', name: player.name || ''
+        userId: player.userId || '', characterId: player.characterId || '',
+        factionId: player.worldFactionId || '', worldFactionId: player.worldFactionId || '', name: player.name || ''
       });
       if (!joined?.ok) return { ok: false, error: joined?.error || 'Группа больше не принимает участников.' };
     }
     player.worldTaskAccepted.push(id);
     if (!player.worldTaskTrackedId) player.worldTaskTrackedId = id;
+    if (isWorldPartyTask(task)) {
+      syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
+    }
     return { ok: true, action, taskId: id, sim: publicState(), self: publicAuthoritativePlayerState(player) };
   }
 
   if (action === 'cancel') {
     if (!accepted && player.worldTaskTrackedId !== id) return { ok: false, error: 'Эта работа не принята.' };
-    if (task.partyId && ['escort_caravan', 'join_patrol'].includes(String(task.type || '').toLowerCase())) {
-      WASTELAND_SIM.leaveWorldParty({ partyId: task.partyId, socketId: player.id, playerId: player.id, characterId: player.characterId || '', name: player.name || '' });
+    if (task.partyId && isWorldPartyTask(task)) {
+      WASTELAND_SIM.leaveWorldParty({
+        partyId: task.partyId,
+        socketId: player.id,
+        playerId: player.id,
+        userId: player.userId || '',
+        characterId: player.characterId || '',
+        name: player.name || ''
+      });
     }
     player.worldTaskAccepted = player.worldTaskAccepted.filter(value => value !== id);
     if (player.worldTaskTrackedId === id) player.worldTaskTrackedId = '';
+    if (isWorldPartyTask(task)) {
+      syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
+    }
     return { ok: true, action, taskId: id, sim: publicState(), self: publicAuthoritativePlayerState(player) };
   }
 
@@ -5205,17 +5418,35 @@ function performServerWorldTaskAction(player = {}, data = {}) {
   if (action === 'claim') {
     if (task.status !== 'completed') return { ok: false, error: 'Награда за эту работу пока недоступна.' };
     if (player.worldTaskRewardClaims.includes(id)) return { ok: false, error: 'Награда уже получена.' };
-    if (!accepted && !worldTaskRewardMatchesPlayer(task, player)) return { ok: false, error: 'Персонаж не участвовал в этой работе.' };
+    if (!worldTaskClaimEligible(task, player, accepted, worldTransferId)) {
+      return { ok: false, error: 'Персонаж не участвовал в этой работе.' };
+    }
     const caps = Math.max(0, Math.floor(Number(task.reward?.caps || 0)));
     const xp = Math.max(0, Math.floor(Number(task.reward?.xp || 0)));
+    const reputation = Math.max(0, Math.floor(Number(task.reward?.reputation || 0)));
+    const reputationFactionId = serverWorldTaskReputationFaction(task, state);
     if (serverInventoryQty(player.inventory || [], 'silver') + caps > serverItemStackLimit('silver')) return { ok: false, error: 'Достигнут предел крышек в рюкзаке.' };
     if (caps > 0) serverInventoryAdd(player, 'silver', caps);
     if (xp > 0) serverGrantXp(player, xp);
+    player.worldFactionReputation = sanitizeServerWorldFactionReputation(player.worldFactionReputation || {});
+    if (reputation > 0 && reputationFactionId) {
+      player.worldFactionReputation[reputationFactionId] = clamp(
+        Number(player.worldFactionReputation[reputationFactionId] || 0) + reputation,
+        0,
+        9999
+      );
+    }
     player.worldTaskRewardClaims.push(id);
     player.worldTaskAccepted = player.worldTaskAccepted.filter(value => value !== id);
     if (player.worldTaskTrackedId === id) player.worldTaskTrackedId = '';
     sanitizeCarrySnapshot(player);
-    return { ok: true, action, taskId: id, reward: { xp, caps, reputation: Math.max(0, Number(task.reward?.reputation || 0)) }, self: publicAuthoritativePlayerState(player) };
+    return {
+      ok: true,
+      action,
+      taskId: id,
+      reward: { xp, caps, reputation, reputationFactionId },
+      self: publicAuthoritativePlayerState(player)
+    };
   }
   return { ok: false, error: 'Неизвестное действие с работой пустоши.' };
 }
@@ -5626,7 +5857,8 @@ function initialServerCharacterState(data = {}, characterId = '') {
       taggedSkills,
       createdAt: now,
       lastVisitedSettlementId: 'settlement',
-      serverCharacterId: id
+      serverCharacterId: id,
+      worldFactionReputation: {}
     },
     lastVisitedSettlementId: 'settlement',
     player: {
@@ -5659,6 +5891,7 @@ function initialServerCharacterState(data = {}, characterId = '') {
     worldTaskAccepted: [],
     worldTaskTrackedId: '',
     worldTaskRewardClaims: [],
+    worldFactionReputation: {},
     socialState: sanitizeServerSocialState(),
     quickbarSlots: [],
     itemRuntime: {},
@@ -6097,16 +6330,24 @@ function serverLocationContextFromPlayer(player = {}) {
   if (!player || player.onGlobalMap) return null;
   const locationId = normalizeLocationId(player.locationId || 'settlement');
   const room = player.roomId ? rooms.get(player.roomId) : null;
+  const attachedPartyId = String(player.attachedPartyId || '');
+  const onsiteZone = room?.onsiteWorldZoneIds instanceof Set
+    ? [...room.onsiteWorldZoneIds]
+      .map(zoneId => serverActiveWorldZoneById(zoneId))
+      .find(zone => zone && (!attachedPartyId || String(zone.partyId || zone.details?.partyId || '') === attachedPartyId))
+    : null;
   return sanitizeServerLocationContext({
     locationId,
     roomId: room && !locationUsesSharedReality(roomLocation(room)) ? room.id : '',
-    encounterId: room?.encounterId || '',
-    worldZoneId: room?.worldZoneId || '',
-    partyId: room?.worldPartyId || '',
-    siteId: room?.worldSiteId || '',
-    worldPoint: room?.encounterWorldPoint || null,
-    pvpMode: room?.pvpModeOverride || '',
-    locationWorldEvent: !!room?.locationWorldEvent
+    encounterId: onsiteZone?.encounterId || room?.encounterId || '',
+    worldZoneId: onsiteZone?.id || room?.worldZoneId || '',
+    partyId: onsiteZone?.partyId || onsiteZone?.details?.partyId || room?.worldPartyId || '',
+    siteId: onsiteZone?.siteId || onsiteZone?.details?.siteId || room?.worldSiteId || '',
+    worldPoint: onsiteZone
+      ? { x: onsiteZone.x, y: onsiteZone.y }
+      : (room?.encounterWorldPoint || null),
+    pvpMode: onsiteZone?.pvpMode || room?.pvpModeOverride || '',
+    locationWorldEvent: !!onsiteZone || !!room?.locationWorldEvent
   }, locationId);
 }
 
@@ -6143,7 +6384,11 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     next.npcQuests = previousState.npcQuests || defaultServerNpcQuestState();
     next.worldTaskAccepted = previousState.worldTaskAccepted || [];
     next.worldTaskTrackedId = previousState.worldTaskTrackedId || '';
-    next.worldTaskRewardClaims = previousState.worldTaskRewardClaims || [];
+    next.worldTaskRewardClaims = sanitizeServerWorldTaskClaimIds(previousState.worldTaskRewardClaims || []);
+    next.worldFactionReputation = sanitizeServerWorldFactionReputation(
+      previousState.worldFactionReputation || previousProfile.worldFactionReputation || {}
+    );
+    next.characterProfile.worldFactionReputation = next.worldFactionReputation;
     next.globalMap = previousState.globalMap || null;
     next.serverLocationContext = previousState.serverLocationContext || null;
     return safeSaveState(next);
@@ -6158,6 +6403,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   profile.taggedSkills = sanitizeTaggedSkills(player.taggedSkills || profile.taggedSkills || []);
   profile.factionId = serverWorldFactionKey(player.worldFactionId || player.factionId || '');
   profile.worldFactionId = profile.factionId;
+  profile.worldFactionReputation = sanitizeServerWorldFactionReputation(player.worldFactionReputation || {});
   next.characterProfile = profile;
   next.lastVisitedSettlementId = normalizeRespawnSettlementId(player.lastVisitedSettlementId || previousState.lastVisitedSettlementId || 'settlement');
   next.currentLocationId = normalizeLocationId(player.locationId || previousState.currentLocationId || 'settlement');
@@ -6188,7 +6434,8 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   next.npcQuests = sanitizeServerNpcQuestState(player.npcQuests || {});
   next.worldTaskAccepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []);
   next.worldTaskTrackedId = String(player.worldTaskTrackedId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120);
-  next.worldTaskRewardClaims = sanitizeServerWorldTaskIds(player.worldTaskRewardClaims || []);
+  next.worldTaskRewardClaims = sanitizeServerWorldTaskClaimIds(player.worldTaskRewardClaims || []);
+  next.worldFactionReputation = profile.worldFactionReputation;
   next.skillRanks = sanitizeSkillRanks(player.skillRanks || {});
   next.talentRanks = sanitizeTalentRanks(player.talentRanks || {});
   next.socialState = sanitizeServerSocialState(player.socialState || previousState.socialState || {});
@@ -12323,6 +12570,7 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
   if (!p || !p.id) return;
   const socket = io.sockets.sockets.get(p.id);
   const now = Date.now();
+  const detachedWorldTaskIds = detachServerPlayerFromActiveWorldParties(p);
   const respawnLocationId = normalizeRespawnSettlementId(p.lastVisitedSettlementId || cause.lastVisitedSettlementId || 'settlement');
   const settlement = chooseRoomForLocation(respawnLocationId);
   let pos = playerSpawnWorld(respawnLocationId, 'respawn');
@@ -12374,6 +12622,12 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
   p.roomId = settlement.id;
   p.locationId = settlement.locationId;
   p.lastVisitedSettlementId = settlement.locationId;
+  p.onGlobalMap = false;
+  p.currentWorldSiteId = '';
+  const respawnWorldSite = serverGlobalSiteForLocation(settlement.locationId);
+  p.globalWorldPoint = sanitizeServerGlobalMapPoint(respawnWorldSite
+    ? { x: respawnWorldSite.x, y: respawnWorldSite.y }
+    : serverGlobalMapNode(settlement.locationId));
   p.x = pos.x;
   p.z = pos.z;
   p.input = { forward: 0, right: 0 };
@@ -12398,6 +12652,7 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
     z: Number(p.z.toFixed(3)),
     hp: p.hp,
     maxHp: p.maxHp,
+    detachedWorldTaskIds,
     players: others,
     worldState: settlement.worldState || publicWorldState(settlement, true),
     serverAuthoritativeEnemies: true,
@@ -12422,6 +12677,8 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
   emitEnemySnapshot(settlement, true);
   emitGroundItemsSnapshot(settlement, true);
   emitWorldContainersSnapshot(settlement, true);
+  persistActivePlayerState(p);
+  emitAuthoritativePlayerState(p, { reason: 'deathRespawn', detachedWorldTaskIds });
 }
 
 function serverEnemyTypeIndexByName(name = '') {
@@ -14182,8 +14439,19 @@ function worldTransferId(value = '') {
   return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
 }
 
+function worldPartyServerMemberKey(player = {}) {
+  return worldPartyMemberIdentityKey(player.userId || '', player.characterId || '', worldTransferId);
+}
+
+function worldTransferRecordId(value = '') {
+  return String(value || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 180);
+}
+
 function playerMatchesWorldPartyMember(p = {}, member = {}) {
   if (!p || !member) return false;
+  const playerMemberKey = worldPartyServerMemberKey(p);
+  const storedMemberKey = worldPartyServerMemberKey(member);
+  if (playerMemberKey && storedMemberKey) return playerMemberKey === storedMemberKey;
   const playerIds = [
     p.id,
     p.characterId,
@@ -14197,6 +14465,184 @@ function playerMatchesWorldPartyMember(p = {}, member = {}) {
     member.userId
   ].map(worldTransferId).filter(Boolean);
   return playerIds.some(id => memberIds.includes(id));
+}
+
+function serverWorldPartyAttachmentForPlayer(p = {}, simState = null) {
+  const state = simState || (typeof WASTELAND_SIM?.state === 'function' ? WASTELAND_SIM.state() : null);
+  const accepted = new Set(sanitizeServerWorldTaskIds(p.worldTaskAccepted || []));
+  const tasks = Array.isArray(state?.worldTasks) ? state.worldTasks : [];
+  for (const task of tasks) {
+    if (!task || task.status !== 'active' || !isWorldPartyTask(task) || !accepted.has(String(task.id || ''))) continue;
+    const party = state?.parties?.[task.partyId || ''];
+    if (!party || party.destroyed || party.state === 'destroyed') continue;
+    const member = (Array.isArray(party.playerMembers) ? party.playerMembers : [])
+      .find(row => playerMatchesWorldPartyMember(p, row));
+    if (member && String(member.taskId || '') === String(task.id || '')) return { task, party, member };
+  }
+  return null;
+}
+
+function removePlayerFromIndependentGlobalTravelSessions(playerId = '') {
+  const id = String(playerId || '');
+  if (!id) return;
+  for (const [leaderId, session] of [...globalTravelSessions.entries()]) {
+    if (!session) {
+      globalTravelSessions.delete(leaderId);
+      continue;
+    }
+    if (String(leaderId || '') === id || String(session.leaderId || '') === id) {
+      globalTravelSessions.delete(leaderId);
+      continue;
+    }
+    if (Array.isArray(session.memberIds)) {
+      session.memberIds = session.memberIds.filter(memberId => String(memberId || '') !== id);
+      if (session.memberIds.length <= 0) globalTravelSessions.delete(leaderId);
+    }
+  }
+}
+
+function serverPlayerIsInAttachedPartyRoom(p = {}, party = {}, simState = null) {
+  const room = p.roomId ? rooms.get(p.roomId) : null;
+  const partyId = String(party.id || '');
+  if (!room || !partyId) return false;
+  const state = simState || (typeof WASTELAND_SIM?.state === 'function' ? WASTELAND_SIM.state() : null);
+  return (Array.isArray(state?.worldZones) ? state.worldZones : []).some(zone => {
+    if (!zone || zone.status !== 'active' || String(zone.partyId || zone.details?.partyId || '') !== partyId) return false;
+    const zoneId = worldTransferId(zone.id || '');
+    if (zoneId && String(room.worldZoneId || '') === zoneId) return true;
+    if (zoneId && room.onsiteWorldZoneIds instanceof Set && room.onsiteWorldZoneIds.has(zoneId)) return true;
+    const zoneRoomId = sanitizeEncounterRoomId(zone.roomId || zone.details?.roomId || '', zone.locationId || room.locationId || '');
+    return !!zoneRoomId && zoneRoomId === room.id;
+  });
+}
+
+function syncServerPlayerWorldPartyAttachment(p = {}, simState = null, options = {}) {
+  if (!p?.id) return { changed: false, attachment: null };
+  const retryPersistence = p.worldPartyAttachmentPersistPending === true;
+  const retryEmission = p.worldPartyAttachmentEmitPending === true;
+  const state = simState || (typeof WASTELAND_SIM?.state === 'function' ? WASTELAND_SIM.state() : null);
+  const before = [
+    p.attachedPartyId || '',
+    p.attachedPartyTaskId || '',
+    p.roomId || '',
+    p.onGlobalMap ? '1' : '0',
+    sanitizeServerWorldTaskIds(p.worldTaskAccepted || []).join(','),
+    String(p.worldTaskTrackedId || '')
+  ].join('|');
+  const attachment = serverWorldPartyAttachmentForPlayer(p, state);
+  if (attachment) {
+    const { task, party } = attachment;
+    p.attachedPartyId = String(party.id || '');
+    p.attachedPartyTaskId = String(task.id || '');
+    p.globalWorldPoint = sanitizeServerGlobalMapPoint({ x: party.x, y: party.y }) || p.globalWorldPoint || null;
+    p.currentWorldSiteId = '';
+    removePlayerFromIndependentGlobalTravelSessions(p.id);
+    if (serverPlayerIsInAttachedPartyRoom(p, party, state)) {
+      p.onGlobalMap = false;
+    } else {
+      const socket = io.sockets.sockets.get(p.id);
+      if (socket && p.roomId) leaveCurrentRoom(socket, 'worldPartyAttach', { leaderId: p.id });
+      p.roomId = '';
+      p.onGlobalMap = true;
+      p.input = { forward: 0, right: 0 };
+      p.vx = 0;
+      p.vz = 0;
+      p.moving = false;
+    }
+  } else {
+    const hadAttachment = !!(p.attachedPartyId || p.attachedPartyTaskId);
+    const previousParty = p.attachedPartyId ? state?.parties?.[p.attachedPartyId] : null;
+    if (previousParty) {
+      p.globalWorldPoint = sanitizeServerGlobalMapPoint({ x: previousParty.x, y: previousParty.y }) || p.globalWorldPoint || null;
+    }
+    p.attachedPartyId = '';
+    p.attachedPartyTaskId = '';
+    if (hadAttachment && !p.roomId) p.onGlobalMap = true;
+    const orphanedTask = serverPlayerActiveWorldPartyTask(p);
+    if (orphanedTask) {
+      const orphanedId = String(orphanedTask.id || '');
+      p.worldTaskAccepted = sanitizeServerWorldTaskIds(p.worldTaskAccepted || []).filter(id => id !== orphanedId);
+      if (p.worldTaskTrackedId === orphanedId) p.worldTaskTrackedId = '';
+    }
+  }
+  const after = [
+    p.attachedPartyId || '',
+    p.attachedPartyTaskId || '',
+    p.roomId || '',
+    p.onGlobalMap ? '1' : '0',
+    sanitizeServerWorldTaskIds(p.worldTaskAccepted || []).join(','),
+    String(p.worldTaskTrackedId || '')
+  ].join('|');
+  const stateChanged = before !== after;
+  if (stateChanged && options.persist === false) {
+    // Join/task handlers persist their larger transaction separately. Keep a
+    // retry marker so a missing or failed outer write cannot strand this
+    // attachment as an in-memory-only state.
+    p.worldPartyAttachmentPersistPending = true;
+  }
+  const needsPersistence = options.persist !== false && (stateChanged || retryPersistence);
+  let persistenceReady = !needsPersistence;
+  if (needsPersistence) {
+    try {
+      persistenceReady = persistActivePlayerState(p) === true;
+    } catch (error) {
+      persistenceReady = false;
+      console.error('World-party attachment persistence failed:', p.id, error);
+    }
+    p.worldPartyAttachmentPersistPending = !persistenceReady;
+  }
+  const needsEmission = options.emit === true && (stateChanged || retryPersistence || retryEmission);
+  if (needsEmission && (options.persist === false || persistenceReady)) {
+    try {
+      emitAuthoritativePlayerState(p, { reason: attachment ? 'worldPartyAttached' : 'worldPartyDetached' });
+      p.worldPartyAttachmentEmitPending = false;
+    } catch (error) {
+      p.worldPartyAttachmentEmitPending = true;
+      console.error('World-party attachment emission failed:', p.id, error);
+    }
+  } else if (needsEmission) {
+    p.worldPartyAttachmentEmitPending = true;
+  }
+  return {
+    changed: stateChanged || retryPersistence || retryEmission,
+    stateChanged,
+    persisted: persistenceReady,
+    pending: p.worldPartyAttachmentPersistPending === true || p.worldPartyAttachmentEmitPending === true,
+    attachment
+  };
+}
+
+function syncWorldPartyPlayerAttachments(simState = null) {
+  for (const p of players.values()) {
+    if (!p || !socketIsLive(p.id)) continue;
+    const attachmentSync = syncServerPlayerWorldPartyAttachment(p, simState, { emit: true, persist: true });
+    const taskFingerprint = serverWorldTaskRecordFingerprint(p);
+    const previousTaskFingerprint = typeof p.worldTaskRecordFingerprint === 'string'
+      ? p.worldTaskRecordFingerprint
+      : null;
+    p.worldTaskRecordFingerprint = taskFingerprint;
+    if (!attachmentSync.changed && previousTaskFingerprint !== taskFingerprint) {
+      emitAuthoritativePlayerState(p, { reason: 'worldTaskLifecycle' });
+    }
+  }
+}
+
+function serverWorldTaskRecordFingerprint(p = {}) {
+  const accepted = sanitizeServerWorldTaskIds(p.worldTaskAccepted || []);
+  const tracked = String(p.worldTaskTrackedId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120);
+  const ids = [...new Set([...accepted, tracked].filter(Boolean))].sort();
+  const acceptedIds = new Set(accepted);
+  const claimedIds = new Set(sanitizeServerWorldTaskClaimIds(p.worldTaskRewardClaims || []));
+  return ids.map(id => {
+    const task = serverWorldTaskById(id).task;
+    const eligible = !!(
+      task
+      && task.status === 'completed'
+      && !claimedIds.has(id)
+      && worldTaskClaimEligible(task, p, acceptedIds.has(id), worldTransferId)
+    );
+    return `${id}:${String(task?.status || 'missing')}:${eligible ? '1' : '0'}:${claimedIds.has(id) ? '1' : '0'}`;
+  }).join('|');
 }
 
 function onlinePlayerForWorldPartyMember(member = {}) {
@@ -14228,6 +14674,22 @@ function transferSetAddLimited(set, key, max = 600) {
     set.delete(first);
   }
   return true;
+}
+
+function runServerWorldTransferOnce(set, key, callback) {
+  if (!transferSetAddLimited(set, key)) return null;
+  let transferred = false;
+  try {
+    transferred = callback() === true;
+    return transferred;
+  } catch (error) {
+    console.error('Server world transfer failed:', key, error);
+    return false;
+  } finally {
+    // A transient persistence, room-adapter, or emit failure must remain
+    // eligible for the next authoritative world tick.
+    if (!transferred) set.delete(key);
+  }
 }
 
 function prepareWorldZoneTransferRoom(zone = {}) {
@@ -14271,72 +14733,185 @@ function prepareWorldZoneTransferRoom(zone = {}) {
   return room;
 }
 
+function snapshotServerWorldTransferPlayer(p = {}) {
+  return {
+    roomId: p.roomId,
+    locationId: p.locationId,
+    onGlobalMap: p.onGlobalMap,
+    input: p.input && typeof p.input === 'object' ? { ...p.input } : p.input,
+    vx: p.vx,
+    vz: p.vz,
+    moving: p.moving,
+    x: p.x,
+    z: p.z,
+    angle: p.angle,
+    lastVisitedSettlementId: p.lastVisitedSettlementId
+  };
+}
+
+function restoreServerWorldTransferPlayer(p = {}, snapshot = {}) {
+  p.roomId = snapshot.roomId;
+  p.locationId = snapshot.locationId;
+  p.onGlobalMap = snapshot.onGlobalMap;
+  p.input = snapshot.input && typeof snapshot.input === 'object' ? { ...snapshot.input } : snapshot.input;
+  p.vx = snapshot.vx;
+  p.vz = snapshot.vz;
+  p.moving = snapshot.moving;
+  p.x = snapshot.x;
+  p.z = snapshot.z;
+  p.angle = snapshot.angle;
+  p.lastVisitedSettlementId = snapshot.lastVisitedSettlementId;
+}
+
+function movePlayerSocketToServerRoom(p, socket, room, previous = {}, reason = 'worldTransfer') {
+  const previousRoomIds = new Set();
+  const previousRoomId = String(previous.roomId || '');
+  if (previousRoomId && previousRoomId !== room.id) previousRoomIds.add(previousRoomId);
+  for (const candidate of rooms.values()) {
+    if (candidate?.id && candidate.id !== room.id && candidate.sockets instanceof Set && candidate.sockets.has(p.id)) {
+      previousRoomIds.add(candidate.id);
+    }
+  }
+  if (socket.rooms instanceof Set) {
+    for (const socketRoomId of socket.rooms) {
+      if (socketRoomId !== room.id && rooms.has(socketRoomId)) previousRoomIds.add(socketRoomId);
+    }
+  }
+
+  let membershipError = null;
+  for (const oldRoomId of previousRoomIds) {
+    const oldRoom = rooms.get(oldRoomId);
+    const wasTracked = !!(oldRoom?.sockets instanceof Set && oldRoom.sockets.delete(p.id));
+    if (oldRoom && wasTracked) {
+      const payload = {
+        id: p.id,
+        characterId: p.characterId || '',
+        reason: String(reason || 'worldTransfer').slice(0, 32),
+        roomId: oldRoomId,
+        locationId: oldRoom.locationId || previous.locationId || '',
+        newLocationId: room.locationId,
+        t: Date.now()
+      };
+      try {
+        socket.to(oldRoomId).emit('playerLeft', payload);
+      } catch (error) {
+        console.error('World transfer departure emission failed:', p.id, oldRoomId, error);
+      }
+    }
+    try {
+      socket.leave(oldRoomId);
+    } catch (error) {
+      membershipError = membershipError || error;
+    }
+    if (oldRoom) {
+      try {
+        markRoomEmptyIfNeeded(oldRoom, reason);
+      } catch (error) {
+        console.error('World transfer room cleanup failed:', oldRoomId, error);
+      }
+    }
+  }
+  if (membershipError) throw membershipError;
+
+  const socketAlreadyJoined = socket.rooms instanceof Set ? socket.rooms.has(room.id) : room.sockets.has(p.id);
+  if (!socketAlreadyJoined) socket.join(room.id);
+  room.sockets.add(p.id);
+}
+
 function transferPlayerToServerRoom(p, room, options = {}) {
   if (!p || !room || p.dead || Number(p.hp || 0) <= 0) return false;
   const socket = io.sockets.sockets.get(p.id);
   if (!socket) return false;
-  const alreadyInRoom = p.roomId === room.id && room.sockets && room.sockets.has(p.id);
-  if (!alreadyInRoom) {
-    leaveCurrentRoom(socket, options.reason || 'worldTransfer', { newLocationId: room.locationId });
-    socket.join(room.id);
-    room.sockets.add(p.id);
-  }
-  p.roomId = room.id;
-  p.locationId = room.locationId;
-  p.onGlobalMap = false;
-  p.input = { forward: 0, right: 0 };
-  p.vx = 0;
-  p.vz = 0;
-  p.moving = false;
+  const previous = snapshotServerWorldTransferPlayer(p);
   const spawnKey = String(options.entryKey || 'entryFromWorld').slice(0, 32);
-  const fallback = playerSpawnWorld(room.locationId, spawnKey);
-  const preferredX = Number.isFinite(Number(options.x)) ? Number(options.x) : fallback.x;
-  const preferredZ = Number.isFinite(Number(options.z)) ? Number(options.z) : fallback.z;
-  const safePos = findRoomSafeSpawnWorld(room, preferredX, preferredZ, {
-    maxRadius: 10,
-    radius: 0.48,
-    minEnemyDistance: 1.35,
-    minPlayerDistance: 1.15,
-    ignorePlayerId: p.id
-  }) || { x: preferredX, z: preferredZ };
-  p.x = clamp(Number(safePos.x), -MAP_SIZE, MAP_SIZE);
-  p.z = clamp(Number(safePos.z), -MAP_SIZE, MAP_SIZE);
-  p.angle = Number.isFinite(Number(options.angle)) ? Number(options.angle) : p.angle;
-  rememberPlayerSettlement(p, room.locationId);
-  applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
-  refreshRoomWorldState(room);
-  const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== p.id).map(publicPlayer);
-  const payload = {
-    ok: true,
-    reason: String(options.reason || 'worldTransfer').slice(0, 40),
-    message: String(options.message || '').slice(0, 160),
-    roomId: room.id,
-    locationId: room.locationId,
-    lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement',
-    entryKey: spawnKey,
-    x: Number(p.x.toFixed(3)),
-    z: Number(p.z.toFixed(3)),
-    angle: Number(p.angle || 0),
-    hp: Math.round(Number(p.hp || 0)),
-    maxHp: Math.round(Number(p.maxHp || 100)),
-    worldState: room.worldState || publicWorldState(room, true),
-    players: others,
-    serverAuthoritativeEnemies: true,
-    encounterId: room.encounterId || '',
-    encounterRoomId: room.id,
-    worldZoneId: options.worldZoneId || room.worldZoneId || '',
-    partyId: options.partyId || room.worldPartyId || '',
-    siteId: room.worldSiteId || options.siteId || '',
-    worldPoint: room.encounterWorldPoint || options.worldPoint || null,
-    sim: options.sim || null,
-    completedWorldTaskId: options.completedWorldTaskId || '',
-    completedWorldTask: options.completedWorldTask || null
-  };
-  socket.emit('serverWorldTransfer', payload);
-  socket.to(room.id).emit('playerJoined', publicPlayer(p));
-  emitEnemySnapshot(room, true);
-  emitGroundItemsSnapshot(room, true);
-  emitWorldContainersSnapshot(room, true);
+  try {
+    const fallback = playerSpawnWorld(room.locationId, spawnKey);
+    const preferredX = Number.isFinite(Number(options.x)) ? Number(options.x) : fallback.x;
+    const preferredZ = Number.isFinite(Number(options.z)) ? Number(options.z) : fallback.z;
+    const safePos = findRoomSafeSpawnWorld(room, preferredX, preferredZ, {
+      maxRadius: 10,
+      radius: 0.48,
+      minEnemyDistance: 1.35,
+      minPlayerDistance: 1.15,
+      ignorePlayerId: p.id
+    }) || { x: preferredX, z: preferredZ };
+    p.roomId = room.id;
+    p.locationId = room.locationId;
+    p.onGlobalMap = false;
+    p.input = { forward: 0, right: 0 };
+    p.vx = 0;
+    p.vz = 0;
+    p.moving = false;
+    p.x = clamp(Number(safePos.x), -MAP_SIZE, MAP_SIZE);
+    p.z = clamp(Number(safePos.z), -MAP_SIZE, MAP_SIZE);
+    p.angle = Number.isFinite(Number(options.angle)) ? Number(options.angle) : p.angle;
+    rememberPlayerSettlement(p, room.locationId);
+    if (!persistActivePlayerState(p)) {
+      restoreServerWorldTransferPlayer(p, previous);
+      return false;
+    }
+  } catch (error) {
+    restoreServerWorldTransferPlayer(p, previous);
+    console.error('World transfer persistence failed:', p.id, error);
+    return false;
+  }
+
+  try {
+    movePlayerSocketToServerRoom(p, socket, room, previous, options.reason || 'worldTransfer');
+  } catch (error) {
+    console.error('World transfer room membership failed:', p.id, room.id, error);
+    return false;
+  }
+  removePlayerFromIndependentGlobalTravelSessions(p.id);
+  try {
+    applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
+    refreshRoomWorldState(room);
+  } catch (error) {
+    console.error('World transfer room refresh failed:', p.id, room.id, error);
+  }
+
+  let payload;
+  try {
+    const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== p.id).map(publicPlayer);
+    payload = {
+      ok: true,
+      reason: String(options.reason || 'worldTransfer').slice(0, 40),
+      message: String(options.message || '').slice(0, 160),
+      roomId: room.id,
+      locationId: room.locationId,
+      lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement',
+      entryKey: spawnKey,
+      x: Number(p.x.toFixed(3)),
+      z: Number(p.z.toFixed(3)),
+      angle: Number(p.angle || 0),
+      hp: Math.round(Number(p.hp || 0)),
+      maxHp: Math.round(Number(p.maxHp || 100)),
+      worldState: room.worldState || publicWorldState(room, true),
+      players: others,
+      serverAuthoritativeEnemies: true,
+      encounterId: room.encounterId || '',
+      encounterRoomId: room.id,
+      worldZoneId: options.worldZoneId || room.worldZoneId || '',
+      partyId: options.partyId || room.worldPartyId || '',
+      siteId: room.worldSiteId || options.siteId || '',
+      worldPoint: room.encounterWorldPoint || options.worldPoint || null,
+      sim: options.sim || null,
+      completedWorldTaskId: options.completedWorldTaskId || '',
+      completedWorldTask: options.completedWorldTask || null
+    };
+    socket.emit('serverWorldTransfer', payload);
+  } catch (error) {
+    console.error('World transfer client notification failed:', p.id, room.id, error);
+    return false;
+  }
+  try {
+    socket.to(room.id).emit('playerJoined', publicPlayer(p));
+    emitEnemySnapshot(room, true);
+    emitGroundItemsSnapshot(room, true);
+    emitWorldContainersSnapshot(room, true);
+  } catch (error) {
+    console.error('World transfer room snapshot failed:', p.id, room.id, error);
+  }
   return true;
 }
 
@@ -14367,13 +14942,12 @@ function syncWorldCaravanBattleTransfers(state = null) {
       const p = onlinePlayerForWorldPartyMember(member);
       if (!p) continue;
       const key = `${worldTransferId(zone.id)}:${p.id}`;
-      if (!transferSetAddLimited(WORLD_ESCORT_BATTLE_TRANSFERS, key)) continue;
-      transferPlayerToServerRoom(p, room, {
+      runServerWorldTransferOnce(WORLD_ESCORT_BATTLE_TRANSFERS, key, () => transferPlayerToServerRoom(p, room, {
         reason: 'caravanBattle',
         message: 'Караван попал в засаду. Сопровождение втянуто в бой.',
         partyId: party.id || zone.partyId || '',
         worldPoint: { x: Number(zone.x || 0), y: Number(zone.y || 0) }
-      });
+      }));
     }
   }
 }
@@ -14397,29 +14971,16 @@ function syncWorldPlayerAmbushTransfers(state = null) {
     for (const target of targets) {
       const p = target.player;
       const key = `${worldTransferId(zone.id)}:${p.id}:${target.role}`;
-      if (!transferSetAddLimited(WORLD_AMBUSH_TRANSFERS, key)) continue;
-      transferPlayerToServerRoom(p, room, {
+      runServerWorldTransferOnce(WORLD_AMBUSH_TRANSFERS, key, () => transferPlayerToServerRoom(p, room, {
         reason: 'playerAmbushTriggered',
         message: target.role === 'ambushOwner'
-          ? 'Р’ Р·Р°СЃР°РґСѓ РІРѕС€РµР» РѕС‚СЂСЏРґ. Р›РѕРєР°С†РёСЏ РѕР¶РёР»Р°.'
-          : 'Р’Р°С€ РѕС‚СЂСЏРґ РїРѕРїР°Р» РІ Р·Р°СЃР°РґСѓ.',
+          ? 'В засаду вошёл отряд. Локация ожила.'
+          : 'Ваш отряд попал в засаду.',
         partyId: party?.id || zone.partyId || '',
         worldPoint: { x: Number(zone.x || 0), y: Number(zone.y || 0) }
-      });
+      }));
     }
   }
-}
-
-function worldTaskRewardMatchesPlayer(task = {}, p = {}) {
-  if (!task || !p) return false;
-  const details = task.details && typeof task.details === 'object' ? task.details : {};
-  const ids = [
-    ...(Array.isArray(details.rewardPlayerIds) ? details.rewardPlayerIds : []),
-    ...(Array.isArray(details.rewardCharacterIds) ? details.rewardCharacterIds : []),
-    ...(Array.isArray(details.joinedPlayers) ? details.joinedPlayers : [])
-  ].map(worldTransferId).filter(Boolean);
-  if (!ids.length) return false;
-  return [p.id, p.characterId, p.userId].map(worldTransferId).filter(Boolean).some(id => ids.includes(id));
 }
 
 function syncWorldCaravanArrivalTransfers(state = null) {
@@ -14437,34 +14998,43 @@ function syncWorldCaravanArrivalTransfers(state = null) {
     let room = null;
     let publicTask = null;
     for (const p of players.values()) {
-      if (!p || p.dead || !socketIsLive(p.id) || !worldTaskRewardMatchesPlayer(task, p)) continue;
-      const persistentPlayerId = worldTransferId(p.characterId || p.userId || p.id);
+      const accepted = sanitizeServerWorldTaskIds(p?.worldTaskAccepted || []).includes(String(task.id || ''));
+      const alreadyClaimed = sanitizeServerWorldTaskClaimIds(p?.worldTaskRewardClaims || []).includes(String(task.id || ''));
+      const participated = accepted || alreadyClaimed;
+      if (!p || p.dead || !socketIsLive(p.id) || !worldTaskClaimEligible(task, p, participated, worldTransferId)) continue;
+      const persistentPlayerId = worldPartyServerMemberKey(p) || worldTransferRecordId(p.id);
       const transferredPlayerIds = (Array.isArray(details.arrivalTransferredPlayerIds)
         ? details.arrivalTransferredPlayerIds
-        : []).map(worldTransferId).filter(Boolean);
+        : []).map(worldTransferRecordId).filter(Boolean);
       if (persistentPlayerId && transferredPlayerIds.includes(persistentPlayerId)) continue;
       const key = `${worldTransferId(task.id)}:${persistentPlayerId || p.id}`;
-      if (!transferSetAddLimited(WORLD_ESCORT_ARRIVAL_TRANSFERS, key)) continue;
-      if (!publicSim && typeof WASTELAND_SIM.publicState === 'function') {
-        publicSim = WASTELAND_SIM.publicState();
-      }
-      if (!publicTask && Array.isArray(publicSim?.worldTasks)) {
-        publicTask = publicSim.worldTasks.find(row => String(row?.id || '') === String(task.id || '')) || null;
-      }
-      room = room || chooseRoomForLocation(locationId);
-      const transferred = transferPlayerToServerRoom(p, room, {
-        reason: 'caravanArrived',
-        message: 'Караван дошел до пункта назначения. Сопровождение прибыло вместе с ним.',
-        entryKey: 'entryFromWorld',
-        partyId: task.partyId || details.partyId || '',
-        siteId: details.arrivalSiteId || task.targetSiteId || '',
-        sim: publicSim,
-        completedWorldTaskId: task.id || '',
-        completedWorldTask: publicTask || task
+      runServerWorldTransferOnce(WORLD_ESCORT_ARRIVAL_TRANSFERS, key, () => {
+        if (!publicSim && typeof WASTELAND_SIM.publicState === 'function') {
+          publicSim = WASTELAND_SIM.publicState();
+        }
+        if (!publicTask && Array.isArray(publicSim?.worldTasks)) {
+          publicTask = publicSim.worldTasks.find(row => String(row?.id || '') === String(task.id || '')) || null;
+        }
+        if (!publicTask && typeof WASTELAND_SIM.publicWorldTasks === 'function') {
+          publicTask = WASTELAND_SIM.publicWorldTasks([task.id])[0] || null;
+        }
+        room = room || chooseRoomForLocation(locationId);
+        const moved = transferPlayerToServerRoom(p, room, {
+          reason: 'caravanArrived',
+          message: 'Караван дошел до пункта назначения. Сопровождение прибыло вместе с ним.',
+          entryKey: 'entryFromWorld',
+          partyId: task.partyId || details.partyId || '',
+          siteId: details.arrivalSiteId || task.targetSiteId || '',
+          sim: publicSim,
+          completedWorldTaskId: task.id || '',
+          completedWorldTask: publicTask
+        });
+        if (!moved) return false;
+        if (persistentPlayerId && typeof WASTELAND_SIM.recordWorldTaskPlayerTransfer === 'function') {
+          return WASTELAND_SIM.recordWorldTaskPlayerTransfer(task.id, [persistentPlayerId]) === true;
+        }
+        return true;
       });
-      if (transferred && persistentPlayerId && typeof WASTELAND_SIM.recordWorldTaskPlayerTransfer === 'function') {
-        WASTELAND_SIM.recordWorldTaskPlayerTransfer(task.id, [persistentPlayerId]);
-      }
     }
   }
 }
@@ -14509,15 +15079,14 @@ function syncWorldOnsitePartyTransfers(state = null) {
       const p = onlinePlayerForWorldPartyMember(member);
       if (!p) continue;
       const key = `${worldTransferId(zone.id)}:${p.id}`;
-      if (!transferSetAddLimited(WORLD_ONSITE_TRANSFERS, key)) continue;
-      transferPlayerToServerRoom(p, room, {
+      runServerWorldTransferOnce(WORLD_ONSITE_TRANSFERS, key, () => transferPlayerToServerRoom(p, room, {
         reason: 'worldPartyOnsite',
         worldZoneId: zoneId,
         message: 'Группа вошла в локацию. Вы прибыли вместе с ней.',
         partyId: party.id || zone.partyId || '',
         siteId: zone.siteId || zone.details?.siteId || '',
         worldPoint: { x: Number(zone.x || 0), y: Number(zone.y || 0) }
-      });
+      }));
     }
   }
   for (const room of rooms.values()) {
@@ -14546,7 +15115,9 @@ function syncWorldCaravanPlayerTransfers() {
   if (typeof WASTELAND_SIM.state !== 'function') return;
   const simState = WASTELAND_SIM.state();
   syncWorldBattleRooms(simState);
+  syncWorldPartyPlayerAttachments(simState);
   syncWorldCaravanBattleTransfers(simState);
+  syncWorldPlayerAmbushTransfers(simState);
   syncWorldCaravanArrivalTransfers(simState);
   syncWorldOnsitePartyTransfers(simState);
 }
@@ -14554,7 +15125,6 @@ function syncWorldCaravanPlayerTransfers() {
 function publicPlayer(p) {
   return {
     id: p.id,
-    accountLogin: p.accountLogin || '',
     characterId: p.characterId || '',
     deviceType: normalizeDeviceType(p.deviceType || 'desktop'),
     controlType: normalizeControlType(p.controlType || '', p.deviceType || 'desktop'),
@@ -14585,8 +15155,14 @@ function publicPlayer(p) {
 
 function serverAuthoritativeGlobalMapState(p = {}) {
   const session = globalTravelSessionForMember(p.id || '');
+  const attachedPartyId = worldTransferId(p.attachedPartyId || '');
+  const attachedPartyTaskId = worldTransferRecordId(p.attachedPartyTaskId || '');
+  const simState = attachedPartyId && typeof WASTELAND_SIM?.state === 'function' ? WASTELAND_SIM.state() : null;
+  const attachedParty = attachedPartyId ? simState?.parties?.[attachedPartyId] : null;
   const point = sanitizeServerGlobalMapPoint(
-    session ? serverGlobalTravelCurrentPoint(session, Date.now()) : p.globalWorldPoint
+    attachedParty
+      ? { x: attachedParty.x, y: attachedParty.y }
+      : (session ? serverGlobalTravelCurrentPoint(session, Date.now()) : p.globalWorldPoint)
   ) || serverGlobalPointForPlayer(p);
   const siteId = String(p.currentWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   return {
@@ -14604,8 +15180,8 @@ function serverAuthoritativeGlobalMapState(p = {}) {
     pendingEncounterWorldPoint: null,
     pendingWorldDrop: null,
     currentWorldSiteId: siteId,
-    attachedPartyId: '',
-    attachedPartyTaskId: '',
+    attachedPartyId,
+    attachedPartyTaskId,
     lastEntryCircle: null,
     travel: null,
     encounter: null
@@ -14622,9 +15198,21 @@ function publicAuthoritativePlayerState(p = {}) {
   const worldTaskRecordIds = worldTaskTrackedId
     ? [...worldTaskAccepted, worldTaskTrackedId]
     : worldTaskAccepted;
-  const worldTaskRecords = typeof WASTELAND_SIM.publicWorldTasks === 'function'
+  const rawWorldTaskRecords = typeof WASTELAND_SIM.publicWorldTasks === 'function'
     ? WASTELAND_SIM.publicWorldTasks(worldTaskRecordIds)
     : [];
+  const acceptedTaskIds = new Set(worldTaskAccepted);
+  const claimedTaskIds = new Set(sanitizeServerWorldTaskClaimIds(p.worldTaskRewardClaims || []));
+  const worldTaskRecords = rawWorldTaskRecords.map(record => {
+    const rawTask = serverWorldTaskById(record.id || '').task;
+    const rewardEligible = !!(
+      rawTask
+      && rawTask.status === 'completed'
+      && !claimedTaskIds.has(String(rawTask.id || ''))
+      && worldTaskClaimEligible(rawTask, p, acceptedTaskIds.has(String(rawTask.id || '')), worldTransferId)
+    );
+    return { ...record, rewardEligible };
+  });
   return {
     ...publicPlayer(p),
     xp: Math.max(0, Math.floor(Number(p.xp || 0))),
@@ -14647,7 +15235,8 @@ function publicAuthoritativePlayerState(p = {}) {
     worldTaskAccepted,
     worldTaskTrackedId,
     worldTaskRecords,
-    worldTaskRewardClaims: sanitizeServerWorldTaskIds(p.worldTaskRewardClaims || []),
+    worldTaskRewardClaims: sanitizeServerWorldTaskClaimIds(p.worldTaskRewardClaims || []),
+    worldFactionReputation: sanitizeServerWorldFactionReputation(p.worldFactionReputation || {}),
     socialState: sanitizeServerSocialState(p.socialState || {}),
     combat,
     onGlobalMap: !!p.onGlobalMap,
@@ -14671,13 +15260,27 @@ function persistActivePlayerState(p = {}) {
   const store = ensureUserCharacterStore(userId);
   const row = store[characterId];
   if (!row?.state) return false;
-  const state = mergeAuthoritativeCharacterState(row.state, row.state, p, characterId);
-  const now = Date.now();
-  row.state = state;
-  row.updatedAt = now;
-  row.summary = summarizeState(state, characterId);
-  persistSaves();
-  return true;
+  const previous = {
+    state: row.state,
+    updatedAt: row.updatedAt,
+    summary: row.summary
+  };
+  try {
+    const state = mergeAuthoritativeCharacterState(row.state, row.state, p, characterId);
+    const now = Date.now();
+    row.state = state;
+    row.updatedAt = now;
+    row.summary = summarizeState(state, characterId);
+    persistSaves();
+    return true;
+  } catch (error) {
+    // A failed atomic write must not make the in-memory database look newer
+    // than the durable save. Callers may safely retry the same transition.
+    row.state = previous.state;
+    row.updatedAt = previous.updatedAt;
+    row.summary = previous.summary;
+    throw error;
+  }
 }
 
 function publicTravelPartyMember(p, leaderId = '') {
@@ -15039,6 +15642,23 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
   }
   if (!leader || !leader.onGlobalMap || leader.dead || Number(leader.hp || 0) <= 0) return fail('Лидер группы недоступен на глобальной карте.');
   if (!session) return fail('Сервер не нашёл активный маршрут. Начните движение заново.');
+  const invalidMemberId = (Array.isArray(session.memberIds) ? session.memberIds : [])
+    .find(id => {
+      const member = players.get(id);
+      return !member || !member.onGlobalMap || !!member.roomId;
+    });
+  if (invalidMemberId) {
+    globalTravelSessions.delete(socket.id);
+    return fail('Состав маршрута изменился; маршрут отменён и должен быть построен заново.');
+  }
+  const committedMember = (Array.isArray(session.memberIds) ? session.memberIds : [])
+    .map(id => players.get(id))
+    .filter(Boolean)
+    .find(member => serverPlayerActiveWorldPartyTask(member) || member.attachedPartyTaskId);
+  if (committedMember) {
+    removePlayerFromIndependentGlobalTravelSessions(committedMember.id);
+    return fail(`${committedMember.name || 'Участник группы'} привязан к отряду пустоши; самостоятельный маршрут отменён.`);
+  }
 
   const now = Date.now();
   let resolution = serverResolveGlobalTravelContact(session, data, leader, now);
@@ -15320,14 +15940,17 @@ io.on('connection', (socket) => {
       return rejectJoin(socket, ack, 'Этот аккаунт уже находится в игре на другом устройстве.');
     }
 
-    const characterId = normalizeCharacterId(data.characterId || data.serverCharacterId || '');
+    let characterId = normalizeCharacterId(data.characterId || data.serverCharacterId || '');
     if (!characterId) return rejectJoin(socket, ack, 'Не выбран персонаж.');
+    const characterStore = ensureUserCharacterStore(auth.user.id);
+    if (!characterStore[characterId] && characterIdOwnerUserIds(characterId).some(userId => userId !== String(auth.user.id || ''))) {
+      characterId = makeGloballyUniqueCharacterId();
+    }
     const activeCharLock = getActiveCharacterLock(characterId);
     if (activeCharLock && activeCharLock.socketId !== socket.id) {
       return rejectJoin(socket, ack, 'Этот персонаж уже находится в игре в другой вкладке или на другом устройстве.');
     }
 
-    const characterStore = ensureUserCharacterStore(auth.user.id);
     if (!characterStore[characterId]) {
       const selectionError = newServerCharacterSelectionError(data);
       if (selectionError) return rejectJoin(socket, ack, selectionError);
@@ -15484,11 +16107,16 @@ io.on('connection', (socket) => {
       npcQuests: sanitizeServerNpcQuestState(savedState.npcQuests || {}),
       worldTaskAccepted: sanitizeServerWorldTaskIds(savedState.worldTaskAccepted || []),
       worldTaskTrackedId: String(savedState.worldTaskTrackedId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120),
-      worldTaskRewardClaims: sanitizeServerWorldTaskIds(savedState.worldTaskRewardClaims || []),
+      worldTaskRewardClaims: sanitizeServerWorldTaskClaimIds(savedState.worldTaskRewardClaims || []),
+      worldFactionReputation: sanitizeServerWorldFactionReputation(
+        savedState.worldFactionReputation || savedProfile.worldFactionReputation || {}
+      ),
       socialState: sanitizeServerSocialState(savedState.socialState || {}),
       globalMap: savedGlobalMap,
       onGlobalMap: !!savedGlobalMap.onWorldMap && !!savedGlobalWorldPoint,
       globalWorldPoint: savedGlobalWorldPoint,
+      attachedPartyId: worldTransferId(savedGlobalMap.attachedPartyId || ''),
+      attachedPartyTaskId: worldTransferRecordId(savedGlobalMap.attachedPartyTaskId || ''),
       currentWorldSiteId: String(savedGlobalMap.currentWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
       lastWorldEntryOrigin: null,
       lastWorldEntryRadius: SERVER_GLOBAL_LOCATION_RADIUS
@@ -15521,36 +16149,41 @@ io.on('connection', (socket) => {
     serverApplyDerivedVitals(p);
     rememberPlayerSettlement(p, room.locationId);
     players.set(socket.id, p);
+    syncServerPlayerWorldPartyAttachment(p, WASTELAND_SIM.state(), { persist: false, emit: false });
+    p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);
     if (p.onGlobalMap && p.globalWorldPoint) {
       const point = sanitizeServerGlobalMapPoint(p.globalWorldPoint);
       leaveCurrentRoom(socket, 'resumeGlobalMap', { leaderId: socket.id });
       p.roomId = '';
       p.globalWorldPoint = point;
-      const startedAt = Date.now();
-      globalTravelSessions.set(socket.id, {
-        id: `travel_${socket.id}_${startedAt}`,
-        leaderId: socket.id,
-        leaderName: p.name || 'Игрок',
-        fromLocationId: p.locationId || 'settlement',
-        targetLocationId: 'wasteland',
-        targetSiteId: '',
-        fromPoint: point,
-        targetPoint: point,
-        worldPoint: point,
-        memberIds: [socket.id],
-        startedAt,
-        arrivalAt: startedAt,
-        durationMs: 0,
-        distanceKm: 0,
-        speedKmh: serverGlobalTravelSpeedKmh(p),
-        worldHours: 0
-      });
+      if (!p.attachedPartyTaskId) {
+        const startedAt = Date.now();
+        globalTravelSessions.set(socket.id, {
+          id: `travel_${socket.id}_${startedAt}`,
+          leaderId: socket.id,
+          leaderName: p.name || 'Игрок',
+          fromLocationId: p.locationId || 'settlement',
+          targetLocationId: 'wasteland',
+          targetSiteId: '',
+          fromPoint: point,
+          targetPoint: point,
+          worldPoint: point,
+          memberIds: [socket.id],
+          startedAt,
+          arrivalAt: startedAt,
+          durationMs: 0,
+          distanceKm: 0,
+          speedKmh: serverGlobalTravelSpeedKmh(p),
+          worldHours: 0
+        });
+      }
       if (typeof ack === 'function') ack({
         ok: true,
         id: socket.id,
         roomId: '',
         locationId: p.locationId,
         lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement',
+        characterId,
         characterLeaseId,
         x: Number(p.x.toFixed(3)),
         z: Number(p.z.toFixed(3)),
@@ -15566,7 +16199,7 @@ io.on('connection', (socket) => {
 
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     refreshRoomWorldState(room);
-    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: room.worldState || publicWorldState(room, true), serverAuthoritativeEnemies: true });
+    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: room.worldState || publicWorldState(room, true), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemySnapshot(room, true);
     emitGroundItemsSnapshot(room, true);
@@ -15913,6 +16546,9 @@ io.on('connection', (socket) => {
       return fail('Маршрут выбирает лидер группы.', { leaderId: session?.leaderId || '', leaderName: session?.leaderName || '' });
     }
     if (!leader || !leader.onGlobalMap || leader.dead || Number(leader.hp || 0) <= 0) return fail('Лидер группы должен находиться на глобальной карте.');
+    if (serverPlayerActiveWorldPartyTask(leader)) {
+      return fail('Сначала отмените работу с отрядом пустоши, затем выберите собственный маршрут.');
+    }
     const targetPoint = sanitizeServerGlobalMapPoint(data.worldPoint || data.targetPoint || null);
     if (!targetPoint) return fail('Не удалось определить точку назначения.');
     const existing = globalTravelSessions.get(socket.id);
@@ -15929,6 +16565,10 @@ io.on('connection', (socket) => {
       : [leader];
     const members = party.filter(member => member && member.onGlobalMap && !member.dead && Number(member.hp || 0) > 0);
     if (!members.some(member => member.id === leader.id)) members.unshift(leader);
+    const committedMember = members.find(member => serverPlayerActiveWorldPartyTask(member));
+    if (committedMember) {
+      return fail(`${committedMember.name || 'Участник группы'} сначала должен отменить работу с отрядом пустоши.`);
+    }
     const routePoints = planInfrastructureRoute(GLOBAL_MAP, fromPoint, targetPoint);
     if (routePoints.length < 2) return fail('Маршрут к этой точке перекрыт водой. Выберите доступную точку на суше.');
     const timing = serverGlobalTravelTiming(leader, fromPoint, targetPoint, routePoints);
@@ -15990,6 +16630,9 @@ io.on('connection', (socket) => {
       return fail('Маршрут выбирает лидер группы.', { leaderId: session?.leaderId || '', leaderName: session?.leaderName || '' });
     }
     if (!leader || !leader.roomId || leader.dead || Number(leader.hp || 0) <= 0) return fail('Игрок недоступен.');
+    if (serverPlayerActiveWorldPartyTask(leader)) {
+      return fail('Сначала отмените работу с отрядом пустоши, затем выходите на собственный маршрут.');
+    }
     if (!serverPlayerAtGlobalMapExit(leader)) return fail('Сначала дойдите до границы локации.');
     const fromLocationId = normalizeLocationId(leader.locationId || 'settlement');
     const exitDirection = serverGlobalExitDirection(leader);
@@ -15997,6 +16640,10 @@ io.on('connection', (socket) => {
     if (!worldPoint) return fail('Сервер не смог определить выход на глобальную карту.');
     const party = nearbyGlobalTravelParty(leader).filter(member => serverPlayerAtGlobalMapExit(member));
     if (!party.some(member => member.id === leader.id)) party.unshift(leader);
+    const committedMember = party.find(member => serverPlayerActiveWorldPartyTask(member));
+    if (committedMember) {
+      return fail(`${committedMember.name || 'Участник группы'} сначала должен отменить работу с отрядом пустоши.`);
+    }
     const startedAt = Date.now();
     const session = {
       id: `travel_${socket.id}_${Date.now()}`,
@@ -16098,27 +16745,9 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, ...payload });
   });
 
-  socket.on('worldTaskJoinParty', (data = {}, ack) => {
-    const p = players.get(socket.id);
-    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
-    try {
-      const worldFactionId = p.worldFactionId || savedCharacterWorldFaction(p.userId || '', p.characterId || '') || serverWorldFactionKey(data.factionId || data.worldFactionId || data.playerFactionId || '');
-      const result = WASTELAND_SIM.joinWorldParty({
-        taskId: data.taskId || data.worldTaskId || '',
-        partyId: data.partyId || '',
-        socketId: socket.id,
-        playerId: socket.id,
-        characterId: p.characterId || data.characterId || '',
-        factionId: worldFactionId,
-        worldFactionId,
-        name: p.name || data.name || ''
-      });
-      if (!result?.ok) return fail(result?.error || 'Не удалось присоединиться к группе.');
-      if (typeof ack === 'function') ack(result);
-    } catch (err) {
-      console.error('worldTaskJoinParty failed:', err);
-      return fail('Сервер не смог присоединить к группе.');
+  socket.on('worldTaskJoinParty', (_data = {}, ack) => {
+    if (typeof ack === 'function') {
+      ack({ ok: false, error: 'Вступление в группу доступно только через принятие работы пустоши.' });
     }
   });
 
@@ -16129,6 +16758,10 @@ io.on('connection', (socket) => {
     try {
       const result = performServerWorldTaskAction(p, data);
       if (!result?.ok) return fail(result?.error || 'Сервер отклонил действие с работой пустоши.');
+      p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);
+      syncWorldPartyPlayerAttachments(
+        typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null
+      );
       persistActivePlayerState(p);
       if (typeof ack === 'function') ack(result);
     } catch (err) {
@@ -16163,23 +16796,9 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('worldTaskLeaveParty', (data = {}, ack) => {
-    const p = players.get(socket.id);
-    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (!p) return fail('Игрок недоступен.');
-    try {
-      const result = WASTELAND_SIM.leaveWorldParty({
-        partyId: data.partyId || '',
-        socketId: socket.id,
-        playerId: socket.id,
-        characterId: p.characterId || data.characterId || '',
-        name: p.name || data.name || ''
-      });
-      if (!result?.ok) return fail(result?.error || 'Не удалось покинуть группу.');
-      if (typeof ack === 'function') ack(result);
-    } catch (err) {
-      console.error('worldTaskLeaveParty failed:', err);
-      return fail('Сервер не смог вывести из группы.');
+  socket.on('worldTaskLeaveParty', (_data = {}, ack) => {
+    if (typeof ack === 'function') {
+      ack({ ok: false, error: 'Выход из группы доступен только через отмену работы пустоши.' });
     }
   });
 

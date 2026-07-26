@@ -103,7 +103,7 @@ function assertRequiredFiles() {
   const arrivalTransferStart = serverSource.indexOf('function syncWorldCaravanArrivalTransfers(');
   const arrivalTransferEnd = serverSource.indexOf('function syncWorldOnsitePartyTransfers(', arrivalTransferStart);
   const arrivalTransferBody = serverSource.slice(arrivalTransferStart, arrivalTransferEnd);
-  const eligibilityCheck = arrivalTransferBody.indexOf('worldTaskRewardMatchesPlayer(task, p)');
+    const eligibilityCheck = arrivalTransferBody.indexOf('worldTaskClaimEligible(task, p, participated, worldTransferId)');
   const publicStateRead = arrivalTransferBody.indexOf('WASTELAND_SIM.publicState()');
   const roomCreation = arrivalTransferBody.indexOf('chooseRoomForLocation(locationId)');
   if (arrivalTransferStart < 0
@@ -165,10 +165,217 @@ function assertWorldTaskArchiveReload() {
   sim.save(true);
   sim = createWastelandSimulation({ stateFile, getGlobalMap: () => globalMap });
   const archivedTarget = sim.publicWorldTasks(['archived_target'])[0];
+  const rawArchivedTarget = [
+    ...(Array.isArray(sim.state().worldTasks) ? sim.state().worldTasks : []),
+    ...(Array.isArray(sim.state().worldTaskHistory) ? sim.state().worldTaskHistory : [])
+  ].find(task => task?.id === 'archived_target');
   if (sim.state().worldTasks.filter(task => task.status === 'active').length !== 85
     || sim.publicWorldTasks(['done_19', 'archived_target']).length !== 2
-    || !archivedTarget?.details?.arrivalTransferredPlayerIds?.includes('character_smoke')) {
+    || !rawArchivedTarget?.details?.arrivalTransferredPlayerIds?.includes('character_smoke')
+    || archivedTarget?.details?.arrivalTransferredPlayerIds !== undefined) {
     fail('wasteland world-task state was lost after save and reload');
+  }
+}
+
+function seedSmokeReputationTask() {
+  const stateFile = path.join(DATA_DIR, 'wasteland-sim.json');
+  const globalMap = readJsonForTest(path.join(PROJECT_ROOT, 'data', 'global-map.json'));
+  const sim = createWastelandSimulation({ stateFile, getGlobalMap: () => globalMap });
+  const state = sim.state();
+  const conflictingSite = Object.values(state.sites || {}).find(site => (
+    site && String(site.owner || site.faction || '') === 'scrap_union'
+  ));
+  if (!conflictingSite) fail('smoke world has no scrap_union site for frozen reputation verification');
+  const taskId = 'smoke_reputation_task';
+  state.worldTasks = (Array.isArray(state.worldTasks) ? state.worldTasks : [])
+    .filter(task => String(task?.id || '') !== taskId);
+  state.worldTaskHistory = (Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
+    .filter(task => String(task?.id || '') !== taskId);
+  state.worldTasks.unshift({
+    id: taskId,
+    key: taskId,
+    type: 'deliver_supplies',
+    status: 'completed',
+    title: 'Smoke reputation reward',
+    siteId: conflictingSite.id,
+    issuerSiteId: conflictingSite.id,
+    createdHour: Number(state.worldHour || 0),
+    completedHour: Number(state.worldHour || 0),
+    expiresHour: Number(state.worldHour || 0) + 100,
+    reward: { xp: 1, caps: 1, reputation: 3 },
+    details: { rewardCharacterIds: ['c_reward_smoke'], rewardFactionId: 'old_klim' }
+  });
+  sim.save(true);
+}
+
+function seedSmokeWorldPartyTask() {
+  const stateFile = path.join(DATA_DIR, 'wasteland-sim.json');
+  const globalMap = readJsonForTest(path.join(PROJECT_ROOT, 'data', 'global-map.json'));
+  const sim = createWastelandSimulation({ stateFile, getGlobalMap: () => globalMap });
+  const state = sim.state();
+  const taskId = 'smoke_world_party_task';
+  const sharedTerminalTaskId = 'smoke_shared_terminal_task';
+  const journalRecoveryTaskId = 'smoke_journal_recovery_task';
+  const partyId = 'smoke_world_party';
+  const settlement = state.sites?.settlement || { x: 255, y: 615 };
+  state.parties[partyId] = {
+    id: partyId,
+    name: 'Smoke Patrol',
+    kind: 'patrol',
+    faction: 'old_klim',
+    state: 'moving',
+    x: Number(settlement.x || 255),
+    y: Number(settlement.y || 615),
+    speedKmh: 18,
+    baseSpeedKmh: 18,
+    strength: 30,
+    members: 4,
+    homeSiteId: 'settlement',
+    destinationSiteId: '',
+    route: [],
+    cargo: {},
+    playerMembers: []
+  };
+  state.worldTasks = (Array.isArray(state.worldTasks) ? state.worldTasks : [])
+    .filter(task => ![taskId, sharedTerminalTaskId, journalRecoveryTaskId].includes(String(task?.id || '')));
+  state.worldTaskHistory = (Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
+    .filter(task => ![taskId, sharedTerminalTaskId, journalRecoveryTaskId].includes(String(task?.id || '')));
+  state.worldTasks.unshift({
+    id: taskId,
+    key: taskId,
+    type: 'join_patrol',
+    status: 'active',
+    title: 'Smoke world party',
+    siteId: 'settlement',
+    issuerSiteId: 'settlement',
+    partyId,
+    createdHour: Number(state.worldHour || 0),
+    completedHour: 0,
+    expiresHour: Number(state.worldHour || 0) + 100,
+    priority: 5,
+    reward: { xp: 1, caps: 1, reputation: 1 },
+    details: {}
+  });
+  state.worldTasks.unshift({
+    id: sharedTerminalTaskId,
+    key: sharedTerminalTaskId,
+    type: 'deliver_supplies',
+    status: 'active',
+    title: 'Smoke shared terminal lifecycle',
+    siteId: 'settlement',
+    issuerSiteId: 'settlement',
+    partyId: '',
+    createdHour: Number(state.worldHour || 0),
+    completedHour: 0,
+    expiresHour: Number(state.worldHour || 0) + 100,
+    priority: 5,
+    reward: { xp: 1, caps: 1, reputation: 1 },
+    details: { demand: { water: 1 } }
+  });
+  state.worldTaskHistory.unshift({
+    id: journalRecoveryTaskId,
+    key: journalRecoveryTaskId,
+    type: 'deliver_supplies',
+    status: 'completed',
+    title: 'Smoke migration journal recovery',
+    siteId: 'settlement',
+    issuerSiteId: 'settlement',
+    partyId: '',
+    createdHour: Number(state.worldHour || 0),
+    completedHour: Number(state.worldHour || 0),
+    expiresHour: Number(state.worldHour || 0) + 100,
+    priority: 1,
+    reward: { xp: 1, caps: 1, reputation: 1 },
+    details: {
+      rewardMemberKeys: ['journal_user:journal_old_character'],
+      arrivalTransferredPlayerIds: ['journal_user:journal_old_character']
+    }
+  });
+  sim.save(true);
+}
+
+function seedLegacyDuplicateCharacters() {
+  const characterId = 'legacy_shared_character';
+  const row = name => ({
+    id: characterId,
+    login: name.toLowerCase(),
+    createdAt: 1,
+    updatedAt: 1,
+    summary: { id: characterId, name, level: 1 },
+    state: {
+      marker: `preserve_${name}`,
+      characterProfile: { serverCharacterId: characterId, name },
+      player: { level: 1, maxHp: 100, hp: 100 },
+      currentLocationId: 'settlement'
+    }
+  });
+  const journalCharacterId = 'journal_new_character';
+  const journalRow = row('JournalRecovery');
+  journalRow.id = journalCharacterId;
+  journalRow.summary.id = journalCharacterId;
+  journalRow.state.characterProfile.serverCharacterId = journalCharacterId;
+  fs.writeFileSync(path.join(DATA_DIR, 'saves.json'), JSON.stringify({
+    version: 2,
+    characters: {
+      legacy_user_b: { [characterId]: row('LegacyB') },
+      legacy_user_a: { [characterId]: row('LegacyA') },
+      journal_user: { [journalCharacterId]: journalRow }
+    },
+    characterIdMigrationJournal: {
+      version: 1,
+      remaps: [{
+        userId: 'journal_user',
+        previousCharacterId: 'journal_old_character',
+        characterId: journalCharacterId
+      }]
+    }
+  }, null, 2));
+}
+
+function assertLegacyDuplicateMigration(expectedRemappedId = '') {
+  const saves = readJsonForTest(path.join(DATA_DIR, 'saves.json'));
+  const first = saves.characters?.legacy_user_a || {};
+  const second = saves.characters?.legacy_user_b || {};
+  if (!first.legacy_shared_character) {
+    fail('startup legacy migration did not keep the deterministic first owner');
+  }
+  if (second.legacy_shared_character) {
+    fail('startup legacy migration left the colliding character id on the second account');
+  }
+  const secondRows = Object.values(second);
+  if (secondRows.length !== 1
+    || !secondRows[0]?.id
+    || secondRows[0].id === 'legacy_shared_character'
+    || secondRows[0].state?.characterProfile?.serverCharacterId !== secondRows[0].id
+    || secondRows[0].summary?.id !== secondRows[0].id
+    || secondRows[0].state?.marker !== 'preserve_LegacyB') {
+    fail('startup legacy migration did not persist a complete remapped character row', JSON.stringify(secondRows));
+  }
+  if (expectedRemappedId && secondRows[0].id !== expectedRemappedId) {
+    fail('startup legacy migration was not idempotent across restart', JSON.stringify({
+      expectedRemappedId,
+      actualRemappedId: secondRows[0].id
+    }));
+  }
+  if (saves.characterIdMigrationJournal) {
+    fail('character-id migration journal was cleared before or left after durable world reconciliation');
+  }
+  return secondRows[0].id;
+}
+
+function assertPendingMigrationJournalRecovery() {
+  const simulation = readJsonForTest(path.join(DATA_DIR, 'wasteland-sim.json'));
+  const task = [
+    ...(Array.isArray(simulation.worldTasks) ? simulation.worldTasks : []),
+    ...(Array.isArray(simulation.worldTaskHistory) ? simulation.worldTaskHistory : [])
+  ].find(row => row?.id === 'smoke_journal_recovery_task');
+  const expected = 'journal_user:journal_new_character';
+  if (!task
+    || !task.details?.rewardMemberKeys?.includes(expected)
+    || task.details.rewardMemberKeys.includes('journal_user:journal_old_character')
+    || !task.details?.arrivalTransferredPlayerIds?.includes(expected)
+    || task.details.arrivalTransferredPlayerIds.includes('journal_user:journal_old_character')) {
+    fail('pending character-id migration journal did not recover exact world identities', JSON.stringify(task));
   }
 }
 
@@ -735,6 +942,9 @@ async function assertCharacterDeletionLifecycle(account) {
 async function assertSocketMultiplayerLifecycle() {
   const suffix = crypto.randomBytes(4).toString('hex');
   const accounts = await Promise.all([1, 2, 3].map(index => registerSocketTestAccount(index, suffix)));
+  accounts[0].characterId = 'c_reward_smoke';
+  const collidedCharacterId = accounts[0].characterId;
+  accounts[1].characterId = collidedCharacterId;
   const sockets = [];
   try {
     for (const account of accounts) {
@@ -775,6 +985,14 @@ async function assertSocketMultiplayerLifecycle() {
       account.join = await joinSocketCharacter(socket, account);
       if (!account.join.ok || !account.join.self || !account.join.characterLeaseId) {
         fail(`multiplayer join failed for ${account.name}`, JSON.stringify(account.join));
+      }
+      if (account === accounts[1]) {
+        if (!account.join.characterId
+          || account.join.characterId === collidedCharacterId
+          || account.join.self?.characterId !== account.join.characterId) {
+          fail('cross-account character-id collision was not remapped by the server', JSON.stringify(account.join));
+        }
+        account.characterId = account.join.characterId;
       }
       if (!Array.isArray(account.join.self.taggedSkills)
         || account.join.self.taggedSkills.length !== 1
@@ -848,6 +1066,70 @@ async function assertSocketMultiplayerLifecycle() {
 
     const first = accounts[0];
     const second = accounts[1];
+    const sharedTerminalTaskId = 'smoke_shared_terminal_task';
+    for (const participant of [first, second]) {
+      const accepted = await socketAck(participant.socket, 'worldTaskAction', {
+        action: 'accept',
+        taskId: sharedTerminalTaskId
+      });
+      if (!accepted.ok || !accepted.self?.worldTaskAccepted?.includes(sharedTerminalTaskId)) {
+        fail('shared terminal smoke task could not be accepted by both players', JSON.stringify(accepted));
+      }
+    }
+    await delay(1100);
+    const secondTerminalState = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        second.socket.off('authoritativePlayerState', onState);
+        reject(new Error('second player did not receive terminal task lifecycle state'));
+      }, 4000);
+      const onState = payload => {
+        const record = (Array.isArray(payload?.worldTaskRecords)
+          ? payload.worldTaskRecords
+          : []).find(row => row?.id === sharedTerminalTaskId);
+        if (payload?.reason !== 'worldTaskLifecycle' || record?.status !== 'completed') return;
+        clearTimeout(timer);
+        second.socket.off('authoritativePlayerState', onState);
+        resolve(payload);
+      };
+      second.socket.on('authoritativePlayerState', onState);
+    });
+    const sharedDelivery = await socketAck(first.socket, 'worldTaskAction', {
+      action: 'deliver',
+      taskId: sharedTerminalTaskId
+    });
+    if (!sharedDelivery.ok || sharedDelivery.task?.status !== 'completed') {
+      fail('first player could not complete the shared terminal smoke task', JSON.stringify(sharedDelivery));
+    }
+    let secondLifecycle;
+    try {
+      secondLifecycle = await secondTerminalState;
+    } catch (err) {
+      fail(err.message);
+    }
+    const secondTerminalRecord = secondLifecycle?.worldTaskRecords
+      ?.find(row => row?.id === sharedTerminalTaskId);
+    if (!secondLifecycle?.worldTaskAccepted?.includes(sharedTerminalTaskId)
+      || secondTerminalRecord?.status !== 'completed'
+      || secondTerminalRecord?.rewardEligible !== true) {
+      fail('second player received stale or non-personalized terminal task state', JSON.stringify(secondLifecycle));
+    }
+    const reputationClaim = await socketAck(first.socket, 'worldTaskAction', {
+      action: 'claim',
+      taskId: 'smoke_reputation_task'
+    });
+    if (!reputationClaim.ok
+      || Number(reputationClaim.reward?.reputation || 0) !== 3
+      || reputationClaim.reward?.reputationFactionId !== 'old_klim'
+      || Number(reputationClaim.self?.worldFactionReputation?.old_klim || 0) !== 3) {
+      fail('world-task reputation reward was not granted authoritatively', JSON.stringify(reputationClaim));
+    }
+    const repeatedReputationClaim = await socketAck(first.socket, 'worldTaskAction', {
+      action: 'claim',
+      taskId: 'smoke_reputation_task'
+    });
+    if (repeatedReputationClaim.ok) {
+      fail('completed world-task reward could be claimed twice', JSON.stringify(repeatedReputationClaim));
+    }
     const friendRequest = await socketAck(first.socket, 'socialAction', {
       action: 'friend',
       targetId: second.socket.id
@@ -903,6 +1185,48 @@ async function assertSocketMultiplayerLifecycle() {
     const missingTask = await socketAck(first.socket, 'worldTaskAction', { action: 'claim', taskId: 'forged_task' });
     if (missingTask.ok) fail('forged world-task reward claim was accepted', JSON.stringify(missingTask));
 
+    const legacyPartyJoin = await socketAck(first.socket, 'worldTaskJoinParty', {
+      taskId: 'forged_task',
+      partyId: 'klim_road_patrol',
+      characterId: first.characterId,
+      factionId: 'old_klim'
+    });
+    if (legacyPartyJoin.ok) fail('legacy world-party join bypass was accepted', JSON.stringify(legacyPartyJoin));
+    const legacyPartyLeave = await socketAck(first.socket, 'worldTaskLeaveParty', {
+      partyId: 'klim_road_patrol',
+      characterId: first.characterId
+    });
+    if (legacyPartyLeave.ok) fail('legacy world-party leave bypass was accepted', JSON.stringify(legacyPartyLeave));
+    const partyStateResponse = await request('/api/wasteland');
+    const partyState = parseJsonResponse(partyStateResponse, 'GET /api/wasteland after legacy party events');
+    const forgedMember = (Array.isArray(partyState.sim?.parties) ? partyState.sim.parties : [])
+      .flatMap(party => Array.isArray(party?.playerMembers) ? party.playerMembers : [])
+      .some(member => String(member?.characterId || member?.id || '') === first.characterId);
+    if (forgedMember) fail('rejected legacy world-party events left a phantom member in simulation state');
+
+    const joinOldKlim = await socketAck(first.socket, 'worldFactionJoin', { factionId: 'old_klim' });
+    if (!joinOldKlim.ok || joinOldKlim.self?.worldFactionId !== 'old_klim') {
+      fail('smoke player could not join the local faction before the party test', JSON.stringify(joinOldKlim));
+    }
+    const partyAccept = await socketAck(first.socket, 'worldTaskAction', {
+      action: 'accept',
+      taskId: 'smoke_world_party_task'
+    });
+    if (!partyAccept.ok
+      || partyAccept.self?.globalMap?.attachedPartyId !== 'smoke_world_party'
+      || partyAccept.self?.globalMap?.attachedPartyTaskId !== 'smoke_world_party_task'
+      || partyAccept.self?.onGlobalMap !== true
+      || partyAccept.self?.roomId) {
+      fail('world-party accept did not atomically attach server player state', JSON.stringify(partyAccept));
+    }
+    const attachedTravel = await socketAck(first.socket, 'globalTravelStart', {
+      worldPoint: { x: 300, y: 600 },
+      targetLocationId: 'wasteland'
+    });
+    if (attachedTravel.ok) {
+      fail('attached world-party player started an independent route', JSON.stringify(attachedTravel));
+    }
+
     first.socket.close();
     await delay(250);
     const reconnected = await connectSocketClient();
@@ -913,6 +1237,29 @@ async function assertSocketMultiplayerLifecycle() {
     if (!rejoin.ok || !firstFriends.some(row => row.id === second.characterId)) {
       fail('friend state did not survive reconnect', JSON.stringify(rejoin));
     }
+    if (Number(rejoin.self?.worldFactionReputation?.old_klim || 0) !== 3) {
+      fail('world-task reputation did not survive reconnect', JSON.stringify(rejoin.self));
+    }
+    if (rejoin.roomId
+      || rejoin.self?.globalMap?.attachedPartyId !== 'smoke_world_party'
+      || rejoin.self?.globalMap?.attachedPartyTaskId !== 'smoke_world_party_task'
+      || rejoin.self?.onGlobalMap !== true) {
+      fail('world-party attachment did not survive reconnect authoritatively', JSON.stringify(rejoin));
+    }
+    const legacyArrivalBypass = await socketAck(first.socket, 'globalTravelArrive', {});
+    if (legacyArrivalBypass.ok) {
+      fail('reconnected world-party attachment inherited an independent arrival route', JSON.stringify(legacyArrivalBypass));
+    }
+    const partyCancel = await socketAck(first.socket, 'worldTaskAction', {
+      action: 'cancel',
+      taskId: 'smoke_world_party_task'
+    });
+    if (!partyCancel.ok
+      || partyCancel.self?.globalMap?.attachedPartyId
+      || partyCancel.self?.globalMap?.attachedPartyTaskId
+      || partyCancel.self?.worldTaskAccepted?.includes('smoke_world_party_task')) {
+      fail('world-party cancel did not atomically detach authoritative state', JSON.stringify(partyCancel));
+    }
 
     await assertCharacterDeletionLifecycle(accounts[2]);
   } finally {
@@ -922,12 +1269,7 @@ async function assertSocketMultiplayerLifecycle() {
   }
 }
 
-async function main() {
-  assertRequiredFiles();
-  assertDependenciesInstalled();
-  assertWorldTaskArchiveReload();
-
-  const logs = [];
+function spawnSmokeServer(logs = []) {
   const proc = childProcess.spawn(process.execPath, [SERVER_FILE], {
     cwd: PROJECT_ROOT,
     env: {
@@ -941,19 +1283,66 @@ async function main() {
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
-  serverProc = proc;
-
   proc.stdout.on('data', chunk => logs.push(String(chunk)));
   proc.stderr.on('data', chunk => logs.push(String(chunk)));
+  return proc;
+}
+
+async function stopSmokeServer(proc) {
+  if (!proc || proc.exitCode !== null) return;
+  await new Promise(resolve => {
+    const timer = setTimeout(() => {
+      try { proc.kill('SIGKILL'); } catch (_) {}
+      resolve();
+    }, 1500);
+    proc.once('exit', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    try { proc.kill('SIGTERM'); } catch (_) {
+      clearTimeout(timer);
+      resolve();
+    }
+  });
+}
+
+async function main() {
+  assertRequiredFiles();
+  assertDependenciesInstalled();
+  assertWorldTaskArchiveReload();
+  seedLegacyDuplicateCharacters();
+  seedSmokeReputationTask();
+  seedSmokeWorldPartyTask();
+
+  const logs = [];
+  let proc = spawnSmokeServer(logs);
+  serverProc = proc;
 
   let health;
   try {
     health = await waitForHealth(proc, logs);
+    const legacyRemappedId = assertLegacyDuplicateMigration();
+    assertPendingMigrationJournalRecovery();
+    if (!logs.join('').includes('Remapped 1 duplicate legacy character id(s).')) {
+      fail('server startup did not report its legacy character-id migration', logs.join(''));
+    }
     await assertStaticAssets(health);
     await assertRestCorsPreflight();
     await assertEditorAndWorldDataApis();
     await assertAuthApiLifecycle();
     await assertSocketMultiplayerLifecycle();
+    assertLegacyDuplicateMigration(legacyRemappedId);
+    await stopSmokeServer(proc);
+    serverProc = null;
+    const restartLogs = [];
+    proc = spawnSmokeServer(restartLogs);
+    serverProc = proc;
+    await waitForHealth(proc, restartLogs);
+    assertLegacyDuplicateMigration(legacyRemappedId);
+    assertPendingMigrationJournalRecovery();
+    if (restartLogs.join('').includes('duplicate legacy character id(s)')) {
+      fail('server remapped an already migrated character again after restart', restartLogs.join(''));
+    }
     console.log(`Smoke check passed: ${health.name || 'Realm of Ashes'} v${health.version} served assets/world APIs and kept three players in one unlimited settlement reality`);
   } finally {
     cleanup();

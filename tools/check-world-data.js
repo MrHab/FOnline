@@ -6,7 +6,10 @@ const {
   normalizeGlobalInfrastructure,
   pointToInfrastructureDistance
 } = require('../src/server/global-infrastructure');
-const { worldSiteLocationId } = require('../src/server/wasteland-sim');
+const {
+  ROAD_SITE_LAYOUT_VERSION,
+  worldSiteLocationId
+} = require('../src/server/wasteland-sim');
 
 const root = path.resolve(__dirname, '..');
 const dataDir = path.join(root, 'data');
@@ -1217,7 +1220,11 @@ if (!globalMap) {
     }
     const requiredDistance = ROAD_LOCATION_CLEARANCE_POINTS + Number(nearest.road.width || 0) * 0.5;
     if (nearest.distance <= requiredDistance) {
-      errors.push(`${path.relative(root, wastelandSimFile)}: site "${id}" overlaps road "${nearest.road.id}" (${nearest.distance.toFixed(1)} <= ${requiredDistance.toFixed(1)})`);
+      const migratesOnLoad = site?.districtInterest === true
+        && Number(site.roadLayoutVersion || 0) < ROAD_SITE_LAYOUT_VERSION;
+      const message = `${path.relative(root, wastelandSimFile)}: site "${id}" overlaps road "${nearest.road.id}" (${nearest.distance.toFixed(1)} <= ${requiredDistance.toFixed(1)})`;
+      if (migratesOnLoad) warnings.push(`${message}; runtime layout v${ROAD_SITE_LAYOUT_VERSION} will relocate it on startup`);
+      else errors.push(message);
     }
   }
   const cells = globalMap.cells && typeof globalMap.cells === 'object' ? globalMap.cells : {};

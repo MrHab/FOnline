@@ -12392,18 +12392,6 @@ function updateServerNpcCorpseLooting(room, enemy, dt, now = Date.now()) {
   enemy.lastNpcLootAt = now;
   if (corpse.looted) corpse.diedAt = Math.min(Number(corpse.diedAt || now), now - 1000);
   refreshRoomWorldState(room);
-  const publicLootEnemy = publicEnemy(corpse);
-  io.to(room.id).emit('enemyLootUpdated', {
-    locationId: room.locationId,
-    enemyId: corpse.id,
-    enemy: publicLootEnemy,
-    removed: false,
-    looted: corpse.looted,
-    taken: result.taken,
-    takenBy: enemy.id,
-    npcLoot: true,
-    t: now
-  });
   emitEnemySnapshot(room, true);
   return true;
 }
@@ -12621,12 +12609,6 @@ function maybeClaimClearedWastelandSite(room, killedEnemy, player) {
     room.locationOccupantKey = wastelandLocationOccupantKey(loc, room);
     refreshRoomWorldState(room);
     emitEnemySnapshot(room, true);
-    io.to(room.id).emit('worldSiteClaimed', {
-      ...result,
-      roomId: room.id,
-      locationId: loc?.id || room.locationId || '',
-      t: Date.now()
-    });
     io.to(room.id).emit('worldState', { reason: 'siteClaimed', state: room.worldState || publicWorldState(room, true) });
     return true;
   } catch (err) {
@@ -17945,16 +17927,6 @@ io.on('connection', (socket) => {
     const now = Date.now();
     const removed = serverShouldRemoveCorpse(enemy, now);
     if (typeof ack === 'function') ack({ ok: true, items: taken, enemy: publicLootEnemy, removed, partial: !!carryCheck.blocked, carry: carryCheck.carry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
-    io.to(room.id).emit('enemyLootUpdated', {
-      locationId: room.locationId,
-      enemyId: enemy.id,
-      enemy: publicLootEnemy,
-      removed,
-      looted: enemy.looted,
-      taken,
-      takenBy: socket.id,
-      t: now
-    });
     if (removed) room.enemies.delete(enemy.id);
     refreshRoomWorldState(room);
     emitEnemySnapshot(room, true);

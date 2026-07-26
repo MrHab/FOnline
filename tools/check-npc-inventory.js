@@ -203,7 +203,6 @@ assert.strictEqual(migratedOnsiteActor.inventoryVersion, 2, 'Onsite actor invent
 assert.strictEqual(rowQty(migratedOnsiteActor.inventory, 'silver'), 12, 'Onsite actor personal money was lost during migration');
 
 const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-const wastelandSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'server', 'wasteland-sim.js'), 'utf8');
 const traderStateSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '07b_trader_market_state.js'), 'utf8');
 const dialogueSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '07c_trader_dialogues_quests.js'), 'utf8');
 const contextSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '08d_world_context_targets.js'), 'utf8');
@@ -218,13 +217,12 @@ assert(serverSource.includes('persistedInventoryVersion < NPC_INVENTORY_VERSION'
   'Legacy global-party actors with incomplete inventory must receive missing mandatory faction items once');
 assert(serverSource.includes('Number.isFinite(explicitCaps) && explicitCaps > 0'),
   'A non-trader caps value of zero must not erase mandatory personal money from sapient NPC inventory');
-assert(serverSource.includes('inventoryVersion: Math.max(0, Math.floor(Number(enemy.inventoryVersion || 0)))')
-  && wastelandSource.includes('inventoryVersion: Math.max(0, Math.floor(Number(input.inventoryVersion || 0)))'),
+assert(serverSource.includes('inventoryVersion: Math.max(0, Math.floor(Number(enemy.inventoryVersion || 0)))'),
   'NPC inventory schema version must survive local/global actor snapshots without replenishing spent items');
 assert(roomActorSnapshotSource.includes('inventoryVersion: Math.max(0, Math.floor(Number(enemy.inventoryVersion || 0)))'),
   'Room actor snapshots must carry the inventory schema version back into the autonomous simulation');
 assert(serverSource.includes("typeof WASTELAND_SIM.syncOnsitePartyActors === 'function'")
-  && wastelandSource.includes('function syncOnsitePartyActors(context = {})'),
+  && typeof simulation.syncOnsitePartyActors === 'function',
   'Migrated physical party actors must write their complete inventory back to the global simulation');
 assert(serverSource.includes('if (updateServerNpcCorpseLooting(room, enemy, dt, now)) continue;'),
   'Live NPC AI must attempt to loot defeated hostile actors');

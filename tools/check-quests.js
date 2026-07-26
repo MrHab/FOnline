@@ -1,5 +1,8 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const { createWastelandSimulation } = require('../src/server/wasteland-sim');
+const { normalizeWorldTask } = require('../src/server/wasteland-world-tasks');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -111,15 +114,38 @@ for (const questId of questIds) {
   }
 }
 
-const serverSim = readText('src/server/wasteland-sim.js');
-[
-  ['доставка ресурсов', 'function completeWorldTaskDelivery'],
-  ['завершение боя на карте', 'function applyEncounterOutcomeToSettlements'],
-  ['зачистка точки', 'function claimClearedSite'],
-  ['единое завершение задачи', 'function finishWorldTask']
-].forEach(([label, needle]) => {
-  if (!serverSim.includes(needle)) errors.push(`Мировые задания: не найден путь завершения "${label}".`);
-});
+const taskCheckDir = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-quest-world-task-'));
+const taskCheckFile = path.join(taskCheckDir, 'wasteland-sim.json');
+try {
+  const globalMap = readJson('data/global-map.json', {});
+  const world = createWastelandSimulation({ stateFile: taskCheckFile, getGlobalMap: () => globalMap });
+  for (const method of ['completeWorldTaskDelivery', 'recordEncounterOutcome', 'claimClearedSite']) {
+    if (typeof world[method] !== 'function') errors.push(`Мировые задания: публичный путь "${method}" недоступен.`);
+  }
+  const delivery = normalizeWorldTask({
+    id: 'quest_check_delivery',
+    type: 'deliver_supplies',
+    status: 'active',
+    siteId: 'settlement',
+    title: 'Проверочная доставка',
+    priority: 1,
+    reward: { xp: 1, caps: 1 },
+    details: { demand: { water: 2 } }
+  }, world.state().worldHour);
+  world.state().worldTasks.unshift(delivery);
+  const result = world.completeWorldTaskDelivery(delivery.id, {
+    delivered: { water: 2 },
+    playerId: 'quest_check_player'
+  });
+  if (!result?.ok || delivery.status !== 'completed') {
+    errors.push('Мировые задания: доставка не проходит через единый терминальный путь.');
+  }
+} catch (error) {
+  errors.push(`Мировые задания: поведенческая проверка завершения упала: ${error.message}`);
+} finally {
+  for (const name of fs.readdirSync(taskCheckDir)) fs.unlinkSync(path.join(taskCheckDir, name));
+  fs.rmdirSync(taskCheckDir);
+}
 
 const sim = readJson('data/wasteland-sim.json', null);
 if (sim) {

@@ -6,10 +6,8 @@ const {
   normalizeGlobalInfrastructure,
   pointToInfrastructureDistance
 } = require('../src/server/global-infrastructure');
-const {
-  ROAD_SITE_LAYOUT_VERSION,
-  worldSiteLocationId
-} = require('../src/server/wasteland-sim');
+const { ROAD_SITE_LAYOUT_VERSION } = require('../src/server/wasteland-district-sites');
+const { worldSiteLocationId } = require('../src/server/wasteland-site-instances');
 
 const root = path.resolve(__dirname, '..');
 const dataDir = path.join(root, 'data');

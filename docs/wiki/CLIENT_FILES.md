@@ -26,12 +26,12 @@ JS-части и vendor-библиотеки пока загружаются д�
 | `02b_lighting_time.js` | свет, тени, время суток, day/night lighting |
 | `02c_map_locations_collision.js` | карта, локации, тайлы, торговые профили, коллизии, `TRADER_STOCK` |
 | `02d_trader_spawn_props.js` | торговец, хранилище, переходы, декор и внешние стены локации |
-| `02d1_building_blocks_roof_setup.js` | строительные блоки, регистрация интерьера, материалы и сетка крыши |
+| `02d1_building_blocks_roof_setup.js` | типы модульных блоков, регистрация интерьера/крыши и совместимость opacity |
 | `02d2_cutaway_geometry_visibility.js` | координаты здания, bounds, экранные пробы и проверки видимости |
 | `02d3_cutaway_transparency_warmup.js` | прозрачность стен/крыш, кэши и прогрев cutaway |
-| `02d4_roof_visibility_batch.js` | совместимость fog/LOS, видимость крыши, instanced roof cells, окна |
+| `02d4_roof_visibility_batch.js` | trader-cutaway compatibility, fog/LOS gates, roof cells и окна |
 | `02d5_trader_building_interior.js` | финальная сборка интерьера здания |
-| `02e_trader_yard_world_build.js` | двор торговца, окружение, terrain layers, `buildWorld()` |
+| `02e_trader_yard_world_build.js` | очистка/сборка мира, set dressing и `buildWorld()` |
 | `03_items_inventory_core.js` | items, item art, equipment, inventory snapshots |
 | `03a_pipboy_social_world_tasks.js` | Pip-Boy social, world tasks, factions, radio |
 | `03b_inventory_actions_ui.js` | inventory actions, medicine, drag-drop, categories, inventory UI |

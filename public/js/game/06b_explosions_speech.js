@@ -163,7 +163,6 @@
       queueSave(true);
     }
 
-    if (!enemiesAreServerAuthoritative()) syncWorldStateToServer('explosionDamage');
     renderInventoryIfVisibleDeferred();
     renderUI();
     updateTargetHintFromHover();

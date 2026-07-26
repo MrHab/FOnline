@@ -539,6 +539,18 @@ function assertCombat(value, expected, label) {
   return combat;
 }
 
+function assertCombatApNotSpent(before, after, label) {
+  const previous = combatSnapshot(before, `${label} before`);
+  const current = combatSnapshot(after, `${label} after`);
+  invariant(Number(current.ap) >= Number(previous.ap)
+    && Number(current.ap) <= Number(current.maxAp),
+  `${label}: AP decreased or exceeded its cap`, {
+    before: previous,
+    after: current
+  });
+  return current;
+}
+
 function assertRuntimeWeaponInventory(self, runtimeId, expectedLoaded, label) {
   const rows = Array.isArray(self?.weaponInventoryRuntime)
     ? self.weaponInventoryRuntime
@@ -782,9 +794,13 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     weaponRuntimeId: pistolB,
     loaded: 3,
     magSize: 8,
-    reserveAmmo: 8,
-    ap: Number(switchedShot.combat.ap)
+    reserveAmmo: 8
   }, 'idempotent duplicate-join combat');
+  assertCombatApNotSpent(
+    switchedShot.combat,
+    duplicateJoinCombat,
+    'Idempotent duplicate join'
+  );
   invariant(Number(duplicateJoinCombat.cooldownRemainingMs) > 0
     && Number(duplicateJoinCombat.cooldownRemainingMs) <= Number(switchedShot.combat.cooldownRemainingMs),
   'Idempotent duplicate join reset or extended the active weapon cooldown', {
@@ -800,14 +816,18 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   invariant(conflictingJoin.ok === false
     && conflictingJoin.self?.characterId === accounts.persistence.characterId,
   'Same socket was allowed to switch identity through a repeated join', conflictingJoin);
-  assertCombat(conflictingJoin.combat, {
+  const conflictingJoinCombat = assertCombat(conflictingJoin.combat, {
     weapon: 'pistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
     magSize: 8,
-    reserveAmmo: 8,
-    ap: Number(duplicateJoinCombat.ap)
+    reserveAmmo: 8
   }, 'conflicting duplicate-join combat');
+  assertCombatApNotSpent(
+    duplicateJoinCombat,
+    conflictingJoinCombat,
+    'Conflicting duplicate join rejection'
+  );
 
   const loadedRuntimeDrop = await socketAck(accounts.persistence.socket, 'dropItem', {
     itemId: 'pistol',
@@ -820,9 +840,13 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     weapon: 'pistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
-    reserveAmmo: 8,
-    ap: Number(duplicateJoinCombat.ap)
+    reserveAmmo: 8
   }, 'loaded-runtime drop rejection combat');
+  assertCombatApNotSpent(
+    conflictingJoinCombat,
+    postDropCombat,
+    'Loaded-runtime drop rejection'
+  );
   invariant(Number(postDropCombat.cooldownRemainingMs) > 0,
     'Rejected loaded-runtime drop reset the active cooldown', postDropCombat);
 
@@ -841,11 +865,11 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   }, 'post-duplicate-join cooldown rejection combat');
   invariant(Number(postDuplicateCombat.cooldownRemainingMs) > 0,
     'Duplicate join cleared the authoritative weapon cooldown', postDuplicateCooldown);
-  invariant(Number(postDuplicateCombat.ap) >= Number(duplicateJoinCombat.ap),
-    'Post-duplicate-join cooldown rejection spent AP', {
-      duplicateJoin: duplicateJoinCombat,
-      cooldown: postDuplicateCombat
-    });
+  assertCombatApNotSpent(
+    postDropCombat,
+    postDuplicateCombat,
+    'Post-duplicate-join cooldown rejection'
+  );
 
   const crossRuntimeReplay = await socketAck(accounts.persistence.socket, 'combatAttack', {
     weapon: 'pistol',
@@ -871,11 +895,11 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     loaded: 3,
     reserveAmmo: 8
   }, 'cross-runtime replay rejection combat');
-  invariant(Number(crossRuntimeCombat.ap) >= Number(switchedShot.combat.ap),
-    'Cross-runtime replay spent AP from B', {
-      switched: switchedShot.combat,
-      replay: crossRuntimeCombat
-    });
+  assertCombatApNotSpent(
+    postDuplicateCombat,
+    crossRuntimeCombat,
+    'Cross-runtime replay rejection'
+  );
 
   // This payload was captured while A was active. It must save inventory
   // presentation without rolling the live authoritative identity back from B.

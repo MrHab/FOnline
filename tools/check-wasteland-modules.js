@@ -41,6 +41,17 @@ const {
   takeStockpile
 } = require('../src/server/wasteland-stockpile');
 const {
+  WORLD_PARTY_SPEED_PROFILE_VERSION,
+  effectiveWorldPartySpeedKmh,
+  normalizeWorldPartySpeedKmh
+} = require('../src/server/wasteland-party-speed');
+const {
+  normalizePartyPlayerMember,
+  normalizePartyPlayerMembers,
+  syncPatrolDutyWindow,
+  worldPartyPlayerLimit
+} = require('../src/server/wasteland-party-membership');
+const {
   readJson,
   seededRandom,
   writeJsonAtomic
@@ -177,6 +188,73 @@ function checkTaskNormalization() {
   assert.strictEqual(localizeLegacyWorldText('Raiders vs patrol'), 'Рейдеры против патруля');
 }
 
+function checkPartySpeed() {
+  assert.strictEqual(
+    normalizeWorldPartySpeedKmh({ kind: 'caravan', faction: 'caravans', speedKmh: 2, baseSpeedKmh: 10 }),
+    26
+  );
+  assert.strictEqual(
+    normalizeWorldPartySpeedKmh({
+      kind: 'caravan',
+      faction: 'caravans',
+      speedKmh: 9,
+      speedProfileVersion: WORLD_PARTY_SPEED_PROFILE_VERSION
+    }),
+    9
+  );
+  assert.strictEqual(effectiveWorldPartySpeedKmh({ kind: 'caravan', faction: 'caravans', speedKmh: 100 }), 42);
+  assert.strictEqual(normalizeWorldPartySpeedKmh({ kind: 'patrol', speedKmh: 20 }), 36);
+}
+
+function checkPartyMembership() {
+  const member = normalizePartyPlayerMember({
+    characterId: 'character one',
+    userId: 'user one',
+    name: '<Alice>',
+    factionId: 'old_klim'
+  }, 0, 12);
+  assert.strictEqual(member.characterId, 'character_one');
+  assert.strictEqual(member.userId, 'user_one');
+  assert.strictEqual(member.name, 'Alice');
+  assert.strictEqual(member.factionId, 'old_klim');
+  assert.strictEqual(member.joinedHour, 12);
+
+  assert.strictEqual(worldPartyPlayerLimit({ kind: 'patrol' }), 5);
+  assert.strictEqual(worldPartyPlayerLimit({ kind: 'caravan', supplyRole: 'heavy' }), 10);
+
+  const playerMembers = Array.from({ length: 7 }, (_, index) => ({
+    characterId: `character_${index + 1}`
+  }));
+  const normalized = normalizePartyPlayerMembers({ kind: 'patrol', playerMembers }, 20);
+  assert.strictEqual(normalized.length, 5);
+  assert.deepStrictEqual(
+    normalized.map(row => row.characterId),
+    ['character_3', 'character_4', 'character_5', 'character_6', 'character_7']
+  );
+
+  const task = { type: 'join_patrol', details: {}, expiresHour: 0 };
+  const dutyMembers = [
+    { joinedHour: 10, lastSeenHour: 10 },
+    { joinedHour: 12, lastSeenHour: 12 }
+  ];
+  syncPatrolDutyWindow(task, dutyMembers, 15);
+  assert.strictEqual(task.details.dutyStartedHour, 15);
+  assert.strictEqual(task.details.dutyEndsHour, 21);
+  assert.strictEqual(task.expiresHour, 22);
+  syncPatrolDutyWindow(task, [], 16);
+  assert.strictEqual(task.details.dutyStartedHour, undefined);
+  assert.strictEqual(task.details.dutyEndsHour, undefined);
+}
+
+function checkPartyModuleBoundaries() {
+  const simulation = fs.readFileSync(path.join(ROOT, 'src/server/wasteland-sim.js'), 'utf8');
+  assert(simulation.includes("require('./wasteland-party-speed')"));
+  assert(simulation.includes("require('./wasteland-party-membership')"));
+  assert(!simulation.includes('function normalizeWorldPartySpeedKmh'));
+  assert(!simulation.includes('function normalizePartyPlayerMember'));
+  assert(!simulation.includes('function pruneInvalidWorldPartyPlayerMembers'));
+}
+
 function checkPersistenceAndRandom() {
   const firstRng = seededRandom('stable');
   const secondRng = seededRandom('stable');
@@ -208,6 +286,9 @@ checkDistrictSites();
 checkSiteInstances();
 checkStockpiles();
 checkTaskNormalization();
+checkPartySpeed();
+checkPartyMembership();
+checkPartyModuleBoundaries();
 checkPersistenceAndRandom();
 
-console.log('Wasteland module checks passed: factions, geometry, district sites, instances, stockpiles, tasks and persistence.');
+console.log('Wasteland module checks passed: factions, geometry, district sites, instances, stockpiles, tasks, parties and persistence.');

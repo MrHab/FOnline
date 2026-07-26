@@ -127,6 +127,10 @@ lease. Поздний callback после disconnect, смены комнаты,
 `globalTravel*`, `serverWorldTransfer`, world zones и уникальные экземпляры
 точек.
 
+Чистые правила скорости и состава мировых отрядов находятся в
+`wasteland-party-speed.js` и `wasteland-party-membership.js`. Состояние и
+порядок simulation tick остаются внутри `wasteland-sim.js`.
+
 Симуляция может жить без открытой 3D-комнаты. Пустые обычные комнаты не должны
 постоянно выполнять полный локальный AI; исключения — короткое settle-окно,
 активный realtime-бой и ожидающий выхода onsite-отряд.

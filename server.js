@@ -18775,10 +18775,14 @@ function getLanUrls(port) {
 }
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`${GAME_NAME} v${GAME_VERSION} server listening on :${PORT}`);
+  const address = server.address();
+  const boundPort = address && typeof address === 'object'
+    ? Number(address.port || PORT)
+    : PORT;
+  console.log(`${GAME_NAME} v${GAME_VERSION} server listening on :${boundPort}`);
   console.log(`Dev API mode: ${DEV_ACCESS_POLICY.mode}`);
-  console.log(`Local: http://localhost:${PORT}`);
-  const lanUrls = getLanUrls(PORT);
+  console.log(`Local: http://localhost:${boundPort}`);
+  const lanUrls = getLanUrls(boundPort);
   if (lanUrls.length) console.log(`LAN: ${lanUrls.join('  |  ')}`);
   console.log(`Data directory: ${DATA_DIR}`);
 });

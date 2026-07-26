@@ -69,6 +69,11 @@ const {
   worldPartyMemberIdentityKey,
   worldTaskClaimEligible
 } = require('./src/server/world-party-integrity');
+const {
+  pruneIdleRooms,
+  resolveEphemeralRoomIdleTtlMs,
+  temporaryRoomContextIsResumable
+} = require('./src/server/room-lifecycle');
 
 const GAME_NAME = 'Realm of Ashes';
 
@@ -89,6 +94,11 @@ const PLAYER_COLLISION_RADIUS = 0.48;
 const LEGACY_INPUT_DEADMAN_MS = Math.max(500, Number(process.env.LEGACY_INPUT_DEADMAN_MS || 1250));
 const NPC_INVENTORY_VERSION = 2;
 const SESSION_LOCK_MS = Number(process.env.SESSION_LOCK_MS || 120000);
+const CONFIGURED_EPHEMERAL_ROOM_IDLE_TTL_MS = Number(process.env.EPHEMERAL_ROOM_IDLE_TTL_MS);
+const EPHEMERAL_ROOM_IDLE_TTL_MS = resolveEphemeralRoomIdleTtlMs({
+  configuredTtlMs: CONFIGURED_EPHEMERAL_ROOM_IDLE_TTL_MS,
+  sessionLockMs: SESSION_LOCK_MS
+});
 const JSON_LIMIT = process.env.JSON_LIMIT || '12mb';
 const REST_CORS_ALLOWED_HEADERS = [
   'Content-Type',
@@ -8308,6 +8318,7 @@ function markRoomEmptyIfNeeded(room, reason = 'empty') {
   if (!room) return;
   for (const sid of [...(room.sockets || new Set())]) if (!socketIsLive(sid)) room.sockets.delete(sid);
   if (room.sockets && room.sockets.size === 0) {
+    room.emptySince = Date.now();
     settleEnemiesWhenRoomBecomesEmpty(room, reason);
     finishEmptyPartyEncounterRoom(room, reason);
   }
@@ -12668,6 +12679,7 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
     try { socket.join(settlement.id); } catch (_) {}
   }
   settlement.sockets.add(p.id);
+  settlement.emptySince = 0;
 
   p.roomId = settlement.id;
   p.locationId = settlement.locationId;
@@ -14438,6 +14450,7 @@ function getOrCreateRoom(roomId = 'settlement', locationId = '') {
       emptyRoomAiUntil: 0,
       lastEmptyAiTickAt: 0,
       emptyRoomAiReason: '',
+      emptySince: Date.now(),
       createdAt: Date.now()
     });
   }
@@ -14445,6 +14458,43 @@ function getOrCreateRoom(roomId = 'settlement', locationId = '') {
   room.worldSiteId = room.worldSiteId || worldSiteIdFromRoomId(id, loc) || authoredWorldSiteId;
   ensureRoomWorld(room);
   return room;
+}
+
+function roomHasActiveWorldOwner(room) {
+  if (!room) return false;
+  const zoneIds = new Set([
+    room.worldZoneId,
+    room.serverRealTimeBattleZoneId,
+    ...(room.onsiteWorldZoneIds instanceof Set ? room.onsiteWorldZoneIds : [])
+  ].map(worldTransferId).filter(Boolean));
+  try {
+    if (zoneIds.size > 0 && typeof WASTELAND_SIM.worldZoneById !== 'function') return true;
+    for (const zoneId of zoneIds) {
+      const zone = WASTELAND_SIM.worldZoneById(zoneId);
+      if (zone && String(zone.status || 'active') === 'active') return true;
+    }
+    const zone = typeof WASTELAND_SIM.activeBattleZoneForRoom === 'function'
+      ? WASTELAND_SIM.activeBattleZoneForRoom(room.id)
+      : null;
+    return !!zone && String(zone.status || 'active') === 'active';
+  } catch (_) {
+    // If the simulation cannot prove that an owner is inactive, keep the room.
+    return true;
+  }
+}
+
+function pruneExpiredEphemeralRooms(now = Date.now()) {
+  return pruneIdleRooms(rooms, {
+    now,
+    idleTtlMs: EPHEMERAL_ROOM_IDLE_TTL_MS,
+    shouldPruneRoom(room) {
+      const loc = roomLocation(room);
+      return String(room?.id || '').includes('#')
+        && !locationUsesSharedReality(loc)
+        && (loc.encounterOnly === true || loc.randomTemplate === true);
+    },
+    hasActiveOwner: roomHasActiveWorldOwner
+  });
 }
 
 function invalidateRoomsForLocation(locationId, reason = 'location-updated') {
@@ -14866,6 +14916,7 @@ function movePlayerSocketToServerRoom(p, socket, room, previous = {}, reason = '
   const socketAlreadyJoined = socket.rooms instanceof Set ? socket.rooms.has(room.id) : room.sockets.has(p.id);
   if (!socketAlreadyJoined) socket.join(room.id);
   room.sockets.add(p.id);
+  room.emptySince = 0;
 }
 
 function transferPlayerToServerRoom(p, room, options = {}) {
@@ -16061,8 +16112,21 @@ io.on('connection', (socket) => {
     let baseLoc = LOCATIONS[locationId] || {};
     let savedLocationContext = sanitizeServerLocationContext(savedState.serverLocationContext || {}, locationId);
     const temporaryLocation = !!(baseLoc.encounterOnly || baseLoc.randomTemplate);
-    const hasSavedTemporaryContext = savedLocationContext.locationId === locationId
-      && !!sanitizeEncounterRoomId(savedLocationContext.roomId || '', locationId);
+    const savedTemporaryRoomId = savedLocationContext.locationId === locationId
+      ? sanitizeEncounterRoomId(savedLocationContext.roomId || '', locationId)
+      : '';
+    const savedTemporaryZone = serverActiveWorldZoneById(savedLocationContext.worldZoneId);
+    const activeSavedTemporaryZone = savedTemporaryZone
+      && normalizeLocationId(savedTemporaryZone.locationId || locationId) === locationId
+      ? savedTemporaryZone
+      : null;
+    const hasSavedTemporaryContext = temporaryRoomContextIsResumable({
+      temporaryLocation,
+      roomId: savedTemporaryRoomId,
+      roomExists: rooms.has(savedTemporaryRoomId),
+      worldZoneId: savedLocationContext.worldZoneId,
+      activeWorldZone: activeSavedTemporaryZone
+    });
     if (temporaryLocation && !hasSavedTemporaryContext) {
       locationId = normalizeRespawnSettlementId(savedState.lastVisitedSettlementId || 'settlement');
       baseLoc = LOCATIONS[locationId] || LOCATIONS.settlement || {};
@@ -16128,6 +16192,7 @@ io.on('connection', (socket) => {
     if (ensureWastelandSiteResourceNodes(room, roomLocation(room))) refreshRoomWorldState(room);
     socket.join(room.id);
     room.sockets.add(socket.id);
+    room.emptySince = 0;
 
     activeAccountSockets.set(auth.login, socket.id);
     const characterLeaseId = setActiveCharacterLock(characterId, socket, token, clientInstanceId);
@@ -18473,6 +18538,7 @@ io.on('connection', (socket) => {
     if (ensureWastelandSiteResourceNodes(room, roomLocation(room))) refreshRoomWorldState(room);
     socket.join(room.id);
     room.sockets.add(socket.id);
+    room.emptySince = 0;
     p.roomId = room.id;
     p.locationId = room.locationId;
     rememberPlayerSettlement(p, room.locationId);
@@ -18565,6 +18631,7 @@ setInterval(() => {
   try {
     WASTELAND_SIM.tick(Date.now());
     syncWorldSiteLocationDefinitions();
+    pruneExpiredEphemeralRooms(Date.now());
   } catch (err) {
     console.error('Wasteland simulation tick failed:', err);
   } finally {

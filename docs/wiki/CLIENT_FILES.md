@@ -92,7 +92,8 @@ node tools/check-client-css.js
 npm run check:client-state
 ```
 
-`check-client-js.js` исполняет generation-drain, смену save-контекста,
+`check-client-js.js` проверяет уникальность имён верхнеуровневых функций после
+склейки всех JS-частей, а также исполняет generation-drain, смену save-контекста,
 отмену logout/switch при неудачном финальном save и single-flight выбора
 персонажа. `check-client-state-integrity.js` исполняет authority cleanup,
 context-aware join-waiters, same-room ack guard, позиционную политику, полный

@@ -9604,18 +9604,24 @@ function serverLocationObjectWorldPoint(row = {}) {
 }
 
 function recordWastelandCraftingStationFee(data = {}, player = null) {
-  const fee = Math.max(0, Math.floor(Number(data.fee || 0)));
-  if (fee <= 0) return { ok: false, error: 'empty_fee' };
   const recipeId = String(data.recipeId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   const requiredStation = SERVER_CRAFT_RECIPE_STATIONS[recipeId] || '';
   if (!recipeId || !requiredStation) return { ok: false, error: 'unknown_recipe' };
   const requiredFee = serverCraftStationFeeForRecipe(recipeId);
-  if (fee < requiredFee) return { ok: false, error: 'fee_too_low', requiredFee };
+  const requestedFee = Math.max(0, Math.floor(Number(data.fee || 0)));
+  if (requestedFee < requiredFee) return { ok: false, error: 'fee_too_low', requiredFee };
+  const fee = requiredFee;
   const station = String(data.station || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
   if (station !== requiredStation) return { ok: false, error: 'wrong_station', requiredStation };
-  const locationId = normalizeLocationId(data.locationId || player?.locationId || player?.currentLocationId || 'settlement');
-  const loc = LOCATIONS[locationId];
-  if (!loc) return { ok: false, error: 'unknown_location' };
+  const playerRoom = rooms.get(String(player?.roomId || '')) || null;
+  if (!playerRoom || player?.onGlobalMap) return { ok: false, error: 'player_not_in_location' };
+  const locationId = normalizeLocationId(playerRoom.locationId || player?.locationId || player?.currentLocationId || 'settlement');
+  const requestedLocationId = String(data.locationId || '').trim();
+  if (requestedLocationId && normalizeLocationId(requestedLocationId) !== locationId) {
+    return { ok: false, error: 'wrong_location', locationId };
+  }
+  const loc = roomLocation(playerRoom);
+  if (!loc || normalizeLocationId(loc.id || '') !== locationId) return { ok: false, error: 'unknown_location' };
   const stationObjectId = String(data.stationObjectId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96);
   const stationObject = stationObjectId && Array.isArray(loc.objects)
     ? loc.objects.find(row => String(row?.id || '') === stationObjectId)
@@ -9638,7 +9644,6 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
     || stationObject?.interactive?.stationSiteId
     || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   const simState = WASTELAND_SIM.state();
-  const playerRoom = rooms.get(String(player?.roomId || '')) || null;
   const publicSites = wastelandSitesForLocation(loc, playerRoom).filter(wastelandSiteIsEconomic);
   const siteId = explicitSiteId || publicSites[0]?.id || '';
   const site = siteId ? simState?.sites?.[siteId] : null;
@@ -17073,7 +17078,7 @@ io.on('connection', (socket) => {
   socket.on('craftingStationUsed', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    if (!p || !p.roomId || p.onGlobalMap || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     try {
       p.id = p.id || socket.id;
       const result = recordWastelandCraftingStationFee(data, p);

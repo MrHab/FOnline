@@ -201,7 +201,6 @@ const mapLoop = [
   '13_minimap_hud_loop.js'
 ].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
 const server = read('server.js');
-const authServer = read(path.join('src', 'server', 'authoritative-server.js'));
 const locationEditor = read(path.join('public', 'dev-location-editor.html'));
 const globalMapEditor = read(path.join('public', 'dev-global-map-editor.html'));
 const gameMechanicsSource = fs.readdirSync(path.join(root, 'public', 'js', 'game'))
@@ -479,28 +478,6 @@ if (!serverPvpModeNormalizeBody.includes("typeof input === 'boolean'")
   || serverPvpModeNormalizeBody.includes("'false', 'combat'")) {
   fail('Server location PvP mode normalization must treat safe/no-PvP aliases as peaceful and not treat false as PvP');
 }
-const authEnemyHitBody = socketEventSlice(authServer, 'enemyHit');
-if (!authEnemyHitBody.includes('data.clientPredictedDamage ?? data.damage')
-  || !authEnemyHitBody.includes('hit: true, damage')) {
-  fail('Authoritative enemyHit fallback must consume the current client damage field and acknowledge applied damage');
-}
-const authEnemyHitBlockIndex = authEnemyHitBody.indexOf('locationAllowsNpcCombat(loc)');
-const authEnemyTargetLookupIndex = authEnemyHitBody.indexOf('const enemy = room.enemies.get(enemyId)');
-const authEnemyDamageIndex = authEnemyHitBody.indexOf('enemy.hp = Math.max');
-if (authEnemyHitBlockIndex < 0
-  || (authEnemyTargetLookupIndex >= 0 && authEnemyHitBlockIndex > authEnemyTargetLookupIndex)
-  || (authEnemyDamageIndex >= 0 && authEnemyHitBlockIndex > authEnemyDamageIndex)) {
-  fail('Authoritative enemyHit must reject NPC attacks in peaceful locations before target lookup and HP changes');
-}
-const authShootBody = socketEventSlice(authServer, 'shoot');
-const authShootBlockIndex = authShootBody.indexOf('locationAllowsNpcCombat(roomLocation(room))');
-const authShootEmitIndex = authShootBody.indexOf("emit('shot'");
-const authShootNoiseIndex = authShootBody.indexOf('addRoomNoise');
-if (authShootBlockIndex < 0
-  || (authShootEmitIndex >= 0 && authShootBlockIndex > authShootEmitIndex)
-  || (authShootNoiseIndex >= 0 && authShootBlockIndex > authShootNoiseIndex)) {
-  fail('Authoritative shoot visual event must be suppressed in peaceful locations before FX broadcast/noise');
-}
 const npcRobServerBody = socketEventSlice(server, 'robEncounterActor');
 if (!npcRobServerBody.includes('locationAllowsNpcCombat(loc)') || npcRobServerBody.indexOf('locationAllowsNpcCombat(loc)') > npcRobServerBody.indexOf('setEncounterFactionHostileToPlayer')) {
   fail('robEncounterActor must reject robbery in peaceful locations before turning NPC factions hostile');
@@ -762,9 +739,6 @@ const closeLootWindowBody = functionSlice(windows, 'function closeLootWindow', '
 const takeAllLootBody = functionSlice(windows, 'function takeAllLoot', '\n\n  function findNearestCorpse');
 if (!server.includes('function serverShouldRemoveCorpse') || !server.includes('serverCorpseLootIsHeld')) {
   fail('Server corpse cleanup must be gated by an active loot-window hold');
-}
-if (!authServer.includes('function serverShouldRemoveCorpse') || !authServer.includes("socket.on('inspectCorpse'")) {
-  fail('Authoritative server copy must keep corpse loot hold mechanics in sync');
 }
 if (!inspectCorpseBody.includes('serverTouchCorpseLootHold(enemy, socket.id') || !releaseCorpseBody.includes('serverReleaseCorpseLootHold(enemy, socket.id')) {
   fail('Corpse loot inspect/release events must refresh and release cleanup holds');

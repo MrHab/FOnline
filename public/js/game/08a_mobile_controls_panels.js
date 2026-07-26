@@ -201,30 +201,76 @@
     return modalOpen || normalOpen || characterOpen || overlayOpen;
   }
 
+  let mobilePanelStateSignature = '';
+  let mobilePanelStateObserver = null;
+  const MOBILE_PANEL_STATE_OBSERVED_IDS = Object.freeze([
+    'loot-window',
+    'trader-window',
+    'storage-window',
+    'character-screen',
+    'game-settings-panel',
+    'tutorial-window',
+    'inventory-window',
+    'talents-window',
+    'craft-window',
+    'map-window',
+    'global-map-window'
+  ]);
+
   function updateMobilePanelState() {
     const lootWin = document.getElementById('loot-window');
-    const playerActionWin = document.getElementById('player-action-window');
     const characterScreen = document.getElementById('character-screen');
     const settingsPanel = document.getElementById('game-settings-panel');
     const tutorialPanel = document.getElementById('tutorial-window');
     const confirmPanel = document.getElementById('game-confirm-panel');
     const lootOpen = !!(lootWin && lootWin.style.display === 'block');
-    const playerActionOpen = !!(playerActionWin && playerActionWin.style.display === 'block');
     const confirmOpen = !!(confirmPanel && confirmPanel.classList.contains('visible') && confirmPanel.style.display !== 'none');
     const normalOpen = Object.values(uiWindows || {}).some(w => w && w.classList.contains('visible'));
     const characterOpen = !!(characterScreen && characterScreen.classList.contains('visible'));
     const overlayOpen = !!((settingsPanel && settingsPanel.classList.contains('visible')) || (tutorialPanel && tutorialPanel.classList.contains('visible')));
     const blockingMobilePanelOpen = !!(lootOpen || traderWindowOpen || storageWindowOpen || confirmOpen || normalOpen || characterOpen || overlayOpen);
-    const open = !!blockingMobilePanelOpen;
+    const mobileControls = isMobileControlsEnabled();
+    const signature = [
+      lootOpen,
+      !!traderWindowOpen,
+      !!storageWindowOpen,
+      confirmOpen,
+      normalOpen,
+      characterOpen,
+      overlayOpen,
+      mobileControls
+    ].join('|');
+    if (signature === mobilePanelStateSignature) return false;
+    mobilePanelStateSignature = signature;
     document.body.classList.toggle('loot-window-open', lootOpen);
     document.body.classList.toggle('trader-window-open', !!traderWindowOpen);
     document.body.classList.toggle('storage-window-open', !!storageWindowOpen);
     // Меню лечения игрока — плавающая карточка поверх игры. Оно не должно включать
     // body-классы, которые переставляют HUD, скрывают журнал/миникарту или меняют touch-кнопки.
     document.body.classList.remove('player-action-window-open');
-    document.body.classList.toggle('mobile-ui-panel-open', isMobileControlsEnabled() && blockingMobilePanelOpen);
-    document.body.classList.toggle('game-ui-panel-open', open);
+    document.body.classList.toggle('mobile-ui-panel-open', mobileControls && blockingMobilePanelOpen);
+    document.body.classList.toggle('game-ui-panel-open', blockingMobilePanelOpen);
     syncMobileCrouchButton();
+    return true;
+  }
+
+  function initMobilePanelStateObserver() {
+    if (mobilePanelStateObserver) mobilePanelStateObserver.disconnect();
+    mobilePanelStateObserver = null;
+    if (typeof MutationObserver === 'function') {
+      const targets = MOBILE_PANEL_STATE_OBSERVED_IDS
+        .map(id => document.getElementById(id))
+        .filter(Boolean);
+      if (targets.length) {
+        mobilePanelStateObserver = new MutationObserver(() => updateMobilePanelState());
+        targets.forEach(target => mobilePanelStateObserver.observe(target, {
+          attributes: true,
+          attributeFilter: ['class', 'style']
+        }));
+      }
+    }
+    mobilePanelStateSignature = '';
+    updateMobilePanelState();
   }
 
   let appFullscreenWanted = false;

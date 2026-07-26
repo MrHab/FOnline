@@ -187,6 +187,9 @@
         characterProfile.worldFactionId = snapshot.worldFactionId;
         characterProfile.factionId = snapshot.worldFactionId;
       }
+      if (snapshot.worldFactionReputation && typeof snapshot.worldFactionReputation === 'object') {
+        characterProfile.worldFactionReputation = { ...snapshot.worldFactionReputation };
+      }
     }
     if (snapshot.skillRanks && typeof snapshot.skillRanks === 'object') {
       Object.keys(skillRanks).forEach(key => delete skillRanks[key]);
@@ -208,6 +211,14 @@
     if (Array.isArray(snapshot.worldTaskRecords) && typeof applyServerWorldTaskRecords === 'function') applyServerWorldTaskRecords(snapshot.worldTaskRecords);
     if (snapshot.socialState && typeof applySocialStateSnapshot === 'function') applySocialStateSnapshot(snapshot.socialState);
     if (snapshot.globalMap && typeof applySavedGlobalMapState === 'function') {
+      if (typeof globalMapState === 'object' && globalMapState) {
+        globalMapState.attachedPartyId = String(snapshot.globalMap.attachedPartyId || '')
+          .replace(/[^a-zA-Z0-9_-]/g, '')
+          .slice(0, 80);
+        globalMapState.attachedPartyTaskId = String(snapshot.globalMap.attachedPartyTaskId || '')
+          .replace(/[^a-zA-Z0-9_:-]/g, '')
+          .slice(0, 120);
+      }
       const shouldApplyGlobalMap = snapshot.onGlobalMap === true
         || (typeof globalMapState === 'object' && globalMapState?.onWorldMap && snapshot.onGlobalMap === false);
       if (shouldApplyGlobalMap) applySavedGlobalMapState(snapshot.globalMap);
@@ -305,6 +316,11 @@
       multiplayer.roomId = ack.roomId || '';
       multiplayer.characterLeaseId = ack.characterLeaseId || '';
       activeCharacterLeaseId = multiplayer.characterLeaseId || activeCharacterLeaseId || '';
+      if (ack.characterId && characterProfile) {
+        selectedServerCharacterId = String(ack.characterId);
+        characterProfile.serverCharacterId = selectedServerCharacterId;
+        localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
+      }
       if (ack.lastVisitedSettlementId && characterProfile) {
         characterProfile.lastVisitedSettlementId = typeof normalizeLastVisitedSettlementId === 'function'
           ? normalizeLastVisitedSettlementId(ack.lastVisitedSettlementId)
@@ -755,6 +771,15 @@
         if (data.worldPoint) {
           globalMapState.playerX = Number(data.worldPoint.x || globalMapState.playerX || 0);
           globalMapState.playerY = Number(data.worldPoint.y || globalMapState.playerY || 0);
+        }
+        const completedWorldTaskId = String(data.completedWorldTaskId || '').trim();
+        if (completedWorldTaskId && completedWorldTaskId === String(globalMapState.attachedPartyTaskId || '').trim()) {
+          if (typeof clearGlobalMapWorldPartyAttachmentLocal === 'function') {
+            clearGlobalMapWorldPartyAttachmentLocal(data.worldPoint, { save: false });
+          } else {
+            globalMapState.attachedPartyId = '';
+            globalMapState.attachedPartyTaskId = '';
+          }
         }
       }
       clearNetworkRoomEntities({ keepPlayer: true });

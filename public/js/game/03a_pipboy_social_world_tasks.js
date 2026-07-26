@@ -712,12 +712,12 @@
   let worldTaskTrackedId = '';
 
   function worldTaskRewardClaimsSnapshot() {
-    return Array.from(worldTaskRewardClaims).slice(0, 300);
+    return Array.from(worldTaskRewardClaims).slice(-800);
   }
 
   function applyWorldTaskRewardClaims(input = []) {
     worldTaskRewardClaims.clear();
-    (Array.isArray(input) ? input : []).slice(0, 300).forEach(id => {
+    (Array.isArray(input) ? input : []).slice(-800).forEach(id => {
       const key = String(id || '').trim();
       if (key) worldTaskRewardClaims.add(key);
     });
@@ -801,42 +801,6 @@
     if (typeof renderGlobalMapPanel === 'function') renderGlobalMapPanel();
   }
 
-  function syncWorldTaskPartyJoin(task = {}, taskId = '') {
-    if (task.actionMode !== 'join_party' || !task.joinPartyId) return Promise.resolve(true);
-    const socket = typeof multiplayer === 'object' ? multiplayer.socket : null;
-    if (!socket || !socket.connected || typeof socket.emit !== 'function') {
-      addLog('Сервер группы недоступен: вступление в караван/патруль не подтверждено.', null, 'quest');
-      return Promise.resolve(false);
-    }
-    return new Promise(resolve => {
-      let settled = false;
-      const done = ok => {
-        if (settled) return;
-        settled = true;
-        resolve(!!ok);
-      };
-      socket.emit('worldTaskJoinParty', {
-        taskId: task.id || taskId,
-        partyId: task.joinPartyId,
-        characterId: typeof characterProfile === 'object' ? (characterProfile?.id || characterProfile?.characterId || '') : '',
-        factionId: typeof playerWorldFactionId === 'function' ? playerWorldFactionId() : '',
-        worldFactionId: typeof playerWorldFactionId === 'function' ? playerWorldFactionId() : ''
-      }, ack => {
-        if (!ack?.ok) {
-          addLog(`Группа недоступна: ${ack?.error || 'сервер отклонил вступление'}.`, null, 'quest');
-          return done(false);
-        }
-        if (ack.sim && typeof applyWastelandSimState === 'function') applyWastelandSimState(ack.sim);
-        if (typeof renderGlobalMapPanel === 'function') renderGlobalMapPanel();
-        done(true);
-      });
-      setTimeout(() => {
-        if (!settled) addLog('Группа не ответила вовремя. Попробуйте снова у доски заданий.', null, 'quest');
-        done(false);
-      }, 4500);
-    });
-  }
-
   function worldTaskPartyId(task = {}) {
     return String(task.joinPartyId || task.partyId || task.details?.partyId || '').trim().slice(0, 80);
   }
@@ -844,33 +808,6 @@
   function worldTaskShouldLeavePartyOnCancel(task = {}) {
     const type = String(task?.type || '').toLowerCase();
     return !!(worldTaskPartyId(task) && (task.actionMode === 'join_party' || ['escort_caravan', 'join_patrol'].includes(type)));
-  }
-
-  function syncWorldTaskPartyLeave(task = {}, taskId = '') {
-    if (!worldTaskShouldLeavePartyOnCancel(task)) return Promise.resolve(true);
-    const partyId = worldTaskPartyId(task);
-    const id = String(task?.id || taskId || '').trim();
-    const attachedPartyId = typeof globalMapState === 'object' ? String(globalMapState.attachedPartyId || '') : '';
-    const attachedTaskId = typeof globalMapState === 'object' ? String(globalMapState.attachedPartyTaskId || '') : '';
-    if (partyId && attachedPartyId === partyId && (!attachedTaskId || !id || attachedTaskId === id) && typeof detachGlobalMapWorldParty === 'function') {
-      detachGlobalMapWorldParty(`${task.title || 'Работа пустоши'}: вы покинули группу и отказались от работы.`);
-      return Promise.resolve(true);
-    }
-    const socket = typeof multiplayer === 'object' ? multiplayer.socket : null;
-    if (!partyId || !socket || !socket.connected || typeof socket.emit !== 'function') return Promise.resolve(false);
-    return new Promise(resolve => {
-      let settled = false;
-      const done = ok => {
-        if (settled) return;
-        settled = true;
-        resolve(!!ok);
-      };
-      socket.emit('worldTaskLeaveParty', { partyId }, ack => {
-        if (ack?.sim && typeof applyWastelandSimState === 'function') applyWastelandSimState(ack.sim);
-        done(!!ack?.ok);
-      });
-      setTimeout(() => done(false), 4500);
-    });
   }
 
   async function acceptWorldTask(taskId = '') {
@@ -906,8 +843,10 @@
     }
     addLog(`${task.title || 'Работа пустоши'}: работа взята.`, null, 'quest');
     if (task.actionMode === 'join_party' && task.joinPartyId && typeof attachGlobalMapToWorldParty === 'function') {
-      attachGlobalMapToWorldParty(task.joinPartyId, task.id || id);
-      worldTaskTrackedId = id;
+      const authoritativeAttachmentApplied = typeof globalMapState === 'object'
+        && String(globalMapState?.attachedPartyId || '') === String(task.joinPartyId || '')
+        && String(globalMapState?.attachedPartyTaskId || '') === String(task.id || id);
+      if (!authoritativeAttachmentApplied) attachGlobalMapToWorldParty(task.joinPartyId, task.id || id);
     }
     queueSave(true);
     renderPipboyInfoPanels();
@@ -926,7 +865,10 @@
       return;
     }
     if (worldTaskShouldLeavePartyOnCancel(task) && typeof detachGlobalMapWorldParty === 'function') {
-      detachGlobalMapWorldParty(`${task.title || 'Работа пустоши'}: вы покинули группу и отказались от работы.`);
+      detachGlobalMapWorldParty(
+        `${task.title || 'Работа пустоши'}: вы покинули группу и отказались от работы.`,
+        { skipServerCancel: true }
+      );
     }
     addLog(`${task.title || 'Работа пустоши'}: работа отменена.`, null, 'quest');
     renderPipboyInfoPanels();
@@ -1217,6 +1159,7 @@
 
   function canClaimWorldTaskReward(task = {}) {
     if (!task || task.status !== 'completed' || worldTaskRewardClaims.has(task.id)) return false;
+    if (typeof task.rewardEligible === 'boolean') return task.rewardEligible;
     const details = task.details && typeof task.details === 'object' ? task.details : {};
     const selfIds = currentWorldTaskRewardIds();
     const owner = String(details.playerId || '').trim();
@@ -1227,6 +1170,7 @@
       return Array.from(selfIds).some(id => eligible.has(id));
     }
     if (Number(details.rewardPlayerCount || 0) > 0) return false;
+    if (typeof multiplayer === 'object' && multiplayer?.joined) return false;
     return !owner || !selfIds.size || selfIds.has(owner);
   }
 
@@ -1478,7 +1422,9 @@
       const meta = pipboyFactionRelationMeta(value, id);
       const stats = pipboyFactionSiteStats(id);
       const color = worldFactionColor(id);
-      const relationText = meta.key === 'self' ? meta.label : `${meta.label} · ${value > 0 ? '+' : ''}${value}`;
+      const reputation = Math.max(0, Math.floor(Number(characterProfile?.worldFactionReputation?.[id] || 0)));
+      const relationText = `${meta.key === 'self' ? meta.label : `${meta.label} · ${value > 0 ? '+' : ''}${value}`}`
+        + (canJoinWorldFaction(id) ? ` · репутация ${reputation}` : '');
       const role = canJoinWorldFaction(id) ? 'фракция' : id === 'neutral' ? 'нейтралы' : 'угроза';
       return `<article class="pipboy-faction-card ${escapeHtml(meta.key)}" style="--faction-color:${escapeHtml(color)}">
         <div class="pipboy-faction-mark" aria-hidden="true"></div>

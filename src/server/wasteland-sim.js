@@ -9,6 +9,12 @@ const {
   pointToInfrastructureDistance,
   pointToSegmentDistance
 } = require('./global-infrastructure');
+const {
+  WORLD_PARTY_REWARD_INTEGRITY_VERSION,
+  isWorldPartyTask,
+  worldPartyMemberIdentityKey,
+  worldPartyTaskIsActiveForParty
+} = require('./world-party-integrity');
 
 const SCHEMA = 'realm.wastelandSim.v1';
 const VERSION = 1;
@@ -92,6 +98,8 @@ const FIXED_LAIR_STATE_VERSION = 3;
 const WORLD_PARTY_SPEED_PROFILE_VERSION = 2;
 const WORLD_INFRASTRUCTURE_LAYOUT_VERSION = 2;
 const WORLD_PARTY_AUTONOMY_VERSION = 1;
+const PATROL_DUTY_WORLD_HOURS = 6;
+const PATROL_DUTY_INTEGRITY_VERSION = 1;
 const PARTY_DECISION_MIN_HOURS = 0.6;
 const PARTY_DECISION_MAX_HOURS = 2.2;
 const PARTY_SITE_EXIT_GRACE_HOURS = 0.5;
@@ -222,6 +230,10 @@ function safeId(value, fallback = 'id') {
   return id || fallback;
 }
 
+function safeTransferIdentity(value = '') {
+  return String(value || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 180);
+}
+
 function stableWorldSiteHash(value = '') {
   let hash = 0x811c9dc5;
   for (const char of String(value || '')) {
@@ -350,12 +362,14 @@ function safeMemberName(value, fallback = 'Игрок') {
 
 function normalizePartyPlayerMember(input = {}, index = 0, worldHour = 0) {
   const characterId = safeId(input.characterId || input.charId || '', '');
+  const userId = safeId(input.userId || input.accountId || '', '');
   const playerId = safeId(input.playerId || input.socketId || input.id || characterId || `player_${index + 1}`, `player_${index + 1}`);
   const id = characterId || playerId;
   if (!id) return null;
   return {
     id,
     playerId,
+    userId,
     characterId,
     name: safeMemberName(input.name || input.playerName || `Игрок ${index + 1}`),
     factionId: isJoinableWorldFaction(input.factionId || input.worldFactionId || input.playerFactionId || '')
@@ -389,6 +403,281 @@ function normalizePartyPlayerMembers(party = {}, worldHour = 0) {
   return Array.isArray(party?.playerMembers)
     ? party.playerMembers.map((row, index) => normalizePartyPlayerMember(row, index, worldHour)).filter(Boolean).slice(-limit)
     : [];
+}
+
+function normalizedWorldPartyMemberKey(userId = '', characterId = '') {
+  return worldPartyMemberIdentityKey(userId, characterId, value => safeId(value, ''));
+}
+
+function syncPatrolDutyWindow(task = {}, taskMembers = [], worldHour = 0) {
+  if (!task || String(task.type || '') !== 'join_patrol') return;
+  task.details = task.details && typeof task.details === 'object' ? task.details : {};
+  if (!Array.isArray(taskMembers) || taskMembers.length <= 0) {
+    delete task.details.dutyStartedHour;
+    delete task.details.dutyEndsHour;
+    delete task.details.patrolDutyIntegrityVersion;
+    return;
+  }
+  const now = Number(worldHour || 0);
+  if (Number(task.details.patrolDutyIntegrityVersion || 0) < PATROL_DUTY_INTEGRITY_VERSION) {
+    taskMembers.forEach(member => {
+      member.joinedHour = now;
+      member.lastSeenHour = Math.max(Number(member.lastSeenHour || 0), now);
+    });
+  }
+  const joinedHours = taskMembers
+    .map(member => Number(member?.joinedHour))
+    .filter(Number.isFinite);
+  const firstJoinedHour = joinedHours.length ? Math.min(...joinedHours) : now;
+  const lastJoinedHour = joinedHours.length ? Math.max(...joinedHours) : now;
+  task.details.patrolDutyIntegrityVersion = PATROL_DUTY_INTEGRITY_VERSION;
+  task.details.dutyStartedHour = Number(firstJoinedHour.toFixed(2));
+  task.details.dutyEndsHour = Number((lastJoinedHour + PATROL_DUTY_WORLD_HOURS).toFixed(2));
+  task.expiresHour = Math.max(Number(task.expiresHour || 0), task.details.dutyEndsHour + 1);
+}
+
+function migrateLegacyWorldIdentityReferences(state = {}, legacyCharacterIdRemaps = []) {
+  const remaps = (Array.isArray(legacyCharacterIdRemaps) ? legacyCharacterIdRemaps : [])
+    .map(row => {
+      const userId = safeId(row?.userId || row?.accountId || '', '');
+      const previousCharacterId = safeId(row?.previousCharacterId || row?.oldCharacterId || '', '');
+      const characterId = safeId(row?.characterId || row?.newCharacterId || '', '');
+      return {
+        userId,
+        previousCharacterId,
+        characterId,
+        previousMemberKeyAmbiguous: !!row?.previousMemberKeyAmbiguous,
+        previousMemberKey: normalizedWorldPartyMemberKey(userId, previousCharacterId),
+        memberKey: normalizedWorldPartyMemberKey(userId, characterId)
+      };
+    })
+    .filter(row => row.userId && row.previousCharacterId && row.characterId && row.previousCharacterId !== row.characterId);
+  if (!remaps.length) return { remapped: 0, removedAmbiguous: 0 };
+  const previousMemberKeyCounts = remaps.reduce((map, row) => {
+    map.set(row.previousMemberKey, Number(map.get(row.previousMemberKey) || 0) + 1);
+    return map;
+  }, new Map());
+  const ambiguousMemberKeys = new Set(remaps
+    .filter(row => row.previousMemberKeyAmbiguous || Number(previousMemberKeyCounts.get(row.previousMemberKey) || 0) > 1)
+    .map(row => row.previousMemberKey));
+  const remapByPreviousMemberKey = new Map(remaps
+    .filter(row => !ambiguousMemberKeys.has(row.previousMemberKey))
+    .map(row => [row.previousMemberKey, row]));
+  const ambiguousCharacterIds = new Set(remaps.map(row => row.previousCharacterId));
+  let remapped = 0;
+  let removedAmbiguous = 0;
+  const remapCompositeIds = values => [...new Set((Array.isArray(values) ? values : [])
+    .map(value => {
+      const id = safeTransferIdentity(value || '');
+      if (ambiguousMemberKeys.has(id)) {
+        removedAmbiguous += 1;
+        return '';
+      }
+      const exact = remapByPreviousMemberKey.get(id);
+      if (exact) {
+        remapped += 1;
+        return exact.memberKey;
+      }
+      if (ambiguousCharacterIds.has(safeId(id, ''))) {
+        removedAmbiguous += 1;
+        return '';
+      }
+      return id;
+    })
+    .filter(Boolean))];
+  const removeAmbiguousIds = values => [...new Set((Array.isArray(values) ? values : [])
+    .map(value => safeTransferIdentity(value || ''))
+    .filter(id => {
+      if (!id || ambiguousCharacterIds.has(safeId(id, ''))) {
+        if (id) removedAmbiguous += 1;
+        return false;
+      }
+      return true;
+    }))];
+  const cleanDetails = details => {
+    if (!details || typeof details !== 'object') return;
+    if (Array.isArray(details.rewardMemberKeys)) {
+      details.rewardMemberKeys = remapCompositeIds(details.rewardMemberKeys);
+    }
+    if (Array.isArray(details.arrivalTransferredPlayerIds)) {
+      details.arrivalTransferredPlayerIds = remapCompositeIds(details.arrivalTransferredPlayerIds);
+    }
+    for (const field of [
+      'rewardPlayerIds',
+      'rewardCharacterIds',
+      'eligibleRewardPlayerIds',
+      'eligibleRewardCharacterIds',
+      'joinedPlayers'
+    ]) {
+      if (Array.isArray(details[field])) details[field] = removeAmbiguousIds(details[field]);
+    }
+    for (const field of ['playerId', 'characterId', 'ownerPlayerId', 'startedByPlayerId']) {
+      if (!ambiguousCharacterIds.has(safeId(details[field] || '', ''))) continue;
+      delete details[field];
+      removedAmbiguous += 1;
+    }
+  };
+  for (const task of [
+    ...(Array.isArray(state.worldTasks) ? state.worldTasks : []),
+    ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
+  ]) {
+    cleanDetails(task?.details);
+  }
+  for (const event of Array.isArray(state.events) ? state.events : []) cleanDetails(event);
+  for (const zone of Array.isArray(state.worldZones) ? state.worldZones : []) {
+    cleanDetails(zone);
+    cleanDetails(zone?.details);
+    const sourceId = safeId(zone?.sourceId || '', '');
+    if (ambiguousCharacterIds.has(sourceId)
+      && (String(zone?.sourceType || '').toLowerCase() === 'player' || zone?.details?.playerAmbush)) {
+      delete zone.sourceId;
+      removedAmbiguous += 1;
+    }
+  }
+  return {
+    remapped,
+    removedAmbiguous,
+    remapByPreviousMemberKey,
+    ambiguousCharacterIds,
+    ambiguousMemberKeys
+  };
+}
+
+function pruneInvalidWorldPartyPlayerMembers(state = {}, authoritativeCharacters = null, options = {}) {
+  const legacyMigration = migrateLegacyWorldIdentityReferences(
+    state,
+    options?.legacyCharacterIdRemaps || options?.legacyRemaps || []
+  );
+  const taskById = new Map((Array.isArray(state.worldTasks) ? state.worldTasks : [])
+    .filter(task => task?.id)
+    .map(task => [String(task.id), task]));
+  const authoritativeRows = authoritativeCharacters === null
+    ? null
+    : (Array.isArray(authoritativeCharacters) ? authoritativeCharacters : [])
+      .map(row => {
+        const userId = safeId(row?.userId || row?.accountId || '', '');
+        const characterId = safeId(row?.characterId || row?.id || '', '');
+        const memberKey = normalizedWorldPartyMemberKey(userId, characterId);
+        return {
+          userId,
+          characterId,
+          memberKey,
+          accepted: new Set((Array.isArray(row?.acceptedTaskIds) ? row.acceptedTaskIds : [])
+            .map(id => safeId(id || '', '')).filter(Boolean)),
+          factionId: factionGroup(row?.factionId || row?.worldFactionId || '')
+        };
+      })
+      .filter(row => row.memberKey);
+  const authoritativeByMember = authoritativeRows === null
+    ? null
+    : new Map(authoritativeRows.map(row => [row.memberKey, row]));
+  const authoritativeByCharacter = authoritativeRows === null
+    ? null
+    : authoritativeRows.reduce((map, row) => {
+      if (!map.has(row.characterId)) map.set(row.characterId, []);
+      map.get(row.characterId).push(row);
+      return map;
+    }, new Map());
+  const candidates = [];
+  let removed = 0;
+
+  for (const party of Object.values(state.parties || {})) {
+    if (!party || !Array.isArray(party.playerMembers)) continue;
+    for (const member of party.playerMembers) {
+      let characterId = safeId(member?.characterId || '', '');
+      let userId = safeId(member?.userId || member?.accountId || '', '');
+      const previousMemberKey = normalizedWorldPartyMemberKey(userId, characterId);
+      const ambiguousLegacyMemberKey = legacyMigration.ambiguousMemberKeys?.has(previousMemberKey);
+      const exactRemap = ambiguousLegacyMemberKey
+        ? null
+        : (legacyMigration.remapByPreviousMemberKey?.get(previousMemberKey) || null);
+      if (exactRemap) {
+        characterId = exactRemap.characterId;
+        member.characterId = characterId;
+        member.id = characterId;
+        member.playerId = '';
+        member.socketId = '';
+      }
+      const ambiguousLegacyIdentity = !!(
+        ambiguousLegacyMemberKey
+        || (!userId && legacyMigration.ambiguousCharacterIds?.has(characterId))
+      );
+      if (!userId && authoritativeByCharacter) {
+        const owners = authoritativeByCharacter.get(characterId) || [];
+        if (!ambiguousLegacyIdentity && owners.length === 1) {
+          userId = owners[0].userId;
+          member.userId = userId;
+        }
+      }
+      const memberKey = normalizedWorldPartyMemberKey(userId, characterId);
+      const taskId = safeId(member?.taskId || '', '');
+      const task = taskById.get(taskId);
+      const requiredFaction = factionGroup(party.faction || '');
+      const memberFaction = factionGroup(member?.factionId || '');
+      const authoritative = authoritativeByMember?.get(memberKey) || null;
+      const valid = !!(!ambiguousLegacyIdentity
+        && characterId
+        && (authoritativeByMember === null || memberKey)
+        && taskId
+        && task
+        && worldPartyTaskIsActiveForParty(task, party, state.worldHour)
+        && (!isJoinableWorldFaction(requiredFaction) || memberFaction === requiredFaction)
+        && (authoritativeByMember === null
+          || (authoritative
+            && authoritative.accepted.has(taskId)
+            && (!isJoinableWorldFaction(requiredFaction) || authoritative.factionId === requiredFaction))));
+      if (!valid) {
+        removed += 1;
+        continue;
+      }
+      candidates.push({
+        party,
+        member,
+        characterId,
+        memberKey: memberKey || `legacy:${characterId}`
+      });
+    }
+    party.playerMembers = [];
+  }
+
+  candidates.sort((left, right) => (
+    Number(right.member.joinedHour || 0) - Number(left.member.joinedHour || 0)
+    || String(left.party.id || '').localeCompare(String(right.party.id || ''))
+    || left.memberKey.localeCompare(right.memberKey)
+  ));
+  const seenMembers = new Set();
+  for (const candidate of candidates) {
+    if (seenMembers.has(candidate.memberKey)) {
+      removed += 1;
+      continue;
+    }
+    seenMembers.add(candidate.memberKey);
+    candidate.party.playerMembers.push(candidate.member);
+  }
+
+  for (const party of Object.values(state.parties || {})) {
+    if (!party) continue;
+    party.playerMembers = (Array.isArray(party.playerMembers) ? party.playerMembers : [])
+      .slice(0, worldPartyPlayerLimit(party));
+  }
+  for (const task of taskById.values()) {
+    if (!isWorldPartyTask(task) || task.status !== 'active') continue;
+    const party = state.parties?.[task.partyId || ''];
+    if (!party) continue;
+    const playerLimit = worldPartyPlayerLimit(party, task);
+    const taskMembers = party.playerMembers.filter(member => member?.taskId === task.id).slice(0, playerLimit);
+    task.details = task.details && typeof task.details === 'object' ? task.details : {};
+    task.details.playerLimit = playerLimit;
+    task.details.joinedPlayers = taskMembers.map(member => member.id).filter(Boolean);
+    task.details.playerCount = taskMembers.length;
+    syncPatrolDutyWindow(task, taskMembers, state.worldHour);
+  }
+  return {
+    removed,
+    kept: seenMembers.size,
+    remappedReferences: Number(legacyMigration.remapped || 0),
+    removedAmbiguousReferences: Number(legacyMigration.removedAmbiguous || 0)
+  };
 }
 
 function clone(value) {
@@ -1312,6 +1601,7 @@ function districtInterestSites(globalMap = {}, worldHour = 0, reservedSites = {}
         districtKey: `${sx}:${sy}`,
         districtX: sx,
         districtY: sy,
+        roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
         interestCycle: cycle,
         interestExpiresHour: (cycle + 1) * DISTRICT_INTEREST_REFRESH_HOURS - Math.floor(seededRandom(`district-interest-offset:${sx}:${sy}`)() * DISTRICT_INTEREST_REFRESH_HOURS)
       };
@@ -3163,6 +3453,7 @@ function normalizeState(input, globalMap = {}) {
       return true;
     })
     .slice(0, MAX_WORLD_TASK_HISTORY_COUNT);
+  pruneInvalidWorldPartyPlayerMembers(state);
   state.worldZones = state.worldZones
     .map(zone => normalizeWorldZone(zone, state.worldHour, globalMap))
     .filter(zone => {
@@ -3227,6 +3518,50 @@ function createWastelandSimulation(options = {}) {
     if (type === 'clear_lair') return { xp: 135 + Math.round(danger * 18 + p * 16), caps: 85 + Math.round(danger * 14 + p * 12), reputation: 3 };
     return { xp: 50, caps: 20, reputation: 1 };
   }
+
+  function worldTaskRewardFactionId(task = {}) {
+    const party = task.partyId ? state.parties?.[task.partyId] : null;
+    const issuer = task.issuerSiteId ? state.sites?.[task.issuerSiteId] : null;
+    const target = task.siteId ? state.sites?.[task.siteId] : null;
+    const candidates = isWorldPartyTask(task)
+      ? [party?.faction, issuer?.owner, issuer?.faction, target?.owner, target?.faction, task.faction]
+      : [issuer?.owner, issuer?.faction, target?.owner, target?.faction, task.faction, party?.faction];
+    for (const candidate of candidates) {
+      const factionId = factionGroup(candidate || '');
+      if (isJoinableWorldFaction(factionId)) return factionId;
+    }
+    return '';
+  }
+
+  function backfillCompletedWorldTaskRewardFactions() {
+    let changed = 0;
+    for (const task of [
+      ...(Array.isArray(state.worldTasks) ? state.worldTasks : []),
+      ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
+    ]) {
+      if (!task || task.status !== 'completed' || Number(task.reward?.reputation || 0) <= 0) continue;
+      task.details = task.details && typeof task.details === 'object' ? task.details : {};
+      const frozenFactionId = factionGroup(task.details.rewardFactionId || '');
+      if (isJoinableWorldFaction(frozenFactionId)) {
+        if (task.details.rewardFactionId !== frozenFactionId) {
+          task.details.rewardFactionId = frozenFactionId;
+          changed += 1;
+        }
+        continue;
+      }
+      const rewardFactionId = worldTaskRewardFactionId(task);
+      if (!rewardFactionId) continue;
+      task.details.rewardFactionId = rewardFactionId;
+      changed += 1;
+    }
+    if (changed > 0) {
+      dirty = true;
+      save(true);
+    }
+    return changed;
+  }
+
+  backfillCompletedWorldTaskRewardFactions();
 
   function worldTaskIssuerSiteId(type = '', site = null, data = {}) {
     const explicit = safeId(data.issuerSiteId || data.boardSiteId || '', '');
@@ -3330,7 +3665,23 @@ function createWastelandSimulation(options = {}) {
       ? nextStatus
       : 'completed';
     task.completedHour = Number(state.worldHour || 0);
-    task.details = { ...(task.details || {}), finishReason: reason, ...details };
+    const trustedGroupReward = task.status === 'completed' && isWorldPartyTask(task)
+      ? {
+        ...partyRewardPlayerDetails(state.parties[task.partyId] || {}, task.id),
+        worldPartyRewardIntegrityVersion: WORLD_PARTY_REWARD_INTEGRITY_VERSION
+      }
+      : {};
+    const rewardFactionId = task.status === 'completed'
+      ? worldTaskRewardFactionId(task)
+      : '';
+    task.details = {
+      ...(task.details || {}),
+      finishReason: reason,
+      ...details,
+      ...trustedGroupReward,
+      ...(rewardFactionId ? { rewardFactionId } : {})
+    };
+    removeWorldTaskPartyMembers(task);
     if (task.status === 'completed') state.stats.worldTasksCompleted = Number(state.stats.worldTasksCompleted || 0) + 1;
     else if (task.status === 'failed') state.stats.worldTasksFailed = Number(state.stats.worldTasksFailed || 0) + 1;
     else state.stats.worldTasksResolved = Number(state.stats.worldTasksResolved || 0) + 1;
@@ -5872,6 +6223,7 @@ function createWastelandSimulation(options = {}) {
           task.status = 'resolved';
           task.completedHour = now;
           task.details = { ...(task.details || {}), finishReason: 'world_task_group_unavailable' };
+          removeWorldTaskPartyMembers(task);
           state.stats.worldTasksResolved = Number(state.stats.worldTasksResolved || 0) + 1;
           addEvent('world_task_group_unavailable', `Заявка снята: ${task.title}. Отряд уже недоступен.`, {
             taskId: task.id,
@@ -5888,6 +6240,7 @@ function createWastelandSimulation(options = {}) {
       task.completedHour = now;
       const consequenceApplied = applyExpiredWorldTaskConsequences(task);
       task.details = { ...(task.details || {}), finishReason: 'expired', consequenceApplied };
+      removeWorldTaskPartyMembers(task);
       state.stats.worldTasksFailed = Number(state.stats.worldTasksFailed || 0) + 1;
       addEvent('world_task_expired', `Задание провалено: ${task.title}.`, {
         taskId: task.id,
@@ -6040,9 +6393,8 @@ function createWastelandSimulation(options = {}) {
   }
 
   function partyPlayerPublicMembers(party = {}) {
-    return Array.isArray(party.playerMembers) ? party.playerMembers.map(row => ({
-      id: row.id,
-      characterId: row.characterId || '',
+    return Array.isArray(party.playerMembers) ? party.playerMembers.map((row, index) => ({
+      id: `${party.id || 'party'}_player_${index + 1}`,
       name: row.name || 'Игрок',
       role: 'Сопровождение',
       type: 'player',
@@ -6557,6 +6909,9 @@ function createWastelandSimulation(options = {}) {
     task.issuerSiteId = task.issuerSiteId || site.id || party.homeSiteId || '';
     task.partyId = party.id || task.partyId || '';
     const playerLimit = worldPartyPlayerLimit(party, task);
+    const taskMembers = Array.isArray(party.playerMembers)
+      ? party.playerMembers.filter(member => member?.taskId === task.id).slice(0, playerLimit)
+      : [];
     task.details = {
       ...(task.details || {}),
       staging: !departed,
@@ -6566,8 +6921,8 @@ function createWastelandSimulation(options = {}) {
       destinationSiteId: destination?.id || party.destinationSiteId || '',
       minPlayers: Number(party.stagingMinPlayers || caravanStagingMinPlayers(party)),
       playerLimit,
-      joinedPlayers: Array.isArray(party.playerMembers) ? party.playerMembers.map(row => row.id).slice(0, playerLimit) : [],
-      playerCount: worldPartyPlayerCount(party),
+      joinedPlayers: taskMembers.map(row => row.id).filter(Boolean),
+      playerCount: taskMembers.length,
       waitUntilHour: Number(party.stagingUntilHour || 0),
       departedHour: departed ? Number(state.worldHour || 0) : Number(task.details?.departedHour || 0),
       cargo: compactStockpile(party.cargo || {})
@@ -6686,10 +7041,14 @@ function createWastelandSimulation(options = {}) {
     return false;
   }
 
-  function partyRewardPlayerDetails(party = {}) {
-    const members = Array.isArray(party.playerMembers) ? party.playerMembers.filter(Boolean) : [];
+  function partyRewardPlayerDetails(party = {}, taskId = '') {
+    const id = safeId(taskId || '', '');
+    const members = Array.isArray(party.playerMembers)
+      ? party.playerMembers.filter(member => member && (!id || member.taskId === id))
+      : [];
     const rewardPlayerIds = [];
     const rewardCharacterIds = [];
+    const rewardMemberKeys = [];
     const rewardPlayerNames = [];
     members.forEach(member => {
       [member.id, member.playerId, member.characterId].forEach(value => {
@@ -6698,12 +7057,15 @@ function createWastelandSimulation(options = {}) {
       });
       const characterId = safeId(member.characterId || member.id || '', '');
       if (characterId && !rewardCharacterIds.includes(characterId)) rewardCharacterIds.push(characterId);
+      const memberKey = normalizedWorldPartyMemberKey(member.userId || '', characterId);
+      if (memberKey && !rewardMemberKeys.includes(memberKey)) rewardMemberKeys.push(memberKey);
       const name = safeMemberName(member.name || '', '');
       if (name && !rewardPlayerNames.includes(name)) rewardPlayerNames.push(name);
     });
     return {
       rewardPlayerIds: rewardPlayerIds.slice(0, 24),
       rewardCharacterIds: rewardCharacterIds.slice(0, 24),
+      rewardMemberKeys: rewardMemberKeys.slice(0, 24),
       rewardPlayerNames: rewardPlayerNames.slice(0, 24),
       rewardPlayerCount: members.length
     };
@@ -6776,6 +7138,9 @@ function createWastelandSimulation(options = {}) {
         state.worldTasks
           .filter(task => task && task.status === 'active' && task.type === 'escort_caravan' && task.partyId === party.id)
           .forEach(task => {
+            const taskMembers = Array.isArray(party.playerMembers)
+              ? party.playerMembers.filter(member => member?.taskId === task.id).slice(0, worldPartyPlayerLimit(party, task))
+              : [];
             task.details = {
               ...(task.details || {}),
               finishReason: 'caravan_returning',
@@ -6789,9 +7154,9 @@ function createWastelandSimulation(options = {}) {
               tradeDestinationSiteId: site.id,
               returnCargo: clone(party.cargo),
               cargo: clone(delivered),
-              playerLimit: worldPartyPlayerLimit(party),
-              playerCount: worldPartyPlayerCount(party),
-              joinedPlayers: Array.isArray(party.playerMembers) ? party.playerMembers.map(row => row.id).slice(0, worldPartyPlayerLimit(party)) : []
+              playerLimit: worldPartyPlayerLimit(party, task),
+              playerCount: taskMembers.length,
+              joinedPlayers: taskMembers.map(row => row.id).filter(Boolean)
             };
             task.text = `${party.name} завершил обмен и возвращается домой. Награда будет доступна после возвращения каравана.`;
             task.targetSiteId = party.homeSiteId;
@@ -6806,27 +7171,21 @@ function createWastelandSimulation(options = {}) {
         dirty = true;
         return;
       }
-      const escortReward = partyRewardPlayerDetails(party);
-      const hasPlayerEscorts = Number(escortReward.rewardPlayerCount || 0) > 0;
-      if (hasPlayerEscorts) {
-        state.worldTasks
-          .filter(task => task && task.status === 'active' && task.type === 'escort_caravan' && task.partyId === party.id)
-          .forEach(task => fundWorldTaskCapsRewardFromSite(task, site, escortReward.rewardPlayerCount));
-      }
-      finishActiveWorldTasks(
-        task => task.type === 'escort_caravan' && task.partyId === party.id,
-        hasPlayerEscorts ? 'completed' : 'resolved',
-        'caravan_arrived',
-        {
+      const escortTasks = state.worldTasks
+        .filter(task => task && task.status === 'active' && task.type === 'escort_caravan' && task.partyId === party.id);
+      escortTasks.forEach(task => {
+        const escortReward = partyRewardPlayerDetails(party, task.id);
+        const hasPlayerEscorts = Number(escortReward.rewardPlayerCount || 0) > 0;
+        if (hasPlayerEscorts) fundWorldTaskCapsRewardFromSite(task, site, escortReward.rewardPlayerCount);
+        finishWorldTask(task, hasPlayerEscorts ? 'completed' : 'resolved', 'caravan_arrived', {
           partyId: party.id,
           siteId: site.id,
           arrivalSiteId: site.id,
           arrivalLocationId: site.locationId || '',
           cargo: clone(delivered),
           ...escortReward
-        }
-      );
-      if (hasPlayerEscorts) party.playerMembers = [];
+        });
+      });
       finishActiveWorldTasks(
         task => task.type === 'deliver_supplies' && task.siteId === site.id,
         'resolved',
@@ -7682,6 +8041,25 @@ function createWastelandSimulation(options = {}) {
           threatPartyId: threat.threatPartyId || '',
           riskLevel: threat.riskLevel
         }
+      });
+    }
+  }
+
+  function completeJoinedPatrolTasks() {
+    const now = Number(state.worldHour || 0);
+    for (const task of state.worldTasks) {
+      if (!task || task.status !== 'active' || String(task.type || '') !== 'join_patrol') continue;
+      const dutyEndsHour = Number(task.details?.dutyEndsHour || 0);
+      if (!Number.isFinite(dutyEndsHour) || dutyEndsHour <= 0 || now < dutyEndsHour) continue;
+      const party = state.parties[task.partyId];
+      if (!party || party.destroyed || party.state === 'destroyed') continue;
+      const rewardDetails = partyRewardPlayerDetails(party, task.id);
+      if (Number(rewardDetails.rewardPlayerCount || 0) <= 0) continue;
+      finishWorldTask(task, 'completed', 'patrol_duty_completed', {
+        partyId: party.id,
+        dutyStartedHour: Number(task.details?.dutyStartedHour || task.createdHour || now),
+        dutyEndsHour,
+        patrolCompletedHour: now
       });
     }
   }
@@ -9708,6 +10086,7 @@ function createWastelandSimulation(options = {}) {
     updatePatrolThreats(hours);
     updateVisibleLairs(hours);
     resolvePartyContacts();
+    completeJoinedPatrolTasks();
     updateSiteControl(hours);
     applyOutpostProtection(hours);
     resolveResourceRaids(hours);
@@ -10399,10 +10778,9 @@ function createWastelandSimulation(options = {}) {
       });
       finishActiveWorldTasks(
         task => (
-          ['defend_resource', 'escort_caravan', 'retake_site'].includes(task.type)
+          ['defend_resource', 'retake_site'].includes(task.type)
             && (!task.targetFaction || task.targetFaction === 'raiders')
-            && (task.type === 'escort_caravan'
-              || !task.siteId
+            && (!task.siteId
               || task.siteId === (raiderSite?.id || '')
               || task.siteId === (nearestSettlement?.id || '')
               || worldTaskTargetNear(task, point, 18))
@@ -10524,15 +10902,26 @@ function createWastelandSimulation(options = {}) {
     return publicState();
   }
 
-  function removePlayerFromWorldParties(memberId = '', exceptPartyId = '') {
-    const id = safeId(memberId, '');
-    if (!id) return 0;
+  function removePlayerFromWorldParties(memberInput = {}, exceptPartyId = '') {
+    const member = memberInput && typeof memberInput === 'object'
+      ? memberInput
+      : { characterId: memberInput, id: memberInput };
+    const memberKey = normalizedWorldPartyMemberKey(member.userId || '', member.characterId || '');
+    const legacyId = safeId(member.characterId || member.id || member.playerId || '', '');
+    if (!memberKey && !legacyId) return 0;
     let removed = 0;
     Object.values(state.parties).forEach(party => {
       if (!party || party.id === exceptPartyId || !Array.isArray(party.playerMembers)) return;
       const before = party.playerMembers.length;
-      party.playerMembers = party.playerMembers.filter(row => row && row.id !== id && row.playerId !== id && row.characterId !== id);
-      removed += before - party.playerMembers.length;
+      party.playerMembers = party.playerMembers.filter(row => {
+        if (!row) return false;
+        const rowKey = normalizedWorldPartyMemberKey(row.userId || '', row.characterId || '');
+        if (memberKey && rowKey) return rowKey !== memberKey;
+        return row.id !== legacyId && row.playerId !== legacyId && row.characterId !== legacyId;
+      });
+      const partyRemoved = before - party.playerMembers.length;
+      removed += partyRemoved;
+      if (partyRemoved > 0) syncWorldPartyPlayerTaskDetails(party);
     });
     return removed;
   }
@@ -10546,87 +10935,130 @@ function createWastelandSimulation(options = {}) {
   function syncWorldPartyPlayerTaskDetails(party = {}, preferredTask = null) {
     if (!party?.id) return;
     const tasks = state.worldTasks.filter(task => task
+      && task.status === 'active'
       && task.partyId === party.id
       && ['escort_caravan', 'join_patrol'].includes(String(task.type || '').toLowerCase()));
-    if (preferredTask && !tasks.includes(preferredTask)) tasks.push(preferredTask);
+    if (preferredTask?.status === 'active' && !tasks.includes(preferredTask)) tasks.push(preferredTask);
     tasks.forEach(task => {
       task.details = task.details && typeof task.details === 'object' ? task.details : {};
       const playerLimit = worldPartyPlayerLimit(party, task);
       task.details.playerLimit = playerLimit;
-      task.details.joinedPlayers = Array.isArray(party.playerMembers)
-        ? party.playerMembers.map(row => row?.id).filter(Boolean).slice(0, playerLimit)
+      const taskMembers = Array.isArray(party.playerMembers)
+        ? party.playerMembers.filter(row => row?.taskId === task.id).slice(0, playerLimit)
         : [];
-      task.details.playerCount = worldPartyPlayerCount(party);
+      task.details.joinedPlayers = taskMembers.map(row => row?.id).filter(Boolean);
+      task.details.playerCount = taskMembers.length;
+      syncPatrolDutyWindow(task, taskMembers, state.worldHour);
     });
+  }
+
+  function removeWorldTaskPartyMembers(task = {}) {
+    if (!isWorldPartyTask(task) || !task.id || !task.partyId) return 0;
+    const party = state.parties[task.partyId];
+    if (!party || !Array.isArray(party.playerMembers)) return 0;
+    const before = party.playerMembers.length;
+    party.playerMembers = party.playerMembers.filter(member => member?.taskId !== task.id);
+    const removed = before - party.playerMembers.length;
+    if (removed > 0) {
+      syncWorldPartyPlayerTaskDetails(party);
+      dirty = true;
+    }
+    return removed;
   }
 
   function joinWorldParty(data = {}) {
     const task = findWorldTaskById(data.taskId || data.worldTaskId || '');
     const taskType = String(task?.type || '').toLowerCase();
-    if (task && task.status !== 'active') return { ok: false, error: 'Эта работа уже недоступна.' };
-    if (task && !['escort_caravan', 'join_patrol'].includes(taskType)) return { ok: false, error: 'Это задание не присоединяет к группе.' };
-    const partyId = safeId(data.partyId || task?.partyId || '', '');
+    if (!task) return { ok: false, error: 'Для вступления нужна существующая работа пустоши.' };
+    if (task.status !== 'active' || Number(task.expiresHour || 0) <= Number(state.worldHour || 0)) {
+      return { ok: false, error: 'Эта работа уже недоступна.' };
+    }
+    if (!['escort_caravan', 'join_patrol'].includes(taskType)) return { ok: false, error: 'Это задание не присоединяет к группе.' };
+    const partyId = safeId(task.partyId || '', '');
+    if (!partyId) return { ok: false, error: 'У работы больше нет связанной группы.' };
+    const requestedPartyId = safeId(data.partyId || '', '');
+    if (requestedPartyId && requestedPartyId !== partyId) return { ok: false, error: 'Работа относится к другой группе.' };
     const party = partyId ? state.parties[partyId] : null;
     if (!party || party.destroyed || party.state === 'destroyed') return { ok: false, error: 'Группа уже недоступна.' };
+    if (!worldPartyTaskIsActiveForParty(task, party, state.worldHour)) {
+      return { ok: false, error: 'Тип группы не соответствует этой работе.' };
+    }
     const kind = String(party.kind || '').toLowerCase();
-    if (!['caravan', 'patrol'].includes(kind)) return { ok: false, error: 'К этой группе нельзя присоединиться.' };
     if (kind === 'caravan' && !caravanStagingIsOpen(party)) {
       return { ok: false, error: 'Караван уже вышел в путь. Набор сопровождения закрыт.' };
     }
-    const requiredFaction = factionGroup(party.faction || task?.joinPartyFaction || task?.faction || task?.owner || '');
+    const requiredFaction = factionGroup(party.faction || '');
     const playerFaction = factionGroup(data.factionId || data.worldFactionId || data.playerFactionId || '');
     if (isJoinableWorldFaction(requiredFaction) && playerFaction !== requiredFaction) {
       return { ok: false, error: `Нужно состоять во фракции: ${factionLabel(requiredFaction)}.` };
     }
+    const characterId = safeId(data.characterId || '', '');
+    if (!characterId) return { ok: false, error: 'Не удалось определить персонажа.' };
+    const userId = safeId(data.userId || data.accountId || '', '');
+    if (!userId) return { ok: false, error: 'Не удалось определить аккаунт персонажа.' };
     const member = normalizePartyPlayerMember({
       playerId: data.playerId || data.socketId || '',
       socketId: data.socketId || '',
-      characterId: data.characterId || '',
+      userId,
+      characterId,
       factionId: requiredFaction,
       name: data.name || data.playerName || '',
-      taskId: task?.id || data.taskId || ''
+      taskId: task.id
     }, 0, state.worldHour);
     if (!member) return { ok: false, error: 'Не удалось определить игрока.' };
+    const memberKey = normalizedWorldPartyMemberKey(member.userId, member.characterId);
     const playerLimit = worldPartyPlayerLimit(party, task);
     party.playerMembers = Array.isArray(party.playerMembers) ? party.playerMembers.filter(Boolean).slice(-playerLimit) : [];
-    let existingIndex = party.playerMembers.findIndex(row => row && (row.id === member.id || row.playerId === member.id || row.characterId === member.id));
+    let existingIndex = party.playerMembers.findIndex(row => (
+      normalizedWorldPartyMemberKey(row?.userId || '', row?.characterId || '') === memberKey
+    ));
     if (existingIndex < 0 && worldPartyPlayerCount(party) >= playerLimit) {
       return { ok: false, error: `В этой группе уже максимум игроков: ${playerLimit}. НПС не занимают места игроков.` };
     }
-    removePlayerFromWorldParties(member.id, party.id);
-    existingIndex = party.playerMembers.findIndex(row => row && (row.id === member.id || row.playerId === member.id || row.characterId === member.id));
+    if (existingIndex >= 0 && party.playerMembers[existingIndex]?.taskId === task.id) {
+      return { ok: true, replay: true, party: publicParty(party), taskId: task.id, sim: publicState() };
+    }
+    removePlayerFromWorldParties(member, party.id);
+    existingIndex = party.playerMembers.findIndex(row => (
+      normalizedWorldPartyMemberKey(row?.userId || '', row?.characterId || '') === memberKey
+    ));
     if (existingIndex >= 0) {
       party.playerMembers[existingIndex] = { ...party.playerMembers[existingIndex], ...member, lastSeenHour: Number(state.worldHour || 0) };
     } else {
       party.playerMembers.push(member);
     }
     party.playerMembers = party.playerMembers.slice(-playerLimit);
-    if (task) {
-      task.details = task.details && typeof task.details === 'object' ? task.details : {};
-      task.details.lastJoinedPlayer = member.name;
-      task.details.lastJoinHour = Number(Number(state.worldHour || 0).toFixed(2));
-      task.details.minPlayers = Number(party.stagingMinPlayers || task.details.minPlayers || 0);
-    }
+    task.details = task.details && typeof task.details === 'object' ? task.details : {};
+    task.details.lastJoinedPlayer = member.name;
+    task.details.lastJoinHour = Number(Number(state.worldHour || 0).toFixed(2));
+    task.details.minPlayers = Number(party.stagingMinPlayers || task.details.minPlayers || 0);
     syncWorldPartyPlayerTaskDetails(party, task);
     addEvent('world_party_joined', `${member.name} присоединился к группе "${party.name || party.id}".`, {
       partyId: party.id,
-      taskId: task?.id || '',
-      playerId: member.playerId,
-      characterId: member.characterId
+      taskId: task.id
     });
     dirty = true;
     save(true);
-    return { ok: true, party: publicParty(party), taskId: task?.id || '', sim: publicState() };
+    return { ok: true, party: publicParty(party), taskId: task.id, sim: publicState() };
+  }
+
+  function reconcileWorldPartyMembers(authoritativeCharacters = [], options = {}) {
+    const result = pruneInvalidWorldPartyPlayerMembers(state, authoritativeCharacters, options);
+    dirty = true;
+    save(true);
+    return result;
   }
 
   function leaveWorldParty(data = {}) {
     const member = normalizePartyPlayerMember({
       playerId: data.playerId || data.socketId || '',
       socketId: data.socketId || '',
+      userId: data.userId || data.accountId || '',
       characterId: data.characterId || '',
       name: data.name || data.playerName || ''
     }, 0, state.worldHour);
-    if (!member) return { ok: false, error: 'Не удалось определить игрока.' };
+    const memberKey = normalizedWorldPartyMemberKey(member?.userId || '', member?.characterId || '');
+    if (!member || !memberKey) return { ok: false, error: 'Не удалось определить игрока.' };
     const partyId = safeId(data.partyId || '', '');
     const parties = partyId && state.parties[partyId] ? [state.parties[partyId]] : Object.values(state.parties);
     let leftParty = null;
@@ -10634,7 +11066,9 @@ function createWastelandSimulation(options = {}) {
     parties.forEach(party => {
       if (!party || !Array.isArray(party.playerMembers)) return;
       const before = party.playerMembers.length;
-      party.playerMembers = party.playerMembers.filter(row => row && row.id !== member.id && row.playerId !== member.id && row.characterId !== member.id);
+      party.playerMembers = party.playerMembers.filter(row => (
+        row && normalizedWorldPartyMemberKey(row.userId || '', row.characterId || '') !== memberKey
+      ));
       if (party.playerMembers.length !== before) {
         removed += before - party.playerMembers.length;
         leftParty = party;
@@ -10643,9 +11077,7 @@ function createWastelandSimulation(options = {}) {
     if (removed > 0 && leftParty) {
       syncWorldPartyPlayerTaskDetails(leftParty);
       addEvent('world_party_left', `${member.name} покинул группу "${leftParty.name || leftParty.id}".`, {
-        partyId: leftParty.id,
-        playerId: member.playerId,
-        characterId: member.characterId
+        partyId: leftParty.id
       });
       dirty = true;
       save(true);
@@ -11168,6 +11600,45 @@ function createWastelandSimulation(options = {}) {
       .slice(0, limit);
   }
 
+  function publicWorldTaskDetails(task = {}) {
+    const details = clone(task?.details || {});
+    delete details.rewardMemberKeys;
+    delete details.arrivalTransferredPlayerIds;
+    delete details.rewardPlayerIds;
+    delete details.rewardCharacterIds;
+    delete details.eligibleRewardPlayerIds;
+    delete details.eligibleRewardCharacterIds;
+    delete details.joinedPlayers;
+    delete details.playerId;
+    delete details.characterId;
+    return details;
+  }
+
+  function publicWorldEvent(event = {}) {
+    return redactPublicIdentityFields(clone(event || {}));
+  }
+
+  function redactPublicIdentityFields(value) {
+    if (Array.isArray(value)) return value.map(redactPublicIdentityFields);
+    if (!value || typeof value !== 'object') return value;
+    const hiddenKeys = new Set([
+      'userId',
+      'accountId',
+      'accountLogin',
+      'characterId',
+      'playerId',
+      'socketId',
+      'ownerPlayerId',
+      'startedByPlayerId'
+    ]);
+    const out = {};
+    for (const [key, row] of Object.entries(value)) {
+      if (hiddenKeys.has(key)) continue;
+      out[key] = redactPublicIdentityFields(row);
+    }
+    return out;
+  }
+
   function publicState() {
     cleanupWorldZonesForSingleReality();
     const publicTask = task => {
@@ -11197,15 +11668,16 @@ function createWastelandSimulation(options = {}) {
         : (String(task?.type || '') === 'clear_lair' && targetParty
           ? lairLocationIdForParty(targetParty)
           : (task?.details?.locationId || target?.locationId || ''))).slice(0, 80);
+      const details = publicWorldTaskDetails(task);
       return {
         ...task,
         details: String(task?.type || '') === 'clear_lair'
           ? {
-            ...(task.details || {}),
+            ...details,
             locationId: targetLocationId,
             encounterId: taskZone ? worldZoneEncounterId(taskZone) : (task.details?.encounterId || (targetParty ? partyMeetingEncounterId(targetParty) : ''))
           }
-          : task.details,
+          : details,
         issuerSiteId: issuerId,
         issuerSiteName: issuer?.name || '',
         targetSiteName: target?.name || '',
@@ -11334,14 +11806,9 @@ function createWastelandSimulation(options = {}) {
       parties: Object.values(state.parties).map(publicParty),
       threatZones: publicThreatZones(),
       territories: publicTerritories(),
-      worldZones: (Array.isArray(state.worldZones) ? state.worldZones : []).map(zone => ({
-        ...zone,
-        encounterId: worldZoneEncounterId(zone),
-        locationId: worldZoneLocationId(zone),
-        roomId: worldZoneRoomId(zone)
-      })),
+      worldZones: [],
       worldContacts: [],
-      events: state.events.slice(0, 30),
+      events: state.events.slice(0, 30).map(publicWorldEvent),
       worldTasks: state.worldTasks
         .slice()
         .sort((a, b) => {
@@ -11384,7 +11851,7 @@ function createWastelandSimulation(options = {}) {
         : (task.details?.locationId || target?.locationId || '')).slice(0, 80);
       return {
         ...task,
-        details: clone(task.details || {}),
+        details: publicWorldTaskDetails(task),
         issuerSiteId: issuerId,
         issuerSiteName: issuer?.name || '',
         targetSiteName: target?.name || '',
@@ -11401,7 +11868,7 @@ function createWastelandSimulation(options = {}) {
   function recordWorldTaskPlayerTransfer(taskId = '', playerIds = []) {
     const id = safeId(taskId || '', '');
     const transferredIds = [...new Set((Array.isArray(playerIds) ? playerIds : [playerIds])
-      .map(value => safeId(value || '', ''))
+      .map(value => safeTransferIdentity(value || ''))
       .filter(Boolean))]
       .slice(0, 20);
     if (!id || !transferredIds.length) return false;
@@ -11413,7 +11880,7 @@ function createWastelandSimulation(options = {}) {
         const previous = (Array.isArray(task.details.arrivalTransferredPlayerIds)
           ? task.details.arrivalTransferredPlayerIds
           : [])
-          .map(value => safeId(value || '', ''))
+          .map(value => safeTransferIdentity(value || ''))
           .filter(Boolean);
         const next = [...new Set([...previous, ...transferredIds])].slice(-100);
         if (next.length === previous.length && next.every((value, index) => value === previous[index])) continue;
@@ -11567,6 +12034,7 @@ function createWastelandSimulation(options = {}) {
     completeWorldTaskDelivery,
     joinWorldParty,
     leaveWorldParty,
+    reconcileWorldPartyMembers,
     upsertSite,
     deleteSite,
     state: () => state
@@ -11574,6 +12042,7 @@ function createWastelandSimulation(options = {}) {
 }
 
 module.exports = {
+  ROAD_SITE_LAYOUT_VERSION,
   createWastelandSimulation,
   worldSiteLocationId,
   worldSiteLocationSeed,

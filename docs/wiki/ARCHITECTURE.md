@@ -101,6 +101,9 @@ Socket.IO обслуживает движение, действия и общи�
 - Авторские JSON загружаются из репозитория даже при внешнем `DATA_DIR`, если
   runtime-копии отсутствуют.
 - `users.json`, `saves.json` и `wasteland-sim.json` записываются атомарно.
+- При старте членство игроков в отрядах из `wasteland-sim.json` сверяется с
+  активными принятыми работами, account/character identity и фракциями
+  персонажей из `saves.json`.
 - Нечитаемые runtime JSON копируются как `*.corrupt-*` перед использованием
   fallback-структуры.
 - Генерируемые GLB и `model-colliders.json` обновляются только соответствующими
@@ -111,6 +114,7 @@ Socket.IO обслуживает движение, действия и общи�
 ```bash
 npm run check:server
 npm run check:client
+npm run check:world-party
 npm run check:data
 npm run smoke
 npm run check

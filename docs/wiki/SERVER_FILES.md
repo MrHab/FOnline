@@ -31,6 +31,7 @@
 | `model-colliders.js` | загрузка collider-каталога и преобразование bounds/parts в серверные blockers |
 | `npc-inventory.js` | фракционные запасы, доктрины экипировки, личный инвентарь NPC, боеприпасы, торговый и трупный лут |
 | `dev-access.js` | startup-политика и middleware для закрытого dev API |
+| `world-party-integrity.js` | общий контракт task/party, account+character identity, доверенный снимок групповой награды и чистые функции целостности мировых групп |
 
 Их импорты находятся в начале `server.js`; именно этот список определяет
 активные production-модули.
@@ -108,6 +109,7 @@ SSH-туннель; штатный public Nginx его не пропускает
 ```bash
 npm run check:server
 npm run check:dev-access
+npm run check:world-party
 npm run check:data
 npm run check:npc
 npm run check:economy

@@ -37,9 +37,7 @@
   }
 
   function isPlayerMovingForAccuracy() {
-    // Используем только уже инициализированные данные игрока: функция может
-    // вызываться до объявления мобильного стика/клавиатуры.
-    return !!(player?.targetPath?.length);
+    return hasLocalMovementIntent();
   }
 
   function automaticAccuracyPenalty(w = currentWeapon()) {

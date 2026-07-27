@@ -6370,12 +6370,46 @@ function serverApplyEquipmentAction(player = {}, data = {}, now = Date.now()) {
 function serverApplyProgressionRequest(player = {}, data = {}) {
   if (!player || !data || typeof data !== 'object') return false;
   const before = JSON.stringify({ skills: player.skillRanks || {}, talents: player.talentRanks || {} });
+  enforceServerProgressionBudget(player);
+  serverUpdateFreeProgressionPoints(player);
+
   if (data.skillRanks && typeof data.skillRanks === 'object') {
-    player.skillRanks = sanitizeSkillRanks(data.skillRanks, player.skillRanks || {});
+    const requested = sanitizeSkillRanks(data.skillRanks, player.skillRanks || {});
+    const accepted = { ...(player.skillRanks || {}) };
+    let remaining = Math.max(0, Math.floor(Number(player.skillPoints || 0)));
+    for (const id of SERVER_SKILL_IDS) {
+      const base = serverSkillBasePercent(player, id);
+      const current = serverSkillRankFrom(accepted, id, player) ?? base;
+      const wanted = serverSkillRankFrom(requested, id, player) ?? current;
+      const wantedSteps = Math.max(0, Math.ceil((wanted - current) / 5));
+      const capacitySteps = Math.max(0, Math.ceil((100 - current) / 5));
+      const steps = Math.min(wantedSteps, capacitySteps, remaining);
+      if (steps <= 0) continue;
+      accepted[id] = Math.min(100, current + steps * 5);
+      remaining -= steps;
+    }
+    player.skillRanks = accepted;
+    serverUpdateFreeProgressionPoints(player);
   }
+
   if (data.talentRanks && typeof data.talentRanks === 'object') {
-    player.talentRanks = sanitizeTalentRanks(data.talentRanks, player.talentRanks || {});
+    const requested = sanitizeTalentRanks(data.talentRanks, player.talentRanks || {});
+    const accepted = { ...(player.talentRanks || {}) };
+    let remaining = Math.max(0, Math.floor(Number(player.perkPoints || 0)));
+    for (const id of serverTalentBudgetOrder()) {
+      const wanted = serverTalentRankFrom(requested, id);
+      let current = serverTalentRankFrom(accepted, id);
+      while (current < wanted && remaining > 0) {
+        const nextRanks = { ...accepted, [id]: current + 1 };
+        if (!serverTalentRequirementsMet(player, id, nextRanks)) break;
+        current += 1;
+        accepted[id] = current;
+        remaining -= 1;
+      }
+    }
+    player.talentRanks = accepted;
   }
+
   enforceServerProgressionBudget(player);
   serverUpdateFreeProgressionPoints(player);
   serverApplyDerivedVitals(player);
@@ -6493,6 +6527,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
     return safeSaveState(next);
   }
 
+  serverApplyProgressionRequest(player, clientState);
   const presentation = authoritativeInventoryPresentation(clientState, previousState, player);
   const previousPlayer = previousState?.player || {};
   const clientPlayer = clientState?.player || {};
@@ -9145,27 +9180,21 @@ function applyContainerProgressionLoot(room, container, p = {}) {
 }
 
 function serverActionProgressionPlayer(p = {}, data = {}) {
-  return enforceServerProgressionBudget({
+  const actor = {
     ...p,
     level: Math.max(1, Math.min(200, Math.floor(Number(p.level || 1)))),
     traits: sanitizeTraits(p.traits || []),
     taggedSkills: sanitizeTaggedSkills(p.taggedSkills || []),
     special: sanitizeSpecial(p.special || p.stats || {}),
-    skillRanks: sanitizeSkillRanks(data.skillRanks || p.skillRanks || {}),
-    talentRanks: sanitizeTalentRanks(data.talentRanks || p.talentRanks || {})
-  });
+    skillRanks: { ...(p.skillRanks || {}) },
+    talentRanks: { ...(p.talentRanks || {}) }
+  };
+  serverApplyProgressionRequest(actor, data);
+  return actor;
 }
 
 function syncServerActionProgressionPlayer(p = {}, data = {}) {
-  const actor = serverActionProgressionPlayer(p, data);
-  p.level = actor.level;
-  p.traits = actor.traits;
-  p.taggedSkills = actor.taggedSkills;
-  p.special = actor.special;
-  p.skillRanks = actor.skillRanks;
-  p.talentRanks = actor.talentRanks;
-  serverUpdateFreeProgressionPoints(p);
-  serverApplyDerivedVitals(p);
+  serverApplyProgressionRequest(p, data);
   return p;
 }
 

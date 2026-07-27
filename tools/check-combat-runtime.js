@@ -316,6 +316,12 @@ function seedCharacterState(account, options, usersDb, savesDb) {
   const spawnZ = Number.isFinite(Number(options.spawnZ)) ? Number(options.spawnZ) : 13;
 
   state.characterProfile.special = special;
+  if (options.skillRanks && typeof options.skillRanks === 'object') {
+    state.skillRanks = cloneJson(options.skillRanks);
+  }
+  if (options.talentRanks && typeof options.talentRanks === 'object') {
+    state.talentRanks = cloneJson(options.talentRanks);
+  }
   state.currentLocationId = 'oldDepot';
   state.lastVisitedSettlementId = 'settlement';
   state.serverLocationContext = { locationId: 'oldDepot' };
@@ -460,6 +466,12 @@ function seedCombatFixtures(accounts) {
     spawnX: 1,
     spawnZ: 11,
     carriedItems: [{ id: 'pickaxe', qty: 1, condition: 100 }]
+  }, usersDb, savesDb);
+  seedCharacterState(accounts.progression, {
+    level: 6,
+    special: { str: 5, per: 6, end: 5, cha: 5, int: 5, agi: 6, luck: 5 },
+    skillRanks: { lightWeapons: 100, lockpick: 83 },
+    talentRanks: { specialStr: 1 }
   }, usersDb, savesDb);
 
   fs.writeFileSync(savesFile, JSON.stringify(savesDb, null, 2));
@@ -677,6 +689,7 @@ async function bootstrapCharacters(accounts) {
     ['strictAp', 'strict'],
     ['equipmentAp', 'equipment'],
     ['harvest', 'harvest'],
+    ['progression', 'progression'],
     ['target', 'target']
   ]) {
     accounts[key] = await registerAccount(role, suffix);
@@ -1481,6 +1494,80 @@ async function assertEquipmentActionAuthority(accounts) {
   closeSocket(account);
 }
 
+function assertLockedProgression(self, label) {
+  invariant(Number(self?.skillRanks?.lightWeapons) === 100
+    && Number(self?.skillRanks?.lockpick) === 88
+    && !Number(self?.skillRanks?.science || 0),
+  `${label}: learned skills were refunded or reassigned`, self);
+  invariant(Number(self?.talentRanks?.specialStr) === 2
+    && !Number(self?.talentRanks?.specialAgi || 0),
+  `${label}: learned talents were refunded or reassigned`, self);
+  invariant(Number(self?.skillPoints || 0) === 0 && Number(self?.perkPoints || 0) === 0,
+    `${label}: fully spent progression budget changed`, self);
+}
+
+async function assertProgressionAllocationAuthority(accounts) {
+  const account = accounts.progression;
+  const finalProgression = {
+    skillRanks: { lightWeapons: 100, lockpick: 88 },
+    talentRanks: { specialStr: 2 }
+  };
+  const reassignedProgression = {
+    skillRanks: { lightWeapons: 38, lockpick: 28, science: 100 },
+    talentRanks: { specialStr: 0, specialAgi: 2 }
+  };
+
+  await connectAndJoin(account);
+  invariant(Number(account.join.self?.skillRanks?.lightWeapons) === 100
+    && Number(account.join.self?.skillRanks?.lockpick) === 83
+    && Number(account.join.self?.talentRanks?.specialStr) === 1
+    && Number(account.join.self?.skillPoints) === 1
+    && Number(account.join.self?.perkPoints) === 1,
+  'Initial progression fixture does not have one free skill and perk point', account.join.self);
+
+  account.socket.emit('state', {
+    profileOnly: true,
+    reason: 'progression-spend-check',
+    ...finalProgression
+  });
+  await delay(100);
+  const afterSpend = await socketAck(account.socket, 'combatAttack', {});
+  invariant(afterSpend.ok === false && afterSpend.self,
+    'Progression spend probe did not return authoritative self state', afterSpend);
+  assertLockedProgression(afterSpend.self, 'forward allocation');
+
+  account.socket.emit('state', {
+    profileOnly: true,
+    reason: 'progression-authority-check',
+    ...reassignedProgression
+  });
+  await delay(100);
+  const afterProfile = await socketAck(account.socket, 'combatAttack', {});
+  invariant(afterProfile.ok === false && afterProfile.self,
+    'Progression profile probe did not return authoritative self state', afterProfile);
+  assertLockedProgression(afterProfile.self, 'profile sync');
+
+  const afterAction = await socketAck(account.socket, 'combatAttack', reassignedProgression);
+  invariant(afterAction.ok === false && afterAction.self,
+    'Progression action probe did not return authoritative self state', afterAction);
+  assertLockedProgression(afterAction.self, 'action payload');
+
+  const reassignedSave = cloneJson(account.seedState);
+  reassignedSave.skillRanks = cloneJson(reassignedProgression.skillRanks);
+  reassignedSave.talentRanks = cloneJson(reassignedProgression.talentRanks);
+  await saveCharacter(account, account.join.characterLeaseId, reassignedSave);
+  const afterSave = await socketAck(account.socket, 'combatAttack', {});
+  invariant(afterSave.ok === false && afterSave.self,
+    'Progression save probe did not return authoritative self state', afterSave);
+  assertLockedProgression(afterSave.self, 'HTTP save');
+
+  closeSocket(account);
+  await delay(650);
+  await connectAndJoin(account);
+  assertLockedProgression(account.join.self, 'reconnect');
+  closeSocket(account);
+}
+
 async function main() {
   assertDependenciesInstalled();
   const accounts = {};
@@ -1492,6 +1579,7 @@ async function main() {
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
     await assertEquipmentActionAuthority(accounts);
+    await assertProgressionAllocationAuthority(accounts);
     // The shooter fixtures intentionally share one oldDepot room so they can
     // target each other. They must not influence the safe-spawn search for the
     // following single-player harvest contract.
@@ -1512,6 +1600,7 @@ async function main() {
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
       + 'equipment changes were revisioned/idempotent and spent exactly 1 server AP, '
+      + 'progression allocations could not be refunded or reassigned through profile/action/save payloads, '
       + 'and insufficient AP or unavailable runtime ids caused no mutation'
     );
   } finally {

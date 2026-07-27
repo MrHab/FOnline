@@ -1,7 +1,15 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 
 const ROOT = path.resolve(__dirname, '..');
+// The current authored map produces 117 sites, 125 friendly groups and 285
+// friendly NPCs. Keep headroom for content edits while rejecting empty or
+// severely truncated fixtures.
+const MIN_GENERATED_SITES = 100;
+const MIN_FRIENDLY_WORKER_GROUPS = 100;
+const MIN_FRIENDLY_SIMULATED_NPCS = 200;
 
 function readText(relPath) {
   return fs.readFileSync(path.join(ROOT, relPath), 'utf8');
@@ -74,7 +82,32 @@ const clientWorld = [
   '05e_ground_items_world_sync.js',
   '05f_enemy_models_location_flow.js'
 ].map(name => readText(path.join('public', 'js', 'game', name))).join('\n');
-const sim = readJson('data/wasteland-sim.json', { sites: {} });
+const scheduleFixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-of-ashes-npc-schedules-'));
+let scheduleFixtureCleaned = false;
+
+function cleanupScheduleFixture() {
+  if (scheduleFixtureCleaned) return;
+  scheduleFixtureCleaned = true;
+  try { fs.rmSync(scheduleFixtureDir, { recursive: true, force: true }); } catch (_) {}
+}
+
+process.once('exit', cleanupScheduleFixture);
+
+let sim = { sites: {} };
+try {
+  const globalMap = readJson('data/global-map.json', null);
+  if (!globalMap || typeof globalMap !== 'object') {
+    errors.push('deterministic schedule fixture: data/global-map.json is missing or invalid');
+  } else {
+    const simulation = createWastelandSimulation({
+      stateFile: path.join(scheduleFixtureDir, 'wasteland-sim.json'),
+      getGlobalMap: () => globalMap
+    });
+    sim = simulation.state();
+  }
+} catch (error) {
+  errors.push(`deterministic schedule fixture: ${error?.message || String(error)}`);
+}
 
 function requireText(label, source, needle) {
   if (!source.includes(needle)) errors.push(`${label}: missing "${needle}"`);
@@ -164,6 +197,8 @@ const supportedScheduleRoles = new Set([
 ]);
 
 const sites = sim && sim.sites && typeof sim.sites === 'object' ? sim.sites : {};
+const simulatedSiteCount = Object.keys(sites).length;
+const friendlyRoleTotals = new Map();
 let friendlyWorkerKinds = 0;
 let friendlyWorkerTotal = 0;
 for (const [siteId, site] of Object.entries(sites)) {
@@ -181,9 +216,25 @@ for (const [siteId, site] of Object.entries(sites)) {
     if (hostileWorkerRoles.has(role)) continue;
     friendlyWorkerKinds++;
     friendlyWorkerTotal += Math.max(0, Math.floor(count));
+    friendlyRoleTotals.set(role, (friendlyRoleTotals.get(role) || 0) + Math.max(0, Math.floor(count)));
     if (!supportedScheduleRoles.has(role)) {
       warnings.push(`${siteId}: role "${role}" uses default worker schedule`);
     }
+  }
+}
+
+if (simulatedSiteCount < MIN_GENERATED_SITES) {
+  errors.push(`deterministic schedule fixture covers only ${simulatedSiteCount} generated sites; expected at least ${MIN_GENERATED_SITES}`);
+}
+if (friendlyWorkerKinds < MIN_FRIENDLY_WORKER_GROUPS) {
+  errors.push(`deterministic schedule fixture covers only ${friendlyWorkerKinds} friendly worker groups; expected at least ${MIN_FRIENDLY_WORKER_GROUPS}`);
+}
+if (friendlyWorkerTotal < MIN_FRIENDLY_SIMULATED_NPCS) {
+  errors.push(`deterministic schedule fixture covers only ${friendlyWorkerTotal} friendly simulated NPCs; expected at least ${MIN_FRIENDLY_SIMULATED_NPCS}`);
+}
+for (const role of ['guard', 'trader', 'quartermaster', 'craftsman', 'mechanic', 'medic', 'worker', 'scavenger']) {
+  if (!friendlyRoleTotals.has(role)) {
+    errors.push(`deterministic schedule fixture has no friendly "${role}" workers`);
   }
 }
 
@@ -208,14 +259,17 @@ for (const file of locationFiles) {
   }
 }
 
-console.log(`NPC schedules OK: ${friendlyWorkerKinds} worker groups, ${friendlyWorkerTotal} simulated NPCs, ${authoredNpcRows} authored NPC rows.`);
+cleanupScheduleFixture();
+
+if (errors.length) {
+  console.error('NPC schedule check failed:');
+  errors.forEach(error => console.error(`- ${error}`));
+  process.exitCode = 1;
+} else {
+  console.log(`NPC schedules OK: ${friendlyWorkerKinds} worker groups, ${friendlyWorkerTotal} simulated NPCs across ${simulatedSiteCount} generated sites, ${authoredNpcRows} authored NPC rows.`);
+}
 if (warnings.length) {
   console.log('Warnings:');
   warnings.slice(0, 20).forEach(warning => console.log(`- ${warning}`));
   if (warnings.length > 20) console.log(`- ...and ${warnings.length - 20} more`);
-}
-if (errors.length) {
-  console.error('NPC schedule check failed:');
-  errors.forEach(error => console.error(`- ${error}`));
-  process.exit(1);
 }

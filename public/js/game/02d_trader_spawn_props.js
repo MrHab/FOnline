@@ -282,13 +282,6 @@
     }
   }
 
-  function addEllipseShadow(group, rx = 1, rz = 0.65, opacity = 0.16, y = 0.004) {
-    // v7.74.10: fake elliptical contact shadows are disabled.
-    // Real shadow-map shadows are used instead. Keep this function as a no-op
-    // so existing set-dressing code stays simple and old callers do not break.
-    return null;
-  }
-
   function createPlank(group, x, y, z, sx, sy, sz, mat = mats.trunk, ry = 0, rz = 0) {
     const plank = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat);
     plank.position.set(x, y, z);

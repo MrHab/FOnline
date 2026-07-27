@@ -19,7 +19,6 @@ const {
 const LOCAL_DEV_HEADERS = { 'X-Dev-Local': '1' };
 const TMP_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-of-ashes-dev-access-'));
 const activeProcesses = new Set();
-let nextPort = 39000 + Math.floor(Math.random() * 1200);
 
 function invariant(condition, message, extra = '') {
   if (condition) return;
@@ -62,14 +61,15 @@ function request(port, pathname, options = {}) {
 }
 
 function spawnServer(label, overrides = {}) {
-  const port = nextPort++;
   const dataDir = path.join(TMP_ROOT, label);
   const logs = [];
   const proc = childProcess.spawn(process.execPath, [SERVER_FILE], {
     cwd: PROJECT_ROOT,
     env: {
       ...process.env,
-      PORT: String(port),
+      // Let the OS reserve and assign the listening port atomically. Choosing
+      // a random number first leaves a TOCTOU window for another process.
+      PORT: '0',
       DATA_DIR: dataDir,
       NODE_ENV: 'test',
       DEV_API_MODE: 'disabled',
@@ -84,7 +84,7 @@ function spawnServer(label, overrides = {}) {
   proc.stdout.on('data', chunk => logs.push(String(chunk)));
   proc.stderr.on('data', chunk => logs.push(String(chunk)));
   proc.once('exit', () => activeProcesses.delete(proc));
-  return { label, port, dataDir, logs, proc };
+  return { label, port: 0, dataDir, logs, proc };
 }
 
 async function waitForHealth(server, timeoutMs = 8000) {
@@ -93,11 +93,18 @@ async function waitForHealth(server, timeoutMs = 8000) {
     if (server.proc.exitCode !== null) {
       invariant(false, `${server.label}: server exited before health`, server.logs.join(''));
     }
-    try {
-      const health = await request(server.port, '/health');
-      if (health.statusCode === 200) return health;
-    } catch (_) {
-      // Startup is still in progress.
+    if (!server.port) {
+      const match = server.logs.join('').match(/server listening on :(\d+)/);
+      const reportedPort = Number(match?.[1] || 0);
+      if (reportedPort > 0 && reportedPort <= 65535) server.port = reportedPort;
+    }
+    if (server.port) {
+      try {
+        const health = await request(server.port, '/health');
+        if (health.statusCode === 200) return health;
+      } catch (_) {
+        // Startup is still in progress.
+      }
     }
     await delay(100);
   }

@@ -132,7 +132,8 @@ function defaultLocalServerOrigins(port = PORT) {
 // Example: ORIGINS="https://yandex.ru,https://yandex.com,http://localhost:8080"
 // The default permits this server's own loopback and LAN addresses. Other
 // cross-origin deployments must opt in explicitly.
-const allowedOrigins = (process.env.ORIGINS || defaultLocalServerOrigins(PORT))
+const configuredOrigins = process.env.ORIGINS;
+const allowedOrigins = (configuredOrigins || defaultLocalServerOrigins(PORT))
   .split(',')
   .map(v => v.trim())
   .filter(Boolean);
@@ -18793,10 +18794,21 @@ function getLanUrls(port) {
 }
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`${GAME_NAME} v${GAME_VERSION} server listening on :${PORT}`);
+  const address = server.address();
+  const boundPort = address && typeof address === 'object'
+    ? Number(address.port || PORT)
+    : PORT;
+  if (!configuredOrigins && boundPort !== PORT) {
+    allowedOrigins.splice(
+      0,
+      allowedOrigins.length,
+      ...defaultLocalServerOrigins(boundPort).split(',').filter(Boolean)
+    );
+  }
+  console.log(`${GAME_NAME} v${GAME_VERSION} server listening on :${boundPort}`);
   console.log(`Dev API mode: ${DEV_ACCESS_POLICY.mode}`);
-  console.log(`Local: http://localhost:${PORT}`);
-  const lanUrls = getLanUrls(PORT);
+  console.log(`Local: http://localhost:${boundPort}`);
+  const lanUrls = getLanUrls(boundPort);
   if (lanUrls.length) console.log(`LAN: ${lanUrls.join('  |  ')}`);
   console.log(`Data directory: ${DATA_DIR}`);
 });

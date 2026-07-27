@@ -504,8 +504,6 @@
       stopTouchAim();
       hideTargetHint();
       hideTooltip();
-      player.targetPath = [];
-      if (marker) marker.visible = false;
     }
   }
 

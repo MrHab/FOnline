@@ -202,7 +202,6 @@
     document.body.classList.toggle('global-map-mode', isActive);
     document.body.classList.toggle('game-ui-panel-open', isActive);
     if (playerGroup) playerGroup.visible = !isActive;
-    if (marker && isActive) marker.visible = false;
     if (!isActive) {
       GLOBAL_MAP_3D.userPanned = false;
       GLOBAL_MAP_3D.dragging = false;
@@ -316,7 +315,6 @@
     } else {
       globalMapSetTravelLeader('', '');
     }
-    player.targetPath = [];
     if (typeof stopAutoFire === 'function') stopAutoFire();
     if (typeof stopTouchAim === 'function') stopTouchAim();
     if (typeof closeAllWindows === 'function') closeAllWindows(false);

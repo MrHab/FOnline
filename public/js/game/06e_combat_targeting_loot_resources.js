@@ -283,8 +283,6 @@
 
   function clearPostResourceActionState() {
     player.attackTarget = null;
-    player.targetPath = [];
-    if (marker) marker.visible = false;
     if (typeof stopAutoFire === 'function') stopAutoFire();
     if (typeof stopTouchAim === 'function') stopTouchAim();
     if (typeof resetVirtualMove === 'function') resetVirtualMove();

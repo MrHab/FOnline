@@ -527,8 +527,8 @@
     const g = new THREE.Group();
     const remoteCastShadow = !IS_MOBILE_DEVICE;
     const parts = {};
-    buildWastelandHumanoid(g, parts, { castShadow: remoteCastShadow, isPlayer: false });
-    buildCharacterArmorExtras(g, parts, remoteCastShadow);
+    buildModernWastelandHumanoid(g, parts, { castShadow: remoteCastShadow, isPlayer: false });
+    buildModernCharacterArmorExtras(g, parts, remoteCastShadow);
     initWeaponVisualState(parts.weaponGroup);
 
     const nameSprite = makeRemoteNameSprite(data.name || 'Игрок', data.deviceType || 'desktop');
@@ -1382,6 +1382,11 @@
       row.x = g.position.x;
       row.z = g.position.z;
       applyCharacterCrouchVisual(g, !!g.userData.crouching, dt);
+      updateCharacterLocomotionAnimation(g, dt, {
+        moving: !!g.userData.remoteMoving,
+        speed: Math.hypot(Number(row.visualVelX || 0), Number(row.visualVelZ || 0)),
+        crouching: !!g.userData.crouching
+      });
       applyCharacterInjuryVisual(g, row.data?.injuries || {}, dt);
       updateWeaponVisualAnimation(g.userData.parts?.weaponGroup, dt, {
         x: row.x,

@@ -40,9 +40,9 @@
     const parts = {};
     const modelRoot = new THREE.Group();
     try {
-      if (typeof buildWastelandHumanoid === 'function') {
-        buildWastelandHumanoid(modelRoot, parts, { castShadow: false, isPlayer: true });
-        if (typeof buildCharacterArmorExtras === 'function') buildCharacterArmorExtras(modelRoot, parts, false);
+      if (typeof buildModernWastelandHumanoid === 'function') {
+        buildModernWastelandHumanoid(modelRoot, parts, { castShadow: false, isPlayer: true });
+        if (typeof buildModernCharacterArmorExtras === 'function') buildModernCharacterArmorExtras(modelRoot, parts, false);
         if (parts.weaponGroup && typeof initWeaponVisualState === 'function') initWeaponVisualState(parts.weaponGroup);
       } else {
         modelRoot.add(buildGlobalMapFallbackPlayerModel());
@@ -103,6 +103,8 @@
     if (parts.weaponGroup) {
       parts.weaponGroup.clear();
       if (typeof initWeaponVisualState === 'function') initWeaponVisualState(parts.weaponGroup);
+      parts.weaponGroup.userData.weaponId = weaponId;
+      marker.userData.modelRoot.userData.weaponId = weaponId;
       const weaponMesh = globalMapPlayerWeaponMesh(weaponId);
       if (weaponMesh) parts.weaponGroup.add(weaponMesh);
     }
@@ -148,4 +150,3 @@
     const targetY = Number.isFinite(Number(group.userData.lastFacingY)) ? Number(group.userData.lastFacingY) : Math.PI * 0.25;
     group.rotation.y = targetY;
   }
-

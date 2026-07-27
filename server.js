@@ -17242,6 +17242,14 @@ io.on('connection', (socket) => {
     }
     const result = serverApplyReload(p, data, Date.now());
     if (!result.ok) return fail(result.error || 'Сервер: перезарядка отклонена.', { inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()) });
+    socket.to(p.roomId).emit('playerReloaded', {
+      shooterId: socket.id,
+      characterId: p.characterId || '',
+      roomId: p.roomId,
+      locationId: p.locationId || '',
+      weapon: serverBaseItemId(p.equipment?.weapon || p.weapon || 'pistol'),
+      t: Date.now()
+    });
     if (typeof ack === 'function') ack({ ok: true, ...result, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
   });
 

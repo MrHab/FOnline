@@ -695,6 +695,13 @@
         targetZ: data.targetZ
       });
     });
+    multiplayer.socket.on('playerReloaded', data => {
+      if (!data || data.shooterId === multiplayer.socket.id) return;
+      if (data.roomId && !networkPayloadIsForCurrentRoom(data)) return;
+      const row = multiplayer.remotePlayers.get(data.shooterId);
+      if (!row?.group) return;
+      triggerCharacterReloadVisual(row.group, data.weapon || row.data?.equipment?.weapon || row.data?.weapon || 'pistol');
+    });
     multiplayer.socket.on('enemyMelee', data => {
       if (!data || data.locationId !== (currentLocation?.id || 'settlement')) return;
       const attacker = enemies.find(e => e && e.id === data.enemyId);
@@ -721,6 +728,7 @@
       if (Number.isFinite(Number(data.hp))) player.hp = Math.max(0, Number(data.hp));
       applyServerInjuryPayload(data);
       player.invincible = Math.max(player.invincible || 0, 0.18);
+      triggerCharacterHitReaction(playerGroup, Number(data.damage || 0) % 2 ? -1 : 1);
       createFloatingText(player.x, player.z, '-' + Math.max(0, Number(data.damage || 0)), '#ff5b4a');
       const absorbedText = Number(data.absorbed || 0) > 0 ? `, броня поглотила ${Math.max(0, Number(data.absorbed || 0))}` : '';
       addLog(`${data.enemyName || 'Монстр'} атакует (${damageTypeLabel(data.damageType || 'ballistic')}): -${Math.max(0, Number(data.damage || 0))} HP${absorbedText}.`, null, 'combat');
@@ -748,6 +756,7 @@
         if (Number.isFinite(Number(data.hp))) player.hp = Math.max(0, Number(data.hp));
         applyServerInjuryPayload(data);
         player.invincible = Math.max(player.invincible || 0, 0.22);
+        triggerCharacterHitReaction(playerGroup, Number(data.damage || 0) % 2 ? -1 : 1);
         createFloatingText(player.x, player.z, data.secondChance ? '1 HP' : '-' + Math.max(0, Number(data.damage || 0)), data.secondChance ? '#ffe28a' : '#ff5b4a');
         const absorbedText = Number(data.absorbed || 0) > 0 ? `, броня поглотила ${Math.max(0, Number(data.absorbed || 0))}` : '';
         addLog(`${data.attackerName || 'Игрок'} атакует (${damageTypeLabel(data.damageType || 'ballistic')}): -${Math.max(0, Number(data.damage || 0))} HP${absorbedText}.`, null, 'combat');
@@ -759,6 +768,7 @@
       const row = multiplayer.remotePlayers.get(data.playerId);
       if (row) {
         row.data = { ...row.data, hp: Number(data.hp || 0), maxHp: Number(data.maxHp || row.data.maxHp || 100) };
+        triggerCharacterHitReaction(row.group, Number(data.damage || 0) % 2 ? -1 : 1);
         const x = row.group?.position?.x ?? Number(row.data.x || 0);
         const z = row.group?.position?.z ?? Number(row.data.z || 0);
         createFloatingText(x, z, '-' + Math.max(0, Number(data.damage || 0)), '#ff5b4a');

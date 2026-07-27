@@ -1248,6 +1248,31 @@ async function assertSocketMultiplayerLifecycle() {
 
     const first = accounts[0];
     const second = accounts[1];
+    const beforePeacefulCombat = first.join.combat || first.join.self?.combat || {};
+    const peacefulToken = `smoke_peaceful_attack_${Date.now().toString(36)}`;
+    const peacefulAttack = await socketAck(first.socket, 'combatAttack', {
+      weapon: String(beforePeacefulCombat.weapon || first.join.self?.equipment?.weapon || 'fists'),
+      mode: 'single',
+      attackToken: peacefulToken,
+      combat: {
+        token: peacefulToken,
+        weapon: String(beforePeacefulCombat.weapon || first.join.self?.equipment?.weapon || 'fists'),
+        mode: 'single',
+        shots: 1
+      }
+    });
+    const afterPeacefulCombat = peacefulAttack.combat || peacefulAttack.self?.combat || {};
+    if (peacefulAttack.ok !== false
+      || !peacefulAttack.self
+      || !peacefulAttack.combat
+      || Number(afterPeacefulCombat.ap) + 0.02 < Number(beforePeacefulCombat.ap)
+      || Number(afterPeacefulCombat.ap) > Number(afterPeacefulCombat.maxAp)
+      || Number(afterPeacefulCombat.loaded) !== Number(beforePeacefulCombat.loaded)
+      || Number(afterPeacefulCombat.reserveAmmo) !== Number(beforePeacefulCombat.reserveAmmo)
+      || Number(afterPeacefulCombat.condition) !== Number(beforePeacefulCombat.condition)) {
+      fail('peaceful-location combatAttack spent resources or omitted authoritative recovery state',
+        JSON.stringify({ before: beforePeacefulCombat, response: peacefulAttack }));
+    }
     const sharedTerminalTaskId = 'smoke_shared_terminal_task';
     for (const participant of [first, second]) {
       const accepted = await socketAck(participant.socket, 'worldTaskAction', {

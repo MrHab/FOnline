@@ -308,10 +308,8 @@
       if (typeof stopTouchAim === 'function') stopTouchAim();
       if (typeof resetVirtualMove === 'function') resetVirtualMove();
       if (typeof player === 'object' && player) {
-        player.targetPath = [];
         player.attackTarget = null;
       }
-      if (typeof marker !== 'undefined' && marker) marker.visible = false;
     } catch (_) {}
   }
 
@@ -405,7 +403,6 @@
     try {
       if (player && player.attackTarget) player.attackTarget = null;
       if (typeof stopAutoFire === 'function') stopAutoFire();
-      if (marker) marker.visible = false;
     } catch (_) {}
     if (!keepPlayer && playerGroup) {
       try { playerGroup.visible = false; } catch (_) {}

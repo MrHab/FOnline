@@ -154,7 +154,6 @@ const tradeStorageSource = [
 ].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
 const sellOverrides = evalConstBlock(tradeStorageSource, 'const SELL_PRICE_OVERRIDES = {', 'SELL_PRICE_OVERRIDES');
 const combatSource = [
-  '06_pathfinding_movement.js',
   '06a_combat_visual_fx.js',
   '06b_explosions_speech.js',
   '06c_combat_stats_modes.js',

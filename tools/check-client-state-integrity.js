@@ -82,8 +82,10 @@ function assertContainsAll(label, source, snippets) {
 }
 
 const core = read('public/js/game/05_multiplayer_core_state.js');
+const remoteLocomotion = read('public/js/game/05b_remote_player_locomotion.js');
 const socketRoom = read('public/js/game/05c_multiplayer_socket_room.js');
 const explosions = read('public/js/game/06b_explosions_speech.js');
+const combatModes = read('public/js/game/06c_combat_stats_modes.js');
 const combat = read('public/js/game/06d_combat_damage_shooting.js');
 const resources = read('public/js/game/06e_combat_targeting_loot_resources.js');
 const containers = read('public/js/game/05d_world_containers_security.js');
@@ -601,14 +603,13 @@ async function assertJoinAndCorrectionContracts() {
     "{ positionMode: 'transition' }"
   ]);
   const positionRuntime = new Function([
-    'const player = { x: 4, y: 0, z: 7, hp: 10, targetPath: [{ x: 8 }], attackTarget: { id: "enemy" } };',
-    'const marker = { visible: true };',
+    'const player = { x: 4, y: 0, z: 7, hp: 10, attackTarget: { id: "enemy" } };',
     'const playerGroup = { position: { set(x, y, z) { playerGroup.last = { x, y, z }; } } };',
     'const multiplayer = {};',
     'let characterProfile = null;',
     functionSource(socketRoom, 'applyServerLocalPositionAck'),
     functionSource(socketRoom, 'applyServerAuthoritativePlayerState'),
-    'return { player, marker, playerGroup, multiplayer, applyServerAuthoritativePlayerState };'
+    'return { player, playerGroup, multiplayer, applyServerAuthoritativePlayerState };'
   ].join('\n'))();
   positionRuntime.applyServerAuthoritativePlayerState({ x: 40, z: 70, hp: 9 });
   assert.deepStrictEqual(
@@ -616,10 +617,7 @@ async function assertJoinAndCorrectionContracts() {
     { x: 4, z: 7 },
     'an ordinary self ACK must preserve the locally predicted position'
   );
-  assert.deepStrictEqual(positionRuntime.player.targetPath, [{ x: 8 }],
-    'an ordinary self ACK must preserve the active path');
   assert.strictEqual(positionRuntime.player.attackTarget?.id, 'enemy');
-  assert.strictEqual(positionRuntime.marker.visible, true);
   assert.strictEqual(positionRuntime.player.hp, 9,
     'preserving position must not suppress other authoritative player fields');
 
@@ -632,9 +630,7 @@ async function assertJoinAndCorrectionContracts() {
     { x: 40, z: 70 },
     'an explicit correction must snap to the authoritative position'
   );
-  assert.deepStrictEqual(positionRuntime.player.targetPath, []);
   assert.strictEqual(positionRuntime.player.attackTarget, null);
-  assert.strictEqual(positionRuntime.marker.visible, false);
   assert.deepStrictEqual(positionRuntime.playerGroup.last, { x: 40, y: 0, z: 70 });
 
   const serverJoin = socketEventSource(server, 'join');
@@ -664,8 +660,7 @@ function inputRuntime() {
     'const buttons = [{ active: true, classList: { remove(name) { if (name === "active") buttons[0].active = false; } } }];',
     'const document = { querySelectorAll() { return buttons; } };',
     'let quickUseRadialState = { open: true };',
-    'const player = { targetPath: [{ x: 1 }], attackTarget: { id: "enemy" } };',
-    'const marker = { visible: true };',
+    'const player = { attackTarget: { id: "enemy" } };',
     'const multiplayer = { socket: { connected: true }, joined: true };',
     'function stopAutoFire() { autoFireStops += 1; mouseFireHeld = false; }',
     'function stopTouchAim() { touchAimStops += 1; }',
@@ -675,7 +670,7 @@ function inputRuntime() {
     'function sendImmediateMultiplayerState(reason) { idleReasons.push(reason); }',
     functionSource(input, 'clearAllGameplayInput'),
     'return {',
-    '  run: clearAllGameplayInput, keys, player, marker, buttons, virtualMove, idleReasons, GLOBAL_MAP_3D,',
+    '  run: clearAllGameplayInput, keys, player, buttons, virtualMove, idleReasons, GLOBAL_MAP_3D,',
     '  state: () => ({ mouseFireHeld, touchFireHeld, touchAimFireHeld, touchFireTimer,',
     '    autoFireStops, touchAimStops, virtualMoveResets, radialCancels, globalMapKeyClears, quickUseRadialState })',
     '};'
@@ -700,9 +695,7 @@ function assertInputLifecycle() {
     quickUseRadialState: null
   });
   assert.strictEqual(runtime.virtualMove.active, false);
-  assert.deepStrictEqual(runtime.player.targetPath, []);
   assert.strictEqual(runtime.player.attackTarget, null);
-  assert.strictEqual(runtime.marker.visible, false);
   assert.strictEqual(runtime.buttons[0].active, false);
   assert.deepStrictEqual(runtime.GLOBAL_MAP_3D.keyPan, {});
   assert.strictEqual(runtime.GLOBAL_MAP_3D.dragging, false);
@@ -731,6 +724,39 @@ function assertInputLifecycle() {
     'document.hidden',
     "clearAllGameplayInput('visibility-hidden')"
   ]);
+}
+
+function assertMovementAccuracyIntent() {
+  const runtime = new Function([
+    'const keys = {};',
+    'const virtualMove = { active: false, forward: 0, right: 0 };',
+    functionSource(remoteLocomotion, 'hasLocalMovementIntent'),
+    functionSource(combatModes, 'isPlayerMovingForAccuracy'),
+    'return { keys, virtualMove, moving: isPlayerMovingForAccuracy };'
+  ].join('\n'))();
+
+  assert.strictEqual(runtime.moving(), false,
+    'an idle player is treated as moving for accuracy');
+  runtime.keys.KeyW = true;
+  assert.strictEqual(runtime.moving(), true,
+    'keyboard movement does not apply the movement accuracy penalty');
+  runtime.keys.KeyW = false;
+  runtime.virtualMove.active = true;
+  runtime.virtualMove.forward = 0.8;
+  assert.strictEqual(runtime.moving(), true,
+    'mobile-stick movement does not apply the movement accuracy penalty');
+
+  const preInputRuntime = new Function([
+    functionSource(remoteLocomotion, 'hasLocalMovementIntent'),
+    functionSource(combatModes, 'isPlayerMovingForAccuracy'),
+    'return isPlayerMovingForAccuracy;'
+  ].join('\n'))();
+  assert.strictEqual(preInputRuntime(), false,
+    'movement accuracy probing before input initialization must fail closed');
+  assert(!functionBody(remoteLocomotion, 'hasLocalMovementIntent').includes('targetPath'),
+    'movement intent still depends on removed click-to-move state');
+  assert(functionBody(combatModes, 'isPlayerMovingForAccuracy').includes('hasLocalMovementIntent()'),
+    'combat accuracy does not use live keyboard/mobile movement intent');
 }
 
 function harvestRuntime() {
@@ -1280,6 +1306,7 @@ async function main() {
   assertGameplayAckGuards();
   await assertJoinAndCorrectionContracts();
   assertInputLifecycle();
+  assertMovementAccuracyIntent();
   assertHarvestIntegrity();
   assertInputDeadman();
   assertGlobalMapMotionIntegrity();
@@ -1287,7 +1314,7 @@ async function main() {
   assertDeferredWorldRuntime();
   assertServerAuthoritativeWorldStateRequests();
   assertEventDrivenMobilePanelState();
-  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
+  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, movement accuracy, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
 }
 
 main().catch(error => {

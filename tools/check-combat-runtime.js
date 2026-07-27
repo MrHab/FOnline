@@ -12,7 +12,7 @@ const { io: createSocketClient } = require('socket.io-client');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
 const MAX_WAIT_MS = Math.max(3000, Number(process.env.COMBAT_RUNTIME_WAIT_MS || 10000));
-const PORT = Number(process.env.COMBAT_RUNTIME_PORT || (37000 + Math.floor(Math.random() * 1500)));
+const REQUESTED_PORT = Number(process.env.COMBAT_RUNTIME_PORT || 0);
 const TMP_ROOT = path.resolve(process.env.COMBAT_RUNTIME_TMPDIR || os.tmpdir());
 const TMP_PREFIX = 'realm-of-ashes-combat-runtime-';
 
@@ -21,6 +21,7 @@ const DATA_DIR = fs.mkdtempSync(path.join(TMP_ROOT, TMP_PREFIX));
 
 let activeServer = null;
 let activeServerLogs = [];
+let activePort = REQUESTED_PORT;
 let cleanedUp = false;
 let attackSequence = 0;
 
@@ -80,7 +81,7 @@ function request(pathname, options = {}) {
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
     const req = http.request({
       hostname: '127.0.0.1',
-      port: PORT,
+      port: activePort,
       path: pathname,
       method: options.method || 'GET',
       headers,
@@ -116,14 +117,21 @@ async function waitForHealth(proc) {
     if (proc.exitCode !== null) {
       throw new Error(`Server exited before /health was ready\n${activeServerLogs.join('').slice(-4000)}`);
     }
-    try {
-      const response = await request('/health', { timeoutMs: 800 });
-      if (response.statusCode === 200) {
-        const health = parseJsonResponse(response, '/health');
-        if (health.ok) return health;
+    if (!activePort) {
+      const match = activeServerLogs.join('').match(/server listening on :(\d+)/);
+      const reportedPort = Number(match?.[1] || 0);
+      if (reportedPort > 0 && reportedPort <= 65535) activePort = reportedPort;
+    }
+    if (activePort) {
+      try {
+        const response = await request('/health', { timeoutMs: 800 });
+        if (response.statusCode === 200) {
+          const health = parseJsonResponse(response, '/health');
+          if (health.ok) return health;
+        }
+      } catch (_) {
+        // Startup is still in progress.
       }
-    } catch (_) {
-      // Startup is still in progress.
     }
     await delay(150);
   }
@@ -133,11 +141,12 @@ async function waitForHealth(proc) {
 async function startServer() {
   invariant(!activeServer, 'Test attempted to start two server processes');
   activeServerLogs = [];
+  activePort = REQUESTED_PORT;
   const proc = childProcess.spawn(process.execPath, [SERVER_FILE], {
     cwd: PROJECT_ROOT,
     env: {
       ...process.env,
-      PORT: String(PORT),
+      PORT: String(REQUESTED_PORT),
       DATA_DIR,
       SESSION_LOCK_MS: '500',
       WASTELAND_SIM_SAVE_INTERVAL_MS: '3000'
@@ -171,7 +180,7 @@ async function stopServer() {
 
 function connectSocketClient() {
   return new Promise((resolve, reject) => {
-    const socket = createSocketClient(`http://127.0.0.1:${PORT}`, {
+    const socket = createSocketClient(`http://127.0.0.1:${activePort}`, {
       transports: ['websocket'],
       forceNew: true,
       reconnection: false,
@@ -276,6 +285,11 @@ function closeSocket(account) {
   account.socket = null;
 }
 
+async function closeFixtureSockets(accounts, keys, settleMs = 200) {
+  for (const key of keys) closeSocket(accounts[key]);
+  await delay(Math.max(0, Number(settleMs || 0)));
+}
+
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -302,6 +316,12 @@ function seedCharacterState(account, options, usersDb, savesDb) {
   const spawnZ = Number.isFinite(Number(options.spawnZ)) ? Number(options.spawnZ) : 13;
 
   state.characterProfile.special = special;
+  if (options.skillRanks && typeof options.skillRanks === 'object') {
+    state.skillRanks = cloneJson(options.skillRanks);
+  }
+  if (options.talentRanks && typeof options.talentRanks === 'object') {
+    state.talentRanks = cloneJson(options.talentRanks);
+  }
   state.currentLocationId = 'oldDepot';
   state.lastVisitedSettlementId = 'settlement';
   state.serverLocationContext = { locationId: 'oldDepot' };
@@ -447,6 +467,12 @@ function seedCombatFixtures(accounts) {
     spawnZ: 11,
     carriedItems: [{ id: 'pickaxe', qty: 1, condition: 100 }]
   }, usersDb, savesDb);
+  seedCharacterState(accounts.progression, {
+    level: 6,
+    special: { str: 5, per: 6, end: 5, cha: 5, int: 5, agi: 6, luck: 5 },
+    skillRanks: { lightWeapons: 100, lockpick: 83 },
+    talentRanks: { specialStr: 1 }
+  }, usersDb, savesDb);
 
   fs.writeFileSync(savesFile, JSON.stringify(savesDb, null, 2));
 }
@@ -532,6 +558,18 @@ function assertCombat(value, expected, label) {
     `${label}.${key}: expected ${expectedValue}, got ${combat[key]}`, combat);
   }
   return combat;
+}
+
+function assertCombatApNotSpent(before, after, label) {
+  const previous = combatSnapshot(before, `${label} before`);
+  const current = combatSnapshot(after, `${label} after`);
+  invariant(Number(current.ap) >= Number(previous.ap)
+    && Number(current.ap) <= Number(current.maxAp),
+  `${label}: AP decreased or exceeded its cap`, {
+    before: previous,
+    after: current
+  });
+  return current;
 }
 
 function assertRuntimeWeaponInventory(self, runtimeId, expectedLoaded, label) {
@@ -651,6 +689,7 @@ async function bootstrapCharacters(accounts) {
     ['strictAp', 'strict'],
     ['equipmentAp', 'equipment'],
     ['harvest', 'harvest'],
+    ['progression', 'progression'],
     ['target', 'target']
   ]) {
     accounts[key] = await registerAccount(role, suffix);
@@ -777,9 +816,13 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     weaponRuntimeId: pistolB,
     loaded: 3,
     magSize: 8,
-    reserveAmmo: 8,
-    ap: Number(switchedShot.combat.ap)
+    reserveAmmo: 8
   }, 'idempotent duplicate-join combat');
+  assertCombatApNotSpent(
+    switchedShot.combat,
+    duplicateJoinCombat,
+    'Idempotent duplicate join'
+  );
   invariant(Number(duplicateJoinCombat.cooldownRemainingMs) > 0
     && Number(duplicateJoinCombat.cooldownRemainingMs) <= Number(switchedShot.combat.cooldownRemainingMs),
   'Idempotent duplicate join reset or extended the active weapon cooldown', {
@@ -795,14 +838,18 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   invariant(conflictingJoin.ok === false
     && conflictingJoin.self?.characterId === accounts.persistence.characterId,
   'Same socket was allowed to switch identity through a repeated join', conflictingJoin);
-  assertCombat(conflictingJoin.combat, {
+  const conflictingJoinCombat = assertCombat(conflictingJoin.combat, {
     weapon: 'pistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
     magSize: 8,
-    reserveAmmo: 8,
-    ap: Number(duplicateJoinCombat.ap)
+    reserveAmmo: 8
   }, 'conflicting duplicate-join combat');
+  assertCombatApNotSpent(
+    duplicateJoinCombat,
+    conflictingJoinCombat,
+    'Conflicting duplicate join rejection'
+  );
 
   const loadedRuntimeDrop = await socketAck(accounts.persistence.socket, 'dropItem', {
     itemId: 'pistol',
@@ -815,9 +862,13 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     weapon: 'pistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
-    reserveAmmo: 8,
-    ap: Number(duplicateJoinCombat.ap)
+    reserveAmmo: 8
   }, 'loaded-runtime drop rejection combat');
+  assertCombatApNotSpent(
+    conflictingJoinCombat,
+    postDropCombat,
+    'Loaded-runtime drop rejection'
+  );
   invariant(Number(postDropCombat.cooldownRemainingMs) > 0,
     'Rejected loaded-runtime drop reset the active cooldown', postDropCombat);
 
@@ -836,11 +887,11 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   }, 'post-duplicate-join cooldown rejection combat');
   invariant(Number(postDuplicateCombat.cooldownRemainingMs) > 0,
     'Duplicate join cleared the authoritative weapon cooldown', postDuplicateCooldown);
-  invariant(Number(postDuplicateCombat.ap) >= Number(duplicateJoinCombat.ap),
-    'Post-duplicate-join cooldown rejection spent AP', {
-      duplicateJoin: duplicateJoinCombat,
-      cooldown: postDuplicateCombat
-    });
+  assertCombatApNotSpent(
+    postDropCombat,
+    postDuplicateCombat,
+    'Post-duplicate-join cooldown rejection'
+  );
 
   const crossRuntimeReplay = await socketAck(accounts.persistence.socket, 'combatAttack', {
     weapon: 'pistol',
@@ -866,11 +917,11 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     loaded: 3,
     reserveAmmo: 8
   }, 'cross-runtime replay rejection combat');
-  invariant(Number(crossRuntimeCombat.ap) >= Number(switchedShot.combat.ap),
-    'Cross-runtime replay spent AP from B', {
-      switched: switchedShot.combat,
-      replay: crossRuntimeCombat
-    });
+  assertCombatApNotSpent(
+    postDuplicateCombat,
+    crossRuntimeCombat,
+    'Cross-runtime replay rejection'
+  );
 
   // This payload was captured while A was active. It must save inventory
   // presentation without rolling the live authoritative identity back from B.
@@ -1150,7 +1201,8 @@ async function assertStrictServerAp(accounts) {
     'playerHit',
     attackPayload(accounts.strictAp.join, accounts.target.socket, 'aimed')
   );
-  invariant(insufficient.ok === false, 'Server accepted a 5-AP aimed shot with less than 5 AP', insufficient);
+  invariant(insufficient.ok === false,
+    'Server accepted an aimed shot below its uninjured 5-AP minimum', insufficient);
   const rejectedCombat = assertCombat(insufficient.combat, {
     loaded: 8,
     reserveAmmo: 0,
@@ -1159,14 +1211,31 @@ async function assertStrictServerAp(accounts) {
   invariant(Number(rejectedCombat.ap) < 5 && Number(rejectedCombat.ap) >= 4.65,
     'Strict-AP rejection returned an unexpected AP value', rejectedCombat);
 
-  await delay(120);
+  // Fill to the acknowledged cap rather than guessing that another fixed
+  // 120ms is enough. A nearby NPC can add a broken-arm AP penalty between the
+  // rejection and retry, increasing this aimed shot from 5 to 6 AP.
+  const refillWaitMs = Math.ceil(
+    Math.max(0, Number(rejectedCombat.maxAp) - Number(rejectedCombat.ap)) / 1.8 * 1000
+  ) + 150;
+  await delay(refillWaitMs);
   const funded = await socketAck(
     accounts.strictAp.socket,
     'playerHit',
     attackPayload(accounts.strictAp.join, accounts.target.socket, 'aimed')
   );
   invariant(funded.ok, 'Aimed shot was rejected after authoritative AP reached its cost', funded);
-  assertCombat(funded.combat, { loaded: 7, reserveAmmo: 0, maxAp: 6 }, 'funded aimed shot');
+  const fundedCombat = assertCombat(
+    funded.combat,
+    { loaded: 7, reserveAmmo: 0, maxAp: 6 },
+    'funded aimed shot'
+  );
+  const inferredFundedCost = Number(rejectedCombat.maxAp) - Number(fundedCombat.ap);
+  invariant(inferredFundedCost >= 4.95 && inferredFundedCost <= 6.05,
+    'Funded aimed shot did not spend its expected AP cost from the full cap', {
+    before: rejectedCombat,
+    inferredCost: inferredFundedCost,
+    after: fundedCombat
+  });
 }
 
 async function assertHarvestRequiresEquippedTool(accounts) {
@@ -1174,6 +1243,8 @@ async function assertHarvestRequiresEquippedTool(accounts) {
   await connectAndJoin(account);
   invariant(account.join.roomId === 'oldDepot',
     'Harvest fixture did not join oldDepot', account.join);
+  invariant((Array.isArray(account.join.players) ? account.join.players : []).length === 0,
+    'Harvest fixture inherited players from the preceding combat phase', account.join.players);
   invariant(account.join.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
     'Harvest fixture did not start with the wrong weapon equipped', account.join.self);
 
@@ -1187,7 +1258,7 @@ async function assertHarvestRequiresEquippedTool(accounts) {
   invariant(Math.hypot(Number(account.join.x) - resourceX, Number(account.join.z) - resourceZ) <= 3.2,
     'Harvest fixture joined outside interaction range', {
       player: { x: account.join.x, z: account.join.z },
-      resource: { x: resourceX, z: resourceZ, ...resource }
+      resource: { ...resource, x: resourceX, z: resourceZ }
     });
 
   const initialAp = Number(account.join.self?.combat?.ap);
@@ -1242,7 +1313,20 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       && equipped.ack.self?.equipmentRuntime?.weapon === 'pickaxe',
     'Harvest fixture could not equip its carried pickaxe', equipped.ack);
     const beforeSuccessAp = Number(equipped.ack.self?.combat?.ap);
+    const maxSuccessAp = Number(equipped.ack.self?.combat?.maxAp);
     const beforeSuccessCondition = Number(equipped.ack.self?.itemConditions?.pickaxe);
+    invariant(Number.isFinite(maxSuccessAp)
+      && Math.abs(maxSuccessAp - beforeSuccessAp - 1) <= 0.05,
+    'Equipping the harvest tool did not leave exactly one AP to regenerate', {
+      before: initialAp,
+      after: beforeSuccessAp,
+      max: maxSuccessAp
+    });
+
+    // Equipment switching spends one AP. Let the authoritative 1.8 AP/s
+    // regeneration fill that single-point deficit before measuring harvest:
+    // otherwise request latency is indistinguishable from a partial refund.
+    await delay(750);
 
     const harvested = await socketAck(account.socket, 'harvestResource', {
       id: resource.id,
@@ -1270,12 +1354,15 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       item: harvested.item,
       inventory: harvested.inventory
     });
-    const spentAp = beforeSuccessAp - Number(harvested.ap);
-    invariant(spentAp >= 1.85 && spentAp <= 2.05,
+    invariant(Number(harvested.apCost) === 2,
+      'Successful harvest acknowledged an unexpected AP cost', harvested);
+    const expectedAfterAp = maxSuccessAp - Number(harvested.apCost);
+    invariant(Math.abs(Number(harvested.ap) - expectedAfterAp) <= 0.05,
       'Successful harvest did not spend one 2-AP action', {
-        before: beforeSuccessAp,
+        before: maxSuccessAp,
         after: harvested.ap,
-        spent: spentAp
+        cost: harvested.apCost,
+        expectedAfter: expectedAfterAp
       });
     await delay(80);
     invariant(resourceUpdates.length === 1
@@ -1407,6 +1494,80 @@ async function assertEquipmentActionAuthority(accounts) {
   closeSocket(account);
 }
 
+function assertLockedProgression(self, label) {
+  invariant(Number(self?.skillRanks?.lightWeapons) === 100
+    && Number(self?.skillRanks?.lockpick) === 88
+    && !Number(self?.skillRanks?.science || 0),
+  `${label}: learned skills were refunded or reassigned`, self);
+  invariant(Number(self?.talentRanks?.specialStr) === 2
+    && !Number(self?.talentRanks?.specialAgi || 0),
+  `${label}: learned talents were refunded or reassigned`, self);
+  invariant(Number(self?.skillPoints || 0) === 0 && Number(self?.perkPoints || 0) === 0,
+    `${label}: fully spent progression budget changed`, self);
+}
+
+async function assertProgressionAllocationAuthority(accounts) {
+  const account = accounts.progression;
+  const finalProgression = {
+    skillRanks: { lightWeapons: 100, lockpick: 88 },
+    talentRanks: { specialStr: 2 }
+  };
+  const reassignedProgression = {
+    skillRanks: { lightWeapons: 38, lockpick: 28, science: 100 },
+    talentRanks: { specialStr: 0, specialAgi: 2 }
+  };
+
+  await connectAndJoin(account);
+  invariant(Number(account.join.self?.skillRanks?.lightWeapons) === 100
+    && Number(account.join.self?.skillRanks?.lockpick) === 83
+    && Number(account.join.self?.talentRanks?.specialStr) === 1
+    && Number(account.join.self?.skillPoints) === 1
+    && Number(account.join.self?.perkPoints) === 1,
+  'Initial progression fixture does not have one free skill and perk point', account.join.self);
+
+  account.socket.emit('state', {
+    profileOnly: true,
+    reason: 'progression-spend-check',
+    ...finalProgression
+  });
+  await delay(100);
+  const afterSpend = await socketAck(account.socket, 'combatAttack', {});
+  invariant(afterSpend.ok === false && afterSpend.self,
+    'Progression spend probe did not return authoritative self state', afterSpend);
+  assertLockedProgression(afterSpend.self, 'forward allocation');
+
+  account.socket.emit('state', {
+    profileOnly: true,
+    reason: 'progression-authority-check',
+    ...reassignedProgression
+  });
+  await delay(100);
+  const afterProfile = await socketAck(account.socket, 'combatAttack', {});
+  invariant(afterProfile.ok === false && afterProfile.self,
+    'Progression profile probe did not return authoritative self state', afterProfile);
+  assertLockedProgression(afterProfile.self, 'profile sync');
+
+  const afterAction = await socketAck(account.socket, 'combatAttack', reassignedProgression);
+  invariant(afterAction.ok === false && afterAction.self,
+    'Progression action probe did not return authoritative self state', afterAction);
+  assertLockedProgression(afterAction.self, 'action payload');
+
+  const reassignedSave = cloneJson(account.seedState);
+  reassignedSave.skillRanks = cloneJson(reassignedProgression.skillRanks);
+  reassignedSave.talentRanks = cloneJson(reassignedProgression.talentRanks);
+  await saveCharacter(account, account.join.characterLeaseId, reassignedSave);
+  const afterSave = await socketAck(account.socket, 'combatAttack', {});
+  invariant(afterSave.ok === false && afterSave.self,
+    'Progression save probe did not return authoritative self state', afterSave);
+  assertLockedProgression(afterSave.self, 'HTTP save');
+
+  closeSocket(account);
+  await delay(650);
+  await connectAndJoin(account);
+  assertLockedProgression(account.join.self, 'reconnect');
+  closeSocket(account);
+}
+
 async function main() {
   assertDependenciesInstalled();
   const accounts = {};
@@ -1417,8 +1578,20 @@ async function main() {
     await assertUntargetedAttack(accounts);
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
-    await assertHarvestRequiresEquippedTool(accounts);
     await assertEquipmentActionAuthority(accounts);
+    await assertProgressionAllocationAuthority(accounts);
+    // The shooter fixtures intentionally share one oldDepot room so they can
+    // target each other. They must not influence the safe-spawn search for the
+    // following single-player harvest contract.
+    await closeFixtureSockets(accounts, [
+      'persistence',
+      'cadence',
+      'untargeted',
+      'strictAp',
+      'equipmentAp',
+      'target'
+    ]);
+    await assertHarvestRequiresEquippedTool(accounts);
 
     console.log(
       'Combat runtime OK: runtime-id profile sync and reload/fire survived save + reconnect, '
@@ -1427,6 +1600,7 @@ async function main() {
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
       + 'equipment changes were revisioned/idempotent and spent exactly 1 server AP, '
+      + 'progression allocations could not be refunded or reassigned through profile/action/save payloads, '
       + 'and insufficient AP or unavailable runtime ids caused no mutation'
     );
   } finally {

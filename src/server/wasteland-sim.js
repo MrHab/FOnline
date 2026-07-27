@@ -4457,102 +4457,6 @@ function createWastelandSimulation(options = {}) {
     return changed;
   }
 
-  function createPlayerAmbushZone(input = {}) {
-    void input;
-    return { ok: false, error: 'player_ambushes_disabled' };
-    const point = normalizeWorldPoint(input.point || input) || state.sites.settlement || { x: 450, y: 450 };
-    const ownerPlayerId = safeId(input.playerId || input.ownerPlayerId || '', '');
-    const ownerName = safeMemberName(input.ownerName || input.playerName || 'Игрок', 'Игрок');
-    const id = safeId(`ambush_${ownerPlayerId || ownerName}_${Math.floor(Number(state.worldHour || 0) * 10)}`, 'ambush');
-    const zone = upsertWorldZone({
-      id,
-      kind: 'ambush',
-      title: `Засада: ${ownerName}`,
-      text: 'Игрок подготовил засаду. Это видимая зона мира: любой, кто войдет в радиус, попадет в общую локацию засады.',
-      x: point.x,
-      y: point.y,
-      radius: 9,
-      priority: 4,
-      sourceType: 'player',
-      sourceId: ownerPlayerId,
-      faction: 'player',
-      targetFaction: '',
-      encounterId: 'player_ambush',
-      locationId: 'randomRuinedRoad',
-      roomId: stableWorldRoomId('randomRuinedRoad', id),
-      pvpMode: 'pvp',
-      ownerPlayerId,
-      ownerName,
-      durationHours: 12,
-      details: { playerAmbush: true, hidden: true, visible: false, empty: true }
-    });
-    if (zone) {
-      addEvent('player_ambush_created', `${ownerName} устроил засаду в пустоши.`, {
-        zoneId: zone.id,
-        playerId: ownerPlayerId,
-        x: Number(zone.x.toFixed(1)),
-        y: Number(zone.y.toFixed(1))
-      });
-      save(true);
-    }
-    return zone ? { ok: true, zone, sim: publicState() } : { ok: false, error: 'Не удалось создать засаду.' };
-  }
-
-  function partyCanTriggerPlayerAmbush(party = {}) {
-    if (!party || party.destroyed || party.state === 'destroyed' || party.state === 'engaged') return false;
-    if (['onsite', 'staging'].includes(String(party.state || '').toLowerCase())) return false;
-    const kind = String(party.kind || '').toLowerCase();
-    if (['caravan', 'patrol'].includes(kind)) return true;
-    return partyIsHostileEncounterParty(party);
-  }
-
-  function triggerPlayerAmbushZone(zone = {}, party = {}, distanceKm = 0) {
-    if (!zone || !party || !partyCanTriggerPlayerAmbush(party)) return false;
-    const actors = partyEncounterActors(party)
-      .map((actor, index) => normalizeBattleActor(actor, index, state.worldHour))
-      .filter(Boolean);
-    if (!actors.length) return false;
-    zone.partyId = party.id;
-    zone.threatPartyId = party.id;
-    zone.targetFaction = party.faction || '';
-    zone.encounterId = partyMeetingEncounterId(party);
-    zone.locationId = zone.locationId || partyMeetingLocationId(party);
-    zone.roomId = zone.roomId || stableWorldRoomId(worldZoneLocationId(zone), zone.id);
-    zone.title = `${zone.title || 'Ambush'}: ${party.name || party.id}`;
-    zone.text = `${party.name || 'A wasteland party'} entered a prepared player ambush.`;
-    zone.priority = Math.max(Number(zone.priority || 0), partyIsHostileEncounterParty(party) ? 5 : 4);
-    zone.details = {
-      ...(zone.details || {}),
-      playerAmbush: true,
-      hidden: true,
-      visible: false,
-      empty: false,
-      triggered: true,
-      simBattle: true,
-      realTimeBattle: true,
-      simulationDisabled: true,
-      partyId: party.id,
-      threatPartyId: party.id,
-      partyKind: String(party.kind || ''),
-      partyName: party.name || '',
-      triggeredHour: Number(state.worldHour || 0),
-      triggeredDistanceKm: Number(Number(distanceKm || 0).toFixed(2)),
-      actors
-    };
-    party.state = 'engaged';
-    party.engagedZoneId = zone.id;
-    party.engagedUntilHour = Number(state.worldHour || 0) + Math.max(8, Number(zone.expiresHour || 0) - Number(state.worldHour || 0));
-    addEvent('player_ambush_triggered', `${party.name || party.id} entered a player ambush.`, {
-      zoneId: zone.id,
-      partyId: party.id,
-      ownerPlayerId: zone.ownerPlayerId || zone.sourceId || '',
-      x: Number(Number(zone.x || 0).toFixed(1)),
-      y: Number(Number(zone.y || 0).toFixed(1))
-    });
-    dirty = true;
-    return true;
-  }
-
   function updatePlayerAmbushInterceptions() {
     const before = Array.isArray(state.worldZones) ? state.worldZones.length : 0;
     state.worldZones = (Array.isArray(state.worldZones) ? state.worldZones : [])
@@ -4560,29 +4464,6 @@ function createWastelandSimulation(options = {}) {
     const removedAmbushes = state.worldZones.length !== before;
     if (removedAmbushes) dirty = true;
     return removedAmbushes;
-    const now = Number(state.worldHour || 0);
-    const map = getGlobalMap();
-    const zones = (Array.isArray(state.worldZones) ? state.worldZones : [])
-      .filter(zone => zone
-        && zone.status === 'active'
-        && zone.details?.playerAmbush
-        && !zone.details?.triggered
-        && (!Number(zone.expiresHour || 0) || Number(zone.expiresHour || 0) > now));
-    if (!zones.length) return false;
-    let changed = false;
-    for (const zone of zones) {
-      const radiusKm = Math.max(1, Number(zone.radius || 9));
-      let best = null;
-      for (const party of Object.values(state.parties || {})) {
-        if (!partyCanTriggerPlayerAmbush(party)) continue;
-        if (activeBattleZoneForParty(party.id)) continue;
-        const distanceKm = pointDistanceKm(zone, party, map);
-        if (distanceKm > radiusKm) continue;
-        if (!best || distanceKm < best.distanceKm) best = { party, distanceKm };
-      }
-      if (best && triggerPlayerAmbushZone(zone, best.party, best.distanceKm)) changed = true;
-    }
-    return changed;
   }
 
   function completeWorldTaskDelivery(taskId = '', data = {}) {
@@ -10321,7 +10202,6 @@ function createWastelandSimulation(options = {}) {
     completeOnsitePartyDeparture,
     beginPartyEncounterZone,
     finishPartyEncounterZone,
-    createPlayerAmbushZone,
     partyEncounterSnapshot,
     worldZoneById,
     activeBattleZoneForRoom,

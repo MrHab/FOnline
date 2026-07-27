@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const { normalizeWorldTask } = require('../src/server/wasteland-world-tasks');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -40,6 +41,39 @@ function functionBody(source, name) {
     else if (ch === '}') {
       depth--;
       if (depth === 0) return source.slice(open + 1, i);
+    }
+  }
+  return '';
+}
+
+function functionSource(source, name) {
+  const start = source.indexOf(`function ${name}`);
+  if (start < 0) return '';
+  const paramsOpen = source.indexOf('(', start);
+  if (paramsOpen < 0) return '';
+  let parenDepth = 0;
+  let paramsClose = -1;
+  for (let i = paramsOpen; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === '(') parenDepth++;
+    else if (ch === ')') {
+      parenDepth--;
+      if (parenDepth === 0) {
+        paramsClose = i;
+        break;
+      }
+    }
+  }
+  if (paramsClose < 0) return '';
+  const open = source.indexOf('{', paramsClose);
+  if (open < 0) return '';
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    const ch = source[i];
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return source.slice(start, i + 1);
     }
   }
   return '';
@@ -104,6 +138,58 @@ const clientEnemyLootBody = functionBody(clientNetwork, 'rollEnemyLoot').trim();
 if (clientEnemyLootBody !== 'return [];') {
   errors.push('client enemy loot: the disabled client-side generator must remain an empty stub');
 }
+const inventoryLimitContext = {
+  SERVER_ITEM_IDS: new Set(['water', 'scrap']),
+  serverBaseItemId: value => String(value || ''),
+  serverItemStackLimit: id => id === 'water' ? 10 : 20,
+  serverInventoryQty: (rows, id) => (Array.isArray(rows) ? rows : [])
+    .filter(row => row?.id === id)
+    .reduce((sum, row) => sum + Math.max(0, Math.floor(Number(row?.qty || 0))), 0),
+  serverItemWeight: id => id === 'water' ? 1 : 2,
+  sanitizeCarrySnapshot: player => {
+    const weight = (Array.isArray(player?.inventory) ? player.inventory : [])
+      .reduce((sum, row) => sum + inventoryLimitContext.serverItemWeight(row.id) * Number(row.qty || 0), 0);
+    const carry = { weight, capacity: Number(player?.capacity || 100), serverCapacity: Number(player?.capacity || 100), updatedAt: 1 };
+    player.carry = carry;
+    return carry;
+  }
+};
+vm.createContext(inventoryLimitContext);
+vm.runInContext(functionSource(server, 'serverLimitItemsByCarry'), inventoryLimitContext);
+const stackLimited = inventoryLimitContext.serverLimitItemsByCarry(
+  { inventory: [{ id: 'water', qty: 9 }], capacity: 100 },
+  {},
+  [{ id: 'water', qty: 3 }],
+  { apply: false }
+);
+if (stackLimited.items.length !== 1
+  || stackLimited.items[0].id !== 'water'
+  || stackLimited.items[0].qty !== 1
+  || stackLimited.stackBlocked !== true
+  || stackLimited.weightBlocked !== false) {
+  errors.push('server loot limiter does not preserve overflow at the source when an inventory stack is nearly full');
+}
+const duplicateStackRows = inventoryLimitContext.serverLimitItemsByCarry(
+  { inventory: [{ id: 'water', qty: 8 }], capacity: 100 },
+  {},
+  [{ id: 'water', qty: 2 }, { id: 'water', qty: 2 }],
+  { apply: false }
+);
+if (duplicateStackRows.items.reduce((sum, row) => sum + row.qty, 0) !== 2
+  || duplicateStackRows.stackBlocked !== true) {
+  errors.push('server loot limiter does not share remaining stack capacity across duplicate item rows');
+}
+const weightLimited = inventoryLimitContext.serverLimitItemsByCarry(
+  { inventory: [], capacity: 1 },
+  {},
+  [{ id: 'water', qty: 3 }],
+  { apply: false }
+);
+if (weightLimited.items.length !== 1
+  || weightLimited.items[0].qty !== 1
+  || weightLimited.weightBlocked !== true) {
+  errors.push('server loot limiter no longer enforces carry weight while applying stack limits');
+}
 requireText('client base storage restock', functionBody(clientTradeStorage, 'restockBaseStorage'), 'return false;');
 requireText('npc quest caps', functionBody(clientTradeStorage, 'awardNpcQuest'), 'const paidMoney = payNpcQuestCaps(money);');
 const legacyWorldTaskReward = normalizeWorldTask({ id: 'legacy_reward', reward: { silver: 37.9 } }, 0);
@@ -119,7 +205,14 @@ requireText('client crafting applies server inventory', functionBody(clientInven
 requireText('client crafting offline block', functionBody(clientInventory, 'craftRecipe'), 'if (!multiplayer?.socket?.connected)');
 requireText('server crafting output table', server, 'const SERVER_CRAFT_RECIPE_OUTPUTS = {');
 requireText('server crafting inventory transaction', server, 'function serverInventoryApplyCraftTransaction');
-requireText('server crafting uses inventory transaction', functionBody(server, 'recordWastelandCraftingStationFee'), 'serverInventoryApplyCraftTransaction(player.inventory || [], recipeId, fee, actor)');
+const serverCrafting = functionBody(server, 'recordWastelandCraftingStationFee');
+requireText('server crafting uses inventory transaction', serverCrafting, 'serverInventoryApplyCraftTransaction(player.inventory || [], recipeId, fee, actor)');
+requireText('server crafting uses authoritative room', serverCrafting, "rooms.get(String(player?.roomId || ''))");
+requireText('server crafting uses authoritative location', serverCrafting, 'normalizeLocationId(playerRoom.locationId');
+requireText('server crafting rejects forged location', serverCrafting, 'normalizeLocationId(requestedLocationId) !== locationId');
+requireText('server crafting uses authoritative fee', serverCrafting, 'const fee = requiredFee;');
+rejectText('server crafting client-selected location', serverCrafting, 'normalizeLocationId(data.locationId ||');
+requireText('server crafting blocks world-map requests', server, 'if (!p || !p.roomId || p.onGlobalMap || p.dead');
 requireText('server crafting station model guard', functionBody(server, 'serverCraftingObjectMatchesStation'), 'SERVER_CRAFT_STATION_MODELS[key]');
 requireText('client crafting station model guard', functionBody(clientInventory, 'craftingObjectMatchesStation'), 'staticModelFileName(modelUrl) === def.modelFile');
 requireText('client crafting stations render as static interactives', functionBody(clientWorldObjects, 'locationObjectIsEntity'), "entityKind === 'craftingstation'");

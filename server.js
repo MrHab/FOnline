@@ -132,7 +132,8 @@ function defaultLocalServerOrigins(port = PORT) {
 // Example: ORIGINS="https://yandex.ru,https://yandex.com,http://localhost:8080"
 // The default permits this server's own loopback and LAN addresses. Other
 // cross-origin deployments must opt in explicitly.
-const allowedOrigins = (process.env.ORIGINS || defaultLocalServerOrigins(PORT))
+const configuredOrigins = process.env.ORIGINS;
+const allowedOrigins = (configuredOrigins || defaultLocalServerOrigins(PORT))
   .split(',')
   .map(v => v.trim())
   .filter(Boolean);
@@ -4625,29 +4626,49 @@ function serverLimitItemsByCarry(p = {}, data = {}, entries = [], opts = {}) {
   const carry = sanitizeCarrySnapshot(p, data.carry || p.carry || null);
   let free = Math.max(0, carry.capacity - carry.weight);
   const out = [];
-  let blocked = false;
+  const remainingStackByItem = new Map();
+  let stackBlocked = false;
+  let weightBlocked = false;
   let addedWeight = 0;
   for (const entry of entries) {
-    if (!entry || !SERVER_ITEM_IDS.has(entry.id)) continue;
+    const id = serverBaseItemId(entry?.id || entry?.itemId || '');
+    if (!id || !SERVER_ITEM_IDS.has(id)) continue;
     const requestedQty = Math.max(0, Math.floor(Number(entry.qty || 0)));
     if (requestedQty <= 0) continue;
-    const weight = serverItemWeight(entry.id);
-    let qty = requestedQty;
-    if (weight > 0) qty = Math.min(requestedQty, Math.max(0, Math.floor((free + 0.0001) / Math.max(0.0001, weight))));
-    if (qty < requestedQty) blocked = true;
+    const stackFree = remainingStackByItem.has(id)
+      ? remainingStackByItem.get(id)
+      : Math.max(0, serverItemStackLimit(id) - serverInventoryQty(p.inventory || [], id));
+    let qty = Math.min(requestedQty, stackFree);
+    if (qty < requestedQty) stackBlocked = true;
+    const weight = serverItemWeight(id);
+    if (weight > 0) {
+      const weightQty = Math.max(0, Math.floor((free + 0.0001) / Math.max(0.0001, weight)));
+      if (weightQty < qty) weightBlocked = true;
+      qty = Math.min(qty, weightQty);
+    }
     if (qty <= 0) continue;
     const w = weight * qty;
     free = Math.max(0, free - w);
     addedWeight += w;
-    out.push({ id: entry.id, qty });
+    remainingStackByItem.set(id, Math.max(0, stackFree - qty));
+    out.push({ id, qty });
   }
+  const blocked = stackBlocked || weightBlocked;
   const nextCarry = addedWeight > 0 ? {
     ...carry,
     weight: Number(Math.min(carry.capacity + 250, carry.weight + addedWeight).toFixed(3)),
     updatedAt: Date.now()
   } : carry;
   if (opts.apply !== false) p.carry = nextCarry;
-  return { items: out, blocked, addedWeight, freeWeight: Number(free.toFixed(3)), carry: nextCarry };
+  return {
+    items: out,
+    blocked,
+    stackBlocked,
+    weightBlocked,
+    addedWeight,
+    freeWeight: Number(free.toFixed(3)),
+    carry: nextCarry
+  };
 }
 
 function serverValidateClientHasItem(data = {}, itemId = '', qty = 1) {
@@ -9633,18 +9654,24 @@ function serverLocationObjectWorldPoint(row = {}) {
 }
 
 function recordWastelandCraftingStationFee(data = {}, player = null) {
-  const fee = Math.max(0, Math.floor(Number(data.fee || 0)));
-  if (fee <= 0) return { ok: false, error: 'empty_fee' };
   const recipeId = String(data.recipeId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   const requiredStation = SERVER_CRAFT_RECIPE_STATIONS[recipeId] || '';
   if (!recipeId || !requiredStation) return { ok: false, error: 'unknown_recipe' };
   const requiredFee = serverCraftStationFeeForRecipe(recipeId);
-  if (fee < requiredFee) return { ok: false, error: 'fee_too_low', requiredFee };
+  const requestedFee = Math.max(0, Math.floor(Number(data.fee || 0)));
+  if (requestedFee < requiredFee) return { ok: false, error: 'fee_too_low', requiredFee };
+  const fee = requiredFee;
   const station = String(data.station || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 48);
   if (station !== requiredStation) return { ok: false, error: 'wrong_station', requiredStation };
-  const locationId = normalizeLocationId(data.locationId || player?.locationId || player?.currentLocationId || 'settlement');
-  const loc = LOCATIONS[locationId];
-  if (!loc) return { ok: false, error: 'unknown_location' };
+  const playerRoom = rooms.get(String(player?.roomId || '')) || null;
+  if (!playerRoom || player?.onGlobalMap) return { ok: false, error: 'player_not_in_location' };
+  const locationId = normalizeLocationId(playerRoom.locationId || player?.locationId || player?.currentLocationId || 'settlement');
+  const requestedLocationId = String(data.locationId || '').trim();
+  if (requestedLocationId && normalizeLocationId(requestedLocationId) !== locationId) {
+    return { ok: false, error: 'wrong_location', locationId };
+  }
+  const loc = roomLocation(playerRoom);
+  if (!loc || normalizeLocationId(loc.id || '') !== locationId) return { ok: false, error: 'unknown_location' };
   const stationObjectId = String(data.stationObjectId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96);
   const stationObject = stationObjectId && Array.isArray(loc.objects)
     ? loc.objects.find(row => String(row?.id || '') === stationObjectId)
@@ -9667,7 +9694,6 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
     || stationObject?.interactive?.stationSiteId
     || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
   const simState = WASTELAND_SIM.state();
-  const playerRoom = rooms.get(String(player?.roomId || '')) || null;
   const publicSites = wastelandSitesForLocation(loc, playerRoom).filter(wastelandSiteIsEconomic);
   const siteId = explicitSiteId || publicSites[0]?.id || '';
   const site = siteId ? simState?.sites?.[siteId] : null;
@@ -17102,7 +17128,7 @@ io.on('connection', (socket) => {
   socket.on('craftingStationUsed', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
-    if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    if (!p || !p.roomId || p.onGlobalMap || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
     try {
       p.id = p.id || socket.id;
       const result = recordWastelandCraftingStationFee(data, p);
@@ -17114,111 +17140,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('globalTravelArrive', (data = {}, ack) => {
-    return handleServerGlobalTravelArrival(socket, data, ack);
-    const leader = players.get(socket.id);
-    const session = globalTravelSessions.get(socket.id);
-    const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
-    if (globalTravelMemberIsFollower(socket.id)) {
-      const session = globalTravelSessionForMember(socket.id);
-      return fail('Маршрут выбирает лидер группы.', { leaderId: session?.leaderId || '', leaderName: session?.leaderName || '' });
-    }
-    if (!leader || (!leader.roomId && !leader.onGlobalMap) || leader.dead || Number(leader.hp || 0) <= 0) return fail('Лидер группы недоступен.');
-    let targetLocationId = normalizeLocationId(data.targetLocationId || session?.targetLocationId || leader.locationId || 'settlement');
-    if (!LOCATIONS[targetLocationId]) return fail('Неизвестная точка глобальной карты.');
-    const activeSession = session || {
-      leaderId: socket.id,
-      leaderName: leader.name || 'Игрок',
-      fromLocationId: leader.locationId || 'settlement',
-      targetLocationId,
-      memberIds: nearbyGlobalTravelParty(leader).map(p => p.id),
-      startedAt: Date.now()
-    };
-    activeSession.targetLocationId = targetLocationId;
-    let encounterId = String(data.encounterId || '').slice(0, 40);
-    let targetLoc = LOCATIONS[targetLocationId] || {};
-    let canOverridePvp = !!(targetLoc.randomTemplate || targetLoc.encounterOnly);
-    let pvpMode = canOverridePvp
-      ? normalizeLocationPvpMode(data.pvpMode || data.zonePvpMode || locationPvpMode(targetLoc), targetLoc.safe !== false)
-      : locationPvpMode(targetLoc);
-    let requestedEncounterRoomId = sanitizeEncounterRoomId(data.encounterRoomId || data.roomId || data.zoneRoomId || '', targetLocationId);
-    let targetUsesSharedReality = locationUsesSharedReality(targetLoc);
-    let encounterRoomId = (data.encounter && requestedEncounterRoomId && !targetUsesSharedReality)
-      ? requestedEncounterRoomId
-      : (targetLoc.randomTemplate || (data.encounter && targetLoc.encounterOnly))
-      ? (requestedEncounterRoomId || `${targetLocationId}#${Date.now().toString(36)}_${crypto.randomBytes(3).toString('hex')}`)
-      : '';
-    const worldPoint = sanitizeServerGlobalMapPoint(data.worldPoint || data.globalPoint || activeSession.worldPoint || null);
-    if (worldPoint) activeSession.worldPoint = worldPoint;
-    const siteId = String(data.siteId || data.worldSiteId || activeSession.siteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-    if (siteId) activeSession.siteId = siteId;
-    const partyId = String(data.partyId || data.worldPartyId || activeSession.partyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
-    if (partyId) activeSession.partyId = partyId;
-    let worldZoneId = String(data.worldZoneId || data.zoneId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-    if (data.encounter && partyId && !worldZoneId && typeof WASTELAND_SIM.beginPartyEncounterZone === 'function') {
-      try {
-        const result = WASTELAND_SIM.beginPartyEncounterZone({
-          partyId,
-          playerId: leader.characterId || leader.id || socket.id,
-          playerName: leader.name || '',
-          point: worldPoint
-        });
-        if (result?.ok && result.zone) {
-          const zone = result.zone;
-          worldZoneId = worldTransferId(zone.id || '');
-          targetLocationId = normalizeLocationId(zone.locationId || targetLocationId);
-          targetLoc = LOCATIONS[targetLocationId] || targetLoc;
-          canOverridePvp = !!(targetLoc.randomTemplate || targetLoc.encounterOnly);
-          pvpMode = normalizeLocationPvpMode(zone.pvpMode || data.pvpMode || data.zonePvpMode || locationPvpMode(targetLoc), targetLoc.safe !== false);
-          encounterId = String(zone.encounterId || encounterId || '').slice(0, 40);
-          requestedEncounterRoomId = sanitizeEncounterRoomId(zone.roomId || '', targetLocationId);
-          targetUsesSharedReality = locationUsesSharedReality(targetLoc);
-          encounterRoomId = requestedEncounterRoomId || encounterRoomId;
-        }
-      } catch (err) {
-        console.error('beginPartyEncounterZone failed:', err);
-      }
-    }
-    if (siteId && (targetLoc.randomTemplate || targetLoc.encounterOnly) && !requestedEncounterRoomId) {
-      encounterRoomId = roomIdForWorldSite(targetLocationId, siteId) || encounterRoomId;
-    }
-    const payload = {
-      leaderId: socket.id,
-      leaderName: leader.name || activeSession.leaderName || 'Игрок',
-      targetLocationId,
-      entryKey: String(data.entryKey || 'entryFromWorld').slice(0, 32),
-      encounter: !!data.encounter,
-      encounterId,
-      encounterRoomId,
-      worldZoneId,
-      siteId,
-      partyId,
-      worldPoint,
-      pvpMode,
-      party: activeSession.memberIds.map(id => players.get(id)).filter(Boolean).map(p => publicTravelPartyMember(p, socket.id))
-    };
-    emitGlobalTravelToParty(activeSession, 'globalTravelArrived', payload, false);
-    activeSession.memberIds.forEach(id => {
-      const p = players.get(id);
-      if (!p) return;
-      p.onGlobalMap = false;
-      p.globalWorldPoint = worldPoint || activeSession.worldPoint || p.globalWorldPoint || null;
-      p.pendingLocationTransition = {
-        targetLocationId,
-        roomId: encounterRoomId || '',
-        worldZoneId,
-        partyId,
-        siteId,
-        encounterId,
-        pvpMode,
-        worldPoint,
-        entryKey: payload.entryKey,
-        expiresAt: Date.now() + 15000
-      };
-    });
-    globalTravelSessions.delete(socket.id);
-    if (typeof ack === 'function') ack({ ok: true, ...payload });
-  });
+  socket.on('globalTravelArrive', (data = {}, ack) => (
+    handleServerGlobalTravelArrival(socket, data, ack)
+  ));
 
   socket.on('shoot', (data = {}) => {
     const p = players.get(socket.id);
@@ -17257,7 +17181,6 @@ io.on('connection', (socket) => {
       t: Date.now()
     };
     (socket.to(p.roomId).volatile || socket.to(p.roomId)).emit('shot', shot);
-    if (room) addRoomNoise(room, p.x, p.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, 'shot');
   });
 
   socket.on('melee', (data = {}) => {
@@ -17283,7 +17206,6 @@ io.on('connection', (socket) => {
       t: Date.now()
     };
     (socket.to(p.roomId).volatile || socket.to(p.roomId)).emit('melee', payload);
-    if (room) addRoomNoise(room, p.x, p.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_HARVEST_RANGE), socket.id, 'melee');
   });
 
 
@@ -17310,14 +17232,21 @@ io.on('connection', (socket) => {
     const p = players.get(socket.id);
     const fail = (error, extra = {}) => { if (typeof ack === 'function') ack({ ok: false, error, ...extra }); };
     if (!p || !p.roomId || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
-    syncServerActionProgressionPlayer(p, data);
+    const room = rooms.get(p.roomId);
+    if (!room) return fail('Локация не найдена.');
+    const loc = roomLocation(room);
     const equippedWeaponId = serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists');
-    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     const weapon = serverWeaponDef(equippedWeaponId);
     const currentCombat = () => ({
       combat: serverCombatAck(p, weapon, Date.now()),
       self: publicAuthoritativePlayerState(p)
     });
+    if (locationIsFactionCapital(loc)
+      || (!locationAllowsNpcCombat(loc) && !room.locationWorldEvent)) {
+      return fail('В этой локации нельзя использовать оружие.', currentCombat());
+    }
+    syncServerActionProgressionPlayer(p, data);
+    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', currentCombat());
@@ -17331,6 +17260,19 @@ io.on('connection', (socket) => {
       ...currentCombat(),
       retryAfterMs: Number(spend.retryAfterMs || 0)
     });
+    if (!spend.reused) {
+      const noiseRadius = weapon.ammoType
+        ? ENEMY_HEARING_SHOT_RANGE
+        : ENEMY_HEARING_HARVEST_RANGE;
+      addRoomNoise(
+        room,
+        p.x,
+        p.z,
+        serverPlayerNoiseRadius(p, noiseRadius),
+        socket.id,
+        weapon.ammoType ? 'combat' : 'melee'
+      );
+    }
     if (typeof ack === 'function') ack({
       ok: true,
       reused: !!spend.reused,
@@ -18001,7 +17943,10 @@ io.on('connection', (socket) => {
     const carryCheck = serverLimitItemsByCarry(p, data, availableTake);
     const taken = carryCheck.items;
     if (!taken.length) {
-      if (typeof ack === 'function') ack({ ok: false, error: carryCheck.blocked ? 'Нет свободного веса для добычи.' : 'В трупе нет выбранных предметов.', enemy: publicEnemy(enemy), carry: carryCheck.carry });
+      const error = carryCheck.stackBlocked
+        ? 'В рюкзаке достигнут предел стака для добычи.'
+        : (carryCheck.weightBlocked ? 'Нет свободного веса для добычи.' : 'В трупе нет выбранных предметов.');
+      if (typeof ack === 'function') ack({ ok: false, error, enemy: publicEnemy(enemy), carry: carryCheck.carry });
       return;
     }
     const takenMap = new Map();
@@ -18116,7 +18061,10 @@ io.on('connection', (socket) => {
     const stackQty = Math.max(1, Math.floor(Number(groundItem.qty || 1)));
     const carryCheck = serverLimitItemsByCarry(p, data, [{ id: groundItem.itemId, qty: stackQty }], { apply: false });
     if (!carryCheck.items.length || Number(carryCheck.items[0].qty || 0) < stackQty) {
-      if (typeof ack === 'function') ack({ ok: false, error: 'Нет свободного веса для предмета.', carry: carryCheck.carry });
+      const error = carryCheck.stackBlocked
+        ? 'В рюкзаке нет места в стаке для всего предмета.'
+        : 'Нет свободного веса для предмета.';
+      if (typeof ack === 'function') ack({ ok: false, error, carry: carryCheck.carry });
       return;
     }
     p.carry = carryCheck.carry;
@@ -18414,7 +18362,10 @@ io.on('connection', (socket) => {
     const taken = carryCheck.items;
     if (!taken.length) {
       const pub = publicWorldContainer(container);
-      if (typeof ack === 'function') ack({ ok: false, error: carryCheck.blocked ? 'Нет свободного веса для предметов.' : 'В контейнере нет выбранных предметов.', container: pub, empty: pub.empty, carry: carryCheck.carry });
+      const error = carryCheck.stackBlocked
+        ? 'В рюкзаке достигнут предел стака для выбранных предметов.'
+        : (carryCheck.weightBlocked ? 'Нет свободного веса для предметов.' : 'В контейнере нет выбранных предметов.');
+      if (typeof ack === 'function') ack({ ok: false, error, container: pub, empty: pub.empty, carry: carryCheck.carry });
       return;
     }
     const finalTaken = container.factionWarehouseSiteId
@@ -18804,10 +18755,21 @@ function getLanUrls(port) {
 }
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`${GAME_NAME} v${GAME_VERSION} server listening on :${PORT}`);
+  const address = server.address();
+  const boundPort = address && typeof address === 'object'
+    ? Number(address.port || PORT)
+    : PORT;
+  if (!configuredOrigins && boundPort !== PORT) {
+    allowedOrigins.splice(
+      0,
+      allowedOrigins.length,
+      ...defaultLocalServerOrigins(boundPort).split(',').filter(Boolean)
+    );
+  }
+  console.log(`${GAME_NAME} v${GAME_VERSION} server listening on :${boundPort}`);
   console.log(`Dev API mode: ${DEV_ACCESS_POLICY.mode}`);
-  console.log(`Local: http://localhost:${PORT}`);
-  const lanUrls = getLanUrls(PORT);
+  console.log(`Local: http://localhost:${boundPort}`);
+  const lanUrls = getLanUrls(boundPort);
   if (lanUrls.length) console.log(`LAN: ${lanUrls.join('  |  ')}`);
   console.log(`Data directory: ${DATA_DIR}`);
 });

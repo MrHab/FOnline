@@ -33,7 +33,6 @@ const partNames = [
   '05d_world_containers_security.js',
   '05e_ground_items_world_sync.js',
   '05f_enemy_models_location_flow.js',
-  '06_pathfinding_movement.js',
   '06a_combat_visual_fx.js',
   '06b_explosions_speech.js',
   '06c_combat_stats_modes.js',
@@ -69,6 +68,23 @@ const partNames = [
   '13_minimap_hud_loop.js'
 ];
 const partFiles = partNames.map(name => path.join(partsDir, name));
+const REMOVED_PROCEDURAL_TRADER_BUILDING_FUNCTIONS = [
+  'markDisposableTexture',
+  'addEllipseShadow',
+  'modelScaleForBuildingBlock',
+  'modelHasGroundOrigin',
+  'createBuildingModelBlock',
+  'cacheTraderInteriorWorldPositions',
+  'createTraderVisionRoofMaterial',
+  'createTraderRoofMaskTexture',
+  'createTraderContinuousRoofPanelGeometry',
+  'createTraderRoofSquareCells',
+  'createTraderVisionRoofGrid',
+  'rebuildTraderRoofBatch',
+  'inferTraderRoofGridDimensions',
+  'createTraderRoofGridBatch',
+  'createTraderBuilding'
+];
 
 function matchingBrace(source, openIndex) {
   let depth = 0;
@@ -135,6 +151,38 @@ for (const file of partNames) {
 
 const combined = partFiles.map(file => fs.readFileSync(file, 'utf8')).join('\n');
 new Function(combined);
+
+const returnedProceduralTraderBuildingFunctions = REMOVED_PROCEDURAL_TRADER_BUILDING_FUNCTIONS
+  .filter(name => combined.includes(`function ${name}(`));
+assert.deepStrictEqual(
+  returnedProceduralTraderBuildingFunctions,
+  [],
+  `Removed procedural trader-building function(s) returned: ${returnedProceduralTraderBuildingFunctions.join(', ')}`
+);
+
+const buildWorldSource = namedFunctionSource(combined, 'buildWorld');
+for (const snippet of [
+  'const authoredLayout = locationUsesAuthoredLayout(currentLocation);',
+  'createAuthoredLocationObjects();',
+  'if (!authoredLayout) createWorldSetDressing();',
+  'freezeStaticWorldTransforms();'
+]) {
+  assert(
+    buildWorldSource.includes(snippet),
+    `Current authored world build path is missing: ${snippet}`
+  );
+}
+const authoredObjectsSource = namedFunctionSource(combined, 'createAuthoredLocationObjects');
+for (const snippet of [
+  'if (!locationUsesAuthoredLayout(currentLocation)) return false;',
+  'queueAuthoredModuleBatch(moduleBatches, row, key);',
+  'flushAuthoredModuleBatches(moduleBatches);'
+]) {
+  assert(
+    authoredObjectsSource.includes(snippet),
+    `Current authored object renderer is missing: ${snippet}`
+  );
+}
 
 const topLevelFunctionDeclarations = [];
 for (const file of partFiles.slice(1)) {
@@ -598,6 +646,7 @@ Promise.all([
     console.log('Client JS loader syntax OK:', loaderFile);
     console.log('Client JS reconstructed bundle syntax OK:', partFiles.length, 'parts');
     console.log('Client JS top-level function names are unique');
+    console.log('Client authored-location renderer guard OK');
     console.log('Client JS native dialog guard OK');
     console.log('Client save generation drain OK');
     console.log('Client save transition abort policy OK');

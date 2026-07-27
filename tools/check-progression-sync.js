@@ -4,6 +4,33 @@ const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 
+const REMOVED_PERK_LAYOUT_FUNCTIONS = [
+  'perkSubgroupIndex',
+  'perkSubgroupCount',
+  'perkLevelRing',
+  'perkNodeRadius',
+  'perkPolarPoint',
+  'perkAtlasEnabled',
+  'perkAtlasRowIndex',
+  'perkAtlasRowY',
+  'perkAtlasNodePoint',
+  'perkGroupHubPoint',
+  'emptyPerkLaneBounds',
+  'collectPerkLaneBounds',
+  'perkBranchLabelPoint',
+  'perkSideLabelPoint',
+  'perkPrerequisiteEntry',
+  'assignPerkHubPorts',
+  'perkRadialLinkPath',
+  'perkDependencyPath',
+  'perkIndependentPath',
+  'perkNodeDesiredPoint',
+  'clampPerkPoint',
+  'resolvePerkLayoutCollisions',
+  'perkWheelInfoHtml',
+  'totalPerkRanks'
+];
+
 function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), 'utf8').replace(/\r\n/g, '\n');
 }
@@ -159,7 +186,6 @@ const crafting = [
   '03d_item_context_repair_crafting.js'
 ].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
 const combat = [
-  '06_pathfinding_movement.js',
   '06a_combat_visual_fx.js',
   '06b_explosions_speech.js',
   '06c_combat_stats_modes.js',
@@ -214,6 +240,20 @@ const clientTalents = idsInArrayBlock(model, 'const TALENTS = [');
 const clientTraits = idsInArrayBlock(creator, 'const START_TRAITS = [');
 const recipeIds = idsInArrayBlock(crafting, 'const CRAFT_RECIPES = [');
 const clientTalentDefs = evalConstBlock(model, 'const TALENTS = [', 'TALENTS', '];');
+
+const returnedPerkLayoutFunctions = REMOVED_PERK_LAYOUT_FUNCTIONS.filter(name => crafting.includes(`function ${name}(`));
+if (returnedPerkLayoutFunctions.length) {
+  fail(`Removed perk-layout function(s) returned: ${returnedPerkLayoutFunctions.join(', ')}`);
+}
+const perkBoardBody = functionSlice(crafting, 'function renderPerkWheel');
+assertIncludesAll('Current perk board renderer', perkBoardBody, [
+  "wheel.className = 'perk-wheel perk-board'",
+  "wrap.classList.add('perk-board-wrap')",
+  'const categories = perkCategoryOptions()',
+  'let visibleTalents = visiblePerksForBoard(selectedPerkCategory)',
+  "shell.className = 'perk-board-shell'",
+  'renderPerkDetail('
+]);
 
 const serverSkills = idsInServerSet(server, 'const SERVER_SKILL_IDS');
 const serverTalents = idsInServerSet(server, 'const SERVER_TALENT_IDS');
@@ -487,11 +527,24 @@ if (!npcRobServerBody.includes('locationAllowsNpcCombat(loc)') || npcRobServerBo
   const body = socketEventSlice(server, eventName);
   const blockIndex = body.indexOf('locationAllowsNpcCombat(roomLocation(room))');
   const emitIndex = body.indexOf(`emit('${eventName === 'shoot' ? 'shot' : 'melee'}'`);
-  const noiseIndex = body.indexOf('addRoomNoise');
-  if (blockIndex < 0 || (emitIndex >= 0 && blockIndex > emitIndex) || (noiseIndex >= 0 && blockIndex > noiseIndex)) {
-    fail(`${eventName} visual combat event must be suppressed in peaceful locations before FX broadcast/noise`);
+  if (blockIndex < 0
+    || (emitIndex >= 0 && blockIndex > emitIndex)
+    || body.includes('addRoomNoise')) {
+    fail(`${eventName} visual combat event must be suppressed in peaceful locations and must not mutate authoritative AI noise`);
   }
 });
+
+const combatAttackServerBody = socketEventSlice(server, 'combatAttack');
+const combatAttackPeacefulIndex = combatAttackServerBody.indexOf('locationAllowsNpcCombat(loc)');
+const combatAttackSpendIndex = combatAttackServerBody.indexOf('serverValidateAndSpendAttack');
+const combatAttackNoiseIndex = combatAttackServerBody.indexOf('addRoomNoise');
+if (combatAttackPeacefulIndex < 0
+  || combatAttackSpendIndex < 0
+  || combatAttackPeacefulIndex > combatAttackSpendIndex
+  || combatAttackNoiseIndex < combatAttackSpendIndex
+  || !combatAttackServerBody.includes('if (!spend.reused)')) {
+  fail('combatAttack must reject peaceful use before spending and create AI noise only after a new authoritative spend');
+}
 
 const playerHitServerBody = socketEventSlice(server, 'playerHit');
 if (!playerHitServerBody.includes('locationAllowsPvp(loc)')) {

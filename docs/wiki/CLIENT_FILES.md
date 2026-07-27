@@ -4,7 +4,7 @@
 
 `public/index.html` сначала подключает локальные vendor-сборки Three.js, `GLTFLoader` и Socket.IO, а затем запускает этот загрузчик.
 
-Загрузчик параллельно получает каталог коллайдеров и все 60 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
+Загрузчик параллельно получает каталог коллайдеров и все 59 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
 
 JS-части и vendor-библиотеки пока загружаются до авторизации, но тяжёлый
 3D-runtime отделён от auth shell: данные мира, PBR-материалы, текстуры,
@@ -26,12 +26,12 @@ JS-части и vendor-библиотеки пока загружаются д�
 | `02b_lighting_time.js` | свет, тени, время суток, day/night lighting |
 | `02c_map_locations_collision.js` | карта, локации, тайлы, торговые профили, коллизии, `TRADER_STOCK` |
 | `02d_trader_spawn_props.js` | торговец, хранилище, переходы, декор и внешние стены локации |
-| `02d1_building_blocks_roof_setup.js` | строительные блоки, регистрация интерьера, материалы и сетка крыши |
+| `02d1_building_blocks_roof_setup.js` | типы модульных блоков, регистрация интерьера/крыши и совместимость opacity |
 | `02d2_cutaway_geometry_visibility.js` | координаты здания, bounds, экранные пробы и проверки видимости |
 | `02d3_cutaway_transparency_warmup.js` | прозрачность стен/крыш, кэши и прогрев cutaway |
-| `02d4_roof_visibility_batch.js` | совместимость fog/LOS, видимость крыши, instanced roof cells, окна |
+| `02d4_roof_visibility_batch.js` | trader-cutaway compatibility, fog/LOS gates, roof cells и окна |
 | `02d5_trader_building_interior.js` | финальная сборка интерьера здания |
-| `02e_trader_yard_world_build.js` | двор торговца, окружение, terrain layers, `buildWorld()` |
+| `02e_trader_yard_world_build.js` | очистка/сборка мира, set dressing и `buildWorld()` |
 | `03_items_inventory_core.js` | items, item art, equipment, inventory snapshots |
 | `03a_pipboy_social_world_tasks.js` | Pip-Boy social, world tasks, factions, radio |
 | `03b_inventory_actions_ui.js` | inventory actions, medicine, drag-drop, categories, inventory UI |
@@ -45,8 +45,7 @@ JS-части и vendor-библиотеки пока загружаются д�
 | `05d_world_containers_security.js` | server containers, lock/terminal UI and loot window actions |
 | `05e_ground_items_world_sync.js` | ground items, resources, world/enemy network snapshots |
 | `05f_enemy_models_location_flow.js` | enemy model builders, local spawn/restore and location loading |
-| `06_pathfinding_movement.js` | поиск пути, ближайшая проходимая клетка и цель движения |
-| `06a_combat_visual_fx.js` | маркер движения, трассеры, пулы эффектов и визуальные FX оружия |
+| `06a_combat_visual_fx.js` | трассеры, пулы эффектов и визуальные FX оружия |
 | `06b_explosions_speech.js` | взрывы, плавающий текст и речевые пузырьки НПС |
 | `06c_combat_stats_modes.js` | формулы боя, режимы оружия, шанс попадания и снапшоты ресурсов |
 | `06d_combat_damage_shooting.js` | трата ОД, урон, выстрелы, PvP/NPC guard и перезарядка |

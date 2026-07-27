@@ -90,9 +90,6 @@ npm start
 - [Настройки графики](GRAPHICS_SETTINGS.md)
 - [Динамические тени](DYNAMIC_SHADOWS.md)
 - [Инициализация и бюджет теней](SHADOWS_INIT_AND_BUDGET.md)
-- [Производительность roof cutaway](ROOF_CUTAWAY_PERFORMANCE.md)
-- [Инварианты крыши и теней](STABLE_ROOF_AND_SHADOWS.md)
-- [Освещение здания торговца](TRADER_BUILDING_LIGHTING.md)
 
 ### Планирование и история
 

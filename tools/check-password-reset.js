@@ -195,30 +195,29 @@ function resetTokenFromMessage(raw) {
   return { decoded, token: match[1] };
 }
 
-function reservePort() {
-  return new Promise((resolve, reject) => {
-    const probe = net.createServer();
-    probe.once('error', reject);
-    probe.listen(0, '127.0.0.1', () => {
-      const port = probe.address().port;
-      probe.close(error => error ? reject(error) : resolve(port));
-    });
-  });
-}
-
-async function waitForHealth(baseUrl, proc, logs) {
+async function waitForHealth(proc, logs) {
   const deadline = Date.now() + REQUEST_TIMEOUT_MS;
+  let baseUrl = '';
   while (Date.now() < deadline) {
     if (proc.exitCode !== null) {
       throw new Error(`Password reset test server exited early (${proc.exitCode}):\n${logs.join('')}`);
     }
-    try {
-      const response = await fetch(`${baseUrl}/health`, {
-        signal: AbortSignal.timeout(1000)
-      });
-      await response.arrayBuffer();
-      if (response.ok) return;
-    } catch (_) {}
+    if (!baseUrl) {
+      const match = logs.join('').match(/server listening on :(\d+)/);
+      const reportedPort = Number(match?.[1] || 0);
+      if (reportedPort > 0 && reportedPort <= 65535) {
+        baseUrl = `http://127.0.0.1:${reportedPort}`;
+      }
+    }
+    if (baseUrl) {
+      try {
+        const response = await fetch(`${baseUrl}/health`, {
+          signal: AbortSignal.timeout(1000)
+        });
+        await response.arrayBuffer();
+        if (response.ok) return baseUrl;
+      } catch (_) {}
+    }
     await new Promise(resolve => setTimeout(resolve, 50));
   }
   throw new Error(`Timed out waiting for password reset test server:\n${logs.join('')}`);
@@ -267,15 +266,13 @@ async function stopChild(proc) {
 async function assertPasswordResetLifecycle() {
   const smtp = await createSmtpCaptureServer();
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-password-reset-'));
-  const port = await reservePort();
-  const baseUrl = `http://127.0.0.1:${port}`;
   const logs = [];
   const proc = childProcess.fork(SERVER_FILE, [], {
     cwd: ROOT,
     execArgv: ['--require', CLOCK_PRELOAD],
     env: {
       ...process.env,
-      PORT: String(port),
+      PORT: '0',
       DATA_DIR: dataDir,
       NODE_ENV: 'test',
       DEV_API_MODE: 'disabled',
@@ -290,7 +287,7 @@ async function assertPasswordResetLifecycle() {
   proc.stderr.on('data', chunk => logs.push(String(chunk)));
 
   try {
-    await waitForHealth(baseUrl, proc, logs);
+    const baseUrl = await waitForHealth(proc, logs);
     const suffix = Math.random().toString(16).slice(2);
     const login = `reset_${suffix}`.slice(0, 28);
     const email = `${login}@example.test`;

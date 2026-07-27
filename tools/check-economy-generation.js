@@ -202,7 +202,14 @@ requireText('client crafting applies server inventory', functionBody(clientInven
 requireText('client crafting offline block', functionBody(clientInventory, 'craftRecipe'), 'if (!multiplayer?.socket?.connected)');
 requireText('server crafting output table', server, 'const SERVER_CRAFT_RECIPE_OUTPUTS = {');
 requireText('server crafting inventory transaction', server, 'function serverInventoryApplyCraftTransaction');
-requireText('server crafting uses inventory transaction', functionBody(server, 'recordWastelandCraftingStationFee'), 'serverInventoryApplyCraftTransaction(player.inventory || [], recipeId, fee, actor)');
+const serverCrafting = functionBody(server, 'recordWastelandCraftingStationFee');
+requireText('server crafting uses inventory transaction', serverCrafting, 'serverInventoryApplyCraftTransaction(player.inventory || [], recipeId, fee, actor)');
+requireText('server crafting uses authoritative room', serverCrafting, "rooms.get(String(player?.roomId || ''))");
+requireText('server crafting uses authoritative location', serverCrafting, 'normalizeLocationId(playerRoom.locationId');
+requireText('server crafting rejects forged location', serverCrafting, 'normalizeLocationId(requestedLocationId) !== locationId');
+requireText('server crafting uses authoritative fee', serverCrafting, 'const fee = requiredFee;');
+rejectText('server crafting client-selected location', serverCrafting, 'normalizeLocationId(data.locationId ||');
+requireText('server crafting blocks world-map requests', server, 'if (!p || !p.roomId || p.onGlobalMap || p.dead');
 requireText('server crafting station model guard', functionBody(server, 'serverCraftingObjectMatchesStation'), 'SERVER_CRAFT_STATION_MODELS[key]');
 requireText('client crafting station model guard', functionBody(clientInventory, 'craftingObjectMatchesStation'), 'staticModelFileName(modelUrl) === def.modelFile');
 requireText('client crafting stations render as static interactives', functionBody(clientWorldObjects, 'locationObjectIsEntity'), "entityKind === 'craftingstation'");

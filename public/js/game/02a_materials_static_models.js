@@ -269,13 +269,6 @@
     return material;
   }
 
-  function markDisposableTexture(texture) {
-    if (!texture) return texture;
-    texture.userData = texture.userData || {};
-    texture.userData.disposableWorldTexture = true;
-    return texture;
-  }
-
   function isSharedWorldGeometry(geometry) {
     return !!(geometry && ((sharedWorldGeometries && sharedWorldGeometries.has(geometry)) || geometry.userData?.sharedWorldGeometry));
   }

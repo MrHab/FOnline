@@ -675,40 +675,8 @@
     if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, dt);
   }
 
-  function addLootStack(list, id, qty = 1) {
-    if (!id || qty <= 0 || !ITEMS[id]) return;
-    const existing = list.find(x => x.id === id);
-    if (existing) existing.qty += qty;
-    else list.push({ id, qty });
-  }
-
-  function rollEnemyLoot(type) {
+  function rollEnemyLoot() {
     return [];
-    const loot = [];
-    const typeNameLower = String(type?.name || '').toLowerCase();
-    const cacheSense = talentLevel('cacheSense');
-    const scrounger = talentLevel('scrounger') + (hasStartTrait('scavengerStart') ? 1 : 0) + Math.floor(skillNorm('wanderer') * 3) + cacheSense;
-    const moneyBase = Math.max(1, type.money || 1);
-    addLootStack(loot, 'silver', moneyBase + Math.floor(rand() * (3 + scrounger * 2)));
-
-    const ammoChance = 0.38 + scrounger * 0.12;
-    if (rand() < ammoChance) addLootStack(loot, rand() < 0.62 ? 'ammo9' : 'ammo556', 2 + Math.floor(rand() * (5 + scrounger * 2)));
-    if (rand() < 0.18 + scrounger * 0.06) addLootStack(loot, 'stim', 1);
-    if (rand() < 0.12 + scrounger * 0.05) addLootStack(loot, 'medkit', 1);
-    if (rand() < 0.24 + scrounger * 0.05) addLootStack(loot, rand() < 0.5 ? 'water' : 'wood', 1 + Math.floor(rand() * 2));
-    if (rand() < 0.16 + scrounger * 0.05) addLootStack(loot, 'ore', 1 + Math.floor(rand() * 2));
-    if (type.name === 'Рейдер' && rand() < 0.14 + scrounger * 0.03) addLootStack(loot, rand() < 0.55 ? 'pistol' : 'knife', 1);
-    if (type.name === 'Рейдер' && rand() < 0.06 + scrounger * 0.02) addLootStack(loot, 'assaultRifle', 1);
-    if (type.name === 'Супермутант' && rand() < 0.22 + scrounger * 0.04) addLootStack(loot, 'trophy', 1);
-    if (type.name === 'Супермутант' && rand() < 0.08 + scrounger * 0.02) addLootStack(loot, 'combatArmor', 1);
-    if (typeNameLower.includes('скорпион') && rand() < 0.78 + scrounger * 0.03) addLootStack(loot, 'trophy', 1 + Math.floor(rand() * 2));
-    if (typeNameLower.includes('скорпион') && rand() < 0.16 + scrounger * 0.03) addLootStack(loot, 'antibiotics', 1);
-    if (typeNameLower.includes('мурав') && rand() < 0.62 + scrounger * 0.03) addLootStack(loot, 'trophy', 1);
-    if (typeNameLower.includes('геккон') && rand() < 0.66 + scrounger * 0.03) addLootStack(loot, 'trophy', 1);
-    if (typeNameLower.includes('огненный геккон') && rand() < 0.20 + scrounger * 0.03) addLootStack(loot, 'energyCell', 2 + Math.floor(rand() * 4));
-    if (cacheSense > 0 && rand() < 0.10 * cacheSense) addLootStack(loot, rand() < 0.5 ? 'repairKit' : 'antibiotics', 1);
-    if (cacheSense > 1 && rand() < 0.06) addLootStack(loot, 'trophy', 1);
-    return loot;
   }
 
   function spawnEnemy() {

@@ -4626,29 +4626,49 @@ function serverLimitItemsByCarry(p = {}, data = {}, entries = [], opts = {}) {
   const carry = sanitizeCarrySnapshot(p, data.carry || p.carry || null);
   let free = Math.max(0, carry.capacity - carry.weight);
   const out = [];
-  let blocked = false;
+  const remainingStackByItem = new Map();
+  let stackBlocked = false;
+  let weightBlocked = false;
   let addedWeight = 0;
   for (const entry of entries) {
-    if (!entry || !SERVER_ITEM_IDS.has(entry.id)) continue;
+    const id = serverBaseItemId(entry?.id || entry?.itemId || '');
+    if (!id || !SERVER_ITEM_IDS.has(id)) continue;
     const requestedQty = Math.max(0, Math.floor(Number(entry.qty || 0)));
     if (requestedQty <= 0) continue;
-    const weight = serverItemWeight(entry.id);
-    let qty = requestedQty;
-    if (weight > 0) qty = Math.min(requestedQty, Math.max(0, Math.floor((free + 0.0001) / Math.max(0.0001, weight))));
-    if (qty < requestedQty) blocked = true;
+    const stackFree = remainingStackByItem.has(id)
+      ? remainingStackByItem.get(id)
+      : Math.max(0, serverItemStackLimit(id) - serverInventoryQty(p.inventory || [], id));
+    let qty = Math.min(requestedQty, stackFree);
+    if (qty < requestedQty) stackBlocked = true;
+    const weight = serverItemWeight(id);
+    if (weight > 0) {
+      const weightQty = Math.max(0, Math.floor((free + 0.0001) / Math.max(0.0001, weight)));
+      if (weightQty < qty) weightBlocked = true;
+      qty = Math.min(qty, weightQty);
+    }
     if (qty <= 0) continue;
     const w = weight * qty;
     free = Math.max(0, free - w);
     addedWeight += w;
-    out.push({ id: entry.id, qty });
+    remainingStackByItem.set(id, Math.max(0, stackFree - qty));
+    out.push({ id, qty });
   }
+  const blocked = stackBlocked || weightBlocked;
   const nextCarry = addedWeight > 0 ? {
     ...carry,
     weight: Number(Math.min(carry.capacity + 250, carry.weight + addedWeight).toFixed(3)),
     updatedAt: Date.now()
   } : carry;
   if (opts.apply !== false) p.carry = nextCarry;
-  return { items: out, blocked, addedWeight, freeWeight: Number(free.toFixed(3)), carry: nextCarry };
+  return {
+    items: out,
+    blocked,
+    stackBlocked,
+    weightBlocked,
+    addedWeight,
+    freeWeight: Number(free.toFixed(3)),
+    carry: nextCarry
+  };
 }
 
 function serverValidateClientHasItem(data = {}, itemId = '', qty = 1) {
@@ -17894,7 +17914,10 @@ io.on('connection', (socket) => {
     const carryCheck = serverLimitItemsByCarry(p, data, availableTake);
     const taken = carryCheck.items;
     if (!taken.length) {
-      if (typeof ack === 'function') ack({ ok: false, error: carryCheck.blocked ? 'Нет свободного веса для добычи.' : 'В трупе нет выбранных предметов.', enemy: publicEnemy(enemy), carry: carryCheck.carry });
+      const error = carryCheck.stackBlocked
+        ? 'В рюкзаке достигнут предел стака для добычи.'
+        : (carryCheck.weightBlocked ? 'Нет свободного веса для добычи.' : 'В трупе нет выбранных предметов.');
+      if (typeof ack === 'function') ack({ ok: false, error, enemy: publicEnemy(enemy), carry: carryCheck.carry });
       return;
     }
     const takenMap = new Map();
@@ -18009,7 +18032,10 @@ io.on('connection', (socket) => {
     const stackQty = Math.max(1, Math.floor(Number(groundItem.qty || 1)));
     const carryCheck = serverLimitItemsByCarry(p, data, [{ id: groundItem.itemId, qty: stackQty }], { apply: false });
     if (!carryCheck.items.length || Number(carryCheck.items[0].qty || 0) < stackQty) {
-      if (typeof ack === 'function') ack({ ok: false, error: 'Нет свободного веса для предмета.', carry: carryCheck.carry });
+      const error = carryCheck.stackBlocked
+        ? 'В рюкзаке нет места в стаке для всего предмета.'
+        : 'Нет свободного веса для предмета.';
+      if (typeof ack === 'function') ack({ ok: false, error, carry: carryCheck.carry });
       return;
     }
     p.carry = carryCheck.carry;
@@ -18307,7 +18333,10 @@ io.on('connection', (socket) => {
     const taken = carryCheck.items;
     if (!taken.length) {
       const pub = publicWorldContainer(container);
-      if (typeof ack === 'function') ack({ ok: false, error: carryCheck.blocked ? 'Нет свободного веса для предметов.' : 'В контейнере нет выбранных предметов.', container: pub, empty: pub.empty, carry: carryCheck.carry });
+      const error = carryCheck.stackBlocked
+        ? 'В рюкзаке достигнут предел стака для выбранных предметов.'
+        : (carryCheck.weightBlocked ? 'Нет свободного веса для предметов.' : 'В контейнере нет выбранных предметов.');
+      if (typeof ack === 'function') ack({ ok: false, error, container: pub, empty: pub.empty, carry: carryCheck.carry });
       return;
     }
     const finalTaken = container.factionWarehouseSiteId

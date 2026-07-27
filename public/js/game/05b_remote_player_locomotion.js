@@ -158,10 +158,9 @@
     try {
       const keyboard = !!(keys && (keys['KeyW'] || keys['ArrowUp'] || keys['KeyS'] || keys['ArrowDown'] || keys['KeyA'] || keys['ArrowLeft'] || keys['KeyD'] || keys['ArrowRight']));
       const mobileStick = !!(typeof virtualMove !== 'undefined' && virtualMove && virtualMove.active && Math.hypot(Number(virtualMove.forward || 0), Number(virtualMove.right || 0)) > 0.04);
-      const pathMove = !!(player && Array.isArray(player.targetPath) && player.targetPath.length);
-      return keyboard || mobileStick || pathMove;
+      return keyboard || mobileStick;
     } catch (_) {
-      return !!(player && Array.isArray(player.targetPath) && player.targetPath.length);
+      return false;
     }
   }
 

@@ -957,9 +957,7 @@
     player.x = pos.x;
     player.z = pos.z;
     player.y = 0;
-    player.targetPath = [];
     player.attackTarget = null;
-    marker.visible = false;
     if (isMobileControlsEnabled && isMobileControlsEnabled()) {
       player.angle = Math.PI;
       pointerHasWorld = false;
@@ -985,7 +983,6 @@
     document.body.classList.remove('global-map-mode');
     document.body.classList.remove('game-ui-panel-open');
     if (playerGroup) playerGroup.visible = true;
-    if (marker) marker.visible = false;
   }
 
   function loadLocationImmediate(id, entryKey = 'spawn', options = {}) {

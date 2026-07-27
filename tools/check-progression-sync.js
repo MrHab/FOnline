@@ -574,7 +574,8 @@ if (!serverNaturalCreatureTextBody.includes('opts.equipmentProfile')
 const serverNaturalCreatureNormalizeBody = functionSlice(server, 'function normalizeServerNaturalCreatureState', '\nfunction ');
 if (!serverNaturalCreatureNormalizeBody.includes('enemy.canDialogue = false')
   || !serverNaturalCreatureNormalizeBody.includes('enemy.traderStock = []')
-  || !serverNaturalCreatureNormalizeBody.includes('enemy.caps = 0')
+  || !serverNaturalCreatureNormalizeBody.includes('delete enemy.caps')
+  || !serverNaturalCreatureNormalizeBody.includes('delete enemy.traderCaps')
   || !serverNaturalCreatureNormalizeBody.includes('stripServerCreatureInventoryRows')) {
   fail('Natural creatures must be forced to non-trading, unarmed inventory state');
 }
@@ -610,12 +611,13 @@ const publicEnemyBody = functionSlice(server, 'function publicEnemy', '\nfunctio
   }
 });
 if (!publicEnemyBody.includes('canDialogue: naturalCreature ? false')
-  || !publicEnemyBody.includes('traderCaps: naturalCreature ? 0')
+  || publicEnemyBody.includes('traderCaps:')
+  || !publicEnemyBody.includes('inventory: naturalCreature ? stripServerCreatureInventoryRows')
   || !publicEnemyBody.includes('traderStock: naturalCreature ? []')
   || !publicEnemyBody.includes('traderBuyInterests: naturalCreature ? []')
   || !publicEnemyBody.includes('traderProfile: naturalCreature ?')
   || !publicEnemyBody.includes('dialogueProfile: naturalCreature ?')) {
-  fail('Public enemy snapshots must strip dialogue, trade and caps from natural creatures before reaching the client');
+  fail('Public enemy snapshots must expose physical inventory without a shadow caps wallet and strip trade from natural creatures');
 }
 const clientNaturalCreatureBody = functionSlice(network, 'function isNaturalCreatureEnemy', '\n  function ');
 if (!clientNaturalCreatureBody.includes('data?.equipmentProfile') || !clientNaturalCreatureBody.includes('data?.lootProfile')) {

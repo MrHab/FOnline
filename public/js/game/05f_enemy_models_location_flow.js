@@ -688,6 +688,10 @@
     if (enemies.filter(e => !e.dead).length >= (Number.isFinite(Number(currentLocation.enemyCap)) ? Number(currentLocation.enemyCap) : 12)) return;
     const typeIndex = Math.floor(rand() * ENEMY_TYPES.length);
     const type = ENEMY_TYPES[typeIndex];
+    const visual = String(type.visual || '').toLowerCase();
+    const startingCaps = visual === 'raider' ? 5 + Math.floor(rand() * 3)
+      : visual === 'mutant' ? 14 + Math.floor(rand() * 3)
+        : 0;
     let tx = 0, tz = 0;
     for (let tries = 0; tries < 120; tries++) {
       tx = 2 + Math.floor(rand() * (MAP_W - 4));
@@ -714,6 +718,7 @@
       vz: 0,
       flash: 0,
       selected: false,
+      inventory: startingCaps > 0 ? [{ id: 'silver', qty: startingCaps }] : [],
       loot: rollEnemyLoot(type),
       typeIndex,
       path: [],
@@ -819,7 +824,6 @@
         traderBuyInterests: naturalCreature ? [] : (Array.isArray(e.traderBuyInterests) ? e.traderBuyInterests.map(id => String(id || '')).filter(Boolean) : []),
         traderMarket,
         inventory: traderInventory,
-        traderCaps: naturalCreature ? 0 : (Number.isFinite(Number(e.traderCaps)) ? Math.max(0, Math.floor(Number(e.traderCaps))) : undefined),
         dead: !!e.dead,
         attackTimer: e.attackTimer || 0,
         loot: (e.loot || []).map(x => ({ id: x.id, qty: x.qty })),
@@ -885,8 +889,9 @@
           priceMultiplier: Number(saved.traderMarket.priceMultiplier || 1),
           quantityMultiplier: Number(saved.traderMarket.quantityMultiplier || 1)
         },
-        inventory: naturalCreature ? [] : (typeof normalizeNpcInventoryRows === 'function' ? normalizeNpcInventoryRows(saved.inventory || []) : (Array.isArray(saved.inventory) ? saved.inventory.slice() : [])),
-        traderCaps: naturalCreature ? 0 : (Number.isFinite(Number(saved.traderCaps)) ? Math.max(0, Math.floor(Number(saved.traderCaps))) : undefined),
+        inventory: naturalCreature ? [] : (typeof normalizeNpcInventoryWithLegacyCaps === 'function'
+          ? normalizeNpcInventoryWithLegacyCaps(saved.inventory || [], saved.traderCaps)
+          : (Array.isArray(saved.inventory) ? saved.inventory.slice() : [])),
         dead: !!saved.dead,
         attackTimer: saved.attackTimer || 0,
         wanderTimer: 0,

@@ -128,7 +128,7 @@ function rejectText(label, source, needle) {
 requireText('server economy rules', server, 'randomLootTables: false');
 requireText('server economy rules', server, 'progressionLootBonus: false');
 requireText('server economy rules', server, 'dailyContainerRestock: false');
-requireText('server enemy loot', functionBody(server, 'rollEnemyLootServer'), 'if (!ECONOMY_RULES.randomLootTables) return [];');
+requireText('server enemy starting inventory', functionBody(server, 'rollEnemyStartingInventoryServer'), 'if (!ECONOMY_RULES.randomLootTables) return [];');
 requireText('server progression loot', functionBody(server, 'addServerProgressionLootBonus'), 'if (!ECONOMY_RULES.progressionLootBonus) return false;');
 requireText('server container restock', functionBody(server, 'restockRoomWorldContainersIfNeeded'), 'if (!ECONOMY_RULES.dailyContainerRestock && !force) return false;');
 requireText('server inventory limits', server, 'SERVER_ITEM_STACK_LIMITS');

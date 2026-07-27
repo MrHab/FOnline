@@ -24,6 +24,7 @@ const {
   transformedModelBlockers
 } = require('./src/server/model-colliders');
 const {
+  NPC_INVENTORY_VERSION,
   buildFactionSupplyCatalog,
   chooseFactionEquipment,
   buildFactionPersonalInventory,
@@ -92,7 +93,6 @@ const MAP_SIZE = 140;
 const PLAYER_SPEED = 7.0;
 const PLAYER_COLLISION_RADIUS = 0.48;
 const LEGACY_INPUT_DEADMAN_MS = Math.max(500, Number(process.env.LEGACY_INPUT_DEADMAN_MS || 1250));
-const NPC_INVENTORY_VERSION = 2;
 const SESSION_LOCK_MS = Number(process.env.SESSION_LOCK_MS || 120000);
 const CONFIGURED_EPHEMERAL_ROOM_IDLE_TTL_MS = Number(process.env.EPHEMERAL_ROOM_IDLE_TTL_MS);
 const EPHEMERAL_ROOM_IDLE_TTL_MS = resolveEphemeralRoomIdleTtlMs({
@@ -2658,21 +2658,21 @@ const SERVER_ENEMY_TYPES = [
   // v7.36: у каждого типа свои чувства. Значения в world units: TILE=2,
   // поэтому visionRange 10 = примерно 5 клеток. Игрок с обычной
   // внимательностью видит немного дальше, чем большинство мобов.
-  { name: 'Рейдер', lootTier: 'raider', hp: 55, atk: 9, speed: 2.45, xp: 25, money: 5, scale: 1.0,
+  { name: 'Рейдер', lootTier: 'raider', hp: 55, atk: 9, speed: 2.45, xp: 25, startingCaps: 5, scale: 1.0,
     visionRange: 10.0, hearingShotRange: 12.5, hearingHarvestRange: 5.5, memoryMs: 3400, investigateMs: 4200, senseIntervalMs: 340, noiseReaction: 0.72, noiseScatter: 1.2, separationRadius: 1.15 },
-  { name: 'Гуль', lootTier: 'ghoul', hp: 42, atk: 7, speed: 2.85, xp: 18, money: 2, scale: 0.92,
+  { name: 'Гуль', lootTier: 'ghoul', hp: 42, atk: 7, speed: 2.85, xp: 18, scale: 0.92,
     visionRange: 8.2, hearingShotRange: 10.5, hearingHarvestRange: 4.5, memoryMs: 2600, investigateMs: 3300, senseIntervalMs: 410, noiseReaction: 0.56, noiseScatter: 1.6, separationRadius: 1.05 },
-  { name: 'Супермутант', lootTier: 'superMutant', hp: 120, atk: 18, speed: 1.75, xp: 70, money: 14, scale: 1.32,
+  { name: 'Супермутант', lootTier: 'superMutant', hp: 120, atk: 18, speed: 1.75, xp: 70, startingCaps: 14, scale: 1.32,
     visionRange: 8.8, hearingShotRange: 14.0, hearingHarvestRange: 7.0, memoryMs: 4700, investigateMs: 5200, senseIntervalMs: 430, noiseReaction: 0.66, noiseScatter: 1.35, separationRadius: 1.45 },
-  { name: 'Пепельный волк', lootTier: 'ashWolf', hp: 36, atk: 8, speed: 3.15, xp: 20, money: 1, scale: 0.82,
+  { name: 'Пепельный волк', lootTier: 'ashWolf', hp: 36, atk: 8, speed: 3.15, xp: 20, scale: 0.82,
     visionRange: 11.2, hearingShotRange: 13.0, hearingHarvestRange: 6.0, memoryMs: 3200, investigateMs: 3900, senseIntervalMs: 260, noiseReaction: 0.68, noiseScatter: 1.75, separationRadius: 1.0 },
-  { name: 'Радскорпион', lootTier: 'radScorpion', hp: 76, atk: 14, speed: 1.9, xp: 36, money: 2, scale: 1.05,
+  { name: 'Радскорпион', lootTier: 'radScorpion', hp: 76, atk: 14, speed: 1.9, xp: 36, scale: 1.05,
     visionRange: 9.4, hearingShotRange: 10.8, hearingHarvestRange: 6.8, memoryMs: 4100, investigateMs: 4700, senseIntervalMs: 340, noiseReaction: 0.62, noiseScatter: 1.15, separationRadius: 1.2 },
-  { name: 'Большой мутировавший муравей', lootTier: 'mutantAnt', hp: 52, atk: 10, speed: 2.55, xp: 24, money: 1, scale: 0.9,
+  { name: 'Большой мутировавший муравей', lootTier: 'mutantAnt', hp: 52, atk: 10, speed: 2.55, xp: 24, scale: 0.9,
     visionRange: 8.8, hearingShotRange: 12.2, hearingHarvestRange: 7.2, memoryMs: 3000, investigateMs: 3600, senseIntervalMs: 290, noiseReaction: 0.7, noiseScatter: 1.55, separationRadius: 0.82 },
-  { name: 'Геккон пустоши', lootTier: 'gecko', hp: 46, atk: 9, speed: 2.7, xp: 22, money: 1, scale: 0.92,
+  { name: 'Геккон пустоши', lootTier: 'gecko', hp: 46, atk: 9, speed: 2.7, xp: 22, scale: 0.92,
     visionRange: 10.6, hearingShotRange: 11.8, hearingHarvestRange: 5.6, memoryMs: 3300, investigateMs: 3900, senseIntervalMs: 270, noiseReaction: 0.66, noiseScatter: 1.65, separationRadius: 0.92 },
-  { name: 'Огненный геккон', lootTier: 'fireGecko', hp: 62, atk: 12, speed: 2.42, xp: 34, money: 2, scale: 1.02,
+  { name: 'Огненный геккон', lootTier: 'fireGecko', hp: 62, atk: 12, speed: 2.42, xp: 34, scale: 1.02,
     visionRange: 10.2, hearingShotRange: 12.4, hearingHarvestRange: 6.0, memoryMs: 3800, investigateMs: 4300, senseIntervalMs: 300, noiseReaction: 0.68, noiseScatter: 1.45, separationRadius: 1.0 }
 ];
 const SERVER_ENEMY_MODEL_KEY_BY_VISUAL = {
@@ -2943,7 +2943,7 @@ const SERVER_ENEMY_VARIANTS = [
     hpMul: 1.24,
     atkMul: 1.08,
     xpMul: 1.35,
-    moneyMul: 1.25,
+    capsMul: 1.25,
     scaleMul: 1.04,
     lootBonus: [
       { id: 'silver', min: 2, max: 6, chance: 0.85 },
@@ -2959,7 +2959,7 @@ const SERVER_ENEMY_VARIANTS = [
     atkMul: 1.06,
     speedMul: 1.20,
     xpMul: 1.28,
-    moneyMul: 1.15,
+    capsMul: 1.15,
     scaleMul: 0.98,
     senseIntervalMul: 0.86,
     lootBonus: [
@@ -2975,7 +2975,7 @@ const SERVER_ENEMY_VARIANTS = [
     atkMul: 1.22,
     speedMul: 1.08,
     xpMul: 2.05,
-    moneyMul: 1.75,
+    capsMul: 1.75,
     scaleMul: 1.13,
     memoryMul: 1.16,
     lootBonus: [
@@ -4226,8 +4226,8 @@ function normalizeServerNaturalCreatureState(enemy = {}) {
   enemy.tradeProfile = '';
   enemy.dialogueProfile = '';
   enemy.traderQuests = [];
-  enemy.caps = 0;
-  enemy.traderCaps = 0;
+  delete enemy.caps;
+  delete enemy.traderCaps;
   enemy.inventory = stripServerCreatureInventoryRows(enemy.inventory || enemy.loot || []);
   enemy.loot = stripServerCreatureInventoryRows(enemy.loot || enemy.inventory || []);
   return enemy;
@@ -4278,8 +4278,8 @@ function normalizePersistedNaturalCreatureEnemy(enemy = {}) {
   enemy.tradeProfile = '';
   enemy.dialogueProfile = '';
   enemy.traderQuests = [];
-  enemy.caps = 0;
-  enemy.traderCaps = 0;
+  delete enemy.caps;
+  delete enemy.traderCaps;
   enemy.inventory = cleanInventory;
   enemy.loot = cleanLoot;
   return JSON.stringify(oldEquipment) !== JSON.stringify(enemy.equipment)
@@ -9053,7 +9053,7 @@ function applyServerEnemyVariant(type = {}, variant = null) {
   const atk = Math.max(1, Math.round(Number(type.atk || 1) * enemyVariantNumber(variant.atkMul)));
   const speed = Math.max(0.25, Number((Number(type.speed || 1) * enemyVariantNumber(variant.speedMul)).toFixed(3)));
   const xp = Math.max(1, Math.round(Number(type.xp || 1) * enemyVariantNumber(variant.xpMul)));
-  const money = Math.max(1, Math.round(Number(type.money || 1) * enemyVariantNumber(variant.moneyMul)));
+  const startingCaps = Math.max(0, Math.round(Number(type.startingCaps || 0) * enemyVariantNumber(variant.capsMul)));
   const scale = Math.max(0.5, Number((Number(type.scale || 1) * enemyVariantNumber(variant.scaleMul)).toFixed(3)));
   const out = {
     ...type,
@@ -9065,7 +9065,7 @@ function applyServerEnemyVariant(type = {}, variant = null) {
     atk,
     speed,
     xp,
-    money,
+    startingCaps,
     scale,
     lootBonus: Array.isArray(variant.lootBonus) ? variant.lootBonus : []
   };
@@ -9130,11 +9130,12 @@ function rollContainerLootTable(rng, tier) {
   return rollServerLootTable(rng, table);
 }
 
-function rollEnemyLootServer(room, type) {
+function rollEnemyStartingInventoryServer(room, type) {
   if (!ECONOMY_RULES.randomLootTables) return [];
   const rng = room.rng || Math.random;
   const loot = [];
-  addLootStack(loot, 'silver', Math.max(1, type.money || 1) + Math.floor(rng() * 3));
+  const startingCaps = Math.max(0, Math.floor(Number(type.startingCaps || 0)));
+  if (startingCaps > 0) addLootStack(loot, 'silver', startingCaps + Math.floor(rng() * 3));
   for (const entry of rollServerLootTable(rng, SERVER_ENEMY_LOOT_TABLES[normalizeEnemyLootTier(type)] || SERVER_ENEMY_LOOT_TABLES.basic)) {
     addLootStack(loot, entry.id, entry.qty);
   }
@@ -12289,7 +12290,6 @@ function publicEnemy(e) {
     speechMs: speechText ? Math.max(0, Math.round(Number(e.npcSpeechUntil || 0) - now)) : 0,
     equipment: naturalCreature ? serverNaturalCreatureEquipment() : serverNpcEquipmentSnapshot(e.equipment || { weapon: e.weapon || 'fists' }),
     inventory: naturalCreature ? stripServerCreatureInventoryRows(e.inventory || []) : sanitizeServerInventorySnapshot(e.inventory || [], { includeEquipped: true }),
-    traderCaps: naturalCreature ? 0 : serverNpcInventoryCaps(e),
     traderId: naturalCreature ? '' : String(e.traderId || '').slice(0, 64),
     traderProfile: naturalCreature ? '' : String(e.traderProfile || '').slice(0, 64),
     dialogueProfile: naturalCreature ? '' : String(e.dialogueProfile || '').slice(0, 64),
@@ -12877,7 +12877,7 @@ function spawnServerEnemy(room, opts = {}) {
     : sanitizeServerNpcEquipment(factionEquipment, rolledEquipment);
   let enemyLoot = Array.isArray(opts.loot)
     ? opts.loot.map(x => ({ id: String(x.id || '').slice(0, 64), qty: clamp(Number(x.qty || 1), 1, 9999) }))
-    : (naturalCreature ? rollServerNaturalCreatureLoot(room, type, opts) : rollEnemyLootServer(room, type));
+    : (naturalCreature ? rollServerNaturalCreatureLoot(room, type, opts) : rollEnemyStartingInventoryServer(room, type));
   if (naturalCreature) enemyLoot = stripServerCreatureInventoryRows(enemyLoot);
   addServerNpcEquipmentLoot(enemyLoot, equipment, !naturalCreature && opts.dropEquipment !== false);
   const hasPersistedInventory = Array.isArray(opts.inventory);
@@ -12977,13 +12977,14 @@ function spawnServerEnemy(room, opts = {}) {
     inventory: enemyInventory,
     inventoryVersion: naturalCreature ? 0 : NPC_INVENTORY_VERSION,
     inventoryUpdatedAt: Date.now(),
-    loot: enemyLoot,
+    loot: naturalCreature ? enemyLoot : [],
     looted: false,
     diedAt: 0,
     lastLootInspectAt: 0,
     corpseLootHoldUntil: 0,
     corpseLootHolderId: ''
   };
+  delete enemy.startingCaps;
   normalizeServerNaturalCreatureState(enemy);
   ensureServerFriendlyNpcSocialState(enemy);
   room.enemies.set(enemy.id, enemy);
@@ -13318,7 +13319,6 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
       tradeProfile: actor.tradeProfile || actor.traderProfile,
       traderStock: Array.isArray(actor.traderStock) ? actor.traderStock : undefined,
       traderBuyInterests: Array.isArray(actor.traderBuyInterests) ? actor.traderBuyInterests : undefined,
-      caps: actor.caps,
       inventory: Array.isArray(actor.inventory) ? actor.inventory.map(row => ({ ...row })) : undefined,
       inventoryVersion: Number(actor.inventoryVersion || 0),
       loot: Array.isArray(actor.loot) ? actor.loot.map(row => ({ ...row })) : []
@@ -13430,7 +13430,6 @@ function setupWorldPartyEncounterRoom(room) {
       tradeProfile: actor.tradeProfile || actor.traderProfile,
       traderStock: Array.isArray(actor.traderStock) ? actor.traderStock : undefined,
       traderBuyInterests: Array.isArray(actor.traderBuyInterests) ? actor.traderBuyInterests : undefined,
-      caps: actor.caps,
       inventory: Array.isArray(actor.inventory) ? actor.inventory.map(row => ({ ...row })) : undefined,
       inventoryVersion: Number(actor.inventoryVersion || 0),
       loot: Array.isArray(actor.loot) ? actor.loot.map(row => ({ ...row })) : []

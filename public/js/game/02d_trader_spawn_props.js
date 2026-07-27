@@ -31,6 +31,9 @@
     const traderQuests = Array.isArray(traderProfile.quests)
       ? traderProfile.quests.map(id => String(id || '').trim()).filter(Boolean)
       : [];
+    const caps = Number.isFinite(Number(traderProfile.caps))
+      ? Math.max(0, Math.floor(Number(traderProfile.caps)))
+      : 720;
     traderNpc = {
       id: traderId,
       x: pos.x,
@@ -41,8 +44,7 @@
       traderId,
       dialogueProfile,
       traderQuests,
-      traderCaps: undefined,
-      inventory: []
+      inventory: caps > 0 ? [{ id: 'silver', qty: caps }] : []
     };
     if (profiledStock) traderNpc.traderStock = profiledStock;
     if (Array.isArray(traderProfile.buyInterests)) {
@@ -393,5 +395,4 @@
     [12, 18, 24, 29].forEach(tz => place(5, tz, Math.PI / 2, tz === 18 ? 7.6 : 6.8));
     [12, 18, 24, 29].forEach(tz => place(33, tz, Math.PI / 2, tz === 18 ? 7.6 : 6.8));
   }
-
 

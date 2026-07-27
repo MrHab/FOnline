@@ -12,7 +12,7 @@ const { io: createSocketClient } = require('socket.io-client');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
 const MAX_WAIT_MS = Math.max(3000, Number(process.env.COMBAT_RUNTIME_WAIT_MS || 10000));
-const PORT = Number(process.env.COMBAT_RUNTIME_PORT || (37000 + Math.floor(Math.random() * 1500)));
+const REQUESTED_PORT = Number(process.env.COMBAT_RUNTIME_PORT || 0);
 const TMP_ROOT = path.resolve(process.env.COMBAT_RUNTIME_TMPDIR || os.tmpdir());
 const TMP_PREFIX = 'realm-of-ashes-combat-runtime-';
 
@@ -21,6 +21,7 @@ const DATA_DIR = fs.mkdtempSync(path.join(TMP_ROOT, TMP_PREFIX));
 
 let activeServer = null;
 let activeServerLogs = [];
+let activePort = REQUESTED_PORT;
 let cleanedUp = false;
 let attackSequence = 0;
 
@@ -80,7 +81,7 @@ function request(pathname, options = {}) {
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
     const req = http.request({
       hostname: '127.0.0.1',
-      port: PORT,
+      port: activePort,
       path: pathname,
       method: options.method || 'GET',
       headers,
@@ -116,14 +117,21 @@ async function waitForHealth(proc) {
     if (proc.exitCode !== null) {
       throw new Error(`Server exited before /health was ready\n${activeServerLogs.join('').slice(-4000)}`);
     }
-    try {
-      const response = await request('/health', { timeoutMs: 800 });
-      if (response.statusCode === 200) {
-        const health = parseJsonResponse(response, '/health');
-        if (health.ok) return health;
+    if (!activePort) {
+      const match = activeServerLogs.join('').match(/server listening on :(\d+)/);
+      const reportedPort = Number(match?.[1] || 0);
+      if (reportedPort > 0 && reportedPort <= 65535) activePort = reportedPort;
+    }
+    if (activePort) {
+      try {
+        const response = await request('/health', { timeoutMs: 800 });
+        if (response.statusCode === 200) {
+          const health = parseJsonResponse(response, '/health');
+          if (health.ok) return health;
+        }
+      } catch (_) {
+        // Startup is still in progress.
       }
-    } catch (_) {
-      // Startup is still in progress.
     }
     await delay(150);
   }
@@ -133,11 +141,12 @@ async function waitForHealth(proc) {
 async function startServer() {
   invariant(!activeServer, 'Test attempted to start two server processes');
   activeServerLogs = [];
+  activePort = REQUESTED_PORT;
   const proc = childProcess.spawn(process.execPath, [SERVER_FILE], {
     cwd: PROJECT_ROOT,
     env: {
       ...process.env,
-      PORT: String(PORT),
+      PORT: String(REQUESTED_PORT),
       DATA_DIR,
       SESSION_LOCK_MS: '500',
       WASTELAND_SIM_SAVE_INTERVAL_MS: '3000'
@@ -171,7 +180,7 @@ async function stopServer() {
 
 function connectSocketClient() {
   return new Promise((resolve, reject) => {
-    const socket = createSocketClient(`http://127.0.0.1:${PORT}`, {
+    const socket = createSocketClient(`http://127.0.0.1:${activePort}`, {
       transports: ['websocket'],
       forceNew: true,
       reconnection: false,

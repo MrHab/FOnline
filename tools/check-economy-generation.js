@@ -191,7 +191,17 @@ if (weightLimited.items.length !== 1
   errors.push('server loot limiter no longer enforces carry weight while applying stack limits');
 }
 requireText('client base storage restock', functionBody(clientTradeStorage, 'restockBaseStorage'), 'return false;');
-requireText('npc quest caps', functionBody(clientTradeStorage, 'awardNpcQuest'), 'const paidMoney = payNpcQuestCaps(money);');
+const serverNpcQuestAction = functionBody(server, 'performServerNpcQuestAction');
+requireText('server npc quest caps', serverNpcQuestAction, 'const paidSilver = Math.min(requestedSilver, serverNpcInventoryCaps(actor));');
+requireText('server npc quest caps', serverNpcQuestAction, 'serverNpcSetInventoryCaps(actor, serverNpcInventoryCaps(actor) - paidSilver);');
+const clientNpcQuestNegotiation = functionBody(clientTradeStorage, 'attemptTraderDialogueCheck');
+requireText('client npc quest negotiation', clientNpcQuestNegotiation, 'return submitServerNpcQuestAction');
+rejectText('client npc quest negotiation', clientNpcQuestNegotiation, 'Math.random()');
+const clientNpcQuestAdvance = functionBody(clientTradeStorage, 'advanceTraderQuestAction');
+requireText('client npc quest completion', clientNpcQuestAdvance, 'return submitServerNpcQuestAction');
+rejectText('client npc quest completion', clientNpcQuestAdvance, 'removeQuestItems');
+rejectText('client npc quest completion', clientNpcQuestAdvance, 'awardNpcQuest');
+rejectText('client npc quest definitions', functionBody(clientTradeStorage, 'normalizeNpcQuestDefinitions'), 'reward: {');
 const legacyWorldTaskReward = normalizeWorldTask({ id: 'legacy_reward', reward: { silver: 37.9 } }, 0);
 if (legacyWorldTaskReward?.reward?.caps !== 37) {
   errors.push('world task rewards: legacy silver reward is not normalized into integer caps');
@@ -268,7 +278,8 @@ requireText('global map resource labels', functionBody(clientGlobalMap, 'updateG
 rejectText('client startup inventory', clientInventory, 'inventory.set(id, start)');
 rejectText('client startup inventory', clientInventory, 'ammo9: 42');
 rejectText('client startup inventory', clientInventory, 'rocketAmmo: 6');
-rejectText('npc quest caps', functionBody(clientTradeStorage, 'awardNpcQuest'), "addItem('silver', money");
+rejectText('client npc quest rewards', clientTradeStorage, 'function awardNpcQuest');
+rejectText('client npc quest rewards', clientTradeStorage, 'function payNpcQuestCaps');
 rejectText('world npc ammo overproduction', functionBody(wastelandSim, 'produceAtSettlements'), '24 * cycles');
 rejectText('world artificial time cap', functionBody(wastelandSim, 'tick'), 'cappedHours');
 rejectText('client crafting local resource removal', functionBody(clientInventory, 'craftRecipe'), 'Object.entries(recipe.cost).forEach(([id, qty]) => removeItem(id, qty))');

@@ -49,13 +49,6 @@
           labels: quest.requirements && typeof quest.requirements.labels === 'object' ? { ...quest.requirements.labels } : {},
           event: String(quest.requirements?.event || '')
         },
-        reward: {
-          xp: Math.max(0, Math.floor(Number(quest.reward?.xp || 0))),
-          silver: Math.max(0, Math.floor(Number(quest.reward?.silver || 0))),
-          items: Array.isArray(quest.reward?.items)
-            ? quest.reward.items.map(row => ({ id: String(row?.id || ''), qty: Math.max(1, Math.floor(Number(row?.qty || 1))) })).filter(row => row.id)
-            : []
-        },
         panel: quest.panel && typeof quest.panel === 'object' ? { ...quest.panel } : {},
         unlocks: Array.isArray(quest.unlocks) ? quest.unlocks.map(String).filter(Boolean) : []
       };
@@ -70,16 +63,6 @@
   function questRequirementItems(questKey = '', fallback = {}) {
     const items = questDef(questKey)?.requirements?.items;
     return items && Object.keys(items).length ? { ...items } : { ...fallback };
-  }
-
-  function questRewardData(questKey = '', fallback = {}) {
-    const reward = questDef(questKey)?.reward;
-    if (!reward) return { ...fallback, items: [] };
-    return {
-      xp: Number.isFinite(Number(reward.xp)) ? Number(reward.xp) : Number(fallback.xp || 0),
-      silver: Number.isFinite(Number(reward.silver)) ? Number(reward.silver) : Number(fallback.silver || 0),
-      items: Array.isArray(reward.items) ? reward.items.map(row => ({ ...row })) : []
-    };
   }
 
   function questTitle(questKey = '', fallback = 'Поручение') {

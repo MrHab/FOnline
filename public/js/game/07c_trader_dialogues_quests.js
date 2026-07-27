@@ -333,61 +333,8 @@
     npcQuestState.relayCalibrationScienceTried = !!npcQuestState.relayCalibrationScienceTried;
   }
 
-  function questRewardMultiplier(questKey = '') {
-    let mul = 1 + skillNorm('speech') * 0.18 + Math.max(0, statValue('cha') - 5) * 0.02 + talentLevel('diplomat') * 0.08;
-    if (questKey === 'klimSupplies' && npcQuestState.klimSuppliesNegotiated) mul += 0.25;
-    if (questKey === 'klimTerminal' && npcQuestState.klimTerminalNegotiated) mul += 0.30;
-    if (questKey === 'scrapParts' && npcQuestState.scrapPartsNegotiated) mul += 0.22;
-    if (questKey === 'relayCalibration' && npcQuestState.relayCalibrationNegotiated) mul += 0.28;
-    return mul;
-  }
-
   function hasQuestItems(cost = {}) {
     return Object.entries(cost).every(([id, qty]) => (inventory.get(id) || 0) >= qty);
-  }
-
-  function removeQuestItems(cost = {}) {
-    for (const [id, qty] of Object.entries(cost)) {
-      if (!removeItem(id, qty)) return false;
-    }
-    return true;
-  }
-
-  function questRewardPayer() {
-    if (activeTraderActor && typeof activeTraderActor === 'object') return activeTraderActor;
-    if (typeof activeTraderOrNearby === 'function') return activeTraderOrNearby(4.2);
-    return null;
-  }
-
-  function payNpcQuestCaps(amount = 0) {
-    const requested = Math.max(0, Math.floor(Number(amount || 0)));
-    if (requested <= 0) return 0;
-    const payer = questRewardPayer();
-    if (!payer || typeof npcInventoryCapsOrNull !== 'function' || typeof setNpcInventoryCaps !== 'function') return 0;
-    const physicalCaps = npcInventoryCapsOrNull(payer);
-    const available = physicalCaps !== null
-      ? physicalCaps
-      : Math.max(0, Math.floor(Number(payer.traderCaps || payer.caps || 0)));
-    const paid = Math.min(requested, available);
-    if (paid <= 0) return 0;
-    setNpcInventoryCaps(payer, available - paid);
-    addItem('silver', paid, { force: true });
-    return paid;
-  }
-
-  function awardNpcQuest({ xp = 0, silver = 0, items = [], label = 'Поручение выполнено', questKey = '' } = {}) {
-    const rewardMul = questRewardMultiplier(questKey);
-    const money = Math.max(0, Math.round(Number(silver || 0) * rewardMul));
-    const paidMoney = payNpcQuestCaps(money);
-    items.forEach(entry => { if (entry?.id && entry.qty > 0) addItem(entry.id, entry.qty, { force: true }); });
-    const xpGain = Math.max(0, Math.round(Number(xp || 0) * rewardMul));
-    if (xpGain > 0) {
-      player.xp += xpGain;
-      createFloatingText(player.x, player.z, '+' + xpGain + ' XP', '#e4c56b');
-      if (typeof checkLevelUp === 'function') checkLevelUp();
-    }
-    addLog(`${label}: +${xpGain} XP, +${paidMoney} крышек.`, null, 'level');
-    queueSave(true);
   }
 
   function npcQuestPanelText() {
@@ -538,63 +485,6 @@
       addLog(`Проверка ${kind === 'science' ? 'науки' : 'речи'} ${ack.success ? 'успешна' : 'провалена'} (${chance}%).`, null, 'quest');
       renderTraderDialogue(ack.success ? 'Условия улучшены. За выполненную работу заплатят больше.' : 'Условия награды остались прежними.');
     });
-    if (targetQuest === 'scrapParts') {
-      if (npcQuestState.scrapPartsSpeechTried || npcQuestState.scrapPartsNegotiated) return renderTraderDialogue('Грач щурится: "С ценой по деталям уже договорились."');
-      const chance = traderSpeechCheckChance();
-      npcQuestState.scrapPartsSpeechTried = true;
-      if (Math.random() < chance) {
-        npcQuestState.scrapPartsNegotiated = true;
-        addLog(`Проверка речи успешна (${Math.round(chance * 100)}%). Грач добавит сверху за срочный ремонт.`, null, 'quest');
-        renderTraderDialogue('"Ладно, язык у тебя не хуже ключа. За полный комплект добавлю патронов и крышек."');
-      } else {
-        addLog(`Проверка речи провалена (${Math.round(chance * 100)}%).`, null, 'quest');
-        renderTraderDialogue('"Красиво крутишь словами, но металл дороже обещаний. Плата обычная."');
-      }
-      queueSave(true);
-      return;
-    }
-    if (targetQuest === 'relayCalibration') {
-      if (npcQuestState.relayCalibrationScienceTried || npcQuestState.relayCalibrationNegotiated) return renderTraderDialogue('Рада сухо отвечает: "Техническую часть мы уже обсудили."');
-      const chance = traderScienceCheckChance();
-      npcQuestState.relayCalibrationScienceTried = true;
-      if (Math.random() < chance) {
-        npcQuestState.relayCalibrationNegotiated = true;
-        addLog(`Проверка науки успешна (${Math.round(chance * 100)}%). Рада пообещала повышенную плату за калибровку.`, null, 'quest');
-        renderTraderDialogue('"Хорошо. Понимаешь нагрузку на контур — значит принесёшь то, что нужно. За точность доплачу."');
-      } else {
-        addLog(`Проверка науки провалена (${Math.round(chance * 100)}%).`, null, 'quest');
-        renderTraderDialogue('"Не вижу расчётов. Принеси расходники, а про доплату поговорим после сигнала."');
-      }
-      queueSave(true);
-      return;
-    }
-    if (kind === 'science') {
-      if (npcQuestState.klimTerminalScienceTried || npcQuestState.klimTerminalNegotiated) return renderTraderDialogue('Клим хмыкает: "Мы это уже обсудили."');
-      const chance = traderScienceCheckChance();
-      npcQuestState.klimTerminalScienceTried = true;
-      if (Math.random() < chance) {
-        npcQuestState.klimTerminalNegotiated = true;
-        addLog(`Проверка науки успешна (${Math.round(chance * 100)}%). Клим обещал повышенную плату за данные.`, null, 'quest');
-        renderTraderDialogue('"Ладно. Раз понимаешь, что там внутри, получишь больше за чистую работу."');
-      } else {
-        addLog(`Проверка науки провалена (${Math.round(chance * 100)}%).`, null, 'quest');
-        renderTraderDialogue('"Звучит красиво, но платить за слова я не буду. Принеси данные — поговорим."');
-      }
-      queueSave(true);
-      return;
-    }
-    if (npcQuestState.klimSuppliesSpeechTried || npcQuestState.klimSuppliesNegotiated) return renderTraderDialogue('Клим качает головой: "С ценой уже решили."');
-    const chance = traderSpeechCheckChance();
-    npcQuestState.klimSuppliesSpeechTried = true;
-    if (Math.random() < chance) {
-      npcQuestState.klimSuppliesNegotiated = true;
-      addLog(`Проверка речи успешна (${Math.round(chance * 100)}%). Награда за припасы повышена.`, null, 'quest');
-      renderTraderDialogue('"Хорошо сказано. За риск добавлю сверху, но припасы нужны сегодня."');
-    } else {
-      addLog(`Проверка речи провалена (${Math.round(chance * 100)}%).`, null, 'quest');
-      renderTraderDialogue('"Красиво просишь, но крышки из воздуха не делаются. Стандартная плата."');
-    }
-    queueSave(true);
   }
 
   function renderTraderDialogue(lineOverride = '') {
@@ -910,112 +800,6 @@
       setReadout(`${trader.name}: задание выполнено.`);
       renderTraderDialogue();
     });
-    if (profileId === 'scrap' && quests.includes('scrapParts')) {
-      const partsCost = { ore: 6, wood: 2, repairKit: 1 };
-      if (npcQuestState.scrapParts !== 'done') {
-        if (npcQuestState.scrapParts !== 'active') {
-          npcQuestState.scrapParts = 'active';
-          addLog(`${trader.name}: принеси 6 руды, 2 древесины и 1 ремкомплект. Свалочный пресс надо поднять до заката.`, null, 'quest');
-          setReadout('Поручение принято: собрать детали для свалочного пресса.');
-          updateNpcQuestPanel();
-          renderTraderWindow();
-          queueSave(true);
-          return true;
-        }
-        if (!hasQuestItems(partsCost)) {
-          setReadout(`Нужно: руда ${inventory.get('ore') || 0}/6, древесина ${inventory.get('wood') || 0}/2, ремкомплект ${inventory.get('repairKit') || 0}/1.`);
-          updateNpcQuestPanel();
-          return true;
-        }
-        if (!removeQuestItems(partsCost)) return false;
-        npcQuestState.scrapParts = 'done';
-        awardNpcQuest({ ...questRewardData('scrapParts', { xp: 85, silver: 70, items: [] }), label: 'Детали для свалочного пресса', questKey: 'scrapParts' });
-        setReadout(`${trader.name}: пресс снова работает. Держи плату и патроны.`);
-        updateNpcQuestPanel();
-        renderTraderWindow();
-        return true;
-      }
-      setReadout(`${trader.name}: пока новой работы нет.`);
-      return true;
-    }
-    if (profileId === 'relay' && quests.includes('relayCalibration')) {
-      const relayCost = { energyCell: 20, repairKit: 1 };
-      if (npcQuestState.relayCalibration !== 'done') {
-        if (npcQuestState.relayCalibration !== 'active') {
-          npcQuestState.relayCalibration = 'active';
-          addLog(`${trader.name}: нужны 20 энергозарядов и 1 ремкомплект для калибровки ретранслятора.`, null, 'quest');
-          setReadout('Поручение принято: подготовить расходники для ретранслятора.');
-          updateNpcQuestPanel();
-          renderTraderWindow();
-          queueSave(true);
-          return true;
-        }
-        if (!hasQuestItems(relayCost)) {
-          setReadout(`Нужно: энергозаряды ${inventory.get('energyCell') || 0}/20, ремкомплект ${inventory.get('repairKit') || 0}/1.`);
-          updateNpcQuestPanel();
-          return true;
-        }
-        if (!removeQuestItems(relayCost)) return false;
-        npcQuestState.relayCalibration = 'done';
-        awardNpcQuest({ ...questRewardData('relayCalibration', { xp: 95, silver: 90, items: [] }), label: 'Калибровка ретранслятора', questKey: 'relayCalibration' });
-        setReadout(`${trader.name}: сигнал стабилен. Забирай награду, ты её заслужил.`);
-        updateNpcQuestPanel();
-        renderTraderWindow();
-        return true;
-      }
-      setReadout(`${trader.name}: станция пока работает штатно.`);
-      return true;
-    }
-    const suppliesCost = { ore: 3, wood: 3, water: 1 };
-    if (npcQuestState.klimSupplies !== 'done') {
-      if (npcQuestState.klimSupplies !== 'active') {
-        npcQuestState.klimSupplies = 'active';
-        addLog(`${trader.name}: принеси 3 руды, 3 древесины и 1 воду. Поселению нужны припасы.`, null, 'quest');
-        setReadout('Поручение принято: принести припасы Старому Климу.');
-        updateNpcQuestPanel();
-        renderTraderWindow();
-        queueSave(true);
-        return true;
-      }
-      if (!hasQuestItems(suppliesCost)) {
-        setReadout(`Нужно: руда ${inventory.get('ore') || 0}/3, древесина ${inventory.get('wood') || 0}/3, вода ${inventory.get('water') || 0}/1.`);
-        updateNpcQuestPanel();
-        return true;
-      }
-      if (!removeQuestItems(suppliesCost)) return false;
-      npcQuestState.klimSupplies = 'done';
-      if (npcQuestState.klimTerminal === 'locked') npcQuestState.klimTerminal = 'available';
-      awardNpcQuest({ ...questRewardData('klimSupplies', { xp: 55, silver: 42, items: [] }), label: 'Припасы для поселения', questKey: 'klimSupplies' });
-      setReadout(`${trader.name}: вот теперь лагерь переживёт ещё одну ночь.`);
-      updateNpcQuestPanel();
-      renderTraderWindow();
-      return true;
-    }
-    if (npcQuestState.klimTerminal !== 'done') {
-      if (npcQuestState.klimTerminal !== 'active') {
-        npcQuestState.klimTerminal = 'active';
-        npcQuestState.klimTerminalHacked = false;
-        addLog(`${trader.name}: в Пепельном лесу есть редкий тайник. Взломай терминал и вернись за наградой.`, null, 'quest');
-        setReadout('Поручение принято: взломать терминал редкого тайника.');
-        updateNpcQuestPanel();
-        renderTraderWindow();
-        queueSave(true);
-        return true;
-      }
-      if (!npcQuestState.klimTerminalHacked) {
-        setReadout('Клим ждёт данные с терминала редкого тайника в Пепельном лесу.');
-        updateNpcQuestPanel();
-        return true;
-      }
-      npcQuestState.klimTerminal = 'done';
-      awardNpcQuest({ ...questRewardData('klimTerminal', { xp: 70, silver: 65, items: [] }), label: 'Данные с ржавого терминала', questKey: 'klimTerminal' });
-      setReadout(`${trader.name}: отлично. Эти данные ещё пригодятся.`);
-      updateNpcQuestPanel();
-      renderTraderWindow();
-      return true;
-    }
-    setReadout(`${trader.name}: пока работы нет. Возвращайся позже.`);
-    return true;
   }
 
   function talkToTraderQuest(traderOverride = null) {
@@ -1033,4 +817,3 @@
     queueSave(true);
     return true;
   }
-

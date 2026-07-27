@@ -32,39 +32,38 @@
 24. `05d_world_containers_security.js` — server containers, lock/terminal UI and loot actions.
 25. `05e_ground_items_world_sync.js` — ground items, resources, world/enemy network snapshots.
 26. `05f_enemy_models_location_flow.js` — enemy model builders, local spawn/restore and location loading.
-27. `06_pathfinding_movement.js` — поиск пути, ближайшая проходимая клетка и цель движения.
-28. `06a_combat_visual_fx.js` — маркер движения, трассеры, пулы эффектов и визуальные FX оружия.
-29. `06b_explosions_speech.js` — взрывы, плавающий текст и речевые пузырьки НПС.
-30. `06c_combat_stats_modes.js` — формулы боя, режимы оружия, шанс попадания и снапшоты ресурсов.
-31. `06d_combat_damage_shooting.js` — трата ОД, урон, выстрелы, PvP/NPC guard и перезарядка.
-32. `06e_combat_targeting_loot_resources.js` — автотаргет, трупы, лут, добыча ресурсов.
-33. `07_quantity_confirm_carry.js` — выбор количества, подтверждения и ограничения переносимого веса.
-34. `07a_storage_window.js` — окно хранилища и перенос между рюкзаком/хранилищем.
-35. `07b_trader_market_state.js` — профили торговцев, определения квестов, запас и ресток рынка.
-36. `07c_trader_dialogues_quests.js` — жизненный цикл окна торговца, цены, диалоги и квестовые действия.
-37. `07d_trader_barter_ui.js` — сетки бартера, очереди покупки/продажи и принятие обмена.
-38. `07e_loot_interaction.js` — окна обыска трупов/контейнеров и ближайшее взаимодействие.
-39. `07f_quickbar_drag_slots.js` — быстрые слоты, назначение, drag/drop и очистка слотов.
-40. `08_character_creation_save.js` — character creator, SPECIAL/traits, generation-safe save/load/bootstrap.
-41. `08a_mobile_controls_panels.js` — input globals, touch movement/aim, fullscreen and game menu panels.
-42. `08b_interaction_quick_access.js` — universal interaction, held items, resource tools, quick access radial.
-43. `08c_hud_edit_windows_touch.js` — HUD editor, mobile control binding, Pip-Boy/window toggles.
-44. `08d_world_context_targets.js` — pointer picking, context target detection and world context options.
-45. `08e_mobile_player_action_menus.js` — mobile treatment/social action windows and remote player menus.
-46. `08f_input_events_proximity.js` — canvas/keyboard events, lifecycle-сброс input, automatic fire и proximity hints.
-47. `09_update_fog_movement_ai.js` — authority guard главного update, fog-of-war, culling, графика, движение, AI, эффекты и камера.
-48. `10_global_map_state_logs_config.js` — системный журнал, базовое состояние глобальной карты, загрузка конфига, сохранение маршрута.
-49. `11_global_map_terrain_core.js` — координаты глобальной карты, вода/берег, высоты, texture canvas и базовые линии.
-50. `11a_global_map_player_models.js` — модель игрока на глобальной карте, оружие и направление движения.
-51. `11b_global_map_static_scene_camera.js` — статическая 3D-сцена, города/объекты, дороги, terrain, камера.
-52. `11c_global_map_sites_territory.js` — ресурсные точки, зоны влияния, территории и фронты фракций.
-53. `11d_global_map_contacts_parties.js` — контакты мира, бродячие отряды и их мини-модели.
-54. `11e_global_map_tasks_dynamic_render.js` — маркеры заданий, динамическое обновление и render global map 3D.
-55. `12_global_map_canvas_controls.js` — колесо/перетаскивание карты и 2D canvas fallback глобальной карты.
-56. `12a_global_map_world_status.js` — подписи отрядов, ресурсные точки, задачи мира, контакты и доска работ.
-57. `12b_global_map_panel_window.js` — панель глобальной карты, runtime frame, окно карты и выход на карту из локации.
-58. `12c_global_map_travel_encounters.js` — старт/отмена маршрута, встречи, входы в локальные локации, завершение travel.
-59. `12d_global_map_entry_ambush_controls.js` — вход в поселения, засады и инициализация контролов глобальной карты.
-60. `13_minimap_hud_loop.js` — миникарта, HUD, оружейный UI, безопасный render guard, главный игровой loop и bootstrap-вызовы.
+27. `06a_combat_visual_fx.js` — трассеры, пулы эффектов и визуальные FX оружия.
+28. `06b_explosions_speech.js` — взрывы, плавающий текст и речевые пузырьки НПС.
+29. `06c_combat_stats_modes.js` — формулы боя, режимы оружия, шанс попадания и снапшоты ресурсов.
+30. `06d_combat_damage_shooting.js` — трата ОД, урон, выстрелы, PvP/NPC guard и перезарядка.
+31. `06e_combat_targeting_loot_resources.js` — автотаргет, трупы, лут, добыча ресурсов.
+32. `07_quantity_confirm_carry.js` — выбор количества, подтверждения и ограничения переносимого веса.
+33. `07a_storage_window.js` — окно хранилища и перенос между рюкзаком/хранилищем.
+34. `07b_trader_market_state.js` — профили торговцев, определения квестов, запас и ресток рынка.
+35. `07c_trader_dialogues_quests.js` — жизненный цикл окна торговца, цены, диалоги и квестовые действия.
+36. `07d_trader_barter_ui.js` — сетки бартера, очереди покупки/продажи и принятие обмена.
+37. `07e_loot_interaction.js` — окна обыска трупов/контейнеров и ближайшее взаимодействие.
+38. `07f_quickbar_drag_slots.js` — быстрые слоты, назначение, drag/drop и очистка слотов.
+39. `08_character_creation_save.js` — character creator, SPECIAL/traits, generation-safe save/load/bootstrap.
+40. `08a_mobile_controls_panels.js` — input globals, touch movement/aim, fullscreen and game menu panels.
+41. `08b_interaction_quick_access.js` — universal interaction, held items, resource tools, quick access radial.
+42. `08c_hud_edit_windows_touch.js` — HUD editor, mobile control binding, Pip-Boy/window toggles.
+43. `08d_world_context_targets.js` — pointer picking, context target detection and world context options.
+44. `08e_mobile_player_action_menus.js` — mobile treatment/social action windows and remote player menus.
+45. `08f_input_events_proximity.js` — canvas/keyboard events, lifecycle-сброс input, automatic fire и proximity hints.
+46. `09_update_fog_movement_ai.js` — authority guard главного update, fog-of-war, culling, графика, движение, AI, эффекты и камера.
+47. `10_global_map_state_logs_config.js` — системный журнал, базовое состояние глобальной карты, загрузка конфига, сохранение маршрута.
+48. `11_global_map_terrain_core.js` — координаты глобальной карты, вода/берег, высоты, texture canvas и базовые линии.
+49. `11a_global_map_player_models.js` — модель игрока на глобальной карте, оружие и направление движения.
+50. `11b_global_map_static_scene_camera.js` — статическая 3D-сцена, города/объекты, дороги, terrain, камера.
+51. `11c_global_map_sites_territory.js` — ресурсные точки, зоны влияния, территории и фронты фракций.
+52. `11d_global_map_contacts_parties.js` — контакты мира, бродячие отряды и их мини-модели.
+53. `11e_global_map_tasks_dynamic_render.js` — маркеры заданий, динамическое обновление и render global map 3D.
+54. `12_global_map_canvas_controls.js` — колесо/перетаскивание карты и 2D canvas fallback глобальной карты.
+55. `12a_global_map_world_status.js` — подписи отрядов, ресурсные точки, задачи мира, контакты и доска работ.
+56. `12b_global_map_panel_window.js` — панель глобальной карты, runtime frame, окно карты и выход на карту из локации.
+57. `12c_global_map_travel_encounters.js` — старт/отмена маршрута, встречи, входы в локальные локации, завершение travel.
+58. `12d_global_map_entry_ambush_controls.js` — вход в поселения, засады и инициализация контролов глобальной карты.
+59. `13_minimap_hud_loop.js` — миникарта, HUD, оружейный UI, безопасный render guard, главный игровой loop и bootstrap-вызовы.
 
 Проверка порядка и синтаксиса: `npm run check:client`.

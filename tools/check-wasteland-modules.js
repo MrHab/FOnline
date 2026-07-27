@@ -253,6 +253,10 @@ function checkPartyModuleBoundaries() {
   assert(!simulation.includes('function normalizeWorldPartySpeedKmh'));
   assert(!simulation.includes('function normalizePartyPlayerMember'));
   assert(!simulation.includes('function pruneInvalidWorldPartyPlayerMembers'));
+  assert(!simulation.includes('function createPlayerAmbushZone'));
+  assert(!simulation.includes('function partyCanTriggerPlayerAmbush'));
+  assert(!simulation.includes('function triggerPlayerAmbushZone'));
+  assert(!simulation.includes('player_ambushes_disabled'));
 }
 
 function checkPersistenceAndRandom() {

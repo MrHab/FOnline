@@ -402,64 +402,6 @@
     if (batch.ghostMesh) batch.ghostMesh.visible = true;
   }
 
-  function rebuildTraderRoofBatch(batch) {
-    if (!batch || !batch.mesh || !batch.cells) return;
-    batch.cells.forEach((cell, index) => { if (cell) cell.instanceIndex = index; });
-    updateTraderRoofVisionCells(batch, true);
-    batch.mesh.visible = true;
-    if (batch.ghostMesh) batch.ghostMesh.visible = true;
-  }
-
-  function inferTraderRoofGridDimensions(cells) {
-    const xs = [];
-    const zs = [];
-    (cells || []).forEach(cell => {
-      if (!cell) return;
-      const x = Number(cell.x || 0);
-      const z = Number(cell.z || 0);
-      if (!xs.some(v => Math.abs(v - x) < 0.01)) xs.push(x);
-      if (!zs.some(v => Math.abs(v - z) < 0.01)) zs.push(z);
-    });
-    xs.sort((a, b) => a - b);
-    zs.sort((a, b) => a - b);
-    return { xs, zs, width: Math.max(1, xs.length), height: Math.max(1, zs.length) };
-  }
-
-  function createTraderRoofGridBatch(group, id, cells, material, panelOpts = {}) {
-    const safeCells = (cells || []).filter(Boolean);
-    const inferredGrid = inferTraderRoofGridDimensions(safeCells);
-    const grid = panelOpts.grid || cells.grid || inferredGrid;
-    const maskData = new Uint8Array(Math.max(1, Number(grid.width || 1)) * Math.max(1, Number(grid.height || 1)));
-    const maskTexture = createTraderRoofMaskTexture(grid.width, grid.height, maskData);
-    const geometry = createTraderContinuousRoofPanelGeometry(safeCells, panelOpts);
-    const bounds = geometry.userData?.traderRoofMaskBounds || panelOpts.maskBounds || geometry.userData?.traderRoofBounds || { minX: -1, minZ: -1, width: 2, depth: 2 };
-    const roofMaterial = createTraderVisionRoofMaterial(material, maskTexture, bounds, { openOpacity: 0.24 });
-    const mesh = new THREE.Mesh(geometry, roofMaterial);
-    mesh.name = `trader-roof-wood-single-mask-${id}`;
-    mesh.userData.kind = `trader-shell-roof-wood-single-mask-${id}`;
-    mesh.userData.traderRoofPanel = true;
-    mesh.userData.traderRoofGridBatch = true;
-    mesh.userData.forceNoShadow = true;
-    mesh.userData.roofCutawayArray = maskData;
-    mesh.userData.roofCutawayTexture = maskTexture;
-    mesh.castShadow = false;
-    mesh.receiveShadow = false;
-    mesh.frustumCulled = false;
-    mesh.renderOrder = 6;
-    safeCells.forEach((cell, index) => {
-      cell.instanceIndex = index;
-      cell.cutaway = false;
-      const col = Number.isFinite(Number(cell.maskCol)) ? Number(cell.maskCol) : grid.xs.findIndex(v => Math.abs(v - Number(cell.x || 0)) < 0.01);
-      const row = Number.isFinite(Number(cell.maskRow)) ? Number(cell.maskRow) : grid.zs.findIndex(v => Math.abs(v - Number(cell.z || 0)) < 0.01);
-      cell.maskIndex = Math.max(0, row) * Math.max(1, Number(grid.width || 1)) + Math.max(0, col);
-    });
-    const batch = { id, mesh, ghostMesh: null, cells: safeCells, dirty: true, grid, maskData, maskTexture };
-    traderBuildingCutawayRoofBatches.push(batch);
-    group.add(mesh);
-    rebuildTraderRoofBatch(batch);
-    return batch;
-  }
-
   function setTraderRoofBatchCellCutaway(batch, cell, cutaway) {
     if (!batch || !batch.mesh || !cell) return false;
     const next = !!cutaway;

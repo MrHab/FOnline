@@ -4,6 +4,33 @@ const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 
+const REMOVED_PERK_LAYOUT_FUNCTIONS = [
+  'perkSubgroupIndex',
+  'perkSubgroupCount',
+  'perkLevelRing',
+  'perkNodeRadius',
+  'perkPolarPoint',
+  'perkAtlasEnabled',
+  'perkAtlasRowIndex',
+  'perkAtlasRowY',
+  'perkAtlasNodePoint',
+  'perkGroupHubPoint',
+  'emptyPerkLaneBounds',
+  'collectPerkLaneBounds',
+  'perkBranchLabelPoint',
+  'perkSideLabelPoint',
+  'perkPrerequisiteEntry',
+  'assignPerkHubPorts',
+  'perkRadialLinkPath',
+  'perkDependencyPath',
+  'perkIndependentPath',
+  'perkNodeDesiredPoint',
+  'clampPerkPoint',
+  'resolvePerkLayoutCollisions',
+  'perkWheelInfoHtml',
+  'totalPerkRanks'
+];
+
 function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), 'utf8').replace(/\r\n/g, '\n');
 }
@@ -213,6 +240,20 @@ const clientTalents = idsInArrayBlock(model, 'const TALENTS = [');
 const clientTraits = idsInArrayBlock(creator, 'const START_TRAITS = [');
 const recipeIds = idsInArrayBlock(crafting, 'const CRAFT_RECIPES = [');
 const clientTalentDefs = evalConstBlock(model, 'const TALENTS = [', 'TALENTS', '];');
+
+const returnedPerkLayoutFunctions = REMOVED_PERK_LAYOUT_FUNCTIONS.filter(name => crafting.includes(`function ${name}(`));
+if (returnedPerkLayoutFunctions.length) {
+  fail(`Removed perk-layout function(s) returned: ${returnedPerkLayoutFunctions.join(', ')}`);
+}
+const perkBoardBody = functionSlice(crafting, 'function renderPerkWheel');
+assertIncludesAll('Current perk board renderer', perkBoardBody, [
+  "wheel.className = 'perk-wheel perk-board'",
+  "wrap.classList.add('perk-board-wrap')",
+  'const categories = perkCategoryOptions()',
+  'let visibleTalents = visiblePerksForBoard(selectedPerkCategory)',
+  "shell.className = 'perk-board-shell'",
+  'renderPerkDetail('
+]);
 
 const serverSkills = idsInServerSet(server, 'const SERVER_SKILL_IDS');
 const serverTalents = idsInServerSet(server, 'const SERVER_TALENT_IDS');

@@ -101,8 +101,6 @@
       return;
     }
     player.attackTarget = null;
-    player.targetPath = [];
-    marker.visible = false;
     mouseFireHeld = isAutoFireModeActive();
     shootAtPoint(pointerWorld.x, pointerWorld.z);
   });
@@ -275,10 +273,8 @@
     } catch (_) {}
     try {
       if (player) {
-        player.targetPath = [];
         player.attackTarget = null;
       }
-      if (marker) marker.visible = false;
     } catch (_) {}
     if (options.sendIdle !== false
       && typeof sendImmediateMultiplayerState === 'function'

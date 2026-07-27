@@ -369,10 +369,8 @@
       virtualMove.pointerId = null;
     }
     if (player) {
-      player.targetPath = [];
       player.attackTarget = null;
     }
-    if (marker) marker.visible = false;
     document.body.classList.add('location-loading-active');
     document.body.classList.toggle('game-startup-loading-active', mode === 'startup');
     if (el.kicker) el.kicker.textContent = options.kicker || (mode === 'startup' ? 'Вход в игру' : 'Переход между локациями');
@@ -1907,4 +1905,3 @@
     group.userData.allowsPlayerOverlap = true;
     return group;
   }
-

@@ -100,7 +100,10 @@ requireText('server container restock', functionBody(server, 'restockRoomWorldCo
 requireText('server inventory limits', server, 'SERVER_ITEM_STACK_LIMITS');
 requireText('server save economy sanitizer', functionBody(server, 'safeSaveState'), 'sanitizePersistedEconomyState(state);');
 requireText('server inventory sanitizer', functionBody(server, 'sanitizeServerInventorySnapshot'), 'serverItemStackLimit(id)');
-requireText('client enemy loot', functionBody(clientNetwork, 'rollEnemyLoot'), 'return [];');
+const clientEnemyLootBody = functionBody(clientNetwork, 'rollEnemyLoot').trim();
+if (clientEnemyLootBody !== 'return [];') {
+  errors.push('client enemy loot: the disabled client-side generator must remain an empty stub');
+}
 requireText('client base storage restock', functionBody(clientTradeStorage, 'restockBaseStorage'), 'return false;');
 requireText('npc quest caps', functionBody(clientTradeStorage, 'awardNpcQuest'), 'const paidMoney = payNpcQuestCaps(money);');
 const legacyWorldTaskReward = normalizeWorldTask({ id: 'legacy_reward', reward: { silver: 37.9 } }, 0);

@@ -153,15 +153,6 @@ const tradeStorageSource = [
   '07f_quickbar_drag_slots.js'
 ].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
 const sellOverrides = evalConstBlock(tradeStorageSource, 'const SELL_PRICE_OVERRIDES = {', 'SELL_PRICE_OVERRIDES');
-const networkSource = [
-  '05_multiplayer_core_state.js',
-  '05a_remote_actor_equipment.js',
-  '05b_remote_player_locomotion.js',
-  '05c_multiplayer_socket_room.js',
-  '05d_world_containers_security.js',
-  '05e_ground_items_world_sync.js',
-  '05f_enemy_models_location_flow.js'
-].map(name => read(path.join('public', 'js', 'game', name))).join('\n');
 const combatSource = [
   '06_pathfinding_movement.js',
   '06a_combat_visual_fx.js',
@@ -244,7 +235,6 @@ if (stealthStart !== 1 || stealthMax < 0.35 || stealthMax > 0.36) fail(`Crouch s
 for (const snippet of ["serverSkillNorm(p, 'stealth') * 0.44", "serverTalentLevel(p, 'ghost') * 0.11", 'Math.max(0.35, 1 - stealthReduction)']) {
   if (!serverSource.includes(snippet)) fail(`Server stealth formula missing: ${snippet}`);
 }
-if (!networkSource.includes("Math.floor(skillNorm('wanderer') * 3) + cacheSense")) fail('Local loot formula must use the same Wanderer/Cache Sense search score as the server/formula text');
 if (!combatSource.includes('rawBase * falloff * ambushDamageMultiplier(enemy)')) fail('Local explosion damage must include Ambush multiplier like server damage');
 for (const snippet of [
   'conditionBefore',

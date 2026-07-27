@@ -1248,6 +1248,17 @@ async function assertSocketMultiplayerLifecycle() {
 
     const first = accounts[0];
     const second = accounts[1];
+    const remoteCraft = await socketAck(first.socket, 'craftingStationUsed', {
+      recipeId: 'repairkitcraft',
+      station: 'repair_bench',
+      fee: 1,
+      locationId: 'roadOutpost',
+      stationObjectId: 'road_outpost_repair_bench'
+    });
+    if (remoteCraft.ok !== false || remoteCraft.error !== 'wrong_location') {
+      fail('crafting accepted or reached a station selected from another location',
+        JSON.stringify({ player: first.join.self, response: remoteCraft }));
+    }
     const beforePeacefulCombat = first.join.combat || first.join.self?.combat || {};
     const peacefulToken = `smoke_peaceful_attack_${Date.now().toString(36)}`;
     const peacefulAttack = await socketAck(first.socket, 'combatAttack', {

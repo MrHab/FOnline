@@ -146,7 +146,25 @@ assert.strictEqual(rowQty(personalStock, 'ammo556'), 10, 'Friendly NPC must keep
 assert.strictEqual(rowQty(personalStock, 'water'), 2, 'Friendly NPC personal goods must be available for barter');
 assert(!personalStock.some(row => ['silver', 'rifle', 'knife'].includes(row.id)), 'Money, equipped gear and the combat backup must not be offered for sale');
 
-const stateFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'realm-of-ashes-npc-inventory-')), 'state.json');
+const TEMP_PREFIX = 'realm-of-ashes-npc-inventory-';
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), TEMP_PREFIX));
+const stateFile = path.join(tempRoot, 'state.json');
+let tempCleaned = false;
+
+function cleanupTemp() {
+  if (tempCleaned) return;
+  tempCleaned = true;
+  const resolvedRoot = path.resolve(tempRoot);
+  const resolvedSystemTemp = path.resolve(os.tmpdir());
+  const isOwnedTempDir = resolvedRoot.startsWith(`${resolvedSystemTemp}${path.sep}`)
+    && path.basename(resolvedRoot).startsWith(TEMP_PREFIX);
+  if (isOwnedTempDir) fs.rmSync(resolvedRoot, { recursive: true, force: true });
+}
+
+process.once('exit', cleanupTemp);
+process.once('SIGINT', () => { cleanupTemp(); process.exit(130); });
+process.once('SIGTERM', () => { cleanupTemp(); process.exit(143); });
+
 const simulation = createWastelandSimulation({
   stateFile,
   getGlobalMap: () => ({ grid: { cols: 1, rows: 1, cellPoints: 1, cellKm: 10 }, nodes: [], cells: { '0:0': {} } }),
@@ -235,4 +253,5 @@ assert(dialogueSource.includes('function renderFriendlyNpcDialogue'), 'Client mu
 assert(dialogueSource.includes('return renderFriendlyNpcDialogue(trader);'), 'Unknown friendly profiles must not fall through to Old Klim quests');
 assert(contextSource.includes("if (neutral) {\n        const options = ["), 'Friendly NPC context menu must always contain social actions');
 
+cleanupTemp();
 console.log('NPC inventory checks passed.');

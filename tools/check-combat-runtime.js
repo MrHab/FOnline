@@ -12,7 +12,7 @@ const { io: createSocketClient } = require('socket.io-client');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
 const MAX_WAIT_MS = Math.max(3000, Number(process.env.COMBAT_RUNTIME_WAIT_MS || 10000));
-const PORT = Number(process.env.COMBAT_RUNTIME_PORT || (37000 + Math.floor(Math.random() * 1500)));
+const REQUESTED_PORT = Number(process.env.COMBAT_RUNTIME_PORT || 0);
 const TMP_ROOT = path.resolve(process.env.COMBAT_RUNTIME_TMPDIR || os.tmpdir());
 const TMP_PREFIX = 'realm-of-ashes-combat-runtime-';
 
@@ -21,6 +21,7 @@ const DATA_DIR = fs.mkdtempSync(path.join(TMP_ROOT, TMP_PREFIX));
 
 let activeServer = null;
 let activeServerLogs = [];
+let activePort = REQUESTED_PORT;
 let cleanedUp = false;
 let attackSequence = 0;
 
@@ -80,7 +81,7 @@ function request(pathname, options = {}) {
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
     const req = http.request({
       hostname: '127.0.0.1',
-      port: PORT,
+      port: activePort,
       path: pathname,
       method: options.method || 'GET',
       headers,
@@ -116,14 +117,21 @@ async function waitForHealth(proc) {
     if (proc.exitCode !== null) {
       throw new Error(`Server exited before /health was ready\n${activeServerLogs.join('').slice(-4000)}`);
     }
-    try {
-      const response = await request('/health', { timeoutMs: 800 });
-      if (response.statusCode === 200) {
-        const health = parseJsonResponse(response, '/health');
-        if (health.ok) return health;
+    if (!activePort) {
+      const match = activeServerLogs.join('').match(/server listening on :(\d+)/);
+      const reportedPort = Number(match?.[1] || 0);
+      if (reportedPort > 0 && reportedPort <= 65535) activePort = reportedPort;
+    }
+    if (activePort) {
+      try {
+        const response = await request('/health', { timeoutMs: 800 });
+        if (response.statusCode === 200) {
+          const health = parseJsonResponse(response, '/health');
+          if (health.ok) return health;
+        }
+      } catch (_) {
+        // Startup is still in progress.
       }
-    } catch (_) {
-      // Startup is still in progress.
     }
     await delay(150);
   }
@@ -133,11 +141,12 @@ async function waitForHealth(proc) {
 async function startServer() {
   invariant(!activeServer, 'Test attempted to start two server processes');
   activeServerLogs = [];
+  activePort = REQUESTED_PORT;
   const proc = childProcess.spawn(process.execPath, [SERVER_FILE], {
     cwd: PROJECT_ROOT,
     env: {
       ...process.env,
-      PORT: String(PORT),
+      PORT: String(REQUESTED_PORT),
       DATA_DIR,
       SESSION_LOCK_MS: '500',
       WASTELAND_SIM_SAVE_INTERVAL_MS: '3000'
@@ -171,7 +180,7 @@ async function stopServer() {
 
 function connectSocketClient() {
   return new Promise((resolve, reject) => {
-    const socket = createSocketClient(`http://127.0.0.1:${PORT}`, {
+    const socket = createSocketClient(`http://127.0.0.1:${activePort}`, {
       transports: ['websocket'],
       forceNew: true,
       reconnection: false,
@@ -274,6 +283,11 @@ function closeSocket(account) {
   if (!account?.socket) return;
   try { account.socket.close(); } catch (_) {}
   account.socket = null;
+}
+
+async function closeFixtureSockets(accounts, keys, settleMs = 200) {
+  for (const key of keys) closeSocket(accounts[key]);
+  await delay(Math.max(0, Number(settleMs || 0)));
 }
 
 function cloneJson(value) {
@@ -534,6 +548,18 @@ function assertCombat(value, expected, label) {
   return combat;
 }
 
+function assertCombatApNotSpent(before, after, label) {
+  const previous = combatSnapshot(before, `${label} before`);
+  const current = combatSnapshot(after, `${label} after`);
+  invariant(Number(current.ap) >= Number(previous.ap)
+    && Number(current.ap) <= Number(current.maxAp),
+  `${label}: AP decreased or exceeded its cap`, {
+    before: previous,
+    after: current
+  });
+  return current;
+}
+
 function assertRuntimeWeaponInventory(self, runtimeId, expectedLoaded, label) {
   const rows = Array.isArray(self?.weaponInventoryRuntime)
     ? self.weaponInventoryRuntime
@@ -777,9 +803,13 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     weaponRuntimeId: pistolB,
     loaded: 3,
     magSize: 8,
-    reserveAmmo: 8,
-    ap: Number(switchedShot.combat.ap)
+    reserveAmmo: 8
   }, 'idempotent duplicate-join combat');
+  assertCombatApNotSpent(
+    switchedShot.combat,
+    duplicateJoinCombat,
+    'Idempotent duplicate join'
+  );
   invariant(Number(duplicateJoinCombat.cooldownRemainingMs) > 0
     && Number(duplicateJoinCombat.cooldownRemainingMs) <= Number(switchedShot.combat.cooldownRemainingMs),
   'Idempotent duplicate join reset or extended the active weapon cooldown', {
@@ -795,14 +825,18 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   invariant(conflictingJoin.ok === false
     && conflictingJoin.self?.characterId === accounts.persistence.characterId,
   'Same socket was allowed to switch identity through a repeated join', conflictingJoin);
-  assertCombat(conflictingJoin.combat, {
+  const conflictingJoinCombat = assertCombat(conflictingJoin.combat, {
     weapon: 'pistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
     magSize: 8,
-    reserveAmmo: 8,
-    ap: Number(duplicateJoinCombat.ap)
+    reserveAmmo: 8
   }, 'conflicting duplicate-join combat');
+  assertCombatApNotSpent(
+    duplicateJoinCombat,
+    conflictingJoinCombat,
+    'Conflicting duplicate join rejection'
+  );
 
   const loadedRuntimeDrop = await socketAck(accounts.persistence.socket, 'dropItem', {
     itemId: 'pistol',
@@ -815,9 +849,13 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     weapon: 'pistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
-    reserveAmmo: 8,
-    ap: Number(duplicateJoinCombat.ap)
+    reserveAmmo: 8
   }, 'loaded-runtime drop rejection combat');
+  assertCombatApNotSpent(
+    conflictingJoinCombat,
+    postDropCombat,
+    'Loaded-runtime drop rejection'
+  );
   invariant(Number(postDropCombat.cooldownRemainingMs) > 0,
     'Rejected loaded-runtime drop reset the active cooldown', postDropCombat);
 
@@ -836,11 +874,11 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   }, 'post-duplicate-join cooldown rejection combat');
   invariant(Number(postDuplicateCombat.cooldownRemainingMs) > 0,
     'Duplicate join cleared the authoritative weapon cooldown', postDuplicateCooldown);
-  invariant(Number(postDuplicateCombat.ap) >= Number(duplicateJoinCombat.ap),
-    'Post-duplicate-join cooldown rejection spent AP', {
-      duplicateJoin: duplicateJoinCombat,
-      cooldown: postDuplicateCombat
-    });
+  assertCombatApNotSpent(
+    postDropCombat,
+    postDuplicateCombat,
+    'Post-duplicate-join cooldown rejection'
+  );
 
   const crossRuntimeReplay = await socketAck(accounts.persistence.socket, 'combatAttack', {
     weapon: 'pistol',
@@ -866,11 +904,11 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     loaded: 3,
     reserveAmmo: 8
   }, 'cross-runtime replay rejection combat');
-  invariant(Number(crossRuntimeCombat.ap) >= Number(switchedShot.combat.ap),
-    'Cross-runtime replay spent AP from B', {
-      switched: switchedShot.combat,
-      replay: crossRuntimeCombat
-    });
+  assertCombatApNotSpent(
+    postDuplicateCombat,
+    crossRuntimeCombat,
+    'Cross-runtime replay rejection'
+  );
 
   // This payload was captured while A was active. It must save inventory
   // presentation without rolling the live authoritative identity back from B.
@@ -1150,7 +1188,8 @@ async function assertStrictServerAp(accounts) {
     'playerHit',
     attackPayload(accounts.strictAp.join, accounts.target.socket, 'aimed')
   );
-  invariant(insufficient.ok === false, 'Server accepted a 5-AP aimed shot with less than 5 AP', insufficient);
+  invariant(insufficient.ok === false,
+    'Server accepted an aimed shot below its uninjured 5-AP minimum', insufficient);
   const rejectedCombat = assertCombat(insufficient.combat, {
     loaded: 8,
     reserveAmmo: 0,
@@ -1159,14 +1198,31 @@ async function assertStrictServerAp(accounts) {
   invariant(Number(rejectedCombat.ap) < 5 && Number(rejectedCombat.ap) >= 4.65,
     'Strict-AP rejection returned an unexpected AP value', rejectedCombat);
 
-  await delay(120);
+  // Fill to the acknowledged cap rather than guessing that another fixed
+  // 120ms is enough. A nearby NPC can add a broken-arm AP penalty between the
+  // rejection and retry, increasing this aimed shot from 5 to 6 AP.
+  const refillWaitMs = Math.ceil(
+    Math.max(0, Number(rejectedCombat.maxAp) - Number(rejectedCombat.ap)) / 1.8 * 1000
+  ) + 150;
+  await delay(refillWaitMs);
   const funded = await socketAck(
     accounts.strictAp.socket,
     'playerHit',
     attackPayload(accounts.strictAp.join, accounts.target.socket, 'aimed')
   );
   invariant(funded.ok, 'Aimed shot was rejected after authoritative AP reached its cost', funded);
-  assertCombat(funded.combat, { loaded: 7, reserveAmmo: 0, maxAp: 6 }, 'funded aimed shot');
+  const fundedCombat = assertCombat(
+    funded.combat,
+    { loaded: 7, reserveAmmo: 0, maxAp: 6 },
+    'funded aimed shot'
+  );
+  const inferredFundedCost = Number(rejectedCombat.maxAp) - Number(fundedCombat.ap);
+  invariant(inferredFundedCost >= 4.95 && inferredFundedCost <= 6.05,
+    'Funded aimed shot did not spend its expected AP cost from the full cap', {
+    before: rejectedCombat,
+    inferredCost: inferredFundedCost,
+    after: fundedCombat
+  });
 }
 
 async function assertHarvestRequiresEquippedTool(accounts) {
@@ -1174,6 +1230,8 @@ async function assertHarvestRequiresEquippedTool(accounts) {
   await connectAndJoin(account);
   invariant(account.join.roomId === 'oldDepot',
     'Harvest fixture did not join oldDepot', account.join);
+  invariant((Array.isArray(account.join.players) ? account.join.players : []).length === 0,
+    'Harvest fixture inherited players from the preceding combat phase', account.join.players);
   invariant(account.join.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
     'Harvest fixture did not start with the wrong weapon equipped', account.join.self);
 
@@ -1187,7 +1245,7 @@ async function assertHarvestRequiresEquippedTool(accounts) {
   invariant(Math.hypot(Number(account.join.x) - resourceX, Number(account.join.z) - resourceZ) <= 3.2,
     'Harvest fixture joined outside interaction range', {
       player: { x: account.join.x, z: account.join.z },
-      resource: { x: resourceX, z: resourceZ, ...resource }
+      resource: { ...resource, x: resourceX, z: resourceZ }
     });
 
   const initialAp = Number(account.join.self?.combat?.ap);
@@ -1242,7 +1300,20 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       && equipped.ack.self?.equipmentRuntime?.weapon === 'pickaxe',
     'Harvest fixture could not equip its carried pickaxe', equipped.ack);
     const beforeSuccessAp = Number(equipped.ack.self?.combat?.ap);
+    const maxSuccessAp = Number(equipped.ack.self?.combat?.maxAp);
     const beforeSuccessCondition = Number(equipped.ack.self?.itemConditions?.pickaxe);
+    invariant(Number.isFinite(maxSuccessAp)
+      && Math.abs(maxSuccessAp - beforeSuccessAp - 1) <= 0.05,
+    'Equipping the harvest tool did not leave exactly one AP to regenerate', {
+      before: initialAp,
+      after: beforeSuccessAp,
+      max: maxSuccessAp
+    });
+
+    // Equipment switching spends one AP. Let the authoritative 1.8 AP/s
+    // regeneration fill that single-point deficit before measuring harvest:
+    // otherwise request latency is indistinguishable from a partial refund.
+    await delay(750);
 
     const harvested = await socketAck(account.socket, 'harvestResource', {
       id: resource.id,
@@ -1270,12 +1341,15 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       item: harvested.item,
       inventory: harvested.inventory
     });
-    const spentAp = beforeSuccessAp - Number(harvested.ap);
-    invariant(spentAp >= 1.85 && spentAp <= 2.05,
+    invariant(Number(harvested.apCost) === 2,
+      'Successful harvest acknowledged an unexpected AP cost', harvested);
+    const expectedAfterAp = maxSuccessAp - Number(harvested.apCost);
+    invariant(Math.abs(Number(harvested.ap) - expectedAfterAp) <= 0.05,
       'Successful harvest did not spend one 2-AP action', {
-        before: beforeSuccessAp,
+        before: maxSuccessAp,
         after: harvested.ap,
-        spent: spentAp
+        cost: harvested.apCost,
+        expectedAfter: expectedAfterAp
       });
     await delay(80);
     invariant(resourceUpdates.length === 1
@@ -1417,8 +1491,19 @@ async function main() {
     await assertUntargetedAttack(accounts);
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
-    await assertHarvestRequiresEquippedTool(accounts);
     await assertEquipmentActionAuthority(accounts);
+    // The shooter fixtures intentionally share one oldDepot room so they can
+    // target each other. They must not influence the safe-spawn search for the
+    // following single-player harvest contract.
+    await closeFixtureSockets(accounts, [
+      'persistence',
+      'cadence',
+      'untargeted',
+      'strictAp',
+      'equipmentAp',
+      'target'
+    ]);
+    await assertHarvestRequiresEquippedTool(accounts);
 
     console.log(
       'Combat runtime OK: runtime-id profile sync and reload/fire survived save + reconnect, '

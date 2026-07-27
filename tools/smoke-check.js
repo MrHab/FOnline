@@ -8,7 +8,6 @@ const http = require('http');
 const os = require('os');
 const path = require('path');
 const { io: createSocketClient } = require('socket.io-client');
-require('./check-password-reset');
 const { passwordResetTokenHash } = require('../src/server/password-reset');
 const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 
@@ -16,13 +15,14 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
 const CLIENT_HTML = path.join(PROJECT_ROOT, 'public', 'index.html');
 const MAX_WAIT_MS = Number(process.env.SMOKE_WAIT_MS || 8000);
-const PORT = Number(process.env.SMOKE_PORT || (35000 + Math.floor(Math.random() * 2000)));
+const REQUESTED_PORT = Number(process.env.SMOKE_PORT || 0);
 const SMOKE_TMP_ROOT = process.env.SMOKE_TMPDIR
   ? path.resolve(process.env.SMOKE_TMPDIR)
   : os.tmpdir();
 fs.mkdirSync(SMOKE_TMP_ROOT, { recursive: true });
 const DATA_DIR = fs.mkdtempSync(path.join(SMOKE_TMP_ROOT, 'realm-of-ashes-smoke-'));
 let serverProc = null;
+let activePort = REQUESTED_PORT;
 let cleanedUp = false;
 
 function cleanup() {
@@ -391,7 +391,7 @@ function request(pathname, options = {}) {
     const headers = { ...(options.headers || {}) };
     if (options.json) headers['Content-Type'] = 'application/json';
     if (body) headers['Content-Length'] = Buffer.byteLength(body);
-    const req = http.request({ hostname: '127.0.0.1', port: PORT, path: pathname, method, headers, timeout: 1200 }, res => {
+    const req = http.request({ hostname: '127.0.0.1', port: activePort, path: pathname, method, headers, timeout: 1200 }, res => {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', chunk => { body += chunk; });
@@ -436,19 +436,26 @@ async function waitForHealth(proc, logs) {
     if (proc.exitCode !== null) {
       fail('server exited before /health became available', logs.join(''));
     }
-    try {
-      const res = await request('/health');
-      if (res.statusCode === 200) {
-        const data = JSON.parse(res.body);
-        if (!data.ok) fail('/health responded without ok=true', res.body);
-        if (!data.version) fail('/health responded without version field', res.body);
-        if (data.playerLimitPerLocation !== null || Object.prototype.hasOwnProperty.call(data, 'roomCapacity')) {
-          fail('/health still reports a per-location player limit', res.body);
+    if (!activePort) {
+      const match = logs.join('').match(/server listening on :(\d+)/);
+      const reportedPort = Number(match?.[1] || 0);
+      if (reportedPort > 0 && reportedPort <= 65535) activePort = reportedPort;
+    }
+    if (activePort) {
+      try {
+        const res = await request('/health');
+        if (res.statusCode === 200) {
+          const data = JSON.parse(res.body);
+          if (!data.ok) fail('/health responded without ok=true', res.body);
+          if (!data.version) fail('/health responded without version field', res.body);
+          if (data.playerLimitPerLocation !== null || Object.prototype.hasOwnProperty.call(data, 'roomCapacity')) {
+            fail('/health still reports a per-location player limit', res.body);
+          }
+          return data;
         }
-        return data;
+      } catch (_) {
+        // Server is still starting.
       }
-    } catch (_) {
-      // Server is still starting.
     }
     await new Promise(resolve => setTimeout(resolve, 250));
   }
@@ -516,7 +523,7 @@ async function assertRestCorsPreflight() {
   const localIpv4 = Object.values(os.networkInterfaces())
     .flatMap(rows => Array.isArray(rows) ? rows : [])
     .find(row => row?.family === 'IPv4' && !row.internal)?.address || '127.0.0.1';
-  const origin = `http://${localIpv4}:${PORT}`;
+  const origin = `http://${localIpv4}:${activePort}`;
   const preflight = await request('/api/auth/me', {
     method: 'OPTIONS',
     headers: {
@@ -976,7 +983,7 @@ function socketAck(socket, event, payload = {}, timeoutMs = 3000) {
 
 function connectSocketClient() {
   return new Promise((resolve, reject) => {
-    const socket = createSocketClient(`http://127.0.0.1:${PORT}`, {
+    const socket = createSocketClient(`http://127.0.0.1:${activePort}`, {
       transports: ['websocket'],
       forceNew: true,
       reconnection: false,
@@ -1252,6 +1259,31 @@ async function assertSocketMultiplayerLifecycle() {
       fail('crafting accepted or reached a station selected from another location',
         JSON.stringify({ player: first.join.self, response: remoteCraft }));
     }
+    const beforePeacefulCombat = first.join.combat || first.join.self?.combat || {};
+    const peacefulToken = `smoke_peaceful_attack_${Date.now().toString(36)}`;
+    const peacefulAttack = await socketAck(first.socket, 'combatAttack', {
+      weapon: String(beforePeacefulCombat.weapon || first.join.self?.equipment?.weapon || 'fists'),
+      mode: 'single',
+      attackToken: peacefulToken,
+      combat: {
+        token: peacefulToken,
+        weapon: String(beforePeacefulCombat.weapon || first.join.self?.equipment?.weapon || 'fists'),
+        mode: 'single',
+        shots: 1
+      }
+    });
+    const afterPeacefulCombat = peacefulAttack.combat || peacefulAttack.self?.combat || {};
+    if (peacefulAttack.ok !== false
+      || !peacefulAttack.self
+      || !peacefulAttack.combat
+      || Number(afterPeacefulCombat.ap) + 0.02 < Number(beforePeacefulCombat.ap)
+      || Number(afterPeacefulCombat.ap) > Number(afterPeacefulCombat.maxAp)
+      || Number(afterPeacefulCombat.loaded) !== Number(beforePeacefulCombat.loaded)
+      || Number(afterPeacefulCombat.reserveAmmo) !== Number(beforePeacefulCombat.reserveAmmo)
+      || Number(afterPeacefulCombat.condition) !== Number(beforePeacefulCombat.condition)) {
+      fail('peaceful-location combatAttack spent resources or omitted authoritative recovery state',
+        JSON.stringify({ before: beforePeacefulCombat, response: peacefulAttack }));
+    }
     const sharedTerminalTaskId = 'smoke_shared_terminal_task';
     for (const participant of [first, second]) {
       const accepted = await socketAck(participant.socket, 'worldTaskAction', {
@@ -1456,11 +1488,12 @@ async function assertSocketMultiplayerLifecycle() {
 }
 
 function spawnSmokeServer(logs = []) {
+  activePort = REQUESTED_PORT;
   const proc = childProcess.spawn(process.execPath, [SERVER_FILE], {
     cwd: PROJECT_ROOT,
     env: {
       ...process.env,
-      PORT: String(PORT),
+      PORT: String(REQUESTED_PORT),
       DATA_DIR,
       NODE_ENV: 'test',
       DEV_API_MODE: 'local',

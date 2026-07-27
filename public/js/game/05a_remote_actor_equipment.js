@@ -295,7 +295,6 @@
       enemy.canDialogue = false;
       enemy.traderStock = [];
       enemy.traderBuyInterests = [];
-      enemy.traderCaps = 0;
       enemy.inventory = [];
       enemy.traderId = '';
       enemy.traderProfile = '';
@@ -387,5 +386,4 @@
     const x = Number(shotData.x || 0), z = Number(shotData.z || 0);
     return new THREE.Vector3(x, 1.05, z);
   }
-
 

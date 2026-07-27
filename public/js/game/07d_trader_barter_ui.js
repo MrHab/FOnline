@@ -340,7 +340,10 @@
       if (ack.enemy && typeof applyNetworkEnemies === 'function') {
         applyNetworkEnemies([ack.enemy], { allowPositionSync: false, fromServer: true, pruneMissing: false });
         const updated = enemies.find(enemy => enemy.id === ack.enemy.id);
-        if (updated) activeTraderActor = updated;
+        if (updated) {
+          activeTraderActor = updated;
+          if (typeof applyServerTraderMarketUpdate === 'function') applyServerTraderMarketUpdate(updated);
+        }
       }
       if (!requested) {
         saleQueue.clear();
@@ -494,4 +497,3 @@
     }
     submitServerNpcTradeExchange(trader, { net: -price }, { sells: [{ id, qty: sellQty }], buys: [] });
   }
-

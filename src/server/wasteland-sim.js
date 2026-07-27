@@ -84,6 +84,10 @@ const {
   worldPartyPlayerCount,
   worldPartyPlayerLimit
 } = require('./wasteland-party-membership');
+const {
+  NPC_CAPS_INVENTORY_VERSION,
+  materializeNpcCapsInventory
+} = require('./npc-inventory');
 
 const SCHEMA = 'realm.wastelandSim.v1';
 const VERSION = 1;
@@ -1483,7 +1487,7 @@ function normalizeBattleActor(input = {}, index = 0, worldHour = 0) {
   const id = safeId(input.id || `${side}_${index}`, `${side}_${index}`);
   const maxHp = clamp(input.maxHp ?? input.hp ?? 40, 1, 400);
   const dead = !!input.dead || Number(input.hp || 0) <= 0;
-  const actor = {
+  let actor = {
     id,
     side,
     name: String(input.name || (side === 'defender' ? 'Охранник каравана' : 'Налетчик')).slice(0, 96),
@@ -1514,11 +1518,27 @@ function normalizeBattleActor(input = {}, index = 0, worldHour = 0) {
     tradeProfile: String(input.tradeProfile || input.traderProfile || '').slice(0, 64),
     traderStock: Array.isArray(input.traderStock) ? input.traderStock.slice(0, 48).map(row => ({ ...row })) : undefined,
     traderBuyInterests: Array.isArray(input.traderBuyInterests) ? input.traderBuyInterests.slice(0, 24) : undefined,
-    caps: Number.isFinite(Number(input.caps)) ? Number(input.caps) : undefined,
     dead,
     diedHour: dead ? (Number.isFinite(Number(input.diedHour)) ? Number(input.diedHour) : Number(worldHour || 0)) : 0
   };
-  return normalizeBattleActorIdentity(actor, index);
+  actor = normalizeBattleActorIdentity(actor, index);
+  const wallet = materializeNpcCapsInventory({
+    id: actor.id,
+    role: actor.role,
+    faction: actor.faction,
+    inventory: actor.inventory,
+    inventoryVersion: actor.inventoryVersion,
+    caps: input.caps,
+    traderCaps: input.traderCaps
+  }, {
+    seed: actor.id,
+    role: actor.role,
+    faction: actor.faction,
+    naturalCreature: factionGroup(actor.faction || '') === 'wild'
+  });
+  actor.inventory = wallet.inventory;
+  actor.inventoryVersion = wallet.inventoryVersion;
+  return actor;
 }
 
 const WILD_CREATURE_BATTLE_PROFILES = [
@@ -1650,7 +1670,6 @@ function normalizeBattleActorIdentity(actor = {}, index = 0) {
     actor.tradeProfile = '';
     actor.traderStock = undefined;
     actor.traderBuyInterests = undefined;
-    actor.caps = 0;
     retuneBattleActorVitals(actor, profile.hp, profile.atk, profile.speed);
     return actor;
   }
@@ -2931,7 +2950,11 @@ function createWastelandSimulation(options = {}) {
       tradeProfile: 'caravan',
       traderStock,
       traderBuyInterests: interests,
-      caps: Math.max(80, Math.round(120 + Number(party.strength || 40) * 3)),
+      inventory: [{
+        id: 'silver',
+        qty: Math.max(80, Math.round(120 + Number(party.strength || 40) * 3))
+      }],
+      inventoryVersion: NPC_CAPS_INVENTORY_VERSION,
       loot: traderStock.slice(0, 12).map(row => ({ id: row.id, qty: row.qty }))
     };
   }
@@ -2952,7 +2975,11 @@ function createWastelandSimulation(options = {}) {
         ...template,
         hp,
         dead,
-        diedHour: previous.diedHour || 0
+        diedHour: previous.diedHour || 0,
+        inventory: Array.isArray(previous.inventory) ? previous.inventory : template.inventory,
+        inventoryVersion: Array.isArray(previous.inventory)
+          ? Math.max(0, Math.floor(Number(previous.inventoryVersion || 0)))
+          : Number(template.inventoryVersion || 0)
       }, existingIndex, state.worldHour);
     } else {
       actors.unshift(normalizeBattleActor(template, 0, state.worldHour));

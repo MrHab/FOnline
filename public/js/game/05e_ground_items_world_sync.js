@@ -211,14 +211,14 @@
   const enemies = [];
   const enemyMeshes = [];
   const ENEMY_TYPES = [
-    { name: 'Рейдер', hp: 55, atk: 9, speed: 2.45, xp: 25, money: 5, scale: 1.0, visual: 'raider' },
-    { name: 'Гуль', hp: 42, atk: 7, speed: 2.85, xp: 18, money: 2, scale: 0.92, visual: 'ghoul' },
-    { name: 'Супермутант', hp: 120, atk: 18, speed: 1.75, xp: 70, money: 14, scale: 1.32, visual: 'mutant' },
-    { name: 'Пепельный волк', hp: 36, atk: 8, speed: 3.15, xp: 20, money: 1, scale: 0.82, visual: 'wolf' },
-    { name: 'Радскорпион', hp: 76, atk: 14, speed: 1.9, xp: 36, money: 2, scale: 1.05, visual: 'radscorpion' },
-    { name: 'Большой мутировавший муравей', hp: 52, atk: 10, speed: 2.55, xp: 24, money: 1, scale: 0.9, visual: 'mutantAnt' },
-    { name: 'Геккон пустоши', hp: 46, atk: 9, speed: 2.7, xp: 22, money: 1, scale: 0.92, visual: 'gecko' },
-    { name: 'Огненный геккон', hp: 62, atk: 12, speed: 2.42, xp: 34, money: 2, scale: 1.02, visual: 'fireGecko' }
+    { name: 'Рейдер', hp: 55, atk: 9, speed: 2.45, xp: 25, scale: 1.0, visual: 'raider' },
+    { name: 'Гуль', hp: 42, atk: 7, speed: 2.85, xp: 18, scale: 0.92, visual: 'ghoul' },
+    { name: 'Супермутант', hp: 120, atk: 18, speed: 1.75, xp: 70, scale: 1.32, visual: 'mutant' },
+    { name: 'Пепельный волк', hp: 36, atk: 8, speed: 3.15, xp: 20, scale: 0.82, visual: 'wolf' },
+    { name: 'Радскорпион', hp: 76, atk: 14, speed: 1.9, xp: 36, scale: 1.05, visual: 'radscorpion' },
+    { name: 'Большой мутировавший муравей', hp: 52, atk: 10, speed: 2.55, xp: 24, scale: 0.9, visual: 'mutantAnt' },
+    { name: 'Геккон пустоши', hp: 46, atk: 9, speed: 2.7, xp: 22, scale: 0.92, visual: 'gecko' },
+    { name: 'Огненный геккон', hp: 62, atk: 12, speed: 2.42, xp: 34, scale: 1.02, visual: 'fireGecko' }
   ];
 
   function enemyVisualFromNetworkSnapshot(saved = {}, fallback = '') {
@@ -588,8 +588,9 @@
         priceMultiplier: Number(saved.traderMarket.priceMultiplier || 1),
         quantityMultiplier: Number(saved.traderMarket.quantityMultiplier || 1)
       },
-      inventory: naturalCreature ? [] : (typeof normalizeNpcInventoryRows === 'function' ? normalizeNpcInventoryRows(saved.inventory || []) : (Array.isArray(saved.inventory) ? saved.inventory.slice() : [])),
-      traderCaps: naturalCreature ? 0 : (Number.isFinite(Number(saved.traderCaps)) ? Math.max(0, Math.floor(Number(saved.traderCaps))) : undefined),
+      inventory: naturalCreature ? [] : (typeof normalizeNpcInventoryWithLegacyCaps === 'function'
+        ? normalizeNpcInventoryWithLegacyCaps(saved.inventory || [], saved.traderCaps)
+        : (Array.isArray(saved.inventory) ? saved.inventory.slice() : [])),
       hp: Number(saved.hp ?? type.hp),
       maxHp: Number(saved.maxHp ?? type.hp),
       mesh,
@@ -694,7 +695,6 @@
       if (naturalCreature) {
         enemy.traderStock = [];
         enemy.traderBuyInterests = [];
-        enemy.traderCaps = 0;
         enemy.inventory = [];
         enemy.traderId = '';
         enemy.traderProfile = '';
@@ -730,8 +730,9 @@
       } else if (naturalCreature) {
         enemy.traderMarket = null;
       }
-      if (!naturalCreature && typeof normalizeNpcInventoryRows === 'function') enemy.inventory = normalizeNpcInventoryRows(saved.inventory || enemy.inventory || []);
-      if (!naturalCreature && Number.isFinite(Number(saved.traderCaps))) enemy.traderCaps = Math.max(0, Math.floor(Number(saved.traderCaps)));
+      if (!naturalCreature && typeof normalizeNpcInventoryWithLegacyCaps === 'function') {
+        enemy.inventory = normalizeNpcInventoryWithLegacyCaps(saved.inventory || enemy.inventory || [], saved.traderCaps);
+      }
       enemy.hp = Number(saved.hp || 0);
       enemy.maxHp = Number(saved.maxHp || enemy.maxHp || 1);
       enemy.aiState = saved.aiState || enemy.aiState || 'idle';

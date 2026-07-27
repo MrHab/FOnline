@@ -416,6 +416,15 @@
     return Array.from(out.entries()).map(([id, qty]) => ({ id, qty }));
   }
 
+  function normalizeNpcInventoryWithLegacyCaps(input = [], legacyCaps = undefined) {
+    const rows = normalizeNpcInventoryRows(input);
+    if (rows.some(row => row.id === 'silver')) return rows;
+    const caps = Number(legacyCaps);
+    if (!Number.isFinite(caps) || caps <= 0) return rows;
+    rows.push({ id: 'silver', qty: Math.min(9999, Math.floor(caps)) });
+    return rows;
+  }
+
   function npcInventoryCapsOrNull(actor = null) {
     if (!actor || !Array.isArray(actor.inventory)) return null;
     return actor.inventory
@@ -436,21 +445,16 @@
   }
 
   function setNpcInventoryCaps(actor = null, caps = 0) {
-    const safeCaps = setNpcInventoryItem(actor, 'silver', caps);
-    if (actor) actor.traderCaps = safeCaps;
-    return safeCaps;
+    return setNpcInventoryItem(actor, 'silver', caps);
   }
 
   function syncNpcTradeStateToServer(trader = null) {
     if (!trader || trader.isTradeMachine || !trader.id || typeof multiplayer === 'undefined' || !multiplayer?.socket || !multiplayer.socket.connected) return;
-    multiplayer.socket.emit('syncNpcTradeState', {
-      enemyId: trader.id,
-      caps: npcInventoryCapsOrNull(trader) ?? Math.max(0, Math.floor(Number(trader.traderCaps || 0))),
-      inventory: normalizeNpcInventoryRows(trader.inventory || []),
-      traderStock: normalizeTraderStockRows(trader.traderStock || [])
-    }, ack => {
+    multiplayer.socket.emit('syncNpcTradeState', { enemyId: trader.id }, ack => {
       if (!ack || !ack.ok || !ack.enemy || typeof applyNetworkEnemies !== 'function') return;
       applyNetworkEnemies([ack.enemy], { allowPositionSync: false, fromServer: true, pruneMissing: false });
+      const updated = enemies.find(enemy => enemy.id === ack.enemy.id);
+      if (updated) applyServerTraderMarketUpdate(updated);
     });
   }
 
@@ -555,8 +559,7 @@
   function computeTraderRestockCaps(trader) {
     const inventoryCaps = npcInventoryCapsOrNull(trader);
     if (inventoryCaps !== null) return inventoryCaps;
-    const hasLocationTraderProfile = isLocationTraderActor(trader);
-    const explicit = Number(trader?.traderCaps ?? (hasLocationTraderProfile ? currentLocation?.trader?.caps : undefined));
+    const explicit = Number(trader?.isTradeMachine ? trader.traderCaps : undefined);
     if (Number.isFinite(explicit)) return Math.max(0, Math.floor(explicit));
     return 0;
   }
@@ -564,7 +567,7 @@
   function syncTraderMarketToActor(trader, state) {
     if (!trader || !state) return;
     const caps = Math.max(0, Math.floor(Number(state.caps || 0)));
-    trader.traderCaps = caps;
+    if (trader.isTradeMachine) trader.traderCaps = caps;
     setNpcInventoryCaps(trader, caps);
     trader.traderRestockDay = Number(state.restockDay || 0);
     trader.traderStock = normalizeTraderStockRows(state.stock);
@@ -577,9 +580,7 @@
     const existing = traderMarketState[key] || {};
     const stock = normalizeTraderStockRows(trader.traderStock || existing.stock || []);
     const caps = npcInventoryCapsOrNull(trader);
-    const safeCaps = caps !== null
-      ? caps
-      : Math.max(0, Math.floor(Number(trader.traderCaps ?? existing.caps ?? computeTraderRestockCaps(trader))));
+    const safeCaps = caps !== null ? caps : computeTraderRestockCaps(trader);
     const baseStock = normalizeTraderStockRows(existing.baseStock).length
       ? normalizeTraderStockRows(existing.baseStock)
       : stock.map(row => ({ ...row }));
@@ -614,11 +615,12 @@
       ? Math.max(0, Math.floor(Number(existing.baseCaps)))
       : computeTraderRestockCaps(trader);
     const needsRestock = force || !existing || Number(existing.restockDay) !== day;
+    const physicalCaps = computeTraderRestockCaps(trader);
     if (needsRestock) {
       traderMarketState[key] = {
         restockDay: day,
         baseCaps,
-        caps: baseCaps,
+        caps: trader.isTradeMachine ? baseCaps : physicalCaps,
         baseStock: baseStock.map(row => ({ ...row })),
         stock: baseStock.map(row => ({ ...row }))
       };
@@ -627,7 +629,7 @@
         ...existing,
         restockDay: Number(existing.restockDay),
         baseCaps,
-        caps: Math.max(0, Math.floor(Number(existing.caps || 0))),
+        caps: trader.isTradeMachine ? Math.max(0, Math.floor(Number(existing.caps || 0))) : physicalCaps,
         baseStock: baseStock.map(row => ({ ...row })),
         stock: normalizeTraderStockRows(existing.stock).map(row => ({ ...row }))
       };
@@ -715,4 +717,3 @@
       queueSave();
     }
   }
-

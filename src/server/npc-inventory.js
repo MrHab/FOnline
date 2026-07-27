@@ -1,5 +1,8 @@
 'use strict';
 
+const NPC_CAPS_INVENTORY_VERSION = 1;
+const NPC_INVENTORY_VERSION = 2;
+
 const FACTION_ALIASES = Object.freeze({
   caravan: 'caravans',
   caravans: 'caravans',
@@ -274,6 +277,45 @@ function setRowQty(rows = [], itemId = '', qty = 0) {
   return out;
 }
 
+function startingNpcCaps(context = {}) {
+  const role = String(context.role || '').toLowerCase();
+  const seed = String(context.seed || `${context.faction || 'neutral'}:${role}:npc`);
+  const wealth = Math.max(0, Number(context.wealth || 0));
+  const roleMoney = ['merchant', 'trader', 'quartermaster'].includes(role) ? 48
+    : ['guard', 'patrol', 'defender'].includes(role) ? 18
+      : ['raider', 'attacker', 'mutant'].includes(role) ? 7 : 10;
+  const wealthMultiplier = Math.max(0.55, Math.min(1.8, 0.55 + Math.log10(Math.max(1, wealth)) * 0.34));
+  return Math.max(1, Math.floor(roleMoney * wealthMultiplier * (0.72 + stableUnit(seed, 'money') * 0.72)));
+}
+
+function materializeNpcCapsInventory(input = {}, context = {}) {
+  const naturalCreature = context.naturalCreature === true;
+  const previousVersion = Math.max(0, Math.floor(Number(input.inventoryVersion || 0)));
+  let inventory = mergeRows(input.inventory || []);
+  if (naturalCreature) {
+    return {
+      inventory: inventory.filter(row => row.id !== 'silver'),
+      inventoryVersion: 0
+    };
+  }
+  if (previousVersion < NPC_CAPS_INVENTORY_VERSION && rowQty(inventory, 'silver') <= 0) {
+    const legacyCaps = Number(input.caps ?? input.traderCaps);
+    const caps = Number.isFinite(legacyCaps) && legacyCaps > 0
+      ? Math.floor(legacyCaps)
+      : startingNpcCaps({
+        seed: context.seed || input.id,
+        role: context.role || input.role,
+        faction: context.faction || input.faction,
+        wealth: context.wealth
+      });
+    inventory = setRowQty(inventory, 'silver', caps);
+  }
+  return {
+    inventory,
+    inventoryVersion: Math.max(previousVersion, NPC_CAPS_INVENTORY_VERSION)
+  };
+}
+
 function buildFactionPersonalInventory(context = {}) {
   const faction = normalizeFaction(context.faction || 'neutral');
   const role = String(context.role || '').toLowerCase();
@@ -290,11 +332,7 @@ function buildFactionPersonalInventory(context = {}) {
   };
   const has = id => itemAvailable(catalog, id);
 
-  const roleMoney = ['merchant', 'trader', 'quartermaster'].includes(role) ? 48
-    : ['guard', 'patrol', 'defender'].includes(role) ? 18
-      : ['raider', 'attacker', 'mutant'].includes(role) ? 7 : 10;
-  const wealthMultiplier = Math.max(0.55, Math.min(1.8, 0.55 + Math.log10(Math.max(1, Number(catalog.wealth || 0))) * 0.34));
-  add('silver', Math.max(1, Math.floor(roleMoney * wealthMultiplier * (0.72 + stableUnit(seed, 'money') * 0.72))));
+  add('silver', startingNpcCaps({ seed, role, faction, wealth: catalog.wealth }));
   if (has('water')) add('water', 1 + Math.floor(stableUnit(seed, 'water') * 2));
   if (has('food') && stableUnit(seed, 'food') > 0.22) add('food', 1);
 
@@ -459,11 +497,15 @@ function transferCorpseLoot(looter = {}, corpse = {}, context = {}) {
 }
 
 module.exports = {
+  NPC_CAPS_INVENTORY_VERSION,
+  NPC_INVENTORY_VERSION,
   FACTION_DOCTRINES,
   normalizeFaction,
   buildFactionSupplyCatalog,
   chooseFactionEquipment,
   buildFactionPersonalInventory,
+  startingNpcCaps,
+  materializeNpcCapsInventory,
   chooseUsableWeapon,
   prepareNpcWeapon,
   consumeNpcAmmo,

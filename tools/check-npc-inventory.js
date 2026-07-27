@@ -6,9 +6,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const {
+  NPC_CAPS_INVENTORY_VERSION,
   buildFactionSupplyCatalog,
   chooseFactionEquipment,
   buildFactionPersonalInventory,
+  materializeNpcCapsInventory,
   prepareNpcWeapon,
   consumeNpcAmmo,
   buildPersonalTradeStock,
@@ -94,6 +96,47 @@ assert(issuedWeapon && issuedWeapon.ammoType, 'Test guard must receive a ranged 
 assert(rowQty(personal, issuedWeapon.ammoType) >= issuedWeapon.magSize * 3, 'Combat NPC must receive several magazines');
 assert(personal.some(row => ['knife', 'axe'].includes(row.id)), 'Ranged NPC must receive an available melee backup');
 
+const migratedLegacyWallet = materializeNpcCapsInventory({
+  id: 'legacy_merchant',
+  role: 'merchant',
+  faction: 'caravans',
+  caps: 137,
+  inventory: [{ id: 'water', qty: 2 }],
+  inventoryVersion: 0
+});
+assert.strictEqual(rowQty(migratedLegacyWallet.inventory, 'silver'), 137, 'Legacy NPC caps must migrate into physical inventory');
+assert.strictEqual(migratedLegacyWallet.inventoryVersion, NPC_CAPS_INVENTORY_VERSION, 'Physical wallet migration version must be recorded');
+assert(!Object.prototype.hasOwnProperty.call(migratedLegacyWallet, 'caps'), 'Migrated NPC state must not retain a shadow caps wallet');
+
+const spentWallet = materializeNpcCapsInventory({
+  id: 'spent_guard',
+  role: 'guard',
+  faction: 'old_klim',
+  inventory: [{ id: 'water', qty: 1 }],
+  inventoryVersion: NPC_CAPS_INVENTORY_VERSION
+});
+assert.strictEqual(rowQty(spentWallet.inventory, 'silver'), 0, 'A migrated NPC who spent every cap must not receive free money on normalization');
+
+const generatedWallet = materializeNpcCapsInventory({
+  id: 'new_raider',
+  role: 'raider',
+  faction: 'raiders',
+  inventory: [],
+  inventoryVersion: 0
+});
+assert(rowQty(generatedWallet.inventory, 'silver') > 0, 'Every new sapient NPC must receive physical caps');
+
+const creatureWallet = materializeNpcCapsInventory({
+  id: 'wild_gecko',
+  role: 'monster',
+  faction: 'wild',
+  caps: 99,
+  inventory: [{ id: 'silver', qty: 99 }, { id: 'leather', qty: 1 }],
+  inventoryVersion: 0
+}, { naturalCreature: true });
+assert.strictEqual(rowQty(creatureWallet.inventory, 'silver'), 0, 'Natural creatures must not carry currency');
+assert.strictEqual(rowQty(creatureWallet.inventory, 'leather'), 1, 'Removing creature currency must preserve legitimate organic loot');
+
 const lastRoundActor = {
   equipment: { weapon: 'pistol' },
   inventory: [{ id: 'pistol', qty: 1 }, { id: 'ammo9', qty: 1 }, { id: 'knife', qty: 1 }]
@@ -165,11 +208,55 @@ process.once('exit', cleanupTemp);
 process.once('SIGINT', () => { cleanupTemp(); process.exit(130); });
 process.once('SIGTERM', () => { cleanupTemp(); process.exit(143); });
 
+fs.writeFileSync(stateFile, JSON.stringify({
+  worldHour: 12,
+  worldZones: [{
+    id: 'legacy_wallet_migration_zone',
+    kind: 'battle',
+    status: 'active',
+    createdHour: 10,
+    expiresHour: 30,
+    details: {
+      simBattle: true,
+      actors: [
+        {
+          id: 'legacy_merchant_actor',
+          side: 'defender',
+          faction: 'caravans',
+          role: 'merchant',
+          hp: 40,
+          maxHp: 40,
+          caps: 137,
+          inventory: [],
+          inventoryVersion: 0
+        },
+        {
+          id: 'legacy_wild_actor',
+          side: 'attacker',
+          faction: 'wild',
+          role: 'monster',
+          hp: 40,
+          maxHp: 40,
+          caps: 99,
+          inventory: [{ id: 'silver', qty: 99 }, { id: 'leather', qty: 1 }],
+          inventoryVersion: 0
+        }
+      ]
+    }
+  }]
+}), 'utf8');
+
 const simulation = createWastelandSimulation({
   stateFile,
   getGlobalMap: () => ({ grid: { cols: 1, rows: 1, cellPoints: 1, cellKm: 10 }, nodes: [], cells: { '0:0': {} } }),
   gameDayRealMs: 60 * 60 * 1000
 });
+const migratedZoneActors = simulation.worldZoneById('legacy_wallet_migration_zone').details.actors;
+const migratedMerchantActor = migratedZoneActors.find(actor => actor.id === 'legacy_merchant_actor');
+const migratedWildActor = migratedZoneActors.find(actor => actor.id === 'legacy_wild_actor');
+assert.strictEqual(rowQty(migratedMerchantActor.inventory, 'silver'), 137, 'World simulation must migrate a legacy NPC wallet into inventory on load');
+assert(!Object.prototype.hasOwnProperty.call(migratedMerchantActor, 'caps'), 'World simulation must delete the migrated actor caps field');
+assert.strictEqual(rowQty(migratedWildActor.inventory, 'silver'), 0, 'World simulation must remove legacy currency from natural creatures');
 const simState = simulation.state();
 simState.worldZones = [{
   id: 'npc_inventory_test_zone',
@@ -221,6 +308,7 @@ assert.strictEqual(migratedOnsiteActor.inventoryVersion, 2, 'Onsite actor invent
 assert.strictEqual(rowQty(migratedOnsiteActor.inventory, 'silver'), 12, 'Onsite actor personal money was lost during migration');
 
 const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+const wastelandSimSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'server', 'wasteland-sim.js'), 'utf8');
 const traderStateSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '07b_trader_market_state.js'), 'utf8');
 const dialogueSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '07c_trader_dialogues_quests.js'), 'utf8');
 const contextSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '08d_world_context_targets.js'), 'utf8');
@@ -248,6 +336,27 @@ assert((serverSource.match(/serverNpcConsumeCombatAmmo\(/g) || []).length >= 3,
   'Both NPC-vs-NPC and NPC-vs-player attacks must consume personal ammunition and trigger weapon fallback');
 assert(serverSource.includes('inventory: naturalCreature ? stripServerCreatureInventoryRows(e.inventory || []) : sanitizeServerInventorySnapshot(e.inventory || [], { includeEquipped: true })'),
   'NPC inventory changes must be exposed in authoritative snapshots');
+assert(!roomActorSnapshotSource.includes('traderCaps:') && !roomActorSnapshotSource.includes('caps:'),
+  'NPC room snapshots must persist currency only through inventory');
+const publicEnemySource = serverSource.match(/function publicEnemy\(e\) \{[\s\S]*?\n\}/)?.[0] || '';
+assert(!publicEnemySource.includes('traderCaps:'),
+  'Public NPC snapshots must not expose a shadow caps wallet');
+assert(!serverSource.includes('caps: actor.caps'),
+  'Simulated actors must enter rooms with their physical inventory instead of a caps field');
+assert(serverSource.includes('loot: naturalCreature ? enemyLoot : []'),
+  'A living sapient NPC must not keep a second copy of inventory currency in corpse loot');
+assert(!wastelandSimSource.includes('caps: Number.isFinite(Number(input.caps))')
+  && !wastelandSimSource.includes('actor.caps ='),
+  'Autonomous NPC actors must not retain a shadow caps field');
+assert(wastelandSimSource.includes('inventory: Array.isArray(previous.inventory) ? previous.inventory : template.inventory'),
+  'Refreshing a caravan merchant must preserve the physical wallet after trade');
+assert(traderStateSource.includes("multiplayer.socket.emit('syncNpcTradeState', { enemyId: trader.id }"),
+  'The client must request NPC trade state without uploading a shadow wallet or inventory');
+assert(!traderStateSource.includes('if (actor) actor.traderCaps'),
+  'Client NPC currency updates must write only the silver inventory row');
+assert(traderStateSource.includes('caps: trader.isTradeMachine ? baseCaps : physicalCaps')
+  && traderStateSource.includes('caps: trader.isTradeMachine ? Math.max(0, Math.floor(Number(existing.caps || 0))) : physicalCaps'),
+  'Client market cache must take NPC caps from physical inventory on create, reload and day rollover');
 assert(traderStateSource.includes("return !!(actor && !actor.dead && !actor._removed && actor.hostileToPlayer === false);"), 'Client must recognize every friendly sapient NPC as a barter partner');
 assert(dialogueSource.includes('function renderFriendlyNpcDialogue'), 'Client must provide a generic non-quest dialogue for friendly NPCs');
 assert(dialogueSource.includes('return renderFriendlyNpcDialogue(trader);'), 'Unknown friendly profiles must not fall through to Old Klim quests');

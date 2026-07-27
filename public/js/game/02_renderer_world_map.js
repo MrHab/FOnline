@@ -570,4 +570,3 @@
   window.addEventListener('resize', resize);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
   window.addEventListener('orientationchange', () => setTimeout(resize, 250));
-

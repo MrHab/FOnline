@@ -1167,6 +1167,8 @@
 
   function updatePlayerMovement(dt) {
     playerDynamicObstacleFrameToken++;
+    const animationStartX = Number(player.x || 0);
+    const animationStartZ = Number(player.z || 0);
     refreshPointerWorldFromLastScreen();
     if (!isMobileControlsEnabled() && pointerHasWorld) {
       const lookDx = pointerWorld.x - player.x;
@@ -1191,6 +1193,12 @@
     playerGroup.position.set(player.x, 0, player.z);
     playerGroup.rotation.y = player.angle + Math.PI;
     applyCharacterCrouchVisual(playerGroup, player.crouching, dt);
+    const animationDistance = Math.hypot(player.x - animationStartX, player.z - animationStartZ);
+    updateCharacterLocomotionAnimation(playerGroup, dt, {
+      moving: animationDistance > 0.0005,
+      speed: animationDistance / Math.max(0.001, Number(dt || 0.016)),
+      crouching: player.crouching
+    });
     applyCharacterInjuryVisual(playerGroup, player.injuries || {}, dt);
     updateWeaponVisualAnimation(playerParts.weaponGroup, dt, player);
     updateCharacterMeleeAnimation(playerGroup, dt);

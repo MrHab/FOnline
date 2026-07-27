@@ -632,6 +632,7 @@
       reserveAmmo: Math.max(0, Number(inventory.get(w.ammoType) || 0))
     };
     player.reloadTimer = 0;
+    triggerCharacterReloadVisual(playerGroup, weaponBaseId(w));
     addLog(`⟳ Перезарядка: +${take} патр. в ${w.name}. Потрачено ${formatActionCost(apCost)} ОД.`, null, 'system');
     setReadout(`Перезарядка: -${formatActionCost(apCost)} ОД.`);
     if (multiplayer.socket && multiplayer.socket.connected && multiplayer.joined) {

@@ -110,12 +110,14 @@
     if (group.userData.equipmentKey === key) return;
     group.userData.equipmentKey = key;
     group.userData.equipment = eq;
+    group.userData.weaponId = eq.weapon;
 
     const parts = group.userData.parts || {};
     applyArmorVisualSet(parts, eq);
     if (parts.weaponGroup) {
       disposeGroupChildren(parts.weaponGroup);
       initWeaponVisualState(parts.weaponGroup);
+      parts.weaponGroup.userData.weaponId = eq.weapon;
       const mesh = makeRemoteWeaponMesh(eq.weapon);
       if (mesh) parts.weaponGroup.add(mesh);
     }
@@ -386,4 +388,3 @@
     const x = Number(shotData.x || 0), z = Number(shotData.z || 0);
     return new THREE.Vector3(x, 1.05, z);
   }
-

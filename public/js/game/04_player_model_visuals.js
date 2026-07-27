@@ -751,8 +751,8 @@
   function createPlayerModel() {
     playerGroup.clear();
     playerParts = {};
-    buildWastelandHumanoid(playerGroup, playerParts, { castShadow: true, isPlayer: true });
-    buildCharacterArmorExtras(playerGroup, playerParts, true);
+    buildModernWastelandHumanoid(playerGroup, playerParts, { castShadow: true, isPlayer: true });
+    buildModernCharacterArmorExtras(playerGroup, playerParts, true);
     initWeaponVisualState(playerParts.weaponGroup);
     playerGroup.userData.parts = playerParts;
     stabilizeCharacterNoCull(playerGroup);
@@ -951,8 +951,17 @@
     let wallPullback = prevPullback + (desiredWallPullback - prevPullback) * Math.min(1, Math.max(0.001, dt || 0.016) * pullRate);
     if (Math.abs(wallPullback) < 0.001) wallPullback = 0;
     weaponGroup.userData.wallPullback = wallPullback;
-    weaponGroup.position.set(basePos.x, basePos.y + eased * 0.05, basePos.z + eased * 0.18 + wallPullback);
-    weaponGroup.rotation.set(baseRot.x - eased * 0.48, baseRot.y, baseRot.z + eased * 0.1);
+    const characterPose = weaponGroup.userData.characterPose || {};
+    weaponGroup.position.set(
+      basePos.x + Number(characterPose.x || 0),
+      basePos.y + Number(characterPose.y || 0) + eased * 0.05,
+      basePos.z + Number(characterPose.z || 0) + eased * 0.18 + wallPullback
+    );
+    weaponGroup.rotation.set(
+      baseRot.x + Number(characterPose.rx || 0) - eased * 0.48,
+      baseRot.y + Number(characterPose.ry || 0),
+      baseRot.z + Number(characterPose.rz || 0) + eased * 0.1
+    );
   }
 
   function meleeVisualBaseId(id = 'fists') {
@@ -1118,6 +1127,18 @@
     catch (_) { return id; }
   }
 
+  function setCharacterArmMaterial(parts, side, material = null, fallbackMaterial = null) {
+    const rows = parts?.[`armMaterialMeshes${side}`];
+    if (Array.isArray(rows) && rows.length) {
+      rows.forEach(row => {
+        if (row?.mesh) row.mesh.material = material || row.material;
+      });
+      return;
+    }
+    const arm = parts?.[`arm${side}`];
+    if (arm?.isMesh && (material || fallbackMaterial)) arm.material = material || fallbackMaterial;
+  }
+
   function applyArmorVisualSet(parts, eq = {}) {
     if (!parts || !parts.chest) return;
     const armorId = String(equipmentVisualBaseId(eq.armor) || '');
@@ -1131,15 +1152,21 @@
     const armMat = baseMats.arm || clothingMat;
 
     if (parts.body) parts.body.material = clothingMat;
-    if (parts.armL) parts.armL.material = armMat;
-    if (parts.armR) parts.armR.material = armMat;
+    setCharacterArmMaterial(parts, 'L', null, armMat);
+    setCharacterArmMaterial(parts, 'R', null, armMat);
     if (parts.chest) {
       parts.chest.material = chestMat;
       parts.chest.scale.set(1, 1, 1);
     }
-    if (parts.helmet) { parts.helmet.material = baseMats.helmet || mats.metal; parts.helmet.scale.set(1, 1, 1); parts.helmet.visible = helmetOn; }
+    if (parts.helmet) {
+      parts.helmet.material = baseMats.helmet || mats.metal;
+      parts.helmet.scale.set(1, parts.modernRig ? 0.72 : 1, 1);
+      parts.helmet.visible = helmetOn;
+    }
+    if (Array.isArray(parts.hairMeshes)) parts.hairMeshes.forEach(mesh => { if (mesh) mesh.visible = !helmetOn; });
     if (parts.boots) parts.boots.visible = true;
     if (parts.backpack) parts.backpack.visible = backpackOn;
+    if (Array.isArray(parts.packAccessories)) parts.packAccessories.forEach(mesh => { if (mesh) mesh.visible = backpackOn; });
     ['chestPlate','shoulderL','shoulderR','energyCore','visor','canister','helmetVisor','helmetFront','helmetPodL','helmetPodR','bootL','bootR','leatherTorso','leatherSleeveL','leatherSleeveR','leatherCollarL','leatherCollarR'].forEach(key => { if (parts[key]) parts[key].visible = false; });
 
     const helmetId = String(equipmentVisualBaseId(eq.helmet) || '');
@@ -1149,7 +1176,7 @@
         if (parts.helmetVisor) parts.helmetVisor.visible = true;
       } else if (helmetId === 'assaultHelmet') {
         parts.helmet.material = matsSet.heavy || mats.metal;
-        parts.helmet.scale.set(1.05, 1.05, 1.05);
+        parts.helmet.scale.set(1.05, parts.modernRig ? 0.76 : 1.05, 1.05);
         if (parts.helmetFront) parts.helmetFront.visible = true;
         if (parts.helmetPodL && parts.helmetPodR) { parts.helmetPodL.visible = true; parts.helmetPodR.visible = true; }
         if (parts.helmetVisor) parts.helmetVisor.visible = true;
@@ -1192,8 +1219,8 @@
       if (parts.shoulderL && parts.shoulderR) { parts.shoulderL.visible = true; parts.shoulderR.visible = true; }
     } else if (armorId === 'ballisticVest') {
       if (parts.body) parts.body.material = matsSet.vest || mats.darkMetal;
-      if (parts.armL) parts.armL.material = matsSet.vest || mats.darkMetal;
-      if (parts.armR) parts.armR.material = matsSet.vest || mats.darkMetal;
+      setCharacterArmMaterial(parts, 'L', matsSet.vest || mats.darkMetal);
+      setCharacterArmMaterial(parts, 'R', matsSet.vest || mats.darkMetal);
       parts.chest.material = matsSet.vest || mats.darkMetal;
       if (parts.chestPlate) { parts.chestPlate.visible = true; parts.chestPlate.material = matsSet.vest || mats.darkMetal; }
     } else if (armorId === 'combatArmor') {
@@ -1204,8 +1231,8 @@
       if (parts.shoulderL && parts.shoulderR) { parts.shoulderL.visible = true; parts.shoulderR.visible = true; }
     } else if (armorId === 'hazmatSuit') {
       if (parts.body) parts.body.material = matsSet.hazmat || mats.cloth;
-      if (parts.armL) parts.armL.material = matsSet.hazmat || mats.cloth;
-      if (parts.armR) parts.armR.material = matsSet.hazmat || mats.cloth;
+      setCharacterArmMaterial(parts, 'L', matsSet.hazmat || mats.cloth);
+      setCharacterArmMaterial(parts, 'R', matsSet.hazmat || mats.cloth);
       parts.chest.material = matsSet.hazmat || mats.cloth;
       if (parts.canister) parts.canister.visible = true;
       if (parts.visor) parts.visor.visible = helmetOn;
@@ -1219,8 +1246,8 @@
       if (parts.visor) parts.visor.visible = helmetOn;
     } else if (armorId === 'energySuit') {
       if (parts.body) parts.body.material = matsSet.energy || mats.metal;
-      if (parts.armL) parts.armL.material = matsSet.energy || mats.metal;
-      if (parts.armR) parts.armR.material = matsSet.energy || mats.metal;
+      setCharacterArmMaterial(parts, 'L', matsSet.energy || mats.metal);
+      setCharacterArmMaterial(parts, 'R', matsSet.energy || mats.metal);
       parts.chest.material = matsSet.energy || mats.metal;
       if (parts.chestPlate) { parts.chestPlate.visible = true; parts.chestPlate.material = matsSet.energy || mats.metal; }
       if (parts.energyCore) parts.energyCore.visible = true;
@@ -1434,6 +1461,8 @@
     initWeaponVisualState(playerParts.weaponGroup);
     const w = currentWeapon();
     const weaponId = equipmentVisualBaseId(w?.id || equipment.weapon || 'fists');
+    playerGroup.userData.weaponId = weaponId;
+    playerParts.weaponGroup.userData.weaponId = weaponId;
     let mesh = null;
     if (weaponId === 'pistol') mesh = makePistolMesh();
     else if (weaponId === 'rifle') mesh = makeRifleMesh();
@@ -1553,16 +1582,27 @@
     group.rotation.z = state.brokenLeg ? Math.sin(performance.now() / 260) * 0.035 : 0;
     if (parts.legs) parts.legs.rotation.z = state.brokenLeg ? -0.09 : 0;
     if (parts.armR) {
-      parts.armR.rotation.z = state.brokenArm ? 0.95 : 0.22;
-      parts.armR.rotation.x = state.brokenArm ? -0.35 : 0;
+      if (parts.modernRig) {
+        if (state.brokenArm) {
+          parts.armR.rotation.z += 0.72;
+          parts.armR.rotation.x -= 0.35;
+        }
+      } else {
+        parts.armR.rotation.z = state.brokenArm ? 0.95 : 0.22;
+        parts.armR.rotation.x = state.brokenArm ? -0.35 : 0;
+      }
     }
-    if (parts.head) parts.head.rotation.z = wobble;
+    if (parts.head) parts.head.rotation.z = parts.modernRig ? parts.head.rotation.z + wobble : wobble;
     if (parts.body) parts.body.rotation.z = state.concussion ? wobble * 0.4 : 0;
   }
 
   function applyCharacterCrouchVisual(group, enabled, dt = 0.016) {
     if (!group) return;
     const target = enabled ? 1 : 0;
+    if (group.userData?.parts?.modernRig) {
+      group.userData.crouching = !!enabled;
+      return;
+    }
     const current = Number(group.userData.crouchBlend || 0);
     const k = Math.min(1, Math.max(0.08, dt * 12));
     const blend = current + (target - current) * k;

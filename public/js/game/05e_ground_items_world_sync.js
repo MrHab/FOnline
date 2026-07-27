@@ -872,7 +872,6 @@
     traderNpc = null;
     storageBox = null;
     exitPortal = null;
-    marker.visible = false;
     if (typeof invalidateMinimapStaticCache === 'function') invalidateMinimapStaticCache('network-rebuild');
     createWastelandBackplate();
 

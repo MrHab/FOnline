@@ -515,8 +515,6 @@
     Object.keys(keys).forEach(code => { keys[code] = false; });
     if (typeof stopAutoFire === 'function') stopAutoFire();
     if (typeof stopTouchAim === 'function') stopTouchAim();
-    player.targetPath = [];
-    if (marker) marker.visible = false;
     if (globalMapState.onWorldMap) {
       setGlobalMapMiniGameActive(true);
     }

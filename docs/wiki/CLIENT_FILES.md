@@ -4,7 +4,7 @@
 
 `public/index.html` сначала подключает локальные vendor-сборки Three.js, `GLTFLoader` и Socket.IO, а затем запускает этот загрузчик.
 
-Загрузчик параллельно получает каталог коллайдеров и все 60 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
+Загрузчик параллельно получает каталог коллайдеров и все 59 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
 
 JS-части и vendor-библиотеки пока загружаются до авторизации, но тяжёлый
 3D-runtime отделён от auth shell: данные мира, PBR-материалы, текстуры,
@@ -45,8 +45,7 @@ JS-части и vendor-библиотеки пока загружаются д�
 | `05d_world_containers_security.js` | server containers, lock/terminal UI and loot window actions |
 | `05e_ground_items_world_sync.js` | ground items, resources, world/enemy network snapshots |
 | `05f_enemy_models_location_flow.js` | enemy model builders, local spawn/restore and location loading |
-| `06_pathfinding_movement.js` | поиск пути, ближайшая проходимая клетка и цель движения |
-| `06a_combat_visual_fx.js` | маркер движения, трассеры, пулы эффектов и визуальные FX оружия |
+| `06a_combat_visual_fx.js` | трассеры, пулы эффектов и визуальные FX оружия |
 | `06b_explosions_speech.js` | взрывы, плавающий текст и речевые пузырьки НПС |
 | `06c_combat_stats_modes.js` | формулы боя, режимы оружия, шанс попадания и снапшоты ресурсов |
 | `06d_combat_damage_shooting.js` | трата ОД, урон, выстрелы, PvP/NPC guard и перезарядка |

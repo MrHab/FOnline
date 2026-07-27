@@ -78,9 +78,7 @@
     if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
     player.x = x;
     player.z = z;
-    player.targetPath = [];
     player.attackTarget = null;
-    if (marker) marker.visible = false;
     if (playerGroup) playerGroup.position.set(player.x, player.y || 0, player.z);
     multiplayer.lastSentX = x;
     multiplayer.lastSentZ = z;
@@ -902,10 +900,8 @@
       player.z = Number.isFinite(Number(data.z)) ? Number(data.z) : tileToWorld(currentLocation.spawn.tx, currentLocation.spawn.tz).z;
       player.y = 0;
       setPlayerCrouching(false, false);
-      player.targetPath = [];
       player.attackTarget = null;
       player.invincible = 1.5;
-      if (marker) marker.visible = false;
       if (typeof stopAutoFire === 'function') stopAutoFire();
       if (typeof stopTouchAim === 'function') stopTouchAim();
       if (typeof virtualMove === 'object' && virtualMove) {
@@ -1023,10 +1019,8 @@
       player.y = 0;
       player.angle = Number.isFinite(Number(data.angle)) ? Number(data.angle) : player.angle;
       setPlayerCrouching(false, false);
-      player.targetPath = [];
       player.attackTarget = null;
       player.invincible = Math.max(Number(player.invincible || 0), 1);
-      if (marker) marker.visible = false;
       if (typeof stopAutoFire === 'function') stopAutoFire();
       if (typeof stopTouchAim === 'function') stopTouchAim();
       if (typeof virtualMove === 'object' && virtualMove) {
@@ -1408,7 +1402,7 @@
     const movedSinceLastSend = Math.hypot(player.x - lastSentX, player.z - lastSentZ) > 0.010;
     const angleDeltaSinceLastSend = Math.abs(normalizeAngleForInterpolation(player.angle, lastSentAngle) - lastSentAngle);
     const turnedSinceLastSend = angleDeltaSinceLastSend > 0.020;
-    const physicallyMoving = movementIntent || sendWindowSpeed > 0.028 || !!(player.targetPath && player.targetPath.length);
+    const physicallyMoving = movementIntent || sendWindowSpeed > 0.028;
     const remoteWasMoving = multiplayer.lastSentMoving === true;
     const justStarted = !remoteWasMoving && !!physicallyMoving;
     const justStopped = remoteWasMoving && !physicallyMoving && !movedSinceLastSend;

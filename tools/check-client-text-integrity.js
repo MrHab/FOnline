@@ -14,6 +14,12 @@ const PART_FILES = fs.readdirSync(PARTS_DIR)
 // UTF-8 Cyrillic decoded as Windows-1251 typically becomes alternating
 // Р?/С? pairs, for example "мимо" -> "РјРёРјРѕ".
 const CYRILLIC_MOJIBAKE = /(?:\u0420[\u0400-\u04ff]|\u0421[\u0400-\u04ff]){3,}/gu;
+const REMOVED_CLICK_TO_MOVE_TOKENS = [
+  'targetPath',
+  'moveTargetMarker',
+  'showMoveMarker',
+  'setMoveTargetWorld'
+];
 const failures = [];
 
 for (const name of PART_FILES) {
@@ -27,6 +33,11 @@ for (const name of PART_FILES) {
   }
   if (source.includes('LegacyUnused')) {
     failures.push(`${name}: remove code marked LegacyUnused instead of shipping it`);
+  }
+  for (const token of REMOVED_CLICK_TO_MOVE_TOKENS) {
+    if (source.includes(token)) {
+      failures.push(`${name}: removed click-to-move token returned (${token})`);
+    }
   }
 }
 

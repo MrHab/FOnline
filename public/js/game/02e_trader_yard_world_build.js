@@ -522,7 +522,6 @@
     traderRoofCutawayRuntime.cutawayWarmupScheduled = false;
     traderRoofCutawayRuntime.cutawayWarmupToken += 1;
     exitPortal = null;
-    marker.visible = false;
     clearGroundItemsVisuals();
     clearWorldContainersVisuals();
     if (typeof resetRtsFogRuntimeCaches === 'function') resetRtsFogRuntimeCaches('clear-world');
@@ -586,4 +585,3 @@
     if (typeof requestDynamicShadowRefresh === 'function') requestDynamicShadowRefresh();
     scheduleTraderRoofCutawayWarmup('world-built-idle');
   }
-  // Initial world is built after marker/player helpers are created.

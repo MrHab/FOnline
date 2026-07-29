@@ -2365,6 +2365,16 @@ const SERVER_CHARACTER_HAIR_IDS = new Set([
   'long',
   'buns'
 ]);
+const SERVER_CHARACTER_HAIR_COLOR_IDS = new Set([
+  'hair_01',
+  'hair_02',
+  'hair_03',
+  'hair_04',
+  'hair_05',
+  'hair_06',
+  'hair_07',
+  'hair_08'
+]);
 
 function sanitizeCharacterAppearance(input = {}, fallback = {}) {
   const source = input && typeof input === 'object' ? input : {};
@@ -2378,6 +2388,8 @@ function sanitizeCharacterAppearance(input = {}, fallback = {}) {
   const faceId = defaults.faceIds.has(rawFaceId) ? rawFaceId : defaults.faceId;
   const rawHairId = String(source.hairId || base.hairId || defaults.hairId).toLowerCase();
   const hairId = SERVER_CHARACTER_HAIR_IDS.has(rawHairId) ? rawHairId : defaults.hairId;
+  const rawHairColorId = String(source.hairColorId || base.hairColorId || 'hair_03').toLowerCase();
+  const hairColorId = SERVER_CHARACTER_HAIR_COLOR_IDS.has(rawHairColorId) ? rawHairColorId : 'hair_03';
   return {
     schema: CHARACTER_APPEARANCE_SCHEMA,
     sex,
@@ -2385,7 +2397,7 @@ function sanitizeCharacterAppearance(input = {}, fallback = {}) {
     faceId,
     hairId,
     skinToneId: 'skin_03',
-    hairColorId: 'hair_03'
+    hairColorId
   };
 }
 
@@ -6081,8 +6093,9 @@ function newServerCharacterSelectionError(data = {}) {
     || !SERVER_CHARACTER_SEXES.has(rawSex)
     || !SERVER_CHARACTER_BODY_TYPES.has(String(rawAppearance.bodyType || '').toLowerCase())
     || !appearanceIds?.faceIds.has(String(rawAppearance.faceId || '').toLowerCase())
-    || !SERVER_CHARACTER_HAIR_IDS.has(String(rawAppearance.hairId || '').toLowerCase())) {
-    return 'При создании персонажа выберите пол, телосложение, лицо и причёску.';
+    || !SERVER_CHARACTER_HAIR_IDS.has(String(rawAppearance.hairId || '').toLowerCase())
+    || !SERVER_CHARACTER_HAIR_COLOR_IDS.has(String(rawAppearance.hairColorId || '').toLowerCase())) {
+    return 'При создании персонажа выберите пол, телосложение, лицо, причёску и цвет волос.';
   }
   const rawTaggedSkills = Array.isArray(data.taggedSkills) ? data.taggedSkills : [];
   const taggedSkills = sanitizeTaggedSkills(rawTaggedSkills);

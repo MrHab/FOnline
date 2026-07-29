@@ -35,6 +35,16 @@ const expectedHair = [
   'long',
   'buns'
 ];
+const expectedHairColors = [
+  ['hair_01', '#1A1512'],
+  ['hair_02', '#2A1B16'],
+  ['hair_03', '#4B3023'],
+  ['hair_04', '#6B452A'],
+  ['hair_05', '#8A6040'],
+  ['hair_06', '#A27A4B'],
+  ['hair_07', '#7B7D76'],
+  ['hair_08', '#5B2922']
+];
 
 function glbJson(buffer, fileName) {
   assert(buffer.length >= 20, `${fileName}: truncated GLB`);
@@ -102,7 +112,12 @@ const index = fs.readFileSync(indexPath, 'utf8');
 assert(runtime.includes('/assets/models/characters/base/character_${characterAppearanceKey(input)}.glb'));
 assert(runtime.includes('setCharacterCreationPreviewAppearance'));
 assert(runtime.includes('applyCharacterGlbAppearance'));
-for (const id of [...expectedFaces.female, ...expectedFaces.male, ...expectedHair]) {
+for (const id of [
+  ...expectedFaces.female,
+  ...expectedFaces.male,
+  ...expectedHair,
+  ...expectedHairColors.map(([id]) => id)
+]) {
   assert(runtime.includes(`'${id}'`), `character appearance option is missing: ${id}`);
 }
 assert(runtime.includes('function applyCharacterGlbVisualVariants('));
@@ -110,23 +125,41 @@ assert(runtime.includes('function applyCharacterFaceShape('));
 assert(runtime.includes('function addCharacterHairVariant('));
 assert(runtime.includes('applyCharacterFaceShapeFrame(runtime.root);'));
 assert(runtime.includes('applyCharacterFaceShapeFrame(characterPreviewState.model);'));
+assert(runtime.includes('characterPreviewState.requestedAppearance = appearance;'));
+assert(runtime.includes('characterPreviewState.requestedAppearance || appearance'),
+  'creator preview drops appearance changes while a body model is loading');
+assert(runtime.includes('characterPreviewState.requestId += 1;')
+  && runtime.includes('characterPreviewState.requestedKey = key;'),
+  'creator preview does not cancel a stale body-model request');
 assert(runtime.includes('root.rotation.y = Math.PI;'), 'runtime GLB does not face the cursor direction');
 assert(runtime.includes("canvas.addEventListener('pointermove'"), 'creator preview does not follow the cursor');
 assert(update.includes('facePoint(pointerWorld.x, pointerWorld.z)'),
   'the local player does not face the world cursor');
-assert(index.includes('id="creator-face-options"') && index.includes('id="creator-hair-options"'),
-  'face or hairstyle controls are missing from character creation');
+assert(index.includes('id="creator-face-options"')
+  && index.includes('id="creator-hair-options"')
+  && index.includes('id="creator-hair-color-options"'),
+  'face, hairstyle or hair color controls are missing from character creation');
 assert(creator.includes('creatorAppearance = { ...creatorAppearance, faceId: option.id }'));
 assert(creator.includes('creatorAppearance = { ...creatorAppearance, hairId: option.id }'));
+assert(creator.includes('creatorAppearance = { ...creatorAppearance, hairColorId: option.id }'));
+assert(creator.includes('function renderCharacterAppearanceStepper('));
+assert(creator.includes("previous.textContent = '←'") && creator.includes("next.textContent = '→'"),
+  'character appearance choices are not rendered as arrow steppers');
 
 const server = fs.readFileSync(serverPath, 'utf8');
 assert(server.includes("const SERVER_CHARACTER_SEXES = new Set(['female', 'male'])"));
 assert(server.includes("const SERVER_CHARACTER_BODY_TYPES = new Set(['slim', 'medium', 'large'])"));
-for (const id of [...expectedFaces.female, ...expectedFaces.male, ...expectedHair]) {
+for (const id of [
+  ...expectedFaces.female,
+  ...expectedFaces.male,
+  ...expectedHair,
+  ...expectedHairColors.map(([id]) => id)
+]) {
   assert(server.includes(`'${id}'`), `server appearance allowlist is missing: ${id}`);
 }
 assert(server.includes('const faceId = defaults.faceIds.has(rawFaceId) ? rawFaceId : defaults.faceId;'));
 assert(server.includes('const hairId = SERVER_CHARACTER_HAIR_IDS.has(rawHairId) ? rawHairId : defaults.hairId;'));
+assert(server.includes('const hairColorId = SERVER_CHARACTER_HAIR_COLOR_IDS.has(rawHairColorId) ? rawHairColorId'));
 assert(server.includes('appearance: sanitizeCharacterAppearance(p.appearance || {})'));
 
 const compatibilityContext = vm.createContext({ THREE, console });
@@ -135,10 +168,14 @@ this.__characterAppearanceFitApi = {
   CHARACTER_BODY_TYPES,
   CHARACTER_FACE_OPTIONS,
   CHARACTER_HAIR_OPTIONS,
+  CHARACTER_HAIR_COLOR_OPTIONS,
   normalizeCharacterAppearance,
   characterFaceFitProfile,
   characterVariantMaterial,
-  addCharacterHairVariant
+  addCharacterHairVariant,
+  applyCharacterFaceShape,
+  characterHeadRestMatrix,
+  attachCharacterVariantToHead
 };`, compatibilityContext, { filename: runtimePath });
 const fitApi = compatibilityContext.__characterAppearanceFitApi;
 assert(fitApi, 'character appearance fit API could not be inspected');
@@ -170,74 +207,120 @@ for (const sex of ['female', 'male']) {
     expectedHair,
     'hairstyle catalog drifted'
   );
+  assert.deepStrictEqual(
+    Array.from(fitApi.CHARACTER_HAIR_COLOR_OPTIONS, option => [option.id, option.hex]),
+    expectedHairColors,
+    'hair color catalog drifted'
+  );
   for (const bodyType of ['slim', 'medium', 'large']) {
     for (const faceId of expectedFaces[sex]) {
       for (const hairId of expectedHair) {
-        const appearance = fitApi.normalizeCharacterAppearance({
-          sex,
-          bodyType,
-          faceId,
-          hairId
-        });
-        assert.strictEqual(appearance.faceId, faceId, `${faceId}: normalization rejected a face`);
-        assert.strictEqual(appearance.hairId, hairId, `${hairId}: normalization rejected a hairstyle`);
-        const fit = fitApi.characterFaceFitProfile(appearance);
-        assert(Array.isArray(fit.headScale) && fit.headScale.length === 3, `${faceId}: invalid head fit`);
-        assert(Array.isArray(fit.scalpScale) && fit.scalpScale.length === 2, `${faceId}: invalid scalp fit`);
-        assert(fit.headScale.every(Number.isFinite), `${faceId}: non-finite head scale`);
-        assert(fit.scalpScale.every(Number.isFinite), `${faceId}: non-finite scalp scale`);
+        for (const [hairColorId, hairHex] of expectedHairColors) {
+          const appearance = fitApi.normalizeCharacterAppearance({
+            sex,
+            bodyType,
+            faceId,
+            hairId,
+            hairColorId
+          });
+          assert.strictEqual(appearance.faceId, faceId, `${faceId}: normalization rejected a face`);
+          assert.strictEqual(appearance.hairId, hairId, `${hairId}: normalization rejected a hairstyle`);
+          assert.strictEqual(appearance.hairColorId, hairColorId, `${hairColorId}: normalization rejected a hair color`);
+          const fit = fitApi.characterFaceFitProfile(appearance);
+          assert(Array.isArray(fit.headScale) && fit.headScale.length === 3, `${faceId}: invalid head fit`);
+          assert(Array.isArray(fit.scalpScale) && fit.scalpScale.length === 2, `${faceId}: invalid scalp fit`);
+          assert(fit.headScale.every(Number.isFinite), `${faceId}: non-finite head scale`);
+          assert(fit.scalpScale.every(Number.isFinite), `${faceId}: non-finite scalp scale`);
 
-        const group = new THREE.Group();
-        const material = fitApi.characterVariantMaterial(0x4b3023);
-        assert(material.color.r < 0.1 && material.color.g < 0.05 && material.color.b < 0.03,
-          `${hairId}: hair palette was not converted from sRGB to linear light`);
-        const built = fitApi.addCharacterHairVariant(group, material, appearance);
-        if (hairId === 'shaved') {
-          assert.strictEqual(built, false, `${hairId}: shaved style unexpectedly built geometry`);
-          assert.strictEqual(group.children.length, 0, `${hairId}: shaved style contains geometry`);
-          material.dispose();
-        } else {
-          assert.strictEqual(built, true, `${hairId}: hairstyle builder did not run`);
-          assert(group.children.length > 0, `${hairId}: hairstyle has no geometry`);
-          group.updateMatrixWorld(true);
-          const bounds = new THREE.Box3().setFromObject(group);
-          finiteBox(bounds, `${sex}/${bodyType}/${faceId}/${hairId}`);
-          assert(bounds.min.y >= 1.25, `${hairId}: hairstyle falls through the upper torso`);
-          assert(bounds.max.y <= 2.05, `${hairId}: hairstyle exceeds the character height budget`);
-          assert(Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x)) <= 0.2,
-            `${hairId}: hairstyle exceeds the head width budget`);
-          assert(Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z)) <= 0.25,
-            `${hairId}: hairstyle exceeds the head depth budget`);
-
-          const cap = group.getObjectByName('hair_variant_scalp');
-          if (hairId === 'mohawk') {
-            assert(!cap, 'mohawk must keep shaved sides instead of a scalp cap');
+          const group = new THREE.Group();
+          const material = fitApi.characterVariantMaterial(hairHex);
+          const expectedColor = new THREE.Color(hairHex);
+          expectedColor.convertSRGBToLinear();
+          assert(Math.max(
+            Math.abs(material.color.r - expectedColor.r),
+            Math.abs(material.color.g - expectedColor.g),
+            Math.abs(material.color.b - expectedColor.b)
+          ) < 1e-7,
+            `${hairColorId}: hair palette was not converted from sRGB to linear light`);
+          const built = fitApi.addCharacterHairVariant(group, material, appearance);
+          if (hairId === 'shaved') {
+            assert.strictEqual(built, false, `${hairId}: shaved style unexpectedly built geometry`);
+            assert.strictEqual(group.children.length, 0, `${hairId}: shaved style contains geometry`);
+            material.dispose();
           } else {
-            assert(cap?.isMesh, `${hairId}: scalp contact cap is missing`);
-            cap.updateMatrixWorld(true);
-            const capBounds = new THREE.Box3().setFromObject(cap);
-            finiteBox(capBounds, `${sex}/${bodyType}/${faceId}/${hairId}/scalp`);
-            assert(capBounds.max.y >= fit.top + 0.02 && capBounds.max.y <= fit.top + 0.03,
-              `${hairId}: scalp cap floats above or sinks into the head`);
-            assert(capBounds.min.y <= fit.top - 0.065,
-              `${hairId}: scalp cap does not cover the hairline`);
-            assert(capBounds.min.x <= -0.08 * fit.scalpScale[0]
-              && capBounds.max.x >= 0.08 * fit.scalpScale[0],
-            `${hairId}: scalp cap does not cover the face profile width`);
-            const capNormals = cap.geometry?.attributes?.normal;
-            assert(capNormals && capNormals.getY(0) > 0.9,
-              `${hairId}: scalp cap normals face inward`);
+            assert.strictEqual(built, true, `${hairId}: hairstyle builder did not run`);
+            assert(group.children.length > 0, `${hairId}: hairstyle has no geometry`);
+            group.updateMatrixWorld(true);
+            const bounds = new THREE.Box3().setFromObject(group);
+            finiteBox(bounds, `${sex}/${bodyType}/${faceId}/${hairId}/${hairColorId}`);
+            assert(bounds.min.y >= 1.25, `${hairId}: hairstyle falls through the upper torso`);
+            assert(bounds.max.y <= 2.05, `${hairId}: hairstyle exceeds the character height budget`);
+            assert(Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x)) <= 0.2,
+              `${hairId}: hairstyle exceeds the head width budget`);
+            assert(Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z)) <= 0.25,
+              `${hairId}: hairstyle exceeds the head depth budget`);
+
+            const cap = group.getObjectByName('hair_variant_scalp');
+            if (hairId === 'mohawk') {
+              assert(!cap, 'mohawk must keep shaved sides instead of a scalp cap');
+            } else {
+              assert(cap?.isMesh, `${hairId}: scalp contact cap is missing`);
+              cap.updateMatrixWorld(true);
+              const capBounds = new THREE.Box3().setFromObject(cap);
+              finiteBox(capBounds, `${sex}/${bodyType}/${faceId}/${hairId}/${hairColorId}/scalp`);
+              assert(capBounds.max.y >= fit.top + 0.02 && capBounds.max.y <= fit.top + 0.03,
+                `${hairId}: scalp cap floats above or sinks into the head`);
+              assert(capBounds.min.y <= fit.top - 0.065,
+                `${hairId}: scalp cap does not cover the hairline`);
+              assert(capBounds.min.x <= -0.08 * fit.scalpScale[0]
+                && capBounds.max.x >= 0.08 * fit.scalpScale[0],
+              `${hairId}: scalp cap does not cover the face profile width`);
+              const capNormals = cap.geometry?.attributes?.normal;
+              assert(capNormals && capNormals.getY(0) > 0.9,
+                `${hairId}: scalp cap normals face inward`);
+            }
           }
+          disposeGroup(group);
+          compatibilityCount += 1;
         }
-        disposeGroup(group);
-        compatibilityCount += 1;
       }
     }
   }
 }
-assert.strictEqual(compatibilityCount, 192, 'appearance compatibility matrix is incomplete');
+assert.strictEqual(compatibilityCount, 1536, 'appearance compatibility matrix is incomplete');
+
+const attachmentRoot = new THREE.Group();
+const attachmentNeck = new THREE.Group();
+const attachmentHead = new THREE.Group();
+attachmentHead.name = 'head';
+attachmentNeck.position.set(0.02, 1.42, -0.01);
+attachmentHead.position.set(-0.02, 0.34, 0.015);
+attachmentNeck.add(attachmentHead);
+attachmentRoot.add(attachmentNeck);
+const attachmentAppearance = fitApi.normalizeCharacterAppearance({
+  sex: 'female',
+  bodyType: 'large',
+  faceId: 'female_03',
+  hairId: 'buns',
+  hairColorId: 'hair_08'
+});
+fitApi.characterHeadRestMatrix(attachmentRoot);
+fitApi.applyCharacterFaceShape(attachmentRoot, attachmentAppearance);
+const firstAttachment = new THREE.Group();
+fitApi.attachCharacterVariantToHead(attachmentRoot, firstAttachment, attachmentAppearance);
+attachmentNeck.rotation.x = 0.19;
+attachmentHead.rotation.z = -0.13;
+attachmentRoot.updateMatrixWorld(true);
+const changedDuringAnimation = new THREE.Group();
+fitApi.attachCharacterVariantToHead(attachmentRoot, changedDuringAnimation, attachmentAppearance);
+firstAttachment.updateMatrix();
+changedDuringAnimation.updateMatrix();
+firstAttachment.matrix.elements.forEach((value, index) => {
+  assert(Math.abs(value - changedDuringAnimation.matrix.elements[index]) < 1e-7,
+    'hairstyle attachment drifted when changed during animation');
+});
 
 console.log(
-  'Character models OK: 6 GLB bases, 8 faces, 8 hairstyles, '
-  + '192 fit combinations, cursor facing, rig/animations and hashes checked'
+  'Character models OK: 6 GLB bases, 8 faces, 8 hairstyles, 8 hair colors, '
+  + '1536 fit combinations, stable rest-pose attachment, cursor facing, rig/animations and hashes checked'
 );

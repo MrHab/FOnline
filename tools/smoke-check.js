@@ -1031,7 +1031,7 @@ async function registerSocketTestAccount(index, suffix) {
       faceId: `${index % 2 === 0 ? 'male' : 'female'}_0${((index - 1) % 4) + 1}`,
       hairId: ['short_crop', 'side_swept', 'mohawk', 'braids', 'tied_back', 'long', 'buns', 'shaved'][(index - 1) % 8],
       skinToneId: 'skin_03',
-      hairColorId: 'hair_03'
+      hairColorId: `hair_0${((index - 1) % 8) + 1}`
     }
   };
 }
@@ -1158,13 +1158,18 @@ async function assertSocketMultiplayerLifecycle() {
           controlType: 'keyboard_mouse',
           characterId: account.characterId,
           name: account.name,
-          appearance: { ...account.appearance, faceId: 'admin_face', hairId: 'invisible_hair' },
+          appearance: {
+            ...account.appearance,
+            faceId: 'admin_face',
+            hairId: 'invisible_hair',
+            hairColorId: 'radioactive_green'
+          },
           special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 },
           traits: ['trainedEye'],
           taggedSkills: ['lightWeapons']
         });
         if (invalidAppearanceJoin.ok) {
-          fail('new character join with forged face and hairstyle was accepted', JSON.stringify(invalidAppearanceJoin));
+          fail('new character join with forged face, hairstyle and hair color was accepted', JSON.stringify(invalidAppearanceJoin));
         }
         const invalidJoinCharacters = await request('/api/characters', {
           headers: authHeaders(account.token, account.deviceId, {
@@ -1199,7 +1204,8 @@ async function assertSocketMultiplayerLifecycle() {
       if (account.join.self.appearance?.sex !== account.appearance.sex
         || account.join.self.appearance?.bodyType !== account.appearance.bodyType
         || account.join.self.appearance?.faceId !== account.appearance.faceId
-        || account.join.self.appearance?.hairId !== account.appearance.hairId) {
+        || account.join.self.appearance?.hairId !== account.appearance.hairId
+        || account.join.self.appearance?.hairColorId !== account.appearance.hairColorId) {
         fail('multiplayer join did not preserve character appearance', JSON.stringify(account.join.self));
       }
       if (!Array.isArray(account.join.self.worldTaskRecords)) {
@@ -1538,6 +1544,7 @@ async function assertSocketMultiplayerLifecycle() {
       || rejoin.self?.appearance?.bodyType !== first.appearance.bodyType
       || rejoin.self?.appearance?.faceId !== first.appearance.faceId
       || rejoin.self?.appearance?.hairId !== first.appearance.hairId
+      || rejoin.self?.appearance?.hairColorId !== first.appearance.hairColorId
       || rejoin.self?.worldFactionId !== 'old_klim'
       || rejoin.lastVisitedSettlementId !== 'settlement') {
       fail('inactive HTTP save replaced authoritative identity or character creation choices', JSON.stringify(rejoin.self));

@@ -24,7 +24,7 @@ const expected = new Map([
   ['plasmaRifle', { family: 'energy_long_gun', scale: 0.54, length: [0.88, 1.18], nodes: ['muzzle', 'energy_core'] }],
   ['shotgun', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'pump'] }],
   ['rocketLauncher', { family: 'launcher', scale: 0.58, length: [1.00, 1.26], nodes: ['muzzle', 'launcher_tube'] }],
-  ['knife', { family: 'melee_light', scale: 0.36, length: [0.42, 0.58], nodes: ['blade', 'grip'] }],
+  ['knife', { family: 'melee_light', scale: 0.22, length: [0.25, 0.36], nodes: ['blade', 'grip'] }],
   ['pickaxe', { family: 'melee_heavy', scale: 0.45, length: [0.68, 0.90], nodes: ['head_socket', 'pick_left'] }],
   ['axe', { family: 'melee_heavy', scale: 0.44, length: [0.68, 0.90], nodes: ['blade', 'handle'] }],
   ['handPump', { family: 'melee_heavy', scale: 0.50, length: [0.62, 0.84], nodes: ['pump_handle', 'nozzle'] }]

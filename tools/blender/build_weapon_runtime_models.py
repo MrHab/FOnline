@@ -44,7 +44,7 @@ WEAPON_RUNTIME_SCALES = {
     "plasmaRifle": 0.54,
     "shotgun": 0.52,
     "rocketLauncher": 0.58,
-    "knife": 0.36,
+    "knife": 0.22,
     "pickaxe": 0.45,
     "axe": 0.44,
     "handPump": 0.50,

@@ -1184,9 +1184,16 @@
     }
 
     const bootsId = String(equipmentVisualBaseId(eq.boots) || '');
+    const serviceScoutBootActive = applyServiceScoutBootVisual(parts, bootsOn ? bootsId : '');
+    if (!serviceScoutBootActive) {
+      if (parts.baseBootL) parts.baseBootL.visible = true;
+      if (parts.baseBootR) parts.baseBootR.visible = true;
+      if (parts.baseGaiterL) parts.baseGaiterL.visible = true;
+      if (parts.baseGaiterR) parts.baseGaiterR.visible = true;
+    }
     if (bootsOn && parts.bootL && parts.bootR) {
-      parts.bootL.visible = true;
-      parts.bootR.visible = true;
+      parts.bootL.visible = !serviceScoutBootActive;
+      parts.bootR.visible = !serviceScoutBootActive;
       parts.bootL.scale.set(1, 1, 1);
       parts.bootR.scale.set(1, 1, 1);
       if (bootsId === 'scoutBoots') {

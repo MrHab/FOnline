@@ -391,6 +391,7 @@
           ensureWorldMaterials();
           createPlayerModel();
           await preloadStaticWorldModels();
+          await preloadServiceScoutBootModel();
           document.body.dataset.worldRuntime = 'ready';
           return true;
         })

@@ -177,6 +177,125 @@
     leatherTrim: modernCharacterMats.leather
   };
 
+  const SERVICE_SCOUT_BOOT_MODEL_URL = '/assets/models/equipment/service_scout_boots.glb';
+  const serviceScoutBootModelState = {
+    promise: null,
+    templates: null,
+    failed: false
+  };
+
+  function buildServiceScoutBootTemplate(source, side) {
+    const sourceNode = source?.getObjectByName?.(`SERVICE_SCOUT_BOOT_${side}`);
+    if (!sourceNode) return null;
+    source.updateMatrixWorld(true);
+    const mesh = sourceNode.clone(true);
+    sourceNode.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);
+    const template = new THREE.Group();
+    template.name = `service_scout_boot_template_${side}`;
+    template.add(mesh);
+    template.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(template);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    template.position.set(-center.x, -box.min.y, -center.z);
+    template.traverse(part => {
+      if (!part?.isMesh) return;
+      part.castShadow = true;
+      part.receiveShadow = false;
+      part.frustumCulled = false;
+    });
+    return template;
+  }
+
+  function preloadServiceScoutBootModel() {
+    if (serviceScoutBootModelState.templates) {
+      return Promise.resolve(serviceScoutBootModelState.templates);
+    }
+    if (serviceScoutBootModelState.promise) return serviceScoutBootModelState.promise;
+    if (serviceScoutBootModelState.failed || !THREE.GLTFLoader) return Promise.resolve(null);
+    const loader = new THREE.GLTFLoader();
+    serviceScoutBootModelState.promise = new Promise(resolve => {
+      loader.load(SERVICE_SCOUT_BOOT_MODEL_URL, gltf => {
+        const source = gltf?.scene || gltf?.scenes?.[0] || null;
+        const templates = source ? {
+          L: buildServiceScoutBootTemplate(source, 'L'),
+          R: buildServiceScoutBootTemplate(source, 'R')
+        } : null;
+        if (!templates?.L || !templates?.R) {
+          serviceScoutBootModelState.failed = true;
+          serviceScoutBootModelState.promise = null;
+          console.warn('GLB разведботинок не содержит оба runtime-меша.');
+          resolve(null);
+          return;
+        }
+        serviceScoutBootModelState.templates = templates;
+        serviceScoutBootModelState.promise = null;
+        resolve(templates);
+      }, undefined, error => {
+        serviceScoutBootModelState.failed = true;
+        serviceScoutBootModelState.promise = null;
+        console.warn('Не удалось загрузить GLB разведботинок:', error);
+        resolve(null);
+      });
+    });
+    return serviceScoutBootModelState.promise;
+  }
+
+  function setServiceScoutBootFallbackVisible(parts, visible) {
+    ['L', 'R'].forEach(side => {
+      if (parts?.[`baseBoot${side}`]) parts[`baseBoot${side}`].visible = !!visible;
+      if (parts?.[`baseGaiter${side}`]) parts[`baseGaiter${side}`].visible = !!visible;
+      if (parts?.[`boot${side}`]) parts[`boot${side}`].visible = !!visible;
+    });
+  }
+
+  function installServiceScoutBootInstances(parts) {
+    if (!parts?.ankleL || !parts?.ankleR || !serviceScoutBootModelState.templates) return false;
+    if (parts.serviceScoutBootL && parts.serviceScoutBootR) return true;
+    ['L', 'R'].forEach(side => {
+      // После разворота носком вперёд стороны меняются местами.
+      const templateSide = side === 'L' ? 'R' : 'L';
+      const holder = new THREE.Group();
+      holder.name = `service_scout_boot_${side}`;
+      holder.add(serviceScoutBootModelState.templates[templateSide].clone(true));
+      holder.position.set(0, -0.01, -0.045);
+      holder.rotation.y = Math.PI;
+      holder.scale.setScalar(1.08);
+      holder.visible = false;
+      holder.userData.cosmeticLod = false;
+      parts[`ankle${side}`].add(holder);
+      parts[`serviceScoutBoot${side}`] = holder;
+    });
+    return true;
+  }
+
+  function applyServiceScoutBootVisual(parts, bootsId = '') {
+    if (!parts) return false;
+    const wanted = bootsId === 'scoutBoots';
+    parts.serviceScoutBootWanted = wanted;
+    if (!wanted) {
+      if (parts.serviceScoutBootL) parts.serviceScoutBootL.visible = false;
+      if (parts.serviceScoutBootR) parts.serviceScoutBootR.visible = false;
+      return false;
+    }
+    if (installServiceScoutBootInstances(parts)) {
+      parts.serviceScoutBootL.visible = true;
+      parts.serviceScoutBootR.visible = true;
+      setServiceScoutBootFallbackVisible(parts, false);
+      return true;
+    }
+    const requestId = Number(parts.serviceScoutBootRequestId || 0) + 1;
+    parts.serviceScoutBootRequestId = requestId;
+    preloadServiceScoutBootModel().then(templates => {
+      if (!templates || parts.serviceScoutBootRequestId !== requestId || !parts.serviceScoutBootWanted) return;
+      if (!installServiceScoutBootInstances(parts)) return;
+      parts.serviceScoutBootL.visible = true;
+      parts.serviceScoutBootR.visible = true;
+      setServiceScoutBootFallbackVisible(parts, false);
+    });
+    return false;
+  }
+
   function modernCharacterMesh(type, values, material, position = [0, 0, 0], rotation = [0, 0, 0], castShadow = true, cosmetic = false) {
     const mesh = new THREE.Mesh(modernCharacterGeometry(type, values), material);
     mesh.position.set(position[0] || 0, position[1] || 0, position[2] || 0);
@@ -223,6 +342,7 @@
     parts[`knee${side}`] = knee;
     parts[`ankle${side}`] = ankle;
     parts[`baseBoot${side}`] = boot;
+    parts[`baseGaiter${side}`] = gaiter;
     return [thigh, kneeGuard, shin, gaiter, boot, toeCap];
   }
 

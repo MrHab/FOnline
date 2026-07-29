@@ -392,6 +392,7 @@
           createPlayerModel();
           await preloadStaticWorldModels();
           await preloadServiceScoutBootModel();
+          await preloadWeaponModelLibrary();
           document.body.dataset.worldRuntime = 'ready';
           return true;
         })

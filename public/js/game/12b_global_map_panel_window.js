@@ -6,7 +6,6 @@
     const route = document.getElementById('global-map-route');
     const party = document.getElementById('global-map-party');
     const systemLog = document.getElementById('global-map-system-log');
-    const contactsBoard = document.getElementById('global-map-world-contacts');
     const workBoard = document.getElementById('global-map-work-board');
     const enterBtn = document.getElementById('global-map-enter-btn');
     const cancelBtn = document.getElementById('global-map-cancel-btn');
@@ -30,7 +29,6 @@
     const currentBoardSite = playerSettlement
       ? (globalMapWorldSiteById(playerSettlement.id) || { id: playerSettlement.id, name: globalMapLocationName(playerSettlement.id) })
       : playerWorldSite || (pendingDrop?.siteId ? { id: pendingDrop.siteId, name: pendingDrop.siteName || globalMapLocationName(pendingDrop.locationId) } : null);
-    renderGlobalMapWorldContacts(contactsBoard);
     renderGlobalMapWorkBoard(workBoard, currentBoardSite || selectedBoardSite, currentBoardSiteId);
     if (route) {
       if (traveling) {

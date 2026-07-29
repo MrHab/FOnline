@@ -37,7 +37,6 @@
         : (globalMapTaskExplicitPoint(task) || globalMapTaskSitePoint(task, false) || globalMapTaskSitePoint(task, true) || globalMapTaskPartyPoint(task));
       if (!point) return;
       const safePoint = clampGlobalMapPoint(point.x, point.y);
-      if (globalMapPointCoveredByWorldContact(safePoint)) return;
       const key = `${Math.round(safePoint.x)}:${Math.round(safePoint.y)}`;
       const meta = globalMapWorldTaskTypeMeta(task);
       let row = buckets.get(key);
@@ -243,11 +242,6 @@
       dynamic.taskLine.visible = false;
       dynamic.taskMarker.visible = false;
     }
-    if (dynamic.worldContacts) {
-      if (dynamic.worldContacts.children.length) clearGlobalMap3DGroup(dynamic.worldContacts);
-      dynamic.worldContacts.visible = false;
-      dynamic.worldContactsSignature = 'disabled';
-    }
     if (dynamic.worldTasks) {
       if (heavyUpdate || !dynamic.worldTasksSignature) {
         const taskRows = globalMapWorldTaskMarkerRows();
@@ -275,8 +269,7 @@
     updateGlobalMapPlayerModelDirection(dynamic.playerMarker, playerPoint, destinationPoint);
     if (dynamic.settlementStatus) {
       if (heavyUpdate || !dynamic.settlementStatusSignature) {
-        const settlementSites = globalMapSettlementSites()
-          .filter(site => !globalMapPointCoveredByWorldContact(site, 16));
+        const settlementSites = globalMapSettlementSites();
         const signature = globalMapSettlementStatus3DSignature(settlementSites);
         if (dynamic.settlementStatusSignature !== signature) {
           clearGlobalMap3DGroup(dynamic.settlementStatus);

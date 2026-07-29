@@ -70,7 +70,7 @@ JS-части и vendor-библиотеки пока загружаются д�
 | `11a_global_map_player_models.js` | модель игрока на глобальной карте, оружие и направление движения |
 | `11b_global_map_static_scene_camera.js` | статическая 3D-сцена, города/объекты, дороги, terrain, камера |
 | `11c_global_map_sites_territory.js` | ресурсные точки, зоны влияния, территории и фронты фракций |
-| `11d_global_map_contacts_parties.js` | контакты мира, бродячие отряды и их мини-модели |
+| `11d_global_map_parties.js` | бродячие отряды мира и их мини-модели |
 | `11e_global_map_tasks_dynamic_render.js` | маркеры заданий, динамическое обновление и render global map 3D |
 | `12_global_map_canvas_controls.js` | колесо/перетаскивание карты и 2D canvas fallback глобальной карты |
 | `12a_global_map_world_status.js` | подписи отрядов, ресурсные точки, задачи мира, guarded-контакты и доска работ |

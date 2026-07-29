@@ -494,8 +494,7 @@
       site?.productionNeedSummary || '',
       site?.controlState || '',
       site?.marketState || '',
-      globalMapWorldSiteHotspot(site)?.label || '',
-      globalMapPointCoveredByWorldContact(site) ? 'covered' : ''
+      globalMapWorldSiteHotspot(site)?.label || ''
     ].join(':')).join('|');
   }
 
@@ -508,8 +507,7 @@
       site?.marketState || '',
       Math.round(Number(site?.controlPressure || 0)),
       site?.controlThreatName || '',
-      globalMapWorldSiteHotspot(site)?.label || '',
-      globalMapPointCoveredByWorldContact(site) ? 'covered' : ''
+      globalMapWorldSiteHotspot(site)?.label || ''
     ].join(':')).join('|');
   }
 
@@ -519,7 +517,7 @@
     const radius = (node ? globalMapSettlementRadius(node) : GLOBAL_SETTLEMENT_RADIUS) / GLOBAL_MAP_SIZE.width * GLOBAL_MAP_3D.worldWidth;
     const statusColorText = globalMapWorldSiteColor(site);
     const statusColor = parseInt(String(statusColorText).replace('#', ''), 16) || 0x93d982;
-    const alert = globalMapPointCoveredByWorldContact(site) ? null : globalMapWorldSiteHotspot(site);
+    const alert = globalMapWorldSiteHotspot(site);
     const ringColor = alert && alert.level !== 'good'
       ? (parseInt(String(alert.color || '').replace('#', ''), 16) || statusColor)
       : statusColor;
@@ -897,21 +895,6 @@
     return globalMapFactionGroupKey(raw);
   }
 
-  function globalMapWorldContactIsForced(contact = {}) {
-    if (!contact || contact.hidden || contact.visible === false) return false;
-    if (contact.details?.forcedEncounter || contact.details?.simBattle) {
-      const activeFaction = globalMapFactionGroupKey(contact.targetFaction || contact.faction || contact.details?.conflict?.primaryFaction || '');
-      if (['raiders', 'mutants', 'wild'].includes(activeFaction)) return true;
-    }
-    const kind = String(contact.kind || '').toLowerCase();
-    const activeFaction = globalMapFactionGroupKey(contact.targetFaction || contact.faction || contact.details?.conflict?.primaryFaction || '');
-    if (kind === 'lair' || ['raiders', 'mutants', 'wild'].includes(activeFaction)) return true;
-    const playerFaction = globalMapPlayerFactionKey();
-    const civil = ['old_klim', 'caravans', 'scrap_union', 'relay_order'];
-    if (playerFaction && civil.includes(playerFaction) && civil.includes(activeFaction) && playerFaction !== activeFaction) return true;
-    return false;
-  }
-
   function globalMapNearestThreatPartyForSite(site = {}, preferredFaction = '') {
     const sitePoint = clampGlobalMapPoint(site.x, site.y);
     const preferred = globalMapFactionGroupKey(preferredFaction);
@@ -940,7 +923,6 @@
       const targetTasks = activeTasks.filter(task => String(task.siteId || '') === String(site.id || ''));
       const pressure = Number(site.controlPressure || 0);
       const raidActive = !!site.activeConflict;
-      if (raidActive && globalMapPointCoveredByWorldContact(site, 16)) return;
       const state = String(site.controlState || 'stable');
       const conflictTask = targetTasks.find(task => ['retake_site', 'defend_resource'].includes(String(task.type || '')));
       const needsFront = raidActive || conflictTask || ['critical', 'contested', 'threatened'].includes(state) || Math.abs(pressure) > 4;

@@ -72,13 +72,14 @@ assertIncludes(path.join('public', 'index.html'), `<title>Realm of Ashes v${expe
 assertIncludes(path.join('public', 'js', 'game', '01_bootstrap_online_save.js'), `Realm of Ashes v${expectedVersion} client bootstrap`, 'client bootstrap version');
 assertIncludes(path.join('public', 'js', 'game', '13_minimap_hud_loop.js'), `Realm of Ashes v${expectedVersion}.`, 'welcome log version');
 
-const clientLoader = read(path.join('public', 'js', 'game.js'));
+const clientLoader = read(path.join('public', 'js', 'game-runtime.js'));
 const clientVersionMatch = clientLoader.match(/const\s+GAME_CLIENT_VERSION\s*=\s*['"]([^'"]+)['"]/);
 if (!clientVersionMatch) {
-  fail('GAME_CLIENT_VERSION is missing in public/js/game.js');
+  fail('GAME_CLIENT_VERSION is missing in public/js/game-runtime.js');
 }
 const clientVersion = clientVersionMatch[1];
-assertIncludes(path.join('public', 'index.html'), `/js/game.js?v=${clientVersion}`, 'HTML client cache version');
+assertIncludes(path.join('public', 'index.html'), `/js/game-runtime.js?v=${clientVersion}`, 'HTML client cache version');
+assertIncludes(path.join('public', 'js', 'game.js'), `/js/game-runtime.js?v=${clientVersion}`, 'compatibility loader cache version');
 assertIncludes(path.join('docs', 'PERFORMANCE_DEPLOYMENT.md'), `?v=${clientVersion}`, 'deployment probe cache version');
 
 const readme = read('README.md');

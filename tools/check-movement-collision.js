@@ -16,7 +16,7 @@ const {
 
 const ROOT = path.resolve(__dirname, '..');
 const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
-const clientLoader = fs.readFileSync(path.join(ROOT, 'public/js/game.js'), 'utf8');
+const clientLoader = fs.readFileSync(path.join(ROOT, 'public/js/game-runtime.js'), 'utf8');
 const clientCollision = fs.readFileSync(path.join(ROOT, 'public/js/game/02c_map_locations_collision.js'), 'utf8');
 const clientModels = fs.readFileSync(path.join(ROOT, 'public/js/game/02a_materials_static_models.js'), 'utf8');
 const clientProps = fs.readFileSync(path.join(ROOT, 'public/js/game/02d_trader_spawn_props.js'), 'utf8');

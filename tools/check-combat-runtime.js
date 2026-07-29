@@ -212,6 +212,30 @@ function socketAck(socket, event, payload = {}, timeoutMs = 3500) {
   });
 }
 
+function socketEvent(socket, event, trigger, timeoutMs = 3500) {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timer);
+      socket.off(event, onEvent);
+    };
+    const onEvent = payload => {
+      cleanup();
+      resolve(payload || {});
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error(`${event} event timed out`));
+    }, timeoutMs);
+    socket.once(event, onEvent);
+    try {
+      trigger();
+    } catch (error) {
+      cleanup();
+      reject(error);
+    }
+  });
+}
+
 function authHeaders(account, leaseId = '') {
   const headers = {
     Authorization: `Bearer ${account.token}`,
@@ -1117,6 +1141,60 @@ async function assertUntargetedAttack(accounts) {
   closeSocket(account);
 }
 
+async function assertActionVisualEquipmentAuthority(accounts) {
+  const attacker = accounts.persistence;
+  const receiver = accounts.target;
+  assertSameCombatRoom(attacker, receiver, 'action visual equipment authority');
+
+  const authoritativeBoots = String(attacker.join.self?.equipment?.boots || '');
+  invariant(authoritativeBoots !== 'scoutBoots',
+    'Action visual authority fixture unexpectedly owns Service Scout boots',
+    attacker.join.self?.equipment);
+  const spoofedEquipment = {
+    weapon: 'rocketLauncher',
+    armor: 'heavyArmor',
+    helmet: 'assaultHelmet',
+    boots: 'scoutBoots',
+    backpack: 'backpack'
+  };
+
+  const shot = await socketEvent(receiver.socket, 'shot', () => {
+    attacker.socket.emit('shoot', {
+      weapon: 'rocketLauncher',
+      equipment: spoofedEquipment,
+      x: Number(attacker.join.x || 0),
+      z: Number(attacker.join.z || 0),
+      angle: 0
+    });
+  });
+  invariant(shot.weapon === 'pistol',
+    'Shoot visual relayed the client-supplied weapon instead of server authority',
+    shot);
+  invariant(shot.equipment?.weapon === 'pistol'
+    && shot.equipment?.boots === authoritativeBoots
+    && shot.equipment?.boots !== 'scoutBoots',
+    'Shoot visual relayed client-supplied equipment without ownership',
+    shot);
+
+  const melee = await socketEvent(receiver.socket, 'melee', () => {
+    attacker.socket.emit('melee', {
+      weapon: 'rocketLauncher',
+      equipment: spoofedEquipment,
+      x: Number(attacker.join.x || 0),
+      z: Number(attacker.join.z || 0),
+      angle: 0
+    });
+  });
+  invariant(melee.weapon === 'pistol',
+    'Melee visual relayed the client-supplied weapon instead of server authority',
+    melee);
+  invariant(melee.equipment?.weapon === 'pistol'
+    && melee.equipment?.boots === authoritativeBoots
+    && melee.equipment?.boots !== 'scoutBoots',
+    'Melee visual relayed client-supplied equipment without ownership',
+    melee);
+}
+
 async function assertServerFireRate(accounts) {
   await connectAndJoin(accounts.cadence);
   assertSameCombatRoom(accounts.cadence, accounts.target, 'fire-rate');
@@ -1575,6 +1653,7 @@ async function main() {
     await bootstrapCharacters(accounts);
     await exerciseMagazineBeforeReconnect(accounts);
     await assertMagazineAfterReconnect(accounts);
+    await assertActionVisualEquipmentAuthority(accounts);
     await assertUntargetedAttack(accounts);
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
@@ -1597,6 +1676,7 @@ async function main() {
       'Combat runtime OK: runtime-id profile sync and reload/fire survived save + reconnect, '
       + 'same-base magazines stayed separate, stale save did not roll back live equipment, '
       + 'duplicate joins and loaded-runtime drops preserved live combat state, '
+      + 'spoofed action visuals could not display unowned equipment, '
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
       + 'equipment changes were revisioned/idempotent and spent exactly 1 server AP, '

@@ -17,6 +17,8 @@
     "check:persistence": "node --check src/server/coalesced-writer.js && node --check tools/check-coalesced-writer.js && node tools/check-coalesced-writer.js",
     "check:socket-events": "node --check tools/check-socket-event-contract.js && node tools/check-socket-event-contract.js",
     "check:room-lifecycle": "node --check src/server/room-lifecycle.js && node --check tools/check-room-lifecycle.js && node tools/check-room-lifecycle.js",
+    "check:service-boots-service-scout": "node --check tools/art/build-service-boots-service-scout-review.js && node --check tools/art/validate-service-boots-service-scout-review.js && node --check tools/art/build-service-boots-service-scout-production.js && node --check tools/art/validate-service-boots-service-scout-production.js && node --check tools/art/build-service-boots-service-scout-integration-evidence.js && node --check tools/art/validate-service-boots-service-scout-integration-evidence.js && node tools/art/validate-service-boots-service-scout-review.js && node tools/art/validate-service-boots-service-scout-production.js && node tools/art/validate-service-boots-service-scout-integration-evidence.js",
+    "check:service-boots-service-scout:blender": "node --check tools/art/run-service-boots-service-scout-blender-roundtrip.js && node tools/art/run-service-boots-service-scout-blender-roundtrip.js",
     "admin:account": "node tools/account-admin.js",
     "check:metadata": "node --check tools/check-project-metadata.js && node tools/check-project-metadata.js",
     "check:client-endpoint": "node --check tools/check-client-endpoint-selection.js && node tools/check-client-endpoint-selection.js",

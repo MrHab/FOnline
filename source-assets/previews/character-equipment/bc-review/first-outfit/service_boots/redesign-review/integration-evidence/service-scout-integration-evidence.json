@@ -1,0 +1,585 @@
+{
+  "schema": "realm.service-scout-integration-evidence.v1",
+  "assetId": "service_boots",
+  "runtimeItemId": "scoutBoots",
+  "status": "awaiting_critic_final_approval",
+  "approvedReviewManifestSha256": "d66e7ebac2b8685b06a7345ef3e5a2c0f457ab2d901be6caa079dd460556f9b9",
+  "scope": {
+    "variants": 6,
+    "publishedVariants": 6,
+    "selectableVariantsInCurrentPlayerRuntime": 1,
+    "lodsPerVariant": 3,
+    "productionGlbs": 18,
+    "triangleTiers": [
+      3900,
+      1992,
+      1100
+    ],
+    "materialsPerGlb": 2,
+    "jointsPerGlb": 65,
+    "provenance": "original",
+    "thirdPartyAssets": 0
+  },
+  "runtimeReachability": {
+    "status": "default_variant_only",
+    "defaultVariant": "male_medium",
+    "browserExercisedVariants": [
+      "male_medium"
+    ],
+    "browserRequestedGlbs": 3,
+    "publishedButNotSelectableFromCurrentPlayerState": [
+      "female_slim",
+      "female_medium",
+      "female_large",
+      "male_slim",
+      "male_large"
+    ],
+    "reason": "The current local and remote procedural-character constructors do not yet receive authoritative sex/bodyType appearance fields."
+  },
+  "blenderRoundTrip": {
+    "command": "npm run check:service-boots-service-scout:blender",
+    "blenderVersion": "4.5.12 LTS",
+    "cleanScenePerFile": true,
+    "importedGlbs": 18,
+    "result": "passed",
+    "report": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/integration-evidence/service-scout-blender-roundtrip.json"
+  },
+  "runtimeDiagnostics": {
+    "desktop": {
+      "viewport": {
+        "width": 2560,
+        "height": 1271
+      },
+      "screenshot": "desktop-gameplay.png",
+      "manifest": "ready",
+      "requests": 3,
+      "attachedActors": 1,
+      "failedActors": 0,
+      "lastError": "",
+      "cachedTemplates": 3,
+      "selectedVariant": "male_medium",
+      "equippedPhysicalItemId": "scoutBoots",
+      "consoleWarningsOrErrors": 0
+    },
+    "mobileLandscapeViewport": {
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "screenshot": "mobile-landscape-844x390.png",
+      "manifest": "ready",
+      "requests": 3,
+      "attachedActors": 1,
+      "failedActors": 0,
+      "lastError": "",
+      "cachedTemplates": 3,
+      "selectedVariant": "male_medium",
+      "note": "Viewport regression check in desktop Chrome; touch/coarse-pointer emulation was not available."
+    }
+  },
+  "checks": [
+    {
+      "command": "npm run check:service-boots-service-scout",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check:service-boots-service-scout:blender",
+      "result": "passed"
+    },
+    {
+      "command": "node tools/check-client-js.js",
+      "result": "passed",
+      "clientParts": 61
+    },
+    {
+      "command": "node tools/check-combat-runtime.js",
+      "result": "passed",
+      "spoofedActionVisualsRejected": true
+    },
+    {
+      "command": "node tools/check-static-assets.js",
+      "result": "passed",
+      "runtimeAssetFiles": 241
+    },
+    {
+      "command": "node tools/check-movement-collision.js",
+      "result": "passed"
+    },
+    {
+      "command": "node tools/smoke-check.js",
+      "result": "passed"
+    },
+    {
+      "command": "npm run check",
+      "result": "passed"
+    },
+    {
+      "command": "GET http://127.0.0.1:3001/health",
+      "result": "passed"
+    },
+    {
+      "command": "Socket.IO websocket connection to port 3001",
+      "result": "passed"
+    }
+  ],
+  "authority": {
+    "source": "server equipment snapshot",
+    "actionVisualSource": "server player equipment only",
+    "spoofedActionVisualRegression": "passed",
+    "physicalInventoryRequired": true,
+    "cosmeticOverrideAllowed": false,
+    "itemId": "scoutBoots"
+  },
+  "knownLimitations": [
+    "Runtime attachment is a transitional ankle-split adapter over the current procedural character, not the final shared-GLB humanoid runtime.",
+    "The current player and remote-player constructors do not provide sex/bodyType, so browser runtime selects only male_medium (3 LOD GLBs); the other 15 published GLBs are Blender-validated but are not player-selectable until the modular appearance state/editor is wired.",
+    "Formal production BVH fit remains pending_geometry_check; the critic-approved review package contains eight visual fit poses for all six body variants.",
+    "The 844x390 check validates loading and attachment at a mobile landscape viewport but does not emulate touch/coarse-pointer device detection.",
+    "The complete Realm of Ashes 3D library is not release-ready; this evidence covers only Service Scout boots."
+  ],
+  "evidenceFiles": [
+    {
+      "file": "docs/art/ASSET_SOURCE_REGISTRY.json",
+      "bytes": 26915,
+      "sha256": "b8c54d5224bd702e824cc8bbc19b88bb4e6baf04fa3387622fd16e6da2644db9"
+    },
+    {
+      "file": "docs/wiki/CHANGELOG.md",
+      "bytes": 110066,
+      "sha256": "60c0a032e71081456d00b19d4f994ce9ea3fb930d2941cbb4c88aab37a7d581c"
+    },
+    {
+      "file": "docs/wiki/PATCH_NOTES_SERVICE_SCOUT_BOOTS_V2.md",
+      "bytes": 2809,
+      "sha256": "eccbac56a19d46e08be09988d034983ca82e2f508e112305348c1c399d5ddb64"
+    },
+    {
+      "file": "package.json",
+      "bytes": 10999,
+      "sha256": "657977fc3e7509888a0f203933380ca3a33e4372f006785c592d71bd38cf598c"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod0.glb",
+      "bytes": 360820,
+      "sha256": "13782776f63c4e16267b23f16424549106da9964aea5aa2103d7741ffd19ddc0"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod1.glb",
+      "bytes": 297472,
+      "sha256": "c0534e6928d381aecc4472b0f54c02999664b8599b1d5251ba086fa286e06876"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod2.glb",
+      "bytes": 267044,
+      "sha256": "2c3cf7508df2e3bc3cd9075fa06ba62cee7915baab70f4e75fd08d9ca58826ac"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod0.glb",
+      "bytes": 360720,
+      "sha256": "bcefc4e7ab01647dbaa19bee8a845b56562246e5eadeefebb6861d46d7199a82"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod1.glb",
+      "bytes": 297472,
+      "sha256": "727ebd31f499f7163a4bd35186075fb6985ba7ca2a6d9306456e332f46ead2b6"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod2.glb",
+      "bytes": 267044,
+      "sha256": "772c1f4560ee4af5e5ae3cb5874473b905fef1bfb1704d99c19e9ed3d3533163"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod0.glb",
+      "bytes": 360608,
+      "sha256": "6e3baad6c16442d466e6861db440c557d416dc6de9ba752f0dd850e232ef8ecd"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod1.glb",
+      "bytes": 297468,
+      "sha256": "541456f018aa4412e5cfadc0a73d85ad84b34b52cb46453e3c31d738da05ef3f"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod2.glb",
+      "bytes": 267040,
+      "sha256": "5dd5c19d631c2cce7db90b38c95e6b0a1799441172cb6959329700e4272654fd"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod0.glb",
+      "bytes": 360888,
+      "sha256": "2b42b0cd764840b7306912e9e7cce0ac36780f8fb6bdf5c36c82a9e6094747d3"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod1.glb",
+      "bytes": 298164,
+      "sha256": "6486eba69154d37367cf1127d2ff2545e3d3c386544dc8dc2c47bfe4353f0112"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod2.glb",
+      "bytes": 267736,
+      "sha256": "f077a7183be5e5fcf7ce6b27e81d4bd7c6db5e3dc4db94b00faad607bccbae1c"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod0.glb",
+      "bytes": 360888,
+      "sha256": "11767524613555b0a1096aa3c6db4c1651821d9c254edf02531ce423adb3a673"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod1.glb",
+      "bytes": 298168,
+      "sha256": "9c0583c06450d7630d544c880dc486776caa73b566d613794ad8ee8b4eae89be"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod2.glb",
+      "bytes": 267740,
+      "sha256": "d9e20fcefb0eaa66ccc995c33d85cfaad71f88145dbf92d8d3ae78ef9c35813b"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod0.glb",
+      "bytes": 360780,
+      "sha256": "ed4e78632166d282748f9436c8ef657c47af3e78c77540ff10dc446c71ea2f2e"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod1.glb",
+      "bytes": 298160,
+      "sha256": "ae770fb9c63755b784af2d0f21c049ed584db8259fdfd5473f559948fcd089a2"
+    },
+    {
+      "file": "public/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod2.glb",
+      "bytes": 267732,
+      "sha256": "dbecac52681bf00ead3bc307d30f08648390b0d9b3360e06d0e1076c17f8d078"
+    },
+    {
+      "file": "public/assets/models/characters/service-scout-boots-manifest.json",
+      "bytes": 6610,
+      "sha256": "ae824ed5a69aa8c8a80d35b909a524eab7ab81cef8124880d9c84196e2f1c49f"
+    },
+    {
+      "file": "public/index.html",
+      "bytes": 41311,
+      "sha256": "58c6f5998af9b47844474fe138fe65cd91c605071422540359336b05c8bb551b"
+    },
+    {
+      "file": "public/js/game-runtime.js",
+      "bytes": 5085,
+      "sha256": "5c6de2fe8b9e9ca152e43895bc081f757f550141a08f82ae747f50ccd9d15203"
+    },
+    {
+      "file": "public/js/game.js",
+      "bytes": 366,
+      "sha256": "ffe4f9480ad7587bd73cbbed0607e5c5945d0fc9ca4d18b6a882b34e4c494018"
+    },
+    {
+      "file": "public/js/game/03_items_inventory_core.js",
+      "bytes": 51054,
+      "sha256": "7d3e136101c550f9daadd90904d224e065a693001d932f2e7c613c1f114e94a3"
+    },
+    {
+      "file": "public/js/game/04_player_model_visuals.js",
+      "bytes": 88734,
+      "sha256": "33fe0e44c973c49677e93399f15c5bea66f7d1a10acd247660f8ccba1fb3e5af"
+    },
+    {
+      "file": "public/js/game/04a_player_model_modern_runtime.js",
+      "bytes": 30581,
+      "sha256": "8d806e094beb724f2dee3af34c6fe55d85acab91d8c16af6ef1ff1ea1105d754"
+    },
+    {
+      "file": "public/js/game/04b_service_scout_boots_runtime.js",
+      "bytes": 12767,
+      "sha256": "d1f036bf1f4eaf33e6b7c869b399a829065e26c83cac2f4d59fd0294e0ba0fbe"
+    },
+    {
+      "file": "public/js/game/05b_remote_player_locomotion.js",
+      "bytes": 68945,
+      "sha256": "bbb11054cf6d94798e88e49931a441dc05e14f4a1f18490d00c768b3f31b98c9"
+    },
+    {
+      "file": "public/js/game/05c_multiplayer_socket_room.js",
+      "bytes": 82596,
+      "sha256": "372cc74357617aea6bba4e3be59703d5f83f7094dc2409e1c0426e265e17e00b"
+    },
+    {
+      "file": "server.js",
+      "bytes": 877134,
+      "sha256": "540fd607c785d33cdba982164b6d229683b66cdfae2ddbb0f048d8917a3476c8"
+    },
+    {
+      "file": "source-assets/characters/library/character-library.json",
+      "bytes": 14562,
+      "sha256": "432caee236b6e9d9fda0f8889c3d77814a69396ac72da1126c4d15980a0ad1d5"
+    },
+    {
+      "file": "source-assets/library/asset-library.json",
+      "bytes": 15910,
+      "sha256": "05e2834f61fed397d51cec698e401f26bedcd4afef9c4886c19cda6e4ccc8ff2"
+    },
+    {
+      "file": "source-assets/library/asset-production-contract.json",
+      "bytes": 47936,
+      "sha256": "5da7a7d31d334dcddb53852c89432a3b266cdf9374d8ec13c523b754d8d55a05"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/CRITIC_CONFIRMATION.md",
+      "bytes": 891,
+      "sha256": "0a30d958844cc8f1d01ccbca1a5c88deff196dbf988771904802b75420f439bf"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/DELEGATED_USER_DECISION.md",
+      "bytes": 924,
+      "sha256": "e28d6b830aa0d034880587fb5e053abf786385d0c548743b056d7f9417333689"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/integration-evidence/desktop-gameplay.png",
+      "bytes": 525053,
+      "sha256": "d53f8bad9950f4d2f83c12d1f2beb139cfd4aa3dd5b1ad9f91f6750300624951"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/integration-evidence/desktop-inventory.png",
+      "bytes": 371777,
+      "sha256": "f55b3c30064510ff500299f861986cf6b422bc213940f50d2364445d1fb1d273"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/integration-evidence/desktop-player-crop.png",
+      "bytes": 19652,
+      "sha256": "b21cc20bb22070ea3cb8ebeedf1debde22910d8d59b5b84acee83a2393535718"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/integration-evidence/mobile-landscape-844x390.png",
+      "bytes": 61711,
+      "sha256": "afb1823ad0cc7efa3c9fb00362a263523632e3c787354e35051104be8fb3cff2"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/integration-evidence/mobile-landscape-inventory-844x390.png",
+      "bytes": 41139,
+      "sha256": "1202495aba0b3edd5360420f3a35f1c34b934f3cde36566226ab1d194a32f03b"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/integration-evidence/service-scout-blender-roundtrip.json",
+      "bytes": 17123,
+      "sha256": "b4541ee70a09cf48600095d47c29c8cd9d3c6d0ce2fe95a1f14785a2fda2122a"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/production-preview/service-boots-service-scout-review.json",
+      "bytes": 51224,
+      "sha256": "d0864702296532d405bf8f93988445f4bd9800e1c22677147a176db2fc4d15de"
+    },
+    {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/service_boots_redesign_working.blend",
+      "bytes": 75244533,
+      "sha256": "c563519620d532cb836f4fc2cd7a6744649a4da5254ac3614be17a34068634b2"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/character-module-set.json",
+      "bytes": 1473,
+      "sha256": "bac00ce91398609fc1e3ce66082106bd0a833eaa1189675cca4c9db4df0a7be4"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/service-scout-production-release.json",
+      "bytes": 11433,
+      "sha256": "682ef36f0e1373fa858bc7f2f8fa18335bd0a9ce025fbd0544bcbd83e61bc41f"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod0.glb",
+      "bytes": 360820,
+      "sha256": "13782776f63c4e16267b23f16424549106da9964aea5aa2103d7741ffd19ddc0"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod1.glb",
+      "bytes": 297472,
+      "sha256": "c0534e6928d381aecc4472b0f54c02999664b8599b1d5251ba086fa286e06876"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod2.glb",
+      "bytes": 267044,
+      "sha256": "2c3cf7508df2e3bc3cd9075fa06ba62cee7915baab70f4e75fd08d9ca58826ac"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod0.glb",
+      "bytes": 360720,
+      "sha256": "bcefc4e7ab01647dbaa19bee8a845b56562246e5eadeefebb6861d46d7199a82"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod1.glb",
+      "bytes": 297472,
+      "sha256": "727ebd31f499f7163a4bd35186075fb6985ba7ca2a6d9306456e332f46ead2b6"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod2.glb",
+      "bytes": 267044,
+      "sha256": "772c1f4560ee4af5e5ae3cb5874473b905fef1bfb1704d99c19e9ed3d3533163"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod0.glb",
+      "bytes": 360608,
+      "sha256": "6e3baad6c16442d466e6861db440c557d416dc6de9ba752f0dd850e232ef8ecd"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod1.glb",
+      "bytes": 297468,
+      "sha256": "541456f018aa4412e5cfadc0a73d85ad84b34b52cb46453e3c31d738da05ef3f"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod2.glb",
+      "bytes": 267040,
+      "sha256": "5dd5c19d631c2cce7db90b38c95e6b0a1799441172cb6959329700e4272654fd"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod0.glb",
+      "bytes": 360888,
+      "sha256": "2b42b0cd764840b7306912e9e7cce0ac36780f8fb6bdf5c36c82a9e6094747d3"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod1.glb",
+      "bytes": 298164,
+      "sha256": "6486eba69154d37367cf1127d2ff2545e3d3c386544dc8dc2c47bfe4353f0112"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod2.glb",
+      "bytes": 267736,
+      "sha256": "f077a7183be5e5fcf7ce6b27e81d4bd7c6db5e3dc4db94b00faad607bccbae1c"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod0.glb",
+      "bytes": 360888,
+      "sha256": "11767524613555b0a1096aa3c6db4c1651821d9c254edf02531ce423adb3a673"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod1.glb",
+      "bytes": 298168,
+      "sha256": "9c0583c06450d7630d544c880dc486776caa73b566d613794ad8ee8b4eae89be"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod2.glb",
+      "bytes": 267740,
+      "sha256": "d9e20fcefb0eaa66ccc995c33d85cfaad71f88145dbf92d8d3ae78ef9c35813b"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod0.glb",
+      "bytes": 360780,
+      "sha256": "ed4e78632166d282748f9436c8ef657c47af3e78c77540ff10dc446c71ea2f2e"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod1.glb",
+      "bytes": 298160,
+      "sha256": "ae770fb9c63755b784af2d0f21c049ed584db8259fdfd5473f559948fcd089a2"
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod2.glb",
+      "bytes": 267732,
+      "sha256": "dbecac52681bf00ead3bc307d30f08648390b0d9b3360e06d0e1076c17f8d078"
+    },
+    {
+      "file": "tools/art/blender/build_character_bc_first_outfit_review.py",
+      "bytes": 37083,
+      "sha256": "898ec9770d4ea1c8c3053f447118ff82996604f41bcfbb100cdf8686065b3879"
+    },
+    {
+      "file": "tools/art/blender/build_service_boots_service_scout.py",
+      "bytes": 30759,
+      "sha256": "10c3994ebb5bfae37ed04d7069306e077d3363ae28b786514db1e44da95ceefc"
+    },
+    {
+      "file": "tools/art/blender/render_service_boots_fit_review.py",
+      "bytes": 14399,
+      "sha256": "d6086c0d85f7f62886532bfd67079cbe362a771634e676bc190a9a4ebfa00a24"
+    },
+    {
+      "file": "tools/art/blender/render_service_boots_service_scout.py",
+      "bytes": 5471,
+      "sha256": "cae1ef3076303bbab827c80542c540df13c5296b7376c9f8296d9cb3341b5fbd"
+    },
+    {
+      "file": "tools/art/blender/validate_service_boots_roundtrip.py",
+      "bytes": 7701,
+      "sha256": "ab20c9d3b8cc5f79573db378bdfaf364f7e7fc58d4b7715bf3e7d0a224ba2d40"
+    },
+    {
+      "file": "tools/art/build-service-boots-service-scout-integration-evidence.js",
+      "bytes": 10247,
+      "sha256": "570f8f2884c45c3614ad29d66d4871120ea16c4b71172342ff3e9866c3f77d2d"
+    },
+    {
+      "file": "tools/art/build-service-boots-service-scout-production.js",
+      "bytes": 13116,
+      "sha256": "30b7acb89997013c63427b527ed070e800a7203b9808455a5a894a108be5b211"
+    },
+    {
+      "file": "tools/art/build-service-boots-service-scout-review.js",
+      "bytes": 18930,
+      "sha256": "ad261f7615bb594da41782ef1da667734e161b1b113cab75c2559435c171eb4a"
+    },
+    {
+      "file": "tools/art/run-service-boots-service-scout-blender-roundtrip.js",
+      "bytes": 1822,
+      "sha256": "26972a1131dc02916ba18bc3624bbbd76ccc9aea4898f05819c301600be3eb1b"
+    },
+    {
+      "file": "tools/art/validate-character-body-set.js",
+      "bytes": 16825,
+      "sha256": "b243ae68466d49b3994e797881c4101139003e8a4794e94a6f85a5fe747472bc"
+    },
+    {
+      "file": "tools/art/validate-character-module-set.js",
+      "bytes": 21550,
+      "sha256": "cd6e4e3473f7e0802aa9867f0efae71ec5c514bad920d6e410695f2b10f82f91"
+    },
+    {
+      "file": "tools/art/validate-production-glb.js",
+      "bytes": 41753,
+      "sha256": "e3094cf906e9876ea86147341853034d75c11a2d3c41712174685ad815fd4a5e"
+    },
+    {
+      "file": "tools/art/validate-production-lod-set.js",
+      "bytes": 9750,
+      "sha256": "2a0d5a096310cc24cbcc703c2ca638677aac8d564a6108bdf453a5e542fe0a60"
+    },
+    {
+      "file": "tools/art/validate-service-boots-service-scout-integration-evidence.js",
+      "bytes": 4512,
+      "sha256": "f1b440647285ac5c716e905a95a704ed329fb6c49ea16ac0da209999776d28bd"
+    },
+    {
+      "file": "tools/art/validate-service-boots-service-scout-production.js",
+      "bytes": 8002,
+      "sha256": "a221f63506a66b4d84347d786413d09f611e65ef5a691864a65c0e1d6cfcdbbc"
+    },
+    {
+      "file": "tools/art/validate-service-boots-service-scout-review.js",
+      "bytes": 12844,
+      "sha256": "cd2beca31f7658cca0afea7d77415172e92adb1b9706f7ddc8ec1630cbe15278"
+    },
+    {
+      "file": "tools/check-client-js.js",
+      "bytes": 27013,
+      "sha256": "b0f7249825189009fc1ad1a6f786a1150d43a74413b2e3a46eb5cb49f9075f0d"
+    },
+    {
+      "file": "tools/check-combat-runtime.js",
+      "bytes": 64205,
+      "sha256": "b0d2aa05b1ba5bd69112456d33905ff08c4d4b3769f0967b9595d5e1fcf9ebde"
+    },
+    {
+      "file": "tools/check-equipment-models.js",
+      "bytes": 2187,
+      "sha256": "93b40f4c63aff4749f6ab68d201da8a25e0d80535cba32f6e5ab7a669b344602"
+    },
+    {
+      "file": "tools/check-movement-collision.js",
+      "bytes": 16763,
+      "sha256": "7a9c2405acbcd099b0ea9f64beaf78fe1937c06f8273d620be24b30740e4222c"
+    },
+    {
+      "file": "tools/check-project-metadata.js",
+      "bytes": 3973,
+      "sha256": "51771e80c595e1c974f2ab34e4be24995289e87aa76feebd093b807bb035fdf7"
+    },
+    {
+      "file": "tools/smoke-check.js",
+      "bytes": 70585,
+      "sha256": "97191a430875851aa71513412e855b6e7ead946f64aaf3aa1ba5ce278be7e623"
+    }
+  ],
+  "evidenceFileCount": 88,
+  "evidenceBytes": 89392691,
+  "contentDigestSha256": "640db36d88f645736fc18822ca2d0cc208a6f7d94e0fd7cb88ae411260d3f6d8"
+}

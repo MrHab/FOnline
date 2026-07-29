@@ -1184,16 +1184,19 @@
     }
 
     const bootsId = String(equipmentVisualBaseId(eq.boots) || '');
-    const serviceScoutBootActive = applyServiceScoutBootVisual(parts, bootsOn ? bootsId : '');
-    if (!serviceScoutBootActive) {
-      if (parts.baseBootL) parts.baseBootL.visible = true;
-      if (parts.baseBootR) parts.baseBootR.visible = true;
-      if (parts.baseGaiterL) parts.baseGaiterL.visible = true;
-      if (parts.baseGaiterR) parts.baseGaiterR.visible = true;
+    const serviceScoutOn = bootsId === 'scoutBoots';
+    ['L', 'R'].forEach(side => {
+      if (parts[`baseFoot${side}`]) parts[`baseFoot${side}`].visible = !bootsOn;
+      if (parts[`baseBoot${side}`]) parts[`baseBoot${side}`].visible = bootsOn && !serviceScoutOn;
+      if (parts[`baseBootToe${side}`]) parts[`baseBootToe${side}`].visible = bootsOn && !serviceScoutOn;
+      if (parts[`baseGaiter${side}`]) parts[`baseGaiter${side}`].visible = !serviceScoutOn;
+    });
+    if (typeof syncServiceScoutBootVisual === 'function') {
+      syncServiceScoutBootVisual(parts, bootsId);
     }
-    if (bootsOn && parts.bootL && parts.bootR) {
-      parts.bootL.visible = !serviceScoutBootActive;
-      parts.bootR.visible = !serviceScoutBootActive;
+    if (bootsOn && !serviceScoutOn && parts.bootL && parts.bootR) {
+      parts.bootL.visible = true;
+      parts.bootR.visible = true;
       parts.bootL.scale.set(1, 1, 1);
       parts.bootR.scale.set(1, 1, 1);
       if (bootsId === 'scoutBoots') {

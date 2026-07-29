@@ -1,0 +1,322 @@
+{
+  "schema": "realm.service-boots-production-release.v1",
+  "version": 1,
+  "status": "approved_for_integration",
+  "assetId": "service_boots",
+  "physicalItemId": "scoutBoots",
+  "designRevision": "service_scout_compact_v2",
+  "artDirection": "geometry_b_materials_c",
+  "approval": {
+    "mode": "delegated_to_critic",
+    "userText": "Пусть критик подтверждает",
+    "scope": "service_boots_service_scout_compact_v2_only",
+    "approvedReviewManifestSha256": "d66e7ebac2b8685b06a7345ef3e5a2c0f457ab2d901be6caa079dd460556f9b9",
+    "criticVerdict": "APPROVED",
+    "runtimeIntegrationAllowed": true,
+    "pullRequestAllowed": true
+  },
+  "provenance": {
+    "type": "original",
+    "id": "realm_of_ashes_original",
+    "thirdPartyGeometryImported": false,
+    "thirdPartyTexturesImported": false,
+    "redistributionAllowed": true
+  },
+  "fitEvidence": {
+    "criticReviewedAllSixVariants": true,
+    "criticReviewedAllEightPoses": true,
+    "formalBvhFitStatus": "pending_geometry_check",
+    "reviewManifest": {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/production-preview/service-boots-service-scout-review.json",
+      "bytes": 51224,
+      "sha256": "d0864702296532d405bf8f93988445f4bd9800e1c22677147a176db2fc4d15de"
+    }
+  },
+  "moduleManifest": {
+    "file": "source-assets/production/characters/outfits/field_worker/service_boots/character-module-set.json",
+    "bytes": 1473,
+    "sha256": "bac00ce91398609fc1e3ce66082106bd0a833eaa1189675cca4c9db4df0a7be4"
+  },
+  "runtimeManifest": {
+    "file": "public/assets/models/characters/service-scout-boots-manifest.json",
+    "bytes": 6610,
+    "sha256": "ae824ed5a69aa8c8a80d35b909a524eab7ab81cef8124880d9c84196e2f1c49f"
+  },
+  "generators": [
+    {
+      "file": "tools/art/blender/build_service_boots_service_scout.py",
+      "bytes": 30759,
+      "sha256": "10c3994ebb5bfae37ed04d7069306e077d3363ae28b786514db1e44da95ceefc"
+    },
+    {
+      "file": "tools/art/build-service-boots-service-scout-production.js",
+      "bytes": 13116,
+      "sha256": "30b7acb89997013c63427b527ed070e800a7203b9808455a5a894a108be5b211"
+    },
+    {
+      "file": "tools/art/validate-service-boots-service-scout-production.js",
+      "bytes": 8002,
+      "sha256": "a221f63506a66b4d84347d786413d09f611e65ef5a691864a65c0e1d6cfcdbbc"
+    }
+  ],
+  "variants": [
+    {
+      "key": "female_slim",
+      "modelId": "service_boots_female_slim",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "source": [
+        {
+          "file": "variants/female_slim/service_boots_female_slim_lod0.glb",
+          "bytes": 360608,
+          "sha256": "6e3baad6c16442d466e6861db440c557d416dc6de9ba752f0dd850e232ef8ecd"
+        },
+        {
+          "file": "variants/female_slim/service_boots_female_slim_lod1.glb",
+          "bytes": 297468,
+          "sha256": "541456f018aa4412e5cfadc0a73d85ad84b34b52cb46453e3c31d738da05ef3f"
+        },
+        {
+          "file": "variants/female_slim/service_boots_female_slim_lod2.glb",
+          "bytes": 267040,
+          "sha256": "5dd5c19d631c2cce7db90b38c95e6b0a1799441172cb6959329700e4272654fd"
+        }
+      ],
+      "runtime": [
+        {
+          "file": "variants/female_slim/service_boots_female_slim_lod0.glb",
+          "bytes": 360608,
+          "sha256": "6e3baad6c16442d466e6861db440c557d416dc6de9ba752f0dd850e232ef8ecd"
+        },
+        {
+          "file": "variants/female_slim/service_boots_female_slim_lod1.glb",
+          "bytes": 297468,
+          "sha256": "541456f018aa4412e5cfadc0a73d85ad84b34b52cb46453e3c31d738da05ef3f"
+        },
+        {
+          "file": "variants/female_slim/service_boots_female_slim_lod2.glb",
+          "bytes": 267040,
+          "sha256": "5dd5c19d631c2cce7db90b38c95e6b0a1799441172cb6959329700e4272654fd"
+        }
+      ]
+    },
+    {
+      "key": "female_medium",
+      "modelId": "service_boots_female_medium",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "source": [
+        {
+          "file": "variants/female_medium/service_boots_female_medium_lod0.glb",
+          "bytes": 360720,
+          "sha256": "bcefc4e7ab01647dbaa19bee8a845b56562246e5eadeefebb6861d46d7199a82"
+        },
+        {
+          "file": "variants/female_medium/service_boots_female_medium_lod1.glb",
+          "bytes": 297472,
+          "sha256": "727ebd31f499f7163a4bd35186075fb6985ba7ca2a6d9306456e332f46ead2b6"
+        },
+        {
+          "file": "variants/female_medium/service_boots_female_medium_lod2.glb",
+          "bytes": 267044,
+          "sha256": "772c1f4560ee4af5e5ae3cb5874473b905fef1bfb1704d99c19e9ed3d3533163"
+        }
+      ],
+      "runtime": [
+        {
+          "file": "variants/female_medium/service_boots_female_medium_lod0.glb",
+          "bytes": 360720,
+          "sha256": "bcefc4e7ab01647dbaa19bee8a845b56562246e5eadeefebb6861d46d7199a82"
+        },
+        {
+          "file": "variants/female_medium/service_boots_female_medium_lod1.glb",
+          "bytes": 297472,
+          "sha256": "727ebd31f499f7163a4bd35186075fb6985ba7ca2a6d9306456e332f46ead2b6"
+        },
+        {
+          "file": "variants/female_medium/service_boots_female_medium_lod2.glb",
+          "bytes": 267044,
+          "sha256": "772c1f4560ee4af5e5ae3cb5874473b905fef1bfb1704d99c19e9ed3d3533163"
+        }
+      ]
+    },
+    {
+      "key": "female_large",
+      "modelId": "service_boots_female_large",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "source": [
+        {
+          "file": "variants/female_large/service_boots_female_large_lod0.glb",
+          "bytes": 360820,
+          "sha256": "13782776f63c4e16267b23f16424549106da9964aea5aa2103d7741ffd19ddc0"
+        },
+        {
+          "file": "variants/female_large/service_boots_female_large_lod1.glb",
+          "bytes": 297472,
+          "sha256": "c0534e6928d381aecc4472b0f54c02999664b8599b1d5251ba086fa286e06876"
+        },
+        {
+          "file": "variants/female_large/service_boots_female_large_lod2.glb",
+          "bytes": 267044,
+          "sha256": "2c3cf7508df2e3bc3cd9075fa06ba62cee7915baab70f4e75fd08d9ca58826ac"
+        }
+      ],
+      "runtime": [
+        {
+          "file": "variants/female_large/service_boots_female_large_lod0.glb",
+          "bytes": 360820,
+          "sha256": "13782776f63c4e16267b23f16424549106da9964aea5aa2103d7741ffd19ddc0"
+        },
+        {
+          "file": "variants/female_large/service_boots_female_large_lod1.glb",
+          "bytes": 297472,
+          "sha256": "c0534e6928d381aecc4472b0f54c02999664b8599b1d5251ba086fa286e06876"
+        },
+        {
+          "file": "variants/female_large/service_boots_female_large_lod2.glb",
+          "bytes": 267044,
+          "sha256": "2c3cf7508df2e3bc3cd9075fa06ba62cee7915baab70f4e75fd08d9ca58826ac"
+        }
+      ]
+    },
+    {
+      "key": "male_slim",
+      "modelId": "service_boots_male_slim",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "source": [
+        {
+          "file": "variants/male_slim/service_boots_male_slim_lod0.glb",
+          "bytes": 360780,
+          "sha256": "ed4e78632166d282748f9436c8ef657c47af3e78c77540ff10dc446c71ea2f2e"
+        },
+        {
+          "file": "variants/male_slim/service_boots_male_slim_lod1.glb",
+          "bytes": 298160,
+          "sha256": "ae770fb9c63755b784af2d0f21c049ed584db8259fdfd5473f559948fcd089a2"
+        },
+        {
+          "file": "variants/male_slim/service_boots_male_slim_lod2.glb",
+          "bytes": 267732,
+          "sha256": "dbecac52681bf00ead3bc307d30f08648390b0d9b3360e06d0e1076c17f8d078"
+        }
+      ],
+      "runtime": [
+        {
+          "file": "variants/male_slim/service_boots_male_slim_lod0.glb",
+          "bytes": 360780,
+          "sha256": "ed4e78632166d282748f9436c8ef657c47af3e78c77540ff10dc446c71ea2f2e"
+        },
+        {
+          "file": "variants/male_slim/service_boots_male_slim_lod1.glb",
+          "bytes": 298160,
+          "sha256": "ae770fb9c63755b784af2d0f21c049ed584db8259fdfd5473f559948fcd089a2"
+        },
+        {
+          "file": "variants/male_slim/service_boots_male_slim_lod2.glb",
+          "bytes": 267732,
+          "sha256": "dbecac52681bf00ead3bc307d30f08648390b0d9b3360e06d0e1076c17f8d078"
+        }
+      ]
+    },
+    {
+      "key": "male_medium",
+      "modelId": "service_boots_male_medium",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "source": [
+        {
+          "file": "variants/male_medium/service_boots_male_medium_lod0.glb",
+          "bytes": 360888,
+          "sha256": "11767524613555b0a1096aa3c6db4c1651821d9c254edf02531ce423adb3a673"
+        },
+        {
+          "file": "variants/male_medium/service_boots_male_medium_lod1.glb",
+          "bytes": 298168,
+          "sha256": "9c0583c06450d7630d544c880dc486776caa73b566d613794ad8ee8b4eae89be"
+        },
+        {
+          "file": "variants/male_medium/service_boots_male_medium_lod2.glb",
+          "bytes": 267740,
+          "sha256": "d9e20fcefb0eaa66ccc995c33d85cfaad71f88145dbf92d8d3ae78ef9c35813b"
+        }
+      ],
+      "runtime": [
+        {
+          "file": "variants/male_medium/service_boots_male_medium_lod0.glb",
+          "bytes": 360888,
+          "sha256": "11767524613555b0a1096aa3c6db4c1651821d9c254edf02531ce423adb3a673"
+        },
+        {
+          "file": "variants/male_medium/service_boots_male_medium_lod1.glb",
+          "bytes": 298168,
+          "sha256": "9c0583c06450d7630d544c880dc486776caa73b566d613794ad8ee8b4eae89be"
+        },
+        {
+          "file": "variants/male_medium/service_boots_male_medium_lod2.glb",
+          "bytes": 267740,
+          "sha256": "d9e20fcefb0eaa66ccc995c33d85cfaad71f88145dbf92d8d3ae78ef9c35813b"
+        }
+      ]
+    },
+    {
+      "key": "male_large",
+      "modelId": "service_boots_male_large",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "source": [
+        {
+          "file": "variants/male_large/service_boots_male_large_lod0.glb",
+          "bytes": 360888,
+          "sha256": "2b42b0cd764840b7306912e9e7cce0ac36780f8fb6bdf5c36c82a9e6094747d3"
+        },
+        {
+          "file": "variants/male_large/service_boots_male_large_lod1.glb",
+          "bytes": 298164,
+          "sha256": "6486eba69154d37367cf1127d2ff2545e3d3c386544dc8dc2c47bfe4353f0112"
+        },
+        {
+          "file": "variants/male_large/service_boots_male_large_lod2.glb",
+          "bytes": 267736,
+          "sha256": "f077a7183be5e5fcf7ce6b27e81d4bd7c6db5e3dc4db94b00faad607bccbae1c"
+        }
+      ],
+      "runtime": [
+        {
+          "file": "variants/male_large/service_boots_male_large_lod0.glb",
+          "bytes": 360888,
+          "sha256": "2b42b0cd764840b7306912e9e7cce0ac36780f8fb6bdf5c36c82a9e6094747d3"
+        },
+        {
+          "file": "variants/male_large/service_boots_male_large_lod1.glb",
+          "bytes": 298164,
+          "sha256": "6486eba69154d37367cf1127d2ff2545e3d3c386544dc8dc2c47bfe4353f0112"
+        },
+        {
+          "file": "variants/male_large/service_boots_male_large_lod2.glb",
+          "bytes": 267736,
+          "sha256": "f077a7183be5e5fcf7ce6b27e81d4bd7c6db5e3dc4db94b00faad607bccbae1c"
+        }
+      ]
+    }
+  ]
+}

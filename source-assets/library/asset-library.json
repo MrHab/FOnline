@@ -1,0 +1,264 @@
+{
+  "schema": "realm.asset-library.v1",
+  "version": 1,
+  "updated": "2026-07-28",
+  "stage": "production",
+  "releaseReady": false,
+  "productionContract": {
+    "manifest": "source-assets/library/asset-production-contract.json",
+    "status": "production"
+  },
+  "productionBriefs": {
+    "manifest": "source-assets/library/asset-production-briefs.json",
+    "status": "preproduction",
+    "targetCoverageComplete": true
+  },
+  "productionOutputPlan": {
+    "manifest": "source-assets/library/asset-production-output-plan.json",
+    "status": "preproduction",
+    "plannedPathCoverageComplete": true
+  },
+  "artDirection": {
+    "document": "docs/art/ART_DIRECTION.md",
+    "approvalGate": "docs/art/ART_DIRECTION_APPROVAL_GATE.md",
+    "status": "approved",
+    "recommendedConceptBlend": [
+      "option_b_geometry",
+      "option_c_materials"
+    ],
+    "approvedAt": "2026-07-28",
+    "approvedBy": "user",
+    "approvalText": "Утверждаю B+C: геометрия B, материалы и износ C"
+  },
+  "characterLibrary": {
+    "manifest": "source-assets/characters/library/character-library.json",
+    "status": "technical_preview"
+  },
+  "inventoryItems": [
+    { "id": "pistol", "family": "weapon", "status": "planned", "sourceCandidates": ["Zombie Apocalypse Kit", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "rifle", "family": "weapon", "status": "planned", "sourceCandidates": ["Zombie Apocalypse Kit", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "assaultRifle", "family": "weapon", "status": "planned", "sourceCandidates": ["Sci-Fi Modular Gun Pack", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "machineGun", "family": "weapon", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "laserPistol", "family": "weapon", "status": "planned", "sourceCandidates": ["Kenney Blaster Kit", "Sci-Fi Modular Gun Pack", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "flamethrower", "family": "weapon", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "plasmaRifle", "family": "weapon", "status": "planned", "sourceCandidates": ["Kenney Blaster Kit", "Sci-Fi Modular Gun Pack", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "shotgun", "family": "weapon", "status": "planned", "sourceCandidates": ["Zombie Apocalypse Kit"] },
+    { "id": "rocketLauncher", "family": "weapon", "status": "planned", "sourceCandidates": ["Sci-Fi Modular Gun Pack"] },
+    { "id": "knife", "family": "weapon", "status": "planned", "sourceCandidates": ["Zombie Apocalypse Kit"] },
+    { "id": "leather", "family": "armor", "status": "planned", "sourceCandidates": ["Modular Character Outfits - Fantasy"] },
+    { "id": "metalArmor", "family": "armor", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "ballisticVest", "family": "armor", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "combatArmor", "family": "armor", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "hazmatSuit", "family": "armor", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "heavyArmor", "family": "armor", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "energySuit", "family": "armor", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "helmet", "family": "helmet", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "tacticalHelmet", "family": "helmet", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "assaultHelmet", "family": "helmet", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "boots", "family": "footwear", "status": "planned", "sourceCandidates": ["Modular Character Outfits - Fantasy"] },
+    { "id": "scoutBoots", "family": "footwear", "status": "planned", "sourceCandidates": ["Modular Character Outfits - Fantasy"] },
+    { "id": "reinforcedBoots", "family": "footwear", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "backpack", "family": "backpack", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "ammo9", "family": "ammunition", "status": "planned", "sourceCandidates": ["Sci-Fi Essentials Kit Standard"] },
+    { "id": "ammo556", "family": "ammunition", "status": "planned", "sourceCandidates": ["Sci-Fi Essentials Kit Standard"] },
+    { "id": "energyCell", "family": "ammunition", "status": "planned", "sourceCandidates": ["Kenney Blaster Kit", "Sci-Fi Modular Gun Pack", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "napalm", "family": "ammunition", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "shotgunShell", "family": "ammunition", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "rocketAmmo", "family": "ammunition", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "medkit", "family": "consumable", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "stim", "family": "consumable", "status": "planned", "sourceCandidates": ["Sci-Fi Essentials Kit Standard"] },
+    { "id": "doctorBag", "family": "consumable", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "antibiotics", "family": "consumable", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "ore", "family": "material", "status": "planned", "sourceCandidates": ["Kenney Survival Kit"] },
+    { "id": "wood", "family": "material", "status": "planned", "sourceCandidates": ["Kenney Survival Kit"] },
+    { "id": "scrap", "family": "material", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard"] },
+    { "id": "oil", "family": "material", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "chemicals", "family": "material", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard"] },
+    { "id": "medicine", "family": "material", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard"] },
+    { "id": "electronics", "family": "material", "status": "planned", "sourceCandidates": ["Sci-Fi Essentials Kit Standard"] },
+    { "id": "ammoParts", "family": "material", "status": "planned", "sourceCandidates": ["Sci-Fi Modular Gun Pack", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "food", "family": "provision", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard"] },
+    { "id": "weaponParts", "family": "material", "status": "planned", "sourceCandidates": ["Sci-Fi Modular Gun Pack", "Sci-Fi Essentials Kit Standard"] },
+    { "id": "silver", "family": "currency", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard"] },
+    { "id": "trophy", "family": "loot", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard"] },
+    { "id": "water", "family": "provision", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard"] },
+    { "id": "pickaxe", "family": "tool", "status": "planned", "sourceCandidates": ["Kenney Survival Kit", "Fantasy Props MegaKit Standard"] },
+    { "id": "axe", "family": "tool", "status": "planned", "sourceCandidates": ["Zombie Apocalypse Kit", "Kenney Survival Kit", "Fantasy Props MegaKit Standard"] },
+    { "id": "handPump", "family": "tool", "status": "planned", "sourceCandidates": [], "provenancePlan": "original_after_art_approval" },
+    { "id": "repairKit", "family": "consumable", "status": "planned", "sourceCandidates": ["Fantasy Props MegaKit Standard"] }
+  ],
+  "creatures": [
+    {
+      "id": "brahmin",
+      "rigId": "brahmin_v1",
+      "legacyStaticFile": "public/assets/models/wasteland/brahmin.glb",
+      "status": "planned",
+      "requiredAnimations": ["idle", "walk", "run", "graze", "hit", "death"],
+      "sourceCandidates": ["Ultimate Animated Animal Pack"]
+    },
+    {
+      "id": "ash_wolf",
+      "rigId": "canid_v1",
+      "legacyStaticFile": "public/assets/models/wasteland/npc_ash_wolf.glb",
+      "status": "planned",
+      "requiredAnimations": ["idle", "walk", "run", "attack", "eat", "hit", "death"],
+      "sourceCandidates": ["Zombie Apocalypse Kit", "Ultimate Animated Animal Pack"]
+    },
+    {
+      "id": "radscorpion",
+      "rigId": "radscorpion_v1",
+      "legacyStaticFile": "public/assets/models/wasteland/npc_radscorpion.glb",
+      "status": "planned",
+      "requiredAnimations": ["idle", "walk", "attack_claw", "attack_sting", "hit", "death"],
+      "sourceCandidates": [],
+      "provenancePlan": "original_after_art_approval"
+    },
+    {
+      "id": "mutant_ant",
+      "rigId": "mutant_ant_v1",
+      "legacyStaticFile": "public/assets/models/wasteland/npc_mutant_ant.glb",
+      "status": "planned",
+      "requiredAnimations": ["idle", "walk", "run", "attack", "hit", "death"],
+      "sourceCandidates": [],
+      "provenancePlan": "original_after_art_approval"
+    },
+    {
+      "id": "gecko",
+      "rigId": "gecko_v1",
+      "legacyStaticFile": "public/assets/models/wasteland/npc_gecko.glb",
+      "status": "planned",
+      "requiredAnimations": ["idle", "walk", "run", "attack", "hit", "death"],
+      "sourceCandidates": [],
+      "provenancePlan": "original_after_art_approval"
+    },
+    {
+      "id": "fire_gecko",
+      "rigId": "gecko_v1",
+      "legacyStaticFile": "public/assets/models/wasteland/npc_fire_gecko.glb",
+      "status": "planned",
+      "requiredAnimations": ["idle", "walk", "run", "attack", "fire_attack", "hit", "death"],
+      "sourceCandidates": [],
+      "provenancePlan": "original_after_art_approval"
+    },
+    {
+      "id": "ghoul",
+      "rigId": "infected_humanoid_v1",
+      "legacyStaticFile": "public/assets/models/wasteland/npc_ghoul.glb",
+      "status": "planned",
+      "requiredAnimations": ["idle", "walk", "run", "attack", "hit", "death", "crawl"],
+      "sourceCandidates": ["Zombie Apocalypse Kit", "Universal Animation Library 2"]
+    },
+    {
+      "id": "super_mutant",
+      "rigId": "mutant_humanoid_v1",
+      "legacyStaticFile": "public/assets/models/wasteland/npc_super_mutant.glb",
+      "status": "planned",
+      "requiredAnimations": ["idle", "walk", "run", "ready_2h", "fire_2h", "melee_heavy", "hit", "death"],
+      "sourceCandidates": [],
+      "provenancePlan": "original_after_art_approval"
+    }
+  ],
+  "environmentFamilies": [
+    {
+      "id": "furniture_domestic",
+      "status": "planned",
+      "requiredArchetypes": ["chair", "table", "cot", "shelf", "cabinet", "stove", "couch", "lamp"],
+      "sourceCandidates": ["Zombie Apocalypse Kit", "Kenney Survival Kit", "Fantasy Props MegaKit Standard", "Sci-Fi Essentials Kit Standard"],
+      "assets": []
+    },
+    {
+      "id": "containers_storage",
+      "status": "planned",
+      "requiredArchetypes": ["small_crate", "large_crate", "storage_chest", "locker", "barrel", "cargo_stack"],
+      "sourceCandidates": ["Zombie Apocalypse Kit", "Kenney Survival Kit", "Kenney Blaster Kit", "Fantasy Props MegaKit Standard", "Sci-Fi Essentials Kit Standard"],
+      "assets": []
+    },
+    {
+      "id": "settlement_modules",
+      "status": "planned",
+      "requiredArchetypes": ["floor", "wall", "window", "door", "roof", "stairs", "fence", "gate"],
+      "sourceCandidates": ["Kenney City Kit (Industrial)", "Kenney City Kit (Suburban)", "Kenney Survival Kit"],
+      "assets": []
+    },
+    {
+      "id": "buildings_ruins",
+      "status": "planned",
+      "requiredArchetypes": ["shack", "workshop", "clinic", "guard_post", "trader", "collapsed_ruin"],
+      "sourceCandidates": ["Kenney City Kit (Industrial)", "Kenney City Kit (Suburban)", "Kenney Survival Kit"],
+      "assets": []
+    },
+    {
+      "id": "industrial_crafting",
+      "status": "planned",
+      "requiredArchetypes": ["ammo_bench", "weapon_bench", "tool_bench", "repair_bench", "energy_bench", "chem_station", "pump", "antenna"],
+      "sourceCandidates": ["Zombie Apocalypse Kit", "Kenney City Kit (Industrial)", "Kenney Survival Kit", "Fantasy Props MegaKit Standard", "Sci-Fi Essentials Kit Standard"],
+      "assets": []
+    },
+    {
+      "id": "vegetation",
+      "status": "planned",
+      "requiredArchetypes": ["dead_tree", "deadwood", "dry_bush", "dry_grass", "cactus"],
+      "sourceCandidates": ["Kenney Survival Kit"],
+      "assets": []
+    },
+    {
+      "id": "rocks_debris",
+      "status": "planned",
+      "requiredArchetypes": ["small_rock", "medium_rock", "large_rock", "ore_outcrop", "rubble", "scrap_heap"],
+      "sourceCandidates": ["Kenney Survival Kit"],
+      "assets": []
+    },
+    {
+      "id": "waste_trash",
+      "status": "planned",
+      "requiredArchetypes": ["trash_bag", "tire", "tire_stack", "rust_barrel", "pallet", "perimeter_debris"],
+      "sourceCandidates": ["Zombie Apocalypse Kit", "Kenney Survival Kit"],
+      "assets": []
+    },
+    {
+      "id": "roadside",
+      "status": "planned",
+      "requiredArchetypes": ["asphalt_straight", "asphalt_turn", "asphalt_crossing", "highway_sign", "utility_pole", "traffic_barrier", "roadblock", "car_wreck"],
+      "sourceCandidates": ["Zombie Apocalypse Kit"],
+      "assets": []
+    },
+    {
+      "id": "dungeon_interior",
+      "status": "planned",
+      "requiredArchetypes": ["floor", "wall", "door", "stairs", "support", "pipe", "light", "debris"],
+      "sourceCandidates": ["Kenney City Kit (Industrial)", "Kenney Survival Kit", "Fantasy Props MegaKit Standard", "Sci-Fi Essentials Kit Standard"],
+      "assets": []
+    }
+  ],
+  "surfaceFamilies": [
+    { "id": "dry_dirt", "status": "planned", "sourceCandidates": ["Poly Haven", "ambientCG"], "assets": [] },
+    { "id": "cracked_dirt", "status": "planned", "sourceCandidates": ["Poly Haven", "ambientCG"], "assets": [] },
+    { "id": "sand_ash", "status": "planned", "sourceCandidates": ["Poly Haven", "ambientCG"], "assets": [] },
+    { "id": "rock_gravel", "status": "planned", "sourceCandidates": ["Poly Haven", "ambientCG"], "assets": [] },
+    { "id": "cracked_asphalt", "status": "planned", "sourceCandidates": ["Poly Haven", "ambientCG"], "assets": [] },
+    { "id": "dusty_concrete", "status": "planned", "sourceCandidates": ["Poly Haven", "ambientCG"], "assets": [] },
+    { "id": "corroded_metal", "status": "planned", "sourceCandidates": ["Poly Haven", "ambientCG"], "assets": [] },
+    { "id": "weathered_wood", "status": "planned", "sourceCandidates": ["Poly Haven", "ambientCG"], "assets": [] }
+  ],
+  "legacyModelReview": {
+    "directory": "public/assets/models/wasteland",
+    "expectedCurrentGlbCount": 75,
+    "status": "audited_static_placeholders",
+    "replacementManifest": "source-assets/library/legacy-model-replacements.json",
+    "replacementMappingComplete": true
+  },
+  "releaseGates": {
+    "artDirectionApproved": true,
+    "characterLibraryReleaseReady": false,
+    "allInventoryItemsApproved": false,
+    "allCreaturesApproved": false,
+    "allEnvironmentFamiliesApproved": false,
+    "allSurfaceFamiliesApproved": false,
+    "allSourcesTraceable": false,
+    "legacyModelReplacementMappingComplete": true,
+    "desktopVisualTestPassed": false,
+    "mobileLandscapeVisualTestPassed": false,
+    "performanceBudgetPassed": false,
+    "colliderCatalogRegenerated": false
+  }
+}

@@ -1,0 +1,705 @@
+{
+  "schema": "realm.service-scout-blender-roundtrip.v1",
+  "assetId": "service_boots",
+  "modelFamily": "service_scout",
+  "blenderVersion": "4.5.12 LTS",
+  "importer": "bpy.ops.import_scene.gltf",
+  "cleanScenePerFile": true,
+  "glbCount": 18,
+  "variantCount": 6,
+  "lodsPerVariant": 3,
+  "checks": {
+    "cameraAndLightFree": true,
+    "oneArmaturePerGlb": true,
+    "jointCount": 65,
+    "allMeshesSkinned": true,
+    "materialsPerGlb": 2,
+    "approvalMetadataRetained": true
+  },
+  "files": [
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod0.glb",
+      "variant": "female_large",
+      "lod": "lod0",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 2148,
+      "triangles": 3900,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181399,
+          -0.128669,
+          -0.0
+        ],
+        "max": [
+          0.181399,
+          0.105292,
+          0.215015
+        ],
+        "size": [
+          0.362797,
+          0.233961,
+          0.215015
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod1.glb",
+      "variant": "female_large",
+      "lod": "lod1",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 1150,
+      "triangles": 1992,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181399,
+          -0.128669,
+          -0.0
+        ],
+        "max": [
+          0.181399,
+          0.105292,
+          0.214843
+        ],
+        "size": [
+          0.362797,
+          0.233961,
+          0.214843
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod2.glb",
+      "variant": "female_large",
+      "lod": "lod2",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 668,
+      "triangles": 1100,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181399,
+          -0.128669,
+          -0.0
+        ],
+        "max": [
+          0.181399,
+          0.105292,
+          0.214779
+        ],
+        "size": [
+          0.362797,
+          0.233961,
+          0.214779
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod0.glb",
+      "variant": "female_medium",
+      "lod": "lod0",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 2146,
+      "triangles": 3900,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181459,
+          -0.125323,
+          -0.0
+        ],
+        "max": [
+          0.181459,
+          0.102677,
+          0.214637
+        ],
+        "size": [
+          0.362918,
+          0.228,
+          0.214637
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod1.glb",
+      "variant": "female_medium",
+      "lod": "lod1",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 1150,
+      "triangles": 1992,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181459,
+          -0.125323,
+          -0.0
+        ],
+        "max": [
+          0.181459,
+          0.102677,
+          0.214465
+        ],
+        "size": [
+          0.362918,
+          0.228,
+          0.214465
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod2.glb",
+      "variant": "female_medium",
+      "lod": "lod2",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 668,
+      "triangles": 1100,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181459,
+          -0.125323,
+          -0.0
+        ],
+        "max": [
+          0.181459,
+          0.102677,
+          0.214401
+        ],
+        "size": [
+          0.362918,
+          0.228,
+          0.214401
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod0.glb",
+      "variant": "female_slim",
+      "lod": "lod0",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 2144,
+      "triangles": 3900,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181373,
+          -0.121776,
+          -0.0
+        ],
+        "max": [
+          0.181373,
+          0.099906,
+          0.214257
+        ],
+        "size": [
+          0.362746,
+          0.221682,
+          0.214258
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod1.glb",
+      "variant": "female_slim",
+      "lod": "lod1",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 1150,
+      "triangles": 1992,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181373,
+          -0.121776,
+          -0.0
+        ],
+        "max": [
+          0.181373,
+          0.099906,
+          0.214085
+        ],
+        "size": [
+          0.362746,
+          0.221682,
+          0.214086
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod2.glb",
+      "variant": "female_slim",
+      "lod": "lod2",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 668,
+      "triangles": 1100,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.181373,
+          -0.121776,
+          -0.0
+        ],
+        "max": [
+          0.181373,
+          0.099906,
+          0.214022
+        ],
+        "size": [
+          0.362746,
+          0.221682,
+          0.214022
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod0.glb",
+      "variant": "male_large",
+      "lod": "lod0",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 2136,
+      "triangles": 3900,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177408,
+          -0.114451,
+          -0.0
+        ],
+        "max": [
+          0.177408,
+          0.110568,
+          0.225652
+        ],
+        "size": [
+          0.354816,
+          0.225019,
+          0.225652
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod1.glb",
+      "variant": "male_large",
+      "lod": "lod1",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 1150,
+      "triangles": 1992,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177408,
+          -0.114451,
+          -0.0
+        ],
+        "max": [
+          0.177408,
+          0.110568,
+          0.225462
+        ],
+        "size": [
+          0.354816,
+          0.225019,
+          0.225462
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod2.glb",
+      "variant": "male_large",
+      "lod": "lod2",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 668,
+      "triangles": 1100,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177408,
+          -0.114451,
+          -0.0
+        ],
+        "max": [
+          0.177408,
+          0.110568,
+          0.225395
+        ],
+        "size": [
+          0.354816,
+          0.225019,
+          0.225395
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod0.glb",
+      "variant": "male_medium",
+      "lod": "lod0",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 2136,
+      "triangles": 3900,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177412,
+          -0.112191,
+          -0.0
+        ],
+        "max": [
+          0.177411,
+          0.108801,
+          0.225463
+        ],
+        "size": [
+          0.354823,
+          0.220992,
+          0.225463
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod1.glb",
+      "variant": "male_medium",
+      "lod": "lod1",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 1150,
+      "triangles": 1992,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177412,
+          -0.112191,
+          -0.0
+        ],
+        "max": [
+          0.177411,
+          0.108801,
+          0.225274
+        ],
+        "size": [
+          0.354823,
+          0.220992,
+          0.225274
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod2.glb",
+      "variant": "male_medium",
+      "lod": "lod2",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 668,
+      "triangles": 1100,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177412,
+          -0.112191,
+          -0.0
+        ],
+        "max": [
+          0.177411,
+          0.108801,
+          0.225207
+        ],
+        "size": [
+          0.354823,
+          0.220992,
+          0.225207
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod0.glb",
+      "variant": "male_slim",
+      "lod": "lod0",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 2134,
+      "triangles": 3900,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177411,
+          -0.109113,
+          -0.0
+        ],
+        "max": [
+          0.177411,
+          0.106397,
+          0.225275
+        ],
+        "size": [
+          0.354823,
+          0.215511,
+          0.225275
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod1.glb",
+      "variant": "male_slim",
+      "lod": "lod1",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 1150,
+      "triangles": 1992,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177411,
+          -0.109113,
+          -0.0
+        ],
+        "max": [
+          0.177411,
+          0.106397,
+          0.225087
+        ],
+        "size": [
+          0.354823,
+          0.215511,
+          0.225087
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    },
+    {
+      "file": "source-assets/production/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod2.glb",
+      "variant": "male_slim",
+      "lod": "lod2",
+      "objects": 2,
+      "meshes": 1,
+      "skinnedMeshes": 1,
+      "armatures": 1,
+      "joints": 65,
+      "vertices": 668,
+      "triangles": 1100,
+      "materials": [
+        "mat_service_boots_sole",
+        "mat_service_boots_upper"
+      ],
+      "boundsMeters": {
+        "min": [
+          -0.177411,
+          -0.109113,
+          -0.0
+        ],
+        "max": [
+          0.177411,
+          0.106397,
+          0.22502
+        ],
+        "size": [
+          0.354823,
+          0.215511,
+          0.22502
+        ]
+      },
+      "approval": {
+        "status": "approved",
+        "reviewOnly": false,
+        "runtimeIntegrationAllowed": true
+      }
+    }
+  ]
+}

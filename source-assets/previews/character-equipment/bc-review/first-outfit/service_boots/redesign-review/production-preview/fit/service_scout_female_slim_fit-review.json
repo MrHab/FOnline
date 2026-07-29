@@ -1,0 +1,97 @@
+{
+  "schema": "realm.service-boots-fit-review.v1",
+  "version": 1,
+  "status": "review_candidate",
+  "body": {
+    "file": "C:\\Users\\Эмиль\\Desktop\\FOnline-art-direction\\source-assets\\previews\\character-base\\bc-review\\body-types\\character_female_slim_bc_lod0.glb",
+    "sha256": "005d09778c38cb1daf0c25bad3c67c02c45d3d3f8b84765639ebcf1be9482a32"
+  },
+  "boots": {
+    "file": "C:\\Users\\Эмиль\\Desktop\\FOnline-art-direction\\source-assets\\previews\\character-equipment\\bc-review\\first-outfit\\service_boots\\redesign-review\\production-preview\\variants\\female_slim\\service_boots_female_slim_service_scout_lod0.glb",
+    "sha256": "e6e5def838cef2557dfc192f488fe9653e51791c266f013a153a09eb87747ec1"
+  },
+  "rig": "humanoid_v1",
+  "jointCount": 65,
+  "jointSetsMatch": true,
+  "hideBodyRegions": [
+    "foot_l",
+    "foot_r"
+  ],
+  "hiddenBodyVertices": 3990,
+  "poses": [
+    {
+      "id": "bind",
+      "action": null,
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": null,
+      "groundShiftMeters": 0.0,
+      "image": "service_scout_female_slim_bind.png"
+    },
+    {
+      "id": "idle",
+      "action": "idle",
+      "frameFraction": 0.35,
+      "frame": 13,
+      "manualPose": null,
+      "groundShiftMeters": 0.005764,
+      "image": "service_scout_female_slim_idle.png"
+    },
+    {
+      "id": "walk_contact",
+      "action": "walk",
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": null,
+      "groundShiftMeters": 0.006754,
+      "image": "service_scout_female_slim_walk_contact.png"
+    },
+    {
+      "id": "run_contact",
+      "action": "run",
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": null,
+      "groundShiftMeters": -0.10237,
+      "image": "service_scout_female_slim_run_contact.png"
+    },
+    {
+      "id": "crouch_idle",
+      "action": null,
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": "crouch",
+      "groundShiftMeters": -0.207824,
+      "image": "service_scout_female_slim_crouch_idle.png"
+    },
+    {
+      "id": "ready_1h",
+      "action": "idle",
+      "frameFraction": 0.35,
+      "frame": 13,
+      "manualPose": "ready_1h",
+      "groundShiftMeters": 0.046637,
+      "image": "service_scout_female_slim_ready_1h.png"
+    },
+    {
+      "id": "ready_2h",
+      "action": "idle",
+      "frameFraction": 0.35,
+      "frame": 13,
+      "manualPose": "ready_2h",
+      "groundShiftMeters": 0.046637,
+      "image": "service_scout_female_slim_ready_2h.png"
+    },
+    {
+      "id": "melee_heavy",
+      "action": null,
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": "melee_heavy",
+      "groundShiftMeters": 0.037708,
+      "image": "service_scout_female_slim_melee_heavy.png"
+    }
+  ],
+  "runtimeIntegrationAllowed": false,
+  "pullRequestAllowed": false
+}

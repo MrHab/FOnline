@@ -1,0 +1,1680 @@
+{
+  "schema": "realm.service-boots-redesign-art-review.v1",
+  "version": 1,
+  "status": "approved_for_runtime_integration",
+  "reviewId": "service_boots_service_scout_compact_v2",
+  "titleRu": "Служебные ботинки «Полевой разведчик», compact v2",
+  "artDirection": {
+    "id": "geometry_b_materials_c",
+    "geometry": "graphic_faceted_b",
+    "materialsAndWear": "retro_modern_c"
+  },
+  "correctionBasis": {
+    "criticVerdict": "APPROVED",
+    "correctedFindings": [
+      "oversized toe, shaft and split outsole",
+      "triangle and material budget overflow",
+      "missing humanoid_v1 skin and weights",
+      "missing LOD and body-variant matrix",
+      "missing production root, metadata, UV and packed ORM"
+    ],
+    "unresolvedGate": "runtime integration and post-integration critic QA"
+  },
+  "criticReview": {
+    "reviewer": "independent_art_critic_agent",
+    "verdict": "APPROVED",
+    "reviewedManifestSha256": "303961848c923cf32c9d3405faa8002bb1d7f4e24a72b41485ba51446020dbca",
+    "report": {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/CRITIC_REVIEW.md",
+      "bytes": 1579,
+      "sha256": "0c87cab21ffeac7be5fadf2dbfcaf3a276c9d9b7f7a5582c5480c9d76bfe1b95"
+    }
+  },
+  "finalCriticConfirmation": {
+    "verdict": "APPROVED",
+    "confirmedManifestSha256": "d66e7ebac2b8685b06a7345ef3e5a2c0f457ab2d901be6caa079dd460556f9b9",
+    "report": {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/CRITIC_CONFIRMATION.md",
+      "bytes": 891,
+      "sha256": "0a30d958844cc8f1d01ccbca1a5c88deff196dbf988771904802b75420f439bf"
+    }
+  },
+  "userDecision": {
+    "mode": "delegated_to_critic",
+    "userText": "Пусть критик подтверждает",
+    "recordedAt": "2026-07-29",
+    "approvedManifestSha256": "d66e7ebac2b8685b06a7345ef3e5a2c0f457ab2d901be6caa079dd460556f9b9",
+    "scope": "service_boots_service_scout_compact_v2_only",
+    "record": {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/DELEGATED_USER_DECISION.md",
+      "bytes": 924,
+      "sha256": "e28d6b830aa0d034880587fb5e053abf786385d0c548743b056d7f9417333689"
+    }
+  },
+  "provenance": {
+    "type": "original",
+    "id": "realm_of_ashes_original",
+    "artisticSource": {
+      "file": "source-assets/previews/character-equipment/bc-review/first-outfit/service_boots/redesign-review/service_boots_redesign_working.blend",
+      "bytes": 75244533,
+      "sha256": "c563519620d532cb836f4fc2cd7a6744649a4da5254ac3614be17a34068634b2"
+    },
+    "thirdPartyGeometryImported": false,
+    "thirdPartyTexturesImported": false,
+    "redistributionStatus": "original Realm of Ashes review asset"
+  },
+  "generators": [
+    {
+      "file": "tools/art/blender/build_service_boots_service_scout.py",
+      "bytes": 30759,
+      "sha256": "10c3994ebb5bfae37ed04d7069306e077d3363ae28b786514db1e44da95ceefc"
+    },
+    {
+      "file": "tools/art/blender/render_service_boots_service_scout.py",
+      "bytes": 5471,
+      "sha256": "cae1ef3076303bbab827c80542c540df13c5296b7376c9f8296d9cb3341b5fbd"
+    },
+    {
+      "file": "tools/art/blender/render_service_boots_fit_review.py",
+      "bytes": 14399,
+      "sha256": "d6086c0d85f7f62886532bfd67079cbe362a771634e676bc190a9a4ebfa00a24"
+    },
+    {
+      "file": "tools/art/build-service-boots-service-scout-review.js",
+      "bytes": 18930,
+      "sha256": "ad261f7615bb594da41782ef1da667734e161b1b113cab75c2559435c171eb4a"
+    },
+    {
+      "file": "tools/art/blender/build_character_bc_first_outfit_review.py",
+      "bytes": 37083,
+      "sha256": "898ec9770d4ea1c8c3053f447118ff82996604f41bcfbb100cdf8686065b3879"
+    }
+  ],
+  "contract": {
+    "file": "source-assets/library/asset-production-contract.json",
+    "bytes": 47936,
+    "sha256": "5da7a7d31d334dcddb53852c89432a3b266cdf9374d8ec13c523b754d8d55a05"
+  },
+  "implementation": {
+    "assetId": "service_boots",
+    "assetClass": "humanoid_skinned_equipment",
+    "rig": "humanoid_v1",
+    "joints": 65,
+    "maxInfluences": 4,
+    "materials": 2,
+    "textureSet": "Base Color + Normal + packed ORM per material",
+    "textureSize": [
+      256,
+      256
+    ],
+    "visualSlot": "feet",
+    "hideBodyRegions": [
+      "foot_l",
+      "foot_r"
+    ],
+    "lods": [
+      "lod0",
+      "lod1",
+      "lod2"
+    ],
+    "matrix": "2 sexes x 3 body types",
+    "designRevision": "service_scout_compact_v2"
+  },
+  "variants": [
+    {
+      "key": "female_slim",
+      "sex": "female",
+      "bodyType": "slim",
+      "modelId": "service_boots_female_slim_service_scout",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "totalBytes": 925284,
+      "lods": [
+        {
+          "file": "variants/female_slim/service_boots_female_slim_service_scout_lod0.glb",
+          "bytes": 360664,
+          "sha256": "e6e5def838cef2557dfc192f488fe9653e51791c266f013a153a09eb87747ec1"
+        },
+        {
+          "file": "variants/female_slim/service_boots_female_slim_service_scout_lod1.glb",
+          "bytes": 297524,
+          "sha256": "62b3fa6598ab1cc84dfca34d7c2e0da3bab1a4c5bcdf7ffc6275f7d1925797b8"
+        },
+        {
+          "file": "variants/female_slim/service_boots_female_slim_service_scout_lod2.glb",
+          "bytes": 267096,
+          "sha256": "64e115c7c7131e738969e7eba936cde7c8c8f24f54edf2dd8a9607d79582915c"
+        }
+      ]
+    },
+    {
+      "key": "female_medium",
+      "sex": "female",
+      "bodyType": "medium",
+      "modelId": "service_boots_female_medium_service_scout",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "totalBytes": 925400,
+      "lods": [
+        {
+          "file": "variants/female_medium/service_boots_female_medium_service_scout_lod0.glb",
+          "bytes": 360772,
+          "sha256": "305993f4124048025a740595da05392c0847a583ed1083264883f78aef6eb8a2"
+        },
+        {
+          "file": "variants/female_medium/service_boots_female_medium_service_scout_lod1.glb",
+          "bytes": 297528,
+          "sha256": "040c692a612a7b6e6e8294f8f0d6239afe292a8499f899777c63c64dbcc79642"
+        },
+        {
+          "file": "variants/female_medium/service_boots_female_medium_service_scout_lod2.glb",
+          "bytes": 267100,
+          "sha256": "72ff50e578c7c908552de685228a30894ac5f089360492254c838f1bca2c063d"
+        }
+      ]
+    },
+    {
+      "key": "female_large",
+      "sex": "female",
+      "bodyType": "large",
+      "modelId": "service_boots_female_large_service_scout",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "totalBytes": 925504,
+      "lods": [
+        {
+          "file": "variants/female_large/service_boots_female_large_service_scout_lod0.glb",
+          "bytes": 360876,
+          "sha256": "b7465ffa98a505783938d550bd2ebb49419fc24e28b181b4f06f2f4dc8370f24"
+        },
+        {
+          "file": "variants/female_large/service_boots_female_large_service_scout_lod1.glb",
+          "bytes": 297528,
+          "sha256": "0d64f7fa3789ea50e8f12d5f9e3312f706458dba6c0cf42e43a2714b1e2b927b"
+        },
+        {
+          "file": "variants/female_large/service_boots_female_large_service_scout_lod2.glb",
+          "bytes": 267100,
+          "sha256": "4f2adfcff8951d1d10bfe1669adc4b52ab6aee5b43f37f127c1c0fda929cc8fe"
+        }
+      ]
+    },
+    {
+      "key": "male_slim",
+      "sex": "male",
+      "bodyType": "slim",
+      "modelId": "service_boots_male_slim_service_scout",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "totalBytes": 926836,
+      "lods": [
+        {
+          "file": "variants/male_slim/service_boots_male_slim_service_scout_lod0.glb",
+          "bytes": 360836,
+          "sha256": "61833ed9dfbdee3629e9bceaccb6199409488aca43a98e1d1fc841bd6d766a6d"
+        },
+        {
+          "file": "variants/male_slim/service_boots_male_slim_service_scout_lod1.glb",
+          "bytes": 298212,
+          "sha256": "97e7fa5a4c1ec5b0da7e4fa2af3176e9c76ef46b5aab829a258eab6203ea5000"
+        },
+        {
+          "file": "variants/male_slim/service_boots_male_slim_service_scout_lod2.glb",
+          "bytes": 267788,
+          "sha256": "2835657f6959b7896a9ae368d25471960988a5b184a0162f4182a1580bfceb3c"
+        }
+      ]
+    },
+    {
+      "key": "male_medium",
+      "sex": "male",
+      "bodyType": "medium",
+      "modelId": "service_boots_male_medium_service_scout",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "totalBytes": 926960,
+      "lods": [
+        {
+          "file": "variants/male_medium/service_boots_male_medium_service_scout_lod0.glb",
+          "bytes": 360940,
+          "sha256": "d0eb688984bcccb99097ea0ee26c2b3cd3bd780deec313f5f6ba94c65d2e46aa"
+        },
+        {
+          "file": "variants/male_medium/service_boots_male_medium_service_scout_lod1.glb",
+          "bytes": 298224,
+          "sha256": "da52a100099864abd279ee96186c645c2d2c85e186a45b15d45d9d815806057c"
+        },
+        {
+          "file": "variants/male_medium/service_boots_male_medium_service_scout_lod2.glb",
+          "bytes": 267796,
+          "sha256": "237e7fec2236f054f204d47b455c29cc78da044c961a4b34755aaaa9fe9b05de"
+        }
+      ]
+    },
+    {
+      "key": "male_large",
+      "sex": "male",
+      "bodyType": "large",
+      "modelId": "service_boots_male_large_service_scout",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "totalBytes": 926956,
+      "lods": [
+        {
+          "file": "variants/male_large/service_boots_male_large_service_scout_lod0.glb",
+          "bytes": 360944,
+          "sha256": "c2ffd1cc30769734ee41bd9a03ff05d9075efab76602bde787865f0fd8a998c0"
+        },
+        {
+          "file": "variants/male_large/service_boots_male_large_service_scout_lod1.glb",
+          "bytes": 298220,
+          "sha256": "0d6cbf560725b1be064674c54c0e60014dd2616493c5d7099d995aabebaf7c53"
+        },
+        {
+          "file": "variants/male_large/service_boots_male_large_service_scout_lod2.glb",
+          "bytes": 267792,
+          "sha256": "ac1273da46db51a9c548c15f1f9af643ac8b98779c2cfa387b9602d484244443"
+        }
+      ]
+    }
+  ],
+  "renders": [
+    {
+      "file": "renders/standalone/service_scout_compact_v2_female_medium_lod0_front.png",
+      "bytes": 976968,
+      "sha256": "59537c94e87c2d50a9ae70961593deaaee258f757819ae48cfd520999cf6334a",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_female_medium_lod0_three_quarter.png",
+      "bytes": 942382,
+      "sha256": "447cae4a344b788ded6ff171a7732aae6971b4a99e8ce8bbbc915312a20038bc",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_female_medium_lod0_side.png",
+      "bytes": 911831,
+      "sha256": "ab2aa44a206ef158ce89564b337272e36b9c1e6314c9ff30eff98bfebb3e0b14",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_female_medium_lod0_rear.png",
+      "bytes": 929253,
+      "sha256": "8a29b0c5cf470eb859d9591472080db4563b29290065ebcc0366f0e5f771e365",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_female_medium_lod0_sole.png",
+      "bytes": 869450,
+      "sha256": "9a13afc678f2f2ce32af502318f3543aba4bdfb5c6fdff00317e426ecb9f52fe",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_male_medium_lod0_front.png",
+      "bytes": 974521,
+      "sha256": "3f0fd8cdc07545e149b90360f5c0c81244058c482290bc184acf4229878a692f",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_male_medium_lod0_three_quarter.png",
+      "bytes": 942018,
+      "sha256": "f12e4f439e62125ba650e284f3bb4daea1a8eb98a473d8b1bff66faccd83f2dc",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_male_medium_lod0_side.png",
+      "bytes": 911297,
+      "sha256": "a430ebbd315fd8c0ec053a784f9bf92a1588b28c306a586e6429e30370938ee0",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_male_medium_lod0_rear.png",
+      "bytes": 927529,
+      "sha256": "39758917edef7e6edfeacb96bf1c3fc502130e038323d55cacad4e61a192936b",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/standalone/service_scout_compact_v2_male_medium_lod0_sole.png",
+      "bytes": 883334,
+      "sha256": "5908eb71ca8df8027fae083111b3873154b54dafe149380704f1404df2257530",
+      "dimensions": [
+        900,
+        900
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_slim/service_scout_female_slim_bind.png",
+      "bytes": 645868,
+      "sha256": "a23925a81957428a8d13a90318fac1e521a6c7884f775dd996da60c55826b660",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_slim/service_scout_female_slim_idle.png",
+      "bytes": 670655,
+      "sha256": "81c55d77d156aae12807543158b9701afc4bd5c69339cf3bb1728f2364d3ef71",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_slim/service_scout_female_slim_walk_contact.png",
+      "bytes": 678695,
+      "sha256": "28a058e286bd789a384728f827e9dc2953a65b6c79849dac2b642740a90a013c",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_slim/service_scout_female_slim_run_contact.png",
+      "bytes": 696600,
+      "sha256": "43814d9b886b4cd99e4ce3149b29bfa2085eeafca6991bb265fdb62825e866c3",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_slim/service_scout_female_slim_crouch_idle.png",
+      "bytes": 679905,
+      "sha256": "301f4d035e207691b1045e9bc11c0f8d5b7cd01bec3af68036a869cba0bfbed8",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_slim/service_scout_female_slim_ready_1h.png",
+      "bytes": 655624,
+      "sha256": "568f4fa7059c3b3d79f6a16b073966871e631db7e8ccf13e795d48d2e3980181",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_slim/service_scout_female_slim_ready_2h.png",
+      "bytes": 640698,
+      "sha256": "f770ff57b930843a2fdb46b6c14b14fe91e8d57eba660c9c9308a94fb0b3a58f",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_slim/service_scout_female_slim_melee_heavy.png",
+      "bytes": 640696,
+      "sha256": "93670dbc92d3b8bd6236ffeda31d547fb71e5b5346d9cb64328a49e6b2b036ae",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_medium/service_scout_female_medium_bind.png",
+      "bytes": 652813,
+      "sha256": "cc099e1d5f16e45329e24a888ca1e11809cfa454f6c03cbde5c36f09386e4ae6",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_medium/service_scout_female_medium_idle.png",
+      "bytes": 674207,
+      "sha256": "992f05e185f254c2d6f42ac8359d8786ec2d05337924c3a26099aa318c7d46a3",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_medium/service_scout_female_medium_walk_contact.png",
+      "bytes": 682928,
+      "sha256": "26039ab03a343dd37f06fe3f969ed19a92af32e013ec2d260d9f1f70ab8426ca",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_medium/service_scout_female_medium_run_contact.png",
+      "bytes": 701896,
+      "sha256": "3e478ee1d6ec2d4faf9ef4a6fce06103b498eda5948f1e918d728f05b57da4e2",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_medium/service_scout_female_medium_crouch_idle.png",
+      "bytes": 685642,
+      "sha256": "e74d261e3b92f6b8bbc06f6f6f073b66963ce1640d067fdfc6d688075037d0d4",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_medium/service_scout_female_medium_ready_1h.png",
+      "bytes": 663274,
+      "sha256": "0d6c78a0ddbb752c90c432864d862e7b4f87e825b579a6167e845d64b675fdc8",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_medium/service_scout_female_medium_ready_2h.png",
+      "bytes": 647847,
+      "sha256": "de6f79e324853f6d5b89617e9ade079112fc9c40ac3e582a4e0ff53e23f54aad",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_medium/service_scout_female_medium_melee_heavy.png",
+      "bytes": 645908,
+      "sha256": "9dcffec80683e2bb5c16e2db64417306ce8262054a2801a8c2a30ec8eb28165f",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_large/service_scout_female_large_bind.png",
+      "bytes": 663068,
+      "sha256": "0153228eaacead3ff50797c420f5cc9fc6cffddb8f4403510ef16608f7fa9e0d",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_large/service_scout_female_large_idle.png",
+      "bytes": 678189,
+      "sha256": "15728700866ffa925063a0a4d8eae4d7e96d13160f47c62b0c54197eb78663ce",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_large/service_scout_female_large_walk_contact.png",
+      "bytes": 688901,
+      "sha256": "24ef8a774acd52199772618aab1a1eacec8c88270ee773604a322c96c83acf67",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_large/service_scout_female_large_run_contact.png",
+      "bytes": 709677,
+      "sha256": "640740a28ef5817b7d9ade54ec7ee780db4a20015cfe9168a616d26e36ef3256",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_large/service_scout_female_large_crouch_idle.png",
+      "bytes": 693358,
+      "sha256": "035140536642a303d775894cc6ed7f7d62bd95007bdd9987279f5eace8197d6b",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_large/service_scout_female_large_ready_1h.png",
+      "bytes": 673810,
+      "sha256": "b8f744298f4aab9801aa1dd825f91c9c6cc368de9783b389c4eeda5765deabcb",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_large/service_scout_female_large_ready_2h.png",
+      "bytes": 656976,
+      "sha256": "881af363306ce194cd261a47c6ccdc4fdbcb21a5bb437d2b33608e24e6938002",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/female_large/service_scout_female_large_melee_heavy.png",
+      "bytes": 652266,
+      "sha256": "68cfa17b9492133f3bf104f952f838877831119f4ea1e9d212ff39741b1e58cd",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_slim/service_scout_male_slim_bind.png",
+      "bytes": 634411,
+      "sha256": "c6619984917fbd5ba14bf04f75be605e062e4b128517e8e57b26ac07d9663a53",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_slim/service_scout_male_slim_idle.png",
+      "bytes": 672276,
+      "sha256": "0f722567e6986849af1a4dc030d78962d8f71f42340a0ea7164b3cf225108532",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_slim/service_scout_male_slim_walk_contact.png",
+      "bytes": 676449,
+      "sha256": "7b19a8f93b01bd939fe3b8ebc688fbfef0f899123ff57c7d1e696a7ddfedf2a1",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_slim/service_scout_male_slim_run_contact.png",
+      "bytes": 690331,
+      "sha256": "7a2900bea2e93de81588e6a7662b10ae038afbff82d6588029ae820f2bcdd6db",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_slim/service_scout_male_slim_crouch_idle.png",
+      "bytes": 671708,
+      "sha256": "be0e419c0c075390d264823b9d72db29d97a362d8986d2d6d832ed2ebbe6be0a",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_slim/service_scout_male_slim_ready_1h.png",
+      "bytes": 648971,
+      "sha256": "544d8ce68929ca52d2139c7795f6e1dcab0ba75211470c77c026fe5fe1f34e08",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_slim/service_scout_male_slim_ready_2h.png",
+      "bytes": 631826,
+      "sha256": "5a0e6556c51eacd8e2ec41579b5d0dd21859b312e3606ba5c1e8219203b83ded",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_slim/service_scout_male_slim_melee_heavy.png",
+      "bytes": 628953,
+      "sha256": "5a3ad717f81160369eb907da70863e3a5cabc0c1be363e505893297d7b983906",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_medium/service_scout_male_medium_bind.png",
+      "bytes": 641040,
+      "sha256": "b409e92ea088f2a6562c24f0f6161a15aa26bc1eb8d13689330bfcf4edccb40d",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_medium/service_scout_male_medium_idle.png",
+      "bytes": 676509,
+      "sha256": "6ed283330dc6fb0a935305fef7346da66944267e237d6c56a8d4db0685218ec3",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_medium/service_scout_male_medium_walk_contact.png",
+      "bytes": 681099,
+      "sha256": "ae1f36cce9bbe31602c9b3793e324d2ea9f2d52fa055d1c6d1920a54c562e257",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_medium/service_scout_male_medium_run_contact.png",
+      "bytes": 696180,
+      "sha256": "e0bb43af8bf92cd354239076508c6da97daf738e983f483fab99e51cb2d4aebf",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_medium/service_scout_male_medium_crouch_idle.png",
+      "bytes": 677855,
+      "sha256": "46a87bbdf14a3cd5205b11bbe8c08f02595ee65c0b34f8c3fb1d548404880674",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_medium/service_scout_male_medium_ready_1h.png",
+      "bytes": 655413,
+      "sha256": "0a9a0e75be2b2beb765aca175af8fa32410aa27c2b38dd4b216b0512bf425398",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_medium/service_scout_male_medium_ready_2h.png",
+      "bytes": 637475,
+      "sha256": "c1e737a8abf8bc83888d7b217f66af33f10a80764ad4bd14d6fc6a771e041944",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_medium/service_scout_male_medium_melee_heavy.png",
+      "bytes": 633473,
+      "sha256": "cf24c221aee3b04d4cfa7f6916ccad721ecb32c23c35b5a2b065b223e25e6686",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_large/service_scout_male_large_bind.png",
+      "bytes": 646954,
+      "sha256": "40fa2e03f80917c31f8dac5a0d2618750108cb843eca284ed298b9030e35d05a",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_large/service_scout_male_large_idle.png",
+      "bytes": 679944,
+      "sha256": "d13c096d4edf06beda7dc17ae190c57a6eed802ebbeb5f8f629a5c9648c588c1",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_large/service_scout_male_large_walk_contact.png",
+      "bytes": 686287,
+      "sha256": "b6d61d167ed422f0b72fa50d085220afef05a1cdc02e7e1029b58d09097d8b8d",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_large/service_scout_male_large_run_contact.png",
+      "bytes": 704555,
+      "sha256": "7619d3a935b2386fe102ef9dac02d33227f4399283f44f804235623e39aa8bce",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_large/service_scout_male_large_crouch_idle.png",
+      "bytes": 686313,
+      "sha256": "eb9c4cec8d8e49930b9e61933c2931e92fbf17218f356f21ecc2790ae70d069c",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_large/service_scout_male_large_ready_1h.png",
+      "bytes": 664641,
+      "sha256": "928d1b7dbce35f8af345be433e3b1d0e3bb041a5bccb5c8bf8b6efe189ffd474",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_large/service_scout_male_large_ready_2h.png",
+      "bytes": 646939,
+      "sha256": "4a0b9761ef9a9f272146c47a17eb441a06d507486a4144a74990a918e7c96750",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    },
+    {
+      "file": "renders/fit/male_large/service_scout_male_large_melee_heavy.png",
+      "bytes": 639859,
+      "sha256": "0a89325262a68c154e383235f050942ff1efa6467127fdfc7a1876c576cdd553",
+      "dimensions": [
+        768,
+        768
+      ],
+      "mime": "image/png"
+    }
+  ],
+  "fitReviews": [
+    {
+      "key": "female_slim",
+      "rig": "humanoid_v1",
+      "jointCount": 65,
+      "jointSetsMatch": true,
+      "hideBodyRegions": [
+        "foot_l",
+        "foot_r"
+      ],
+      "hiddenBodyVertices": 3990,
+      "poses": [
+        {
+          "id": "bind",
+          "groundShiftMeters": 0,
+          "image": {
+            "file": "renders/fit/female_slim/service_scout_female_slim_bind.png",
+            "bytes": 645868,
+            "sha256": "a23925a81957428a8d13a90318fac1e521a6c7884f775dd996da60c55826b660",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "idle",
+          "groundShiftMeters": 0.005764,
+          "image": {
+            "file": "renders/fit/female_slim/service_scout_female_slim_idle.png",
+            "bytes": 670655,
+            "sha256": "81c55d77d156aae12807543158b9701afc4bd5c69339cf3bb1728f2364d3ef71",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "walk_contact",
+          "groundShiftMeters": 0.006754,
+          "image": {
+            "file": "renders/fit/female_slim/service_scout_female_slim_walk_contact.png",
+            "bytes": 678695,
+            "sha256": "28a058e286bd789a384728f827e9dc2953a65b6c79849dac2b642740a90a013c",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "run_contact",
+          "groundShiftMeters": -0.10237,
+          "image": {
+            "file": "renders/fit/female_slim/service_scout_female_slim_run_contact.png",
+            "bytes": 696600,
+            "sha256": "43814d9b886b4cd99e4ce3149b29bfa2085eeafca6991bb265fdb62825e866c3",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "crouch_idle",
+          "groundShiftMeters": -0.207824,
+          "image": {
+            "file": "renders/fit/female_slim/service_scout_female_slim_crouch_idle.png",
+            "bytes": 679905,
+            "sha256": "301f4d035e207691b1045e9bc11c0f8d5b7cd01bec3af68036a869cba0bfbed8",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_1h",
+          "groundShiftMeters": 0.046637,
+          "image": {
+            "file": "renders/fit/female_slim/service_scout_female_slim_ready_1h.png",
+            "bytes": 655624,
+            "sha256": "568f4fa7059c3b3d79f6a16b073966871e631db7e8ccf13e795d48d2e3980181",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_2h",
+          "groundShiftMeters": 0.046637,
+          "image": {
+            "file": "renders/fit/female_slim/service_scout_female_slim_ready_2h.png",
+            "bytes": 640698,
+            "sha256": "f770ff57b930843a2fdb46b6c14b14fe91e8d57eba660c9c9308a94fb0b3a58f",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "melee_heavy",
+          "groundShiftMeters": 0.037708,
+          "image": {
+            "file": "renders/fit/female_slim/service_scout_female_slim_melee_heavy.png",
+            "bytes": 640696,
+            "sha256": "93670dbc92d3b8bd6236ffeda31d547fb71e5b5346d9cb64328a49e6b2b036ae",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        }
+      ],
+      "report": {
+        "file": "fit/service_scout_female_slim_fit-review.json",
+        "bytes": 2906,
+        "sha256": "484c7043fba33a21a688b2bac15dd538ea11afccc5586d753f76825645028700"
+      }
+    },
+    {
+      "key": "female_medium",
+      "rig": "humanoid_v1",
+      "jointCount": 65,
+      "jointSetsMatch": true,
+      "hideBodyRegions": [
+        "foot_l",
+        "foot_r"
+      ],
+      "hiddenBodyVertices": 3966,
+      "poses": [
+        {
+          "id": "bind",
+          "groundShiftMeters": 0,
+          "image": {
+            "file": "renders/fit/female_medium/service_scout_female_medium_bind.png",
+            "bytes": 652813,
+            "sha256": "cc099e1d5f16e45329e24a888ca1e11809cfa454f6c03cbde5c36f09386e4ae6",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "idle",
+          "groundShiftMeters": 0.005807,
+          "image": {
+            "file": "renders/fit/female_medium/service_scout_female_medium_idle.png",
+            "bytes": 674207,
+            "sha256": "992f05e185f254c2d6f42ac8359d8786ec2d05337924c3a26099aa318c7d46a3",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "walk_contact",
+          "groundShiftMeters": 0.007625,
+          "image": {
+            "file": "renders/fit/female_medium/service_scout_female_medium_walk_contact.png",
+            "bytes": 682928,
+            "sha256": "26039ab03a343dd37f06fe3f969ed19a92af32e013ec2d260d9f1f70ab8426ca",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "run_contact",
+          "groundShiftMeters": -0.101046,
+          "image": {
+            "file": "renders/fit/female_medium/service_scout_female_medium_run_contact.png",
+            "bytes": 701896,
+            "sha256": "3e478ee1d6ec2d4faf9ef4a6fce06103b498eda5948f1e918d728f05b57da4e2",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "crouch_idle",
+          "groundShiftMeters": -0.207661,
+          "image": {
+            "file": "renders/fit/female_medium/service_scout_female_medium_crouch_idle.png",
+            "bytes": 685642,
+            "sha256": "e74d261e3b92f6b8bbc06f6f6f073b66963ce1640d067fdfc6d688075037d0d4",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_1h",
+          "groundShiftMeters": 0.046802,
+          "image": {
+            "file": "renders/fit/female_medium/service_scout_female_medium_ready_1h.png",
+            "bytes": 663274,
+            "sha256": "0d6c78a0ddbb752c90c432864d862e7b4f87e825b579a6167e845d64b675fdc8",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_2h",
+          "groundShiftMeters": 0.046802,
+          "image": {
+            "file": "renders/fit/female_medium/service_scout_female_medium_ready_2h.png",
+            "bytes": 647847,
+            "sha256": "de6f79e324853f6d5b89617e9ade079112fc9c40ac3e582a4e0ff53e23f54aad",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "melee_heavy",
+          "groundShiftMeters": 0.038125,
+          "image": {
+            "file": "renders/fit/female_medium/service_scout_female_medium_melee_heavy.png",
+            "bytes": 645908,
+            "sha256": "9dcffec80683e2bb5c16e2db64417306ce8262054a2801a8c2a30ec8eb28165f",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        }
+      ],
+      "report": {
+        "file": "fit/service_scout_female_medium_fit-review.json",
+        "bytes": 2917,
+        "sha256": "4d96c34fc34b70ff2494f76e0fcc709ff959ed1aa5d3859d7e12bd0f6964f684"
+      }
+    },
+    {
+      "key": "female_large",
+      "rig": "humanoid_v1",
+      "jointCount": 65,
+      "jointSetsMatch": true,
+      "hideBodyRegions": [
+        "foot_l",
+        "foot_r"
+      ],
+      "hiddenBodyVertices": 3924,
+      "poses": [
+        {
+          "id": "bind",
+          "groundShiftMeters": 0,
+          "image": {
+            "file": "renders/fit/female_large/service_scout_female_large_bind.png",
+            "bytes": 663068,
+            "sha256": "0153228eaacead3ff50797c420f5cc9fc6cffddb8f4403510ef16608f7fa9e0d",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "idle",
+          "groundShiftMeters": 0.005843,
+          "image": {
+            "file": "renders/fit/female_large/service_scout_female_large_idle.png",
+            "bytes": 678189,
+            "sha256": "15728700866ffa925063a0a4d8eae4d7e96d13160f47c62b0c54197eb78663ce",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "walk_contact",
+          "groundShiftMeters": 0.00844,
+          "image": {
+            "file": "renders/fit/female_large/service_scout_female_large_walk_contact.png",
+            "bytes": 688901,
+            "sha256": "24ef8a774acd52199772618aab1a1eacec8c88270ee773604a322c96c83acf67",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "run_contact",
+          "groundShiftMeters": -0.099797,
+          "image": {
+            "file": "renders/fit/female_large/service_scout_female_large_run_contact.png",
+            "bytes": 709677,
+            "sha256": "640740a28ef5817b7d9ade54ec7ee780db4a20015cfe9168a616d26e36ef3256",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "crouch_idle",
+          "groundShiftMeters": -0.207508,
+          "image": {
+            "file": "renders/fit/female_large/service_scout_female_large_crouch_idle.png",
+            "bytes": 693358,
+            "sha256": "035140536642a303d775894cc6ed7f7d62bd95007bdd9987279f5eace8197d6b",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_1h",
+          "groundShiftMeters": 0.046958,
+          "image": {
+            "file": "renders/fit/female_large/service_scout_female_large_ready_1h.png",
+            "bytes": 673810,
+            "sha256": "b8f744298f4aab9801aa1dd825f91c9c6cc368de9783b389c4eeda5765deabcb",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_2h",
+          "groundShiftMeters": 0.046958,
+          "image": {
+            "file": "renders/fit/female_large/service_scout_female_large_ready_2h.png",
+            "bytes": 656976,
+            "sha256": "881af363306ce194cd261a47c6ccdc4fdbcb21a5bb437d2b33608e24e6938002",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "melee_heavy",
+          "groundShiftMeters": 0.038505,
+          "image": {
+            "file": "renders/fit/female_large/service_scout_female_large_melee_heavy.png",
+            "bytes": 652266,
+            "sha256": "68cfa17b9492133f3bf104f952f838877831119f4ea1e9d212ff39741b1e58cd",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        }
+      ],
+      "report": {
+        "file": "fit/service_scout_female_large_fit-review.json",
+        "bytes": 2917,
+        "sha256": "173774ae7330dd7c44f91baa73768a98e2de00bcf0b7cfd957f54894c5f6557c"
+      }
+    },
+    {
+      "key": "male_slim",
+      "rig": "humanoid_v1",
+      "jointCount": 65,
+      "jointSetsMatch": true,
+      "hideBodyRegions": [
+        "foot_l",
+        "foot_r"
+      ],
+      "hiddenBodyVertices": 3828,
+      "poses": [
+        {
+          "id": "bind",
+          "groundShiftMeters": 0,
+          "image": {
+            "file": "renders/fit/male_slim/service_scout_male_slim_bind.png",
+            "bytes": 634411,
+            "sha256": "c6619984917fbd5ba14bf04f75be605e062e4b128517e8e57b26ac07d9663a53",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "idle",
+          "groundShiftMeters": 0.000789,
+          "image": {
+            "file": "renders/fit/male_slim/service_scout_male_slim_idle.png",
+            "bytes": 672276,
+            "sha256": "0f722567e6986849af1a4dc030d78962d8f71f42340a0ea7164b3cf225108532",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "walk_contact",
+          "groundShiftMeters": -0.003237,
+          "image": {
+            "file": "renders/fit/male_slim/service_scout_male_slim_walk_contact.png",
+            "bytes": 676449,
+            "sha256": "7b19a8f93b01bd939fe3b8ebc688fbfef0f899123ff57c7d1e696a7ddfedf2a1",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "run_contact",
+          "groundShiftMeters": -0.087018,
+          "image": {
+            "file": "renders/fit/male_slim/service_scout_male_slim_run_contact.png",
+            "bytes": 690331,
+            "sha256": "7a2900bea2e93de81588e6a7662b10ae038afbff82d6588029ae820f2bcdd6db",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "crouch_idle",
+          "groundShiftMeters": -0.204602,
+          "image": {
+            "file": "renders/fit/male_slim/service_scout_male_slim_crouch_idle.png",
+            "bytes": 671708,
+            "sha256": "be0e419c0c075390d264823b9d72db29d97a362d8986d2d6d832ed2ebbe6be0a",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_1h",
+          "groundShiftMeters": 0.046671,
+          "image": {
+            "file": "renders/fit/male_slim/service_scout_male_slim_ready_1h.png",
+            "bytes": 648971,
+            "sha256": "544d8ce68929ca52d2139c7795f6e1dcab0ba75211470c77c026fe5fe1f34e08",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_2h",
+          "groundShiftMeters": 0.046671,
+          "image": {
+            "file": "renders/fit/male_slim/service_scout_male_slim_ready_2h.png",
+            "bytes": 631826,
+            "sha256": "5a0e6556c51eacd8e2ec41579b5d0dd21859b312e3606ba5c1e8219203b83ded",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "melee_heavy",
+          "groundShiftMeters": 0.030758,
+          "image": {
+            "file": "renders/fit/male_slim/service_scout_male_slim_melee_heavy.png",
+            "bytes": 628953,
+            "sha256": "5a3ad717f81160369eb907da70863e3a5cabc0c1be363e505893297d7b983906",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        }
+      ],
+      "report": {
+        "file": "fit/service_scout_male_slim_fit-review.json",
+        "bytes": 2886,
+        "sha256": "536409f836e9c6240f5987e64c0e23748d8f0e7230eb53908434ce8a99f6ce08"
+      }
+    },
+    {
+      "key": "male_medium",
+      "rig": "humanoid_v1",
+      "jointCount": 65,
+      "jointSetsMatch": true,
+      "hideBodyRegions": [
+        "foot_l",
+        "foot_r"
+      ],
+      "hiddenBodyVertices": 3828,
+      "poses": [
+        {
+          "id": "bind",
+          "groundShiftMeters": 0,
+          "image": {
+            "file": "renders/fit/male_medium/service_scout_male_medium_bind.png",
+            "bytes": 641040,
+            "sha256": "b409e92ea088f2a6562c24f0f6161a15aa26bc1eb8d13689330bfcf4edccb40d",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "idle",
+          "groundShiftMeters": 0.00079,
+          "image": {
+            "file": "renders/fit/male_medium/service_scout_male_medium_idle.png",
+            "bytes": 676509,
+            "sha256": "6ed283330dc6fb0a935305fef7346da66944267e237d6c56a8d4db0685218ec3",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "walk_contact",
+          "groundShiftMeters": -0.002485,
+          "image": {
+            "file": "renders/fit/male_medium/service_scout_male_medium_walk_contact.png",
+            "bytes": 681099,
+            "sha256": "ae1f36cce9bbe31602c9b3793e324d2ea9f2d52fa055d1c6d1920a54c562e257",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "run_contact",
+          "groundShiftMeters": -0.085868,
+          "image": {
+            "file": "renders/fit/male_medium/service_scout_male_medium_run_contact.png",
+            "bytes": 696180,
+            "sha256": "e0bb43af8bf92cd354239076508c6da97daf738e983f483fab99e51cb2d4aebf",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "crouch_idle",
+          "groundShiftMeters": -0.204462,
+          "image": {
+            "file": "renders/fit/male_medium/service_scout_male_medium_crouch_idle.png",
+            "bytes": 677855,
+            "sha256": "46a87bbdf14a3cd5205b11bbe8c08f02595ee65c0b34f8c3fb1d548404880674",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_1h",
+          "groundShiftMeters": 0.046817,
+          "image": {
+            "file": "renders/fit/male_medium/service_scout_male_medium_ready_1h.png",
+            "bytes": 655413,
+            "sha256": "0a9a0e75be2b2beb765aca175af8fa32410aa27c2b38dd4b216b0512bf425398",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_2h",
+          "groundShiftMeters": 0.046817,
+          "image": {
+            "file": "renders/fit/male_medium/service_scout_male_medium_ready_2h.png",
+            "bytes": 637475,
+            "sha256": "c1e737a8abf8bc83888d7b217f66af33f10a80764ad4bd14d6fc6a771e041944",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "melee_heavy",
+          "groundShiftMeters": 0.031113,
+          "image": {
+            "file": "renders/fit/male_medium/service_scout_male_medium_melee_heavy.png",
+            "bytes": 633473,
+            "sha256": "cf24c221aee3b04d4cfa7f6916ccad721ecb32c23c35b5a2b065b223e25e6686",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        }
+      ],
+      "report": {
+        "file": "fit/service_scout_male_medium_fit-review.json",
+        "bytes": 2895,
+        "sha256": "ddb590c8a970fa56941eee84b1bb489d1250022a736c94aae7859905903e42fa"
+      }
+    },
+    {
+      "key": "male_large",
+      "rig": "humanoid_v1",
+      "jointCount": 65,
+      "jointSetsMatch": true,
+      "hideBodyRegions": [
+        "foot_l",
+        "foot_r"
+      ],
+      "hiddenBodyVertices": 3804,
+      "poses": [
+        {
+          "id": "bind",
+          "groundShiftMeters": 0,
+          "image": {
+            "file": "renders/fit/male_large/service_scout_male_large_bind.png",
+            "bytes": 646954,
+            "sha256": "40fa2e03f80917c31f8dac5a0d2618750108cb843eca284ed298b9030e35d05a",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "idle",
+          "groundShiftMeters": 0.000791,
+          "image": {
+            "file": "renders/fit/male_large/service_scout_male_large_idle.png",
+            "bytes": 679944,
+            "sha256": "d13c096d4edf06beda7dc17ae190c57a6eed802ebbeb5f8f629a5c9648c588c1",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "walk_contact",
+          "groundShiftMeters": -0.001933,
+          "image": {
+            "file": "renders/fit/male_large/service_scout_male_large_walk_contact.png",
+            "bytes": 686287,
+            "sha256": "b6d61d167ed422f0b72fa50d085220afef05a1cdc02e7e1029b58d09097d8b8d",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "run_contact",
+          "groundShiftMeters": -0.085024,
+          "image": {
+            "file": "renders/fit/male_large/service_scout_male_large_run_contact.png",
+            "bytes": 704555,
+            "sha256": "7619d3a935b2386fe102ef9dac02d33227f4399283f44f804235623e39aa8bce",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "crouch_idle",
+          "groundShiftMeters": -0.204358,
+          "image": {
+            "file": "renders/fit/male_large/service_scout_male_large_crouch_idle.png",
+            "bytes": 686313,
+            "sha256": "eb9c4cec8d8e49930b9e61933c2931e92fbf17218f356f21ecc2790ae70d069c",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_1h",
+          "groundShiftMeters": 0.046924,
+          "image": {
+            "file": "renders/fit/male_large/service_scout_male_large_ready_1h.png",
+            "bytes": 664641,
+            "sha256": "928d1b7dbce35f8af345be433e3b1d0e3bb041a5bccb5c8bf8b6efe189ffd474",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "ready_2h",
+          "groundShiftMeters": 0.046924,
+          "image": {
+            "file": "renders/fit/male_large/service_scout_male_large_ready_2h.png",
+            "bytes": 646939,
+            "sha256": "4a0b9761ef9a9f272146c47a17eb441a06d507486a4144a74990a918e7c96750",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        },
+        {
+          "id": "melee_heavy",
+          "groundShiftMeters": 0.031374,
+          "image": {
+            "file": "renders/fit/male_large/service_scout_male_large_melee_heavy.png",
+            "bytes": 639859,
+            "sha256": "0a89325262a68c154e383235f050942ff1efa6467127fdfc7a1876c576cdd553",
+            "dimensions": [
+              768,
+              768
+            ],
+            "mime": "image/png"
+          }
+        }
+      ],
+      "report": {
+        "file": "fit/service_scout_male_large_fit-review.json",
+        "bytes": 2897,
+        "sha256": "d99fed03803f8d091c254ad773a54068dd070776a3be4190a71e7e4bd57db31d"
+      }
+    }
+  ],
+  "decisionLog": {
+    "priorIterationFolders": [
+      "critic_d2 through critic_d12",
+      "fit_final",
+      "final"
+    ],
+    "priorUserDecisionRecordAvailable": false,
+    "currentUserDecisionRecorded": true
+  },
+  "approval": {
+    "artDirectionApproved": true,
+    "baseBodiesApproved": true,
+    "criticApproved": true,
+    "userAssetsApproved": true,
+    "runtimeIntegrationAllowed": true,
+    "pullRequestAllowed": true
+  }
+}

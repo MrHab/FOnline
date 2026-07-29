@@ -5,7 +5,7 @@ const assert = require('assert');
 const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const partsDir = path.join(root, 'public', 'js', 'game');
-const loaderFile = path.join(root, 'public', 'js', 'game.js');
+const loaderFile = path.join(root, 'public', 'js', 'game-runtime.js');
 const partNames = [
   '00_save_generation_drain.js',
   '01_bootstrap_online_save.js',
@@ -27,6 +27,7 @@ const partNames = [
   '03d_item_context_repair_crafting.js',
   '04_player_model_visuals.js',
   '04a_player_model_modern_runtime.js',
+  '04b_service_scout_boots_runtime.js',
   '05_multiplayer_core_state.js',
   '05a_remote_actor_equipment.js',
   '05b_remote_player_locomotion.js',

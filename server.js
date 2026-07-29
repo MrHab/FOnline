@@ -17168,6 +17168,10 @@ io.on('connection', (socket) => {
     if (!room) return;
     if (locationIsFactionCapital(roomLocation(room))) return;
     if (!locationAllowsNpcCombat(roomLocation(room)) && !room.locationWorldEvent) return;
+    const authoritativeEquipment = sanitizeEquipment(
+      p.equipment || {},
+      { weapon: p.weapon || 'pistol' }
+    );
     const shot = {
       shooterId: socket.id,
       characterId: p.characterId || '',
@@ -17187,11 +17191,12 @@ io.on('connection', (socket) => {
       endX: Number.isFinite(Number(data.endX)) ? Number(data.endX) : null,
       endZ: Number.isFinite(Number(data.endZ)) ? Number(data.endZ) : null,
       angle: Number.isFinite(Number(data.angle)) ? Number(data.angle) : p.angle,
-      weapon: String(data.weapon || p.weapon).slice(0, 32),
+      weapon: authoritativeEquipment.weapon,
       // v7.74.55: shot is a visual action event, not an authoritative
       // inventory/equipment sync. Keep it tiny so it does not lag behind
-      // movement packets during long runs or auto-fire.
-      equipment: data.equipment ? sanitizeEquipment(data.equipment, p.equipment || { weapon: p.weapon || 'pistol' }) : null,
+      // movement packets during long runs or auto-fire. The client may request
+      // the snapshot, but every relayed slot still comes from server state.
+      equipment: data.equipment ? authoritativeEquipment : null,
       mode: String(data.mode || 'single').slice(0, 24),
       shotSeq: Number.isFinite(Number(data.shotSeq)) ? Number(data.shotSeq) : 0,
       clientFiredAt: Number.isFinite(Number(data.clientFiredAt)) ? Number(data.clientFiredAt) : 0,
@@ -17207,7 +17212,11 @@ io.on('connection', (socket) => {
     if (!room) return;
     if (locationIsFactionCapital(roomLocation(room))) return;
     if (!locationAllowsNpcCombat(roomLocation(room)) && !room.locationWorldEvent) return;
-    const weapon = String(data.weapon || p.weapon || p.equipment?.weapon || 'fists').slice(0, 32);
+    const authoritativeEquipment = sanitizeEquipment(
+      p.equipment || {},
+      { weapon: p.weapon || 'fists' }
+    );
+    const weapon = authoritativeEquipment.weapon;
     const payload = {
       shooterId: socket.id,
       characterId: p.characterId || '',
@@ -17219,7 +17228,7 @@ io.on('connection', (socket) => {
       targetX: Number.isFinite(Number(data.targetX)) ? Number(data.targetX) : null,
       targetZ: Number.isFinite(Number(data.targetZ)) ? Number(data.targetZ) : null,
       weapon,
-      equipment: data.equipment ? sanitizeEquipment(data.equipment, p.equipment || { weapon }) : null,
+      equipment: data.equipment ? authoritativeEquipment : null,
       t: Date.now()
     };
     (socket.to(p.roomId).volatile || socket.to(p.roomId)).emit('melee', payload);

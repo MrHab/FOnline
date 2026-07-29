@@ -1,0 +1,61 @@
+{
+  "schema": "realm.character-module-set.v1",
+  "version": 1,
+  "status": "approved",
+  "assetId": "service_boots",
+  "assetClass": "humanoid_skinned_equipment",
+  "visualSlot": "feet",
+  "hideBodyRegions": [
+    "foot_l",
+    "foot_r"
+  ],
+  "provenance": {
+    "type": "original",
+    "id": "realm_of_ashes_original"
+  },
+  "fitStatus": "pending_geometry_check",
+  "variants": [
+    {
+      "key": "female_slim",
+      "sex": "female",
+      "bodyType": "slim",
+      "modelId": "service_boots_female_slim",
+      "lodDirectory": "variants/female_slim"
+    },
+    {
+      "key": "female_medium",
+      "sex": "female",
+      "bodyType": "medium",
+      "modelId": "service_boots_female_medium",
+      "lodDirectory": "variants/female_medium"
+    },
+    {
+      "key": "female_large",
+      "sex": "female",
+      "bodyType": "large",
+      "modelId": "service_boots_female_large",
+      "lodDirectory": "variants/female_large"
+    },
+    {
+      "key": "male_slim",
+      "sex": "male",
+      "bodyType": "slim",
+      "modelId": "service_boots_male_slim",
+      "lodDirectory": "variants/male_slim"
+    },
+    {
+      "key": "male_medium",
+      "sex": "male",
+      "bodyType": "medium",
+      "modelId": "service_boots_male_medium",
+      "lodDirectory": "variants/male_medium"
+    },
+    {
+      "key": "male_large",
+      "sex": "male",
+      "bodyType": "large",
+      "modelId": "service_boots_male_large",
+      "lodDirectory": "variants/male_large"
+    }
+  ]
+}

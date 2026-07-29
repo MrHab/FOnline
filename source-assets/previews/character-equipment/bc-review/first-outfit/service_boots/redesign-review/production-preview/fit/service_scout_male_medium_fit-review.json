@@ -1,0 +1,97 @@
+{
+  "schema": "realm.service-boots-fit-review.v1",
+  "version": 1,
+  "status": "review_candidate",
+  "body": {
+    "file": "C:\\Users\\Эмиль\\Desktop\\FOnline-art-direction\\source-assets\\previews\\character-base\\bc-review\\character_male_medium_bc_lod0.glb",
+    "sha256": "a53288f35a6091b7c967937500d02e2297c54803deb5c73ab4d2de88d1d88a65"
+  },
+  "boots": {
+    "file": "C:\\Users\\Эмиль\\Desktop\\FOnline-art-direction\\source-assets\\previews\\character-equipment\\bc-review\\first-outfit\\service_boots\\redesign-review\\production-preview\\variants\\male_medium\\service_boots_male_medium_service_scout_lod0.glb",
+    "sha256": "d0eb688984bcccb99097ea0ee26c2b3cd3bd780deec313f5f6ba94c65d2e46aa"
+  },
+  "rig": "humanoid_v1",
+  "jointCount": 65,
+  "jointSetsMatch": true,
+  "hideBodyRegions": [
+    "foot_l",
+    "foot_r"
+  ],
+  "hiddenBodyVertices": 3828,
+  "poses": [
+    {
+      "id": "bind",
+      "action": null,
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": null,
+      "groundShiftMeters": 0.0,
+      "image": "service_scout_male_medium_bind.png"
+    },
+    {
+      "id": "idle",
+      "action": "idle",
+      "frameFraction": 0.35,
+      "frame": 13,
+      "manualPose": null,
+      "groundShiftMeters": 0.00079,
+      "image": "service_scout_male_medium_idle.png"
+    },
+    {
+      "id": "walk_contact",
+      "action": "walk",
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": null,
+      "groundShiftMeters": -0.002485,
+      "image": "service_scout_male_medium_walk_contact.png"
+    },
+    {
+      "id": "run_contact",
+      "action": "run",
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": null,
+      "groundShiftMeters": -0.085868,
+      "image": "service_scout_male_medium_run_contact.png"
+    },
+    {
+      "id": "crouch_idle",
+      "action": null,
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": "crouch",
+      "groundShiftMeters": -0.204462,
+      "image": "service_scout_male_medium_crouch_idle.png"
+    },
+    {
+      "id": "ready_1h",
+      "action": "idle",
+      "frameFraction": 0.35,
+      "frame": 13,
+      "manualPose": "ready_1h",
+      "groundShiftMeters": 0.046817,
+      "image": "service_scout_male_medium_ready_1h.png"
+    },
+    {
+      "id": "ready_2h",
+      "action": "idle",
+      "frameFraction": 0.35,
+      "frame": 13,
+      "manualPose": "ready_2h",
+      "groundShiftMeters": 0.046817,
+      "image": "service_scout_male_medium_ready_2h.png"
+    },
+    {
+      "id": "melee_heavy",
+      "action": null,
+      "frameFraction": 0.0,
+      "frame": 0,
+      "manualPose": "melee_heavy",
+      "groundShiftMeters": 0.031113,
+      "image": "service_scout_male_medium_melee_heavy.png"
+    }
+  ],
+  "runtimeIntegrationAllowed": false,
+  "pullRequestAllowed": false
+}

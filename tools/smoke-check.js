@@ -65,13 +65,14 @@ function assertRequiredFiles() {
     SERVER_FILE,
     CLIENT_HTML,
     path.join(PROJECT_ROOT, 'public', 'js', 'game.js'),
+    path.join(PROJECT_ROOT, 'public', 'js', 'game-runtime.js'),
     path.join(PROJECT_ROOT, 'public', 'css', 'game.css')
   ];
   for (const file of required) {
     if (!fs.existsSync(file)) fail(`required file is missing: ${path.relative(PROJECT_ROOT, file)}`);
   }
   const serverSource = fs.readFileSync(SERVER_FILE, 'utf8');
-  const clientLoaderSource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game.js'), 'utf8');
+  const clientLoaderSource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game-runtime.js'), 'utf8');
   if (clientLoaderSource.includes("open('GET', url, false)")
     || clientLoaderSource.includes('open("GET", url, false)')) {
     fail('client loader still uses synchronous XMLHttpRequest');
@@ -490,10 +491,15 @@ async function assertStaticAssets(health) {
     fail('CSS loader does not include the mobile UI icon layer', css.body.slice(0, 500));
   }
 
-  const js = await request('/js/game.js');
-  assertStatus(js, 200, 'GET /js/game.js');
+  const js = await request('/js/game-runtime.js');
+  assertStatus(js, 200, 'GET /js/game-runtime.js');
   if (!js.body.includes('GAME_SCRIPT_PARTS')) {
-    fail('client JS loader did not look like the expected loader', js.body.slice(0, 500));
+    fail('client JS runtime loader did not look like the expected loader', js.body.slice(0, 500));
+  }
+  const compatibilityJs = await request('/js/game.js');
+  assertStatus(compatibilityJs, 200, 'GET /js/game.js');
+  if (!compatibilityJs.body.includes('/js/game-runtime.js')) {
+    fail('client compatibility loader does not forward to game-runtime.js', compatibilityJs.body.slice(0, 500));
   }
 
   const three = await request('/vendor/three.min.js');

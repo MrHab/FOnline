@@ -1,0 +1,140 @@
+{
+  "schema": "realm.runtime-character-module.v1",
+  "version": 1,
+  "status": "approved",
+  "assetId": "service_boots",
+  "designRevision": "service_scout_compact_v2",
+  "physicalItemIds": [
+    "scoutBoots"
+  ],
+  "visualSlot": "feet",
+  "hideBodyRegions": [
+    "foot_l",
+    "foot_r"
+  ],
+  "rigId": "humanoid_v1",
+  "attachmentMode": "ankle_split_from_shared_rig",
+  "defaultVariant": "male_medium",
+  "lodDistancesMeters": {
+    "lod0": 0,
+    "lod1": 18,
+    "lod2": 40
+  },
+  "files": [
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod0.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod1.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod2.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod0.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod1.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod2.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod0.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod1.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod2.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod0.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod1.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod2.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod0.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod1.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod2.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod0.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod1.glb",
+    "/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod2.glb"
+  ],
+  "variants": [
+    {
+      "key": "female_slim",
+      "sex": "female",
+      "bodyType": "slim",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "lods": {
+        "lod0": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod0.glb",
+        "lod1": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod1.glb",
+        "lod2": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_slim/service_boots_female_slim_lod2.glb"
+      }
+    },
+    {
+      "key": "female_medium",
+      "sex": "female",
+      "bodyType": "medium",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "lods": {
+        "lod0": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod0.glb",
+        "lod1": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod1.glb",
+        "lod2": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_medium/service_boots_female_medium_lod2.glb"
+      }
+    },
+    {
+      "key": "female_large",
+      "sex": "female",
+      "bodyType": "large",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "lods": {
+        "lod0": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod0.glb",
+        "lod1": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod1.glb",
+        "lod2": "/assets/models/characters/outfits/field_worker/service_boots/variants/female_large/service_boots_female_large_lod2.glb"
+      }
+    },
+    {
+      "key": "male_slim",
+      "sex": "male",
+      "bodyType": "slim",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "lods": {
+        "lod0": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod0.glb",
+        "lod1": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod1.glb",
+        "lod2": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_slim/service_boots_male_slim_lod2.glb"
+      }
+    },
+    {
+      "key": "male_medium",
+      "sex": "male",
+      "bodyType": "medium",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "lods": {
+        "lod0": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod0.glb",
+        "lod1": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod1.glb",
+        "lod2": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_medium/service_boots_male_medium_lod2.glb"
+      }
+    },
+    {
+      "key": "male_large",
+      "sex": "male",
+      "bodyType": "large",
+      "triangles": {
+        "lod0": 3900,
+        "lod1": 1992,
+        "lod2": 1100
+      },
+      "lods": {
+        "lod0": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod0.glb",
+        "lod1": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod1.glb",
+        "lod2": "/assets/models/characters/outfits/field_worker/service_boots/variants/male_large/service_boots_male_large_lod2.glb"
+      }
+    }
+  ],
+  "authority": {
+    "equipmentSource": "server_snapshot.equipment.boots",
+    "physicalInventoryRequired": true,
+    "clientCosmeticOverrideAllowed": false
+  }
+}

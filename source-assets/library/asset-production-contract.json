@@ -1,0 +1,1832 @@
+{
+  "schema": "realm.asset-production-contract.v1",
+  "version": 1,
+  "updated": "2026-07-28",
+  "stage": "production",
+  "releaseReady": false,
+  "artDirection": {
+    "status": "approved",
+    "approvalGate": "docs/art/ART_DIRECTION_APPROVAL_GATE.md",
+    "proposedBlend": [
+      "option_b_geometry",
+      "option_c_materials"
+    ],
+    "finalArtProductionAllowed": true,
+    "approvedAt": "2026-07-28",
+    "approvedBy": "user",
+    "approvalText": "Утверждаю B+C: геометрия B, материалы и износ C"
+  },
+  "linkedManifests": {
+    "characterLibrary": "source-assets/characters/library/character-library.json",
+    "assetLibrary": "source-assets/library/asset-library.json",
+    "sourceRegistry": "docs/art/ASSET_SOURCE_REGISTRY.json",
+    "derivationRegistry": "source-assets/library/asset-derivations.json",
+    "productionBatches": "source-assets/library/asset-production-batches.json",
+    "sourceCandidateMatrix": "source-assets/library/asset-source-candidate-matrix.json",
+    "legacyModelReplacements": "source-assets/library/legacy-model-replacements.json",
+    "productionBriefs": "source-assets/library/asset-production-briefs.json",
+    "productionOutputPlan": "source-assets/library/asset-production-output-plan.json"
+  },
+  "coordinateSystem": {
+    "units": "meters",
+    "up": "+Y",
+    "forward": "-Z",
+    "origin": "asset_specific"
+  },
+  "runtimeTarget": {
+    "format": "GLB",
+    "gltfVersion": "2.0",
+    "clientRenderer": "Three.js r125",
+    "embeddedResourcesOnly": true,
+    "allowedRequiredExtensions": [],
+    "maxJointInfluencesPerVertex": 4,
+    "skinWeightsNormalized": true,
+    "transformPolicy": {
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "rotationDegrees": [
+        0,
+        0,
+        0
+      ],
+      "negativeScaleAllowed": false
+    }
+  },
+  "naming": {
+    "identifierPattern": "^[a-z][a-z0-9_]*$",
+    "runtimeIdPattern": "^[a-z][A-Za-z0-9_]*$",
+    "lodFilePattern": "^[a-z][a-z0-9_]*_lod[0-2]\\.glb$",
+    "rootPattern": "^[a-z][a-z0-9_]*_root$",
+    "meshPattern": "^mesh_[a-z][a-z0-9_]*$",
+    "materialPattern": "^mat_[a-z][a-z0-9_]*$",
+    "socketPattern": "^socket_[a-z][a-z0-9_]*$",
+    "animationPattern": "^[a-z][a-z0-9_]*$",
+    "texturePattern": "^[a-z][a-z0-9_]*_(basecolor|normal|orm|emissive)\\.(png|jpg|webp)$"
+  },
+  "metadataContract": {
+    "assetSchema": "realm.production-asset.v1",
+    "requiredRootExtras": [
+      "realm_asset_schema",
+      "realm_asset_id",
+      "realm_asset_class",
+      "realm_lod",
+      "realm_origin_profile",
+      "realm_approval_status",
+      "realm_provenance_type",
+      "realm_provenance_id"
+    ],
+    "approvalStatuses": [
+      "review",
+      "approved",
+      "integrated"
+    ],
+    "provenanceTypes": [
+      "original",
+      "derived"
+    ],
+    "originalProvenanceId": "realm_of_ashes_original",
+    "rigExtra": "realm_rig_id"
+  },
+  "sourceProvenanceContract": {
+    "registrySchema": "realm.asset-source-registry.v1",
+    "derivationRegistrySchema": "realm.asset-derivation-registry.v1",
+    "allowedExternalLicenses": [
+      "CC0-1.0",
+      "Public Domain"
+    ],
+    "sourceTiers": [
+      "audited_donor",
+      "catalog_only",
+      "blocked"
+    ],
+    "productionSourceTier": "audited_donor",
+    "requiredSourceFields": [
+      "name",
+      "url",
+      "author",
+      "license",
+      "license_url",
+      "intended_use",
+      "review_status",
+      "source_tier",
+      "production_use_allowed",
+      "direct_runtime_use_allowed",
+      "derivative_redistribution_allowed"
+    ],
+    "pinKinds": [
+      "archive_sha256",
+      "audited_subset_sha256",
+      "source_manifest_sha256"
+    ],
+    "requiredPinFields": [
+      "kind",
+      "files",
+      "bytes",
+      "sha256"
+    ],
+    "sha256Pattern": "^[a-f0-9]{64}$",
+    "retrievedDatePattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    "licenseEvidenceRequiredForProduction": true,
+    "pinRequiredForProduction": true,
+    "directRuntimeUseForbidden": true,
+    "catalogProviderRequiresPerAssetPin": true,
+    "blockedUnknownLicenseMustRemainUnusable": true,
+    "sourceManifestDirectRuntimeUseForbidden": true,
+    "derivation": {
+      "requiredFields": [
+        "assetId",
+        "assetClass",
+        "provenanceType",
+        "status",
+        "sources",
+        "recipe",
+        "transformSummary",
+        "sourceFilesShipped",
+        "outputs",
+        "licenseConclusion"
+      ],
+      "provenanceTypes": [
+        "original",
+        "derived"
+      ],
+      "statuses": [
+        "planned",
+        "source_ready",
+        "blocked_art_approval",
+        "work_in_progress",
+        "review",
+        "approved",
+        "integrated"
+      ],
+      "statusesForbiddenBeforeArtApproval": [
+        "work_in_progress",
+        "review",
+        "approved",
+        "integrated"
+      ],
+      "requiredSourceRefFields": [
+        "registryName",
+        "sourceAssetIds"
+      ],
+      "requiredOutputFields": [
+        "file",
+        "sha256"
+      ],
+      "licenseConclusions": [
+        "realm_original",
+        "redistributable_derivative"
+      ],
+      "recipeMustBeRepositoryTool": true,
+      "originalHasNoExternalSources": true,
+      "derivedRequiresAuditedSources": true,
+      "sourceFilesShippedForbidden": true,
+      "reviewOutputsAndHashesRequired": true
+    }
+  },
+  "sourceCandidateContract": {
+    "schema": "realm.asset-source-candidate-matrix.v1",
+    "stageBeforeArtApproval": "preproduction",
+    "exactSourceAssetRequiredForDonorCandidate": true,
+    "originalOnlyDecisionAllowed": true,
+    "directRuntimeUseOfDonorsForbidden": true,
+    "exactDependencyClosureRequired": true,
+    "networkDependenciesForbidden": true,
+    "dependencyPathTraversalForbidden": true,
+    "dependencySymlinksForbidden": true,
+    "normalizedExportNameResolutionRecorded": true,
+    "finalSelectionBeforeArtApprovalForbidden": true,
+    "productionGlbBeforeArtApprovalForbidden": true,
+    "targetCatalogs": [
+      "characterComponents",
+      "inventoryItems",
+      "creatures",
+      "environmentFamilies",
+      "surfaceFamilies"
+    ]
+  },
+  "legacyReplacementContract": {
+    "schema": "realm.legacy-model-replacements.v1",
+    "everyLegacyGlbMappedExactlyOnce": true,
+    "legacyFileHashRequired": true,
+    "runtimeAliasesRequired": true,
+    "authoredLocationAndObjectIdsRequired": true,
+    "noLegacyDeletionBeforeApprovedMigration": true,
+    "generatedGlbMustUseRepositoryTools": true,
+    "generatedColliderCatalogMustUseRepositoryTool": true,
+    "userApprovalRequiredBeforeReplacementProduction": true,
+    "userApprovalRequiredBeforeRuntimeMigration": true
+  },
+  "textureContract": {
+    "powerOfTwoOnly": true,
+    "allowedDimensions": [
+      128,
+      256,
+      512,
+      1024,
+      2048
+    ],
+    "defaultMaxDimension": 1024,
+    "absoluteMaxDimension": 2048,
+    "alphaModes": [
+      "OPAQUE",
+      "MASK"
+    ],
+    "blendRequiresExplicitApproval": true,
+    "channels": [
+      {
+        "role": "basecolor",
+        "colorSpace": "sRGB",
+        "required": true
+      },
+      {
+        "role": "normal",
+        "colorSpace": "linear",
+        "required": true,
+        "convention": "OpenGL +Y"
+      },
+      {
+        "role": "orm",
+        "colorSpace": "linear",
+        "required": true,
+        "packing": {
+          "r": "occlusion",
+          "g": "roughness",
+          "b": "metalness"
+        }
+      },
+      {
+        "role": "emissive",
+        "colorSpace": "sRGB",
+        "required": false
+      }
+    ]
+  },
+  "lodPolicy": {
+    "tiers": [
+      {
+        "id": "lod0",
+        "referenceDistanceMeters": 0
+      },
+      {
+        "id": "lod1",
+        "referenceDistanceMeters": 18
+      },
+      {
+        "id": "lod2",
+        "referenceDistanceMeters": 40
+      }
+    ],
+    "separateGlbFiles": true,
+    "sharedRigAndSockets": true,
+    "animationClips": "lod0_only",
+    "triangleRetention": {
+      "lod1": {
+        "min": 0.25,
+        "max": 0.7
+      },
+      "lod2": {
+        "min": 0.08,
+        "max": 0.35
+      }
+    },
+    "preserveSilhouettePriority": [
+      "head",
+      "hands",
+      "weapon",
+      "outer_contour"
+    ]
+  },
+  "originProfiles": [
+    {
+      "id": "rig_root_ground",
+      "description": "Корень общего скелета находится на земле между стопами."
+    },
+    {
+      "id": "attachment_anchor",
+      "description": "Корень жёсткой экипировки совпадает с её точкой крепления."
+    },
+    {
+      "id": "grip_anchor",
+      "description": "Корень ручного предмета совпадает с socket_grip_r."
+    },
+    {
+      "id": "object_base_center",
+      "description": "Корень предмета или окружения находится по центру основания."
+    },
+    {
+      "id": "creature_ground_contact",
+      "description": "Корень существа находится по центру опорного контура на земле."
+    },
+    {
+      "id": "no_geometry",
+      "description": "Профиль поверхности не содержит собственной геометрии."
+    }
+  ],
+  "assetClassOriginMap": {
+    "humanoid_body": "rig_root_ground",
+    "humanoid_face": "rig_root_ground",
+    "humanoid_hair": "rig_root_ground",
+    "humanoid_skinned_equipment": "rig_root_ground",
+    "rigid_equipment": "attachment_anchor",
+    "handheld_weapon": "grip_anchor",
+    "handheld_tool": "grip_anchor",
+    "inventory_prop": "object_base_center",
+    "creature_small": "creature_ground_contact",
+    "creature_medium": "creature_ground_contact",
+    "creature_large": "creature_ground_contact",
+    "environment_small": "object_base_center",
+    "environment_medium": "object_base_center",
+    "environment_large": "object_base_center",
+    "environment_modular": "object_base_center",
+    "surface_material": "no_geometry"
+  },
+  "maxGlbBytesByClass": {
+    "humanoid_body": 16777216,
+    "humanoid_face": 5242880,
+    "humanoid_hair": 4194304,
+    "humanoid_skinned_equipment": 10485760,
+    "rigid_equipment": 8388608,
+    "handheld_weapon": 10485760,
+    "handheld_tool": 8388608,
+    "inventory_prop": 4194304,
+    "creature_small": 10485760,
+    "creature_medium": 16777216,
+    "creature_large": 25165824,
+    "environment_small": 6291456,
+    "environment_medium": 10485760,
+    "environment_large": 25165824,
+    "environment_modular": 10485760,
+    "surface_material": 4194304
+  },
+  "assetClasses": [
+    {
+      "id": "humanoid_body",
+      "maxTriangles": {
+        "lod0": 18000,
+        "lod1": 9000,
+        "lod2": 3500
+      },
+      "maxMaterials": 3,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": true,
+      "requiresLods": true
+    },
+    {
+      "id": "humanoid_face",
+      "maxTriangles": {
+        "lod0": 5000,
+        "lod1": 2500,
+        "lod2": 900
+      },
+      "maxMaterials": 1,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": true,
+      "requiresLods": true
+    },
+    {
+      "id": "humanoid_hair",
+      "maxTriangles": {
+        "lod0": 4000,
+        "lod1": 2000,
+        "lod2": 700
+      },
+      "maxMaterials": 1,
+      "maxTextureDimension": 512,
+      "requiresUv": true,
+      "requiresSkin": true,
+      "requiresLods": true
+    },
+    {
+      "id": "humanoid_skinned_equipment",
+      "maxTriangles": {
+        "lod0": 10000,
+        "lod1": 5000,
+        "lod2": 1800
+      },
+      "maxMaterials": 2,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": true,
+      "requiresLods": true
+    },
+    {
+      "id": "rigid_equipment",
+      "maxTriangles": {
+        "lod0": 6000,
+        "lod1": 3000,
+        "lod2": 1000
+      },
+      "maxMaterials": 2,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": false,
+      "requiresLods": false
+    },
+    {
+      "id": "handheld_weapon",
+      "maxTriangles": {
+        "lod0": 8000,
+        "lod1": 4000,
+        "lod2": 1400
+      },
+      "maxMaterials": 3,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": false,
+      "requiresLods": false
+    },
+    {
+      "id": "handheld_tool",
+      "maxTriangles": {
+        "lod0": 5000,
+        "lod1": 2500,
+        "lod2": 900
+      },
+      "maxMaterials": 2,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": false,
+      "requiresLods": false
+    },
+    {
+      "id": "inventory_prop",
+      "maxTriangles": {
+        "lod0": 4000,
+        "lod1": 1800,
+        "lod2": 600
+      },
+      "maxMaterials": 2,
+      "maxTextureDimension": 512,
+      "requiresUv": true,
+      "requiresSkin": false,
+      "requiresLods": false
+    },
+    {
+      "id": "creature_small",
+      "maxTriangles": {
+        "lod0": 10000,
+        "lod1": 5000,
+        "lod2": 1800
+      },
+      "maxMaterials": 3,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": true,
+      "requiresLods": true
+    },
+    {
+      "id": "creature_medium",
+      "maxTriangles": {
+        "lod0": 16000,
+        "lod1": 8000,
+        "lod2": 2800
+      },
+      "maxMaterials": 3,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": true,
+      "requiresLods": true
+    },
+    {
+      "id": "creature_large",
+      "maxTriangles": {
+        "lod0": 24000,
+        "lod1": 12000,
+        "lod2": 4200
+      },
+      "maxMaterials": 4,
+      "maxTextureDimension": 2048,
+      "requiresUv": true,
+      "requiresSkin": true,
+      "requiresLods": true
+    },
+    {
+      "id": "environment_small",
+      "maxTriangles": {
+        "lod0": 4000,
+        "lod1": 1800,
+        "lod2": 600
+      },
+      "maxMaterials": 2,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": false,
+      "requiresLods": false
+    },
+    {
+      "id": "environment_medium",
+      "maxTriangles": {
+        "lod0": 10000,
+        "lod1": 4500,
+        "lod2": 1500
+      },
+      "maxMaterials": 3,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": false,
+      "requiresLods": true
+    },
+    {
+      "id": "environment_large",
+      "maxTriangles": {
+        "lod0": 30000,
+        "lod1": 14000,
+        "lod2": 4500
+      },
+      "maxMaterials": 4,
+      "maxTextureDimension": 2048,
+      "requiresUv": true,
+      "requiresSkin": false,
+      "requiresLods": true
+    },
+    {
+      "id": "environment_modular",
+      "maxTriangles": {
+        "lod0": 8000,
+        "lod1": 3500,
+        "lod2": 1200
+      },
+      "maxMaterials": 2,
+      "maxTextureDimension": 1024,
+      "requiresUv": true,
+      "requiresSkin": false,
+      "requiresLods": true
+    },
+    {
+      "id": "surface_material",
+      "maxTriangles": {
+        "lod0": 0,
+        "lod1": 0,
+        "lod2": 0
+      },
+      "maxMaterials": 1,
+      "maxTextureDimension": 1024,
+      "requiresUv": false,
+      "requiresSkin": false,
+      "requiresLods": false
+    }
+  ],
+  "inventoryFamilyClassMap": {
+    "weapon": "handheld_weapon",
+    "armor": "humanoid_skinned_equipment",
+    "helmet": "rigid_equipment",
+    "footwear": "humanoid_skinned_equipment",
+    "backpack": "rigid_equipment",
+    "ammunition": "inventory_prop",
+    "consumable": "inventory_prop",
+    "material": "inventory_prop",
+    "provision": "inventory_prop",
+    "currency": "inventory_prop",
+    "loot": "inventory_prop",
+    "tool": "handheld_tool"
+  },
+  "inventoryAttachmentRules": {
+    "familyDefaults": {
+      "weapon": {
+        "mode": "rigid_handheld",
+        "characterSocket": "socket_hand_r"
+      },
+      "armor": {
+        "mode": "shared_rig"
+      },
+      "helmet": {
+        "mode": "rigid_attachment",
+        "characterSocket": "socket_head"
+      },
+      "footwear": {
+        "mode": "shared_rig"
+      },
+      "backpack": {
+        "mode": "rigid_attachment",
+        "characterSocket": "socket_back"
+      },
+      "tool": {
+        "mode": "rigid_handheld",
+        "characterSocket": "socket_hand_r"
+      }
+    },
+    "itemModeOverrides": {
+      "medkit": {
+        "mode": "rigid_handheld",
+        "characterSocket": "socket_hand_r"
+      },
+      "stim": {
+        "mode": "rigid_handheld",
+        "characterSocket": "socket_hand_r"
+      },
+      "doctorBag": {
+        "mode": "rigid_handheld",
+        "characterSocket": "socket_hand_r"
+      },
+      "antibiotics": {
+        "mode": "rigid_handheld",
+        "characterSocket": "socket_hand_r"
+      }
+    },
+    "itemSocketOverrides": {
+      "pistol": [
+        "socket_grip_r",
+        "socket_muzzle"
+      ],
+      "rifle": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_muzzle"
+      ],
+      "assaultRifle": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_muzzle"
+      ],
+      "machineGun": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_muzzle"
+      ],
+      "laserPistol": [
+        "socket_grip_r",
+        "socket_muzzle"
+      ],
+      "flamethrower": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_muzzle"
+      ],
+      "plasmaRifle": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_muzzle"
+      ],
+      "shotgun": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_muzzle"
+      ],
+      "rocketLauncher": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_muzzle"
+      ],
+      "knife": [
+        "socket_grip_r"
+      ],
+      "pickaxe": [
+        "socket_grip_r",
+        "socket_grip_l"
+      ],
+      "axe": [
+        "socket_grip_r",
+        "socket_grip_l"
+      ],
+      "handPump": [
+        "socket_grip_r"
+      ],
+      "medkit": [
+        "socket_grip_r"
+      ],
+      "stim": [
+        "socket_grip_r"
+      ],
+      "doctorBag": [
+        "socket_grip_r"
+      ],
+      "antibiotics": [
+        "socket_grip_r"
+      ]
+    }
+  },
+  "humanoidContract": {
+    "rigId": "humanoid_v1",
+    "jointCount": 65,
+    "originProfile": "rig_root_ground",
+    "characterSockets": [
+      "socket_hand_r",
+      "socket_hand_l",
+      "socket_back",
+      "socket_hip_r",
+      "socket_head"
+    ],
+    "itemSockets": {
+      "oneHanded": [
+        "socket_grip_r"
+      ],
+      "twoHanded": [
+        "socket_grip_r",
+        "socket_grip_l"
+      ],
+      "firearm": [
+        "socket_grip_r",
+        "socket_muzzle"
+      ],
+      "twoHandedFirearm": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_muzzle"
+      ],
+      "ejectingFirearmOptional": [
+        "socket_shell_eject"
+      ]
+    },
+    "visualSlots": [
+      "body_base",
+      "legs_inner",
+      "torso_inner",
+      "torso_outer",
+      "armor",
+      "feet",
+      "hands",
+      "head",
+      "back",
+      "weapon"
+    ],
+    "bodyRegions": [
+      "head",
+      "neck",
+      "torso_upper",
+      "torso_lower",
+      "upper_arm_l",
+      "upper_arm_r",
+      "lower_arm_l",
+      "lower_arm_r",
+      "hand_l",
+      "hand_r",
+      "pelvis",
+      "thigh_l",
+      "thigh_r",
+      "lower_leg_l",
+      "lower_leg_r",
+      "foot_l",
+      "foot_r"
+    ],
+    "variantMatrix": {
+      "sexes": [
+        "female",
+        "male"
+      ],
+      "bodyTypes": [
+        "slim",
+        "medium",
+        "large"
+      ],
+      "requiredBodyVariants": [
+        "female_slim",
+        "female_medium",
+        "female_large",
+        "male_slim",
+        "male_medium",
+        "male_large"
+      ]
+    },
+    "baseState": {
+      "underwearIncludedInBody": true,
+      "underwearIsInventoryItem": false,
+      "barefoot": true,
+      "visibleEquipment": [],
+      "physicalInventory": []
+    },
+    "moduleRules": {
+      "sharedRigRequired": true,
+      "bodyVariantCoverageRequired": true,
+      "hideBodyRegionsRequired": true,
+      "bakedArmorForbidden": true,
+      "bakedFootwearForbidden": true,
+      "bakedBackpackForbidden": true,
+      "runtimeItemIdRequiredForEquippedModules": true
+    },
+    "firstOutfitItems": [
+      "field_shirt",
+      "work_trousers",
+      "service_boots"
+    ]
+  },
+  "characterAppearanceContract": {
+    "schema": "realm.character-appearance-catalog.v1",
+    "snapshotSchema": "realm.character-appearance.v1",
+    "snapshotFields": [
+      "schema",
+      "sex",
+      "bodyType",
+      "faceId",
+      "hairId",
+      "skinToneId",
+      "hairColorId"
+    ],
+    "actors": [
+      "player",
+      "remote_player",
+      "humanoid_npc"
+    ],
+    "authority": "server",
+    "appearanceIsInventory": false,
+    "sexes": [
+      "female",
+      "male"
+    ],
+    "bodyTypes": [
+      "slim",
+      "medium",
+      "large"
+    ],
+    "appearanceSlots": [
+      "face",
+      "hair"
+    ],
+    "face": {
+      "countPerSex": 4,
+      "idPattern": "^(female|male)_[0-9]{2}$",
+      "visualSlot": "face",
+      "replacesBodyRegions": [
+        "head"
+      ],
+      "compatibleBodyTypes": [
+        "slim",
+        "medium",
+        "large"
+      ],
+      "rigId": "humanoid_v1",
+      "assetClass": "humanoid_face",
+      "inventoryItem": false,
+      "requiresGeometry": true,
+      "requiresLodSetAtReview": true,
+      "animationsForbidden": true,
+      "requiredRootExtras": [
+        "realm_visual_slot",
+        "realm_sex",
+        "realm_compatible_body_types",
+        "realm_replaces_body_regions",
+        "realm_rig_id",
+        "realm_inventory_item"
+      ]
+    },
+    "hair": {
+      "count": 8,
+      "visualSlot": "hair",
+      "compatibleSexes": [
+        "female",
+        "male"
+      ],
+      "compatibleBodyTypes": [
+        "slim",
+        "medium",
+        "large"
+      ],
+      "rigId": "humanoid_v1",
+      "assetClass": "humanoid_hair",
+      "inventoryItem": false,
+      "headgearPolicy": "hide_when_covering_headgear_equipped",
+      "renderModes": [
+        "mesh",
+        "scalp_only"
+      ],
+      "geometryFreeIds": [
+        "shaved"
+      ],
+      "requiresLodSetAtReviewForMesh": true,
+      "animationsForbidden": true,
+      "requiredRootExtras": [
+        "realm_visual_slot",
+        "realm_compatible_sexes",
+        "realm_compatible_body_types",
+        "realm_rig_id",
+        "realm_headgear_policy",
+        "realm_inventory_item"
+      ]
+    },
+    "palettes": {
+      "skin": {
+        "count": 6,
+        "idPattern": "^skin_[0-9]{2}$",
+        "colorSpace": "srgb",
+        "application": "material_base_color_factor",
+        "duplicateFullTextureSetsForbidden": true
+      },
+      "hair": {
+        "count": 8,
+        "idPattern": "^hair_[0-9]{2}$",
+        "colorSpace": "srgb",
+        "application": "material_base_color_factor",
+        "duplicateFullTextureSetsForbidden": true
+      }
+    },
+    "defaults": {
+      "female": {
+        "bodyType": "medium",
+        "faceId": "female_01",
+        "hairId": "short_crop",
+        "skinToneId": "skin_04",
+        "hairColorId": "hair_02"
+      },
+      "male": {
+        "bodyType": "medium",
+        "faceId": "male_01",
+        "hairId": "short_crop",
+        "skinToneId": "skin_04",
+        "hairColorId": "hair_02"
+      }
+    },
+    "geometryStatuses": [
+      "review",
+      "approved",
+      "integrated"
+    ],
+    "statusesForbiddenBeforeArtApproval": [
+      "work_in_progress",
+      "review",
+      "approved",
+      "integrated"
+    ],
+    "allOptionsRequiredForRelease": true,
+    "approvedRuntimeGeometryFilesRequiredForRelease": true
+  },
+  "characterAppearanceAssetContract": {
+    "setSchema": "realm.character-appearance-set.v1",
+    "paletteSchema": "realm.character-color-palette.v1",
+    "geometryTargets": {
+      "faces": "face",
+      "hairstyles": "hair"
+    },
+    "paletteTargets": {
+      "skin_palette": "skin",
+      "hair_palette": "hair"
+    },
+    "productionStatus": "awaiting_user_approval",
+    "fixtureStatus": "fixture",
+    "swatchFormat": "PNG",
+    "swatchLayout": "horizontal",
+    "swatchCellPixels": 64,
+    "allCatalogOptionsRequired": true,
+    "validatedLodSetRequiredPerGeometryOption": true,
+    "reviewPackageRequiredPerGeometryOption": true,
+    "metadataCompatibilityRequired": true,
+    "palettePixelsMustMatchCatalog": true,
+    "duplicatePaletteTexturesForbidden": true,
+    "sha256EvidenceRequired": true,
+    "runtimeIntegrationBeforeApprovalForbidden": true,
+    "pullRequestBeforeApprovalForbidden": true
+  },
+  "characterBodySetContract": {
+    "schema": "realm.character-body-set.v1",
+    "variantKeys": [
+      "female_slim",
+      "female_medium",
+      "female_large",
+      "male_slim",
+      "male_medium",
+      "male_large"
+    ],
+    "requiredVariantFields": [
+      "sex",
+      "bodyType",
+      "assetId",
+      "modelId",
+      "lodDirectory"
+    ],
+    "requiredRootExtras": [
+      "realm_visual_slot",
+      "realm_sex",
+      "realm_body_type",
+      "realm_base_state",
+      "realm_underwear_included",
+      "realm_barefoot",
+      "realm_baked_equipment"
+    ],
+    "requiredRootValues": {
+      "realm_visual_slot": "body_base",
+      "realm_base_state": "underwear_barefoot",
+      "realm_underwear_included": true,
+      "realm_barefoot": true,
+      "realm_baked_equipment": []
+    },
+    "requiredManifestBaseState": {
+      "underwearIncludedInBody": true,
+      "underwearIsInventoryItem": false,
+      "barefoot": true,
+      "bakedEquipment": []
+    },
+    "bodyRegionNodePattern": "^mesh_body_region_(head|neck|torso_upper|torso_lower|upper_arm_l|upper_arm_r|lower_arm_l|lower_arm_r|hand_l|hand_r|pelvis|thigh_l|thigh_r|lower_leg_l|lower_leg_r|foot_l|foot_r)$",
+    "requiredMaterialNames": [
+      "mat_body_skin_underwear"
+    ],
+    "forbiddenBakedNodeTokens": [
+      "armor",
+      "helmet",
+      "boot",
+      "shoe",
+      "backpack",
+      "weapon",
+      "holster",
+      "pouch"
+    ],
+    "productionBounds": {
+      "heightMeters": {
+        "min": 1.75,
+        "max": 1.85
+      },
+      "minimumTorsoWidthStepRatio": 1.08,
+      "maximumTorsoWidthStepRatio": 1.35
+    },
+    "targetTriangles": {
+      "lod0": {
+        "min": 12000,
+        "max": 16000
+      },
+      "lod1": {
+        "min": 6000,
+        "max": 9000
+      },
+      "lod2": {
+        "min": 2000,
+        "max": 3500
+      }
+    },
+    "allSixVariantsRequired": true,
+    "allBodyRegionsRequired": true,
+    "uniqueRegionMeshesRequired": true,
+    "regionMeshesAreAuthoringPartitions": true,
+    "runtimeRegionMergeRequired": true,
+    "maximumRuntimeBodyDrawCalls": 3,
+    "sharedMaterialsRequired": true,
+    "sharedJointOrderRequired": true,
+    "sharedSocketsRequired": true,
+    "lod0AnimationsRequired": true,
+    "lowerLodAnimationsForbidden": true
+  },
+  "characterModuleSetContract": {
+    "schema": "realm.character-module-set.v1",
+    "variantKeys": [
+      "female_slim",
+      "female_medium",
+      "female_large",
+      "male_slim",
+      "male_medium",
+      "male_large"
+    ],
+    "allowedVisualSlots": [
+      "legs_inner",
+      "torso_inner",
+      "torso_outer",
+      "armor",
+      "feet",
+      "hands"
+    ],
+    "requiredVariantFields": [
+      "sex",
+      "bodyType",
+      "modelId",
+      "lodDirectory"
+    ],
+    "requiredRootExtras": [
+      "realm_visual_slot",
+      "realm_sex",
+      "realm_body_type",
+      "realm_hide_body_regions"
+    ],
+    "bodyRegionNodePattern": "^mesh_body_region_(head|neck|torso_upper|torso_lower|upper_arm_l|upper_arm_r|lower_arm_l|lower_arm_r|hand_l|hand_r|pelvis|thigh_l|thigh_r|lower_leg_l|lower_leg_r|foot_l|foot_r)$",
+    "requiredFitPoses": [
+      "bind",
+      "idle",
+      "walk_contact",
+      "run_contact",
+      "crouch_idle",
+      "ready_1h",
+      "ready_2h",
+      "melee_heavy"
+    ],
+    "fitStatusBeforeGeometryTest": "pending_geometry_check",
+    "fitStatusAfterPassing": "geometry_check_passed",
+    "allSixVariantsRequired": true,
+    "sharedMaterialsRequired": true,
+    "sharedJointOrderRequired": true,
+    "sharedHideBodyRegionsRequired": true
+  },
+  "characterFitContract": {
+    "schema": "realm.character-fit-report.v1",
+    "bodySetSchema": "realm.character-body-set.v1",
+    "algorithm": "blender_bvh_visible_body_v1",
+    "lod": "lod0",
+    "requiredPoses": [
+      {
+        "id": "bind",
+        "action": null,
+        "frameFraction": 0
+      },
+      {
+        "id": "idle",
+        "action": "idle",
+        "frameFraction": 0.35
+      },
+      {
+        "id": "walk_contact",
+        "action": "walk",
+        "frameFraction": 0
+      },
+      {
+        "id": "run_contact",
+        "action": "run",
+        "frameFraction": 0
+      },
+      {
+        "id": "crouch_idle",
+        "action": "crouch_idle",
+        "frameFraction": 0.35
+      },
+      {
+        "id": "ready_1h",
+        "action": "ready_1h",
+        "frameFraction": 0.35
+      },
+      {
+        "id": "ready_2h",
+        "action": "ready_2h",
+        "frameFraction": 0.35
+      },
+      {
+        "id": "melee_heavy",
+        "action": "melee_heavy",
+        "frameFraction": 0.55
+      }
+    ],
+    "maximumIntersectingTrianglePairs": 0,
+    "maximumPenetratingGarmentVertices": 0,
+    "penetrationEpsilonMeters": 0.0015,
+    "maximumMedianGarmentClearanceMeters": 0.12,
+    "allSixVariantsRequired": true,
+    "allRequiredPosesMustPass": true,
+    "visibleBodyRegionsOnly": true,
+    "inputHashesRequired": true,
+    "fixtureMissingActionsUseBindPose": true
+  },
+  "animationSetContract": {
+    "schema": "realm.animation-set.v1",
+    "version": 1,
+    "profileIds": [
+      "humanoid",
+      "brahmin",
+      "ash_wolf",
+      "radscorpion",
+      "mutant_ant",
+      "gecko",
+      "fire_gecko",
+      "ghoul",
+      "super_mutant"
+    ],
+    "allowedStatuses": [
+      "fixture",
+      "review_candidate",
+      "approved"
+    ],
+    "productionStatusesForbiddenBeforeArtApproval": [
+      "review_candidate",
+      "approved"
+    ],
+    "requiredManifestFields": [
+      "profileId",
+      "assetClass",
+      "rigId",
+      "rootJoint",
+      "provenance",
+      "clips",
+      "targets"
+    ],
+    "requiredTargetFields": [
+      "id",
+      "assetId",
+      "modelId",
+      "file"
+    ],
+    "requiredClipFields": [
+      "id",
+      "loop",
+      "terminal",
+      "locomotionMetersPerSecond",
+      "events"
+    ],
+    "rootMotionPolicy": "in_place",
+    "scaleChannelsForbidden": true,
+    "weightsChannelsForbidden": true,
+    "targetNodesMustBeRigJoints": true,
+    "inputTimesStrictlyIncreasing": true,
+    "maximumStartTimeSeconds": 0.0001,
+    "minimumDurationSeconds": 0.1,
+    "maximumDurationSeconds": 12,
+    "locomotionSpeedMetersPerSecond": {
+      "min": 0.1,
+      "max": 15
+    },
+    "loopClosureTolerance": 0.002,
+    "allowedInterpolations": [
+      "LINEAR",
+      "STEP",
+      "CUBICSPLINE"
+    ],
+    "allowedChannelPaths": [
+      "translation",
+      "rotation"
+    ],
+    "loopingClips": [
+      "idle",
+      "walk",
+      "run",
+      "crouch_idle",
+      "crouch_walk",
+      "ready_1h",
+      "ready_2h",
+      "graze",
+      "eat",
+      "crawl"
+    ],
+    "oneShotClips": [
+      "fire_1h",
+      "fire_2h",
+      "reload_1h",
+      "reload_2h",
+      "melee_light",
+      "melee_heavy",
+      "hit_front",
+      "hit_back",
+      "death_front",
+      "death_back",
+      "interact",
+      "pickup",
+      "use_item",
+      "throw_item",
+      "harvest",
+      "plant_seed",
+      "water",
+      "chop",
+      "hit_heavy",
+      "hit",
+      "death",
+      "attack",
+      "attack_claw",
+      "attack_sting",
+      "fire_attack"
+    ],
+    "locomotionClips": [
+      "walk",
+      "run",
+      "crouch_walk",
+      "crawl"
+    ],
+    "terminalClips": [
+      "death_front",
+      "death_back",
+      "death"
+    ],
+    "requiredEventMarkers": {
+      "walk": [
+        "foot_l",
+        "foot_r"
+      ],
+      "run": [
+        "foot_l",
+        "foot_r"
+      ],
+      "crouch_walk": [
+        "foot_l",
+        "foot_r"
+      ],
+      "crawl": [
+        "foot_l",
+        "foot_r"
+      ],
+      "fire_1h": [
+        "fire"
+      ],
+      "fire_2h": [
+        "fire"
+      ],
+      "reload_1h": [
+        "magazine_out",
+        "magazine_in"
+      ],
+      "reload_2h": [
+        "magazine_out",
+        "magazine_in"
+      ],
+      "melee_light": [
+        "impact"
+      ],
+      "melee_heavy": [
+        "impact"
+      ],
+      "interact": [
+        "interact"
+      ],
+      "pickup": [
+        "pickup"
+      ],
+      "use_item": [
+        "use"
+      ],
+      "throw_item": [
+        "release"
+      ],
+      "harvest": [
+        "impact"
+      ],
+      "plant_seed": [
+        "plant"
+      ],
+      "water": [
+        "pour"
+      ],
+      "chop": [
+        "impact"
+      ],
+      "attack": [
+        "impact"
+      ],
+      "attack_claw": [
+        "impact"
+      ],
+      "attack_sting": [
+        "impact"
+      ],
+      "fire_attack": [
+        "fire"
+      ]
+    },
+    "allowedEventIds": [
+      "foot_l",
+      "foot_r",
+      "fire",
+      "magazine_out",
+      "magazine_in",
+      "impact",
+      "interact",
+      "pickup",
+      "use",
+      "release",
+      "plant",
+      "pour"
+    ],
+    "clipFingerprintsMustMatchAcrossTargets": true,
+    "productionFilesMustBeLod0": true,
+    "productionGlbValidationRequired": true
+  },
+  "creatureContracts": [
+    {
+      "id": "brahmin",
+      "rigId": "brahmin_v1",
+      "assetClass": "creature_large",
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "run",
+        "graze",
+        "hit",
+        "death"
+      ]
+    },
+    {
+      "id": "ash_wolf",
+      "rigId": "canid_v1",
+      "assetClass": "creature_medium",
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "run",
+        "attack",
+        "eat",
+        "hit",
+        "death"
+      ]
+    },
+    {
+      "id": "radscorpion",
+      "rigId": "radscorpion_v1",
+      "assetClass": "creature_medium",
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "attack_claw",
+        "attack_sting",
+        "hit",
+        "death"
+      ]
+    },
+    {
+      "id": "mutant_ant",
+      "rigId": "mutant_ant_v1",
+      "assetClass": "creature_small",
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "run",
+        "attack",
+        "hit",
+        "death"
+      ]
+    },
+    {
+      "id": "gecko",
+      "rigId": "gecko_v1",
+      "assetClass": "creature_medium",
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "run",
+        "attack",
+        "hit",
+        "death"
+      ]
+    },
+    {
+      "id": "fire_gecko",
+      "rigId": "gecko_v1",
+      "assetClass": "creature_medium",
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "run",
+        "attack",
+        "fire_attack",
+        "hit",
+        "death"
+      ]
+    },
+    {
+      "id": "ghoul",
+      "rigId": "infected_humanoid_v1",
+      "assetClass": "creature_medium",
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "run",
+        "attack",
+        "hit",
+        "death",
+        "crawl"
+      ]
+    },
+    {
+      "id": "super_mutant",
+      "rigId": "mutant_humanoid_v1",
+      "assetClass": "creature_large",
+      "requiredAnimations": [
+        "idle",
+        "walk",
+        "run",
+        "ready_2h",
+        "fire_2h",
+        "melee_heavy",
+        "hit",
+        "death"
+      ]
+    }
+  ],
+  "environmentFamilyClassMap": {
+    "furniture_domestic": "environment_medium",
+    "containers_storage": "environment_medium",
+    "settlement_modules": "environment_modular",
+    "buildings_ruins": "environment_large",
+    "industrial_crafting": "environment_large",
+    "vegetation": "environment_medium",
+    "rocks_debris": "environment_medium",
+    "waste_trash": "environment_small",
+    "roadside": "environment_large",
+    "dungeon_interior": "environment_modular"
+  },
+  "surfaceFamilyClass": "surface_material",
+  "colliderContract": {
+    "generatedOnly": true,
+    "generator": "tools/build-model-colliders.js",
+    "catalog": "public/assets/models/wasteland/model-colliders.json",
+    "allowedTypes": [
+      "box",
+      "cylinder",
+      "capsule",
+      "compound"
+    ],
+    "walkableMeshesRequireAuthoredWalkableProfile": true,
+    "handEditingGeneratedCatalogForbidden": true
+  },
+  "environmentFamilyManifestContract": {
+    "schema": "realm.environment-family.v1",
+    "colliderEvidenceSchema": "realm.environment-collider-evidence.v1",
+    "productionStatus": "awaiting_user_approval",
+    "fixtureStatus": "fixture",
+    "colliderEvidenceProductionStatus": "validated_candidate",
+    "colliderEvidenceFixtureStatus": "fixture",
+    "allRequiredArchetypesMustBePresent": true,
+    "validatedLodSetRequiredPerModel": true,
+    "reviewPackageRequiredPerModel": true,
+    "colliderEvidenceRequiredPerModel": true,
+    "sha256EvidenceRequired": true,
+    "provenanceMustMatchGlbMetadata": true,
+    "runtimeIntegrationBeforeApprovalForbidden": true,
+    "pullRequestBeforeApprovalForbidden": true,
+    "handEditedColliderEvidenceForbidden": true
+  },
+  "reviewContract": {
+    "schema": "realm.asset-review-package.v1",
+    "renderLod": "lod0",
+    "resolution": [
+      768,
+      768
+    ],
+    "fixtureResolution": [
+      256,
+      256
+    ],
+    "format": "PNG",
+    "views": [
+      "front",
+      "back",
+      "isometric"
+    ],
+    "requiredArtifacts": [
+      "validated_lod_set",
+      "lod0_glb_reference",
+      "render_manifest",
+      "front_render",
+      "back_render",
+      "isometric_render"
+    ],
+    "runtimeIntegrationBeforeApprovalForbidden": true,
+    "pullRequestBeforeApprovalForbidden": true
+  },
+  "materialReviewContract": {
+    "schema": "realm.material-review-package.v1",
+    "renderSchema": "realm.material-review-render.v1",
+    "sourcePbrSchema": "realm.pbr-texture-build.v1",
+    "resolutionSource": "reviewContract",
+    "format": "PNG",
+    "views": [
+      "tiled_swatch",
+      "material_ball",
+      "in_scene"
+    ],
+    "requiredArtifacts": [
+      "validated_pbr_manifest",
+      "copied_pbr_manifest",
+      "basecolor_texture",
+      "normal_texture",
+      "orm_texture",
+      "render_manifest",
+      "tiled_swatch_render",
+      "material_ball_render",
+      "in_scene_render"
+    ],
+    "copySourceMapsIntoReviewPackage": true,
+    "sha256EvidenceRequired": true,
+    "runtimeIntegrationBeforeApprovalForbidden": true,
+    "pullRequestBeforeApprovalForbidden": true
+  },
+  "humanoidRuntimeEvidenceContract": {
+    "sharedResolverContractSchema": "realm.shared-humanoid-resolver-contract.v1",
+    "emptyStartContractSchema": "realm.empty-start-state-contract.v1",
+    "reportSchema": "realm.humanoid-runtime-evidence-report.v1",
+    "adapterSchema": "realm.humanoid-runtime-adapter.v1",
+    "scenarioSuiteSchema": "realm.humanoid-runtime-scenario-suite.v1",
+    "productionStatus": "awaiting_user_approval",
+    "verifiedCandidateStatus": "verified_candidate",
+    "fixtureStatus": "fixture",
+    "productionAdapter": "tools/art/runtime/humanoid-runtime-adapter.js",
+    "targetKinds": {
+      "shared_humanoid_resolver": [
+        "runtime_contract",
+        "player_npc_parity_report"
+      ],
+      "empty_start_state": [
+        "empty_start_contract",
+        "empty_start_test_report"
+      ]
+    },
+    "parityScenarioIds": [
+      "shared_output_player_remote_npc",
+      "unequipped_inventory_hidden",
+      "runtime_item_identity_preserved",
+      "barefoot_without_boots",
+      "boots_disable_barefoot",
+      "headgear_hides_hair_without_mutating_profile",
+      "local_cosmetic_override_ignored",
+      "fists_are_nonphysical_and_invisible",
+      "npc_equipment_requires_physical_inventory",
+      "currency_never_becomes_visual_equipment"
+    ],
+    "emptyStartScenarioIds": [
+      "new_player_inventory_empty",
+      "new_player_equipment_empty",
+      "underwear_barefoot_visual_state",
+      "starter_items_absent",
+      "traits_do_not_grant_items",
+      "empty_state_survives_round_trip",
+      "fists_not_stored_as_item",
+      "appearance_survives_creation",
+      "empty_start_resolves_through_shared_resolver"
+    ],
+    "executableScenariosRequired": true,
+    "implementationHashesRequired": true,
+    "physicalInventoryBackedEquipmentRequired": true,
+    "runtimeItemIdentityRequired": true,
+    "localCosmeticOverridesForbidden": true,
+    "emptyStartInventoryRequired": true,
+    "emptyHandsNonPhysical": true,
+    "roundTripRequired": true,
+    "runtimeIntegrationBeforeApprovalForbidden": true,
+    "pullRequestBeforeApprovalForbidden": true
+  },
+  "runtimeVisualEvidenceContract": {
+    "productionDimensions": {
+      "animationContactSheet": [
+        2560,
+        1440
+      ],
+      "desktopVideo": [
+        1280,
+        720
+      ],
+      "mobileLandscapeVideo": [
+        844,
+        390
+      ],
+      "desktopScreenshot": [
+        1440,
+        900
+      ],
+      "mobileLandscapeScreenshot": [
+        844,
+        390
+      ]
+    },
+    "fixtureDimensions": {
+      "animationContactSheet": [
+        320,
+        180
+      ],
+      "desktopVideo": [
+        320,
+        180
+      ],
+      "mobileLandscapeVideo": [
+        256,
+        144
+      ],
+      "desktopScreenshot": [
+        320,
+        200
+      ],
+      "mobileLandscapeScreenshot": [
+        256,
+        144
+      ]
+    },
+    "allowedVideoCodecs": [
+      "V_VP8",
+      "V_VP9",
+      "V_AV1"
+    ],
+    "minimumVideoDurationSeconds": 26,
+    "minimumImageBytes": 16384,
+    "minimumVideoBytes": 65536,
+    "fixtureMinimumVideoDurationSeconds": 1,
+    "fixtureMinimumImageBytes": 128,
+    "fixtureMinimumVideoBytes": 96,
+    "contactSheetMustCoverAllRequiredClips": true,
+    "desktopAndMobileLandscapeRequired": true,
+    "mediaHashesMustBeUnique": true,
+    "animationCaptureRequiresValidatedManifest": true,
+    "editorCaptureRequiresAutomatedTestReport": true,
+    "runtimeIntegrationBeforeApprovalForbidden": true,
+    "pullRequestBeforeApprovalForbidden": true
+  },
+  "tooling": {
+    "contractValidator": "tools/art/check-production-contract.js",
+    "glbValidator": "tools/art/validate-production-glb.js",
+    "glbValidatorTests": "tools/art/test-production-glb-validator.js",
+    "lodSetValidator": "tools/art/validate-production-lod-set.js",
+    "lodSetValidatorTests": "tools/art/test-production-lod-set.js",
+    "characterBodySetValidator": "tools/art/validate-character-body-set.js",
+    "characterBodySetTests": "tools/art/test-character-body-set.js",
+    "characterAppearanceValidator": "tools/art/validate-character-appearance.js",
+    "characterAppearanceTests": "tools/art/test-character-appearance.js",
+    "characterModuleSetValidator": "tools/art/validate-character-module-set.js",
+    "characterModuleSetTests": "tools/art/test-character-module-set.js",
+    "characterFitBuilder": "tools/art/build-character-fit-report.js",
+    "characterFitBlenderScript": "tools/art/blender/check_character_fit.py",
+    "characterFitFixtureScript": "tools/art/blender/build_character_fit_fixture.py",
+    "characterFitTests": "tools/art/test-character-fit-report.js",
+    "animationSetValidator": "tools/art/validate-animation-set.js",
+    "animationSetTests": "tools/art/test-animation-set.js",
+    "sourceProvenanceValidator": "tools/art/validate-source-provenance.js",
+    "sourceProvenanceTests": "tools/art/test-source-provenance.js",
+    "ambientCgSourceFetcher": "tools/art/fetch-ambientcg-material-candidates.js",
+    "ambientCgSourceTests": "tools/art/test-ambientcg-material-candidates.js",
+    "sourceCandidateMatrixBuilder": "tools/art/build-source-candidate-matrix.js",
+    "sourceCandidateMatrixValidator": "tools/art/validate-source-candidate-matrix.js",
+    "sourceCandidateMatrixTests": "tools/art/test-source-candidate-matrix.js",
+    "legacyReplacementBuilder": "tools/art/build-legacy-model-replacements.js",
+    "legacyReplacementValidator": "tools/art/validate-legacy-model-replacements.js",
+    "legacyReplacementTests": "tools/art/test-legacy-model-replacements.js",
+    "productionBriefBuilder": "tools/art/build-asset-production-briefs.js",
+    "productionBriefValidator": "tools/art/validate-asset-production-briefs.js",
+    "productionBriefTests": "tools/art/test-asset-production-briefs.js",
+    "productionOutputPlanBuilder": "tools/art/build-asset-production-output-plan.js",
+    "productionOutputPlanValidator": "tools/art/validate-asset-production-output-plan.js",
+    "productionOutputPlanTests": "tools/art/test-asset-production-output-plan.js",
+    "productionBatchValidator": "tools/art/validate-production-batches.js",
+    "productionBatchTests": "tools/art/test-production-batches.js",
+    "pbrBuilder": "tools/art/build-pbr-textures.js",
+    "pbrBlenderScript": "tools/art/blender/build_pbr_textures.py",
+    "pbrBuilderTests": "tools/art/test-pbr-texture-builder.js",
+    "reviewPackageBuilder": "tools/art/build-review-package.js",
+    "reviewRenderScript": "tools/art/blender/render_production_review.py",
+    "reviewPackageTests": "tools/art/test-review-package.js",
+    "materialReviewBuilder": "tools/art/build-material-review-package.js",
+    "materialReviewRenderScript": "tools/art/blender/render_material_review.py",
+    "materialReviewTests": "tools/art/test-material-review-package.js",
+    "environmentFamilyBuilder": "tools/art/build-environment-family-manifest.js",
+    "environmentFamilyValidator": "tools/art/validate-environment-family-manifest.js",
+    "environmentFamilyTests": "tools/art/test-environment-family-manifest.js",
+    "characterAppearanceAssetBuilder": "tools/art/build-character-appearance-assets.js",
+    "characterAppearanceAssetValidator": "tools/art/validate-character-appearance-assets.js",
+    "characterAppearanceAssetTests": "tools/art/test-character-appearance-assets.js",
+    "humanoidRuntimeScenarioRunner": "tools/art/run-humanoid-runtime-scenarios.js",
+    "humanoidRuntimeEvidenceBuilder": "tools/art/build-humanoid-runtime-evidence.js",
+    "humanoidRuntimeEvidenceValidator": "tools/art/validate-humanoid-runtime-evidence.js",
+    "humanoidRuntimeEvidenceTests": "tools/art/test-humanoid-runtime-evidence.js",
+    "humanoidRuntimeProductionAdapter": "tools/art/runtime/humanoid-runtime-adapter.js",
+    "runtimeVisualEvidenceValidator": "tools/art/validate-runtime-visual-evidence.js",
+    "runtimeVisualEvidenceTests": "tools/art/test-runtime-visual-evidence.js",
+    "colliderGenerator": "tools/build-model-colliders.js"
+  },
+  "approvalWorkflow": {
+    "states": [
+      "planned",
+      "source_ready",
+      "blocked_art_approval",
+      "work_in_progress",
+      "review",
+      "approved",
+      "integrated"
+    ],
+    "requiredReviewViews": [
+      "front",
+      "back",
+      "isometric"
+    ],
+    "glbBeforeRuntimeIntegration": true,
+    "userApprovalBeforeRuntimeIntegration": true,
+    "userApprovalBeforePullRequest": true,
+    "desktopVisualTestRequired": true,
+    "mobileLandscapeVisualTestRequired": true
+  },
+  "productionBatches": [
+    {
+      "id": "modular_character",
+      "status": "planned",
+      "deliverables": [
+        "10 character-system components from the linked batch manifest"
+      ]
+    },
+    {
+      "id": "ordinary_equipment",
+      "status": "planned",
+      "deliverables": [
+        "15 ordinary equipment, weapon and tool item IDs"
+      ]
+    },
+    {
+      "id": "creatures",
+      "status": "planned",
+      "deliverables": [
+        "8 creatures with rigs, animations and LOD"
+      ]
+    },
+    {
+      "id": "remaining_inventory",
+      "status": "planned",
+      "deliverables": [
+        "36 remaining physical inventory item IDs"
+      ]
+    },
+    {
+      "id": "settlement_environment",
+      "status": "planned",
+      "deliverables": [
+        "5 settlement environment families and 3 surface families"
+      ]
+    },
+    {
+      "id": "open_wasteland",
+      "status": "planned",
+      "deliverables": [
+        "4 wasteland environment families and 5 surface families"
+      ]
+    },
+    {
+      "id": "dungeon_interiors",
+      "status": "planned",
+      "deliverables": [
+        "dungeon and interior environment family"
+      ]
+    }
+  ]
+}

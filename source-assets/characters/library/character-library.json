@@ -1,0 +1,664 @@
+{
+  "schema": "realm.character-library.v1",
+  "version": 1,
+  "updated": "2026-07-28",
+  "stage": "production",
+  "releaseReady": false,
+  "productionContract": {
+    "manifest": "source-assets/library/asset-production-contract.json",
+    "status": "production"
+  },
+  "artDirection": {
+    "document": "docs/art/ART_DIRECTION.md",
+    "status": "approved",
+    "recommendedConceptBlend": [
+      "option_b_geometry",
+      "option_c_materials"
+    ],
+    "approvedAt": "2026-07-28",
+    "approvedBy": "user",
+    "approvalText": "Утверждаю B+C: геометрия B, материалы и износ C"
+  },
+  "coordinateSystem": {
+    "units": "meters",
+    "up": "+Y",
+    "forward": "-Z",
+    "origin": "ground_between_feet"
+  },
+  "rig": {
+    "id": "humanoid_v1",
+    "jointCount": 65,
+    "characterSockets": [
+      "socket_hand_r",
+      "socket_hand_l",
+      "socket_back",
+      "socket_hip_r",
+      "socket_head"
+    ],
+    "weaponSockets": [
+      "socket_muzzle"
+    ]
+  },
+  "baseState": {
+    "underwearIncludedInBody": true,
+    "underwearIsInventoryItem": false,
+    "barefoot": true,
+    "visibleEquipment": [],
+    "authoritativeEquipment": {
+      "weapon": "fists",
+      "armor": "",
+      "helmet": "",
+      "boots": "",
+      "backpack": ""
+    },
+    "physicalInventory": []
+  },
+  "appearance": {
+    "schema": "realm.character-appearance-catalog.v1",
+    "snapshotSchema": "realm.character-appearance.v1",
+    "snapshotFields": [
+      "schema",
+      "sex",
+      "bodyType",
+      "faceId",
+      "hairId",
+      "skinToneId",
+      "hairColorId"
+    ],
+    "appearanceSlots": [
+      "face",
+      "hair"
+    ],
+    "sameResolverFor": [
+      "player",
+      "remote_player",
+      "humanoid_npc"
+    ],
+    "authority": "server",
+    "inventoryBacked": false,
+    "sexes": [
+      "female",
+      "male"
+    ],
+    "bodyTypes": [
+      "slim",
+      "medium",
+      "large"
+    ],
+    "faces": [
+      {
+        "id": "female_01",
+        "sex": "female",
+        "visualSlot": "face",
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "replacesBodyRegions": [
+          "head"
+        ],
+        "status": "planned"
+      },
+      {
+        "id": "female_02",
+        "sex": "female",
+        "visualSlot": "face",
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "replacesBodyRegions": [
+          "head"
+        ],
+        "status": "planned"
+      },
+      {
+        "id": "female_03",
+        "sex": "female",
+        "visualSlot": "face",
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "replacesBodyRegions": [
+          "head"
+        ],
+        "status": "planned"
+      },
+      {
+        "id": "female_04",
+        "sex": "female",
+        "visualSlot": "face",
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "replacesBodyRegions": [
+          "head"
+        ],
+        "status": "planned"
+      },
+      {
+        "id": "male_01",
+        "sex": "male",
+        "visualSlot": "face",
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "replacesBodyRegions": [
+          "head"
+        ],
+        "status": "planned"
+      },
+      {
+        "id": "male_02",
+        "sex": "male",
+        "visualSlot": "face",
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "replacesBodyRegions": [
+          "head"
+        ],
+        "status": "planned"
+      },
+      {
+        "id": "male_03",
+        "sex": "male",
+        "visualSlot": "face",
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "replacesBodyRegions": [
+          "head"
+        ],
+        "status": "planned"
+      },
+      {
+        "id": "male_04",
+        "sex": "male",
+        "visualSlot": "face",
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "replacesBodyRegions": [
+          "head"
+        ],
+        "status": "planned"
+      }
+    ],
+    "hairstyles": [
+      {
+        "id": "shaved",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "visualSlot": "hair",
+        "headgearPolicy": "hide_when_covering_headgear_equipped",
+        "renderMode": "scalp_only",
+        "status": "planned"
+      },
+      {
+        "id": "short_crop",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "visualSlot": "hair",
+        "headgearPolicy": "hide_when_covering_headgear_equipped",
+        "renderMode": "mesh",
+        "status": "planned"
+      },
+      {
+        "id": "side_swept",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "visualSlot": "hair",
+        "headgearPolicy": "hide_when_covering_headgear_equipped",
+        "renderMode": "mesh",
+        "status": "planned"
+      },
+      {
+        "id": "mohawk",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "visualSlot": "hair",
+        "headgearPolicy": "hide_when_covering_headgear_equipped",
+        "renderMode": "mesh",
+        "status": "planned"
+      },
+      {
+        "id": "braids",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "visualSlot": "hair",
+        "headgearPolicy": "hide_when_covering_headgear_equipped",
+        "renderMode": "mesh",
+        "status": "planned"
+      },
+      {
+        "id": "tied_back",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "visualSlot": "hair",
+        "headgearPolicy": "hide_when_covering_headgear_equipped",
+        "renderMode": "mesh",
+        "status": "planned"
+      },
+      {
+        "id": "long",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "visualSlot": "hair",
+        "headgearPolicy": "hide_when_covering_headgear_equipped",
+        "renderMode": "mesh",
+        "status": "planned"
+      },
+      {
+        "id": "buns",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "visualSlot": "hair",
+        "headgearPolicy": "hide_when_covering_headgear_equipped",
+        "renderMode": "mesh",
+        "status": "planned"
+      }
+    ],
+    "skinTones": [
+      {
+        "id": "skin_01",
+        "color": "#5B3326"
+      },
+      {
+        "id": "skin_02",
+        "color": "#744735"
+      },
+      {
+        "id": "skin_03",
+        "color": "#966348"
+      },
+      {
+        "id": "skin_04",
+        "color": "#BC896C"
+      },
+      {
+        "id": "skin_05",
+        "color": "#D7AC8D"
+      },
+      {
+        "id": "skin_06",
+        "color": "#E8C5A8"
+      }
+    ],
+    "hairColors": [
+      {
+        "id": "hair_01",
+        "color": "#1A1512"
+      },
+      {
+        "id": "hair_02",
+        "color": "#2A1B16"
+      },
+      {
+        "id": "hair_03",
+        "color": "#4B3023"
+      },
+      {
+        "id": "hair_04",
+        "color": "#6B452A"
+      },
+      {
+        "id": "hair_05",
+        "color": "#8A6040"
+      },
+      {
+        "id": "hair_06",
+        "color": "#A27A4B"
+      },
+      {
+        "id": "hair_07",
+        "color": "#7B7D76"
+      },
+      {
+        "id": "hair_08",
+        "color": "#5B2922"
+      }
+    ],
+    "defaults": {
+      "female": {
+        "bodyType": "medium",
+        "faceId": "female_01",
+        "hairId": "short_crop",
+        "skinToneId": "skin_04",
+        "hairColorId": "hair_02"
+      },
+      "male": {
+        "bodyType": "medium",
+        "faceId": "male_01",
+        "hairId": "short_crop",
+        "skinToneId": "skin_04",
+        "hairColorId": "hair_02"
+      }
+    }
+  },
+  "bodyRegions": [
+    "head",
+    "neck",
+    "torso_upper",
+    "torso_lower",
+    "upper_arm_l",
+    "upper_arm_r",
+    "lower_arm_l",
+    "lower_arm_r",
+    "hand_l",
+    "hand_r",
+    "pelvis",
+    "thigh_l",
+    "thigh_r",
+    "lower_leg_l",
+    "lower_leg_r",
+    "foot_l",
+    "foot_r"
+  ],
+  "visualSlots": [
+    "body_base",
+    "legs_inner",
+    "torso_inner",
+    "torso_outer",
+    "armor",
+    "feet",
+    "hands",
+    "head",
+    "back",
+    "weapon"
+  ],
+  "runtimeContract": {
+    "authority": "server",
+    "sameResolverFor": [
+      "player",
+      "remote_player",
+      "humanoid_npc"
+    ],
+    "requiresPhysicalInventoryItem": true,
+    "allowsCosmeticEquipmentOverride": false,
+    "emptyHandsServerId": "fists",
+    "emptyHandsIsPhysicalItem": false,
+    "currentServerSlotMap": {
+      "weapon": "weapon",
+      "armor": "armor",
+      "helmet": "head",
+      "boots": "feet",
+      "backpack": "back"
+    },
+    "futureServerSlotsRequired": [
+      "legs_inner",
+      "torso_inner",
+      "torso_outer",
+      "hands"
+    ],
+    "runtimeItemIdentityRequired": true
+  },
+  "baseBodies": [
+    {
+      "id": "female_slim",
+      "sex": "female",
+      "bodyType": "slim",
+      "status": "planned"
+    },
+    {
+      "id": "female_medium",
+      "sex": "female",
+      "bodyType": "medium",
+      "status": "technical_preview",
+      "file": "source-assets/previews/character-base/technical/character_female_medium_technical.glb",
+      "sourceRegistryName": "Universal Base Characters",
+      "approvedForRuntime": false
+    },
+    {
+      "id": "female_large",
+      "sex": "female",
+      "bodyType": "large",
+      "status": "planned"
+    },
+    {
+      "id": "male_slim",
+      "sex": "male",
+      "bodyType": "slim",
+      "status": "planned"
+    },
+    {
+      "id": "male_medium",
+      "sex": "male",
+      "bodyType": "medium",
+      "status": "technical_preview",
+      "file": "source-assets/previews/character-base/technical/character_male_medium_technical.glb",
+      "sourceRegistryName": "Universal Base Characters",
+      "approvedForRuntime": false
+    },
+    {
+      "id": "male_large",
+      "sex": "male",
+      "bodyType": "large",
+      "status": "planned"
+    }
+  ],
+  "firstOutfit": {
+    "id": "field_worker",
+    "status": "planned",
+    "items": [
+      {
+        "id": "field_shirt",
+        "slot": "torso_inner",
+        "status": "planned",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "hideBodyRegions": [
+          "torso_upper"
+        ]
+      },
+      {
+        "id": "work_trousers",
+        "slot": "legs_inner",
+        "status": "planned",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "hideBodyRegions": [
+          "pelvis",
+          "thigh_l",
+          "thigh_r",
+          "lower_leg_l",
+          "lower_leg_r"
+        ]
+      },
+      {
+        "id": "service_boots",
+        "slot": "feet",
+        "status": "planned",
+        "compatibleSexes": [
+          "female",
+          "male"
+        ],
+        "compatibleBodyTypes": [
+          "slim",
+          "medium",
+          "large"
+        ],
+        "hideBodyRegions": [
+          "foot_l",
+          "foot_r"
+        ]
+      }
+    ]
+  },
+  "animationRequirements": {
+    "technicalPreview": [
+      "idle",
+      "walk",
+      "run",
+      "crouch_idle",
+      "crouch_walk",
+      "ready_1h",
+      "fire_1h",
+      "reload_1h",
+      "melee_light",
+      "melee_heavy",
+      "hit_front",
+      "hit_back",
+      "death_front",
+      "interact",
+      "pickup",
+      "use_item",
+      "throw_item",
+      "harvest",
+      "plant_seed",
+      "water",
+      "chop",
+      "hit_heavy"
+    ],
+    "release": [
+      "idle",
+      "walk",
+      "run",
+      "crouch_idle",
+      "crouch_walk",
+      "ready_1h",
+      "ready_2h",
+      "fire_1h",
+      "fire_2h",
+      "reload_1h",
+      "reload_2h",
+      "melee_light",
+      "melee_heavy",
+      "hit_front",
+      "hit_back",
+      "death_front",
+      "death_back",
+      "interact",
+      "pickup",
+      "use_item",
+      "throw_item",
+      "harvest",
+      "plant_seed",
+      "water",
+      "chop",
+      "hit_heavy"
+    ]
+  },
+  "knownRuntimeMigrations": [
+    {
+      "id": "appearance_profile",
+      "status": "required",
+      "description": "Добавить авторитетные поля пола, телосложения, лица, причёски и палитр."
+    },
+    {
+      "id": "empty_start",
+      "status": "required",
+      "description": "Убрать стартовые нож, воду, валюту и предметы особенностей из новой игры."
+    },
+    {
+      "id": "bare_feet",
+      "status": "required",
+      "description": "Не показывать обувь при пустом серверном слоте boots."
+    },
+    {
+      "id": "expanded_clothing_slots",
+      "status": "required",
+      "description": "Добавить серверные слоты отдельной одежды и перчаток до их интеграции."
+    },
+    {
+      "id": "shared_humanoid_resolver",
+      "status": "required",
+      "description": "Заменить встроенную одежду NPC тем же модульным резолвером, что у игрока."
+    }
+  ],
+  "releaseGates": {
+    "artDirectionApproved": true,
+    "allBaseBodiesApproved": false,
+    "allFacesApproved": false,
+    "allHairstylesApproved": false,
+    "firstOutfitApproved": false,
+    "desktopVisualTestPassed": false,
+    "mobileLandscapeVisualTestPassed": false,
+    "inventoryEquipmentIntegrationPassed": false,
+    "npcParityPassed": false
+  }
+}

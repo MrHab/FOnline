@@ -9,6 +9,8 @@ const root = path.resolve(__dirname, '..');
 const modelDirectory = path.join(root, 'public', 'assets', 'models', 'characters', 'base');
 const manifestPath = path.join(modelDirectory, 'manifest.json');
 const runtimePath = path.join(root, 'public', 'js', 'game', '04b_character_glb_runtime.js');
+const modernRuntimePath = path.join(root, 'public', 'js', 'game', '04a_player_model_modern_runtime.js');
+const remoteRuntimePath = path.join(root, 'public', 'js', 'game', '05b_remote_player_locomotion.js');
 const creatorPath = path.join(root, 'public', 'js', 'game', '08_character_creation_save.js');
 const updatePath = path.join(root, 'public', 'js', 'game', '09_update_fog_movement_ai.js');
 const indexPath = path.join(root, 'public', 'index.html');
@@ -106,6 +108,8 @@ for (const row of manifest.files) {
 assert.deepStrictEqual(actualKeys, expectedKeys);
 
 const runtime = fs.readFileSync(runtimePath, 'utf8');
+const modernRuntime = fs.readFileSync(modernRuntimePath, 'utf8');
+const remoteRuntime = fs.readFileSync(remoteRuntimePath, 'utf8');
 const creator = fs.readFileSync(creatorPath, 'utf8');
 const update = fs.readFileSync(updatePath, 'utf8');
 const index = fs.readFileSync(indexPath, 'utf8');
@@ -135,6 +139,18 @@ assert(runtime.includes('root.rotation.y = Math.PI;'), 'runtime GLB does not fac
 assert(runtime.includes("canvas.addEventListener('pointermove'"), 'creator preview does not follow the cursor');
 assert(update.includes('facePoint(pointerWorld.x, pointerWorld.z)'),
   'the local player does not face the world cursor');
+assert(update.includes('moveX: animationMoveX')
+  && update.includes('moveZ: animationMoveZ')
+  && update.includes('facingAngle: player.angle'),
+  'local locomotion does not receive movement relative to cursor facing');
+assert(remoteRuntime.includes('moveX: visualMoveX')
+  && remoteRuntime.includes('moveZ: visualMoveZ')
+  && remoteRuntime.includes('facingAngle: Number(g.rotation.y || 0) - Math.PI'),
+  'remote locomotion does not receive visual movement relative to facing');
+assert(modernRuntime.includes("typeof characterDirectionalLocomotionState === 'function'")
+  && modernRuntime.includes('parts.motionRoot.rotation.y = lowerBodyYaw;')
+  && modernRuntime.includes('dt * phaseSpeed * actor.userData.modernPlaybackRate'),
+  'procedural equipment rig does not follow directional locomotion');
 assert(index.includes('id="creator-face-options"')
   && index.includes('id="creator-hair-options"')
   && index.includes('id="creator-hair-color-options"'),
@@ -175,10 +191,141 @@ this.__characterAppearanceFitApi = {
   addCharacterHairVariant,
   applyCharacterFaceShape,
   characterHeadRestMatrix,
-  attachCharacterVariantToHead
+  attachCharacterVariantToHead,
+  characterDirectionalLocomotionState,
+  applyCharacterGlbDirectionalPose,
+  clearCharacterGlbDirectionalPose
 };`, compatibilityContext, { filename: runtimePath });
 const fitApi = compatibilityContext.__characterAppearanceFitApi;
 assert(fitApi, 'character appearance fit API could not be inspected');
+
+function closeTo(actual, expected, tolerance, label) {
+  assert(Math.abs(actual - expected) <= tolerance,
+    `${label}: expected ${expected}, received ${actual}`);
+}
+
+const forwardLocomotion = fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 6,
+  facingAngle: 0,
+  moveX: 0,
+  moveZ: 1
+});
+assert.strictEqual(forwardLocomotion.direction, 'forward');
+assert.strictEqual(forwardLocomotion.action, 'run');
+assert(forwardLocomotion.playbackRate > 0);
+closeTo(forwardLocomotion.lowerBodyYaw, 0, 1e-7, 'forward lower-body yaw');
+
+const backwardLocomotion = fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 6,
+  facingAngle: 0,
+  moveX: 0,
+  moveZ: -1
+});
+assert.strictEqual(backwardLocomotion.direction, 'backward');
+assert.strictEqual(backwardLocomotion.action, 'walk');
+assert(backwardLocomotion.playbackRate < 0, 'backpedal does not reverse the walk cycle');
+assert(backwardLocomotion.strideScale < forwardLocomotion.strideScale,
+  'backpedal stride is not shortened');
+closeTo(backwardLocomotion.lowerBodyYaw, 0, 1e-7, 'backward lower-body yaw');
+
+const rightLocomotion = fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 4,
+  facingAngle: 0,
+  moveX: 1,
+  moveZ: 0
+});
+const leftLocomotion = fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 4,
+  facingAngle: 0,
+  moveX: -1,
+  moveZ: 0
+});
+assert.strictEqual(rightLocomotion.direction, 'right');
+assert.strictEqual(leftLocomotion.direction, 'left');
+assert(rightLocomotion.lowerBodyYaw > 0 && leftLocomotion.lowerBodyYaw < 0,
+  'strafe does not turn the lower body toward movement');
+closeTo(
+  rightLocomotion.lowerBodyYaw + rightLocomotion.upperBodyYaw,
+  0,
+  1e-7,
+  'right strafe cursor-facing compensation'
+);
+closeTo(
+  leftLocomotion.lowerBodyYaw + leftLocomotion.upperBodyYaw,
+  0,
+  1e-7,
+  'left strafe cursor-facing compensation'
+);
+
+assert.strictEqual(fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 4,
+  facingAngle: 0,
+  moveX: 1,
+  moveZ: 1
+}).direction, 'forward_right');
+assert.strictEqual(fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 4,
+  facingAngle: 0,
+  moveX: 1,
+  moveZ: -1
+}).direction, 'backward_right');
+assert.strictEqual(fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 4,
+  facingAngle: Math.PI / 2,
+  moveX: 1,
+  moveZ: 0
+}).direction, 'forward');
+assert.strictEqual(fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 4,
+  facingAngle: Math.PI / 2,
+  moveX: 0,
+  moveZ: -1
+}).direction, 'right');
+assert.strictEqual(fitApi.characterDirectionalLocomotionState({
+  moving: false,
+  speed: 0,
+  facingAngle: 0,
+  moveX: 0,
+  moveZ: 0
+}).direction, 'idle');
+
+const directionalRoot = new THREE.Group();
+const directionalBones = {};
+for (const key of ['pelvis', 'spine01', 'spine02', 'spine03', 'neck', 'head']) {
+  directionalBones[key] = new THREE.Group();
+}
+const directionalRuntime = {
+  root: directionalRoot,
+  baseRotationY: Math.PI,
+  directionalMoveBlend: 0,
+  directionalLowerBodyYaw: 0,
+  directionalSideAmount: 0,
+  directionalForwardAmount: 1,
+  directionalPoseOffsets: [],
+  locomotionBones: directionalBones
+};
+fitApi.applyCharacterGlbDirectionalPose(directionalRuntime, rightLocomotion, 0.2);
+closeTo(
+  directionalRoot.rotation.y,
+  Math.PI + rightLocomotion.lowerBodyYaw,
+  1e-7,
+  'GLB lower-body movement heading'
+);
+assert.strictEqual(directionalRuntime.directionalPoseOffsets.length, 6,
+  'directional GLB pose is not distributed over the upper-body rig');
+fitApi.clearCharacterGlbDirectionalPose(directionalRuntime);
+assert.strictEqual(directionalRuntime.directionalPoseOffsets.length, 0);
+for (const [key, bone] of Object.entries(directionalBones)) {
+  closeTo(bone.quaternion.angleTo(new THREE.Quaternion()), 0, 1e-7, `${key} pose cleanup`);
+}
 
 function finiteBox(box, label) {
   for (const value of [
@@ -322,5 +469,6 @@ firstAttachment.matrix.elements.forEach((value, index) => {
 
 console.log(
   'Character models OK: 6 GLB bases, 8 faces, 8 hairstyles, 8 hair colors, '
-  + '1536 fit combinations, stable rest-pose attachment, cursor facing, rig/animations and hashes checked'
+  + '1536 fit combinations, stable rest-pose attachment, 8-way cursor-relative locomotion, '
+  + 'rig/animations and hashes checked'
 );

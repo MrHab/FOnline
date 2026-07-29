@@ -24,9 +24,22 @@
       "id": "pistol",
       "family": "sidearm",
       "file": "/assets/models/weapons/weapon_pistol.glb",
-      "bytes": 95220,
-      "sha256": "ff5838967d73021b4a12cb4b881ff392509e7eae8f5851b709dfd73e1bcb22d2",
+      "bytes": 95316,
+      "sha256": "055b8437feab11d130d5b620912b7681bda14ff68549a2e10f90b4b00abfcb0c",
       "meshes": 8,
+      "runtimeScale": 0.34,
+      "boundsMeters": {
+        "min": [
+          -0.0442,
+          -0.076755,
+          -0.132911
+        ],
+        "max": [
+          0.0442,
+          0.2176,
+          0.10625
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -37,9 +50,22 @@
       "id": "rifle",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_rifle.glb",
-      "bytes": 109252,
-      "sha256": "988e3ba48d89b7df4b167611cfa1ac09806b0de1e0dfed077421bff9df3aa172",
+      "bytes": 109348,
+      "sha256": "edf70319131d01feba34482fdb21cffce053567fd610347ccebc8ec4943889bf",
       "meshes": 9,
+      "runtimeScale": 0.52,
+      "boundsMeters": {
+        "min": [
+          -0.0988,
+          -0.2704,
+          -0.160627
+        ],
+        "max": [
+          0.1196,
+          0.8112,
+          0.18772
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -50,9 +76,22 @@
       "id": "assaultRifle",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_assaultRifle.glb",
-      "bytes": 146488,
-      "sha256": "e65b04d4730496b5407dddca739796baced405ff2fefe0b278193be86d5404f3",
+      "bytes": 146584,
+      "sha256": "1b5895d987ee24643d7309282228e945936152aac97ee791dcfedb41ed2d6973",
       "meshes": 12,
+      "runtimeScale": 0.52,
+      "boundsMeters": {
+        "min": [
+          -0.0884,
+          -0.2496,
+          -0.181343
+        ],
+        "max": [
+          0.07436,
+          0.6994,
+          0.1716
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -63,9 +102,22 @@
       "id": "machineGun",
       "family": "heavy",
       "file": "/assets/models/weapons/weapon_machineGun.glb",
-      "bytes": 148604,
-      "sha256": "76677361b1eda372b81a66e3e49251f9ba8fe63826500dd8ff5cd0bfe6cd76d5",
+      "bytes": 148724,
+      "sha256": "265989340d95227a3c4da206298b58b47d792c7f6e2576487a7945b6c82ec324",
       "meshes": 11,
+      "runtimeScale": 0.56,
+      "boundsMeters": {
+        "min": [
+          -0.112,
+          -0.3136,
+          -0.223613
+        ],
+        "max": [
+          0.1904,
+          0.8428,
+          0.251781
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -76,9 +128,22 @@
       "id": "laserPistol",
       "family": "energy_sidearm",
       "file": "/assets/models/weapons/weapon_laserPistol.glb",
-      "bytes": 108796,
-      "sha256": "646424a7ec790c3544ae46d0c9e2d621d302af50a4971eb877a1a95f9e032d06",
+      "bytes": 108888,
+      "sha256": "222d59a455bf34c5c673b0635851434f26849a8862e65543a5f3de969f7de7f7",
       "meshes": 9,
+      "runtimeScale": 0.4,
+      "boundsMeters": {
+        "min": [
+          -0.082311,
+          -0.080817,
+          -0.161133
+        ],
+        "max": [
+          0.082311,
+          0.318,
+          0.142
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -89,9 +154,22 @@
       "id": "flamethrower",
       "family": "heavy",
       "file": "/assets/models/weapons/weapon_flamethrower.glb",
-      "bytes": 140748,
-      "sha256": "31bfd6dcf057355ca507bf7830417c9bc2effab7e0fdeb7004da6155cca8ffa3",
+      "bytes": 140840,
+      "sha256": "3333431483eaf8283954f40a4342f74018e2c755a80d568b9574b309817d47d3",
       "meshes": 9,
+      "runtimeScale": 0.55,
+      "boundsMeters": {
+        "min": [
+          -0.078462,
+          -0.2695,
+          -0.215105
+        ],
+        "max": [
+          0.151846,
+          0.78925,
+          0.1485
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -102,9 +180,22 @@
       "id": "plasmaRifle",
       "family": "energy_long_gun",
       "file": "/assets/models/weapons/weapon_plasmaRifle.glb",
-      "bytes": 129436,
-      "sha256": "e49f6b741f76799f30e86317ca685e91d766f98c774e1272cf86270b04bf66b8",
+      "bytes": 129528,
+      "sha256": "baaef8de8c0a70a35c58f877600cd803355eed330d97df4e012cbc8b6aac683a",
       "meshes": 11,
+      "runtimeScale": 0.54,
+      "boundsMeters": {
+        "min": [
+          -0.12285,
+          -0.2592,
+          -0.22094
+        ],
+        "max": [
+          0.12285,
+          0.783,
+          0.1701
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -115,9 +206,22 @@
       "id": "shotgun",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_shotgun.glb",
-      "bytes": 107016,
-      "sha256": "6a7c26b5d1d9412cf40640bfc52848758aef77cc36b718f97975163bb07c50c4",
+      "bytes": 107108,
+      "sha256": "99b18cc906a7e9a14583875c15663ae9f3639aa0b386dddff69163154463af43",
       "meshes": 9,
+      "runtimeScale": 0.52,
+      "boundsMeters": {
+        "min": [
+          -0.0988,
+          -0.2808,
+          -0.176143
+        ],
+        "max": [
+          0.078,
+          0.7878,
+          0.11856
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -128,9 +232,22 @@
       "id": "rocketLauncher",
       "family": "launcher",
       "file": "/assets/models/weapons/weapon_rocketLauncher.glb",
-      "bytes": 125700,
-      "sha256": "63673c232d84551750e63df8a6a1faa49d9e43e8bf707ce8d106b5d8693a44de",
+      "bytes": 125796,
+      "sha256": "46dd8723970cfc7c40e10b77533443624e25df9face28b012a08c89fda2cb51a",
       "meshes": 9,
+      "runtimeScale": 0.58,
+      "boundsMeters": {
+        "min": [
+          -0.141365,
+          -0.3074,
+          -0.241197
+        ],
+        "max": [
+          0.141365,
+          0.812,
+          0.2465
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -141,9 +258,22 @@
       "id": "knife",
       "family": "melee_light",
       "file": "/assets/models/weapons/weapon_knife.glb",
-      "bytes": 106036,
-      "sha256": "d046b21eaa0ada08cec4dc7b35d42bd224d3324de3371134f8348b2693b25636",
+      "bytes": 106132,
+      "sha256": "df70d12c874fda6a79ed69e99298256a8d2fd6ed6a52daff2f7df5466de795dd",
       "meshes": 8,
+      "runtimeScale": 0.36,
+      "boundsMeters": {
+        "min": [
+          -0.0558,
+          -0.18,
+          -0.0324
+        ],
+        "max": [
+          0.0558,
+          0.3312,
+          0.0324
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -154,9 +284,22 @@
       "id": "pickaxe",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_pickaxe.glb",
-      "bytes": 98356,
-      "sha256": "ff0d6e6cb3b03ed630e9c6e55d8ea01bb8981b495713f5a71739a81cd216e82e",
+      "bytes": 98456,
+      "sha256": "e48eec7b6454278494a8b61b2d5bff388f73c87ca14e5ac2f91dc39b29d5574e",
       "meshes": 6,
+      "runtimeScale": 0.45,
+      "boundsMeters": {
+        "min": [
+          -0.324,
+          -0.25875,
+          -0.054
+        ],
+        "max": [
+          0.324,
+          0.54,
+          0.054
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -167,9 +310,22 @@
       "id": "axe",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_axe.glb",
-      "bytes": 97784,
-      "sha256": "ae20fe18ce19c46baa632a5d384366dcbeb374f27d31c317a47b084ab0ee679f",
+      "bytes": 97876,
+      "sha256": "1126acc6ecb6d6620882021bdf8bc3f83f33081f0766d6ffba969a9bb7a8588c",
       "meshes": 6,
+      "runtimeScale": 0.44,
+      "boundsMeters": {
+        "min": [
+          -0.1826,
+          -0.2552,
+          -0.044
+        ],
+        "max": [
+          0.2288,
+          0.5368,
+          0.044
+        ]
+      },
       "animations": [
         "idle",
         "attack",
@@ -180,9 +336,22 @@
       "id": "handPump",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_handPump.glb",
-      "bytes": 118988,
-      "sha256": "c01221389a282b2c3e5f240f493911a13c3ac60c27e84773f34b0519e0d99d69",
+      "bytes": 119036,
+      "sha256": "b215f68ebeebd4b0d2d596664c741cb7bbff8be7e554df49be5e42cacd824113",
       "meshes": 7,
+      "runtimeScale": 0.5,
+      "boundsMeters": {
+        "min": [
+          -0.13,
+          -0.2075,
+          -0.184477
+        ],
+        "max": [
+          0.13,
+          0.535,
+          0.0625
+        ]
+      },
       "animations": [
         "idle",
         "attack",

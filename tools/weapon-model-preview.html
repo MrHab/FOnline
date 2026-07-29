@@ -32,7 +32,7 @@
 <body>
   <main>
     <h1>Библиотека оружия B+C</h1>
-    <p>Проверка геометрии, материалов и встроенных клипов без запуска игрового мира.</p>
+    <p>Проверка геометрии, материалов, масштаба относительно роста 1,75 м и встроенных клипов без запуска игрового мира.</p>
     <section class="viewer">
       <canvas id="preview" aria-label="Трёхмерный предпросмотр оружия"></canvas>
       <div class="toolbar">
@@ -88,6 +88,35 @@
     let dragging = false;
     let pointerX = 0;
 
+    function referenceMaterial(color) {
+      return new THREE.MeshStandardMaterial({ color, roughness: 0.88, metalness: 0.02, flatShading: true });
+    }
+
+    function createHumanReference() {
+      const human = new THREE.Group();
+      const skin = referenceMaterial(0xb67857);
+      const cloth = referenceMaterial(0x53635d);
+      const dark = referenceMaterial(0x242b29);
+      const addBox = (dimensions, position, material, rotationZ = 0) => {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(...dimensions), material);
+        mesh.position.set(...position);
+        mesh.rotation.z = rotationZ;
+        mesh.castShadow = true;
+        human.add(mesh);
+      };
+      addBox([0.42, 0.58, 0.24], [0, 1.12, 0], cloth);
+      addBox([0.18, 0.62, 0.20], [-0.12, 0.54, 0], dark, -0.025);
+      addBox([0.18, 0.62, 0.20], [0.12, 0.54, 0], dark, 0.025);
+      addBox([0.14, 0.58, 0.16], [-0.31, 1.07, 0], skin, -0.08);
+      addBox([0.14, 0.58, 0.16], [0.31, 1.07, 0], skin, 0.08);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 7), skin);
+      head.position.set(0, 1.58, 0);
+      head.castShadow = true;
+      human.add(head);
+      human.userData.referenceHeightMeters = 1.75;
+      return human;
+    }
+
     function resize() {
       const width = Math.max(1, canvas.clientWidth);
       const height = Math.max(1, canvas.clientHeight);
@@ -115,11 +144,12 @@
       const size = new THREE.Vector3();
       box.getCenter(center);
       box.getSize(size);
-      root.position.sub(center);
-      root.position.y += Math.max(0.06, size.y * 0.08);
+      root.position.x -= center.x;
+      root.position.z -= center.z;
+      root.position.y = 0;
       const radius = Math.max(size.x, size.y, size.z, 0.5);
-      camera.position.set(radius * 1.65, radius * 1.28, radius * 2.15);
-      camera.lookAt(0, radius * 0.08, 0);
+      camera.position.set(radius * 1.35, radius * 0.95, radius * 2.1);
+      camera.lookAt(0, size.y * 0.47, 0);
       camera.near = Math.max(0.02, radius * 0.02);
       camera.far = radius * 15;
       camera.updateProjectionMatrix();
@@ -143,9 +173,13 @@
       document.getElementById('status').textContent = 'загрузка GLB…';
       const gltf = await loadFile(row);
       if (active) scene.remove(active);
-      active = gltf.scene.clone(true);
+      active = new THREE.Group();
       active.rotation.y = dragX;
-      active.traverse(object => {
+      const weapon = gltf.scene.clone(true);
+      weapon.position.set(0.38, 1.05, -0.04);
+      weapon.rotation.set(0.04, 0, -0.06);
+      active.add(createHumanReference(), weapon);
+      weapon.traverse(object => {
         object.frustumCulled = false;
         if (object.isMesh) {
           object.castShadow = true;
@@ -154,7 +188,7 @@
       });
       scene.add(active);
       frameModel(active);
-      mixer = new THREE.AnimationMixer(active);
+      mixer = new THREE.AnimationMixer(weapon);
       clips = new Map(gltf.animations.map(clip => [clip.name, clip]));
       document.getElementById('status').textContent = `${row.meshes} мешей · ${Math.round(row.bytes / 1024)} КБ`;
       playAnimation('idle');

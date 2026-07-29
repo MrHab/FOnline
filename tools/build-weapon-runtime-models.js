@@ -76,6 +76,8 @@ function writeManifest(outputDirectory, report) {
       bytes: fs.statSync(file).size,
       sha256: sha256(file),
       meshes: Number(row.meshes || 0),
+      runtimeScale: Number(row.runtimeScale || 1),
+      boundsMeters: row.boundsBlender || null,
       animations: ['idle', 'attack', 'reload']
     };
   });

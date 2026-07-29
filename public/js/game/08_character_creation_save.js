@@ -135,6 +135,8 @@
     const startBtn = document.getElementById('char-start-btn');
     const sexOptions = document.getElementById('creator-sex-options');
     const bodyOptions = document.getElementById('creator-body-options');
+    const faceOptions = document.getElementById('creator-face-options');
+    const hairOptions = document.getElementById('creator-hair-options');
     const appearanceSummary = document.getElementById('character-appearance-summary');
     if (!statBox || !skillsEl || !traitsEl || !derivedEl) return;
     creatorAppearance = typeof normalizeCharacterAppearance === 'function'
@@ -181,6 +183,44 @@
           renderCharacterCreator();
         });
         bodyOptions.appendChild(button);
+      });
+    }
+    if (faceOptions) {
+      faceOptions.innerHTML = '';
+      const options = typeof CHARACTER_FACE_OPTIONS === 'object'
+        ? (CHARACTER_FACE_OPTIONS[creatorAppearance.sex] || [])
+        : [];
+      options.forEach(option => {
+        const selected = creatorAppearance.faceId === option.id;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `character-appearance-option compact${selected ? ' selected' : ''}`;
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        button.textContent = option.label;
+        button.addEventListener('click', () => {
+          creatorAppearance = { ...creatorAppearance, faceId: option.id };
+          renderCharacterCreator();
+        });
+        faceOptions.appendChild(button);
+      });
+    }
+    if (hairOptions) {
+      hairOptions.innerHTML = '';
+      const options = typeof CHARACTER_HAIR_OPTIONS !== 'undefined' && Array.isArray(CHARACTER_HAIR_OPTIONS)
+        ? CHARACTER_HAIR_OPTIONS
+        : [];
+      options.forEach(option => {
+        const selected = creatorAppearance.hairId === option.id;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `character-appearance-option compact${selected ? ' selected' : ''}`;
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        button.textContent = option.label;
+        button.addEventListener('click', () => {
+          creatorAppearance = { ...creatorAppearance, hairId: option.id };
+          renderCharacterCreator();
+        });
+        hairOptions.appendChild(button);
       });
     }
     if (appearanceSummary) {

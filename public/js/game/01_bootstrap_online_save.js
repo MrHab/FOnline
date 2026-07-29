@@ -735,7 +735,11 @@
       : {
         schema: 'realm.character-appearance.v1',
         sex: 'male',
-        bodyType: 'medium'
+        bodyType: 'medium',
+        faceId: 'male_01',
+        hairId: 'short_crop',
+        skinToneId: 'skin_03',
+        hairColorId: 'hair_03'
       };
     const nameInput = document.getElementById('char-name-input');
     if (nameInput) nameInput.value = '';

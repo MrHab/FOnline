@@ -265,7 +265,11 @@ function joinPayload(account) {
     appearance: {
       schema: 'realm.character-appearance.v1',
       sex: 'male',
-      bodyType: 'medium'
+      bodyType: 'medium',
+      faceId: 'male_01',
+      hairId: 'short_crop',
+      skinToneId: 'skin_03',
+      hairColorId: 'hair_03'
     },
     special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 },
     traits: ['trainedEye'],

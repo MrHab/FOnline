@@ -787,6 +787,12 @@
   .character-appearance-options.body-options {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  .character-appearance-options.face-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .character-appearance-options.hair-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
   .character-appearance-option {
     min-height: 54px;
     padding: 9px 10px;
@@ -936,7 +942,9 @@
     .char-title { margin-bottom: 9px; }
   }
   @media (max-width: 520px) {
-    .character-appearance-options.body-options { grid-template-columns: 1fr; }
+    .character-appearance-options.body-options,
+    .character-appearance-options.face-options { grid-template-columns: 1fr; }
+    .character-appearance-options.hair-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .character-card-row { grid-template-columns: 1fr; }
     .character-card-actions { justify-content: stretch; }
     .character-card-actions .char-action-btn { flex: 1; }

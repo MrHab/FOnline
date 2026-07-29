@@ -2,6 +2,24 @@
   const CHARACTER_APPEARANCE_SCHEMA = 'realm.character-appearance.v1';
   const CHARACTER_SEXES = ['female', 'male'];
   const CHARACTER_BODY_TYPES = ['slim', 'medium', 'large'];
+  const CHARACTER_FACE_OPTIONS = {
+    female: [
+      { id: 'female_01', label: 'Классическое' },
+      { id: 'female_02', label: 'Обветренное' },
+      { id: 'female_03', label: 'Со шрамом' }
+    ],
+    male: [
+      { id: 'male_01', label: 'Классическое' },
+      { id: 'male_02', label: 'Обветренное' },
+      { id: 'male_03', label: 'Со шрамом' }
+    ]
+  };
+  const CHARACTER_HAIR_OPTIONS = [
+    { id: 'short_crop', label: 'Короткая' },
+    { id: 'tied_back', label: 'Собранная' },
+    { id: 'mohawk', label: 'Ирокез' },
+    { id: 'shaved', label: 'Без волос' }
+  ];
   const CHARACTER_SEX_LABELS = { female: 'Женский', male: 'Мужской' };
   const CHARACTER_BODY_TYPE_LABELS = {
     slim: 'Стройное',
@@ -18,8 +36,11 @@
     lastFrameAt: 0,
     requestedKey: '',
     loadedKey: '',
+    loadedAppearanceKey: '',
     requestId: 0,
-    resizeObserver: null
+    resizeObserver: null,
+    pointerX: 0,
+    pointerActive: false
   };
 
   function defaultCharacterAppearance(sex = 'male') {
@@ -35,6 +56,10 @@
     };
   }
 
+  function characterAppearanceOption(options = [], id = '') {
+    return options.find(option => option.id === id) || options[0] || null;
+  }
+
   function normalizeCharacterAppearance(input = {}) {
     const sex = CHARACTER_SEXES.includes(String(input?.sex || ''))
       ? String(input.sex)
@@ -43,9 +68,18 @@
       ? String(input.bodyType)
       : 'medium';
     const defaults = defaultCharacterAppearance(sex);
+    const faceOptions = CHARACTER_FACE_OPTIONS[sex] || CHARACTER_FACE_OPTIONS.male;
+    const faceId = faceOptions.some(option => option.id === String(input?.faceId || ''))
+      ? String(input.faceId)
+      : defaults.faceId;
+    const hairId = CHARACTER_HAIR_OPTIONS.some(option => option.id === String(input?.hairId || ''))
+      ? String(input.hairId)
+      : defaults.hairId;
     return {
       ...defaults,
-      bodyType
+      bodyType,
+      faceId,
+      hairId
     };
   }
 
@@ -56,7 +90,14 @@
 
   function characterAppearanceLabel(input = {}) {
     const appearance = normalizeCharacterAppearance(input);
-    return `${CHARACTER_SEX_LABELS[appearance.sex]} · ${CHARACTER_BODY_TYPE_LABELS[appearance.bodyType]}`;
+    const face = characterAppearanceOption(CHARACTER_FACE_OPTIONS[appearance.sex], appearance.faceId);
+    const hair = characterAppearanceOption(CHARACTER_HAIR_OPTIONS, appearance.hairId);
+    return [
+      CHARACTER_SEX_LABELS[appearance.sex],
+      CHARACTER_BODY_TYPE_LABELS[appearance.bodyType],
+      face?.label || appearance.faceId,
+      hair?.label || appearance.hairId
+    ].join(' · ');
   }
 
   function characterModelUrl(input = {}) {
@@ -112,6 +153,189 @@
     root.rotation.set(0, 0, 0);
     root.scale.setScalar(1);
     return root;
+  }
+
+  function characterVariantMaterial(color, options = {}) {
+    return new THREE.MeshStandardMaterial({
+      color,
+      roughness: options.roughness ?? 0.9,
+      metalness: 0,
+      flatShading: true,
+      transparent: !!options.transparent,
+      opacity: options.opacity ?? 1,
+      depthWrite: options.depthWrite !== false
+    });
+  }
+
+  function attachCharacterVariantToHead(root, group) {
+    if (!root || !group) return;
+    root.add(group);
+    root.updateMatrixWorld(true);
+    const head = root.getObjectByName?.('head');
+    if (head?.attach) head.attach(group);
+  }
+
+  function addCharacterShortHair(group, material, tiedBack = false) {
+    const cap = new THREE.Mesh(new THREE.DodecahedronGeometry(0.112, 0), material);
+    cap.name = 'hair_variant_cap';
+    cap.position.set(0, 1.81, -0.006);
+    cap.scale.set(0.94, 0.56, 1.02);
+    group.add(cap);
+    [-1, 0, 1].forEach(index => {
+      const lock = new THREE.Mesh(new THREE.TetrahedronGeometry(0.045, 0), material);
+      lock.name = `hair_variant_lock_${index}`;
+      lock.position.set(index * 0.052, 1.795 - Math.abs(index) * 0.008, 0.092);
+      lock.rotation.set(-0.18, index * 0.14, index * -0.12);
+      lock.scale.set(0.75, 1.05, 0.65);
+      group.add(lock);
+    });
+    if (!tiedBack) return;
+    const knot = new THREE.Mesh(new THREE.DodecahedronGeometry(0.064, 0), material);
+    knot.name = 'hair_variant_knot';
+    knot.position.set(0, 1.77, -0.125);
+    knot.scale.set(0.9, 0.9, 0.78);
+    group.add(knot);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.17, 5), material);
+    tail.name = 'hair_variant_tail';
+    tail.position.set(0, 1.66, -0.135);
+    tail.rotation.x = -0.12;
+    group.add(tail);
+  }
+
+  function addCharacterMohawk(group, material) {
+    const halfWidth = 0.034;
+    const bottom = 1.838;
+    const top = 1.912;
+    const front = 0.112;
+    const back = -0.112;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+      -halfWidth, bottom, front,
+      halfWidth, bottom, front,
+      0, top, front,
+      -halfWidth, bottom, back,
+      halfWidth, bottom, back,
+      0, top, back
+    ], 3));
+    geometry.setIndex([
+      0, 1, 2,
+      3, 5, 4,
+      0, 2, 5, 0, 5, 3,
+      1, 4, 5, 1, 5, 2,
+      0, 3, 4, 0, 4, 1
+    ]);
+    geometry.computeVertexNormals();
+    const crest = new THREE.Mesh(geometry, material);
+    crest.name = 'hair_variant_mohawk_crest';
+    group.add(crest);
+  }
+
+  function addCharacterFaceVariant(group, appearance) {
+    if (appearance.faceId.endsWith('_02')) {
+      const weathering = characterVariantMaterial(0x6f4a36, {
+        roughness: 1,
+        transparent: true,
+        opacity: 0.58,
+        depthWrite: false
+      });
+      [-1, 1].forEach(side => {
+        const cheek = new THREE.Mesh(new THREE.CircleGeometry(0.027, 5), weathering);
+        cheek.name = `face_variant_weathered_${side < 0 ? 'l' : 'r'}`;
+        cheek.position.set(side * 0.062, 1.678, 0.132);
+        cheek.scale.set(1.3, 0.52, 1);
+        cheek.rotation.z = side * 0.18;
+        group.add(cheek);
+      });
+      return;
+    }
+    if (!appearance.faceId.endsWith('_03')) return;
+    const scarMaterial = characterVariantMaterial(0x8a4a3a, {
+      roughness: 1,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false
+    });
+    [
+      { y: 1.712, h: 0.052, angle: -0.48 },
+      { y: 1.674, h: 0.032, angle: -0.32 }
+    ].forEach((mark, index) => {
+      const scar = new THREE.Mesh(new THREE.BoxGeometry(0.008, mark.h, 0.004), scarMaterial);
+      scar.name = `face_variant_scar_${index}`;
+      scar.position.set(0.056 + index * 0.008, mark.y, 0.135);
+      scar.rotation.z = mark.angle;
+      group.add(scar);
+    });
+  }
+
+  function applyCharacterFaceShape(root, appearance) {
+    const head = root?.getObjectByName?.('head');
+    if (!head?.scale) return;
+    if (!Array.isArray(head.userData?.characterAppearanceBaseScale)) {
+      head.userData.characterAppearanceBaseScale = [head.scale.x, head.scale.y, head.scale.z];
+    }
+    const factors = appearance.faceId.endsWith('_02')
+      ? [1.06, 1, 0.98]
+      : (appearance.faceId.endsWith('_03') ? [0.96, 1.025, 1.03] : [1, 1, 1]);
+    head.userData.characterAppearanceScaleFactors = factors;
+    const [baseX, baseY, baseZ] = head.userData.characterAppearanceBaseScale;
+    head.scale.set(baseX * factors[0], baseY * factors[1], baseZ * factors[2]);
+  }
+
+  function applyCharacterFaceShapeFrame(root) {
+    const head = root?.getObjectByName?.('head');
+    const factors = head?.userData?.characterAppearanceScaleFactors;
+    if (!head?.scale || !Array.isArray(factors)) return;
+    head.scale.x *= factors[0];
+    head.scale.y *= factors[1];
+    head.scale.z *= factors[2];
+  }
+
+  function applyCharacterGlbVisualVariants(root, input = {}, options = {}) {
+    if (!root?.traverse) return;
+    const appearance = normalizeCharacterAppearance(input);
+    const helmetOn = !!options.helmetOn;
+    const appearanceKey = `${appearance.faceId}:${appearance.hairId}:${helmetOn ? 1 : 0}`;
+    if (root.userData?.characterAppearanceKey === appearanceKey) return;
+    applyCharacterFaceShape(root, appearance);
+    const sourceHairId = appearance.sex === 'female' ? 'tied_back' : 'short_crop';
+    root.traverse(obj => {
+      if (!obj || obj.userData?.characterAppearanceVariant) return;
+      const layer = String(obj.userData?.realm_character_layer || '').toLowerCase();
+      const name = String(obj.name || '').toLowerCase();
+      if (layer === 'hair' || name.startsWith('hair_')) {
+        obj.visible = !helmetOn && appearance.hairId === sourceHairId;
+      }
+    });
+    const previous = root.userData?.characterAppearanceVariantGroup;
+    if (previous?.parent) previous.parent.remove(previous);
+    if (previous) disposeCharacterGlbObject(previous);
+    const group = new THREE.Group();
+    group.name = 'character_appearance_variants';
+    group.userData.characterAppearanceVariant = true;
+    const hairMaterial = characterVariantMaterial(0x2d241e, { roughness: 0.94 });
+    if (!helmetOn && appearance.hairId === 'short_crop' && sourceHairId !== 'short_crop') {
+      addCharacterShortHair(group, hairMaterial, false);
+    } else if (!helmetOn && appearance.hairId === 'tied_back' && sourceHairId !== 'tied_back') {
+      addCharacterShortHair(group, hairMaterial, true);
+    } else if (!helmetOn && appearance.hairId === 'mohawk') {
+      addCharacterMohawk(group, hairMaterial);
+    } else {
+      hairMaterial.dispose();
+    }
+    addCharacterFaceVariant(group, appearance);
+    if (group.children.length) {
+      group.traverse(obj => {
+        if (!obj?.isMesh) return;
+        obj.castShadow = true;
+        obj.receiveShadow = false;
+        obj.frustumCulled = false;
+      });
+      attachCharacterVariantToHead(root, group);
+      root.userData.characterAppearanceVariantGroup = group;
+    } else {
+      delete root.userData.characterAppearanceVariantGroup;
+    }
+    root.userData.characterAppearanceKey = appearanceKey;
   }
 
   function characterGlbActions(mixer, animations = []) {
@@ -171,11 +395,7 @@
     if (!runtime?.root) return;
     setCharacterProceduralBaseVisible(actor, false);
     const helmetOn = !!eq?.helmet;
-    runtime.root.traverse(obj => {
-      if (!obj) return;
-      const name = String(obj.name || '').toLowerCase();
-      if (name.includes('hair')) obj.visible = !helmetOn;
-    });
+    applyCharacterGlbVisualVariants(runtime.root, runtime.appearance, { helmetOn });
   }
 
   function removeCharacterGlbRuntime(actor) {
@@ -194,6 +414,8 @@
     const key = characterAppearanceKey(appearance);
     const current = actor.userData.characterGlbRuntime;
     if (current?.key === key && current.root) {
+      current.appearance = appearance;
+      actor.userData.characterAppearance = appearance;
       refreshCharacterGlbEquipmentLayers(actor, options.equipment || {});
       return Promise.resolve(true);
     }
@@ -215,6 +437,9 @@
         const root = configureCharacterGlbScene(gltf.scene, {
           castShadow: options.castShadow !== false
         });
+        // Исходная GLB смотрит вдоль +Z, а actor-контейнер исторически ориентирован вдоль -Z.
+        // Разворачиваем только базовую GLB, чтобы лицо, оружие и курсор совпадали по направлению.
+        root.rotation.y = Math.PI;
         root.name = `character_glb_${key}`;
         const mixer = new THREE.AnimationMixer(root);
         const runtime = {
@@ -255,6 +480,7 @@
     setCharacterGlbAction(runtime, action);
     runtime.root.position.y = state.crouching ? -0.13 : 0;
     runtime.mixer.update(Math.max(0, Math.min(0.08, Number(dt || 0.016))));
+    applyCharacterFaceShapeFrame(runtime.root);
     return true;
   }
 
@@ -281,6 +507,7 @@
     characterPreviewState.requestId += 1;
     characterPreviewState.requestedKey = '';
     characterPreviewState.loadedKey = '';
+    characterPreviewState.loadedAppearanceKey = '';
     characterPreviewState.mixer?.stopAllAction?.();
     characterPreviewState.mixer = null;
     if (characterPreviewState.model) {
@@ -324,6 +551,15 @@
       characterPreviewState.resizeObserver = new ResizeObserver(resizeCharacterPreview);
       characterPreviewState.resizeObserver.observe(canvas);
     }
+    canvas.addEventListener('pointermove', event => {
+      const rect = canvas.getBoundingClientRect();
+      characterPreviewState.pointerX = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1));
+      characterPreviewState.pointerActive = true;
+    }, { passive: true });
+    canvas.addEventListener('pointerleave', () => {
+      characterPreviewState.pointerX = 0;
+      characterPreviewState.pointerActive = false;
+    }, { passive: true });
     const frame = now => {
       characterPreviewState.animationFrame = requestAnimationFrame(frame);
       const panel = document.getElementById('character-creator-panel');
@@ -336,7 +572,14 @@
       characterPreviewState.lastFrameAt = now;
       characterPreviewState.mixer?.update(dt);
       if (characterPreviewState.model) {
-        characterPreviewState.model.rotation.y = Math.sin(now / 4200) * 0.2;
+        applyCharacterFaceShapeFrame(characterPreviewState.model);
+        const faceCameraYaw = Math.atan2(camera.position.x, camera.position.z);
+        const pointerOffset = characterPreviewState.pointerActive
+          ? characterPreviewState.pointerX * 0.34
+          : Math.sin(now / 4200) * 0.08;
+        const targetYaw = faceCameraYaw + pointerOffset;
+        characterPreviewState.model.rotation.y += (targetYaw - characterPreviewState.model.rotation.y)
+          * Math.min(1, dt * 8);
       }
       renderer.render(previewScene, camera);
     };
@@ -348,6 +591,15 @@
     if (!ensureCharacterPreview()) return;
     const appearance = normalizeCharacterAppearance(input);
     const key = characterAppearanceKey(appearance);
+    const appearanceKey = `${key}:${appearance.faceId}:${appearance.hairId}`;
+    if (characterPreviewState.loadedKey === key && characterPreviewState.model) {
+      if (characterPreviewState.loadedAppearanceKey !== appearanceKey) {
+        applyCharacterGlbVisualVariants(characterPreviewState.model, appearance);
+        characterPreviewState.loadedAppearanceKey = appearanceKey;
+      }
+      setCharacterPreviewStatus(characterAppearanceLabel(appearance), 'ready');
+      return;
+    }
     if (characterPreviewState.requestedKey === key) return;
     characterPreviewState.requestedKey = key;
     const requestId = characterPreviewState.requestId + 1;
@@ -364,6 +616,7 @@
         return;
       }
       const model = configureCharacterGlbScene(gltf.scene, { castShadow: false });
+      applyCharacterGlbVisualVariants(model, appearance);
       const previous = characterPreviewState.model;
       if (previous) {
         characterPreviewState.scene.remove(previous);
@@ -376,6 +629,7 @@
       if (actions.idle) actions.idle.play();
       characterPreviewState.scene.add(model);
       characterPreviewState.loadedKey = key;
+      characterPreviewState.loadedAppearanceKey = appearanceKey;
       setCharacterPreviewStatus(characterAppearanceLabel(appearance), 'ready');
       resizeCharacterPreview();
     }, undefined, error => {

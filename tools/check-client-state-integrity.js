@@ -1111,9 +1111,12 @@ function assertDeferredWorldRuntime() {
     functionBody(authBootstrap, 'selectServerCharacter').includes('await ensureWorldDataReady()'),
     'existing characters can resolve their saved location before world data is ready'
   );
+  const characterCreationBody = functionBody(characterCreation, 'createCharacterFromForm');
+  const startupLoadingIndex = characterCreationBody.indexOf('await runGameStartupLoading(');
+  assert(startupLoadingIndex >= 0, 'new character creation does not use the startup loading screen');
   assert(
-    functionBody(characterCreation, 'createCharacterFromForm').includes('await ensureWorldDataReady()'),
-    'new characters can start before authored world data is ready'
+    !characterCreationBody.slice(0, startupLoadingIndex).includes('await ensureWorldDataReady()'),
+    'new character creation waits for world data before showing the startup loading screen'
   );
 
   assert(worldMaterials.includes('function createWorldMaterialSet()'),

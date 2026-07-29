@@ -457,7 +457,6 @@
       renderCharacterCreator();
       return;
     }
-    await ensureWorldDataReady();
     const profile = {
       name: rawName.slice(0, 18),
       special: { ...creatorStats },

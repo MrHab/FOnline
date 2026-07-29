@@ -620,6 +620,8 @@
       duration: Math.max(0.5, Number(duration || 0.82)),
       weaponId: String(weaponId || 'pistol')
     };
+    const weaponGroup = actorAnimationParts(actor)?.weaponGroup || actor.userData?.enemyWeaponGroup;
+    if (typeof triggerWeaponModelAction === 'function') triggerWeaponModelAction(weaponGroup, 'reload');
   }
 
   function triggerCharacterHitReaction(actor, direction = 1, duration = 0.34) {

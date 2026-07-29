@@ -64,6 +64,8 @@
 
   function globalMapPlayerWeaponMesh(weaponId = '') {
     const id = String(weaponId || 'fists');
+    const model = typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(id) : null;
+    if (model) return model;
     if (id === 'pistol' && typeof makePistolMesh === 'function') return makePistolMesh();
     if (id === 'rifle' && typeof makeRifleMesh === 'function') return makeRifleMesh();
     if (id === 'assaultRifle' && typeof makeAssaultRifleMesh === 'function') return makeAssaultRifleMesh();

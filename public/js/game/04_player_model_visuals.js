@@ -911,6 +911,7 @@
     initWeaponVisualState(weaponGroup);
     const kick = ({ rocketLauncher: 0.36, machineGun: 0.26, flamethrower: 0.18, plasmaRifle: 0.22, shotgun: 0.24, assaultRifle: 0.2, rifle: 0.17, laserPistol: 0.14, pistol: 0.12, knife: 0.08 })[weaponId] || 0.12;
     weaponGroup.userData.recoil = Math.max(Number(weaponGroup.userData.recoil || 0), kick);
+    if (typeof triggerWeaponModelAction === 'function') triggerWeaponModelAction(weaponGroup, 'attack');
   }
 
   function weaponVisualOwnerPose(weaponGroup, owner = null) {
@@ -942,6 +943,7 @@
   function updateWeaponVisualAnimation(weaponGroup, dt, owner = null) {
     if (!weaponGroup) return;
     initWeaponVisualState(weaponGroup);
+    if (typeof updateWeaponModelAnimation === 'function') updateWeaponModelAnimation(weaponGroup, dt);
     const basePos = weaponGroup.userData.basePosition;
     const baseRot = weaponGroup.userData.baseRotation;
     let recoil = Number(weaponGroup.userData.recoil || 0);
@@ -1483,20 +1485,20 @@
     const weaponId = equipmentVisualBaseId(w?.id || equipment.weapon || 'fists');
     playerGroup.userData.weaponId = weaponId;
     playerParts.weaponGroup.userData.weaponId = weaponId;
-    let mesh = null;
-    if (weaponId === 'pistol') mesh = makePistolMesh();
-    else if (weaponId === 'rifle') mesh = makeRifleMesh();
-    else if (weaponId === 'assaultRifle') mesh = makeAssaultRifleMesh();
-    else if (weaponId === 'machineGun') mesh = makeMachineGunMesh();
-    else if (weaponId === 'laserPistol') mesh = makeLaserPistolMesh();
-    else if (weaponId === 'flamethrower') mesh = makeFlamethrowerMesh();
-    else if (weaponId === 'plasmaRifle') mesh = makePlasmaRifleMesh();
-    else if (weaponId === 'shotgun') mesh = makeShotgunMesh();
-    else if (weaponId === 'rocketLauncher') mesh = makeRocketLauncherMesh();
-    else if (weaponId === 'knife') mesh = makeKnifeMesh();
-    else if (weaponId === 'pickaxe') mesh = makePickaxeMesh();
-    else if (weaponId === 'axe') mesh = makeAxeMesh();
-    else if (weaponId === 'handPump') mesh = makeHandPumpMesh();
+    let mesh = typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(weaponId) : null;
+    if (!mesh && weaponId === 'pistol') mesh = makePistolMesh();
+    else if (!mesh && weaponId === 'rifle') mesh = makeRifleMesh();
+    else if (!mesh && weaponId === 'assaultRifle') mesh = makeAssaultRifleMesh();
+    else if (!mesh && weaponId === 'machineGun') mesh = makeMachineGunMesh();
+    else if (!mesh && weaponId === 'laserPistol') mesh = makeLaserPistolMesh();
+    else if (!mesh && weaponId === 'flamethrower') mesh = makeFlamethrowerMesh();
+    else if (!mesh && weaponId === 'plasmaRifle') mesh = makePlasmaRifleMesh();
+    else if (!mesh && weaponId === 'shotgun') mesh = makeShotgunMesh();
+    else if (!mesh && weaponId === 'rocketLauncher') mesh = makeRocketLauncherMesh();
+    else if (!mesh && weaponId === 'knife') mesh = makeKnifeMesh();
+    else if (!mesh && weaponId === 'pickaxe') mesh = makePickaxeMesh();
+    else if (!mesh && weaponId === 'axe') mesh = makeAxeMesh();
+    else if (!mesh && weaponId === 'handPump') mesh = makeHandPumpMesh();
     if (mesh) playerParts.weaponGroup.add(mesh);
     stabilizeCharacterNoCull(playerGroup);
 

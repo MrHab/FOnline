@@ -76,6 +76,8 @@
 
   function makeRemoteWeaponMesh(weaponId = 'pistol') {
     weaponId = networkEquipmentBaseId(weaponId, 'pistol');
+    const model = typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(weaponId) : null;
+    if (model) return model;
     if (weaponId === 'pistol') return makePistolMesh();
     if (weaponId === 'rifle') return makeRifleMesh();
     if (weaponId === 'assaultRifle') return makeAssaultRifleMesh();
@@ -96,7 +98,7 @@
     if (!group) return;
     group.children.forEach(child => {
       child.traverse(obj => {
-        if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
+        if (!obj.userData?.weaponSharedAsset && obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
         // Материалы mats общие, их не трогаем, чтобы не сломать сцену.
       });
     });

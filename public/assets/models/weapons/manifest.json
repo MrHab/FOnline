@@ -1,0 +1,193 @@
+{
+  "schema": "realm.weapon-model-catalog.v1",
+  "version": 1,
+  "generator": "tools/build-weapon-runtime-models.js",
+  "blenderGenerator": "tools/blender/build_weapon_runtime_models.py",
+  "artDirection": "geometry_b_materials_c",
+  "source": {
+    "package": "Realm of Ashes original procedural weapon library",
+    "license": "Project-owned original work"
+  },
+  "coordinateSystem": {
+    "forward": "-Z",
+    "up": "+Y",
+    "origin": "primary grip"
+  },
+  "textureSize": 96,
+  "requiredAnimations": [
+    "idle",
+    "attack",
+    "reload"
+  ],
+  "files": [
+    {
+      "id": "pistol",
+      "family": "sidearm",
+      "file": "/assets/models/weapons/weapon_pistol.glb",
+      "bytes": 95220,
+      "sha256": "ff5838967d73021b4a12cb4b881ff392509e7eae8f5851b709dfd73e1bcb22d2",
+      "meshes": 8,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "rifle",
+      "family": "long_gun",
+      "file": "/assets/models/weapons/weapon_rifle.glb",
+      "bytes": 109252,
+      "sha256": "988e3ba48d89b7df4b167611cfa1ac09806b0de1e0dfed077421bff9df3aa172",
+      "meshes": 9,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "assaultRifle",
+      "family": "long_gun",
+      "file": "/assets/models/weapons/weapon_assaultRifle.glb",
+      "bytes": 146488,
+      "sha256": "e65b04d4730496b5407dddca739796baced405ff2fefe0b278193be86d5404f3",
+      "meshes": 12,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "machineGun",
+      "family": "heavy",
+      "file": "/assets/models/weapons/weapon_machineGun.glb",
+      "bytes": 148604,
+      "sha256": "76677361b1eda372b81a66e3e49251f9ba8fe63826500dd8ff5cd0bfe6cd76d5",
+      "meshes": 11,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "laserPistol",
+      "family": "energy_sidearm",
+      "file": "/assets/models/weapons/weapon_laserPistol.glb",
+      "bytes": 108796,
+      "sha256": "646424a7ec790c3544ae46d0c9e2d621d302af50a4971eb877a1a95f9e032d06",
+      "meshes": 9,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "flamethrower",
+      "family": "heavy",
+      "file": "/assets/models/weapons/weapon_flamethrower.glb",
+      "bytes": 140748,
+      "sha256": "31bfd6dcf057355ca507bf7830417c9bc2effab7e0fdeb7004da6155cca8ffa3",
+      "meshes": 9,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "plasmaRifle",
+      "family": "energy_long_gun",
+      "file": "/assets/models/weapons/weapon_plasmaRifle.glb",
+      "bytes": 129436,
+      "sha256": "e49f6b741f76799f30e86317ca685e91d766f98c774e1272cf86270b04bf66b8",
+      "meshes": 11,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "shotgun",
+      "family": "long_gun",
+      "file": "/assets/models/weapons/weapon_shotgun.glb",
+      "bytes": 107016,
+      "sha256": "6a7c26b5d1d9412cf40640bfc52848758aef77cc36b718f97975163bb07c50c4",
+      "meshes": 9,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "rocketLauncher",
+      "family": "launcher",
+      "file": "/assets/models/weapons/weapon_rocketLauncher.glb",
+      "bytes": 125700,
+      "sha256": "63673c232d84551750e63df8a6a1faa49d9e43e8bf707ce8d106b5d8693a44de",
+      "meshes": 9,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "knife",
+      "family": "melee_light",
+      "file": "/assets/models/weapons/weapon_knife.glb",
+      "bytes": 106036,
+      "sha256": "d046b21eaa0ada08cec4dc7b35d42bd224d3324de3371134f8348b2693b25636",
+      "meshes": 8,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "pickaxe",
+      "family": "melee_heavy",
+      "file": "/assets/models/weapons/weapon_pickaxe.glb",
+      "bytes": 98356,
+      "sha256": "ff0d6e6cb3b03ed630e9c6e55d8ea01bb8981b495713f5a71739a81cd216e82e",
+      "meshes": 6,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "axe",
+      "family": "melee_heavy",
+      "file": "/assets/models/weapons/weapon_axe.glb",
+      "bytes": 97784,
+      "sha256": "ae20fe18ce19c46baa632a5d384366dcbeb374f27d31c317a47b084ab0ee679f",
+      "meshes": 6,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    },
+    {
+      "id": "handPump",
+      "family": "melee_heavy",
+      "file": "/assets/models/weapons/weapon_handPump.glb",
+      "bytes": 118988,
+      "sha256": "c01221389a282b2c3e5f240f493911a13c3ac60c27e84773f34b0519e0d99d69",
+      "meshes": 7,
+      "animations": [
+        "idle",
+        "attack",
+        "reload"
+      ]
+    }
+  ]
+}

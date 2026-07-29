@@ -28,6 +28,7 @@ const partNames = [
   '04_player_model_visuals.js',
   '04a_player_model_modern_runtime.js',
   '04b_character_glb_runtime.js',
+  '04c_weapon_glb_runtime.js',
   '05_multiplayer_core_state.js',
   '05a_remote_actor_equipment.js',
   '05b_remote_player_locomotion.js',

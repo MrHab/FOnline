@@ -1,4 +1,5 @@
   // ===== B+C WEAPON GLB RUNTIME =====
+  const WEAPON_MODEL_ASSET_VERSION = '7.76.6-weapon-scale-fix';
   const WEAPON_MODEL_CATALOG = Object.freeze({
     pistol: { file: '/assets/models/weapons/weapon_pistol.glb', family: 'sidearm' },
     rifle: { file: '/assets/models/weapons/weapon_rifle.glb', family: 'long_gun' },
@@ -61,7 +62,7 @@
     if (weaponModelLibraryState.failed.has(entry.id) || !THREE.GLTFLoader) return Promise.resolve(null);
     return new Promise(resolve => {
       const loader = new THREE.GLTFLoader();
-      loader.load(entry.file, gltf => {
+      loader.load(`${entry.file}?v=${encodeURIComponent(WEAPON_MODEL_ASSET_VERSION)}`, gltf => {
         const template = prepareWeaponModelTemplate(entry, gltf);
         if (!template) {
           weaponModelLibraryState.failed.add(entry.id);

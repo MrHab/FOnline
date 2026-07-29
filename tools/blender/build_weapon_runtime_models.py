@@ -34,6 +34,22 @@ WEAPONS = (
     ("handPump", "melee_heavy", "hand pump"),
 )
 
+WEAPON_RUNTIME_SCALES = {
+    "pistol": 0.34,
+    "rifle": 0.52,
+    "assaultRifle": 0.52,
+    "machineGun": 0.56,
+    "laserPistol": 0.40,
+    "flamethrower": 0.55,
+    "plasmaRifle": 0.54,
+    "shotgun": 0.52,
+    "rocketLauncher": 0.58,
+    "knife": 0.22,
+    "pickaxe": 0.45,
+    "axe": 0.44,
+    "handPump": 0.50,
+}
+
 PALETTE = {
     "metal": ((0.19, 0.22, 0.22, 1.0), (0.34, 0.37, 0.36, 1.0), 0.62, 0.62),
     "dark_metal": ((0.075, 0.085, 0.085, 1.0), (0.19, 0.20, 0.19, 1.0), 0.7, 0.48),
@@ -475,7 +491,7 @@ def add_action_track(
 
 def animate_weapon(root: bpy.types.Object, weapon_id: str, family: str):
     zero = tuple(root.location)
-    scale = (1.0, 1.0, 1.0)
+    scale = tuple(root.scale)
     add_action_track(root, "idle", [
         (1, zero, (0, 0, 0), scale),
         (30, (0, 0, 0.006), (0.003, 0, 0), scale),
@@ -588,6 +604,9 @@ def build_one(weapon_id: str, family: str, label: str, output: Path, texture_siz
     root["realm_weapon_id"] = weapon_id
     root["realm_animation_family"] = family
     root["realm_art_direction"] = "geometry_b_materials_c"
+    runtime_scale = WEAPON_RUNTIME_SCALES[weapon_id]
+    root["realm_runtime_scale"] = runtime_scale
+    root.scale = (runtime_scale, runtime_scale, runtime_scale)
     BUILDERS[weapon_id](root, materials)
     animate_weapon(root, weapon_id, family)
     bpy.context.view_layer.update()
@@ -597,6 +616,7 @@ def build_one(weapon_id: str, family: str, label: str, output: Path, texture_siz
         "id": weapon_id,
         "label": label,
         "family": family,
+        "runtimeScale": runtime_scale,
         "output": str(output.resolve()),
         "meshes": len([obj for obj in bpy.context.scene.objects if obj.type == "MESH"]),
         "materials": len(bpy.data.materials),

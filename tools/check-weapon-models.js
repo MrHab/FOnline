@@ -15,19 +15,19 @@ const loaderPath = path.join(root, 'public', 'js', 'game.js');
 const loadingPath = path.join(root, 'public', 'js', 'game', '13_minimap_hud_loop.js');
 
 const expected = new Map([
-  ['pistol', { family: 'sidearm', nodes: ['muzzle', 'slide'] }],
-  ['rifle', { family: 'long_gun', nodes: ['muzzle', 'bolt'] }],
-  ['assaultRifle', { family: 'long_gun', nodes: ['muzzle', 'magazine'] }],
-  ['machineGun', { family: 'heavy', nodes: ['muzzle', 'ammo_box'] }],
-  ['laserPistol', { family: 'energy_sidearm', nodes: ['muzzle', 'energy_core'] }],
-  ['flamethrower', { family: 'heavy', nodes: ['pilot', 'fuel_tank'] }],
-  ['plasmaRifle', { family: 'energy_long_gun', nodes: ['muzzle', 'energy_core'] }],
-  ['shotgun', { family: 'long_gun', nodes: ['muzzle', 'pump'] }],
-  ['rocketLauncher', { family: 'launcher', nodes: ['muzzle', 'launcher_tube'] }],
-  ['knife', { family: 'melee_light', nodes: ['blade', 'grip'] }],
-  ['pickaxe', { family: 'melee_heavy', nodes: ['head_socket', 'pick_left'] }],
-  ['axe', { family: 'melee_heavy', nodes: ['blade', 'handle'] }],
-  ['handPump', { family: 'melee_heavy', nodes: ['pump_handle', 'nozzle'] }]
+  ['pistol', { family: 'sidearm', scale: 0.34, length: [0.24, 0.38], nodes: ['muzzle', 'slide'] }],
+  ['rifle', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'bolt'] }],
+  ['assaultRifle', { family: 'long_gun', scale: 0.52, length: [0.80, 1.08], nodes: ['muzzle', 'magazine'] }],
+  ['machineGun', { family: 'heavy', scale: 0.56, length: [1.00, 1.28], nodes: ['muzzle', 'ammo_box'] }],
+  ['laserPistol', { family: 'energy_sidearm', scale: 0.40, length: [0.32, 0.48], nodes: ['muzzle', 'energy_core'] }],
+  ['flamethrower', { family: 'heavy', scale: 0.55, length: [0.90, 1.22], nodes: ['pilot', 'fuel_tank'] }],
+  ['plasmaRifle', { family: 'energy_long_gun', scale: 0.54, length: [0.88, 1.18], nodes: ['muzzle', 'energy_core'] }],
+  ['shotgun', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'pump'] }],
+  ['rocketLauncher', { family: 'launcher', scale: 0.58, length: [1.00, 1.26], nodes: ['muzzle', 'launcher_tube'] }],
+  ['knife', { family: 'melee_light', scale: 0.22, length: [0.25, 0.36], nodes: ['blade', 'grip'] }],
+  ['pickaxe', { family: 'melee_heavy', scale: 0.45, length: [0.68, 0.90], nodes: ['head_socket', 'pick_left'] }],
+  ['axe', { family: 'melee_heavy', scale: 0.44, length: [0.68, 0.90], nodes: ['blade', 'handle'] }],
+  ['handPump', { family: 'melee_heavy', scale: 0.50, length: [0.62, 0.84], nodes: ['pump_handle', 'nozzle'] }]
 ]);
 const requiredAnimations = ['idle', 'attack', 'reload'];
 
@@ -76,6 +76,18 @@ for (const [id, config] of expected) {
   const row = manifestById.get(id);
   assert(row, `${id}: manifest row is missing`);
   assert.strictEqual(row.family, config.family, `${id}: wrong animation family`);
+  assert.strictEqual(row.runtimeScale, config.scale, `${id}: wrong runtime scale`);
+  assert(
+    row.boundsMeters && Array.isArray(row.boundsMeters.min) && Array.isArray(row.boundsMeters.max),
+    `${id}: scaled bounds are missing`
+  );
+  const runtimeLength = row.boundsMeters.max[1] - row.boundsMeters.min[1];
+  assert(
+    Number.isFinite(runtimeLength)
+      && runtimeLength >= config.length[0]
+      && runtimeLength <= config.length[1],
+    `${id}: runtime length ${runtimeLength}m is outside ${config.length[0]}-${config.length[1]}m`
+  );
   assert.deepStrictEqual(row.animations, requiredAnimations, `${id}: manifest animations drifted`);
   const file = path.join(root, 'public', row.file.replace(/^\//, ''));
   assert(fs.existsSync(file), `${id}: GLB file is missing`);
@@ -104,6 +116,11 @@ for (const [id, config] of expected) {
   assert.strictEqual(rootNode.extras.realm_schema, 'realm.weapon-runtime.v1');
   assert.strictEqual(rootNode.extras.realm_animation_family, config.family);
   assert.strictEqual(rootNode.extras.realm_art_direction, 'geometry_b_materials_c');
+  assert.strictEqual(rootNode.extras.realm_runtime_scale, config.scale);
+  assert(Array.isArray(rootNode.scale) && rootNode.scale.length === 3, `${id}: root scale is missing`);
+  rootNode.scale.forEach(value => {
+    assert(Math.abs(value - config.scale) < 1e-6, `${id}: exported root scale drifted`);
+  });
 
   const animations = new Map((json.animations || []).map(animation => [animation.name, animation]));
   assert.deepStrictEqual([...animations.keys()].sort(), [...requiredAnimations].sort(), `${id}: GLB clips drifted`);
@@ -139,6 +156,7 @@ for (const [id, config] of expected) {
   'function makeWeaponModelMesh(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
+  "const WEAPON_MODEL_ASSET_VERSION = '7.76.6-weapon-scale-fix';",
   "action.setLoop(THREE.LoopOnce, 1)"
 ].forEach(marker => assert(runtime.includes(marker), `weapon runtime integration is missing: ${marker}`));
 

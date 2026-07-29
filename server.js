@@ -2346,16 +2346,25 @@ const SERVER_CHARACTER_BODY_TYPES = new Set(['slim', 'medium', 'large']);
 const SERVER_CHARACTER_APPEARANCE_IDS = {
   female: {
     faceId: 'female_01',
-    faceIds: new Set(['female_01', 'female_02', 'female_03']),
+    faceIds: new Set(['female_01', 'female_02', 'female_03', 'female_04']),
     hairId: 'tied_back'
   },
   male: {
     faceId: 'male_01',
-    faceIds: new Set(['male_01', 'male_02', 'male_03']),
+    faceIds: new Set(['male_01', 'male_02', 'male_03', 'male_04']),
     hairId: 'short_crop'
   }
 };
-const SERVER_CHARACTER_HAIR_IDS = new Set(['short_crop', 'tied_back', 'mohawk', 'shaved']);
+const SERVER_CHARACTER_HAIR_IDS = new Set([
+  'shaved',
+  'short_crop',
+  'side_swept',
+  'mohawk',
+  'braids',
+  'tied_back',
+  'long',
+  'buns'
+]);
 
 function sanitizeCharacterAppearance(input = {}, fallback = {}) {
   const source = input && typeof input === 'object' ? input : {};

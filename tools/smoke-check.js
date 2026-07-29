@@ -1028,8 +1028,8 @@ async function registerSocketTestAccount(index, suffix) {
       schema: 'realm.character-appearance.v1',
       sex: index % 2 === 0 ? 'male' : 'female',
       bodyType: ['slim', 'medium', 'large'][(index - 1) % 3],
-      faceId: `${index % 2 === 0 ? 'male' : 'female'}_0${((index - 1) % 3) + 1}`,
-      hairId: ['short_crop', 'tied_back', 'mohawk'][(index - 1) % 3],
+      faceId: `${index % 2 === 0 ? 'male' : 'female'}_0${((index - 1) % 4) + 1}`,
+      hairId: ['short_crop', 'side_swept', 'mohawk', 'braids', 'tied_back', 'long', 'buns', 'shaved'][(index - 1) % 8],
       skinToneId: 'skin_03',
       hairColorId: 'hair_03'
     }

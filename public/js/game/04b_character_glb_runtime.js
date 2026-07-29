@@ -4,22 +4,54 @@
   const CHARACTER_BODY_TYPES = ['slim', 'medium', 'large'];
   const CHARACTER_FACE_OPTIONS = {
     female: [
-      { id: 'female_01', label: 'Классическое' },
-      { id: 'female_02', label: 'Обветренное' },
-      { id: 'female_03', label: 'Со шрамом' }
+      { id: 'female_01', label: 'Угловатое' },
+      { id: 'female_02', label: 'Узкое' },
+      { id: 'female_03', label: 'Широкое' },
+      { id: 'female_04', label: 'Округлое' }
     ],
     male: [
-      { id: 'male_01', label: 'Классическое' },
-      { id: 'male_02', label: 'Обветренное' },
-      { id: 'male_03', label: 'Со шрамом' }
+      { id: 'male_01', label: 'Угловатое' },
+      { id: 'male_02', label: 'Узкое' },
+      { id: 'male_03', label: 'Широкое' },
+      { id: 'male_04', label: 'Округлое' }
     ]
   };
   const CHARACTER_HAIR_OPTIONS = [
+    { id: 'shaved', label: 'Без волос' },
     { id: 'short_crop', label: 'Короткая' },
-    { id: 'tied_back', label: 'Собранная' },
+    { id: 'side_swept', label: 'Набок' },
     { id: 'mohawk', label: 'Ирокез' },
-    { id: 'shaved', label: 'Без волос' }
+    { id: 'braids', label: 'Косы' },
+    { id: 'tied_back', label: 'Собранная' },
+    { id: 'long', label: 'Длинная' },
+    { id: 'buns', label: 'Два пучка' }
   ];
+  const CHARACTER_FACE_FIT_PROFILES = {
+    '01': {
+      headScale: [1, 1, 1],
+      scalpScale: [1, 1],
+      topOffset: 0
+    },
+    '02': {
+      headScale: [0.88, 1.018, 1.05],
+      scalpScale: [0.94, 1.035],
+      topOffset: 0.0065
+    },
+    '03': {
+      headScale: [1.13, 0.985, 0.96],
+      scalpScale: [1.105, 0.975],
+      topOffset: -0.0055
+    },
+    '04': {
+      headScale: [0.98, 0.982, 1.09],
+      scalpScale: [1.07, 1.055],
+      topOffset: -0.0065
+    }
+  };
+  const CHARACTER_HEAD_FIT = {
+    female: { top: 1.8285, centerZ: -0.006 },
+    male: { top: 1.8282, centerZ: -0.006 }
+  };
   const CHARACTER_SEX_LABELS = { female: 'Женский', male: 'Мужской' };
   const CHARACTER_BODY_TYPE_LABELS = {
     slim: 'Стройное',
@@ -156,8 +188,10 @@
   }
 
   function characterVariantMaterial(color, options = {}) {
+    const materialColor = new THREE.Color(color);
+    materialColor.convertSRGBToLinear?.();
     return new THREE.MeshStandardMaterial({
-      color,
+      color: materialColor,
       roughness: options.roughness ?? 0.9,
       metalness: 0,
       flatShading: true,
@@ -175,96 +209,217 @@
     if (head?.attach) head.attach(group);
   }
 
-  function addCharacterShortHair(group, material, tiedBack = false) {
-    const cap = new THREE.Mesh(new THREE.DodecahedronGeometry(0.112, 0), material);
-    cap.name = 'hair_variant_cap';
-    cap.position.set(0, 1.81, -0.006);
-    cap.scale.set(0.94, 0.56, 1.02);
-    group.add(cap);
-    [-1, 0, 1].forEach(index => {
-      const lock = new THREE.Mesh(new THREE.TetrahedronGeometry(0.045, 0), material);
-      lock.name = `hair_variant_lock_${index}`;
-      lock.position.set(index * 0.052, 1.795 - Math.abs(index) * 0.008, 0.092);
-      lock.rotation.set(-0.18, index * 0.14, index * -0.12);
-      lock.scale.set(0.75, 1.05, 0.65);
-      group.add(lock);
-    });
-    if (!tiedBack) return;
-    const knot = new THREE.Mesh(new THREE.DodecahedronGeometry(0.064, 0), material);
-    knot.name = 'hair_variant_knot';
-    knot.position.set(0, 1.77, -0.125);
-    knot.scale.set(0.9, 0.9, 0.78);
-    group.add(knot);
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.17, 5), material);
-    tail.name = 'hair_variant_tail';
-    tail.position.set(0, 1.66, -0.135);
-    tail.rotation.x = -0.12;
-    group.add(tail);
+  function characterFaceFitProfile(input = {}) {
+    const appearance = normalizeCharacterAppearance(input);
+    const profileId = String(appearance.faceId || '').slice(-2);
+    const profile = CHARACTER_FACE_FIT_PROFILES[profileId] || CHARACTER_FACE_FIT_PROFILES['01'];
+    const head = CHARACTER_HEAD_FIT[appearance.sex] || CHARACTER_HEAD_FIT.male;
+    return {
+      ...profile,
+      top: head.top + profile.topOffset,
+      centerZ: head.centerZ
+    };
   }
 
-  function addCharacterMohawk(group, material) {
-    const halfWidth = 0.034;
-    const bottom = 1.838;
-    const top = 1.912;
-    const front = 0.112;
-    const back = -0.112;
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute([
-      -halfWidth, bottom, front,
-      halfWidth, bottom, front,
-      0, top, front,
-      -halfWidth, bottom, back,
-      halfWidth, bottom, back,
-      0, top, back
-    ], 3));
-    geometry.setIndex([
-      0, 1, 2,
-      3, 5, 4,
-      0, 2, 5, 0, 5, 3,
-      1, 4, 5, 1, 5, 2,
-      0, 3, 4, 0, 4, 1
-    ]);
-    geometry.computeVertexNormals();
-    const crest = new THREE.Mesh(geometry, material);
-    crest.name = 'hair_variant_mohawk_crest';
-    group.add(crest);
+  function characterHairPoint(fit, x, y, z) {
+    const baseTop = CHARACTER_HEAD_FIT.female.top;
+    const baseCenterZ = CHARACTER_HEAD_FIT.female.centerZ;
+    return [
+      x * fit.scalpScale[0],
+      y + (fit.top - baseTop),
+      fit.centerZ + (z - baseCenterZ) * fit.scalpScale[1]
+    ];
   }
 
-  function addCharacterFaceVariant(group, appearance) {
-    if (appearance.faceId.endsWith('_02')) {
-      const weathering = characterVariantMaterial(0x6f4a36, {
-        roughness: 1,
-        transparent: true,
-        opacity: 0.58,
-        depthWrite: false
-      });
-      [-1, 1].forEach(side => {
-        const cheek = new THREE.Mesh(new THREE.CircleGeometry(0.027, 5), weathering);
-        cheek.name = `face_variant_weathered_${side < 0 ? 'l' : 'r'}`;
-        cheek.position.set(side * 0.062, 1.678, 0.132);
-        cheek.scale.set(1.3, 0.52, 1);
-        cheek.rotation.z = side * 0.18;
-        group.add(cheek);
-      });
-      return;
+  function addCharacterScalpCap(group, material, style, fit) {
+    const centerY = fit.top - 0.084;
+    const radiusX = 0.0947 * fit.scalpScale[0];
+    const radiusY = 0.11;
+    const radiusZ = 0.118 * fit.scalpScale[1];
+    const segments = 14;
+    const rings = 6;
+    const positions = [0, centerY + radiusY, fit.centerZ];
+    const indices = [];
+    for (let ring = 1; ring <= rings; ring += 1) {
+      const fraction = ring / rings;
+      for (let segment = 0; segment < segments; segment += 1) {
+        const phi = Math.PI * 2 * segment / segments;
+        const directionZ = Math.sin(phi);
+        let thetaMax = directionZ < -0.45 ? 1.04 : (directionZ > 0.45 ? 1.58 : 1.18);
+        if (style === 'short_crop') thetaMax -= 0.1;
+        const theta = thetaMax * fraction;
+        positions.push(
+          Math.cos(phi) * Math.sin(theta) * radiusX,
+          centerY + Math.cos(theta) * radiusY,
+          fit.centerZ - Math.sin(phi) * Math.sin(theta) * radiusZ
+        );
+      }
     }
-    if (!appearance.faceId.endsWith('_03')) return;
-    const scarMaterial = characterVariantMaterial(0x8a4a3a, {
-      roughness: 1,
-      transparent: true,
-      opacity: 0.9,
-      depthWrite: false
+    for (let segment = 0; segment < segments; segment += 1) {
+      indices.push(0, 1 + segment, 1 + ((segment + 1) % segments));
+    }
+    for (let ring = 0; ring < rings - 1; ring += 1) {
+      const current = 1 + ring * segments;
+      const following = current + segments;
+      for (let segment = 0; segment < segments; segment += 1) {
+        const next = (segment + 1) % segments;
+        indices.push(
+          current + segment,
+          following + segment,
+          following + next,
+          current + segment,
+          following + next,
+          current + next
+        );
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    const cap = new THREE.Mesh(geometry, material);
+    cap.name = 'hair_variant_scalp';
+    group.add(cap);
+  }
+
+  function addCharacterHairPiece(group, material, name, fit, position, scale, rotation = [0, 0, 0], detail = 0) {
+    const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, detail), material);
+    const fitted = characterHairPoint(fit, position[0], position[1], position[2]);
+    mesh.name = `hair_variant_${name}`;
+    mesh.position.set(fitted[0], fitted[1], fitted[2]);
+    mesh.scale.set(
+      scale[0] * fit.scalpScale[0],
+      scale[1],
+      scale[2] * fit.scalpScale[1]
+    );
+    mesh.rotation.set(rotation[0], rotation[1], rotation[2]);
+    group.add(mesh);
+  }
+
+  function addCharacterSideSweptHair(group, material, fit) {
+    [-0.065, -0.043, -0.02, 0.004, 0.028, 0.051].forEach((offsetX, index) => {
+      addCharacterHairPiece(group, material, `sweep_${index}`, fit, [
+        offsetX + 0.02,
+        1.8485 - Math.abs(offsetX) * 0.22,
+        0.006 - index * 0.009
+      ], [0.019, 0.024, 0.09], [0.11, -0.2, -0.32]);
     });
-    [
-      { y: 1.712, h: 0.052, angle: -0.48 },
-      { y: 1.674, h: 0.032, angle: -0.32 }
-    ].forEach((mark, index) => {
-      const scar = new THREE.Mesh(new THREE.BoxGeometry(0.008, mark.h, 0.004), scarMaterial);
-      scar.name = `face_variant_scar_${index}`;
-      scar.position.set(0.056 + index * 0.008, mark.y, 0.135);
-      scar.rotation.z = mark.angle;
-      group.add(scar);
+    for (let index = 0; index < 3; index += 1) {
+      addCharacterHairPiece(group, material, `fringe_${index}`, fit, [
+        0.064 + index * 0.007,
+        1.7685 - index * 0.034,
+        0.044
+      ], [0.014, 0.058, 0.019], [0, 0.12, -0.18]);
+    }
+  }
+
+  function addCharacterMohawk(group, material, fit) {
+    [-0.085, -0.06, -0.035, -0.01, 0.018, 0.047, 0.076, 0.103].forEach((offsetZ, index) => {
+      const height = 0.08 + 0.028 * Math.sin((index + 1) * Math.PI / 9);
+      addCharacterHairPiece(group, material, `mohawk_blade_${index}`, fit, [
+        0,
+        1.8285 + height * 0.36,
+        -0.006 - offsetZ
+      ], [0.02, height, 0.027], [0, -0.07 + index * 0.018, 0]);
     });
+    [-1, 1].forEach(side => {
+      [-0.045, 0.015, 0.072].forEach((offsetZ, index) => {
+        addCharacterHairPiece(group, material, `mohawk_root_${side}_${index}`, fit, [
+          side * 0.017,
+          1.8035,
+          -0.006 - offsetZ
+        ], [0.014, 0.015, 0.044]);
+      });
+    });
+  }
+
+  function addCharacterBraids(group, material, fit) {
+    [-1, 1].forEach(side => {
+      for (let index = 0; index < 8; index += 1) {
+        const sway = Math.sin(index * 1.25 + (side > 0 ? 0.8 : 0)) * 0.008;
+        addCharacterHairPiece(group, material, `braid_${side}_${index}`, fit, [
+          side * (0.066 + sway),
+          1.7235 - index * 0.04,
+          -0.088 - index * 0.003
+        ], [0.018, 0.027, 0.02], [0, side * 0.15, side * 0.2]);
+      }
+      for (let index = 0; index < 4; index += 1) {
+        addCharacterHairPiece(group, material, `braid_crown_${side}_${index}`, fit, [
+          side * (0.018 + index * 0.015),
+          1.8385 - index * 0.012,
+          -0.026 - index * 0.016
+        ], [0.014, 0.016, 0.034], [0, side * 0.12, side * -0.2]);
+      }
+    });
+  }
+
+  function addCharacterTiedBackHair(group, material, fit) {
+    addCharacterHairPiece(group, material, 'tied_knot', fit, [
+      0, 1.7785, -0.148
+    ], [0.043, 0.043, 0.039]);
+    for (let index = 0; index < 5; index += 1) {
+      addCharacterHairPiece(group, material, `tied_tail_${index}`, fit, [
+        Math.sin(index * 0.8) * 0.012,
+        1.7335 - index * 0.05,
+        -0.16
+      ], [0.026, 0.04, 0.025], [0, 0.12, Math.sin(index) * 0.15]);
+    }
+  }
+
+  function addCharacterLongHair(group, material, fit) {
+    [-1, 1].forEach(side => {
+      for (let index = 0; index < 7; index += 1) {
+        const offset = index * 0.012;
+        addCharacterHairPiece(group, material, `long_side_${side}_${index}`, fit, [
+          side * (0.058 + offset * 0.55),
+          1.6935 - index * 0.036,
+          -0.021 - offset
+        ], [0.018, 0.09, 0.028], [0.04, side * 0.08, side * (0.1 + index * 0.018)]);
+      }
+    });
+    [-0.045, -0.022, 0, 0.022, 0.045].forEach((offsetX, index) => {
+      addCharacterHairPiece(group, material, `long_back_${index}`, fit, [
+        offsetX, 1.5835, -0.118
+      ], [0.02, 0.19, 0.026], [0.03, -offsetX * 0.8, offsetX * 0.8]);
+    });
+  }
+
+  function addCharacterBuns(group, material, fit) {
+    [-1, 1].forEach(side => {
+      addCharacterHairPiece(group, material, `bun_${side}`, fit, [
+        side * 0.08, 1.8465, -0.038
+      ], [0.04, 0.041, 0.038]);
+      for (let index = 0; index < 4; index += 1) {
+        const angle = Math.PI * 2 * index / 4;
+        addCharacterHairPiece(group, material, `bun_lock_${side}_${index}`, fit, [
+          side * 0.08 + Math.cos(angle) * 0.028,
+          1.8465 + Math.sin(angle * 0.5) * 0.02,
+          -0.038 - Math.sin(angle) * 0.023
+        ], [0.018, 0.016, 0.032], [angle * 0.2, side * 0.18, angle]);
+      }
+    });
+    [-0.05, -0.025, 0, 0.025, 0.05].forEach((offsetX, index) => {
+      addCharacterHairPiece(group, material, `bun_crown_${index}`, fit, [
+        offsetX, 1.8335, -0.016
+      ], [0.018, 0.021, 0.075], [0, -offsetX * 1.2, -offsetX * 1.8]);
+    });
+  }
+
+  function addCharacterHairVariant(group, material, appearance) {
+    const hairId = appearance.hairId;
+    if (hairId === 'shaved') return false;
+    const fit = characterFaceFitProfile(appearance);
+    if (hairId !== 'mohawk') addCharacterScalpCap(group, material, hairId, fit);
+    const builders = {
+      side_swept: addCharacterSideSweptHair,
+      mohawk: addCharacterMohawk,
+      braids: addCharacterBraids,
+      tied_back: addCharacterTiedBackHair,
+      long: addCharacterLongHair,
+      buns: addCharacterBuns
+    };
+    builders[hairId]?.(group, material, fit);
+    return true;
   }
 
   function applyCharacterFaceShape(root, appearance) {
@@ -273,9 +428,7 @@
     if (!Array.isArray(head.userData?.characterAppearanceBaseScale)) {
       head.userData.characterAppearanceBaseScale = [head.scale.x, head.scale.y, head.scale.z];
     }
-    const factors = appearance.faceId.endsWith('_02')
-      ? [1.06, 1, 0.98]
-      : (appearance.faceId.endsWith('_03') ? [0.96, 1.025, 1.03] : [1, 1, 1]);
+    const factors = characterFaceFitProfile(appearance).headScale;
     head.userData.characterAppearanceScaleFactors = factors;
     const [baseX, baseY, baseZ] = head.userData.characterAppearanceBaseScale;
     head.scale.set(baseX * factors[0], baseY * factors[1], baseZ * factors[2]);
@@ -285,9 +438,13 @@
     const head = root?.getObjectByName?.('head');
     const factors = head?.userData?.characterAppearanceScaleFactors;
     if (!head?.scale || !Array.isArray(factors)) return;
-    head.scale.x *= factors[0];
-    head.scale.y *= factors[1];
-    head.scale.z *= factors[2];
+    const base = head.userData?.characterAppearanceBaseScale;
+    if (!Array.isArray(base)) return;
+    head.scale.set(
+      base[0] * factors[0],
+      base[1] * factors[1],
+      base[2] * factors[2]
+    );
   }
 
   function applyCharacterGlbVisualVariants(root, input = {}, options = {}) {
@@ -297,13 +454,12 @@
     const appearanceKey = `${appearance.faceId}:${appearance.hairId}:${helmetOn ? 1 : 0}`;
     if (root.userData?.characterAppearanceKey === appearanceKey) return;
     applyCharacterFaceShape(root, appearance);
-    const sourceHairId = appearance.sex === 'female' ? 'tied_back' : 'short_crop';
     root.traverse(obj => {
       if (!obj || obj.userData?.characterAppearanceVariant) return;
       const layer = String(obj.userData?.realm_character_layer || '').toLowerCase();
       const name = String(obj.name || '').toLowerCase();
       if (layer === 'hair' || name.startsWith('hair_')) {
-        obj.visible = !helmetOn && appearance.hairId === sourceHairId;
+        obj.visible = false;
       }
     });
     const previous = root.userData?.characterAppearanceVariantGroup;
@@ -312,17 +468,10 @@
     const group = new THREE.Group();
     group.name = 'character_appearance_variants';
     group.userData.characterAppearanceVariant = true;
-    const hairMaterial = characterVariantMaterial(0x2d241e, { roughness: 0.94 });
-    if (!helmetOn && appearance.hairId === 'short_crop' && sourceHairId !== 'short_crop') {
-      addCharacterShortHair(group, hairMaterial, false);
-    } else if (!helmetOn && appearance.hairId === 'tied_back' && sourceHairId !== 'tied_back') {
-      addCharacterShortHair(group, hairMaterial, true);
-    } else if (!helmetOn && appearance.hairId === 'mohawk') {
-      addCharacterMohawk(group, hairMaterial);
-    } else {
-      hairMaterial.dispose();
+    if (!helmetOn && appearance.hairId !== 'shaved') {
+      const hairMaterial = characterVariantMaterial(0x4b3023, { roughness: 0.94 });
+      if (!addCharacterHairVariant(group, hairMaterial, appearance)) hairMaterial.dispose();
     }
-    addCharacterFaceVariant(group, appearance);
     if (group.children.length) {
       group.traverse(obj => {
         if (!obj?.isMesh) return;

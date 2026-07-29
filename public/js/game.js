@@ -59,7 +59,7 @@
     '/js/game/11a_global_map_player_models.js',
     '/js/game/11b_global_map_static_scene_camera.js',
     '/js/game/11c_global_map_sites_territory.js',
-    '/js/game/11d_global_map_contacts_parties.js',
+    '/js/game/11d_global_map_parties.js',
     '/js/game/11e_global_map_tasks_dynamic_render.js',
     '/js/game/12_global_map_canvas_controls.js',
     '/js/game/12a_global_map_world_status.js',

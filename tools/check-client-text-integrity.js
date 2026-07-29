@@ -20,6 +20,14 @@ const REMOVED_CLICK_TO_MOVE_TOKENS = [
   'showMoveMarker',
   'setMoveTargetWorld'
 ];
+const RETIRED_WORLD_CONTACT_MARKERS = [
+  'function globalMapWorldContact',
+  'function globalMapPointCoveredByWorldContact',
+  'function openGlobalMapWorldContact',
+  'function maybeStopGlobalTravelForWorldContact',
+  'function renderGlobalMapWorldContacts',
+  'worldContacts = new THREE.Group'
+];
 const failures = [];
 
 for (const name of PART_FILES) {
@@ -38,6 +46,25 @@ for (const name of PART_FILES) {
     if (source.includes(token)) {
       failures.push(`${name}: removed click-to-move token returned (${token})`);
     }
+  }
+  for (const marker of RETIRED_WORLD_CONTACT_MARKERS) {
+    if (source.includes(marker)) {
+      failures.push(`${name}: retired global-map world-contact code returned (${marker})`);
+    }
+  }
+}
+
+if (PART_FILES.includes('11d_global_map_contacts_parties.js')) {
+  failures.push('retired global-map world-contact module name returned');
+}
+
+for (const relPath of [
+  'public/index.html',
+  'public/css/game/03_hud_minimap_inventory_progression.css'
+]) {
+  const source = fs.readFileSync(path.join(ROOT, relPath), 'utf8');
+  if (source.includes('global-map-world-contacts')) {
+    failures.push(`${relPath}: retired global-map world-contact panel returned`);
   }
 }
 

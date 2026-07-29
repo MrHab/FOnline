@@ -227,7 +227,6 @@
   }
 
   function drawGlobalMapWorldHotspot2D(ctx, site = {}, options = {}) {
-    if (globalMapPointCoveredByWorldContact(site, 16)) return;
     const hotspot = globalMapWorldSiteHotspot(site);
     if (!hotspot || hotspot.level === 'good') return;
     const radius = Number(options.radius || hotspot.radius || 20);
@@ -612,94 +611,6 @@
     systemLog.appendChild(wrap);
   }
 
-  function globalMapWorldContactById(contactId = '') {
-    void contactId;
-    return null;
-  }
-
-  function globalMapWorldContactDistance(contact = {}) {
-    const playerPoint = globalMapPlayerPoint();
-    return globalMapPointDistance(playerPoint, clampGlobalMapPoint(contact.x, contact.y));
-  }
-
-  function globalMapWorldContactButtonText(contact = {}, options = {}) {
-    const point = clampGlobalMapPoint(contact.x, contact.y);
-    const currentPoint = globalMapPlayerPoint();
-    const candidatePlayerPoint = options.playerPoint ? clampGlobalMapPoint(options.playerPoint.x, options.playerPoint.y) : currentPoint;
-    const distKm = globalMapPointDistance(candidatePlayerPoint, point);
-    if (distKm > globalMapCircleTouchRadius(globalMapWorldContactDetectRadius(contact))) return 'Маршрут';
-    return contact.actionLabel || globalMapWorldContactMeta(contact).label || 'Войти';
-  }
-
-  function openGlobalMapWorldContact(contactId = '', options = {}) {
-    void contactId;
-    void options;
-    return false;
-
-    const contact = globalMapWorldContactById(contactId);
-    if (!contact) {
-      setReadout('Событие уже исчезло или было решено миром.');
-      renderGlobalMapPanel();
-      return false;
-    }
-    if (blockGlobalMapGroupMovement()) return false;
-    const point = clampGlobalMapPoint(contact.x, contact.y);
-    const triggerRadius = globalMapWorldContactDetectRadius(contact);
-    const currentPoint = globalMapPlayerPoint();
-    const candidatePlayerPoint = options.playerPoint ? clampGlobalMapPoint(options.playerPoint.x, options.playerPoint.y) : currentPoint;
-    const distKm = globalMapPointDistance(candidatePlayerPoint, point);
-    const fromRoute = !!options.fromRoute;
-    if (distKm > globalMapCircleTouchRadius(triggerRadius) + 0.35) {
-      selectGlobalMapDestination(point.x, point.y);
-      addLog(`Маршрут к событию: ${contact.title || 'событие пустоши'}.`, null, 'system');
-      return true;
-    }
-    const meta = globalMapWorldContactMeta(contact);
-    const originPoint = options.originPoint ? clampGlobalMapPoint(options.originPoint.x, options.originPoint.y) : currentPoint;
-    const playerPoint = candidatePlayerPoint;
-    globalMapState.travel = null;
-    globalMapState.playerX = playerPoint.x;
-    globalMapState.playerY = playerPoint.y;
-    globalMapState.selectedX = point.x;
-    globalMapState.selectedY = point.y;
-    const forcedEncounter = globalMapWorldContactIsForced(contact);
-    globalMapState.encounter = {
-      id: contact.encounterId || 'caravan_patrol_vs_ghouls',
-      title: contact.title || meta.label || 'Событие пустоши',
-      text: contact.text || 'Мир пустоши ждёт вашего решения.',
-      kind: contact.kind || 'battle',
-      locationId: contact.locationId || '',
-      forced: forcedEncounter,
-      requiredWanderer: 0,
-      wanderer: 0,
-      worldContact: true,
-      worldContactId: contact.id || '',
-      worldContactKind: contact.kind || '',
-      worldZoneId: contact.zoneId || '',
-      worldZoneRoomId: contact.roomId || '',
-      worldPartyId: contact.partyId || contact.sourceId || '',
-      siteId: contact.siteId || '',
-      worldContactRadius: triggerRadius,
-      originWorldPoint: { x: originPoint.x, y: originPoint.y },
-      worldContactPoint: { x: point.x, y: point.y },
-      pvpMode: contact.pvpMode || 'pvp'
-    };
-    globalMapState.encounter.wanderer = typeof skillValue === 'function' ? skillValue('wanderer') : 0;
-    rememberGlobalMapEntryCircle({
-      x: point.x,
-      y: point.y,
-      radius: triggerRadius,
-      origin: originPoint,
-      kind: contact.kind || 'contact',
-      id: contact.id || ''
-    });
-    addLog(`Контакт пустоши: ${contact.title || meta.label}.`, null, 'combat');
-    renderGlobalMapPanel();
-    if (typeof queueSave === 'function') queueSave(true);
-    resolveGlobalEncounter('enter');
-    return true;
-  }
-
   function openGlobalMapWorldPartyEncounter(partyId = '', options = {}) {
     if (typeof rejectBlockedGameplayAction === 'function'
       && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Контакты на глобальной карте временно недоступны.')) {
@@ -829,15 +740,6 @@
     return clampGlobalMapPoint(ax + dx * t, ay + dy * t);
   }
 
-  function globalMapWorldContactDetectRadius(contact = {}) {
-    const explicitRadius = Number(contact.radius || 0);
-    if (Number.isFinite(explicitRadius) && explicitRadius > 0) return Math.max(3, Math.min(18, explicitRadius));
-    const priority = Math.max(1, Math.min(5, Number(contact.priority || 1)));
-    const kind = String(contact.kind || '').toLowerCase();
-    const kindBonus = kind === 'siege' || kind === 'battle' ? 3 : kind === 'lair' ? 2 : 0;
-    return Math.max(5, Math.min(14, 5 + priority * 1.4 + kindBonus));
-  }
-
   function maybeStopGlobalTravelForWorldLocation(prevPoint = {}, nextPoint = {}) {
     const travel = globalMapState.travel;
     if (!travel || globalMapState.encounter) return false;
@@ -957,96 +859,6 @@
       fromRoute: true,
       playerPoint: stopPoint,
       originPoint: travel.fromPoint || prevPoint
-    });
-  }
-
-  function maybeStopGlobalTravelForWorldContact(prevPoint = {}, nextPoint = {}) {
-    void prevPoint;
-    void nextPoint;
-    return false;
-
-    const travel = globalMapState.travel;
-    if (!travel || globalMapState.encounter) return false;
-    const ignored = globalMapState.routeContactStops && typeof globalMapState.routeContactStops === 'object'
-      ? globalMapState.routeContactStops
-      : {};
-    globalMapState.routeContactStops = ignored;
-    const now = Number(WASTELAND_SIM_STATE.worldHour || 0);
-    Object.keys(ignored).forEach(id => {
-      if (Number(ignored[id] || 0) <= now) delete ignored[id];
-    });
-
-    let best = null;
-    globalMapWorldContacts(60, { includeHidden: true }).forEach(contact => {
-      const id = String(contact?.id || '').trim();
-      if (!id || ignored[id]) return;
-      const point = clampGlobalMapPoint(contact.x, contact.y);
-      const hit = globalMapPointSegmentHit(point, prevPoint, nextPoint);
-      const radius = globalMapWorldContactDetectRadius(contact);
-      const touchRadius = globalMapCircleTouchRadius(radius);
-      if (hit.t <= 0.02 && globalMapPointDistance(prevPoint, point) > touchRadius) return;
-      if (hit.distance > touchRadius) return;
-      const priority = Math.max(1, Math.min(5, Number(contact.priority || 1)));
-      const score = priority * 100 - hit.distance * 4 - hit.t;
-      const entryPoint = globalMapPointSegmentCircleEntry(point, prevPoint, nextPoint, touchRadius)
-        || clampGlobalMapPoint(hit.x, hit.y);
-      if (!best || score > best.score) best = { contact, point, hit, radius, touchRadius, entryPoint, score };
-    });
-    if (!best) return false;
-
-    ignored[String(best.contact.id || '')] = now + 2;
-    const stopPoint = nearestGlobalMapLandPoint(best.entryPoint || best.point, prevPoint);
-    globalMapState.playerX = stopPoint.x;
-    globalMapState.playerY = stopPoint.y;
-    globalMapState.selectedX = best.point.x;
-    globalMapState.selectedY = best.point.y;
-    globalMapState.travel = null;
-    globalMapState.encounter = null;
-    const meta = globalMapWorldContactMeta(best.contact);
-    addLog(`Глобальная карта: вход в событие "${best.contact.title || meta.label}".`, null, 'combat');
-    setReadout(`Обнаружено: ${best.contact.title || meta.label}.`);
-    openGlobalMapWorldContact(best.contact.id || '', {
-      fromRoute: true,
-      playerPoint: stopPoint,
-      originPoint: travel.fromPoint || prevPoint
-    });
-    if (typeof queueSave === 'function') queueSave(true);
-    return true;
-  }
-
-  function renderGlobalMapWorldContacts(boardEl) {
-    if (!boardEl) return;
-    boardEl.innerHTML = '';
-    return;
-
-    const contacts = globalMapWorldContacts(5);
-    if (!contacts.length) {
-      boardEl.innerHTML = '<div class="global-map-contact-empty">Поблизости нет срочных событий. Мир продолжает жить фоном.</div>';
-      return;
-    }
-    boardEl.innerHTML = contacts.map(contact => {
-      const meta = globalMapWorldContactMeta(contact);
-      const point = clampGlobalMapPoint(contact.x, contact.y);
-      const cell = globalMapPointCell(point.x, point.y);
-      const distKm = globalMapWorldContactDistance(contact);
-      const critical = Number(contact.priority || 0) >= 4;
-      const text = String(contact.text || '').trim();
-      return `<div class="global-map-contact-row${critical ? ' critical' : ''}">
-        <div>
-          <b>${escapeHtml(meta.label)}: ${escapeHtml(contact.title || 'Событие пустоши')}</b>
-          <small>${escapeHtml(text ? text.slice(0, 130) : 'Можно вмешаться лично или дать миру решить исход.')} ${text.length > 130 ? '...' : ''}</small>
-          <small>Клетка ${cell.cx + 1}:${cell.cy + 1} · точка ${Math.round(point.x)}:${Math.round(point.y)} · ${formatGlobalMapNumber(distKm, 1)} км</small>
-        </div>
-        <button class="global-map-contact-action" type="button" data-world-contact="${escapeHtml(contact.id)}">${escapeHtml(globalMapWorldContactButtonText(contact))}</button>
-      </div>`;
-    }).join('');
-    boardEl.querySelectorAll('[data-world-contact]').forEach(btn => {
-      if (btn.dataset.bound === '1') return;
-      btn.dataset.bound = '1';
-      btn.addEventListener('click', e => {
-        e.preventDefault();
-        openGlobalMapWorldContact(btn.dataset.worldContact || '');
-      });
     });
   }
 

@@ -61,13 +61,12 @@
     cache.factionTerritories = new THREE.Group();
     cache.factionInfluence = new THREE.Group();
     cache.factionFronts = new THREE.Group();
-    cache.worldContacts = new THREE.Group();
     cache.worldTasks = new THREE.Group();
     cache.settlementStatus = new THREE.Group();
     cache.worldSites = new THREE.Group();
     cache.worldParties = new THREE.Group();
 
-    GLOBAL_MAP_3D.dynamicGroup.add(cache.factionTerritories, cache.factionInfluence, cache.factionFronts, cache.worldContacts, cache.currentCircle, cache.selectedCircle, cache.routeLine, cache.taskLine, cache.flag, cache.playerMarker, cache.taskMarker, cache.worldTasks, cache.settlementStatus, cache.worldSites, cache.worldParties);
+    GLOBAL_MAP_3D.dynamicGroup.add(cache.factionTerritories, cache.factionInfluence, cache.factionFronts, cache.currentCircle, cache.selectedCircle, cache.routeLine, cache.taskLine, cache.flag, cache.playerMarker, cache.taskMarker, cache.worldTasks, cache.settlementStatus, cache.worldSites, cache.worldParties);
     GLOBAL_MAP_3D.dynamicCache = cache;
     return cache;
   }

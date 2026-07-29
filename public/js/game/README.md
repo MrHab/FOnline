@@ -58,7 +58,7 @@
 50. `11a_global_map_player_models.js` — модель игрока на глобальной карте, оружие и направление движения.
 51. `11b_global_map_static_scene_camera.js` — статическая 3D-сцена, города/объекты, дороги, terrain, камера.
 52. `11c_global_map_sites_territory.js` — ресурсные точки, зоны влияния, территории и фронты фракций.
-53. `11d_global_map_contacts_parties.js` — контакты мира, бродячие отряды и их мини-модели.
+53. `11d_global_map_parties.js` — бродячие отряды мира и их мини-модели.
 54. `11e_global_map_tasks_dynamic_render.js` — маркеры заданий, динамическое обновление и render global map 3D.
 55. `12_global_map_canvas_controls.js` — колесо/перетаскивание карты и 2D canvas fallback глобальной карты.
 56. `12a_global_map_world_status.js` — подписи отрядов, ресурсные точки, задачи мира, контакты и доска работ.

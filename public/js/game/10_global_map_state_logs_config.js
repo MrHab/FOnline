@@ -1782,35 +1782,6 @@
     }
   }
 
-  function globalMapWorldContactIdFromObject(object = null) {
-    let node = object;
-    while (node) {
-      const contactId = String(node.userData?.contactId || node.userData?.worldContactId || '').trim();
-      if (contactId) return contactId;
-      node = node.parent || null;
-    }
-    return '';
-  }
-
-  function tagGlobalMapWorldContactObject(root = null, contactId = '') {
-    const id = String(contactId || '').trim();
-    if (!root || !id) return;
-    root.userData.contactId = id;
-    root.userData.worldContactId = id;
-    if (typeof root.traverse === 'function') {
-      root.traverse(child => {
-        if (!child) return;
-        child.userData.contactId = id;
-        child.userData.worldContactId = id;
-      });
-    }
-  }
-
-  function globalMapWorldContactByPickedId(contactId = '') {
-    void contactId;
-    return null;
-  }
-
   function globalMapWorldScreenDistanceToPoint(clientX, clientY, point = {}, lift = 0.5) {
     if (!globalMap3dCanvas || !GLOBAL_MAP_3D.camera || typeof globalMap3DWorldPoint !== 'function') return null;
     const rect3d = globalMap3dCanvas.getBoundingClientRect();
@@ -1901,18 +1872,6 @@
     return globalMapWorldPartyFromScreenDistance(clientX, clientY);
   }
 
-  function globalMapWorldContactFromScreenDistance(clientX, clientY) {
-    void clientX;
-    void clientY;
-    return null;
-  }
-
-  function globalMapWorldContactFromClient(clientX, clientY) {
-    void clientX;
-    void clientY;
-    return null;
-  }
-
   function globalMapPointFromClient(clientX, clientY) {
     if (prepareGlobalMap3DRayFromClient(clientX, clientY)) {
       const hits = GLOBAL_MAP_3D.terrain ? GLOBAL_MAP_3D.raycaster.intersectObject(GLOBAL_MAP_3D.terrain, false) : [];
@@ -1947,29 +1906,23 @@
       return;
     }
     const pickedParty = globalMapWorldPartyFromClient(e.clientX, e.clientY);
-    const pickedContact = pickedParty ? null : globalMapWorldContactFromClient(e.clientX, e.clientY);
     const point = pickedParty
       ? clampGlobalMapPoint(globalMapWorldPartyDisplayPoint(pickedParty))
-      : pickedContact
-        ? clampGlobalMapPoint(pickedContact.x, pickedContact.y)
-        : globalMapPointFromClient(e.clientX, e.clientY);
+      : globalMapPointFromClient(e.clientX, e.clientY);
     if (!point) {
       hideGlobalMapCursor();
       return;
     }
     const cell = globalMapPointCell(point.x, point.y);
     const worldParty = pickedParty || globalMapWorldPartyAt(point.x, point.y);
-    const worldContact = worldParty ? null : (pickedContact || globalMapWorldContactAt(point.x, point.y));
-    const settlement = worldParty || worldContact ? null : globalMapSettlementAt(point.x, point.y);
-    const worldSite = worldParty || worldContact || settlement ? null : globalMapWorldSiteAt(point.x, point.y);
+    const settlement = worldParty ? null : globalMapSettlementAt(point.x, point.y);
+    const worldSite = worldParty || settlement ? null : globalMapWorldSiteAt(point.x, point.y);
     const settlementSite = settlement ? globalMapWorldSiteById(settlement.id) : null;
     const cursorWorldSite = worldSite || settlementSite;
     const cursorHotspot = cursorWorldSite ? globalMapWorldSiteHotspot(cursorWorldSite) : null;
-    const profile = worldParty || worldContact || settlement || worldSite ? null : globalMapCellProfile(cell.cx, cell.cy);
+    const profile = worldParty || settlement || worldSite ? null : globalMapCellProfile(cell.cx, cell.cy);
     const title = worldParty
       ? (worldParty.name || globalMapWorldPartyKindLabel(worldParty.kind))
-      : worldContact
-      ? globalMapWorldContactTitle(worldContact)
       : settlement
       ? globalMapLocationName(settlement.id)
       : worldSite
@@ -1977,8 +1930,6 @@
         : (profile?.terrain || 'Пустошь');
     const noteText = worldParty
       ? globalMapWorldPartyStatus(worldParty)
-      : worldContact
-      ? globalMapWorldContactDescription(worldContact)
       : settlement && settlement.note
       ? [String(settlement.note).trim(), globalMapWorldSiteMarketLine(settlementSite)].filter(Boolean).join(' ')
       : worldSite
@@ -1986,8 +1937,6 @@
         : '';
     const kindText = worldParty
       ? `${globalMapWorldPartyKindLabel(worldParty.kind)} · ${globalMapFactionLabel(worldParty.faction || '')}`
-      : worldContact
-      ? globalMapWorldContactKindText(worldContact)
       : settlementSite
         ? globalMapWorldSiteKindLabel(settlementSite)
       : worldSite
@@ -2003,7 +1952,7 @@
       ['Охрана', Math.round(Number(worldParty.escortPower || worldParty.strength || 0))],
       ['Риск', `${Math.round(Number(worldParty.riskLevel || 0))}%${worldParty.riskLabel ? ` · ${worldParty.riskLabel}` : ''}`],
       ['Груз', worldParty.cargoSummary && worldParty.cargoSummary !== 'нет груза' ? worldParty.cargoSummary : 'пусто']
-    ] : worldContact ? globalMapWorldContactExtraRows(worldContact) : cursorWorldSite ? [
+    ] : cursorWorldSite ? [
       ...(cursorHotspot ? [['Обстановка', cursorHotspot.labels.join(', ')]] : []),
       ['Владелец', cursorWorldSite.ownerLabel || globalMapFactionLabel(cursorWorldSite.owner || 'neutral')],
       ['Контроль', cursorWorldSite.controlStateLabel || 'стабильно'],

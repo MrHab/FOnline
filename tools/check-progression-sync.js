@@ -217,7 +217,7 @@ const mapLoop = [
   '11a_global_map_player_models.js',
   '11b_global_map_static_scene_camera.js',
   '11c_global_map_sites_territory.js',
-  '11d_global_map_contacts_parties.js',
+  '11d_global_map_parties.js',
   '11e_global_map_tasks_dynamic_render.js',
   '12_global_map_canvas_controls.js',
   '12a_global_map_world_status.js',

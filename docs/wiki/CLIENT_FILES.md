@@ -4,7 +4,7 @@
 
 `public/index.html` сначала подключает локальные vendor-сборки Three.js, `GLTFLoader` и Socket.IO, а затем запускает этот загрузчик.
 
-Загрузчик параллельно получает каталог коллайдеров и все 59 файлов из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
+Загрузчик параллельно получает каталог коллайдеров и 61 файл из `GAME_SCRIPT_PARTS`. После загрузки он проверяет схему каталога `realm.model-colliders.v1`, добавляет замороженный `MODEL_COLLIDER_CATALOG`, объединяет JS-части **в порядке массива** и выполняет общий исходник через `new Function(...)`. Поэтому сетевой порядок завершения запросов не влияет на порядок выполнения кода.
 
 JS-части и vendor-библиотеки пока загружаются до авторизации, но тяжёлый
 3D-runtime отделён от auth shell: данные мира, PBR-материалы, текстуры,
@@ -38,6 +38,8 @@ JS-части и vendor-библиотеки пока загружаются д�
 | `03c_skills_perks_tooltips.js` | SPECIAL, skills, perks, tooltips |
 | `03d_item_context_repair_crafting.js` | item context menu, repair, salvage, crafting |
 | `04_player_model_visuals.js` | модель игрока, оружие, броня, визуал экипировки |
+| `04a_player_model_modern_runtime.js` | процедурный модульный риг, общие материалы и совместимые слои экипировки |
+| `04b_character_glb_runtime.js` | утверждённые GLB-модели пола/телосложения, встроенные анимации и 3D-предпросмотр создания персонажа |
 | `05_multiplayer_core_state.js` | режимы authority, sticky online requirement, context-bound join/waiters, same-room gameplay ack guard и исходящие снимки |
 | `05a_remote_actor_equipment.js` | remote actor names, equipment visuals, muzzle helpers |
 | `05b_remote_player_locomotion.js` | remote player interpolation and visual locomotion |

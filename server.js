@@ -1113,6 +1113,7 @@ function summarizeState(state, fallbackId = '') {
     name: safeName(profile.name || 'Без имени'),
     level: Number(player.level || 1),
     xp: Number(player.xp || 0),
+    appearance: sanitizeCharacterAppearance(profile.appearance || {}),
     factionId,
     locationId: String(state?.currentLocationId || 'settlement').slice(0, 32),
     savedAt: Number(state?.savedAt || Date.now()),
@@ -1132,6 +1133,9 @@ function listStoredUserCharacters(store = {}, userId = '') {
       name: row.summary?.name || row.state?.characterProfile?.name || 'Без имени',
       level: Number(row.summary?.level || row.state?.player?.level || 1),
       xp: Number(row.summary?.xp || row.state?.player?.xp || 0),
+      appearance: sanitizeCharacterAppearance(
+        row.summary?.appearance || row.state?.characterProfile?.appearance || {}
+      ),
       factionId: row.summary?.factionId || savedCharacterWorldFaction(userId, row.id || row.state?.characterProfile?.serverCharacterId || ''),
       locationId: row.summary?.locationId || row.state?.currentLocationId || 'settlement',
       createdAt: Number(row.createdAt || row.summary?.createdAt || Date.now()),
@@ -2334,6 +2338,33 @@ function sanitizeTraits(input = [], fallback = []) {
     .map(x => String(x || '').slice(0, 32))
     .filter(x => SERVER_START_TRAITS.has(x) && !seen.has(x) && seen.add(x))
     .slice(0, 2);
+}
+
+const CHARACTER_APPEARANCE_SCHEMA = 'realm.character-appearance.v1';
+const SERVER_CHARACTER_SEXES = new Set(['female', 'male']);
+const SERVER_CHARACTER_BODY_TYPES = new Set(['slim', 'medium', 'large']);
+const SERVER_CHARACTER_APPEARANCE_IDS = {
+  female: { faceId: 'female_01', hairId: 'short_crop' },
+  male: { faceId: 'male_01', hairId: 'short_crop' }
+};
+
+function sanitizeCharacterAppearance(input = {}, fallback = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const base = fallback && typeof fallback === 'object' ? fallback : {};
+  const rawSex = String(source.sex || base.sex || 'male').toLowerCase();
+  const sex = SERVER_CHARACTER_SEXES.has(rawSex) ? rawSex : 'male';
+  const rawBodyType = String(source.bodyType || base.bodyType || 'medium').toLowerCase();
+  const bodyType = SERVER_CHARACTER_BODY_TYPES.has(rawBodyType) ? rawBodyType : 'medium';
+  const defaults = SERVER_CHARACTER_APPEARANCE_IDS[sex];
+  return {
+    schema: CHARACTER_APPEARANCE_SCHEMA,
+    sex,
+    bodyType,
+    faceId: defaults.faceId,
+    hairId: defaults.hairId,
+    skinToneId: 'skin_03',
+    hairColorId: 'hair_03'
+  };
 }
 
 function sanitizeTaggedSkills(input = [], fallback = []) {
@@ -5941,7 +5972,8 @@ function initialServerCharacterState(data = {}, characterId = '') {
   const traits = sanitizeTraits(data.traits || []);
   const taggedSkills = sanitizeTaggedSkills(data.taggedSkills || []);
   const special = sanitizeSpecial(data.special || {});
-  const equipment = { weapon: 'knife', armor: '', helmet: '', boots: '', backpack: '' };
+  const appearance = sanitizeCharacterAppearance(data.appearance || {});
+  const equipment = { weapon: 'fists', armor: '', helmet: '', boots: '', backpack: '' };
   const inventory = serverInventoryRowsToObject(serverStarterInventoryRows(traits));
   inventory.knife = 1;
   const spawn = playerSpawnWorld('settlement', 'spawn');
@@ -5954,6 +5986,7 @@ function initialServerCharacterState(data = {}, characterId = '') {
       special,
       traits,
       taggedSkills,
+      appearance,
       createdAt: now,
       lastVisitedSettlementId: 'settlement',
       serverCharacterId: id,
@@ -6019,6 +6052,12 @@ function ensureServerCharacterForJoin(auth = {}, data = {}, characterId = '') {
 }
 
 function newServerCharacterSelectionError(data = {}) {
+  const rawAppearance = data.appearance;
+  if (!rawAppearance || typeof rawAppearance !== 'object'
+    || !SERVER_CHARACTER_SEXES.has(String(rawAppearance.sex || '').toLowerCase())
+    || !SERVER_CHARACTER_BODY_TYPES.has(String(rawAppearance.bodyType || '').toLowerCase())) {
+    return 'При создании персонажа выберите пол и телосложение.';
+  }
   const rawTaggedSkills = Array.isArray(data.taggedSkills) ? data.taggedSkills : [];
   const taggedSkills = sanitizeTaggedSkills(rawTaggedSkills);
   if (rawTaggedSkills.length < 1 || rawTaggedSkills.length > 2 || taggedSkills.length !== rawTaggedSkills.length) {
@@ -6502,6 +6541,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   const clientProfile = clientState?.characterProfile || {};
   const profile = { ...previousProfile, ...clientProfile, serverCharacterId: id };
   profile.taggedSkills = sanitizeTaggedSkills(previousProfile.taggedSkills || clientProfile.taggedSkills || []);
+  profile.appearance = sanitizeCharacterAppearance(previousProfile.appearance || clientProfile.appearance || {});
   if (!player) {
     const worldFactionId = serverWorldFactionKey(
       previousProfile.worldFactionId || previousProfile.factionId || ''
@@ -6513,6 +6553,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
       special: sanitizeSpecial(previousProfile.special || {}),
       traits: sanitizeTraits(previousProfile.traits || []),
       taggedSkills: sanitizeTaggedSkills(previousProfile.taggedSkills || []),
+      appearance: sanitizeCharacterAppearance(previousProfile.appearance || {}),
       factionId: worldFactionId,
       worldFactionId,
       worldFactionReputation: sanitizeServerWorldFactionReputation(
@@ -6553,6 +6594,7 @@ function mergeAuthoritativeCharacterState(clientState = {}, previousState = {}, 
   profile.special = sanitizeSpecial(player.special || profile.special || {});
   profile.traits = sanitizeTraits(player.traits || profile.traits || []);
   profile.taggedSkills = sanitizeTaggedSkills(player.taggedSkills || profile.taggedSkills || []);
+  profile.appearance = sanitizeCharacterAppearance(player.appearance || previousProfile.appearance || profile.appearance || {});
   profile.factionId = serverWorldFactionKey(player.worldFactionId || player.factionId || '');
   profile.worldFactionId = profile.factionId;
   profile.worldFactionReputation = sanitizeServerWorldFactionReputation(player.worldFactionReputation || {});
@@ -15302,6 +15344,7 @@ function publicPlayer(p) {
     deviceType: normalizeDeviceType(p.deviceType || 'desktop'),
     controlType: normalizeControlType(p.controlType || '', p.deviceType || 'desktop'),
     name: p.name,
+    appearance: sanitizeCharacterAppearance(p.appearance || {}),
     factionId: p.worldFactionId || p.factionId || '',
     worldFactionId: p.worldFactionId || p.factionId || '',
     x: Number(p.x.toFixed(3)),
@@ -15394,6 +15437,7 @@ function publicAuthoritativePlayerState(p = {}) {
     perkPoints: Math.max(0, Math.floor(Number(p.perkPoints || 0))),
     skillPoints: Math.max(0, Math.floor(Number(p.skillPoints || 0))),
     special: sanitizeSpecial(p.special || {}),
+    appearance: sanitizeCharacterAppearance(p.appearance || {}),
     traits: sanitizeTraits(p.traits || []),
     taggedSkills: sanitizeTaggedSkills(p.taggedSkills || []),
     skillRanks: sanitizeSkillRanks(p.skillRanks || {}),
@@ -16306,6 +16350,7 @@ io.on('connection', (socket) => {
       ap: clamp(Number(savedPlayer.ap ?? savedPlayer.maxAp ?? 0), 0, clamp(Number(savedPlayer.maxAp || 0), 0, 99)),
       serverCombat: serverCombatStateFromSaved(savedState, savedEquipment, savedInventory, savedEquipmentRuntime),
       special: sanitizeSpecial(savedProfile.special || {}),
+      appearance: sanitizeCharacterAppearance(savedProfile.appearance || data.appearance || {}),
       skillRanks: sanitizeSkillRanks(savedState.skillRanks || {}),
       talentRanks: sanitizeTalentRanks(savedState.talentRanks || {}),
       traits: sanitizeTraits(savedProfile.traits || []),

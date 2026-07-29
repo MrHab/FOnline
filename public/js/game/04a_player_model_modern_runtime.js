@@ -632,6 +632,9 @@
   }
 
   function updateCharacterLocomotionAnimation(actor, dt = 0.016, state = {}) {
+    if (typeof updateCharacterGlbAnimation === 'function') {
+      updateCharacterGlbAnimation(actor, dt, state);
+    }
     const parts = actorAnimationParts(actor);
     if (!actor || !parts.modernRig || !parts.motionRoot || !parts.torsoRig) return;
     const moving = !!state.moving;

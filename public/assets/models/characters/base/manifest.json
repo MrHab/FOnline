@@ -1,0 +1,79 @@
+{
+  "schema": "realm.character-model-catalog.v1",
+  "version": 1,
+  "generator": "tools/build-character-runtime-models.js",
+  "blenderGenerator": "tools/blender/build_character_runtime_models.py",
+  "artDirection": "geometry_b_materials_c",
+  "source": {
+    "package": "Approved Realm of Ashes B+C character base review",
+    "donor": [
+      "Quaternius Universal Base Characters",
+      "Quaternius Universal Animation Library"
+    ],
+    "license": "CC0-1.0"
+  },
+  "defaults": {
+    "sex": "male",
+    "bodyType": "medium",
+    "faceId": "male_01",
+    "hairId": "short_crop",
+    "skinToneId": "skin_03",
+    "hairColorId": "hair_03"
+  },
+  "animations": [
+    "idle",
+    "walk",
+    "run"
+  ],
+  "textureSize": 512,
+  "files": [
+    {
+      "id": "female_slim",
+      "sex": "female",
+      "bodyType": "slim",
+      "file": "/assets/models/characters/base/character_female_slim.glb",
+      "bytes": 5108508,
+      "sha256": "7b93c9b064f41116b19a0eb08681c2fea7cf97922a924f2143176ff01b6be5f4"
+    },
+    {
+      "id": "female_medium",
+      "sex": "female",
+      "bodyType": "medium",
+      "file": "/assets/models/characters/base/character_female_medium.glb",
+      "bytes": 5108432,
+      "sha256": "f8cf08e4c8cdc20def562abad0a387d632834850fad6edc33ffb19c986138140"
+    },
+    {
+      "id": "female_large",
+      "sex": "female",
+      "bodyType": "large",
+      "file": "/assets/models/characters/base/character_female_large.glb",
+      "bytes": 5108176,
+      "sha256": "8da5199fbfea96839e646f36d05fa5721cbe6c7685668fcc878f46c347a0f4dd"
+    },
+    {
+      "id": "male_slim",
+      "sex": "male",
+      "bodyType": "slim",
+      "file": "/assets/models/characters/base/character_male_slim.glb",
+      "bytes": 4016168,
+      "sha256": "dbdbf0e4cdbc1f4b05e28a3c079543bf3787546b79dcf4508acd5e58d97f267d"
+    },
+    {
+      "id": "male_medium",
+      "sex": "male",
+      "bodyType": "medium",
+      "file": "/assets/models/characters/base/character_male_medium.glb",
+      "bytes": 4015844,
+      "sha256": "55b8394edc67009244ae07107cffc4f5928ac4d5158d5a6ce6aa5cbd7e7a8046"
+    },
+    {
+      "id": "male_large",
+      "sex": "male",
+      "bodyType": "large",
+      "file": "/assets/models/characters/base/character_male_large.glb",
+      "bytes": 4015928,
+      "sha256": "7b9b70759f25bfedf61b2f200ee6d2fc1d04a863c5373306caf3a72d695169d7"
+    }
+  ]
+}

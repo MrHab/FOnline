@@ -749,14 +749,24 @@
   }
 
   function createPlayerModel() {
+    if (typeof removeCharacterGlbRuntime === 'function') removeCharacterGlbRuntime(playerGroup);
     playerGroup.clear();
     playerParts = {};
     buildModernWastelandHumanoid(playerGroup, playerParts, { castShadow: true, isPlayer: true });
+    if (typeof captureCharacterProceduralBaseMeshes === 'function') {
+      captureCharacterProceduralBaseMeshes(playerGroup, playerParts);
+    }
     buildModernCharacterArmorExtras(playerGroup, playerParts, true);
     initWeaponVisualState(playerParts.weaponGroup);
     playerGroup.userData.parts = playerParts;
     stabilizeCharacterNoCull(playerGroup);
     updatePlayerEquipmentVisuals();
+    if (typeof applyCharacterGlbAppearance === 'function' && characterProfile?.appearance) {
+      applyCharacterGlbAppearance(playerGroup, characterProfile?.appearance || {}, {
+        castShadow: true,
+        equipment
+      });
+    }
   }
 
   function buildCharacterArmorExtras(root, parts, castShadow = true) {
@@ -1267,6 +1277,9 @@
     }
     if (armorId !== 'heavyArmor' && parts.chestPlate) parts.chestPlate.scale.set(1, 1, 1);
     if (!['hazmatSuit','energySuit','heavyArmor'].includes(armorId) && parts.visor) parts.visor.visible = false;
+    if (typeof refreshCharacterGlbEquipmentLayers === 'function' && parts.characterRoot) {
+      refreshCharacterGlbEquipmentLayers(parts.characterRoot, eq);
+    }
   }
 
   function makePistolMesh() {

@@ -501,6 +501,9 @@
       carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null,
       inventory: typeof multiplayerInventorySnapshot === 'function' ? multiplayerInventorySnapshot() : null,
       special: characterProfile?.special || DEFAULT_SPECIAL,
+      appearance: typeof normalizeCharacterAppearance === 'function'
+        ? normalizeCharacterAppearance(characterProfile?.appearance || {})
+        : (characterProfile?.appearance || {}),
       factionId: characterProfile?.factionId || characterProfile?.worldFactionId || '',
       worldFactionId: characterProfile?.worldFactionId || characterProfile?.factionId || '',
       skillRanks: multiplayerSkillSnapshot(),

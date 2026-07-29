@@ -1023,7 +1023,16 @@ async function registerSocketTestAccount(index, suffix) {
     deviceId,
     clientInstanceId,
     characterId: `c_multi_${index}_${suffix}`,
-    name: `Tester ${index}`
+    name: `Tester ${index}`,
+    appearance: {
+      schema: 'realm.character-appearance.v1',
+      sex: index % 2 === 0 ? 'male' : 'female',
+      bodyType: ['slim', 'medium', 'large'][(index - 1) % 3],
+      faceId: index % 2 === 0 ? 'male_01' : 'female_01',
+      hairId: 'short_crop',
+      skinToneId: 'skin_03',
+      hairColorId: 'hair_03'
+    }
   };
 }
 
@@ -1036,6 +1045,7 @@ async function joinSocketCharacter(socket, account) {
     controlType: 'keyboard_mouse',
     characterId: account.characterId,
     name: account.name,
+    appearance: account.appearance,
     special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 },
     traits: ['trainedEye'],
     taggedSkills: ['lightWeapons']
@@ -1134,6 +1144,7 @@ async function assertSocketMultiplayerLifecycle() {
           controlType: 'keyboard_mouse',
           characterId: account.characterId,
           name: account.name,
+          appearance: account.appearance,
           special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 }
         });
         if (invalidJoin.ok) {
@@ -1168,6 +1179,10 @@ async function assertSocketMultiplayerLifecycle() {
         || account.join.self.taggedSkills.length !== 1
         || account.join.self.taggedSkills[0] !== 'lightWeapons') {
         fail('multiplayer join did not preserve tagged skills', JSON.stringify(account.join.self));
+      }
+      if (account.join.self.appearance?.sex !== account.appearance.sex
+        || account.join.self.appearance?.bodyType !== account.appearance.bodyType) {
+        fail('multiplayer join did not preserve character appearance', JSON.stringify(account.join.self));
       }
       if (!Array.isArray(account.join.self.worldTaskRecords)) {
         fail('authoritative player state is missing personal world-task records', JSON.stringify(account.join.self));
@@ -1467,6 +1482,11 @@ async function assertSocketMultiplayerLifecycle() {
       special: { str: 10, per: 10, end: 10, cha: 7, int: 1, agi: 1, luck: 1 },
       traits: ['bruiser', 'educatedStart'],
       taggedSkills: ['science', 'repair'],
+      appearance: {
+        schema: 'realm.character-appearance.v1',
+        sex: 'male',
+        bodyType: 'large'
+      },
       factionId: 'scrap_union',
       worldFactionId: 'scrap_union'
     };
@@ -1496,6 +1516,8 @@ async function assertSocketMultiplayerLifecycle() {
       || Object.values(rejoin.self?.special || {}).some(value => Number(value) !== 5)
       || JSON.stringify(rejoin.self?.traits || []) !== JSON.stringify(['trainedEye'])
       || JSON.stringify(rejoin.self?.taggedSkills || []) !== JSON.stringify(['lightWeapons'])
+      || rejoin.self?.appearance?.sex !== first.appearance.sex
+      || rejoin.self?.appearance?.bodyType !== first.appearance.bodyType
       || rejoin.self?.worldFactionId !== 'old_klim'
       || rejoin.lastVisitedSettlementId !== 'settlement') {
       fail('inactive HTTP save replaced authoritative identity or character creation choices', JSON.stringify(rejoin.self));

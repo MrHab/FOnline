@@ -124,6 +124,47 @@
     return rows.map(([name, value]) => `<div>${name}: <b>${value}%</b></div>`).join('');
   }
 
+  function renderCharacterAppearanceStepper(container, options = [], selectedId = '', onSelect, label = '', swatches = false) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (!Array.isArray(options) || !options.length) return;
+    const selectedIndex = Math.max(0, options.findIndex(option => option.id === selectedId));
+    const selected = options[selectedIndex];
+    const stepper = document.createElement('div');
+    stepper.className = 'character-appearance-stepper';
+    const selectOffset = offset => {
+      const nextIndex = (selectedIndex + offset + options.length) % options.length;
+      onSelect?.(options[nextIndex]);
+    };
+    const previous = document.createElement('button');
+    previous.type = 'button';
+    previous.className = 'character-appearance-stepper-arrow';
+    previous.setAttribute('aria-label', `Предыдущий вариант: ${label}`);
+    previous.textContent = '←';
+    previous.addEventListener('click', () => selectOffset(-1));
+    const value = document.createElement('div');
+    value.className = 'character-appearance-stepper-value';
+    value.setAttribute('aria-live', 'polite');
+    if (swatches && selected.hex) {
+      const swatch = document.createElement('span');
+      swatch.className = 'character-hair-color-swatch';
+      swatch.style.backgroundColor = selected.hex;
+      swatch.setAttribute('aria-hidden', 'true');
+      value.appendChild(swatch);
+    }
+    const valueLabel = document.createElement('span');
+    valueLabel.textContent = selected.label;
+    value.appendChild(valueLabel);
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'character-appearance-stepper-arrow';
+    next.setAttribute('aria-label', `Следующий вариант: ${label}`);
+    next.textContent = '→';
+    next.addEventListener('click', () => selectOffset(1));
+    stepper.append(previous, value, next);
+    container.appendChild(stepper);
+  }
+
   function renderCharacterCreator() {
     const statBox = document.getElementById('char-stats');
     const pointsEl = document.getElementById('char-points-left');
@@ -137,91 +178,98 @@
     const bodyOptions = document.getElementById('creator-body-options');
     const faceOptions = document.getElementById('creator-face-options');
     const hairOptions = document.getElementById('creator-hair-options');
+    const hairColorOptions = document.getElementById('creator-hair-color-options');
     const appearanceSummary = document.getElementById('character-appearance-summary');
     if (!statBox || !skillsEl || !traitsEl || !derivedEl) return;
     creatorAppearance = typeof normalizeCharacterAppearance === 'function'
       ? normalizeCharacterAppearance(creatorAppearance)
       : creatorAppearance;
     if (sexOptions) {
-      sexOptions.innerHTML = '';
       const options = [
-        { id: 'female', label: 'Женский', hint: 'Женская базовая модель' },
-        { id: 'male', label: 'Мужской', hint: 'Мужская базовая модель' }
+        { id: 'female', label: 'Женский' },
+        { id: 'male', label: 'Мужской' }
       ];
-      options.forEach(option => {
-        const selected = creatorAppearance.sex === option.id;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `character-appearance-option${selected ? ' selected' : ''}`;
-        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        button.innerHTML = `<span>${option.label}</span><small>${option.hint}</small>`;
-        button.addEventListener('click', () => {
+      renderCharacterAppearanceStepper(
+        sexOptions,
+        options,
+        creatorAppearance.sex,
+        option => {
           const next = typeof defaultCharacterAppearance === 'function'
             ? defaultCharacterAppearance(option.id)
             : { ...creatorAppearance, sex: option.id };
-          creatorAppearance = { ...next, bodyType: creatorAppearance.bodyType || 'medium' };
+          creatorAppearance = {
+            ...next,
+            bodyType: creatorAppearance.bodyType || 'medium',
+            hairId: creatorAppearance.hairId || next.hairId,
+            hairColorId: creatorAppearance.hairColorId || next.hairColorId
+          };
           renderCharacterCreator();
-        });
-        sexOptions.appendChild(button);
-      });
+        },
+        'пол'
+      );
     }
     if (bodyOptions) {
-      bodyOptions.innerHTML = '';
-      [
+      const options = [
         { id: 'slim', label: 'Стройное' },
         { id: 'medium', label: 'Среднее' },
         { id: 'large', label: 'Крепкое' }
-      ].forEach(option => {
-        const selected = creatorAppearance.bodyType === option.id;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `character-appearance-option compact${selected ? ' selected' : ''}`;
-        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        button.textContent = option.label;
-        button.addEventListener('click', () => {
+      ];
+      renderCharacterAppearanceStepper(
+        bodyOptions,
+        options,
+        creatorAppearance.bodyType,
+        option => {
           creatorAppearance = { ...creatorAppearance, bodyType: option.id };
           renderCharacterCreator();
-        });
-        bodyOptions.appendChild(button);
-      });
+        },
+        'телосложение'
+      );
     }
     if (faceOptions) {
-      faceOptions.innerHTML = '';
       const options = typeof CHARACTER_FACE_OPTIONS === 'object'
         ? (CHARACTER_FACE_OPTIONS[creatorAppearance.sex] || [])
         : [];
-      options.forEach(option => {
-        const selected = creatorAppearance.faceId === option.id;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `character-appearance-option compact${selected ? ' selected' : ''}`;
-        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        button.textContent = option.label;
-        button.addEventListener('click', () => {
+      renderCharacterAppearanceStepper(
+        faceOptions,
+        options,
+        creatorAppearance.faceId,
+        option => {
           creatorAppearance = { ...creatorAppearance, faceId: option.id };
           renderCharacterCreator();
-        });
-        faceOptions.appendChild(button);
-      });
+        },
+        'лицо'
+      );
     }
     if (hairOptions) {
-      hairOptions.innerHTML = '';
       const options = typeof CHARACTER_HAIR_OPTIONS !== 'undefined' && Array.isArray(CHARACTER_HAIR_OPTIONS)
         ? CHARACTER_HAIR_OPTIONS
         : [];
-      options.forEach(option => {
-        const selected = creatorAppearance.hairId === option.id;
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `character-appearance-option compact${selected ? ' selected' : ''}`;
-        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        button.textContent = option.label;
-        button.addEventListener('click', () => {
+      renderCharacterAppearanceStepper(
+        hairOptions,
+        options,
+        creatorAppearance.hairId,
+        option => {
           creatorAppearance = { ...creatorAppearance, hairId: option.id };
           renderCharacterCreator();
-        });
-        hairOptions.appendChild(button);
-      });
+        },
+        'причёска'
+      );
+    }
+    if (hairColorOptions) {
+      const options = typeof CHARACTER_HAIR_COLOR_OPTIONS !== 'undefined' && Array.isArray(CHARACTER_HAIR_COLOR_OPTIONS)
+        ? CHARACTER_HAIR_COLOR_OPTIONS
+        : [];
+      renderCharacterAppearanceStepper(
+        hairColorOptions,
+        options,
+        creatorAppearance.hairColorId,
+        option => {
+          creatorAppearance = { ...creatorAppearance, hairColorId: option.id };
+          renderCharacterCreator();
+        },
+        'цвет волос',
+        true
+      );
     }
     if (appearanceSummary) {
       appearanceSummary.textContent = typeof characterAppearanceLabel === 'function'

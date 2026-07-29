@@ -26,6 +26,16 @@
     { id: 'long', label: 'Длинная' },
     { id: 'buns', label: 'Два пучка' }
   ];
+  const CHARACTER_HAIR_COLOR_OPTIONS = [
+    { id: 'hair_01', label: 'Чёрный', hex: '#1A1512' },
+    { id: 'hair_02', label: 'Тёмно-коричневый', hex: '#2A1B16' },
+    { id: 'hair_03', label: 'Каштановый', hex: '#4B3023' },
+    { id: 'hair_04', label: 'Коричневый', hex: '#6B452A' },
+    { id: 'hair_05', label: 'Светло-коричневый', hex: '#8A6040' },
+    { id: 'hair_06', label: 'Русый', hex: '#A27A4B' },
+    { id: 'hair_07', label: 'Седой', hex: '#7B7D76' },
+    { id: 'hair_08', label: 'Рыжий', hex: '#5B2922' }
+  ];
   const CHARACTER_FACE_FIT_PROFILES = {
     '01': {
       headScale: [1, 1, 1],
@@ -69,6 +79,7 @@
     requestedKey: '',
     loadedKey: '',
     loadedAppearanceKey: '',
+    requestedAppearance: null,
     requestId: 0,
     resizeObserver: null,
     pointerX: 0,
@@ -107,11 +118,15 @@
     const hairId = CHARACTER_HAIR_OPTIONS.some(option => option.id === String(input?.hairId || ''))
       ? String(input.hairId)
       : defaults.hairId;
+    const hairColorId = CHARACTER_HAIR_COLOR_OPTIONS.some(option => option.id === String(input?.hairColorId || ''))
+      ? String(input.hairColorId)
+      : defaults.hairColorId;
     return {
       ...defaults,
       bodyType,
       faceId,
-      hairId
+      hairId,
+      hairColorId
     };
   }
 
@@ -124,11 +139,13 @@
     const appearance = normalizeCharacterAppearance(input);
     const face = characterAppearanceOption(CHARACTER_FACE_OPTIONS[appearance.sex], appearance.faceId);
     const hair = characterAppearanceOption(CHARACTER_HAIR_OPTIONS, appearance.hairId);
+    const hairColor = characterAppearanceOption(CHARACTER_HAIR_COLOR_OPTIONS, appearance.hairColorId);
     return [
       CHARACTER_SEX_LABELS[appearance.sex],
       CHARACTER_BODY_TYPE_LABELS[appearance.bodyType],
       face?.label || appearance.faceId,
-      hair?.label || appearance.hairId
+      hair?.label || appearance.hairId,
+      hairColor?.label || appearance.hairColorId
     ].join(' · ');
   }
 
@@ -201,12 +218,37 @@
     });
   }
 
-  function attachCharacterVariantToHead(root, group) {
-    if (!root || !group) return;
-    root.add(group);
+  function characterHeadRestMatrix(root) {
+    const head = root?.getObjectByName?.('head');
+    if (!head) return null;
+    const saved = head.userData?.characterAppearanceRestMatrix;
+    if (Array.isArray(saved) && saved.length === 16) {
+      return new THREE.Matrix4().fromArray(saved);
+    }
     root.updateMatrixWorld(true);
+    const rootInverse = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    const restMatrix = rootInverse.multiply(head.matrixWorld);
+    head.userData.characterAppearanceRestMatrix = restMatrix.toArray();
+    return restMatrix;
+  }
+
+  function attachCharacterVariantToHead(root, group, appearance = {}) {
+    if (!root || !group) return;
     const head = root.getObjectByName?.('head');
-    if (head?.attach) head.attach(group);
+    const restMatrix = characterHeadRestMatrix(root);
+    if (!head || !restMatrix) {
+      root.add(group);
+      root.updateMatrixWorld(true);
+      return;
+    }
+    const factors = characterFaceFitProfile(appearance).headScale;
+    const fittedRestMatrix = restMatrix.clone().multiply(
+      new THREE.Matrix4().makeScale(factors[0], factors[1], factors[2])
+    );
+    const attachmentMatrix = fittedRestMatrix.invert();
+    head.add(group);
+    attachmentMatrix.decompose(group.position, group.quaternion, group.scale);
+    group.updateMatrixWorld(true);
   }
 
   function characterFaceFitProfile(input = {}) {
@@ -451,9 +493,11 @@
     if (!root?.traverse) return;
     const appearance = normalizeCharacterAppearance(input);
     const helmetOn = !!options.helmetOn;
-    const appearanceKey = `${appearance.faceId}:${appearance.hairId}:${helmetOn ? 1 : 0}`;
+    const appearanceKey = `${appearance.faceId}:${appearance.hairId}:${appearance.hairColorId}:${helmetOn ? 1 : 0}`;
     if (root.userData?.characterAppearanceKey === appearanceKey) return;
+    characterHeadRestMatrix(root);
     applyCharacterFaceShape(root, appearance);
+    root.updateMatrixWorld(true);
     root.traverse(obj => {
       if (!obj || obj.userData?.characterAppearanceVariant) return;
       const layer = String(obj.userData?.realm_character_layer || '').toLowerCase();
@@ -469,7 +513,8 @@
     group.name = 'character_appearance_variants';
     group.userData.characterAppearanceVariant = true;
     if (!helmetOn && appearance.hairId !== 'shaved') {
-      const hairMaterial = characterVariantMaterial(0x4b3023, { roughness: 0.94 });
+      const hairColor = characterAppearanceOption(CHARACTER_HAIR_COLOR_OPTIONS, appearance.hairColorId);
+      const hairMaterial = characterVariantMaterial(hairColor?.hex || '#4B3023', { roughness: 0.94 });
       if (!addCharacterHairVariant(group, hairMaterial, appearance)) hairMaterial.dispose();
     }
     if (group.children.length) {
@@ -479,7 +524,7 @@
         obj.receiveShadow = false;
         obj.frustumCulled = false;
       });
-      attachCharacterVariantToHead(root, group);
+      attachCharacterVariantToHead(root, group, appearance);
       root.userData.characterAppearanceVariantGroup = group;
     } else {
       delete root.userData.characterAppearanceVariantGroup;
@@ -657,6 +702,7 @@
     characterPreviewState.requestedKey = '';
     characterPreviewState.loadedKey = '';
     characterPreviewState.loadedAppearanceKey = '';
+    characterPreviewState.requestedAppearance = null;
     characterPreviewState.mixer?.stopAllAction?.();
     characterPreviewState.mixer = null;
     if (characterPreviewState.model) {
@@ -722,6 +768,7 @@
       characterPreviewState.mixer?.update(dt);
       if (characterPreviewState.model) {
         applyCharacterFaceShapeFrame(characterPreviewState.model);
+        characterPreviewState.model.updateMatrixWorld(true);
         const faceCameraYaw = Math.atan2(camera.position.x, camera.position.z);
         const pointerOffset = characterPreviewState.pointerActive
           ? characterPreviewState.pointerX * 0.34
@@ -740,8 +787,13 @@
     if (!ensureCharacterPreview()) return;
     const appearance = normalizeCharacterAppearance(input);
     const key = characterAppearanceKey(appearance);
-    const appearanceKey = `${key}:${appearance.faceId}:${appearance.hairId}`;
+    const appearanceKey = `${key}:${appearance.faceId}:${appearance.hairId}:${appearance.hairColorId}`;
+    characterPreviewState.requestedAppearance = appearance;
     if (characterPreviewState.loadedKey === key && characterPreviewState.model) {
+      if (characterPreviewState.requestedKey !== key) {
+        characterPreviewState.requestId += 1;
+        characterPreviewState.requestedKey = key;
+      }
       if (characterPreviewState.loadedAppearanceKey !== appearanceKey) {
         applyCharacterGlbVisualVariants(characterPreviewState.model, appearance);
         characterPreviewState.loadedAppearanceKey = appearanceKey;
@@ -749,7 +801,10 @@
       setCharacterPreviewStatus(characterAppearanceLabel(appearance), 'ready');
       return;
     }
-    if (characterPreviewState.requestedKey === key) return;
+    if (characterPreviewState.requestedKey === key) {
+      setCharacterPreviewStatus(`Загрузка: ${characterAppearanceLabel(appearance)}…`, 'loading');
+      return;
+    }
     characterPreviewState.requestedKey = key;
     const requestId = characterPreviewState.requestId + 1;
     characterPreviewState.requestId = requestId;
@@ -765,7 +820,11 @@
         return;
       }
       const model = configureCharacterGlbScene(gltf.scene, { castShadow: false });
-      applyCharacterGlbVisualVariants(model, appearance);
+      const requestedAppearance = normalizeCharacterAppearance(
+        characterPreviewState.requestedAppearance || appearance
+      );
+      const requestedAppearanceKey = `${key}:${requestedAppearance.faceId}:${requestedAppearance.hairId}:${requestedAppearance.hairColorId}`;
+      applyCharacterGlbVisualVariants(model, requestedAppearance);
       const previous = characterPreviewState.model;
       if (previous) {
         characterPreviewState.scene.remove(previous);
@@ -778,8 +837,8 @@
       if (actions.idle) actions.idle.play();
       characterPreviewState.scene.add(model);
       characterPreviewState.loadedKey = key;
-      characterPreviewState.loadedAppearanceKey = appearanceKey;
-      setCharacterPreviewStatus(characterAppearanceLabel(appearance), 'ready');
+      characterPreviewState.loadedAppearanceKey = requestedAppearanceKey;
+      setCharacterPreviewStatus(characterAppearanceLabel(requestedAppearance), 'ready');
       resizeCharacterPreview();
     }, undefined, error => {
       console.warn(`Character preview failed to load (${key}):`, error);

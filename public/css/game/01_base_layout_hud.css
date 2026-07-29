@@ -780,60 +780,64 @@
     gap: 16px;
   }
   .character-appearance-options {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-  .character-appearance-options.body-options {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .character-appearance-options.face-options {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .character-appearance-options.hair-options {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .character-appearance-option {
-    min-height: 54px;
-    padding: 9px 10px;
-    border: 1px solid rgba(137, 112, 67, 0.55);
-    border-radius: 7px;
-    background: rgba(24, 27, 24, 0.88);
-    color: #d6c08c;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    pointer-events: all;
-  }
-  .character-appearance-option:hover {
-    border-color: #c09645;
-    background: rgba(38, 37, 30, 0.96);
-  }
-  .character-appearance-option.selected {
-    border-color: #83ad58;
-    color: #f0d28a;
-    background: rgba(46, 57, 37, 0.94);
-    box-shadow: inset 0 0 0 1px rgba(127, 178, 75, 0.22);
-  }
-  .character-appearance-option span,
-  .character-appearance-option small {
     display: block;
   }
-  .character-appearance-option span {
+  .character-appearance-stepper {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    align-items: stretch;
+    min-height: 42px;
+    border: 1px solid rgba(137, 112, 67, 0.55);
+    border-radius: 7px;
+    overflow: hidden;
+    background: rgba(24, 27, 24, 0.88);
+  }
+  .character-appearance-stepper-arrow {
+    border: 0;
+    background: rgba(35, 29, 18, 0.96);
+    color: #e7c171;
+    font: 800 19px/1 monospace;
+    cursor: pointer;
+    pointer-events: all;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .character-appearance-stepper-arrow:first-child {
+    border-right: 1px solid rgba(137, 112, 67, 0.45);
+  }
+  .character-appearance-stepper-arrow:last-child {
+    border-left: 1px solid rgba(137, 112, 67, 0.45);
+  }
+  .character-appearance-stepper-arrow:hover,
+  .character-appearance-stepper-arrow:focus-visible {
+    background: rgba(70, 55, 28, 0.98);
+    color: #ffe09a;
+    outline: none;
+  }
+  .character-appearance-stepper-value {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 7px 10px;
+    color: #f0d28a;
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.5px;
-  }
-  .character-appearance-option small {
-    margin-top: 4px;
-    color: #7f8c73;
-    font-size: 9.5px;
-  }
-  .character-appearance-option.compact {
-    min-height: 42px;
-    padding: 8px;
     text-align: center;
-    font-size: 11px;
+  }
+  .character-appearance-stepper-value span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .character-hair-color-swatch {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    border: 1px solid rgba(240, 210, 138, 0.55);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
   }
   .character-appearance-note {
     padding: 9px 10px;
@@ -936,15 +940,15 @@
       gap: 10px;
       padding: 10px;
     }
-    .character-appearance-option { min-height: 46px; padding: 7px 8px; }
-    .character-appearance-option.compact { min-height: 38px; }
+    .character-appearance-stepper {
+      grid-template-columns: 38px minmax(0, 1fr) 38px;
+      min-height: 38px;
+    }
+    .character-appearance-stepper-value { padding: 6px 8px; }
     .character-appearance-note { padding: 7px 8px; line-height: 1.3; }
     .char-title { margin-bottom: 9px; }
   }
   @media (max-width: 520px) {
-    .character-appearance-options.body-options { grid-template-columns: 1fr; }
-    .character-appearance-options.face-options,
-    .character-appearance-options.hair-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .character-card-row { grid-template-columns: 1fr; }
     .character-card-actions { justify-content: stretch; }
     .character-card-actions .char-action-btn { flex: 1; }

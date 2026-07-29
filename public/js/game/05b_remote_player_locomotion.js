@@ -1414,10 +1414,15 @@
       row.x = g.position.x;
       row.z = g.position.z;
       applyCharacterCrouchVisual(g, !!g.userData.crouching, dt);
+      const visualMoveX = Number(row.visualVelX || 0);
+      const visualMoveZ = Number(row.visualVelZ || 0);
       updateCharacterLocomotionAnimation(g, dt, {
         moving: !!g.userData.remoteMoving,
-        speed: Math.hypot(Number(row.visualVelX || 0), Number(row.visualVelZ || 0)),
-        crouching: !!g.userData.crouching
+        speed: Math.hypot(visualMoveX, visualMoveZ),
+        crouching: !!g.userData.crouching,
+        moveX: visualMoveX,
+        moveZ: visualMoveZ,
+        facingAngle: Number(g.rotation.y || 0) - Math.PI
       });
       applyCharacterInjuryVisual(g, row.data?.injuries || {}, dt);
       updateWeaponVisualAnimation(g.userData.parts?.weaponGroup, dt, {

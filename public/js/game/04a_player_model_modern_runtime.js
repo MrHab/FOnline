@@ -643,6 +643,15 @@
     const weaponId = modernAnimationWeaponId(actor);
     const usesRangedStance = !['fists', 'knife', 'pickaxe', 'axe', 'handPump'].includes(weaponId);
     const now = performance.now();
+    const directional = typeof characterDirectionalLocomotionState === 'function'
+      ? characterDirectionalLocomotionState(state)
+      : {
+          lowerBodyYaw: 0,
+          upperBodyYaw: 0,
+          sideAmount: 0,
+          playbackRate: moving ? 1 : 0,
+          strideScale: moving ? 1 : 0
+        };
 
     const moveTarget = moving ? 1 : 0;
     const aimTarget = usesRangedStance ? 1 : 0;
@@ -652,11 +661,39 @@
     const moveBlend = actor.userData.modernMoveBlend;
     const aimBlend = actor.userData.modernAimBlend;
     const crouchBlend = actor.userData.modernCrouchBlend;
+    actor.userData.modernLowerBodyYaw = modernAnimationBlend(
+      Number(actor.userData.modernLowerBodyYaw || 0),
+      directional.lowerBodyYaw,
+      moving ? 8.5 : 6.5,
+      dt
+    );
+    actor.userData.modernSideAmount = modernAnimationBlend(
+      Number(actor.userData.modernSideAmount || 0),
+      Number(directional.sideAmount || 0),
+      9,
+      dt
+    );
+    if (moving && !actor.userData.modernWasMoving) {
+      actor.userData.modernPlaybackRate = directional.playbackRate;
+    }
+    actor.userData.modernPlaybackRate = modernAnimationBlend(
+      Number.isFinite(Number(actor.userData.modernPlaybackRate))
+        ? Number(actor.userData.modernPlaybackRate)
+        : 1,
+      moving ? directional.playbackRate : 1,
+      directional.playbackRate < 0 ? 7 : 9,
+      dt
+    );
+    actor.userData.modernWasMoving = moving;
+    const lowerBodyYaw = actor.userData.modernLowerBodyYaw * moveBlend;
+    const upperBodyYaw = -lowerBodyYaw;
+    const sideAmount = actor.userData.modernSideAmount * moveBlend;
 
     const phaseSpeed = moving ? Math.max(4.6, Math.min(9.2, 4.2 + speed * 0.7)) : 2.2;
-    actor.userData.modernWalkPhase = Number(actor.userData.modernWalkPhase || 0) + dt * phaseSpeed;
+    actor.userData.modernWalkPhase = Number(actor.userData.modernWalkPhase || 0)
+      + dt * phaseSpeed * actor.userData.modernPlaybackRate;
     const phase = actor.userData.modernWalkPhase;
-    const stride = Math.sin(phase) * moveBlend * (0.58 - crouchBlend * 0.22);
+    const stride = Math.sin(phase) * moveBlend * directional.strideScale * (0.58 - crouchBlend * 0.22);
     const footLiftL = Math.max(0, Math.sin(phase)) * moveBlend;
     const footLiftR = Math.max(0, -Math.sin(phase)) * moveBlend;
     const breath = Math.sin(now / 720) * 0.012;
@@ -664,11 +701,12 @@
 
     parts.motionRoot.position.y = -crouchBlend * 0.16 + bob;
     parts.motionRoot.rotation.x = crouchBlend * 0.055;
-    parts.motionRoot.rotation.z = Math.sin(phase * 0.5) * moveBlend * 0.012;
+    parts.motionRoot.rotation.y = lowerBodyYaw;
+    parts.motionRoot.rotation.z = Math.sin(phase * 0.5) * moveBlend * 0.012 - sideAmount * 0.035;
     parts.torsoRig.position.y = 0.72 + breath;
     parts.torsoRig.rotation.x = crouchBlend * 0.14 + moveBlend * 0.025;
-    parts.torsoRig.rotation.y = Math.sin(phase) * moveBlend * 0.035;
-    parts.torsoRig.rotation.z = -Math.sin(phase) * moveBlend * 0.018;
+    parts.torsoRig.rotation.y = Math.sin(phase) * moveBlend * 0.035 + upperBodyYaw * 0.82;
+    parts.torsoRig.rotation.z = -Math.sin(phase) * moveBlend * 0.018 + sideAmount * 0.025;
 
     parts.legL.rotation.set(stride - crouchBlend * 0.34, 0, 0.035);
     parts.legR.rotation.set(-stride - crouchBlend * 0.34, 0, -0.035);
@@ -690,7 +728,7 @@
     parts.wristR.rotation.set(-0.06 * aimBlend, 0, 0);
     if (parts.head) {
       parts.head.rotation.x = -crouchBlend * 0.08 + moveBlend * 0.015;
-      parts.head.rotation.y = -Math.sin(phase) * moveBlend * 0.025;
+      parts.head.rotation.y = -Math.sin(phase) * moveBlend * 0.025 + upperBodyYaw * 0.18;
       parts.head.rotation.z = 0;
     }
 

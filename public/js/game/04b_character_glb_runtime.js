@@ -545,6 +545,133 @@
     return actions;
   }
 
+  function characterDirectionalLocomotionState(state = {}) {
+    const moving = !!state.moving;
+    const speed = Math.max(0, Number(state.speed || 0));
+    const facingAngle = Number.isFinite(Number(state.facingAngle))
+      ? Number(state.facingAngle)
+      : 0;
+    let moveX = Number(state.moveX || 0);
+    let moveZ = Number(state.moveZ || 0);
+    let moveLength = Math.hypot(moveX, moveZ);
+    if (!moving || !Number.isFinite(moveLength) || moveLength < 0.0001) {
+      moveX = Math.sin(facingAngle);
+      moveZ = Math.cos(facingAngle);
+      moveLength = 1;
+    }
+    moveX /= moveLength;
+    moveZ /= moveLength;
+    const facingX = Math.sin(facingAngle);
+    const facingZ = Math.cos(facingAngle);
+    const rightX = Math.cos(facingAngle);
+    const rightZ = -Math.sin(facingAngle);
+    const forwardAmount = Math.max(-1, Math.min(1, moveX * facingX + moveZ * facingZ));
+    const sideAmount = Math.max(-1, Math.min(1, moveX * rightX + moveZ * rightZ));
+    const relativeAngle = Math.atan2(sideAmount, forwardAmount);
+    const backward = moving && forwardAmount < -0.42;
+    const sideStrength = Math.abs(sideAmount);
+    let lowerBodyYaw = 0;
+    if (moving && !backward) {
+      lowerBodyYaw = Math.max(-1.05, Math.min(1.05, relativeAngle * 0.82));
+    } else if (backward) {
+      lowerBodyYaw = sideAmount * 0.38;
+    }
+    let direction = 'idle';
+    if (moving) {
+      const vertical = forwardAmount > 0.42 ? 'forward' : (forwardAmount < -0.42 ? 'backward' : '');
+      const horizontal = sideAmount > 0.42 ? 'right' : (sideAmount < -0.42 ? 'left' : '');
+      direction = [vertical, horizontal].filter(Boolean).join('_') || 'forward';
+    }
+    const action = moving
+      ? (backward ? 'walk' : (speed > 5.35 ? 'run' : 'walk'))
+      : 'idle';
+    const playbackRate = !moving
+      ? 1
+      : (backward ? -0.82 : (sideStrength > 0.62 ? 0.92 : 1));
+    const strideScale = !moving
+      ? 0
+      : (backward ? 0.68 : (sideStrength > 0.62 ? 0.84 : 1));
+    return {
+      moving,
+      speed,
+      direction,
+      action,
+      forwardAmount,
+      sideAmount,
+      relativeAngle,
+      lowerBodyYaw,
+      upperBodyYaw: -lowerBodyYaw,
+      playbackRate,
+      strideScale
+    };
+  }
+
+  function characterLocomotionBlend(current, target, rate, dt) {
+    const step = Math.min(1, Math.max(0.001, Number(dt || 0.016)) * Math.max(0, Number(rate || 0)));
+    return Number(current || 0) + (Number(target || 0) - Number(current || 0)) * step;
+  }
+
+  function clearCharacterGlbDirectionalPose(runtime) {
+    const offsets = Array.isArray(runtime?.directionalPoseOffsets)
+      ? runtime.directionalPoseOffsets
+      : [];
+    offsets.forEach(row => {
+      if (!row?.bone?.quaternion || !row.quaternion) return;
+      row.bone.quaternion.multiply(row.quaternion.clone().invert());
+    });
+    if (runtime) runtime.directionalPoseOffsets = [];
+  }
+
+  function addCharacterGlbDirectionalBoneOffset(runtime, bone, x = 0, y = 0, z = 0) {
+    if (!runtime || !bone?.quaternion) return;
+    const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
+    bone.quaternion.multiply(quaternion);
+    runtime.directionalPoseOffsets.push({ bone, quaternion });
+  }
+
+  function applyCharacterGlbDirectionalPose(runtime, locomotion, dt = 0.016) {
+    if (!runtime?.root || !locomotion) return;
+    runtime.directionalMoveBlend = characterLocomotionBlend(
+      runtime.directionalMoveBlend,
+      locomotion.moving ? 1 : 0,
+      locomotion.moving ? 9 : 6,
+      dt
+    );
+    runtime.directionalLowerBodyYaw = characterLocomotionBlend(
+      runtime.directionalLowerBodyYaw,
+      locomotion.lowerBodyYaw,
+      locomotion.moving ? 8.5 : 6.5,
+      dt
+    );
+    runtime.directionalSideAmount = characterLocomotionBlend(
+      runtime.directionalSideAmount,
+      locomotion.sideAmount,
+      9,
+      dt
+    );
+    runtime.directionalForwardAmount = characterLocomotionBlend(
+      runtime.directionalForwardAmount,
+      locomotion.forwardAmount,
+      9,
+      dt
+    );
+    const moveBlend = runtime.directionalMoveBlend;
+    const lowerBodyYaw = runtime.directionalLowerBodyYaw * moveBlend;
+    const counterYaw = -lowerBodyYaw;
+    const side = runtime.directionalSideAmount * moveBlend;
+    const forward = runtime.directionalForwardAmount;
+    const backwardLean = Math.max(0, -forward) * moveBlend;
+    const forwardLean = Math.max(0, forward) * moveBlend;
+    runtime.root.rotation.y = Number(runtime.baseRotationY ?? Math.PI) + lowerBodyYaw;
+    const bones = runtime.locomotionBones || {};
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.pelvis, backwardLean * -0.025, 0, side * -0.035);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine01, forwardLean * 0.025 - backwardLean * 0.045, counterYaw * 0.25, side * -0.018);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine02, 0, counterYaw * 0.29, side * -0.012);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine03, 0, counterYaw * 0.27, side * 0.012);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.neck, 0, counterYaw * 0.11, side * 0.008);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.head, 0, counterYaw * 0.08, 0);
+  }
+
   function setCharacterGlbAction(runtime, name = 'idle', fadeSeconds = 0.16) {
     if (!runtime?.actions) return;
     const nextName = runtime.actions[name] ? name : (runtime.actions.idle ? 'idle' : Object.keys(runtime.actions)[0]);
@@ -642,7 +769,23 @@
           root,
           mixer,
           actions: characterGlbActions(mixer, gltf.animations || []),
-          currentAction: ''
+          currentAction: '',
+          baseRotationY: Math.PI,
+          directionalMoveBlend: 0,
+          directionalLowerBodyYaw: 0,
+          directionalSideAmount: 0,
+          directionalForwardAmount: 1,
+          directionalPlaybackRate: 1,
+          directionalWasMoving: false,
+          directionalPoseOffsets: [],
+          locomotionBones: {
+            pelvis: root.getObjectByName('pelvis'),
+            spine01: root.getObjectByName('spine_01'),
+            spine02: root.getObjectByName('spine_02'),
+            spine03: root.getObjectByName('spine_03'),
+            neck: root.getObjectByName('neck_01'),
+            head: root.getObjectByName('head')
+          }
         };
         const previous = actor.userData.characterGlbRuntime;
         actor.add(root);
@@ -668,13 +811,32 @@
   function updateCharacterGlbAnimation(actor, dt = 0.016, state = {}) {
     const runtime = actor?.userData?.characterGlbRuntime;
     if (!runtime?.mixer) return false;
-    const moving = !!state.moving;
-    const speed = Math.max(0, Number(state.speed || 0));
-    const action = moving ? (speed > 5.35 ? 'run' : 'walk') : 'idle';
-    setCharacterGlbAction(runtime, action);
+    const frameDt = Math.max(0, Math.min(0.08, Number(dt || 0.016)));
+    const locomotion = characterDirectionalLocomotionState(state);
+    setCharacterGlbAction(runtime, locomotion.action);
+    if (locomotion.moving && !runtime.directionalWasMoving) {
+      runtime.directionalPlaybackRate = locomotion.playbackRate;
+    }
+    runtime.directionalPlaybackRate = characterLocomotionBlend(
+      runtime.directionalPlaybackRate,
+      locomotion.playbackRate,
+      locomotion.playbackRate < 0 ? 7 : 9,
+      frameDt
+    );
+    const action = runtime.actions?.[runtime.currentAction];
+    if (action) {
+      const baseRate = runtime.currentAction === 'walk' ? 1.05 : 1;
+      action.setEffectiveTimeScale(baseRate * runtime.directionalPlaybackRate);
+    }
+    clearCharacterGlbDirectionalPose(runtime);
     runtime.root.position.y = state.crouching ? -0.13 : 0;
-    runtime.mixer.update(Math.max(0, Math.min(0.08, Number(dt || 0.016))));
+    runtime.mixer.update(frameDt);
     applyCharacterFaceShapeFrame(runtime.root);
+    applyCharacterGlbDirectionalPose(runtime, locomotion, frameDt);
+    actor.userData.characterLocomotionDirection = locomotion.direction;
+    actor.userData.characterLocomotionForwardAmount = locomotion.forwardAmount;
+    actor.userData.characterLocomotionSideAmount = locomotion.sideAmount;
+    runtime.directionalWasMoving = locomotion.moving;
     return true;
   }
 

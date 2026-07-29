@@ -24,6 +24,17 @@
   let creatorStats = Object.fromEntries(STAT_DEFS.map(s => [s.key, 5]));
   let creatorSkills = [];
   let creatorTraits = [];
+  let creatorAppearance = typeof defaultCharacterAppearance === 'function'
+    ? defaultCharacterAppearance('male')
+    : {
+      schema: 'realm.character-appearance.v1',
+      sex: 'male',
+      bodyType: 'medium',
+      faceId: 'male_01',
+      hairId: 'short_crop',
+      skinToneId: 'skin_03',
+      hairColorId: 'hair_03'
+    };
 
   function effectiveSpecialStats(profile = characterProfile) {
     const source = profile?.special || DEFAULT_SPECIAL;
@@ -122,7 +133,64 @@
     const traitCount = document.getElementById('trait-count');
     const derivedEl = document.getElementById('char-derived');
     const startBtn = document.getElementById('char-start-btn');
+    const sexOptions = document.getElementById('creator-sex-options');
+    const bodyOptions = document.getElementById('creator-body-options');
+    const appearanceSummary = document.getElementById('character-appearance-summary');
     if (!statBox || !skillsEl || !traitsEl || !derivedEl) return;
+    creatorAppearance = typeof normalizeCharacterAppearance === 'function'
+      ? normalizeCharacterAppearance(creatorAppearance)
+      : creatorAppearance;
+    if (sexOptions) {
+      sexOptions.innerHTML = '';
+      const options = [
+        { id: 'female', label: 'Женский', hint: 'Женская базовая модель' },
+        { id: 'male', label: 'Мужской', hint: 'Мужская базовая модель' }
+      ];
+      options.forEach(option => {
+        const selected = creatorAppearance.sex === option.id;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `character-appearance-option${selected ? ' selected' : ''}`;
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        button.innerHTML = `<span>${option.label}</span><small>${option.hint}</small>`;
+        button.addEventListener('click', () => {
+          const next = typeof defaultCharacterAppearance === 'function'
+            ? defaultCharacterAppearance(option.id)
+            : { ...creatorAppearance, sex: option.id };
+          creatorAppearance = { ...next, bodyType: creatorAppearance.bodyType || 'medium' };
+          renderCharacterCreator();
+        });
+        sexOptions.appendChild(button);
+      });
+    }
+    if (bodyOptions) {
+      bodyOptions.innerHTML = '';
+      [
+        { id: 'slim', label: 'Стройное' },
+        { id: 'medium', label: 'Среднее' },
+        { id: 'large', label: 'Крепкое' }
+      ].forEach(option => {
+        const selected = creatorAppearance.bodyType === option.id;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `character-appearance-option compact${selected ? ' selected' : ''}`;
+        button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        button.textContent = option.label;
+        button.addEventListener('click', () => {
+          creatorAppearance = { ...creatorAppearance, bodyType: option.id };
+          renderCharacterCreator();
+        });
+        bodyOptions.appendChild(button);
+      });
+    }
+    if (appearanceSummary) {
+      appearanceSummary.textContent = typeof characterAppearanceLabel === 'function'
+        ? characterAppearanceLabel(creatorAppearance)
+        : `${creatorAppearance.sex} · ${creatorAppearance.bodyType}`;
+    }
+    if (typeof setCharacterCreationPreviewAppearance === 'function') {
+      setCharacterCreationPreviewAppearance(creatorAppearance);
+    }
     const points = creatorPointsLeft();
     statBox.innerHTML = '';
     STAT_DEFS.forEach(def => {
@@ -227,6 +295,9 @@
   }
 
   function applyCharacterProfile(profile, resetVitals = false) {
+    profile.appearance = typeof normalizeCharacterAppearance === 'function'
+      ? normalizeCharacterAppearance(profile.appearance || {})
+      : (profile.appearance || creatorAppearance);
     characterProfile = profile;
     const effectiveSpecial = effectiveSpecialStats(profile);
     const d = derivedFromStats(effectiveSpecial, profile.traits || []);
@@ -243,6 +314,12 @@
     }
     const nameEl = document.getElementById('player-name');
     if (nameEl) nameEl.textContent = profile.name || player.name || 'Странник';
+    if (typeof applyCharacterGlbAppearance === 'function' && playerGroup) {
+      applyCharacterGlbAppearance(playerGroup, profile.appearance, {
+        castShadow: true,
+        equipment
+      });
+    }
     renderWeaponReadout();
   }
 
@@ -258,7 +335,7 @@
     traderMarketState = {};
     restockBaseStorage(true, { silent: true, noSave: true, noRender: true });
     Object.keys(equipment).forEach(slot => equipment[slot] = null);
-    equipment.weapon = 'knife';
+    equipment.weapon = 'fists';
     normalizeUniqueEquipmentState();
     quickbarSlots.fill(null);
   }
@@ -298,6 +375,9 @@
       special: { ...creatorStats },
       taggedSkills: creatorSkills.slice(0, CREATOR_MAX_SKILLS),
       traits: creatorTraits.slice(0, CREATOR_MAX_PERKS),
+      appearance: typeof normalizeCharacterAppearance === 'function'
+        ? normalizeCharacterAppearance(creatorAppearance)
+        : { ...creatorAppearance },
       createdAt: Date.now(),
       yandexName: yandexPlayerName || '',
       lastVisitedSettlementId: 'settlement',
@@ -376,6 +456,9 @@
   }
 
   function hideCharacterCreatorAndStart() {
+    if (typeof releaseCharacterCreationPreview === 'function') {
+      releaseCharacterCreationPreview();
+    }
     const screen = document.getElementById('character-screen');
     if (screen) screen.classList.remove('visible');
     gameStarted = true;

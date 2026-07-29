@@ -262,6 +262,11 @@ function joinPayload(account) {
     controlType: 'keyboard_mouse',
     characterId: account.characterId,
     name: account.name,
+    appearance: {
+      schema: 'realm.character-appearance.v1',
+      sex: 'male',
+      bodyType: 'medium'
+    },
     special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, luck: 5 },
     traits: ['trainedEye'],
     taggedSkills: ['lightWeapons']

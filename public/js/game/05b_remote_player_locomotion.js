@@ -528,6 +528,9 @@
     const remoteCastShadow = !IS_MOBILE_DEVICE;
     const parts = {};
     buildModernWastelandHumanoid(g, parts, { castShadow: remoteCastShadow, isPlayer: false });
+    if (typeof captureCharacterProceduralBaseMeshes === 'function') {
+      captureCharacterProceduralBaseMeshes(g, parts);
+    }
     buildModernCharacterArmorExtras(g, parts, remoteCastShadow);
     initWeaponVisualState(parts.weaponGroup);
 
@@ -556,6 +559,12 @@
     g.position.set(g.userData.targetX, 0, g.userData.targetZ);
     g.rotation.y = g.userData.targetAngle + Math.PI;
     updateRemoteEquipmentVisuals(g, data);
+    if (typeof applyCharacterGlbAppearance === 'function') {
+      applyCharacterGlbAppearance(g, data.appearance || {}, {
+        castShadow: remoteCastShadow,
+        equipment: data.equipment || {}
+      });
+    }
     scene.add(g);
     return g;
   }
@@ -567,6 +576,12 @@
 
   function remoteNameKey(data = {}) {
     return `${data.name || 'Игрок'}|${data.deviceType || 'desktop'}`;
+  }
+
+  function remoteAppearanceKey(data = {}) {
+    return typeof characterAppearanceKey === 'function'
+      ? characterAppearanceKey(data.appearance || {})
+      : '';
   }
 
   function upsertRemotePlayer(data, options = {}) {
@@ -581,7 +596,14 @@
     if (data.characterId) removeRemotePlayersByCharacterId(data.characterId, data.id);
     let row = multiplayer.remotePlayers.get(data.id);
     if (!row) {
-      row = { data: {}, group: makeRemotePlayerModel(data), equipmentKey: '', nameKey: '', remoteContextBound: false };
+      row = {
+        data: {},
+        group: makeRemotePlayerModel(data),
+        equipmentKey: '',
+        nameKey: '',
+        appearanceKey: remoteAppearanceKey(data),
+        remoteContextBound: false
+      };
       row.netX = Number(data.x || 0);
       row.netZ = Number(data.z || 0);
       row.visualX = row.netX;
@@ -611,6 +633,16 @@
     if (nameKey !== row.nameKey) {
       row.nameKey = nameKey;
       updateRemoteNameSprite(row.group.userData.nameSprite, row.data.name || 'Игрок', row.data.deviceType || 'desktop');
+    }
+    const appearanceKey = remoteAppearanceKey(row.data);
+    if (appearanceKey && appearanceKey !== row.appearanceKey) {
+      row.appearanceKey = appearanceKey;
+      if (typeof applyCharacterGlbAppearance === 'function') {
+        applyCharacterGlbAppearance(row.group, row.data.appearance || {}, {
+          castShadow: !IS_MOBILE_DEVICE,
+          equipment: row.data.equipment || {}
+        });
+      }
     }
     const nowMs = Number.isFinite(Number(options.receivedAt)) ? Number(options.receivedAt) : performance.now();
     const serverT = Number(options.serverT ?? options.snapshotT ?? data.t ?? 0);

@@ -4,7 +4,7 @@
 (async () => {
   'use strict';
 
-  const GAME_CLIENT_VERSION = '7.76.6-service-scout-boots';
+  const GAME_CLIENT_VERSION = '7.76.6-character-models';
   const MODEL_COLLIDER_CATALOG_URL = '/assets/models/wasteland/model-colliders.json';
   const GAME_SCRIPT_PARTS = [
     '/js/game/00_save_generation_drain.js',
@@ -27,6 +27,7 @@
     '/js/game/03d_item_context_repair_crafting.js',
     '/js/game/04_player_model_visuals.js',
     '/js/game/04a_player_model_modern_runtime.js',
+    '/js/game/04b_character_glb_runtime.js',
     '/js/game/05_multiplayer_core_state.js',
     '/js/game/05a_remote_actor_equipment.js',
     '/js/game/05b_remote_player_locomotion.js',

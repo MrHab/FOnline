@@ -181,6 +181,17 @@
       if (snapshot.special && typeof snapshot.special === 'object') characterProfile.special = { ...snapshot.special };
       if (Array.isArray(snapshot.traits)) characterProfile.traits = snapshot.traits.slice(0, 2);
       if (Array.isArray(snapshot.taggedSkills)) characterProfile.taggedSkills = snapshot.taggedSkills.slice(0, 2);
+      if (snapshot.appearance && typeof snapshot.appearance === 'object') {
+        characterProfile.appearance = typeof normalizeCharacterAppearance === 'function'
+          ? normalizeCharacterAppearance(snapshot.appearance)
+          : { ...snapshot.appearance };
+        if (typeof applyCharacterGlbAppearance === 'function') {
+          applyCharacterGlbAppearance(playerGroup, characterProfile.appearance, {
+            castShadow: true,
+            equipment
+          });
+        }
+      }
       if (typeof snapshot.worldFactionId === 'string') {
         characterProfile.worldFactionId = snapshot.worldFactionId;
         characterProfile.factionId = snapshot.worldFactionId;
@@ -347,6 +358,9 @@
       carry: typeof multiplayerCarrySnapshot === 'function' ? multiplayerCarrySnapshot() : null,
       inventory: typeof multiplayerInventorySnapshot === 'function' ? multiplayerInventorySnapshot() : null,
       special: characterProfile?.special || DEFAULT_SPECIAL,
+      appearance: typeof normalizeCharacterAppearance === 'function'
+        ? normalizeCharacterAppearance(characterProfile?.appearance || {})
+        : (characterProfile?.appearance || {}),
       factionId: characterProfile?.factionId || characterProfile?.worldFactionId || '',
       worldFactionId: characterProfile?.worldFactionId || characterProfile?.factionId || '',
       skillRanks: multiplayerSkillSnapshot(),

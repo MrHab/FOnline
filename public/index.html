@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Realm of Ashes v7.76.6</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/css/game.css?v=7.76.6-global-map-motion-integrity">
+<link rel="stylesheet" href="/css/game.css?v=7.76.6-character-models">
 
 </head>
 <body>
@@ -546,6 +546,30 @@
         </div>
 
         <div id="character-creator-panel" class="auth-step">
+          <div class="character-appearance-editor">
+            <div class="character-preview-shell">
+              <canvas id="character-model-preview" aria-label="Трёхмерный предпросмотр персонажа"></canvas>
+              <div class="character-preview-caption">
+                <span>Базовая модель</span>
+                <b id="character-appearance-summary">Мужской · Среднее</b>
+              </div>
+              <div id="character-model-preview-status" class="character-model-preview-status" aria-live="polite">Загрузка модели…</div>
+            </div>
+            <div class="character-appearance-controls char-block">
+              <div>
+                <h3>Пол</h3>
+                <div id="creator-sex-options" class="character-appearance-options"></div>
+              </div>
+              <div>
+                <h3>Телосложение</h3>
+                <div id="creator-body-options" class="character-appearance-options body-options"></div>
+              </div>
+              <div class="character-appearance-note">
+                Новый персонаж начинает игру в нижнем белье и без надетых предметов.
+                Одежда, броня, обувь, головные уборы, рюкзаки и оружие отображаются только после экипировки.
+              </div>
+            </div>
+          </div>
           <div class="char-layout">
             <div class="char-block">
               <h3>Имя и SPECIAL</h3>
@@ -630,7 +654,7 @@
 <script src="/vendor/three.min.js"></script>
 <script src="/vendor/GLTFLoader.js"></script>
 <script src="/vendor/socket.io.min.js"></script>
-<script src="/js/game.js?v=7.76.6-service-scout-boots"></script>
+<script src="/js/game.js?v=7.76.6-character-models"></script>
 
 </body>
 </html>

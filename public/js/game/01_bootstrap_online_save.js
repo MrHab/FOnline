@@ -283,6 +283,9 @@
 
   function setAuthStep(step) {
     authScreenStep = step;
+    if (step !== 'create' && typeof releaseCharacterCreationPreview === 'function') {
+      releaseCharacterCreationPreview();
+    }
     ['login-panel', 'register-panel', 'password-reset-panel', 'password-reset-confirm-panel', 'character-select-panel', 'character-creator-panel'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.toggle('active', id === `${step}-panel` || (step === 'select' && id === 'character-select-panel') || (step === 'create' && id === 'character-creator-panel'));
@@ -516,11 +519,14 @@
       const row = document.createElement('div');
       row.className = 'character-card-row';
       const updated = ch.updatedAt ? new Date(ch.updatedAt).toLocaleString() : 'нет даты';
+      const appearance = typeof characterAppearanceLabel === 'function'
+        ? characterAppearanceLabel(ch.appearance || {})
+        : '';
       const deletingThisCharacter = characterDeletePendingId === ch.id;
       row.innerHTML = `
         <div>
           <div class="character-card-name">☢ ${escapeHtml(ch.name || 'Без имени')}</div>
-          <div class="character-card-meta">Уровень ${Number(ch.level || 1)} · Локация: ${escapeHtml(serverCharacterLocationLabel(ch.locationId))} · обновлён: ${escapeHtml(updated)}</div>
+          <div class="character-card-meta">${appearance ? `${escapeHtml(appearance)} · ` : ''}Уровень ${Number(ch.level || 1)} · Локация: ${escapeHtml(serverCharacterLocationLabel(ch.locationId))} · обновлён: ${escapeHtml(updated)}</div>
         </div>
         <div class="character-card-actions">
           <button type="button" class="char-action-btn" data-character-play data-character-id="${escapeHtml(ch.id)}" ${controlsLocked ? 'disabled' : ''}>Играть</button>
@@ -724,6 +730,13 @@
     creatorStats = Object.fromEntries(specialStatDefs().map(s => [s.key, 5]));
     creatorSkills = [];
     creatorTraits = [];
+    creatorAppearance = typeof defaultCharacterAppearance === 'function'
+      ? defaultCharacterAppearance('male')
+      : {
+        schema: 'realm.character-appearance.v1',
+        sex: 'male',
+        bodyType: 'medium'
+      };
     const nameInput = document.getElementById('char-name-input');
     if (nameInput) nameInput.value = '';
     setCharacterNotice('');

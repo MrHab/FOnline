@@ -415,6 +415,98 @@
     return 'raider';
   }
 
+  function configureEnemyStaticGlbAnimation(actorGroup, model, modelKey) {
+    if (
+      modelKey !== 'enemyGhoul'
+      || !actorGroup
+      || !model
+      || typeof staticModelAnimations !== 'function'
+      || !THREE.AnimationMixer
+    ) return null;
+    const clips = staticModelAnimations(modelKey);
+    if (!clips.length) return null;
+    const previous = actorGroup.userData?.npcCreatureGlbAnimation;
+    previous?.mixer?.stopAllAction?.();
+    const mixer = new THREE.AnimationMixer(model);
+    const actions = {};
+    clips.forEach(clip => {
+      const name = String(clip?.name || '').toLowerCase();
+      if (!name || actions[name]) return;
+      const action = mixer.clipAction(clip);
+      action.enabled = true;
+      action.setEffectiveWeight(1);
+      actions[name] = action;
+    });
+    const runtime = {
+      mixer,
+      actions,
+      model,
+      modelKey,
+      currentAction: ''
+    };
+    actorGroup.userData.npcCreatureGlbAnimation = runtime;
+    setEnemyStaticGlbAction(runtime, 'idle', 0);
+    return runtime;
+  }
+
+  function setEnemyStaticGlbAction(runtime, requested = 'idle', fadeSeconds = 0.12) {
+    if (!runtime?.actions) return false;
+    const name = runtime.actions[requested]
+      ? requested
+      : (runtime.actions.idle ? 'idle' : Object.keys(runtime.actions)[0]);
+    if (!name) return false;
+    if (runtime.currentAction === name) return true;
+    const previous = runtime.actions[runtime.currentAction];
+    const next = runtime.actions[name];
+    if (previous && previous !== next) previous.fadeOut(Math.max(0, fadeSeconds));
+    next.reset();
+    next.enabled = true;
+    next.setEffectiveWeight(1);
+    if (name === 'death') {
+      next.setLoop(THREE.LoopOnce, 1);
+      next.clampWhenFinished = true;
+    } else if (name === 'hurt' || name === 'attack') {
+      next.setLoop(THREE.LoopOnce, 1);
+      next.clampWhenFinished = false;
+    } else {
+      next.setLoop(THREE.LoopRepeat, Infinity);
+      next.clampWhenFinished = false;
+    }
+    next.fadeIn(Math.max(0, fadeSeconds)).play();
+    runtime.currentAction = name;
+    return true;
+  }
+
+  function updateEnemyStaticGlbAnimation(enemy, dt = 0.016, state = {}) {
+    const runtime = enemy?.mesh?.userData?.npcCreatureGlbAnimation;
+    if (!runtime?.mixer) return false;
+    let action = 'idle';
+    if (state.dead || enemy.dead) action = 'death';
+    else if (Number(enemy.flash || 0) > 0.001) action = 'hurt';
+    else if (enemy.aiState === 'attack' || enemy.meleeAnim) action = 'attack';
+    else if (
+      state.moving
+      && runtime.actions.run
+      && Number(state.visualSpeed || 0) >= 1.35
+    ) action = 'run';
+    else if (state.moving) action = 'walk';
+    setEnemyStaticGlbAction(runtime, action, action === 'death' ? 0.08 : 0.12);
+    const active = runtime.actions?.[runtime.currentAction];
+    if (active) {
+      const visualSpeed = Number(state.visualSpeed || 0.8);
+      const movingRate = runtime.currentAction === 'run'
+        ? Math.max(0.82, Math.min(1.45, visualSpeed * 0.42))
+        : Math.max(0.72, Math.min(1.6, visualSpeed * 0.72));
+      active.setEffectiveTimeScale(
+        state.moving && (runtime.currentAction === 'walk' || runtime.currentAction === 'run')
+          ? movingRate
+          : 1
+      );
+    }
+    runtime.mixer.update(Math.max(0, Math.min(0.08, Number(dt || 0.016))));
+    return true;
+  }
+
   function tryBuildStaticEnemyModel(group, type, visual) {
     const rawKey = String(type.modelKey || '').replace(/[^a-zA-Z0-9_-]/g, '');
     if (!rawKey || typeof makeStaticModelGroup !== 'function') return false;
@@ -427,7 +519,10 @@
       scale: s,
       cloneMaterials: true,
       castShadow: !IS_MOBILE_DEVICE,
-      receiveShadow: false
+      receiveShadow: false,
+      afterApply: (_holder, instance, appliedKey) => {
+        configureEnemyStaticGlbAnimation(group, instance, appliedKey || rawKey);
+      }
     });
     model.position.set(0, 0, 0);
     group.add(model);
@@ -593,7 +688,11 @@
   function animateEnemyVisual(enemy, dt = 0.016) {
     const mesh = enemy?.mesh;
     const parts = mesh?.userData?.actorParts;
-    if (!mesh || !parts || enemy.dead) return;
+    if (!mesh || !parts) return;
+    if (enemy.dead) {
+      updateEnemyStaticGlbAnimation(enemy, dt, { dead: true });
+      return;
+    }
     const restoreK = Math.min(1, Math.max(0, Number(dt || 0.016)) * 10);
     enemyAnimRestoreActorParts(parts, restoreK);
     const scheduleState = String(enemy.scheduleState || enemy.aiState || '').toLowerCase();
@@ -621,6 +720,11 @@
       || enemy.targetId
       || enemy.factionTargetId
       || enemy.meleeAnim;
+    const visualSpeed = Math.max(
+      Number(enemy.enemyVisualSpeed || 0),
+      moved / Math.max(0.001, Number(dt || 0.016))
+    );
+    updateEnemyStaticGlbAnimation(enemy, dt, { moving, visualSpeed, sleeping, inDialogue });
     if (!important) {
       enemy.idleVisualAnimTimer = Math.max(0, Number(enemy.idleVisualAnimTimer || 0) - Math.max(0, Number(dt || 0.016)));
       if (enemy.idleVisualAnimTimer > 0) return;
@@ -641,7 +745,6 @@
       const baseOpacity = Number(accent.userData.baseOpacity || 0.4);
       accent.material.opacity = baseOpacity + Math.sin(t * 0.7) * 0.045;
     }
-    const visualSpeed = Math.max(Number(enemy.enemyVisualSpeed || 0), moved / Math.max(0.001, Number(dt || 0.016)));
     const amp = moving ? Math.min(0.28, Math.max(moved * 11, visualSpeed * 0.09)) : 0.035;
     if (parts.kind === 'wolf') {
       if (parts.body) parts.body.rotation.z = Math.sin(t) * amp * 0.18;

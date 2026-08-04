@@ -2,6 +2,12 @@ const fs = require('fs');
 const path = require('path');
 
 global.ProgressEvent = global.ProgressEvent || class ProgressEvent {};
+global.self = global.self || global;
+global.createImageBitmap = global.createImageBitmap || (async () => ({
+  width: 1,
+  height: 1,
+  close() {}
+}));
 
 const root = path.resolve(__dirname, '..');
 const modelsDir = path.join(root, 'public', 'assets', 'models', 'wasteland');

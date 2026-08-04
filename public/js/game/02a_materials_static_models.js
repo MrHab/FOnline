@@ -624,6 +624,7 @@
     }
   });
 
+  const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.9-ghoul-bc-v3';
   const STATIC_MODEL_URLS = {
     barrel: '/assets/models/wasteland/rust_barrel_v1.glb',
     rustBarrel: '/assets/models/wasteland/rust_barrel_v1.glb',
@@ -845,6 +846,7 @@
     if (!staticModelStates[stateKey]) {
       staticModelStates[stateKey] = {
         source: null,
+        animations: [],
         loading: false,
         failed: false,
         pending: [],
@@ -964,16 +966,45 @@
     });
   }
 
+  function cloneStaticModelSource(source) {
+    const clone = source.clone(true);
+    const sourceNodes = [];
+    const cloneNodes = [];
+    source.traverse(node => sourceNodes.push(node));
+    clone.traverse(node => cloneNodes.push(node));
+    const clonedNodeBySource = new Map(
+      sourceNodes.map((node, index) => [node, cloneNodes[index]])
+    );
+    sourceNodes.forEach((sourceNode, index) => {
+      if (!sourceNode?.isSkinnedMesh || !sourceNode.skeleton) return;
+      const cloneNode = cloneNodes[index];
+      if (!cloneNode?.isSkinnedMesh) return;
+      const bones = sourceNode.skeleton.bones.map(bone => clonedNodeBySource.get(bone));
+      if (bones.some(bone => !bone)) return;
+      const inverses = sourceNode.skeleton.boneInverses.map(matrix => matrix.clone());
+      cloneNode.bind(
+        new THREE.Skeleton(bones, inverses),
+        sourceNode.bindMatrix.clone()
+      );
+    });
+    return clone;
+  }
+
   function cloneStaticModel(key) {
     const state = staticModelState(key);
     if (!state.source) return null;
-    const clone = state.source.clone(true);
+    const clone = cloneStaticModelSource(state.source);
     clone.traverse(part => {
       if (!part || !part.isMesh) return;
       part.castShadow = true;
       part.receiveShadow = true;
     });
     return clone;
+  }
+
+  function staticModelAnimations(key) {
+    const state = staticModelState(key);
+    return Array.isArray(state.animations) ? state.animations : [];
   }
 
   function cloneBarrelModel(bodyMat) {
@@ -1238,8 +1269,11 @@ varying float vInstanceOpacity;`
 
   function requestStaticModel(key) {
     if (usesFastModuleBlockRenderer(key)) return Promise.resolve(null);
-    const url = STATIC_MODEL_URLS[key];
-    if (!url) return Promise.resolve(null);
+    const sourceUrl = STATIC_MODEL_URLS[key];
+    if (!sourceUrl) return Promise.resolve(null);
+    const url = key === 'enemyGhoul'
+      ? `${sourceUrl}?v=${encodeURIComponent(NPC_GHOUL_GLB_ASSET_VERSION)}`
+      : sourceUrl;
     const state = staticModelState(key);
     if (state.source) return Promise.resolve(state.source);
     if (state.promise) return state.promise;
@@ -1255,6 +1289,7 @@ varying float vInstanceOpacity;`
       loader.load(url, gltf => {
         const source = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
         state.source = prepareStaticModelObject(source || null);
+        state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];
         state.loading = false;
         const pending = state.pending.splice(0);
         pending.forEach(entry => {
@@ -1275,7 +1310,11 @@ varying float vInstanceOpacity;`
   }
 
   function preloadStaticWorldModels() {
-    return Promise.all(Object.keys(STATIC_MODEL_URLS).map(requestStaticModel));
+    return Promise.all(
+      Object.keys(STATIC_MODEL_URLS)
+        .filter(key => key !== 'enemyGhoul')
+        .map(requestStaticModel)
+    );
   }
 
   function makeStaticModelGroup(key, x, z, angle = 0, kind = key, opts = {}) {
@@ -1984,4 +2023,3 @@ varying float vInstanceOpacity;`
   const detailPlaneGeom = markSharedGeometry(new THREE.PlaneGeometry(1, 1));
   const pebbleGeom = markSharedGeometry(new THREE.DodecahedronGeometry(0.075, 0));
   const grassBladeGeom = markSharedGeometry(new THREE.ConeGeometry(0.027, 0.48, 5));
-

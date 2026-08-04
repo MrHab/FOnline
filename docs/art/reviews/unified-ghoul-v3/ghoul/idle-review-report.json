@@ -1,0 +1,28 @@
+{
+  "assetId": "creature_ghoul_unified_v3",
+  "model": "creature_ghoul_unified_v3.glb",
+  "actions": {
+    "idle": [
+      0.0,
+      37.6
+    ]
+  },
+  "frames": [
+    {
+      "action": "idle",
+      "frame": 19,
+      "bounds": {
+        "minimum": [
+          -0.35286,
+          -0.30787,
+          0.0
+        ],
+        "maximum": [
+          0.36425,
+          0.39294,
+          1.81173
+        ]
+      }
+    }
+  ]
+}

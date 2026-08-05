@@ -1,0 +1,243 @@
+{
+  "schema": "realm.approved-creature-model-catalog.v1",
+  "version": 1,
+  "generator": "tools/build-approved-creature-models.js",
+  "artDirection": "geometry_b_materials_c",
+  "scope": "approved_creature_runtime_replacements",
+  "animationSet": [
+    "attack",
+    "death",
+    "hurt",
+    "idle",
+    "run",
+    "walk"
+  ],
+  "source": {
+    "license": "Project-owned original work; selected topology, rigs and base motion use Quaternius CC0 1.0",
+    "method": "Reproducible Blender generators with a critic-approved SHA-256 gate"
+  },
+  "files": [
+    {
+      "id": "brahmin",
+      "category": "creature",
+      "species": "brahmin",
+      "label": "Брамин",
+      "file": "/assets/models/wasteland/brahmin.glb",
+      "sha256": "F61FCA471CAAFE50A592697E075CAC253840F944C81CE4F54626D15D35D94F66",
+      "approvedReviewSha256": "B12B53B02C502CD0007FDEF70295CF09E81732458F468BE2A600C8E9ED263EA5",
+      "runtimeScaleMultiplier": 1,
+      "runtimeScaleCompensation": "component_square_root_for_threejs_skinned_bounds",
+      "bytes": 4334436,
+      "meshes": 1,
+      "vertices": 7078,
+      "triangles": 3478,
+      "materials": 9,
+      "images": 27,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 924,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 1.695023,
+        "y": 1.087041,
+        "z": 1.238178
+      },
+      "centerMeters": {
+        "x": 0,
+        "y": 0.570542,
+        "z": 0.157249
+      }
+    },
+    {
+      "id": "npc_gecko",
+      "category": "creature",
+      "species": "gecko",
+      "label": "Геккон пустоши",
+      "file": "/assets/models/wasteland/npc_gecko.glb",
+      "sha256": "18A9F50C8B650BFFA08C3F9402A4BCCF2FCA2F5853900389C7E792C0EB74B7EB",
+      "approvedReviewSha256": "7970765D978E9BB219557268445B795A50039E9717F2E13B1570073F35D2E454",
+      "runtimeScaleMultiplier": 2.2,
+      "runtimeScaleCompensation": null,
+      "bytes": 2185336,
+      "meshes": 2,
+      "vertices": 3256,
+      "triangles": 1648,
+      "materials": 5,
+      "images": 15,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 528,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 1.415697,
+        "y": 1.257459,
+        "z": 1.876276
+      },
+      "centerMeters": {
+        "x": -0.000077,
+        "y": 0.653827,
+        "z": -0.17729
+      }
+    },
+    {
+      "id": "npc_fire_gecko",
+      "category": "creature",
+      "species": "fire_gecko",
+      "label": "Огненный геккон",
+      "file": "/assets/models/wasteland/npc_fire_gecko.glb",
+      "sha256": "0A8790B87F2B6F5C26E53686A5996C1BDDDF1BF6620ED68FD7FB533FB9B26B5E",
+      "approvedReviewSha256": "225B1DBB1F26DAE0022152FE1C47F754914F4F302577AB474CBA4476250EF07C",
+      "runtimeScaleMultiplier": 2.2,
+      "runtimeScaleCompensation": null,
+      "bytes": 2384716,
+      "meshes": 2,
+      "vertices": 3256,
+      "triangles": 1648,
+      "materials": 6,
+      "images": 19,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 528,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 1.415697,
+        "y": 1.381573,
+        "z": 1.876276
+      },
+      "centerMeters": {
+        "x": -0.000077,
+        "y": 0.715884,
+        "z": -0.17729
+      }
+    },
+    {
+      "id": "npc_ash_wolf",
+      "category": "creature",
+      "species": "ash_wolf",
+      "label": "Пепельный волк",
+      "file": "/assets/models/wasteland/npc_ash_wolf.glb",
+      "sha256": "60489F6E6F0FF2A374DC3DB7DA374728AA3976BCEEF2AC7230DE92184F5646F8",
+      "approvedReviewSha256": "CDB0374E135B80C880B93D373B7CEB9490A9B34C44AEA6EB4D469DD9CA0E1A7A",
+      "runtimeScaleMultiplier": 1,
+      "runtimeScaleCompensation": "component_square_root_for_threejs_skinned_bounds",
+      "bytes": 3410172,
+      "meshes": 2,
+      "vertices": 4056,
+      "triangles": 1990,
+      "materials": 7,
+      "images": 21,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 942,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 0.671076,
+        "y": 1.348549,
+        "z": 2.110174
+      },
+      "centerMeters": {
+        "x": 0,
+        "y": 0.681511,
+        "z": -0.081834
+      }
+    },
+    {
+      "id": "npc_radscorpion",
+      "category": "creature",
+      "species": "radscorpion",
+      "label": "Радскорпион",
+      "file": "/assets/models/wasteland/npc_radscorpion.glb",
+      "sha256": "64B54BC6EB25BF2F9A796581FAEE3FCEC837802BE0CF352FB983FD447FFBEC49",
+      "approvedReviewSha256": "B8E13C9DF4AEF5CD73AC400B29B7B5B3D4A5EBFB16888C684E738DB0E303BF46",
+      "runtimeScaleMultiplier": 1,
+      "runtimeScaleCompensation": null,
+      "bytes": 3388824,
+      "meshes": 1,
+      "vertices": 9684,
+      "triangles": 3624,
+      "materials": 7,
+      "images": 21,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 1122,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 2.210505,
+        "y": 1.246726,
+        "z": 2.269616
+      },
+      "centerMeters": {
+        "x": 0.000017,
+        "y": 0.646637,
+        "z": -0.231122
+      }
+    },
+    {
+      "id": "npc_mutant_ant",
+      "category": "creature",
+      "species": "mutant_ant",
+      "label": "Мутировавший муравей",
+      "file": "/assets/models/wasteland/npc_mutant_ant.glb",
+      "sha256": "54D25A1245DA94310EDB016B5955C3EB79656FE91FB8B0E69B6CB576F398F9F3",
+      "approvedReviewSha256": "7419D9A522BE72424F2E94F31D2D2FE4B7B227DE25074A695FFE1C1B65B052FF",
+      "runtimeScaleMultiplier": 1,
+      "runtimeScaleCompensation": null,
+      "bytes": 3088452,
+      "meshes": 1,
+      "vertices": 6788,
+      "triangles": 2498,
+      "materials": 7,
+      "images": 21,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 888,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 2.009994,
+        "y": 0.675568,
+        "z": 2.15746
+      },
+      "centerMeters": {
+        "x": 0.000012,
+        "y": 0.354658,
+        "z": 0.02032
+      }
+    }
+  ]
+}

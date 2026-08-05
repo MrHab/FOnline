@@ -1,0 +1,430 @@
+{
+  "assetId": "creature_ash_wolf_unified_v8",
+  "file": "creature_ash_wolf_unified_v8.glb",
+  "boundsIdleMetres": {
+    "minimum": [
+      -0.332845,
+      -0.96982,
+      0.0
+    ],
+    "maximum": [
+      0.332845,
+      1.032549,
+      1.355754
+    ],
+    "size": [
+      0.665691,
+      2.002369,
+      1.355754
+    ]
+  },
+  "collider": {
+    "type": "box",
+    "size": [
+      0.665691,
+      2.002369,
+      1.355754
+    ],
+    "center": [
+      -0.0,
+      0.031365,
+      0.677877
+    ]
+  },
+  "rig": {
+    "armatures": 1,
+    "boneCount": 52,
+    "bones": [
+      "Back",
+      "BackLeg.L",
+      "BackLeg.R",
+      "BackLowerLeg.L",
+      "BackLowerLeg.R",
+      "BackShoulder.L",
+      "BackShoulder.R",
+      "BackUpperLeg.L",
+      "BackUpperLeg.R",
+      "Body",
+      "Ear1.L",
+      "Ear1.R",
+      "Ear2.L",
+      "Ear2.R",
+      "Ear3.L",
+      "Ear3.R",
+      "Ear4.L",
+      "Ear4.R",
+      "FF.L",
+      "FF.R",
+      "FFB.L",
+      "FFB.R",
+      "FrontLowerLeg.L",
+      "FrontLowerLeg.R",
+      "FrontShoulder.L",
+      "FrontShoulder.R",
+      "FrontUpperLeg.L",
+      "FrontUpperLeg.R",
+      "Head",
+      "IKBackLeg.L",
+      "IKBackLeg.R",
+      "IKFrontLeg.L",
+      "IKFrontLeg.R",
+      "Jaw",
+      "Neck1",
+      "Neck2",
+      "Neck3",
+      "PoleTarget.L",
+      "PoleTarget.R",
+      "PoleTargetBack.L",
+      "PoleTargetBack.R",
+      "Tail1",
+      "Tail2",
+      "Tail3",
+      "Tail4",
+      "Tail5",
+      "Tail6",
+      "Tail7",
+      "Tail8",
+      "Torso",
+      "Torso2",
+      "Torso3"
+    ]
+  },
+  "requiredAnimations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "hurt",
+    "death"
+  ],
+  "actualGlb": {
+    "meshDefinitions": 2,
+    "positionVertices": 4056,
+    "triangles": 1990,
+    "materials": 7,
+    "textures": 21,
+    "skins": 1,
+    "skinJointCounts": [
+      52
+    ],
+    "animations": [
+      "attack",
+      "death",
+      "hurt",
+      "idle",
+      "run",
+      "walk"
+    ],
+    "nodes": [
+      "Jaw",
+      "Head",
+      "Ear4.L",
+      "Ear3.L",
+      "Ear2.L",
+      "Ear1.L",
+      "Ear4.R",
+      "Ear3.R",
+      "Ear2.R",
+      "Ear1.R",
+      "Neck3",
+      "Neck2",
+      "Neck1",
+      "Torso3",
+      "FrontLowerLeg.L",
+      "FrontUpperLeg.L",
+      "FrontShoulder.L",
+      "FrontLowerLeg.R",
+      "FrontUpperLeg.R",
+      "FrontShoulder.R",
+      "Torso2",
+      "Torso",
+      "BackLowerLeg.L",
+      "BackUpperLeg.L",
+      "BackLeg.L",
+      "BackShoulder.L",
+      "BackLowerLeg.R",
+      "BackUpperLeg.R",
+      "BackLeg.R",
+      "BackShoulder.R",
+      "Tail8",
+      "Tail7",
+      "Tail6",
+      "Tail5",
+      "Tail4",
+      "Tail3",
+      "Tail2",
+      "Tail1",
+      "Back",
+      "PoleTargetBack.L",
+      "PoleTarget.L",
+      "PoleTargetBack.R",
+      "PoleTarget.R",
+      "Body",
+      "FFB.L",
+      "IKBackLeg.L",
+      "FF.L",
+      "IKFrontLeg.L",
+      "FFB.R",
+      "IKBackLeg.R",
+      "FF.R",
+      "IKFrontLeg.R",
+      "ash_wolf_mouth_details",
+      "ash_wolf_quaternius_continuous_body",
+      "ash_wolf_quaternius_rig",
+      "creature_ash_wolf_unified_v8"
+    ]
+  },
+  "geometryAnalysis": {
+    "primaryBodyConnectedComponents": 1,
+    "primaryBodyTopology": "unaltered Quaternius Wolf single-component organic topology",
+    "sourceVertices": 983,
+    "sourceTriangles": 1962,
+    "flatShaded": true,
+    "materialRemap": {
+      "materialPolygonCounts": {
+        "fur": 480,
+        "underfur": 224,
+        "dust": 206,
+        "charcoal": 98,
+        "eyes": 8
+      },
+      "uvProjection": "deterministic dominant-axis box projection",
+      "topologyEdits": 0,
+      "facetPolicy": "preserved Quaternius flat-shaded faces"
+    },
+    "skinInfluenceNormalization": {
+      "verticesLimitedToFourInfluences": 257,
+      "maximumInfluencesBefore": 9,
+      "maximumInfluencesAfter": 4
+    },
+    "deformingJaw": {
+      "bone": "Jaw",
+      "parent": "Head",
+      "hinge": [
+        0.0,
+        -1.94,
+        2.0
+      ],
+      "weightedVertices": 36,
+      "maximumWeight": 1.0,
+      "upperVertexBoundaryZ": 2.04,
+      "topologyChange": "none"
+    },
+    "mouthInterior": {
+      "mesh": "ash_wolf_mouth_details",
+      "vertices": 24,
+      "triangles": 28,
+      "materials": [
+        "ash_wolf_dark_mouth_interior",
+        "ash_wolf_dusty_bone_teeth"
+      ],
+      "skinBones": [
+        "Head",
+        "Jaw"
+      ],
+      "canineCount": 4,
+      "placement": "inside closed muzzle; dark cavity and canine teeth are revealed by lower-jaw opening"
+    }
+  },
+  "actions": {
+    "sourceToRuntime": {
+      "idle": "Idle",
+      "walk": "Walk",
+      "run": "Gallop",
+      "attack": "Attack",
+      "hurt": "Idle_HitReact_Left",
+      "death": "Death"
+    },
+    "runtimeRanges": {
+      "idle": [
+        0.0,
+        100.0
+      ],
+      "walk": [
+        0.0,
+        32.0
+      ],
+      "run": [
+        0.0,
+        17.0
+      ],
+      "attack": [
+        0.0,
+        40.0
+      ],
+      "hurt": [
+        0.0,
+        20.0
+      ],
+      "death": [
+        0.0,
+        32.0
+      ]
+    },
+    "authoredMotion": "Quaternius quadruped locomotion, attack, hit reaction and death",
+    "visualBake": {
+      "sampledPoseBoneFrames": 12844,
+      "removedBlenderOnlyConstraints": 4,
+      "purpose": "preserve evaluated Quaternius IK motion in portable GLB bone channels"
+    }
+  },
+  "jawAnimation": {
+    "axis": "local +X opens lower jaw",
+    "attackMaximumRadians": 0.58,
+    "attackMaximumDegrees": 33.23,
+    "keyframes": {
+      "idle": [
+        [
+          0,
+          0.0
+        ],
+        [
+          50,
+          0.015
+        ],
+        [
+          100,
+          0.0
+        ]
+      ],
+      "walk": [
+        [
+          0,
+          0.0
+        ],
+        [
+          16,
+          0.025
+        ],
+        [
+          32,
+          0.0
+        ]
+      ],
+      "run": [
+        [
+          0,
+          0.035
+        ],
+        [
+          8,
+          0.065
+        ],
+        [
+          17,
+          0.035
+        ]
+      ],
+      "attack": [
+        [
+          0,
+          0.0
+        ],
+        [
+          8,
+          0.12
+        ],
+        [
+          14,
+          0.58
+        ],
+        [
+          22,
+          0.25
+        ],
+        [
+          30,
+          0.0
+        ],
+        [
+          40,
+          0.0
+        ]
+      ],
+      "hurt": [
+        [
+          0,
+          0.0
+        ],
+        [
+          5,
+          0.08
+        ],
+        [
+          12,
+          0.0
+        ],
+        [
+          20,
+          0.0
+        ]
+      ],
+      "death": [
+        [
+          0,
+          0.0
+        ],
+        [
+          16,
+          0.04
+        ],
+        [
+          32,
+          0.08
+        ]
+      ]
+    }
+  },
+  "groundContactCorrections": {
+    "actions": {
+      "idle": {
+        "sampledFrames": 101,
+        "minimumBeforeMetres": 0.0,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.0
+      },
+      "walk": {
+        "sampledFrames": 33,
+        "minimumBeforeMetres": -0.022478,
+        "minimumAfterMetres": -0.0,
+        "maximumVerticalCorrectionMetres": 0.023978
+      },
+      "run": {
+        "sampledFrames": 18,
+        "minimumBeforeMetres": -0.037323,
+        "minimumAfterMetres": -0.0,
+        "maximumVerticalCorrectionMetres": 0.038823
+      },
+      "attack": {
+        "sampledFrames": 41,
+        "minimumBeforeMetres": -0.020486,
+        "minimumAfterMetres": -0.0,
+        "maximumVerticalCorrectionMetres": 0.021986
+      },
+      "hurt": {
+        "sampledFrames": 21,
+        "minimumBeforeMetres": -0.0,
+        "minimumAfterMetres": -0.0,
+        "maximumVerticalCorrectionMetres": 0.0
+      },
+      "death": {
+        "sampledFrames": 33,
+        "minimumBeforeMetres": -0.092732,
+        "minimumAfterMetres": -0.0,
+        "maximumVerticalCorrectionMetres": 0.094232
+      }
+    }
+  },
+  "provenance": {
+    "donor": "Quaternius Ultimate Animated Animals / Wolf.blend",
+    "donorSha256": "FE31C3829DD2A8B9DFEDB2E5CB656939A1D525EBD535A62434D2D25A4399CB9E",
+    "license": "CC0 1.0 Universal",
+    "geometry": "unaltered connected donor topology; no procedural replacement",
+    "rig": "Quaternius 51-bone quadruped rig plus one Realm weighted jaw bone",
+    "animations": "Quaternius Idle, Walk, Gallop, Attack, Idle_HitReact_Left and Death",
+    "materials": "original Realm of Ashes B+C packed 512 px PBR textures"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "CDB0374E135B80C880B93D373B7CEB9490A9B34C44AEA6EB4D469DD9CA0E1A7A"
+}

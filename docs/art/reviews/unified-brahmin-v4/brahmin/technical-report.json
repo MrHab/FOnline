@@ -1,0 +1,412 @@
+{
+  "assetId": "creature_brahmin_unified_v4",
+  "file": "creature_brahmin_unified_v4.glb",
+  "boundsIdleMetres": {
+    "minimum": [
+      -1.036374,
+      -0.782985,
+      0.0
+    ],
+    "maximum": [
+      0.872652,
+      0.462968,
+      1.119095
+    ],
+    "size": [
+      1.909026,
+      1.245953,
+      1.119095
+    ]
+  },
+  "collider": {
+    "type": "box",
+    "size": [
+      1.909026,
+      1.245953,
+      1.119095
+    ],
+    "center": [
+      -0.081861,
+      -0.160009,
+      0.559547
+    ]
+  },
+  "rig": {
+    "armatures": 1,
+    "boneCount": 51,
+    "bones": [
+      "Back",
+      "BackLeg.L",
+      "BackLeg.R",
+      "BackLowerLeg.L",
+      "BackLowerLeg.R",
+      "BackShoulder.L",
+      "BackShoulder.R",
+      "BackUpperLeg.L",
+      "BackUpperLeg.R",
+      "Body",
+      "EarA.L",
+      "EarA.R",
+      "EarB.L",
+      "EarB.R",
+      "FF.L",
+      "FF.R",
+      "FFB.L",
+      "FFB.R",
+      "FrontLowerLeg.L",
+      "FrontLowerLeg.R",
+      "FrontShoulder.L",
+      "FrontShoulder.R",
+      "FrontUpperLeg.L",
+      "FrontUpperLeg.R",
+      "Head",
+      "Head.R",
+      "IKBackLeg.L",
+      "IKBackLeg.R",
+      "IKFrontLeg.L",
+      "IKFrontLeg.R",
+      "Jaw.L",
+      "Jaw.R",
+      "Neck1",
+      "Neck2",
+      "Neck2.R",
+      "Neck3",
+      "Neck3.R",
+      "PoleTarget.L",
+      "PoleTarget.R",
+      "PoleTargetBack.L",
+      "PoleTargetBack.R",
+      "Tail1",
+      "Tail2",
+      "Tail3",
+      "Tail4",
+      "Tail5",
+      "Tail6",
+      "Tail7",
+      "Torso",
+      "Torso2",
+      "Torso3"
+    ],
+    "twoHeadAugmentation": {
+      "commonNeck": "Neck1",
+      "leftBranch": [
+        "Neck2",
+        "Neck3",
+        "Head"
+      ],
+      "rightBranch": [
+        "Neck2.R",
+        "Neck3.R",
+        "Head.R"
+      ],
+      "addedSecondaryBones": [
+        "Jaw.L",
+        "EarA.L",
+        "EarB.L",
+        "Jaw.R",
+        "EarA.R",
+        "EarB.R"
+      ],
+      "totalBones": 51,
+      "branchMethod": "central Neck1 forks into independently skinned left and right Neck2/Neck3/Head chains; donor forward/up rest axes are preserved so the authored headbutt stays sagittal",
+      "sourceHeadRest": {
+        "head": [
+          -0.0,
+          -3.9831,
+          3.8519
+        ],
+        "tail": [
+          -0.0,
+          -4.7928,
+          3.0845
+        ]
+      }
+    }
+  },
+  "requiredAnimations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "hurt",
+    "death"
+  ],
+  "actualGlb": {
+    "meshDefinitions": 1,
+    "positionVertices": 7078,
+    "triangles": 3478,
+    "materials": 9,
+    "textures": 27,
+    "skins": 1,
+    "skinJointCounts": [
+      51
+    ],
+    "animations": [
+      "attack",
+      "death",
+      "hurt",
+      "idle",
+      "run",
+      "walk"
+    ],
+    "nodes": [
+      "Jaw.L",
+      "EarA.L",
+      "EarB.L",
+      "Head",
+      "Neck3",
+      "Neck2",
+      "Jaw.R",
+      "EarA.R",
+      "EarB.R",
+      "Head.R",
+      "Neck3.R",
+      "Neck2.R",
+      "Neck1",
+      "Torso3",
+      "FrontLowerLeg.L",
+      "FrontUpperLeg.L",
+      "FrontShoulder.L",
+      "FrontLowerLeg.R",
+      "FrontUpperLeg.R",
+      "FrontShoulder.R",
+      "Torso2",
+      "Torso",
+      "BackLowerLeg.L",
+      "BackUpperLeg.L",
+      "BackLeg.L",
+      "BackShoulder.L",
+      "BackLowerLeg.R",
+      "BackUpperLeg.R",
+      "BackLeg.R",
+      "BackShoulder.R",
+      "Tail7",
+      "Tail6",
+      "Tail5",
+      "Tail4",
+      "Tail3",
+      "Tail2",
+      "Tail1",
+      "Back",
+      "PoleTargetBack.L",
+      "PoleTarget.L",
+      "PoleTargetBack.R",
+      "PoleTarget.R",
+      "Body",
+      "FFB.L",
+      "IKBackLeg.L",
+      "FF.L",
+      "IKFrontLeg.L",
+      "FFB.R",
+      "IKBackLeg.R",
+      "FF.R",
+      "IKFrontLeg.R",
+      "brahmin_quaternius_connected_two_head_body",
+      "brahmin_quaternius_full_rig",
+      "creature_brahmin_unified_v4"
+    ]
+  },
+  "geometryAnalysis": {
+    "primaryBodyConnectedComponents": 1,
+    "primaryBodyTopology": "connected Quaternius Bull surface with shared Y-shaped two-neck fork",
+    "sourceVertices": 1221,
+    "resultVertices": 1751,
+    "sourceTriangles": 2488,
+    "resultTriangles": 3478,
+    "flatShaded": true,
+    "twoHeadRebuild": {
+      "selectedSourceVertices": 530,
+      "sourceVertices": 1221,
+      "resultVertices": 1751,
+      "sourcePolygons": 1244,
+      "duplicatedBranchPolygons": 548,
+      "mixedSharedSeamPolygons": 14,
+      "hiddenHornBridgeTriangles": 8,
+      "maximumHornBridgeLength": 0.086135,
+      "resultPolygons": 1800,
+      "seamY": -2.7,
+      "branchOffsetX": 0.84,
+      "headLateralScale": 0.46,
+      "headLongitudinalScale": 0.9,
+      "topologyMethod": "forward Quaternius branch duplicated inside one mesh; mixed boundary faces share the original seam vertices so both necks remain connected to the torso"
+    },
+    "materialRemap": {
+      "materialPolygonCounts": {
+        "hide": 983,
+        "ash_hide": 184,
+        "dust": 164,
+        "muzzle": 36,
+        "hoof": 76,
+        "eye_black": 56,
+        "eye_white": 8,
+        "horn": 280,
+        "scar": 13
+      },
+      "uvProjection": "deterministic dominant-axis box projection",
+      "facetPolicy": "preserved Quaternius flat-shaded planes",
+      "wearHierarchy": "burnt hide, ash patches, contact dust, muted muzzle, worn horn and a localized healed mutation scar"
+    },
+    "secondarySkinning": {
+      "weightedVertices": {
+        "Jaw.L": 63,
+        "Jaw.R": 63,
+        "EarA.L": 76,
+        "EarB.L": 76,
+        "EarA.R": 76,
+        "EarB.R": 76
+      },
+      "maximumWeights": {
+        "Jaw.L": 0.9333,
+        "Jaw.R": 0.9333,
+        "EarA.L": 0.88,
+        "EarB.L": 0.88,
+        "EarA.R": 0.88,
+        "EarB.R": 0.88
+      },
+      "jawMask": "forward lower muzzle with feathered anatomical hinge",
+      "earMask": "hide polygons only; horns and eyes excluded"
+    },
+    "skinInfluenceNormalization": {
+      "verticesLimitedToFourInfluences": 122,
+      "maximumInfluencesBefore": 8,
+      "maximumInfluencesAfter": 4
+    }
+  },
+  "actions": {
+    "sourceToRuntime": {
+      "idle": "Idle",
+      "walk": "Walk",
+      "run": "Gallop",
+      "attack": "Attack_Headbutt",
+      "hurt": "Idle_HitReact_Left",
+      "death": "Death"
+    },
+    "runtimeRanges": {
+      "idle": [
+        0.0,
+        100.0
+      ],
+      "walk": [
+        0.0,
+        35.0
+      ],
+      "run": [
+        0.0,
+        18.0
+      ],
+      "attack": [
+        0.0,
+        31.0
+      ],
+      "hurt": [
+        0.0,
+        20.0
+      ],
+      "death": [
+        0.0,
+        30.0
+      ]
+    },
+    "visualBake": {
+      "sampledPoseBoneFrames": 12240,
+      "removedBlenderOnlyConstraints": 4,
+      "purpose": "portable GLB channels preserve the evaluated Quaternius quadruped IK motion"
+    }
+  },
+  "rightHeadAnimation": {
+    "sourceToRightBranch": {
+      "Neck2": "Neck2.R",
+      "Neck3": "Neck3.R",
+      "Head": "Head.R"
+    },
+    "copiedFcurves": 180,
+    "policy": "right branch inherits authored donor head motion before asymmetric secondary posing is added"
+  },
+  "secondaryAnimation": {
+    "jaws": {
+      "bones": [
+        "Jaw.L",
+        "Jaw.R"
+      ],
+      "attackMaximumRadians": 0.2,
+      "asynchronousChewing": true
+    },
+    "ears": {
+      "bones": [
+        "EarA.L",
+        "EarB.L",
+        "EarA.R",
+        "EarB.R"
+      ],
+      "asymmetricFlicks": true
+    },
+    "rightHeadAsymmetry": {
+      "idleYawRadians": 0.09,
+      "attackCounterYawRadians": 0.14,
+      "hurtRollRadians": 0.11
+    },
+    "twoHeadOutwardYaw": {
+      "idleRadians": 0.04,
+      "attackMaximumRadians": 0.17,
+      "purpose": "preserve a readable gap between cheeks and internal horns through the headbutt arc"
+    },
+    "headbuttRetarget": {
+      "method": "donor body weight-shift retained; diagonal single-head neck sweep replaced by symmetric sagittal pitch with outward yaw",
+      "maximumCommonNeckPitchRadians": 0.42,
+      "maximumBranchPitchRadians": 0.24,
+      "maximumOutwardYawRadians": 0.17
+    }
+  },
+  "groundContactCorrections": {
+    "actions": {
+      "idle": {
+        "sampledFrames": 101,
+        "minimumBeforeMetres": 0.0,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.0
+      },
+      "walk": {
+        "sampledFrames": 36,
+        "minimumBeforeMetres": -0.015699,
+        "minimumAfterMetres": -0.0,
+        "maximumVerticalCorrectionMetres": 0.017199
+      },
+      "run": {
+        "sampledFrames": 19,
+        "minimumBeforeMetres": -0.017436,
+        "minimumAfterMetres": -0.0,
+        "maximumVerticalCorrectionMetres": 0.018936
+      },
+      "attack": {
+        "sampledFrames": 32,
+        "minimumBeforeMetres": 0.0,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.0
+      },
+      "hurt": {
+        "sampledFrames": 21,
+        "minimumBeforeMetres": 0.0,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.0
+      },
+      "death": {
+        "sampledFrames": 31,
+        "minimumBeforeMetres": -0.160635,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.162135
+      }
+    }
+  },
+  "provenance": {
+    "donor": "Quaternius Ultimate Animated Animals / Bull.blend",
+    "donorSha256": "6CD6CB9DB2FF50CC32AF34C4138613B92F1132D14476322CD23DD1F4347605FD",
+    "license": "CC0 1.0 Universal",
+    "geometry": "connected donor body and limbs; forward branch duplicated with shared seam into original two-head mutant anatomy",
+    "rig": "Quaternius 42-bone quadruped rig plus right neck/head branch, two jaws and four deforming ears",
+    "animations": "Quaternius Idle, Walk, Gallop, Attack_Headbutt, Idle_HitReact_Left and Death with Realm secondary motion",
+    "materials": "original Realm of Ashes B+C packed 512 px PBR textures"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "B12B53B02C502CD0007FDEF70295CF09E81732458F468BE2A600C8E9ED263EA5"
+}

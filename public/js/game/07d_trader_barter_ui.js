@@ -291,6 +291,10 @@
       const bought = buys.map(row => `${ITEMS[row.id]?.name || row.id} x${row.qty}`);
       const sold = sells.map(row => `${ITEMS[row.id]?.name || row.id} x${row.qty}`);
       const parts = [];
+      const unloaded = (Array.isArray(ack.unloadedAmmo) ? ack.unloadedAmmo : [])
+        .map(row => `${ITEMS[row.id]?.name || row.id} x${Math.max(0, Math.floor(Number(row.qty || 0)))}`)
+        .filter(Boolean);
+      if (unloaded.length) parts.push(`патроны из магазинов возвращены: ${unloaded.join(', ')}`);
       if (bought.length) parts.push(`куплено: ${bought.join(', ')}`);
       if (sold.length) parts.push(`продано: ${sold.join(', ')}`);
       const balance = net > 0 ? `доплата ${net}` : (net < 0 ? `получено ${Math.abs(net)}` : 'без доплаты');
@@ -354,6 +358,10 @@
       const bought = buys.map(row => `${ITEMS[row.id]?.name || row.id} x${row.qty}`);
       const sold = sells.map(row => `${ITEMS[row.id]?.name || row.id} x${row.qty}`);
       const parts = [];
+      const unloaded = (Array.isArray(ack.unloadedAmmo) ? ack.unloadedAmmo : [])
+        .map(row => `${ITEMS[row.id]?.name || row.id} x${Math.max(0, Math.floor(Number(row.qty || 0)))}`)
+        .filter(Boolean);
+      if (unloaded.length) parts.push(`патроны из магазинов возвращены: ${unloaded.join(', ')}`);
       if (bought.length) parts.push(`куплено: ${bought.join(', ')}`);
       if (sold.length) parts.push(`продано: ${sold.join(', ')}`);
       const balance = net > 0 ? `доплата ${net}` : (net < 0 ? `получено ${Math.abs(net)}` : 'без доплаты');

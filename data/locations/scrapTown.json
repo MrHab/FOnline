@@ -173,6 +173,70 @@
   ],
   "objects": [
     {
+      "id": "scrap_gratch",
+      "model": "traderNpc",
+      "name": "Грач-Жестянщик",
+      "url": "/assets/models/wasteland/trader_npc.glb",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": 1
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "merchant",
+        "trader",
+        "unique",
+        "scrap_gratch"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "entity": {
+        "kind": "npc",
+        "role": "merchant",
+        "faction": "scrap_union",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "traderProfile": "scrap",
+        "dialogueProfile": "scrap",
+        "quests": [
+          "scrapParts"
+        ],
+        "profile": "caravanMerchant",
+        "statProfile": "merchantVeteran",
+        "equipmentProfile": "caravanMerchant",
+        "tradeProfile": "scrap",
+        "lootProfile": "merchant"
+      },
+      "vision": {
+        "mode": "none"
+      }
+    },
+    {
       "id": "scrapTown_job_board_01",
       "model": "jobBoard",
       "name": "Доска заданий",
@@ -588,6 +652,57 @@
       "rotation": {
         "x": 0,
         "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "building": {
+        "module": false,
+        "tileSize": 2,
+        "height": 0.55,
+        "bottomOnGround": true,
+        "lockScale": true
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "scrapTown_cot_08",
+      "model": "cotBed",
+      "name": "Койка НПС",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": -14
+      },
+      "rotation": {
+        "x": 0,
+        "y": 3.141592653589793,
         "z": 0
       },
       "scale": {

@@ -227,7 +227,8 @@
     const bounds = typeof locationPlayableBounds === 'function'
       ? locationPlayableBounds(currentLocation)
       : { minX: 0, minZ: 0, maxX: MAP_W - 1, maxZ: MAP_H - 1 };
-    return t.tx <= bounds.minX + 1 || t.tz <= bounds.minZ + 1 || t.tx >= bounds.maxX - 1 || t.tz >= bounds.maxZ - 1;
+    const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;
+    return t.tx <= bounds.minX + innerOffset || t.tz <= bounds.minZ + innerOffset || t.tx >= bounds.maxX - innerOffset || t.tz >= bounds.maxZ - innerOffset;
   }
 
   function updateWorldMapEdgeExit() {

@@ -1015,6 +1015,33 @@ for (const [id, row] of locations) {
       });
     }
   }
+  if (id === 'scrapTown') {
+    const gratchActors = authoredTraders.filter(obj => {
+      const entity = objectEntity(obj);
+      return safeId(obj.id) === 'scrap_gratch'
+        || safeId(entity.traderProfile) === 'scrap'
+        || safeId(entity.tradeProfile) === 'scrap';
+    });
+    if (gratchActors.length !== 1) {
+      errors.push(`${rel}: scrap town must contain exactly one authored Gratch trader (found ${gratchActors.length})`);
+    } else {
+      const gratch = gratchActors[0];
+      const entity = objectEntity(gratch);
+      if (safeId(gratch.id) !== 'scrap_gratch') errors.push(`${rel}: Gratch must use stable object id "scrap_gratch"`);
+      if (resolveLocationEditorModelKey(gratch.model || '') !== 'traderNpc') errors.push(`${rel}: Gratch must use the dedicated "traderNpc" model`);
+      if (objectRole(gratch) !== 'merchant') errors.push(`${rel}: Gratch must have merchant role`);
+      if (safeId(entity.faction) !== 'scrap_union') errors.push(`${rel}: Gratch must belong to faction "scrap_union"`);
+      if (entity.hostileToPlayer !== false) errors.push(`${rel}: Gratch must be friendly to the player`);
+      if (entity.canDialogue !== true) errors.push(`${rel}: Gratch must support dialogue`);
+      if (entity.stationary !== true) errors.push(`${rel}: Gratch must stay at his authored scrap-town position`);
+      if (safeId(entity.traderProfile) !== 'scrap' || safeId(entity.tradeProfile) !== 'scrap') {
+        errors.push(`${rel}: Gratch must use the authoritative "scrap" trade profile`);
+      }
+      if (safeId(entity.dialogueProfile) !== 'scrap') errors.push(`${rel}: Gratch must use the "scrap" dialogue profile`);
+      const quests = new Set((Array.isArray(entity.quests) ? entity.quests : []).map(safeId));
+      if (!quests.has('scrapParts')) errors.push(`${rel}: Gratch is missing quest "scrapParts"`);
+    }
+  }
   const locTraderObjectId = safeId(loc.trader?.objectId);
   const locStorageObjectId = safeId(loc.storage?.objectId);
   if ((loc.trader?.authoredActor || loc.trader?.authoredObject || locTraderObjectId) && locTraderObjectId && !authoredTraders.some(obj => safeId(obj.id) === locTraderObjectId)) {

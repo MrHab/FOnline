@@ -5662,10 +5662,10 @@ function serverRequestedWeaponRuntimeIds(row = {}, baseId = '') {
     .filter(itemKey => itemKey && itemKey !== base))];
 }
 
-function serverValidateWeaponRuntimeRemoval(player = {}, row = {}) {
+function serverValidateWeaponRuntimeRemoval(player = {}, row = {}, options = {}) {
   const baseId = serverBaseItemId(row?.id || row?.itemId || '');
   const weapon = SERVER_WEAPONS[baseId];
-  if (!weapon?.ammoType) return { ok: true, baseId, runtimeIds: [] };
+  if (!weapon?.ammoType) return { ok: true, baseId, runtimeIds: [], ammoReturns: [] };
   const combat = serverEnsureCombatState(player, Date.now());
   const equippedBaseId = serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists');
   const equippedKey = equippedBaseId === baseId
@@ -5682,6 +5682,47 @@ function serverValidateWeaponRuntimeRemoval(player = {}, row = {}) {
   const knownRequestedIds = requestedIds.filter(itemKey => (
     trustedBagIds.has(itemKey) && candidates.some(entry => entry.itemKey === itemKey)
   ));
+  const releaseLoadedAmmo = options.releaseLoadedAmmo === true;
+  if (releaseLoadedAmmo) {
+    const qty = Math.max(1, Math.floor(Number(row?.qty ?? row?.count ?? 1)));
+    const trustedCandidates = candidates.filter(entry => trustedBagIds.has(entry.itemKey));
+    const selected = knownRequestedIds
+      .map(itemKey => trustedCandidates.find(entry => entry.itemKey === itemKey))
+      .filter(Boolean);
+    const selectedIds = new Set(selected.map(entry => entry.itemKey));
+    let unresolvedQty = Math.max(0, qty - selected.length);
+
+    // A bag can contain legacy/base-id weapons that have no separate runtime
+    // magazine row. They are empty by definition and should be consumed before
+    // an unrelated known loaded instance when the client did not name one.
+    const bagQty = serverInventoryQty(player.inventory || [], baseId);
+    const genericEmptyQty = Math.max(0, bagQty - trustedCandidates.length);
+    unresolvedQty = Math.max(0, unresolvedQty - Math.min(unresolvedQty, genericEmptyQty));
+
+    const remainingCandidates = trustedCandidates
+      .filter(entry => !selectedIds.has(entry.itemKey))
+      .sort((a, b) => {
+        const loadedDelta = Number(a.state?.loaded || 0) - Number(b.state?.loaded || 0);
+        return loadedDelta || a.itemKey.localeCompare(b.itemKey);
+      });
+    for (const entry of remainingCandidates) {
+      if (unresolvedQty <= 0) break;
+      selected.push(entry);
+      selectedIds.add(entry.itemKey);
+      unresolvedQty--;
+    }
+
+    const returnedAmmo = selected.reduce(
+      (sum, entry) => sum + Math.max(0, Math.floor(Number(entry.state?.loaded || 0))),
+      0
+    );
+    return {
+      ok: true,
+      baseId,
+      runtimeIds: selected.map(entry => entry.itemKey),
+      ammoReturns: returnedAmmo > 0 ? [{ id: weapon.ammoType, qty: returnedAmmo }] : []
+    };
+  }
   const requestedLoaded = candidates.find(entry => (
     knownRequestedIds.includes(entry.itemKey) && Number(entry.state?.loaded || 0) > 0
   ));
@@ -5709,7 +5750,7 @@ function serverValidateWeaponRuntimeRemoval(player = {}, row = {}) {
       };
     }
   }
-  return { ok: true, baseId, runtimeIds: knownRequestedIds };
+  return { ok: true, baseId, runtimeIds: knownRequestedIds, ammoReturns: [] };
 }
 
 function serverPruneWeaponRuntimeToOwnership(player = {}, baseId = '') {
@@ -5746,6 +5787,54 @@ function serverFinalizeWeaponRuntimeRemoval(player = {}, row = {}, validation = 
     }
   }
   serverPruneWeaponRuntimeToOwnership(player, baseId);
+}
+
+function serverWeaponRuntimeReturnedAmmoRows(runtimeRemovals = []) {
+  const totals = new Map();
+  for (const removal of Array.isArray(runtimeRemovals) ? runtimeRemovals : []) {
+    for (const row of Array.isArray(removal?.validation?.ammoReturns) ? removal.validation.ammoReturns : []) {
+      const id = serverBaseItemId(row?.id || '');
+      const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
+      if (!id || qty <= 0) continue;
+      totals.set(id, Number(totals.get(id) || 0) + qty);
+    }
+  }
+  return [...totals.entries()].map(([id, qty]) => ({ id, qty }));
+}
+
+function serverBuildTradeInventory(rows = [], sells = [], buys = [], returnedAmmo = [], silverQty = 0) {
+  const quantities = new Map(sanitizeServerInventorySnapshot(rows, { includeEquipped: true })
+    .map(row => [row.id, Math.max(0, Math.floor(Number(row.qty || 0)))]));
+  for (const row of Array.isArray(sells) ? sells : []) {
+    const id = serverBaseItemId(row?.id || '');
+    const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
+    quantities.set(id, Number(quantities.get(id) || 0) - qty);
+  }
+  quantities.set('silver', Math.max(0, Math.floor(Number(silverQty || 0))));
+  for (const row of [...(Array.isArray(buys) ? buys : []), ...(Array.isArray(returnedAmmo) ? returnedAmmo : [])]) {
+    const id = serverBaseItemId(row?.id || '');
+    const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
+    if (!id || qty <= 0) continue;
+    quantities.set(id, Number(quantities.get(id) || 0) + qty);
+  }
+  for (const [id, qty] of quantities) {
+    if (qty < 0) return { ok: false, error: 'Часть выбранных товаров уже отсутствует в инвентаре.' };
+    if (qty > serverItemStackLimit(id)) {
+      const returned = (Array.isArray(returnedAmmo) ? returnedAmmo : []).some(row => serverBaseItemId(row?.id || '') === id);
+      return {
+        ok: false,
+        error: returned
+          ? 'После автоматической разрядки в инвентаре не хватит места для боеприпасов.'
+          : 'Для одного из товаров достигнут предел стака.'
+      };
+    }
+  }
+  return {
+    ok: true,
+    inventory: [...quantities.entries()]
+      .filter(([id, qty]) => id && qty > 0)
+      .map(([id, qty]) => ({ id, qty }))
+  };
 }
 
 function serverReleaseBagWeaponMagazineAmmo(player = {}) {
@@ -6403,7 +6492,10 @@ function serverApplyEquipmentAction(player = {}, data = {}, now = Date.now()) {
   if (rawItemRuntimeId && serverRuntimeItemKey(rawItemRuntimeId, desiredBaseId) !== rawItemRuntimeId) {
     return finish({ ok: false, error: 'Сервер: неверный id экземпляра экипировки.' });
   }
-  if (slot === 'weapon') {
+  // An empty weapon id means "put the weapon away" and intentionally falls
+  // back to fists. Fists are a built-in combat state, not a physical runtime
+  // item that has to be present in the player's inventory.
+  if (slot === 'weapon' && rawItemRuntimeId) {
     const currentEquipment = sanitizeEquipment(player.equipment || {}, { weapon: 'fists' });
     const currentRuntime = serverEquipmentRuntimeFromRequest(
       player.equipmentRuntime || {},
@@ -10067,7 +10159,7 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
     if (serverInventoryQty(nextInventory, rowToSell.id) < rowToSell.qty) {
       return { ok: false, error: 'В инвентаре больше нет части выбранных товаров.', market };
     }
-    const validation = serverValidateWeaponRuntimeRemoval(player, rowToSell);
+    const validation = serverValidateWeaponRuntimeRemoval(player, rowToSell, { releaseLoadedAmmo: true });
     if (!validation.ok) return { ok: false, error: validation.error, market };
     runtimeRemovals.push({ row: rowToSell, validation });
   }
@@ -10096,11 +10188,10 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
     return { ok: false, error: 'В инвентаре достигнут предел крышек.', market };
   }
 
-  for (const rowToSell of sells) {
-    nextInventory = serverInventorySetRows(nextInventory, rowToSell.id, serverInventoryQty(nextInventory, rowToSell.id) - rowToSell.qty);
-  }
-  nextInventory = serverInventorySetRows(nextInventory, 'silver', nextSilver);
-  nextInventory = serverInventoryMergeRows(nextInventory, buys);
+  const unloadedAmmo = serverWeaponRuntimeReturnedAmmoRows(runtimeRemovals);
+  const inventoryResult = serverBuildTradeInventory(nextInventory, sells, buys, unloadedAmmo, nextSilver);
+  if (!inventoryResult.ok) return { ok: false, error: inventoryResult.error, market };
+  nextInventory = inventoryResult.inventory;
   const inventoryWeight = serverInventoryWeightWithEquipment(nextInventory, player.equipment || {});
   const capacity = serverCarryCapacity(player);
   if (inventoryWeight > capacity + 0.0001) {
@@ -10140,6 +10231,7 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
     sellTotal,
     buys,
     sells,
+    unloadedAmmo,
     inventory: player.inventory,
     carry: player.carry,
     market: serverTradeMachineMarket(room, loc, row),
@@ -10234,7 +10326,7 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   const runtimeRemovals = [];
   for (const row of sells) {
     if (serverInventoryQty(nextInventory, row.id) < row.qty) return { ok: false, error: 'В инвентаре больше нет части выбранных товаров.' };
-    const validation = serverValidateWeaponRuntimeRemoval(player, row);
+    const validation = serverValidateWeaponRuntimeRemoval(player, row, { releaseLoadedAmmo: true });
     if (!validation.ok) return { ok: false, error: validation.error };
     runtimeRemovals.push({ row, validation });
   }
@@ -10252,9 +10344,10 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   if (net < 0 && market.caps < Math.abs(net)) return { ok: false, error: 'У торговца не хватает крышек для выкупа.' };
   const nextSilver = serverInventoryQty(nextInventory, 'silver') - net;
   if (nextSilver > serverItemStackLimit('silver')) return { ok: false, error: 'В инвентаре достигнут предел крышек.' };
-  for (const row of sells) nextInventory = serverInventorySetRows(nextInventory, row.id, serverInventoryQty(nextInventory, row.id) - row.qty);
-  nextInventory = serverInventorySetRows(nextInventory, 'silver', nextSilver);
-  nextInventory = serverInventoryMergeRows(nextInventory, buys);
+  const unloadedAmmo = serverWeaponRuntimeReturnedAmmoRows(runtimeRemovals);
+  const inventoryResult = serverBuildTradeInventory(nextInventory, sells, buys, unloadedAmmo, nextSilver);
+  if (!inventoryResult.ok) return { ok: false, error: inventoryResult.error };
+  nextInventory = inventoryResult.inventory;
   const weight = serverInventoryWeightWithEquipment(nextInventory, player.equipment || {});
   const capacity = serverCarryCapacity(player);
   if (weight > capacity + 0.0001) return { ok: false, error: `Перегруз: ${weight.toFixed(1)}/${capacity.toFixed(1)} кг.` };
@@ -10294,7 +10387,7 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   if (!actor.personalTrade && buys.length && typeof WASTELAND_SIM.consumeTraderStock === 'function') WASTELAND_SIM.consumeTraderStock(profileId, buys, stockContext);
   if (!actor.personalTrade && sells.length && typeof WASTELAND_SIM.receiveTraderStock === 'function') WASTELAND_SIM.receiveTraderStock(profileId, sells, stockContext);
   refreshRoomWorldState(room);
-  return { ok: true, net, buyTotal, sellTotal, buys, sells, inventory: player.inventory, carry: player.carry, market: serverNpcTradeMarket(actor), enemy: publicEnemy(actor), self: publicAuthoritativePlayerState(player) };
+  return { ok: true, net, buyTotal, sellTotal, buys, sells, unloadedAmmo, inventory: player.inventory, carry: player.carry, market: serverNpcTradeMarket(actor), enemy: publicEnemy(actor), self: publicAuthoritativePlayerState(player) };
 }
 
 function wastelandFactionWarehouseProtection(owner = '') {
@@ -15591,6 +15684,7 @@ const SERVER_GLOBAL_TRAVEL_TIME_COMPRESSION = 900;
 const SERVER_GLOBAL_PLAYER_RADIUS = 5.2;
 const SERVER_GLOBAL_LOCATION_RADIUS = 15;
 const SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE = 5.5;
+const WORLD_MAP_EXIT_BAND_TILES = 2;
 
 function serverGlobalMapMetrics() {
   const grid = GLOBAL_MAP?.grid || GLOBAL_MAP_GRID_DEFAULT;
@@ -15778,7 +15872,8 @@ function serverPlayerAtGlobalMapExit(p = {}) {
   const tile = worldToTile(Number(p.x || 0), Number(p.z || 0));
   const loc = LOCATIONS[normalizeLocationId(p.locationId || '')] || {};
   const bounds = normalizedLocationPlayableBounds(loc);
-  if (tile.tx <= bounds.minX + 2 || tile.tz <= bounds.minZ + 2 || tile.tx >= bounds.maxX - 2 || tile.tz >= bounds.maxZ - 2) return true;
+  const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;
+  if (tile.tx <= bounds.minX + innerOffset || tile.tz <= bounds.minZ + innerOffset || tile.tx >= bounds.maxX - innerOffset || tile.tz >= bounds.maxZ - innerOffset) return true;
   const rows = [loc.exit, ...(Array.isArray(loc.transitions) ? loc.transitions : [])].filter(Boolean);
   return rows.some(row => {
     if (row.to && normalizeLocationId(row.to || '') !== 'wasteland') return false;

@@ -634,19 +634,27 @@
   }
 
   function updateCharacterLocomotionAnimation(actor, dt = 0.016, state = {}) {
+    const moving = !!state.moving;
+    const turnInPlace = typeof characterTurnInPlaceState === 'function'
+      ? characterTurnInPlaceState(actor, state.facingAngle, moving, dt)
+      : { turning: false, amount: 0 };
+    const animationState = {
+      ...state,
+      turning: turnInPlace.turning,
+      turnAmount: turnInPlace.amount
+    };
     if (typeof updateCharacterGlbAnimation === 'function') {
-      updateCharacterGlbAnimation(actor, dt, state);
+      updateCharacterGlbAnimation(actor, dt, animationState);
     }
     const parts = actorAnimationParts(actor);
     if (!actor || !parts.modernRig || !parts.motionRoot || !parts.torsoRig) return;
-    const moving = !!state.moving;
     const crouching = state.crouching !== undefined ? !!state.crouching : !!actor.userData.crouching;
     const speed = Math.max(0, Number(state.speed || 0));
     const weaponId = modernAnimationWeaponId(actor);
     const usesRangedStance = !['fists', 'knife', 'pickaxe', 'axe', 'handPump'].includes(weaponId);
     const now = performance.now();
     const directional = typeof characterDirectionalLocomotionState === 'function'
-      ? characterDirectionalLocomotionState(state)
+      ? characterDirectionalLocomotionState(animationState)
       : {
           lowerBodyYaw: 0,
           upperBodyYaw: 0,
@@ -654,10 +662,14 @@
           playbackRate: moving ? 1 : 0,
           strideScale: moving ? 1 : 0
         };
+    const locomoting = directional.locomoting !== undefined
+      ? !!directional.locomoting
+      : moving;
+    const turnAmount = Number(directional.turnAmount || 0);
 
-    const moveTarget = moving ? 1 : 0;
+    const moveTarget = locomoting ? 1 : 0;
     const aimTarget = usesRangedStance ? 1 : 0;
-    actor.userData.modernMoveBlend = modernAnimationBlend(Number(actor.userData.modernMoveBlend || 0), moveTarget, moving ? 10 : 7, dt);
+    actor.userData.modernMoveBlend = modernAnimationBlend(Number(actor.userData.modernMoveBlend || 0), moveTarget, locomoting ? 10 : 7, dt);
     actor.userData.modernAimBlend = modernAnimationBlend(Number(actor.userData.modernAimBlend || 0), aimTarget, 9, dt);
     actor.userData.modernCrouchBlend = modernAnimationBlend(Number(actor.userData.modernCrouchBlend || 0), crouching ? 1 : 0, 11, dt);
     const moveBlend = actor.userData.modernMoveBlend;
@@ -666,7 +678,7 @@
     actor.userData.modernLowerBodyYaw = modernAnimationBlend(
       Number(actor.userData.modernLowerBodyYaw || 0),
       directional.lowerBodyYaw,
-      moving ? 8.5 : 6.5,
+      locomoting ? 8.5 : 6.5,
       dt
     );
     actor.userData.modernSideAmount = modernAnimationBlend(
@@ -675,23 +687,25 @@
       9,
       dt
     );
-    if (moving && !actor.userData.modernWasMoving) {
+    if (locomoting && !actor.userData.modernWasMoving) {
       actor.userData.modernPlaybackRate = directional.playbackRate;
     }
     actor.userData.modernPlaybackRate = modernAnimationBlend(
       Number.isFinite(Number(actor.userData.modernPlaybackRate))
         ? Number(actor.userData.modernPlaybackRate)
         : 1,
-      moving ? directional.playbackRate : 1,
+      locomoting ? directional.playbackRate : 1,
       directional.playbackRate < 0 ? 7 : 9,
       dt
     );
-    actor.userData.modernWasMoving = moving;
+    actor.userData.modernWasMoving = locomoting;
     const lowerBodyYaw = actor.userData.modernLowerBodyYaw * moveBlend;
     const upperBodyYaw = -lowerBodyYaw;
     const sideAmount = actor.userData.modernSideAmount * moveBlend;
 
-    const phaseSpeed = moving ? Math.max(4.6, Math.min(9.2, 4.2 + speed * 0.7)) : 2.2;
+    const phaseSpeed = directional.turning
+      ? 4.4 + Math.abs(turnAmount) * 1.6
+      : (moving ? Math.max(4.6, Math.min(9.2, 4.2 + speed * 0.7)) : 2.2);
     actor.userData.modernWalkPhase = Number(actor.userData.modernWalkPhase || 0)
       + dt * phaseSpeed * actor.userData.modernPlaybackRate;
     const phase = actor.userData.modernWalkPhase;
@@ -710,12 +724,14 @@
     parts.torsoRig.rotation.y = Math.sin(phase) * moveBlend * 0.035 + upperBodyYaw * 0.82;
     parts.torsoRig.rotation.z = -Math.sin(phase) * moveBlend * 0.018 + sideAmount * 0.025;
 
-    parts.legL.rotation.set(stride - crouchBlend * 0.34, 0, 0.035);
-    parts.legR.rotation.set(-stride - crouchBlend * 0.34, 0, -0.035);
+    parts.legL.rotation.set(stride - crouchBlend * 0.34, turnAmount * 0.16 * moveBlend, 0.035);
+    parts.legR.rotation.set(-stride - crouchBlend * 0.34, turnAmount * 0.16 * moveBlend, -0.035);
     parts.kneeL.rotation.x = footLiftL * 0.46 + crouchBlend * 0.62;
     parts.kneeR.rotation.x = footLiftR * 0.46 + crouchBlend * 0.62;
     parts.ankleL.rotation.x = -footLiftL * 0.3 - crouchBlend * 0.2;
     parts.ankleR.rotation.x = -footLiftR * 0.3 - crouchBlend * 0.2;
+    parts.ankleL.rotation.y = -turnAmount * 0.11 * moveBlend;
+    parts.ankleR.rotation.y = -turnAmount * 0.11 * moveBlend;
     if (parts.coatTailL) parts.coatTailL.rotation.x = -0.035 + Math.max(0, -stride) * 0.12 + moveBlend * 0.035;
     if (parts.coatTailR) parts.coatTailR.rotation.x = -0.035 + Math.max(0, stride) * 0.12 + moveBlend * 0.035;
     if (parts.coatBack) parts.coatBack.rotation.x = -0.06 + moveBlend * 0.05;

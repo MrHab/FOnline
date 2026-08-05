@@ -9,8 +9,11 @@ const root = path.resolve(__dirname, '..');
 const modelDirectory = path.join(root, 'public', 'assets', 'models', 'characters', 'base');
 const manifestPath = path.join(modelDirectory, 'manifest.json');
 const runtimePath = path.join(root, 'public', 'js', 'game', '04b_character_glb_runtime.js');
+const playerVisualPath = path.join(root, 'public', 'js', 'game', '04_player_model_visuals.js');
 const modernRuntimePath = path.join(root, 'public', 'js', 'game', '04a_player_model_modern_runtime.js');
 const remoteRuntimePath = path.join(root, 'public', 'js', 'game', '05b_remote_player_locomotion.js');
+const socketRuntimePath = path.join(root, 'public', 'js', 'game', '05c_multiplayer_socket_room.js');
+const enemyRuntimePath = path.join(root, 'public', 'js', 'game', '05f_enemy_models_location_flow.js');
 const creatorPath = path.join(root, 'public', 'js', 'game', '08_character_creation_save.js');
 const updatePath = path.join(root, 'public', 'js', 'game', '09_update_fog_movement_ai.js');
 const indexPath = path.join(root, 'public', 'index.html');
@@ -108,8 +111,11 @@ for (const row of manifest.files) {
 assert.deepStrictEqual(actualKeys, expectedKeys);
 
 const runtime = fs.readFileSync(runtimePath, 'utf8');
+const playerVisual = fs.readFileSync(playerVisualPath, 'utf8');
 const modernRuntime = fs.readFileSync(modernRuntimePath, 'utf8');
 const remoteRuntime = fs.readFileSync(remoteRuntimePath, 'utf8');
+const socketRuntime = fs.readFileSync(socketRuntimePath, 'utf8');
+const enemyRuntime = fs.readFileSync(enemyRuntimePath, 'utf8');
 const creator = fs.readFileSync(creatorPath, 'utf8');
 const update = fs.readFileSync(updatePath, 'utf8');
 const index = fs.readFileSync(indexPath, 'utf8');
@@ -129,6 +135,22 @@ assert(runtime.includes('function applyCharacterFaceShape('));
 assert(runtime.includes('function addCharacterHairVariant('));
 assert(runtime.includes('applyCharacterFaceShapeFrame(runtime.root);'));
 assert(runtime.includes('applyCharacterFaceShapeFrame(characterPreviewState.model);'));
+assert(runtime.includes('function characterTurnInPlaceState(')
+  && modernRuntime.includes('characterTurnInPlaceState(actor, state.facingAngle, moving, dt)'),
+  'stationary cursor turns do not enter turn-in-place locomotion');
+assert(runtime.includes('function triggerActorAttackAnimationPulse(')
+  && runtime.includes('function actorAttackAnimationPulseState(')
+  && runtime.includes('function characterOneShotRestart('),
+  'GLB characters do not expose repeatable one-shot attack pulses');
+assert(playerVisual.includes('triggerActorAttackAnimationPulse(actor, opts.attackToken || opts.t || 0)'),
+  'melee events do not pulse the GLB attack action');
+assert(socketRuntime.includes('triggerActorAttackAnimationPulse(enemyShooter.mesh, data.t || 0)'),
+  'ranged NPC shots do not pulse the GLB attack action');
+assert(socketRuntime.includes('attackToken: data.t || 0'),
+  'melee NPC events lose their unique attack token');
+assert(enemyRuntime.includes('attackToken: attackAnimation.token')
+  && enemyRuntime.includes('characterOneShotRestart(runtime, action, state.attackToken)'),
+  'NPC or creature animation updates do not restart attacks from event tokens');
 assert(runtime.includes('characterPreviewState.requestedAppearance = appearance;'));
 assert(runtime.includes('characterPreviewState.requestedAppearance || appearance'),
   'creator preview drops appearance changes while a body model is loading');
@@ -178,7 +200,7 @@ assert(server.includes('const hairId = SERVER_CHARACTER_HAIR_IDS.has(rawHairId) 
 assert(server.includes('const hairColorId = SERVER_CHARACTER_HAIR_COLOR_IDS.has(rawHairColorId) ? rawHairColorId'));
 assert(server.includes('appearance: sanitizeCharacterAppearance(p.appearance || {})'));
 
-const compatibilityContext = vm.createContext({ THREE, console });
+const compatibilityContext = vm.createContext({ THREE, console, performance });
 vm.runInContext(`${runtime}
 this.__characterAppearanceFitApi = {
   CHARACTER_BODY_TYPES,
@@ -193,11 +215,56 @@ this.__characterAppearanceFitApi = {
   characterHeadRestMatrix,
   attachCharacterVariantToHead,
   characterDirectionalLocomotionState,
+  characterTurnInPlaceState,
+  triggerActorAttackAnimationPulse,
+  actorAttackAnimationPulseState,
+  characterOneShotRestart,
+  setCharacterGlbAction,
   applyCharacterGlbDirectionalPose,
   clearCharacterGlbDirectionalPose
 };`, compatibilityContext, { filename: runtimePath });
 const fitApi = compatibilityContext.__characterAppearanceFitApi;
 assert(fitApi, 'character appearance fit API could not be inspected');
+
+const attackPulseActor = { userData: {} };
+assert.deepStrictEqual(
+  { ...fitApi.actorAttackAnimationPulseState(attackPulseActor, true) },
+  { token: 0, active: true },
+  'persistent attack fallback is missing before the first combat event'
+);
+assert.strictEqual(fitApi.triggerActorAttackAnimationPulse(attackPulseActor, 101), 101);
+assert.deepStrictEqual(
+  { ...fitApi.actorAttackAnimationPulseState(attackPulseActor, false) },
+  { token: 101, active: true },
+  'a combat event does not activate its attack window'
+);
+attackPulseActor.userData.attackAnimationUntil = 0;
+assert.strictEqual(fitApi.actorAttackAnimationPulseState(attackPulseActor, true).active, false,
+  'persistent AI state incorrectly keeps attacks active after event-driven animation starts');
+
+const attackRuntime = { attackAnimationToken: 0 };
+assert.strictEqual(fitApi.characterOneShotRestart(attackRuntime, 'attack', 101), true);
+assert.strictEqual(fitApi.characterOneShotRestart(attackRuntime, 'attack', 101), false,
+  'one combat event restarts the same action more than once');
+assert.strictEqual(fitApi.characterOneShotRestart(attackRuntime, 'attack', 102), true,
+  'a later combat event cannot restart the finished attack action');
+const actionCalls = { reset: 0, play: 0 };
+const repeatedAttackAction = {
+  reset() { actionCalls.reset += 1; return this; },
+  setEffectiveWeight() { return this; },
+  setEffectiveTimeScale() { return this; },
+  play() { actionCalls.play += 1; return this; }
+};
+const repeatedAttackRuntime = {
+  actions: { attack: repeatedAttackAction },
+  currentAction: 'attack'
+};
+fitApi.setCharacterGlbAction(repeatedAttackRuntime, 'attack', 0);
+assert.deepStrictEqual(actionCalls, { reset: 0, play: 0 },
+  'a stable frame restarts the attack clip without a new event');
+fitApi.setCharacterGlbAction(repeatedAttackRuntime, 'attack', 0, { restart: true });
+assert.deepStrictEqual(actionCalls, { reset: 1, play: 1 },
+  'a new event does not reset and replay the current attack clip');
 
 function closeTo(actual, expected, tolerance, label) {
   assert(Math.abs(actual - expected) <= tolerance,
@@ -296,6 +363,47 @@ assert.strictEqual(fitApi.characterDirectionalLocomotionState({
   moveX: 0,
   moveZ: 0
 }).direction, 'idle');
+
+const turningActor = { userData: {} };
+assert.strictEqual(
+  fitApi.characterTurnInPlaceState(turningActor, 0, false, 0.016).turning,
+  false,
+  'the initial facing sample starts an unwanted turn animation'
+);
+const rightTurnState = fitApi.characterTurnInPlaceState(turningActor, Math.PI / 2, false, 0.016);
+assert(rightTurnState.turning && rightTurnState.amount > 0,
+  'a stationary right turn does not produce a positive turn-in-place signal');
+assert.strictEqual(
+  fitApi.characterTurnInPlaceState(turningActor, Math.PI / 2, false, 0.016).turning,
+  true,
+  'a one-frame cursor turn is not held long enough to show a footstep'
+);
+const rightTurnLocomotion = fitApi.characterDirectionalLocomotionState({
+  moving: false,
+  turning: true,
+  turnAmount: rightTurnState.amount
+});
+const leftTurnLocomotion = fitApi.characterDirectionalLocomotionState({
+  moving: false,
+  turning: true,
+  turnAmount: -rightTurnState.amount
+});
+assert.strictEqual(rightTurnLocomotion.direction, 'turn_right');
+assert.strictEqual(leftTurnLocomotion.direction, 'turn_left');
+assert.strictEqual(rightTurnLocomotion.action, 'walk');
+assert(rightTurnLocomotion.locomoting && rightTurnLocomotion.strideScale > 0,
+  'turn-in-place does not drive the legs');
+assert(rightTurnLocomotion.lowerBodyYaw > 0 && leftTurnLocomotion.lowerBodyYaw < 0,
+  'turn-in-place does not rotate the pelvis in the turn direction');
+const wrappedTurnActor = { userData: {} };
+fitApi.characterTurnInPlaceState(wrappedTurnActor, Math.PI - 0.05, false, 0.016);
+assert(fitApi.characterTurnInPlaceState(wrappedTurnActor, -Math.PI + 0.05, false, 0.016).amount > 0,
+  'turn-in-place chooses the long direction across the angle wrap');
+assert.strictEqual(
+  fitApi.characterTurnInPlaceState(turningActor, Math.PI / 2, true, 0.016).turning,
+  false,
+  'turn-in-place remains active during physical movement'
+);
 
 const directionalRoot = new THREE.Group();
 const directionalBones = {};
@@ -469,6 +577,6 @@ firstAttachment.matrix.elements.forEach((value, index) => {
 
 console.log(
   'Character models OK: 6 GLB bases, 8 faces, 8 hairstyles, 8 hair colors, '
-  + '1536 fit combinations, stable rest-pose attachment, 8-way cursor-relative locomotion, '
+  + '1536 fit combinations, stable rest-pose attachment, 8-way cursor-relative locomotion and turn-in-place steps, '
   + 'rig/animations and hashes checked'
 );

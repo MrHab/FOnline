@@ -1,0 +1,956 @@
+{
+  "schema": "realm.equipment-hazmat-review.v1",
+  "assetFamily": "equipment_hazmat_suit_unified_v1",
+  "itemId": "hazmatSuit",
+  "itemNameRu": "Костюм химзащиты",
+  "artDirection": "геометрия B, материалы и износ C",
+  "bodyIds": [
+    "female_slim",
+    "female_medium",
+    "female_large",
+    "male_slim",
+    "male_medium",
+    "male_large"
+  ],
+  "variantCount": 6,
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "variants": [
+    {
+      "actualGlb": {
+        "materials": 6,
+        "meshDefinitions": 3,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_hazmat_suit_unified_v1_female_slim_inner_seal",
+          "equipment_hazmat_suit_unified_v1_female_slim_sealed_details",
+          "equipment_hazmat_suit_unified_v1_female_slim_sealed_shell",
+          "character_root"
+        ],
+        "positionVertices": 49945,
+        "skins": 1,
+        "textures": 6,
+        "triangles": 27558
+      },
+      "assetId": "equipment_hazmat_suit_unified_v1_female_slim",
+      "bodyId": "female_slim",
+      "file": "equipment_hazmat_suit_unified_v1_female_slim.glb",
+      "fit": {
+        "bodyBounds": {
+          "maximum": [
+            0.64216,
+            0.15022,
+            1.48695
+          ],
+          "minimum": [
+            -0.64216,
+            -0.13026,
+            -0.00841
+          ]
+        },
+        "detailPolygons": 598,
+        "detailVertices": 839,
+        "headBounds": {
+          "maximum": [
+            0.08888,
+            0.1129,
+            1.76664
+          ],
+          "minimum": [
+            -0.08888,
+            -0.11191,
+            1.48329
+          ]
+        },
+        "headRadii": [
+          0.11688,
+          0.1444,
+          0.17167
+        ],
+        "rubberMaterialPolygons": 3574,
+        "shellPolygons": 17611,
+        "shellVertices": 8880,
+        "torsoBounds": {
+          "maximum": [
+            0.1602,
+            0.15022,
+            1.48695
+          ],
+          "minimum": [
+            -0.1602,
+            -0.12659,
+            0.871
+          ]
+        },
+        "visorCenter": [
+          0,
+          -0.16391,
+          1.63696
+        ]
+      },
+      "itemId": "hazmatSuit",
+      "itemNameRu": "Костюм химзащиты",
+      "materials": [
+        "hazmat_faded_mustard_canvas",
+        "hazmat_aged_black_rubber",
+        "hazmat_oxidized_filter_metal",
+        "hazmat_scratched_smoke_visor",
+        "hazmat_dusty_olive_repairs",
+        "hazmat_faded_warning_panel"
+      ],
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original body-fitted B geometry with authored B+C hazmat details on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "E200587375D71C565CFCFCFE8704675760D47617EB088D33F5B4261CB5171605"
+    },
+    {
+      "actualGlb": {
+        "materials": 6,
+        "meshDefinitions": 3,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_hazmat_suit_unified_v1_female_medium_inner_seal",
+          "equipment_hazmat_suit_unified_v1_female_medium_sealed_details",
+          "equipment_hazmat_suit_unified_v1_female_medium_sealed_shell",
+          "character_root"
+        ],
+        "positionVertices": 49649,
+        "skins": 1,
+        "textures": 6,
+        "triangles": 27660
+      },
+      "assetId": "equipment_hazmat_suit_unified_v1_female_medium",
+      "bodyId": "female_medium",
+      "file": "equipment_hazmat_suit_unified_v1_female_medium.glb",
+      "fit": {
+        "bodyBounds": {
+          "maximum": [
+            0.64122,
+            0.16247,
+            1.48872
+          ],
+          "minimum": [
+            -0.64122,
+            -0.14023,
+            -0.00841
+          ]
+        },
+        "detailPolygons": 598,
+        "detailVertices": 839,
+        "headBounds": {
+          "maximum": [
+            0.08888,
+            0.1129,
+            1.76664
+          ],
+          "minimum": [
+            -0.08888,
+            -0.11191,
+            1.4846
+          ]
+        },
+        "headRadii": [
+          0.11688,
+          0.1444,
+          0.17102
+        ],
+        "rubberMaterialPolygons": 3544,
+        "shellPolygons": 17703,
+        "shellVertices": 8930,
+        "torsoBounds": {
+          "maximum": [
+            0.173,
+            0.16247,
+            1.48775
+          ],
+          "minimum": [
+            -0.173,
+            -0.14023,
+            0.87088
+          ]
+        },
+        "visorCenter": [
+          0,
+          -0.16391,
+          1.63762
+        ]
+      },
+      "itemId": "hazmatSuit",
+      "itemNameRu": "Костюм химзащиты",
+      "materials": [
+        "hazmat_faded_mustard_canvas",
+        "hazmat_aged_black_rubber",
+        "hazmat_oxidized_filter_metal",
+        "hazmat_scratched_smoke_visor",
+        "hazmat_dusty_olive_repairs",
+        "hazmat_faded_warning_panel"
+      ],
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original body-fitted B geometry with authored B+C hazmat details on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "B9DD1D79A79707187F3E237DF4A9C1BA9A0CCE5FD2F733BB76084CCD754EB1CC"
+    },
+    {
+      "actualGlb": {
+        "materials": 6,
+        "meshDefinitions": 3,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_hazmat_suit_unified_v1_female_large_inner_seal",
+          "equipment_hazmat_suit_unified_v1_female_large_sealed_details",
+          "equipment_hazmat_suit_unified_v1_female_large_sealed_shell",
+          "character_root"
+        ],
+        "positionVertices": 49459,
+        "skins": 1,
+        "textures": 6,
+        "triangles": 27765
+      },
+      "assetId": "equipment_hazmat_suit_unified_v1_female_large",
+      "bodyId": "female_large",
+      "file": "equipment_hazmat_suit_unified_v1_female_large.glb",
+      "fit": {
+        "bodyBounds": {
+          "maximum": [
+            0.64233,
+            0.18787,
+            1.49105
+          ],
+          "minimum": [
+            -0.64234,
+            -0.16967,
+            -0.00841
+          ]
+        },
+        "detailPolygons": 598,
+        "detailVertices": 839,
+        "headBounds": {
+          "maximum": [
+            0.08888,
+            0.1129,
+            1.76664
+          ],
+          "minimum": [
+            -0.08888,
+            -0.11191,
+            1.48035
+          ]
+        },
+        "headRadii": [
+          0.11688,
+          0.1444,
+          0.17314
+        ],
+        "rubberMaterialPolygons": 3507,
+        "shellPolygons": 17805,
+        "shellVertices": 8990,
+        "torsoBounds": {
+          "maximum": [
+            0.1955,
+            0.18787,
+            1.48863
+          ],
+          "minimum": [
+            -0.1955,
+            -0.16967,
+            0.87074
+          ]
+        },
+        "visorCenter": [
+          0,
+          -0.16391,
+          1.63549
+        ]
+      },
+      "itemId": "hazmatSuit",
+      "itemNameRu": "Костюм химзащиты",
+      "materials": [
+        "hazmat_faded_mustard_canvas",
+        "hazmat_aged_black_rubber",
+        "hazmat_oxidized_filter_metal",
+        "hazmat_scratched_smoke_visor",
+        "hazmat_dusty_olive_repairs",
+        "hazmat_faded_warning_panel"
+      ],
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original body-fitted B geometry with authored B+C hazmat details on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "F9ACB5E818CF24E2C6A484363473FE4DF83DA36A236EC1106578FC50FD85D19A"
+    },
+    {
+      "actualGlb": {
+        "materials": 6,
+        "meshDefinitions": 3,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_hazmat_suit_unified_v1_male_slim_inner_seal",
+          "equipment_hazmat_suit_unified_v1_male_slim_sealed_details",
+          "equipment_hazmat_suit_unified_v1_male_slim_sealed_shell",
+          "character_root"
+        ],
+        "positionVertices": 48416,
+        "skins": 1,
+        "textures": 6,
+        "triangles": 27479
+      },
+      "assetId": "equipment_hazmat_suit_unified_v1_male_slim",
+      "bodyId": "male_slim",
+      "file": "equipment_hazmat_suit_unified_v1_male_slim.glb",
+      "fit": {
+        "bodyBounds": {
+          "maximum": [
+            0.70616,
+            0.14997,
+            1.55992
+          ],
+          "minimum": [
+            -0.70616,
+            -0.12804,
+            -0.00951
+          ]
+        },
+        "detailPolygons": 598,
+        "detailVertices": 839,
+        "headBounds": {
+          "maximum": [
+            0.09283,
+            0.11971,
+            1.81008
+          ],
+          "minimum": [
+            -0.09283,
+            -0.11517,
+            1.51691
+          ]
+        },
+        "headRadii": [
+          0.12083,
+          0.14944,
+          0.17659
+        ],
+        "rubberMaterialPolygons": 3775,
+        "shellPolygons": 17629,
+        "shellVertices": 8884,
+        "torsoBounds": {
+          "maximum": [
+            0.19315,
+            0.14985,
+            1.53285
+          ],
+          "minimum": [
+            -0.19315,
+            -0.11343,
+            0.89245
+          ]
+        },
+        "visorCenter": [
+          0,
+          -0.16717,
+          1.6755
+        ]
+      },
+      "itemId": "hazmatSuit",
+      "itemNameRu": "Костюм химзащиты",
+      "materials": [
+        "hazmat_faded_mustard_canvas",
+        "hazmat_aged_black_rubber",
+        "hazmat_oxidized_filter_metal",
+        "hazmat_scratched_smoke_visor",
+        "hazmat_dusty_olive_repairs",
+        "hazmat_faded_warning_panel"
+      ],
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original body-fitted B geometry with authored B+C hazmat details on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "4782DA2F7E98C4DFBE61B6E0F30E670BDA99AAEDB5D69C2BB1777CE955BB8B3B"
+    },
+    {
+      "actualGlb": {
+        "materials": 6,
+        "meshDefinitions": 3,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_hazmat_suit_unified_v1_male_medium_inner_seal",
+          "equipment_hazmat_suit_unified_v1_male_medium_sealed_details",
+          "equipment_hazmat_suit_unified_v1_male_medium_sealed_shell",
+          "character_root"
+        ],
+        "positionVertices": 48904,
+        "skins": 1,
+        "textures": 6,
+        "triangles": 27406
+      },
+      "assetId": "equipment_hazmat_suit_unified_v1_male_medium",
+      "bodyId": "male_medium",
+      "file": "equipment_hazmat_suit_unified_v1_male_medium.glb",
+      "fit": {
+        "bodyBounds": {
+          "maximum": [
+            0.70614,
+            0.16345,
+            1.56288
+          ],
+          "minimum": [
+            -0.70614,
+            -0.12804,
+            -0.00951
+          ]
+        },
+        "detailPolygons": 598,
+        "detailVertices": 839,
+        "headBounds": {
+          "maximum": [
+            0.09253,
+            0.12317,
+            1.81008
+          ],
+          "minimum": [
+            -0.09253,
+            -0.11517,
+            1.51807
+          ]
+        },
+        "headRadii": [
+          0.12053,
+          0.15117,
+          0.17601
+        ],
+        "rubberMaterialPolygons": 3762,
+        "shellPolygons": 17604,
+        "shellVertices": 8874,
+        "torsoBounds": {
+          "maximum": [
+            0.206,
+            0.16345,
+            1.5333
+          ],
+          "minimum": [
+            -0.206,
+            -0.12534,
+            0.89362
+          ]
+        },
+        "visorCenter": [
+          0,
+          -0.16717,
+          1.67608
+        ]
+      },
+      "itemId": "hazmatSuit",
+      "itemNameRu": "Костюм химзащиты",
+      "materials": [
+        "hazmat_faded_mustard_canvas",
+        "hazmat_aged_black_rubber",
+        "hazmat_oxidized_filter_metal",
+        "hazmat_scratched_smoke_visor",
+        "hazmat_dusty_olive_repairs",
+        "hazmat_faded_warning_panel"
+      ],
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original body-fitted B geometry with authored B+C hazmat details on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "A179A5B757048F7D62907F650AAA324FB0F26EBF20E19BB39943B05A0F6A5592"
+    },
+    {
+      "actualGlb": {
+        "materials": 6,
+        "meshDefinitions": 3,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_hazmat_suit_unified_v1_male_large_inner_seal",
+          "equipment_hazmat_suit_unified_v1_male_large_sealed_details",
+          "equipment_hazmat_suit_unified_v1_male_large_sealed_shell",
+          "character_root"
+        ],
+        "positionVertices": 49290,
+        "skins": 1,
+        "textures": 6,
+        "triangles": 27392
+      },
+      "assetId": "equipment_hazmat_suit_unified_v1_male_large",
+      "bodyId": "male_large",
+      "file": "equipment_hazmat_suit_unified_v1_male_large.glb",
+      "fit": {
+        "bodyBounds": {
+          "maximum": [
+            0.70613,
+            0.19073,
+            1.56614
+          ],
+          "minimum": [
+            -0.70613,
+            -0.15233,
+            -0.00951
+          ]
+        },
+        "detailPolygons": 598,
+        "detailVertices": 839,
+        "headBounds": {
+          "maximum": [
+            0.09236,
+            0.12927,
+            1.81008
+          ],
+          "minimum": [
+            -0.09236,
+            -0.11517,
+            1.51934
+          ]
+        },
+        "headRadii": [
+          0.12036,
+          0.15422,
+          0.17537
+        ],
+        "rubberMaterialPolygons": 3728,
+        "shellPolygons": 17626,
+        "shellVertices": 8884,
+        "torsoBounds": {
+          "maximum": [
+            0.23082,
+            0.19073,
+            1.53435
+          ],
+          "minimum": [
+            -0.23082,
+            -0.15233,
+            0.89324
+          ]
+        },
+        "visorCenter": [
+          0,
+          -0.16717,
+          1.67671
+        ]
+      },
+      "itemId": "hazmatSuit",
+      "itemNameRu": "Костюм химзащиты",
+      "materials": [
+        "hazmat_faded_mustard_canvas",
+        "hazmat_aged_black_rubber",
+        "hazmat_oxidized_filter_metal",
+        "hazmat_scratched_smoke_visor",
+        "hazmat_dusty_olive_repairs",
+        "hazmat_faded_warning_panel"
+      ],
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original body-fitted B geometry with authored B+C hazmat details on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "089A0A7F4808E8ECD40D64CDBE3BE28F9E4FFE41D2F89A1721825D09578F9B8D"
+    }
+  ]
+}

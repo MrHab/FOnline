@@ -1,0 +1,155 @@
+{
+  "actualGlb": {
+    "materials": 6,
+    "meshDefinitions": 3,
+    "nodes": [
+      "head",
+      "neck_01",
+      "index_04_leaf_l",
+      "index_03_l",
+      "index_02_l",
+      "index_01_l",
+      "middle_04_leaf_l",
+      "middle_03_l",
+      "middle_02_l",
+      "middle_01_l",
+      "pinky_04_leaf_l",
+      "pinky_03_l",
+      "pinky_02_l",
+      "pinky_01_l",
+      "ring_04_leaf_l",
+      "ring_03_l",
+      "ring_02_l",
+      "ring_01_l",
+      "thumb_04_leaf_l",
+      "thumb_03_l",
+      "thumb_02_l",
+      "thumb_01_l",
+      "hand_l",
+      "lowerarm_l",
+      "upperarm_l",
+      "clavicle_l",
+      "index_04_leaf_r",
+      "index_03_r",
+      "index_02_r",
+      "index_01_r",
+      "middle_04_leaf_r",
+      "middle_03_r",
+      "middle_02_r",
+      "middle_01_r",
+      "pinky_04_leaf_r",
+      "pinky_03_r",
+      "pinky_02_r",
+      "pinky_01_r",
+      "ring_04_leaf_r",
+      "ring_03_r",
+      "ring_02_r",
+      "ring_01_r",
+      "thumb_04_leaf_r",
+      "thumb_03_r",
+      "thumb_02_r",
+      "thumb_01_r",
+      "hand_r",
+      "lowerarm_r",
+      "upperarm_r",
+      "clavicle_r",
+      "spine_03",
+      "spine_02",
+      "spine_01",
+      "ball_leaf_l",
+      "ball_l",
+      "foot_l",
+      "calf_l",
+      "thigh_l",
+      "ball_leaf_r",
+      "ball_r",
+      "foot_r",
+      "calf_r",
+      "thigh_r",
+      "pelvis",
+      "root",
+      "equipment_energy_suit_unified_v1_female_medium_field_details",
+      "equipment_energy_suit_unified_v1_female_medium_inner_seal",
+      "equipment_energy_suit_unified_v1_female_medium_sealed_shell",
+      "character_root"
+    ],
+    "positionVertices": 49109,
+    "skins": 1,
+    "textures": 6,
+    "triangles": 27054
+  },
+  "assetId": "equipment_energy_suit_unified_v1_female_medium",
+  "bodyId": "female_medium",
+  "file": "equipment_energy_suit_unified_v1_female_medium.glb",
+  "fit": {
+    "bodyBounds": {
+      "maximum": [
+        0.64122,
+        0.16247,
+        1.48872
+      ],
+      "minimum": [
+        -0.64122,
+        -0.14023,
+        -0.00841
+      ]
+    },
+    "detailPolygons": 281,
+    "detailVertices": 522,
+    "energyCore": [
+      0.0,
+      -0.21323,
+      1.28275
+    ],
+    "headBounds": {
+      "maximum": [
+        0.08888,
+        0.1129,
+        1.76664
+      ],
+      "minimum": [
+        -0.08888,
+        -0.11191,
+        1.4846
+      ]
+    },
+    "rubberMaterialPolygons": 3544,
+    "shellPolygons": 17703,
+    "shellVertices": 8930,
+    "torsoBounds": {
+      "maximum": [
+        0.173,
+        0.16247,
+        1.48775
+      ],
+      "minimum": [
+        -0.173,
+        -0.14023,
+        0.87088
+      ]
+    },
+    "waistRadii": [
+      0.16953,
+      0.11489
+    ]
+  },
+  "itemId": "energySuit",
+  "itemNameRu": "Энергозащитный костюм",
+  "materials": [
+    "energy_suit_weathered_graphite_composite",
+    "energy_suit_aged_charcoal_insulation",
+    "energy_suit_tarnished_copper_channels",
+    "energy_suit_cyan_field_glass",
+    "energy_suit_chipped_blue_ceramic",
+    "energy_suit_oxidized_service_patch"
+  ],
+  "provenance": {
+    "directRuntimeUse": false,
+    "donor": null,
+    "license": "Realm of Ashes project asset",
+    "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "CE8EF929FB2828CA54947F67DE1B4A6ECE66B3E39B193772D2AF8CE9555222FF"
+}

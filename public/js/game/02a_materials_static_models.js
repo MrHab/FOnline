@@ -624,7 +624,7 @@
     }
   });
 
-  const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.9-ghoul-bc-v3';
+  const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.10-ghoul-bc-v3-death-v2';
   const APPROVED_CREATURE_GLB_ASSET_VERSION = '7.77.0-approved-creatures-bc';
   const APPROVED_CREATURE_STATIC_MODEL_KEYS = new Set([
     'brahmin',

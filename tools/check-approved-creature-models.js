@@ -236,9 +236,12 @@ const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
   '!APPROVED_CREATURE_STATIC_MODEL_KEYS.has(modelKey)',
   'configureEnemyStaticGlbAnimation(group, instance, appliedKey || modelKey);',
   "function setEnemyStaticGlbAction(runtime, requested = 'idle'",
+  'characterOneShotRestart(runtime, action, state.attackToken)',
+  'attackActive: attackAnimation.active',
+  'attackToken: attackAnimation.token',
   '&& runtime.actions.run',
   "runtime.currentAction === 'walk' || runtime.currentAction === 'run'",
-  'updateEnemyStaticGlbAnimation(enemy, dt, { moving, visualSpeed, sleeping, inDialogue });',
+  'updateEnemyStaticGlbAnimation(enemy, dt, {',
   'updateEnemyStaticGlbAnimation(enemy, dt, { dead: true });'
 ].forEach(marker => {
   assert(enemyRuntime.includes(marker), `approved creature animation integration is missing: ${marker}`);

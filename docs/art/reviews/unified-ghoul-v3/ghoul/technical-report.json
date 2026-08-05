@@ -2,7 +2,7 @@
   "assetId": "creature_ghoul_unified_v3",
   "file": "creature_ghoul_unified_v3.glb",
   "source": "npc_humanoid_base_unified_v5.glb",
-  "sourceSha256": "71D52C97C28F4654D4DB91A4D87D7517A5489372BD56561EA715C301F40F4F92",
+  "sourceSha256": "EAC5248C381FD457E93A04094DAC51FA22C60EDE138C88E00EEFBB3EB4E6091E",
   "boundsIdleMetres": {
     "minimum": [
       -0.353352,
@@ -263,5 +263,5 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "6203193F87FD8B1FB3D0BDEB9E82F218BC7E1E1103827F3E09CA3D86861EF8D8"
+  "sha256": "DCAA6F7E2A2C48D3C89F9089399BE2BC4B12383265C2B16B5C825A2AB105CAF1"
 }

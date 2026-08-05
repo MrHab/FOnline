@@ -43,5 +43,20 @@ assert(!client.includes("if (currentLocation.id === 'wasteland') return false;")
   'wasteland edge exits are still disabled on the client');
 assert(!exitVisuals.includes("if (currentLocation.id === 'wasteland') return;"),
   'wasteland global-map exit bands are still hidden');
+assert(client.includes('const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;'),
+  'client global-map exit trigger does not use the shared two-tile band width');
+assert(server.includes('const innerOffset = WORLD_MAP_EXIT_BAND_TILES - 1;'),
+  'server global-map exit validation does not match the client band width');
+assert(exitVisuals.includes("locationPlayableBounds(currentLocation)"),
+  'global-map exit visuals ignore the current location playable bounds');
+assert(exitVisuals.includes('const mapWidth = bounds.width * TILE;')
+  && exitVisuals.includes('const mapDepth = bounds.height * TILE;'),
+  'global-map exit visuals still use the fixed 38x38 map dimensions');
+assert(exitVisuals.includes('const centerX = (westEdgeX + eastEdgeX) * 0.5;')
+  && exitVisuals.includes('const centerZ = (northEdgeZ + southEdgeZ) * 0.5;'),
+  'global-map exit visuals are not centered on shifted playable bounds');
+assert(!exitVisuals.includes('const mapWidth = MAP_W * TILE;')
+  && !exitVisuals.includes('const mapDepth = MAP_H * TILE;'),
+  'global-map exit visuals regressed to the technical map boundary');
 
-console.log('Global exit direction check passed: north, south, west and east stay aligned across maps, including the Ash Forest.');
+console.log('Global exit direction check passed: direction, trigger width and rendered bands stay aligned with every location playable bound.');

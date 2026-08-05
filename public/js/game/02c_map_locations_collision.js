@@ -2,6 +2,7 @@
   const TILE = 2.0;
   const MAP_W = 38;
   const MAP_H = 38;
+  const WORLD_MAP_EXIT_BAND_TILES = 2;
   const map = [];
   const resourceNodes = [];
   const locationJobBoards = [];

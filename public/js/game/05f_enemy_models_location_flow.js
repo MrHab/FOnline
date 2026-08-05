@@ -458,13 +458,14 @@
     return runtime;
   }
 
-  function setEnemyStaticGlbAction(runtime, requested = 'idle', fadeSeconds = 0.12) {
+  function setEnemyStaticGlbAction(runtime, requested = 'idle', fadeSeconds = 0.12, options = {}) {
     if (!runtime?.actions) return false;
     const name = runtime.actions[requested]
       ? requested
       : (runtime.actions.idle ? 'idle' : Object.keys(runtime.actions)[0]);
     if (!name) return false;
-    if (runtime.currentAction === name) return true;
+    const restart = options.restart === true;
+    if (runtime.currentAction === name && !restart) return true;
     const previous = runtime.actions[runtime.currentAction];
     const next = runtime.actions[name];
     if (previous && previous !== next) previous.fadeOut(Math.max(0, fadeSeconds));
@@ -492,14 +493,22 @@
     let action = 'idle';
     if (state.dead || enemy.dead) action = 'death';
     else if (Number(enemy.flash || 0) > 0.001) action = 'hurt';
-    else if (enemy.aiState === 'attack' || enemy.meleeAnim) action = 'attack';
+    else if (
+      state.attackActive !== undefined
+        ? state.attackActive
+        : (enemy.aiState === 'attack' || enemy.mesh?.userData?.meleeAnim)
+    ) action = 'attack';
     else if (
       state.moving
       && runtime.actions.run
       && Number(state.visualSpeed || 0) >= 1.35
     ) action = 'run';
     else if (state.moving) action = 'walk';
-    setEnemyStaticGlbAction(runtime, action, action === 'death' ? 0.08 : 0.12);
+    const restartAttack = typeof characterOneShotRestart === 'function'
+      && characterOneShotRestart(runtime, action, state.attackToken);
+    setEnemyStaticGlbAction(runtime, action, action === 'death' ? 0.08 : 0.12, {
+      restart: restartAttack
+    });
     const active = runtime.actions?.[runtime.currentAction];
     if (active) {
       const visualSpeed = Number(state.visualSpeed || 0.8);
@@ -821,11 +830,17 @@
       || enemy.aiState === 'chase'
       || enemy.targetId
       || enemy.factionTargetId
-      || enemy.meleeAnim;
+      || mesh.userData?.meleeAnim;
     const visualSpeed = Math.max(
       Number(enemy.enemyVisualSpeed || 0),
       moved / Math.max(0.001, Number(dt || 0.016))
     );
+    const attackAnimation = typeof actorAttackAnimationPulseState === 'function'
+      ? actorAttackAnimationPulseState(mesh, String(enemy.aiState || '').toLowerCase() === 'attack')
+      : {
+          active: String(enemy.aiState || '').toLowerCase() === 'attack',
+          token: 0
+        };
     if (parts.unifiedHumanoidNpc) {
       const facingAngle = Number.isFinite(Number(enemy.angle))
         ? Number(enemy.angle)
@@ -836,7 +851,8 @@
         moveX: visualX - Number(enemy.prevUnifiedAnimX ?? visualX),
         moveZ: visualZ - Number(enemy.prevUnifiedAnimZ ?? visualZ),
         facingAngle,
-        attacking: String(enemy.aiState || '').toLowerCase() === 'attack',
+        attacking: attackAnimation.active,
+        attackToken: attackAnimation.token,
         hurt: Number(enemy.flash || 0) > 0.02
       });
       enemy.prevUnifiedAnimX = visualX;
@@ -851,7 +867,14 @@
       }
       return;
     }
-    updateEnemyStaticGlbAnimation(enemy, dt, { moving, visualSpeed, sleeping, inDialogue });
+    updateEnemyStaticGlbAnimation(enemy, dt, {
+      moving,
+      visualSpeed,
+      sleeping,
+      inDialogue,
+      attackActive: attackAnimation.active,
+      attackToken: attackAnimation.token
+    });
     if (!important) {
       enemy.idleVisualAnimTimer = Math.max(0, Number(enemy.idleVisualAnimTimer || 0) - Math.max(0, Number(dt || 0.016)));
       if (enemy.idleVisualAnimTimer > 0) return;

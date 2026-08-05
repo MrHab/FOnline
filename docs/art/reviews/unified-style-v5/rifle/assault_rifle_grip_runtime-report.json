@@ -47,6 +47,10 @@
     "thumb_03_r"
   ],
   "mountNode": "approved_assault_rifle_mount",
+  "visualBake": {
+    "maxPositionErrorMetres": 8.513246093443454e-07,
+    "maxRotationErrorDegrees": 0.0
+  },
   "actualGlb": {
     "nodes": [
       "approved_assault_rifle_mount",
@@ -121,9 +125,9 @@
     "animations": [
       "assault_rifle_grip"
     ],
-    "animationChannels": 41,
+    "animationChannels": 195,
     "meshes": 1,
     "skins": 1
   },
-  "sha256": "6AAC14935BADEEF8A6FD8FF702449A8C864A387D3235A68E6F6564192E3344E3"
+  "sha256": "7B96493E5D26DCF12D10B03526036DCD529A74C26FD031BFE8DCBBA986FD4FE8"
 }

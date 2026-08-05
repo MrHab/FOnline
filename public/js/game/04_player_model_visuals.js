@@ -1051,6 +1051,9 @@
     const weaponGroup = actorWeaponGroup(actor);
     const profile = meleeProfileForWeapon(weaponId || opts.weapon || 'fists');
     const now = performance.now();
+    if (typeof triggerActorAttackAnimationPulse === 'function') {
+      triggerActorAttackAnimationPulse(actor, opts.attackToken || opts.t || 0);
+    }
     const current = actor.userData?.meleeAnim;
     if (current?.base) restoreMeleeVisualBase(current);
     actor.userData.meleeAnim = {

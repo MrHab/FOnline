@@ -1,0 +1,215 @@
+{
+  "actualGlb": {
+    "bones": 65,
+    "materials": 6,
+    "meshDefinitions": 1,
+    "positionVertices": 2064,
+    "skins": 1,
+    "textures": 15,
+    "triangles": 1492
+  },
+  "assetId": "equipment_tactical_helmet_unified_v1_female_medium",
+  "bodyId": "female_medium",
+  "design": {
+    "features": [
+      "компактная high-cut композитная чаша",
+      "боковые рельсы с крепежом",
+      "затылочный регулятор и четырёхточечный подвес",
+      "низкопрофильное переднее крепление",
+      "закрытый дымчатый визор до уровня скул",
+      "сдержанные сколы, пыль и полевой ремонт"
+    ],
+    "geometry": "B",
+    "materialsAndWear": "C"
+  },
+  "file": "equipment_tactical_helmet_unified_v1_female_medium.glb",
+  "fit": {
+    "baseClearance": {
+      "back": 0.029,
+      "crown": 0.024,
+      "front": 0.025,
+      "side": 0.028
+    },
+    "bodyId": "female_medium",
+    "closedVisorBottomAboveHeadMinimum": 0.083,
+    "faceProfiles": {
+      "female_01": {
+        "headScale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "label": "угловатое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.029,
+          "crown": 0.024,
+          "front": 0.025,
+          "side": 0.028
+        }
+      },
+      "female_02": {
+        "headScale": [
+          0.88,
+          1.018,
+          1.05
+        ],
+        "label": "узкое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02952,
+          "crown": 0.0252,
+          "front": 0.02545,
+          "side": 0.02464
+        }
+      },
+      "female_03": {
+        "headScale": [
+          1.13,
+          0.985,
+          0.96
+        ],
+        "label": "широкое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02857,
+          "crown": 0.02304,
+          "front": 0.02463,
+          "side": 0.03164
+        }
+      },
+      "female_04": {
+        "headScale": [
+          0.98,
+          0.982,
+          1.09
+        ],
+        "label": "округлое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02848,
+          "crown": 0.02616,
+          "front": 0.02455,
+          "side": 0.02744
+        }
+      },
+      "male_01": {
+        "headScale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "label": "угловатое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.029,
+          "crown": 0.024,
+          "front": 0.025,
+          "side": 0.028
+        }
+      },
+      "male_02": {
+        "headScale": [
+          0.88,
+          1.018,
+          1.05
+        ],
+        "label": "узкое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02952,
+          "crown": 0.0252,
+          "front": 0.02545,
+          "side": 0.02464
+        }
+      },
+      "male_03": {
+        "headScale": [
+          1.13,
+          0.985,
+          0.96
+        ],
+        "label": "широкое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02857,
+          "crown": 0.02304,
+          "front": 0.02463,
+          "side": 0.03164
+        }
+      },
+      "male_04": {
+        "headScale": [
+          0.98,
+          0.982,
+          1.09
+        ],
+        "label": "округлое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02848,
+          "crown": 0.02616,
+          "front": 0.02455,
+          "side": 0.02744
+        }
+      }
+    },
+    "hairPolicy": "runtime_hides_hair_when_any_helmet_is_equipped",
+    "headBounds": {
+      "maximum": [
+        0.088878,
+        0.112899,
+        1.766644
+      ],
+      "minimum": [
+        -0.088878,
+        -0.111906,
+        1.53809
+      ]
+    },
+    "headVertexCount": 6047,
+    "helmetDimensions": {
+      "backRadius": 0.141403,
+      "centerX": 0.0,
+      "centerY": 0.000497,
+      "frontRadius": 0.137403,
+      "radiusX": 0.116878,
+      "rimZ": 1.634644,
+      "shellThickness": 0.0055,
+      "topZ": 1.790644
+    },
+    "highCutEarClearance": 0.038,
+    "result": "pass"
+  },
+  "itemId": "tacticalHelmet",
+  "itemNameRu": "Тактический шлем",
+  "materials": [
+    "tactical_helmet_weathered_olive_composite",
+    "tactical_helmet_exposed_composite_edge",
+    "tactical_helmet_aged_black_polymer",
+    "tactical_helmet_dusty_retention_webbing",
+    "tactical_helmet_tarnished_hardware",
+    "tactical_helmet_scratched_smoked_visor"
+  ],
+  "metrics": {
+    "headBoneWeight": 1.0,
+    "polygonCount": 790,
+    "railPointCount": 6,
+    "vertexCount": 962,
+    "visorBounds": [
+      -0.098178,
+      0.098178,
+      1.62109,
+      1.676644
+    ]
+  },
+  "provenance": {
+    "directRuntimeUse": false,
+    "donor": null,
+    "license": "Realm of Ashes project asset",
+    "rebuild": "original fitted B geometry and authored C materials on the exact current 65-bone player rig"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "5636969701B778B1A36D4D29B7DF191FDADB487886880D844C08615FEB5E2D54"
+}

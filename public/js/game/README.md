@@ -28,6 +28,7 @@
 20. `04a_player_model_modern_runtime.js` — современная модульная модель игрока, общие текстуры, шарнирный риг и анимации.
    - `04b_character_glb_runtime.js` — GLB-модели выбранного пола и телосложения, их анимации и 3D-предпросмотр при создании персонажа.
    - `04c_weapon_glb_runtime.js` — каталог GLB-оружия, общая загрузка моделей и клипы ожидания, атаки и перезарядки.
+   - `04d_approved_humanoid_assets_runtime.js` — утверждённые модели НПС и ботинок, а также точный двуручный хват автомата.
 21. `05_multiplayer_core_state.js` — authority modes, transport/join state, room guards и исходящие снимки.
 22. `05a_remote_actor_equipment.js` — remote actor names, equipment visuals, muzzle helpers.
 23. `05b_remote_player_locomotion.js` — remote player interpolation and visual locomotion.

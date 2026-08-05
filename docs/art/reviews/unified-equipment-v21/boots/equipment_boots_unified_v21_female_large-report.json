@@ -1,0 +1,143 @@
+{
+  "actualGlb": {
+    "materials": 4,
+    "meshDefinitions": 1,
+    "nodes": [
+      "head",
+      "neck_01",
+      "index_04_leaf_l",
+      "index_03_l",
+      "index_02_l",
+      "index_01_l",
+      "middle_04_leaf_l",
+      "middle_03_l",
+      "middle_02_l",
+      "middle_01_l",
+      "pinky_04_leaf_l",
+      "pinky_03_l",
+      "pinky_02_l",
+      "pinky_01_l",
+      "ring_04_leaf_l",
+      "ring_03_l",
+      "ring_02_l",
+      "ring_01_l",
+      "thumb_04_leaf_l",
+      "thumb_03_l",
+      "thumb_02_l",
+      "thumb_01_l",
+      "hand_l",
+      "lowerarm_l",
+      "upperarm_l",
+      "clavicle_l",
+      "index_04_leaf_r",
+      "index_03_r",
+      "index_02_r",
+      "index_01_r",
+      "middle_04_leaf_r",
+      "middle_03_r",
+      "middle_02_r",
+      "middle_01_r",
+      "pinky_04_leaf_r",
+      "pinky_03_r",
+      "pinky_02_r",
+      "pinky_01_r",
+      "ring_04_leaf_r",
+      "ring_03_r",
+      "ring_02_r",
+      "ring_01_r",
+      "thumb_04_leaf_r",
+      "thumb_03_r",
+      "thumb_02_r",
+      "thumb_01_r",
+      "hand_r",
+      "lowerarm_r",
+      "upperarm_r",
+      "clavicle_r",
+      "spine_03",
+      "spine_02",
+      "spine_01",
+      "ball_leaf_l",
+      "ball_l",
+      "foot_l",
+      "calf_l",
+      "thigh_l",
+      "ball_leaf_r",
+      "ball_r",
+      "foot_r",
+      "calf_r",
+      "thigh_r",
+      "pelvis",
+      "root",
+      "equipment_boots_unified_v21_female_large",
+      "character_root"
+    ],
+    "positionVertices": 2532,
+    "skins": 1,
+    "textures": 12,
+    "triangles": 1308
+  },
+  "assetId": "equipment_boots_unified_v21_female_large",
+  "bodyId": "female_large",
+  "dimensionsMetres": {
+    "depth": 0.3407,
+    "height": 0.2695,
+    "width": 0.4002
+  },
+  "file": "equipment_boots_unified_v21_female_large.glb",
+  "fitBodies": [
+    "female_large"
+  ],
+  "fitTransforms": {
+    "l": {
+      "footBounds": {
+        "maximum": [
+          0.18195,
+          0.13376,
+          0.09107
+        ],
+        "minimum": [
+          0.06723,
+          -0.13026,
+          -0.00841
+        ]
+      },
+      "sole": {
+        "bottomZ": -0.01841,
+        "halfWidth": 0.06736,
+        "heelY": 0.15176,
+        "toeY": -0.17026,
+        "topZ": 0.01159
+      }
+    },
+    "r": {
+      "footBounds": {
+        "maximum": [
+          -0.06723,
+          0.13376,
+          0.09107
+        ],
+        "minimum": [
+          -0.18195,
+          -0.13026,
+          -0.00841
+        ]
+      },
+      "sole": {
+        "bottomZ": -0.01841,
+        "halfWidth": 0.06736,
+        "heelY": 0.15176,
+        "toeY": -0.17026,
+        "topZ": 0.01159
+      }
+    }
+  },
+  "provenance": {
+    "directRuntimeUse": false,
+    "donor": null,
+    "license": "Realm of Ashes project asset",
+    "rebuild": "original body-fitted B geometry; new B+C material system; exact current 65-bone player rig"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "F4639A7612ED9A6D2E133D2892FF75D76CFD6952D96A11CD652BD24D38902286"
+}

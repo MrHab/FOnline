@@ -1393,6 +1393,16 @@
   }
 
   function updateEnemies(dt) {
+    if (traderNpc?.mesh?.userData?.actorParts?.unifiedHumanoidNpc) {
+      updateCharacterLocomotionAnimation(traderNpc.mesh, dt, {
+        moving: false,
+        speed: 0,
+        facingAngle: Number(traderNpc.mesh.rotation.y || 0) - Math.PI
+      });
+      if (traderNpc.mesh.userData.enemyWeaponGroup) {
+        updateWeaponVisualAnimation(traderNpc.mesh.userData.enemyWeaponGroup, dt, traderNpc);
+      }
+    }
     if (enemiesAreServerAuthoritative()) {
       enemies.forEach(e => {
         if (!e || !e.mesh) return;

@@ -1,0 +1,1425 @@
+{
+  "assetId": "equipment_boots_unified_v21",
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "bodyCount": 6,
+  "exactRigCompatibility": true,
+  "rows": [
+    {
+      "body": "female_slim",
+      "bodyBounds": {
+        "minimum": [
+          -0.3325,
+          -0.3109,
+          0.0
+        ],
+        "maximum": [
+          0.325,
+          0.3932,
+          1.8432
+        ]
+      },
+      "equipmentBounds": {
+        "minimum": [
+          -0.3852,
+          -0.3586,
+          -0.0134
+        ],
+        "maximum": [
+          0.3202,
+          0.4333,
+          0.2775
+        ]
+      },
+      "renders": {
+        "fullIsometric": "equipment_boots_unified_v21_female_slim_full_isometric.png",
+        "feetFront": "equipment_boots_unified_v21_female_slim_feet_front.png",
+        "feetSide": "equipment_boots_unified_v21_female_slim_feet_side.png",
+        "feetBack": "equipment_boots_unified_v21_female_slim_feet_back.png",
+        "native112": "equipment_boots_unified_v21_female_slim_native112.png"
+      },
+      "bodyRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "equipmentRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "stressActions": {
+        "walk": {
+          "frame": 10,
+          "bodyBounds": {
+            "minimum": [
+              -0.2326,
+              -0.4551,
+              0.0205
+            ],
+            "maximum": [
+              0.3044,
+              0.4645,
+              1.8336
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.1986,
+              -0.5063,
+              -0.0103
+            ],
+            "maximum": [
+              0.2159,
+              0.4936,
+              0.3499
+            ]
+          },
+          "front": "equipment_boots_unified_v21_female_slim_walk_f10_feet_front.png",
+          "side": "equipment_boots_unified_v21_female_slim_walk_f10_feet_side.png"
+        },
+        "run": {
+          "frame": 6,
+          "bodyBounds": {
+            "minimum": [
+              -0.3684,
+              -0.6683,
+              0.2288
+            ],
+            "maximum": [
+              0.268,
+              0.8593,
+              1.7997
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2089,
+              -0.7181,
+              0.1969
+            ],
+            "maximum": [
+              0.198,
+              0.8762,
+              0.642
+            ]
+          },
+          "front": "equipment_boots_unified_v21_female_slim_run_f6_feet_front.png",
+          "side": "equipment_boots_unified_v21_female_slim_run_f6_feet_side.png"
+        }
+      }
+    },
+    {
+      "body": "female_medium",
+      "bodyBounds": {
+        "minimum": [
+          -0.3325,
+          -0.3109,
+          0.0
+        ],
+        "maximum": [
+          0.325,
+          0.3956,
+          1.8432
+        ]
+      },
+      "equipmentBounds": {
+        "minimum": [
+          -0.3851,
+          -0.3586,
+          -0.0134
+        ],
+        "maximum": [
+          0.3205,
+          0.4351,
+          0.2775
+        ]
+      },
+      "renders": {
+        "fullIsometric": "equipment_boots_unified_v21_female_medium_full_isometric.png",
+        "feetFront": "equipment_boots_unified_v21_female_medium_feet_front.png",
+        "feetSide": "equipment_boots_unified_v21_female_medium_feet_side.png",
+        "feetBack": "equipment_boots_unified_v21_female_medium_feet_back.png",
+        "native112": "equipment_boots_unified_v21_female_medium_native112.png"
+      },
+      "bodyRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "equipmentRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "stressActions": {
+        "walk": {
+          "frame": 10,
+          "bodyBounds": {
+            "minimum": [
+              -0.2326,
+              -0.4551,
+              0.02
+            ],
+            "maximum": [
+              0.3074,
+              0.4662,
+              1.8336
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.1986,
+              -0.5063,
+              -0.0113
+            ],
+            "maximum": [
+              0.2159,
+              0.4958,
+              0.3499
+            ]
+          },
+          "front": "equipment_boots_unified_v21_female_medium_walk_f10_feet_front.png",
+          "side": "equipment_boots_unified_v21_female_medium_walk_f10_feet_side.png"
+        },
+        "run": {
+          "frame": 6,
+          "bodyBounds": {
+            "minimum": [
+              -0.3684,
+              -0.6683,
+              0.2281
+            ],
+            "maximum": [
+              0.2716,
+              0.8593,
+              1.7997
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2088,
+              -0.7181,
+              0.1957
+            ],
+            "maximum": [
+              0.198,
+              0.8762,
+              0.642
+            ]
+          },
+          "front": "equipment_boots_unified_v21_female_medium_run_f6_feet_front.png",
+          "side": "equipment_boots_unified_v21_female_medium_run_f6_feet_side.png"
+        }
+      }
+    },
+    {
+      "body": "female_large",
+      "bodyBounds": {
+        "minimum": [
+          -0.3325,
+          -0.3109,
+          0.0
+        ],
+        "maximum": [
+          0.325,
+          0.3979,
+          1.8432
+        ]
+      },
+      "equipmentBounds": {
+        "minimum": [
+          -0.385,
+          -0.3586,
+          -0.0134
+        ],
+        "maximum": [
+          0.3208,
+          0.4369,
+          0.2775
+        ]
+      },
+      "renders": {
+        "fullIsometric": "equipment_boots_unified_v21_female_large_full_isometric.png",
+        "feetFront": "equipment_boots_unified_v21_female_large_feet_front.png",
+        "feetSide": "equipment_boots_unified_v21_female_large_feet_side.png",
+        "feetBack": "equipment_boots_unified_v21_female_large_feet_back.png",
+        "native112": "equipment_boots_unified_v21_female_large_native112.png"
+      },
+      "bodyRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "equipmentRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "stressActions": {
+        "walk": {
+          "frame": 10,
+          "bodyBounds": {
+            "minimum": [
+              -0.2326,
+              -0.4551,
+              0.0196
+            ],
+            "maximum": [
+              0.3114,
+              0.4678,
+              1.8336
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.1986,
+              -0.5063,
+              -0.0123
+            ],
+            "maximum": [
+              0.2159,
+              0.498,
+              0.3499
+            ]
+          },
+          "front": "equipment_boots_unified_v21_female_large_walk_f10_feet_front.png",
+          "side": "equipment_boots_unified_v21_female_large_walk_f10_feet_side.png"
+        },
+        "run": {
+          "frame": 6,
+          "bodyBounds": {
+            "minimum": [
+              -0.3684,
+              -0.6683,
+              0.2274
+            ],
+            "maximum": [
+              0.2747,
+              0.8593,
+              1.7997
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2088,
+              -0.7181,
+              0.1944
+            ],
+            "maximum": [
+              0.198,
+              0.8762,
+              0.642
+            ]
+          },
+          "front": "equipment_boots_unified_v21_female_large_run_f6_feet_front.png",
+          "side": "equipment_boots_unified_v21_female_large_run_f6_feet_side.png"
+        }
+      }
+    },
+    {
+      "body": "male_slim",
+      "bodyBounds": {
+        "minimum": [
+          -0.3533,
+          -0.3079,
+          0.0
+        ],
+        "maximum": [
+          0.3727,
+          0.3975,
+          1.8367
+        ]
+      },
+      "equipmentBounds": {
+        "minimum": [
+          -0.3976,
+          -0.3539,
+          -0.0104
+        ],
+        "maximum": [
+          0.3144,
+          0.44,
+          0.2777
+        ]
+      },
+      "renders": {
+        "fullIsometric": "equipment_boots_unified_v21_male_slim_full_isometric.png",
+        "feetFront": "equipment_boots_unified_v21_male_slim_feet_front.png",
+        "feetSide": "equipment_boots_unified_v21_male_slim_feet_side.png",
+        "feetBack": "equipment_boots_unified_v21_male_slim_feet_back.png",
+        "native112": "equipment_boots_unified_v21_male_slim_native112.png"
+      },
+      "bodyRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "equipmentRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "stressActions": {
+        "walk": {
+          "frame": 10,
+          "bodyBounds": {
+            "minimum": [
+              -0.2899,
+              -0.455,
+              0.0089
+            ],
+            "maximum": [
+              0.3687,
+              0.4705,
+              1.8229
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2002,
+              -0.506,
+              -0.0203
+            ],
+            "maximum": [
+              0.2133,
+              0.4981,
+              0.3415
+            ]
+          },
+          "front": "equipment_boots_unified_v21_male_slim_walk_f10_feet_front.png",
+          "side": "equipment_boots_unified_v21_male_slim_walk_f10_feet_side.png"
+        },
+        "run": {
+          "frame": 6,
+          "bodyBounds": {
+            "minimum": [
+              -0.4049,
+              -0.6783,
+              0.2098
+            ],
+            "maximum": [
+              0.3342,
+              0.8636,
+              1.7935
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2076,
+              -0.7289,
+              0.18
+            ],
+            "maximum": [
+              0.1992,
+              0.8788,
+              0.6417
+            ]
+          },
+          "front": "equipment_boots_unified_v21_male_slim_run_f6_feet_front.png",
+          "side": "equipment_boots_unified_v21_male_slim_run_f6_feet_side.png"
+        }
+      }
+    },
+    {
+      "body": "male_medium",
+      "bodyBounds": {
+        "minimum": [
+          -0.3533,
+          -0.3079,
+          0.0
+        ],
+        "maximum": [
+          0.3727,
+          0.3991,
+          1.8367
+        ]
+      },
+      "equipmentBounds": {
+        "minimum": [
+          -0.3976,
+          -0.3539,
+          -0.0104
+        ],
+        "maximum": [
+          0.3144,
+          0.4413,
+          0.2777
+        ]
+      },
+      "renders": {
+        "fullIsometric": "equipment_boots_unified_v21_male_medium_full_isometric.png",
+        "feetFront": "equipment_boots_unified_v21_male_medium_feet_front.png",
+        "feetSide": "equipment_boots_unified_v21_male_medium_feet_side.png",
+        "feetBack": "equipment_boots_unified_v21_male_medium_feet_back.png",
+        "native112": "equipment_boots_unified_v21_male_medium_native112.png"
+      },
+      "bodyRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "equipmentRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "stressActions": {
+        "walk": {
+          "frame": 10,
+          "bodyBounds": {
+            "minimum": [
+              -0.2899,
+              -0.455,
+              0.0086
+            ],
+            "maximum": [
+              0.375,
+              0.4716,
+              1.8229
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2002,
+              -0.506,
+              -0.021
+            ],
+            "maximum": [
+              0.2133,
+              0.4997,
+              0.3415
+            ]
+          },
+          "front": "equipment_boots_unified_v21_male_medium_walk_f10_feet_front.png",
+          "side": "equipment_boots_unified_v21_male_medium_walk_f10_feet_side.png"
+        },
+        "run": {
+          "frame": 6,
+          "bodyBounds": {
+            "minimum": [
+              -0.4049,
+              -0.6783,
+              0.2093
+            ],
+            "maximum": [
+              0.3382,
+              0.8636,
+              1.7935
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2075,
+              -0.7289,
+              0.1791
+            ],
+            "maximum": [
+              0.1992,
+              0.8788,
+              0.6417
+            ]
+          },
+          "front": "equipment_boots_unified_v21_male_medium_run_f6_feet_front.png",
+          "side": "equipment_boots_unified_v21_male_medium_run_f6_feet_side.png"
+        }
+      }
+    },
+    {
+      "body": "male_large",
+      "bodyBounds": {
+        "minimum": [
+          -0.3533,
+          -0.3079,
+          0.0
+        ],
+        "maximum": [
+          0.3751,
+          0.4008,
+          1.8367
+        ]
+      },
+      "equipmentBounds": {
+        "minimum": [
+          -0.3975,
+          -0.3539,
+          -0.0104
+        ],
+        "maximum": [
+          0.3145,
+          0.4426,
+          0.2777
+        ]
+      },
+      "renders": {
+        "fullIsometric": "equipment_boots_unified_v21_male_large_full_isometric.png",
+        "feetFront": "equipment_boots_unified_v21_male_large_feet_front.png",
+        "feetSide": "equipment_boots_unified_v21_male_large_feet_side.png",
+        "feetBack": "equipment_boots_unified_v21_male_large_feet_back.png",
+        "native112": "equipment_boots_unified_v21_male_large_native112.png"
+      },
+      "bodyRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "equipmentRig": {
+        "armatures": 1,
+        "bones": [
+          "ball_l",
+          "ball_leaf_l",
+          "ball_leaf_r",
+          "ball_r",
+          "calf_l",
+          "calf_r",
+          "clavicle_l",
+          "clavicle_r",
+          "foot_l",
+          "foot_r",
+          "hand_l",
+          "hand_r",
+          "head",
+          "index_01_l",
+          "index_01_r",
+          "index_02_l",
+          "index_02_r",
+          "index_03_l",
+          "index_03_r",
+          "index_04_leaf_l",
+          "index_04_leaf_r",
+          "lowerarm_l",
+          "lowerarm_r",
+          "middle_01_l",
+          "middle_01_r",
+          "middle_02_l",
+          "middle_02_r",
+          "middle_03_l",
+          "middle_03_r",
+          "middle_04_leaf_l",
+          "middle_04_leaf_r",
+          "neck_01",
+          "pelvis",
+          "pinky_01_l",
+          "pinky_01_r",
+          "pinky_02_l",
+          "pinky_02_r",
+          "pinky_03_l",
+          "pinky_03_r",
+          "pinky_04_leaf_l",
+          "pinky_04_leaf_r",
+          "ring_01_l",
+          "ring_01_r",
+          "ring_02_l",
+          "ring_02_r",
+          "ring_03_l",
+          "ring_03_r",
+          "ring_04_leaf_l",
+          "ring_04_leaf_r",
+          "root",
+          "spine_01",
+          "spine_02",
+          "spine_03",
+          "thigh_l",
+          "thigh_r",
+          "thumb_01_l",
+          "thumb_01_r",
+          "thumb_02_l",
+          "thumb_02_r",
+          "thumb_03_l",
+          "thumb_03_r",
+          "thumb_04_leaf_l",
+          "thumb_04_leaf_r",
+          "upperarm_l",
+          "upperarm_r"
+        ],
+        "boneCount": 65
+      },
+      "stressActions": {
+        "walk": {
+          "frame": 10,
+          "bodyBounds": {
+            "minimum": [
+              -0.2921,
+              -0.455,
+              0.0083
+            ],
+            "maximum": [
+              0.3802,
+              0.4727,
+              1.8229
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2002,
+              -0.506,
+              -0.0217
+            ],
+            "maximum": [
+              0.2133,
+              0.5012,
+              0.3415
+            ]
+          },
+          "front": "equipment_boots_unified_v21_male_large_walk_f10_feet_front.png",
+          "side": "equipment_boots_unified_v21_male_large_walk_f10_feet_side.png"
+        },
+        "run": {
+          "frame": 6,
+          "bodyBounds": {
+            "minimum": [
+              -0.4049,
+              -0.6783,
+              0.2088
+            ],
+            "maximum": [
+              0.3422,
+              0.8636,
+              1.7935
+            ]
+          },
+          "equipmentBounds": {
+            "minimum": [
+              -0.2075,
+              -0.7289,
+              0.1782
+            ],
+            "maximum": [
+              0.1992,
+              0.8788,
+              0.6417
+            ]
+          },
+          "front": "equipment_boots_unified_v21_male_large_run_f6_feet_front.png",
+          "side": "equipment_boots_unified_v21_male_large_run_f6_feet_side.png"
+        }
+      }
+    }
+  ]
+}

@@ -17,7 +17,15 @@ const loadingPath = path.join(root, 'public', 'js', 'game', '13_minimap_hud_loop
 const expected = new Map([
   ['pistol', { family: 'sidearm', scale: 0.34, length: [0.24, 0.38], nodes: ['muzzle', 'slide'] }],
   ['rifle', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'bolt'] }],
-  ['assaultRifle', { family: 'long_gun', scale: 0.52, length: [0.80, 1.08], nodes: ['muzzle', 'magazine'] }],
+  ['assaultRifle', {
+    family: 'long_gun',
+    scale: 1,
+    length: [1.04, 1.06],
+    nodes: ['socket_muzzle', 'socket_grip_l', 'socket_grip_r'],
+    approved: true,
+    minMeshes: 3,
+    maxBytes: 600_000
+  }],
   ['machineGun', { family: 'heavy', scale: 0.56, length: [1.00, 1.28], nodes: ['muzzle', 'ammo_box'] }],
   ['laserPistol', { family: 'energy_sidearm', scale: 0.40, length: [0.32, 0.48], nodes: ['muzzle', 'energy_core'] }],
   ['flamethrower', { family: 'heavy', scale: 0.55, length: [0.90, 1.22], nodes: ['pilot', 'fuel_tank'] }],
@@ -93,13 +101,16 @@ for (const [id, config] of expected) {
   assert(fs.existsSync(file), `${id}: GLB file is missing`);
   assert.strictEqual(fs.statSync(file).size, row.bytes, `${id}: manifest byte size is stale`);
   assert.strictEqual(sha256(file), row.sha256, `${id}: manifest hash is stale`);
-  assert(row.bytes > 40_000 && row.bytes < 190_000, `${id}: unexpected runtime model weight ${row.bytes}`);
+  assert(
+    row.bytes > 40_000 && row.bytes < Number(config.maxBytes || 190_000),
+    `${id}: unexpected runtime model weight ${row.bytes}`
+  );
 
   const { data, json } = parseGlb(file);
   totalBytes += data.length;
   totalMeshes += json.meshes?.length || 0;
   assert.strictEqual(json.scenes?.length, 1, `${id}: GLB must have one scene`);
-  assert((json.meshes?.length || 0) >= 5, `${id}: silhouette is too simple`);
+  assert((json.meshes?.length || 0) >= Number(config.minMeshes || 5), `${id}: silhouette is too simple`);
   assert((json.materials?.length || 0) >= 4, `${id}: B+C material separation is missing`);
   assert((json.images?.length || 0) >= 4, `${id}: embedded wear textures are missing`);
   assert((json.buffers || []).every(buffer => !buffer.uri), `${id}: external buffers are not allowed`);
@@ -113,7 +124,10 @@ for (const [id, config] of expected) {
   config.nodes.forEach(name => assert(names.has(name), `${id}: required animated/readable part is missing: ${name}`));
   const rootNode = (json.nodes || []).find(node => node.extras?.realm_weapon_id === id);
   assert(rootNode, `${id}: runtime root metadata is missing`);
-  assert.strictEqual(rootNode.extras.realm_schema, 'realm.weapon-runtime.v1');
+  assert.strictEqual(
+    rootNode.extras.realm_schema,
+    config.approved ? 'realm.weapon-runtime.approved.v1' : 'realm.weapon-runtime.v1'
+  );
   assert.strictEqual(rootNode.extras.realm_animation_family, config.family);
   assert.strictEqual(rootNode.extras.realm_art_direction, 'geometry_b_materials_c');
   assert.strictEqual(rootNode.extras.realm_runtime_scale, config.scale);
@@ -131,8 +145,20 @@ for (const [id, config] of expected) {
   });
 
   const materialNames = (json.materials || []).map(material => String(material.name || ''));
-  assert(materialNames.some(name => name.startsWith('WPN_') && name.endsWith('_WORN')),
-    `${id}: worn B+C material naming is missing`);
+  assert(
+    config.approved
+      ? materialNames.some(name => name.includes('old_gunmetal') || name.includes('weathered_walnut'))
+      : materialNames.some(name => name.startsWith('WPN_') && name.endsWith('_WORN')),
+    `${id}: worn B+C material naming is missing`
+  );
+  if (config.approved) {
+    assert.strictEqual(
+      row.approvedReviewSha256,
+      '81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28'
+    );
+    assert.strictEqual(rootNode.extras.realm_runtime_integration_allowed, true);
+    assert.strictEqual(rootNode.extras.realm_approved_review_sha256, row.approvedReviewSha256);
+  }
 }
 assert(totalBytes < 2_000_000, `weapon library exceeds the 2 MB budget: ${totalBytes}`);
 
@@ -156,7 +182,7 @@ for (const [id, config] of expected) {
   'function makeWeaponModelMesh(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
-  "const WEAPON_MODEL_ASSET_VERSION = '7.76.6-weapon-scale-fix';",
+  "const WEAPON_MODEL_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v1';",
   "action.setLoop(THREE.LoopOnce, 1)"
 ].forEach(marker => assert(runtime.includes(marker), `weapon runtime integration is missing: ${marker}`));
 

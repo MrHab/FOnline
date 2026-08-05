@@ -115,14 +115,15 @@
       "thigh_r",
       "pelvis",
       "root",
+      "approved_grip_skin_proxy",
       "character_root"
     ],
     "animations": [
       "assault_rifle_grip"
     ],
-    "animationChannels": 123,
-    "meshes": 0,
-    "skins": 0
+    "animationChannels": 41,
+    "meshes": 1,
+    "skins": 1
   },
-  "sha256": "2DE6A6F02AE2BA2FD480B97EB12A5ED98D1328DF820ABF3E5546B78B414F37DE"
+  "sha256": "6AAC14935BADEEF8A6FD8FF702449A8C864A387D3235A68E6F6564192E3344E3"
 }

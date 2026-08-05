@@ -129,10 +129,14 @@ const grip = byId.get('assaultRifleGrip');
 assert(grip, 'approved assault-rifle grip donor is missing');
 assert.strictEqual(grip.sourceSha256, GRIP_RUNTIME_SHA256);
 const gripGlb = parseGlb(runtimeFile(grip.file));
-assert.strictEqual(gripGlb.json.meshes?.length || 0, 0);
-assert.strictEqual(gripGlb.json.skins?.length || 0, 0);
+assert.deepStrictEqual({ vertices: gripGlb.vertices, triangles: gripGlb.triangles }, { vertices: 3, triangles: 1 });
+assert.strictEqual(gripGlb.json.meshes?.length, 1);
+assert.strictEqual(gripGlb.json.skins?.length, 1);
+assert.strictEqual(gripGlb.json.skins[0].joints?.length, 65);
 assert.deepStrictEqual((gripGlb.json.animations || []).map(animation => animation.name), ['assault_rifle_grip']);
-assert.strictEqual(gripGlb.json.animations[0].channels?.length, 123);
+assert.strictEqual(gripGlb.json.animations[0].channels?.length, 41);
+assert((gripGlb.json.animations[0].channels || []).every(channel => channel.target?.path === 'rotation'),
+  'approved grip must contain rotation tracks only');
 const gripNames = new Set((gripGlb.json.nodes || []).map(node => node.name));
 ['approved_assault_rifle_mount', 'hand_l', 'hand_r', 'thumb_01_l'].forEach(name => (
   assert(gripNames.has(name), `approved grip node is missing: ${name}`)
@@ -143,6 +147,7 @@ const runtimeSource = fs.readFileSync(
   'utf8'
 );
 [
+  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v2'",
   'function attachApprovedNpcAnimations(runtime)',
   'new THREE.Skeleton(',
   'function applyApprovedBootsVisual(actor, eq = {})',
@@ -187,11 +192,22 @@ async function verifyThreeRuntime() {
     return new Promise((resolve, reject) => loader.parse(buffer, '', resolve, reject));
   };
 
+  const skinnedMeshBounds = mesh => {
+    assert(mesh?.isSkinnedMesh && mesh.skeleton, 'cannot measure a missing skinned mesh');
+    const box = new THREE.Box3().makeEmpty();
+    const vertex = new THREE.Vector3();
+    mesh.updateMatrixWorld(true);
+    mesh.skeleton.update();
+    for (let index = 0; index < mesh.geometry.attributes.position.count; index += 1) {
+      vertex.fromBufferAttribute(mesh.geometry.attributes.position, index);
+      mesh.boneTransform(index, vertex);
+      box.expandByPoint(vertex.applyMatrix4(mesh.matrixWorld));
+    }
+    return box;
+  };
+
   const character = await load(path.join(
     ROOT, 'public', 'assets', 'models', 'characters', 'base', 'character_male_medium.glb'
-  ));
-  const femaleCharacter = await load(path.join(
-    ROOT, 'public', 'assets', 'models', 'characters', 'base', 'character_female_medium.glb'
   ));
   const boots = await load(runtimeFile(byId.get('boots_male_medium').file));
   let bootMesh = null;
@@ -221,30 +237,36 @@ async function verifyThreeRuntime() {
   const gripRuntime = await load(runtimeFile(grip.file));
   const gripClip = gripRuntime.animations.find(clip => clip.name === 'assault_rifle_grip');
   assert(gripClip, 'Three.js cannot read the approved assault-rifle grip clip');
+  assert.strictEqual(gripClip.tracks.length, 41);
+  assert(gripClip.tracks.every(track => track.name.endsWith('.quaternion')),
+    'approved grip contains an unsafe bone translation or scale track');
   const handTrack = gripClip.tracks.find(track => track.name === 'hand_l.quaternion');
   assert(handTrack, 'approved support-hand quaternion track is missing');
   const handQuaternion = Array.from(handTrack.createInterpolant().evaluate(gripClip.duration * 0.5));
   assert.strictEqual(handQuaternion.length, 4);
   assert(Math.abs(Math.hypot(...handQuaternion) - 1) < 0.001, 'approved support-hand quaternion is invalid');
-  const upperArmPositionTrack = gripClip.tracks.find(track => track.name === 'upperarm_l.position');
-  assert(upperArmPositionTrack, 'approved support-arm position track is missing');
-  const donorUpperArm = gripRuntime.scene.getObjectByName('upperarm_l');
-  const maleUpperArm = character.scene.getObjectByName('upperarm_l');
-  const femaleUpperArm = femaleCharacter.scene.getObjectByName('upperarm_l');
-  assert(donorUpperArm && maleUpperArm?.isBone && femaleUpperArm?.isBone);
-  const approvedUpperArmPosition = new THREE.Vector3().fromArray(Array.from(
-    upperArmPositionTrack.createInterpolant().evaluate(gripClip.duration * 0.5)
-  ));
-  const maleRetargetedPosition = maleUpperArm.position.clone().add(
-    approvedUpperArmPosition.clone().sub(donorUpperArm.position)
-  );
-  const femaleRetargetedPosition = femaleUpperArm.position.clone().add(
-    approvedUpperArmPosition.clone().sub(donorUpperArm.position)
-  );
-  assert(maleRetargetedPosition.distanceTo(approvedUpperArmPosition) < 0.0001,
-    'approved male grip must remain byte-for-byte equivalent after retargeting');
-  assert(femaleRetargetedPosition.distanceTo(approvedUpperArmPosition) > 0.03,
-    'female grip retarget must preserve the female shoulder/arm proportions');
+  for (const bodyId of BODY_IDS) {
+    const posedCharacter = await load(path.join(
+      ROOT, 'public', 'assets', 'models', 'characters', 'base', `character_${bodyId}.glb`
+    ));
+    const bodyMesh = posedCharacter.scene.getObjectByName('body_base');
+    assert(bodyMesh?.isSkinnedMesh, `${bodyId}: current character body mesh is missing`);
+    gripClip.tracks.forEach(track => {
+      const boneName = track.name.slice(0, -'.quaternion'.length);
+      const donorBone = gripRuntime.scene.getObjectByName(boneName);
+      const targetBone = posedCharacter.scene.getObjectByName(boneName);
+      assert(donorBone?.isBone && targetBone?.isBone, `${bodyId}: grip bone is missing: ${boneName}`);
+      const poseQuaternion = new THREE.Quaternion().fromArray(Array.from(
+        track.createInterpolant().evaluate(gripClip.duration * 0.5)
+      )).normalize();
+      const delta = donorBone.quaternion.clone().invert().multiply(poseQuaternion);
+      targetBone.quaternion.multiply(delta).normalize();
+    });
+    posedCharacter.scene.updateMatrixWorld(true);
+    const size = skinnedMeshBounds(bodyMesh).getSize(new THREE.Vector3());
+    assert(size.y >= 1.6 && size.y <= 2.1 && size.x <= 1 && size.z <= 1,
+      `${bodyId}: assault-rifle grip tears the character mesh: ${size.toArray()}`);
+  }
   const mount = gripRuntime.scene.getObjectByName('approved_assault_rifle_mount');
   assert(mount, 'Three.js cannot resolve the approved rifle mount');
   assert(Math.abs(mount.position.y - 1.3562635) < 0.0001, 'approved shoulder mount drifted');

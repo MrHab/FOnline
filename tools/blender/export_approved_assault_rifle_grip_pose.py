@@ -2,9 +2,9 @@
 
 Run this script with the final held-review .blend open.  It bakes only the
 upper-body bones used by the grip and stores the approved weapon-root transform
-in an empty named ``approved_assault_rifle_mount``.  The resulting GLB contains
-no character or weapon mesh; Three.js uses its animation tracks and mount node
-to reproduce the reviewed pose on every compatible 65-bone character rig.
+in an empty named ``approved_assault_rifle_mount``.  One tiny untextured skinned
+triangle is retained deliberately so the exported hierarchy remains a skeletal
+rig.  The proxy is never added to the game scene.
 """
 
 from __future__ import annotations
@@ -113,6 +113,35 @@ def find_weapon_root() -> bpy.types.Object:
     return candidates[0]
 
 
+def create_skin_proxy(armature: bpy.types.Object) -> bpy.types.Object:
+    source_candidates = [
+        obj
+        for obj in bpy.context.scene.objects
+        if obj.type == "MESH"
+        and any(
+            modifier.type == "ARMATURE" and modifier.object == armature
+            for modifier in obj.modifiers
+        )
+    ]
+    if not source_candidates:
+        raise RuntimeError("Held review scene has no skinned character mesh for grip export")
+    mesh = bpy.data.meshes.new("approved_grip_skin_proxy_mesh")
+    mesh.from_pydata(
+        [(0.0, 0.0, 0.0), (0.001, 0.0, 0.0), (0.0, 0.001, 0.0)],
+        [],
+        [(0, 1, 2)],
+    )
+    mesh.update()
+    proxy = bpy.data.objects.new("approved_grip_skin_proxy", mesh)
+    bpy.context.scene.collection.objects.link(proxy)
+    proxy.parent = armature
+    root_group = proxy.vertex_groups.new(name="root")
+    root_group.add([0, 1, 2], 1.0, "REPLACE")
+    modifier = proxy.modifiers.new(name="Armature", type="ARMATURE")
+    modifier.object = armature
+    return proxy
+
+
 def main() -> None:
     args = parse_args()
     armatures = [obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"]
@@ -123,6 +152,7 @@ def main() -> None:
     if missing:
         raise RuntimeError(f"Held review rig is missing grip bones: {missing}")
     weapon_root = find_weapon_root()
+    skin_proxy = create_skin_proxy(armature)
 
     bpy.context.scene.frame_set(1)
     bpy.context.view_layer.update()
@@ -152,10 +182,10 @@ def main() -> None:
     for name in sorted(GRIP_BONES, key=lambda value: depth[value]):
         armature.pose.bones[name].matrix = evaluated_matrices[name]
     bpy.context.view_layer.update()
-    pose_values = {}
+    pose_rotations = {}
     for name in GRIP_BONES:
-        location, rotation, scale = armature.pose.bones[name].matrix_basis.decompose()
-        pose_values[name] = (location.copy(), rotation.copy(), scale.copy())
+        _location, rotation, _scale = armature.pose.bones[name].matrix_basis.decompose()
+        pose_rotations[name] = rotation.copy()
 
     action = bpy.data.actions.new("assault_rifle_grip")
     action.use_fake_user = True
@@ -165,14 +195,17 @@ def main() -> None:
         bpy.context.scene.frame_set(frame)
         for name in GRIP_BONES:
             bone = armature.pose.bones[name]
-            location, rotation, scale = pose_values[name]
             bone.rotation_mode = "QUATERNION"
-            bone.location = location
-            bone.rotation_quaternion = rotation
-            bone.scale = scale
-            bone.keyframe_insert("location", frame=frame, group=name)
+            # A humanoid grip must never translate or stretch individual bones.
+            # Blender's evaluated pose matrices are in armature space; exporting
+            # their decomposed locations creates metre-scale local offsets in
+            # glTF and tears the skinned character apart.  Rest translations and
+            # scales come from the shared 65-bone rig, while the approved pose is
+            # represented entirely by local rotations.
+            bone.location = (0.0, 0.0, 0.0)
+            bone.rotation_quaternion = pose_rotations[name]
+            bone.scale = (1.0, 1.0, 1.0)
             bone.keyframe_insert("rotation_quaternion", frame=frame, group=name)
-            bone.keyframe_insert("scale", frame=frame, group=name)
     for other_action in list(bpy.data.actions):
         if other_action != action:
             bpy.data.actions.remove(other_action)
@@ -186,6 +219,7 @@ def main() -> None:
 
     bpy.ops.object.select_all(action="DESELECT")
     armature.select_set(True)
+    skin_proxy.select_set(True)
     mount.select_set(True)
     bpy.context.view_layer.objects.active = armature
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -206,7 +240,7 @@ def main() -> None:
         export_def_bones=True,
         export_leaf_bone=False,
         export_armature_object_remove=False,
-        export_skins=False,
+        export_skins=True,
         export_morph=False,
     )
     if "FINISHED" not in result:

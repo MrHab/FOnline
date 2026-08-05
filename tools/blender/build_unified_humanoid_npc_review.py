@@ -168,6 +168,8 @@ def create_action(
     for curve in action.fcurves:
         for point in curve.keyframe_points:
             point.interpolation = "BEZIER"
+            point.handle_left_type = "AUTO_CLAMPED"
+            point.handle_right_type = "AUTO_CLAMPED"
     action.frame_start = frames[0][0]
     action.frame_end = frames[-1][0]
     armature.animation_data.action = None
@@ -258,6 +260,63 @@ def create_attack_action(
     reset_pose(armature)
 
 
+def pin_death_limb_contacts(
+    armature: bpy.types.Object,
+    frame: int = 38,
+    clearance: float = 0.025,
+) -> None:
+    """Bake relaxed final hand/foot contacts instead of leaving limbs airborne."""
+    action = bpy.data.actions.get("death")
+    if action is None:
+        raise RuntimeError("Cannot pin contacts without the death action")
+    armature.animation_data_create()
+    armature.animation_data.action = action
+    bpy.context.scene.frame_set(frame)
+    bpy.context.view_layer.update()
+
+    for parent_name, effector_name in (
+        ("upperarm_l", "lowerarm_l"),
+        ("upperarm_r", "lowerarm_r"),
+        ("thigh_l", "calf_l"),
+        ("thigh_r", "calf_r"),
+    ):
+        parent = armature.pose.bones[parent_name]
+        effector = armature.pose.bones[effector_name]
+        current_tail = armature.matrix_world @ effector.tail
+        target = bpy.data.objects.new(f"death_contact_{effector_name}", None)
+        bpy.context.scene.collection.objects.link(target)
+        target.location = Vector((current_tail.x, current_tail.y, clearance))
+
+        constraint = effector.constraints.new("IK")
+        constraint.name = "death_ground_contact_ik"
+        constraint.target = target
+        constraint.chain_count = 2
+        constraint.use_tail = True
+        bpy.context.view_layer.update()
+
+        parent_matrix = parent.matrix.copy()
+        effector_matrix = effector.matrix.copy()
+        effector.constraints.remove(constraint)
+        bpy.data.objects.remove(target, do_unlink=True)
+        bpy.context.view_layer.update()
+        parent.matrix = parent_matrix
+        bpy.context.view_layer.update()
+        effector.matrix = effector_matrix
+        bpy.context.view_layer.update()
+        for bone in (parent, effector):
+            bone.keyframe_insert("location", frame=frame, group=bone.name)
+            bone.keyframe_insert("rotation_quaternion", frame=frame, group=bone.name)
+            bone.keyframe_insert("scale", frame=frame, group=bone.name)
+
+    for curve in action.fcurves:
+        for point in curve.keyframe_points:
+            point.interpolation = "BEZIER"
+            point.handle_left_type = "AUTO_CLAMPED"
+            point.handle_right_type = "AUTO_CLAMPED"
+    armature.animation_data.action = None
+    reset_pose(armature)
+
+
 def capture_idle_baseline(
     armature: bpy.types.Object,
 ) -> dict[str, dict[str, object]]:
@@ -325,16 +384,45 @@ def add_combat_actions(armature: bpy.types.Object) -> None:
         (
             (1, neutral),
             (
-                9,
+                7,
                 {
                     **neutral,
                     "root": {
-                        "location": (0.10, 0.0, 0.145),
-                        "rotation": (0.0, 0.55, 0.0),
+                        "location": (0.0, -0.025, -0.035),
+                        "rotation": (0.10, 0.0, 0.025),
                     },
-                    "spine_02": {"rotation": (0.12, 0.10, 0.18)},
-                    "spine_03": {"rotation": (0.18, 0.08, 0.24)},
-                    "head": {"rotation": (-0.12, 0.0, -0.18)},
+                    "pelvis": {"rotation": (0.10, 0.0, -0.025)},
+                    "spine_01": {"rotation": (0.10, 0.0, 0.02)},
+                    "spine_02": {"rotation": (0.18, 0.03, -0.03)},
+                    "spine_03": {"rotation": (0.22, -0.02, 0.025)},
+                    "head": {"rotation": (-0.18, 0.02, -0.025)},
+                    "upperarm_l": {"rotation": (-0.18, 0.04, -0.20)},
+                    "upperarm_r": {"rotation": (-0.10, -0.03, 0.18)},
+                },
+            ),
+            (
+                15,
+                {
+                    **neutral,
+                    "root": {
+                        "location": (0.015, -0.11, -0.31),
+                        "rotation": (0.28, 0.0, 0.04),
+                    },
+                    "pelvis": {"rotation": (0.18, 0.0, -0.05)},
+                    "spine_01": {"rotation": (0.20, 0.0, 0.03)},
+                    "spine_02": {"rotation": (0.30, 0.04, -0.04)},
+                    "spine_03": {"rotation": (0.34, -0.03, 0.04)},
+                    "head": {"rotation": (-0.30, 0.02, -0.04)},
+                    "upperarm_l": {"rotation": (0.34, 0.08, 0.28)},
+                    "upperarm_r": {"rotation": (0.28, -0.06, -0.25)},
+                    "lowerarm_l": {"rotation": (-0.24, 0.0, 0.06)},
+                    "lowerarm_r": {"rotation": (-0.20, 0.0, -0.05)},
+                    "thigh_l": {"rotation": (-0.68, 0.02, 0.08)},
+                    "thigh_r": {"rotation": (-0.50, -0.02, -0.07)},
+                    "calf_l": {"rotation": (1.18, 0.0, -0.04)},
+                    "calf_r": {"rotation": (0.96, 0.0, 0.04)},
+                    "foot_l": {"rotation": (-0.48, 0.0, 0.0)},
+                    "foot_r": {"rotation": (-0.38, 0.0, 0.0)},
                 },
             ),
             (
@@ -342,21 +430,57 @@ def add_combat_actions(armature: bpy.types.Object) -> None:
                 {
                     **neutral,
                     "root": {
-                        "location": (0.45, 0.0, 0.245),
-                        "rotation": (0.0, 1.50, 0.0),
+                        "location": (0.025, -0.19, -0.12),
+                        "rotation": (0.92, 0.015, 0.055),
                     },
-                    "spine_02": {"rotation": (0.08, 0.12, 0.20)},
-                    "spine_03": {"rotation": (0.10, 0.08, 0.22)},
-                    "head": {"rotation": (-0.20, 0.02, -0.24)},
-                    "upperarm_l": {"rotation": (-0.18, 0.0, -0.34)},
-                    "upperarm_r": {"rotation": (0.26, 0.0, 0.38)},
-                    "thigh_l": {"rotation": (0.12, 0.0, 0.08)},
-                    "thigh_r": {"rotation": (-0.18, 0.0, -0.06)},
+                    "pelvis": {"rotation": (0.10, 0.0, -0.04)},
+                    "spine_01": {"rotation": (0.12, 0.0, 0.02)},
+                    "spine_02": {"rotation": (0.22, 0.04, -0.03)},
+                    "spine_03": {"rotation": (0.26, -0.03, 0.035)},
+                    "head": {"rotation": (-0.38, 0.03, -0.04)},
+                    "upperarm_l": {"rotation": (0.72, 0.08, 0.40)},
+                    "upperarm_r": {"rotation": (0.60, -0.06, -0.34)},
+                    "lowerarm_l": {"rotation": (-0.26, 0.0, 0.08)},
+                    "lowerarm_r": {"rotation": (-0.30, 0.0, -0.07)},
+                    "thigh_l": {"rotation": (-0.34, 0.02, 0.11)},
+                    "thigh_r": {"rotation": (-0.18, -0.02, -0.09)},
+                    "calf_l": {"rotation": (0.72, 0.0, -0.04)},
+                    "calf_r": {"rotation": (0.56, 0.0, 0.04)},
+                    "foot_l": {"rotation": (-0.28, 0.0, 0.0)},
+                    "foot_r": {"rotation": (-0.22, 0.0, 0.0)},
+                },
+            ),
+            (
+                38,
+                {
+                    **neutral,
+                    "root": {
+                        "location": (0.035, -0.24, 0.020),
+                        "rotation": (1.50, 0.02, 0.065),
+                    },
+                    "pelvis": {"rotation": (0.06, 0.0, -0.04)},
+                    "spine_01": {"rotation": (0.06, 0.0, 0.02)},
+                    "spine_02": {"rotation": (0.10, 0.04, -0.04)},
+                    "spine_03": {"rotation": (0.12, -0.03, 0.045)},
+                    "head": {"rotation": (-0.34, 0.06, -0.08)},
+                    "clavicle_l": {"rotation": (0.0, 0.0, 0.12)},
+                    "clavicle_r": {"rotation": (0.0, 0.0, -0.10)},
+                    "upperarm_l": {"rotation": (0.28, 0.10, 0.58)},
+                    "upperarm_r": {"rotation": (-0.28, -0.10, -0.58)},
+                    "lowerarm_l": {"rotation": (-0.20, 0.0, 0.10)},
+                    "lowerarm_r": {"rotation": (0.20, 0.0, -0.10)},
+                    "thigh_l": {"rotation": (-0.08, 0.02, 0.04)},
+                    "thigh_r": {"rotation": (0.08, -0.02, -0.04)},
+                    "calf_l": {"rotation": (0.18, 0.0, -0.03)},
+                    "calf_r": {"rotation": (-0.18, 0.0, 0.03)},
+                    "foot_l": {"rotation": (-0.08, 0.0, 0.0)},
+                    "foot_r": {"rotation": (0.08, 0.0, 0.0)},
                 },
             ),
         ),
         baseline,
     )
+    pin_death_limb_contacts(armature)
 
 
 def evaluated_bounds(
@@ -517,7 +641,7 @@ def main() -> None:
     report = {
         "assetId": args.asset_id,
         "file": args.output.name,
-        "source": str(args.source.resolve()),
+        "source": args.source.as_posix(),
         "sourceSha256": hashlib.sha256(args.source.read_bytes()).hexdigest().upper(),
         "boundsIdleMetres": {
             "minimum": [round(value, 6) for value in minimum],

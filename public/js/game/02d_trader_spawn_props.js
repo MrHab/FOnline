@@ -130,17 +130,31 @@
     const group = new THREE.Group();
     group.userData.kind = 'world-map-exit-zone';
 
-    const mapWidth = MAP_W * TILE;
-    const mapDepth = MAP_H * TILE;
-    const bandWidth = TILE * 2;
-    const northZ = tileToWorld(0, 0).z + TILE * 0.5;
-    const southZ = tileToWorld(0, MAP_H - 1).z - TILE * 0.5;
-    const westX = tileToWorld(0, 0).x + TILE * 0.5;
-    const eastX = tileToWorld(MAP_W - 1, 0).x - TILE * 0.5;
-    const innerNorthZ = tileToWorld(0, 2).z - TILE * 0.5;
-    const innerSouthZ = tileToWorld(0, MAP_H - 3).z + TILE * 0.5;
-    const innerWestX = tileToWorld(2, 0).x - TILE * 0.5;
-    const innerEastX = tileToWorld(MAP_W - 3, 0).x + TILE * 0.5;
+    const bounds = typeof locationPlayableBounds === 'function'
+      ? locationPlayableBounds(currentLocation)
+      : { minX: 0, minZ: 0, maxX: MAP_W - 1, maxZ: MAP_H - 1, width: MAP_W, height: MAP_H };
+    const mapWidth = bounds.width * TILE;
+    const mapDepth = bounds.height * TILE;
+    const exitBandTiles = WORLD_MAP_EXIT_BAND_TILES;
+    const bandWidth = TILE * exitBandTiles;
+    const minPoint = tileToWorld(bounds.minX, bounds.minZ);
+    const maxPoint = tileToWorld(bounds.maxX, bounds.maxZ);
+    const westEdgeX = minPoint.x - TILE * 0.5;
+    const eastEdgeX = maxPoint.x + TILE * 0.5;
+    const northEdgeZ = minPoint.z - TILE * 0.5;
+    const southEdgeZ = maxPoint.z + TILE * 0.5;
+    const centerX = (westEdgeX + eastEdgeX) * 0.5;
+    const centerZ = (northEdgeZ + southEdgeZ) * 0.5;
+    const northZ = northEdgeZ + bandWidth * 0.5;
+    const southZ = southEdgeZ - bandWidth * 0.5;
+    const westX = westEdgeX + bandWidth * 0.5;
+    const eastX = eastEdgeX - bandWidth * 0.5;
+    const innerNorthZ = northEdgeZ + bandWidth;
+    const innerSouthZ = southEdgeZ - bandWidth;
+    const innerWestX = westEdgeX + bandWidth;
+    const innerEastX = eastEdgeX - bandWidth;
+    group.userData.playableBounds = { ...bounds };
+    group.userData.exitBandTiles = exitBandTiles;
 
     const zoneMat = new THREE.MeshBasicMaterial({
       color: 0xd8bd6e,
@@ -175,14 +189,14 @@
       return mesh;
     };
 
-    addFlatPlane(mapWidth, bandWidth, 0, northZ, zoneMat);
-    addFlatPlane(mapWidth, bandWidth, 0, southZ, zoneMat);
-    addFlatPlane(bandWidth, mapDepth, westX, 0, zoneMat);
-    addFlatPlane(bandWidth, mapDepth, eastX, 0, zoneMat);
-    addFlatPlane(mapWidth, 0.16, 0, innerNorthZ, lineMat, 0.052);
-    addFlatPlane(mapWidth, 0.16, 0, innerSouthZ, lineMat, 0.052);
-    addFlatPlane(0.16, mapDepth, innerWestX, 0, lineMat, 0.052);
-    addFlatPlane(0.16, mapDepth, innerEastX, 0, lineMat, 0.052);
+    addFlatPlane(mapWidth, bandWidth, centerX, northZ, zoneMat);
+    addFlatPlane(mapWidth, bandWidth, centerX, southZ, zoneMat);
+    addFlatPlane(bandWidth, mapDepth, westX, centerZ, zoneMat);
+    addFlatPlane(bandWidth, mapDepth, eastX, centerZ, zoneMat);
+    addFlatPlane(mapWidth, 0.16, centerX, innerNorthZ, lineMat, 0.052);
+    addFlatPlane(mapWidth, 0.16, centerX, innerSouthZ, lineMat, 0.052);
+    addFlatPlane(0.16, mapDepth, innerWestX, centerZ, lineMat, 0.052);
+    addFlatPlane(0.16, mapDepth, innerEastX, centerZ, lineMat, 0.052);
 
     const shape = new THREE.Shape();
     shape.moveTo(0, 0.58);
@@ -199,11 +213,11 @@
       group.add(arrow);
       return arrow;
     };
-    [-24, -8, 8, 24].forEach(x => {
+    [-0.32, -0.1067, 0.1067, 0.32].map(offset => centerX + mapWidth * offset).forEach(x => {
       addArrow(x, innerNorthZ - 1.2, 0);
       addArrow(x, innerSouthZ + 1.2, Math.PI);
     });
-    [-24, -8, 8, 24].forEach(z => {
+    [-0.32, -0.1067, 0.1067, 0.32].map(offset => centerZ + mapDepth * offset).forEach(z => {
       addArrow(innerWestX - 1.2, z, -Math.PI / 2);
       addArrow(innerEastX + 1.2, z, Math.PI / 2);
     });
@@ -215,10 +229,10 @@
       group.add(sprite);
       return sprite;
     };
-    addSign('ГЛОБАЛЬНАЯ КАРТА', 0, innerNorthZ + 1.15);
-    addSign('ГЛОБАЛЬНАЯ КАРТА', 0, innerSouthZ - 1.15);
-    addSign('ГЛОБАЛЬНАЯ КАРТА', innerWestX + 1.15, 0);
-    addSign('ГЛОБАЛЬНАЯ КАРТА', innerEastX - 1.15, 0);
+    addSign('ГЛОБАЛЬНАЯ КАРТА', centerX, innerNorthZ + 1.15);
+    addSign('ГЛОБАЛЬНАЯ КАРТА', centerX, innerSouthZ - 1.15);
+    addSign('ГЛОБАЛЬНАЯ КАРТА', innerWestX + 1.15, centerZ);
+    addSign('ГЛОБАЛЬНАЯ КАРТА', innerEastX - 1.15, centerZ);
 
     markNoRuntimeCull(group, 'world-map-exit-zone');
     worldGroup.add(group);

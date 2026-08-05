@@ -83,10 +83,29 @@ assert.deepStrictEqual(
   (npcGlb.json.animations || []).map(animation => animation.name).sort(),
   ['attack', 'death', 'hurt', 'idle', 'run', 'walk']
 );
+const npcDeath = (npcGlb.json.animations || []).find(animation => animation.name === 'death');
+const npcDeathDuration = Math.max(...npcDeath.samplers.map(sampler => (
+  Number(npcGlb.json.accessors?.[sampler.input]?.max?.[0] || 0)
+)));
+assert(npcDeathDuration >= 1.2, 'humanoid death must include balance loss, knee collapse and ground contact');
+assert.strictEqual(npcDeath.channels?.length, 195, 'humanoid death must key all 65 bones');
 const npcRoot = (npcGlb.json.nodes || []).find(node => node.extras?.realm_runtime_asset_id === 'npc_humanoid_animations');
 assert(npcRoot, 'humanoid NPC runtime metadata is missing');
 assert.strictEqual(npcRoot.extras.realm_runtime_integration_allowed, true);
 assert.strictEqual(npcRoot.extras.realm_approved_review_sha256, NPC_REVIEW_SHA256);
+const npcGeneratorSource = fs.readFileSync(path.join(
+  ROOT, 'tools', 'blender', 'build_unified_humanoid_npc_review.py'
+), 'utf8');
+[
+  'def pin_death_limb_contacts(',
+  '("upperarm_r", "lowerarm_r")',
+  '("thigh_r", "calf_r")',
+  'target.location = Vector((current_tail.x, current_tail.y, clearance))',
+  'pin_death_limb_contacts(armature)'
+].forEach(marker => assert(
+  npcGeneratorSource.includes(marker),
+  `humanoid death-contact marker is missing: ${marker}`
+));
 
 for (const bodyId of BODY_IDS) {
   const row = byId.get(`boots_${bodyId}`);
@@ -128,15 +147,26 @@ assert.strictEqual(rifleRoot.extras.realm_approved_review_sha256, RIFLE_REVIEW_S
 const grip = byId.get('assaultRifleGrip');
 assert(grip, 'approved assault-rifle grip donor is missing');
 assert.strictEqual(grip.sourceSha256, GRIP_RUNTIME_SHA256);
+const gripReport = JSON.parse(fs.readFileSync(path.join(
+  ROOT, 'docs', 'art', 'reviews', 'unified-style-v5', 'rifle', 'assault_rifle_grip_runtime-report.json'
+), 'utf8'));
+const gripBoneNames = new Set(gripReport.gripBones || []);
+assert.strictEqual(gripBoneNames.size, 41, 'approved grip report must name 41 upper-body bones');
+assert(gripReport.visualBake?.maxPositionErrorMetres < 0.00001);
+assert(gripReport.visualBake?.maxRotationErrorDegrees < 0.01);
 const gripGlb = parseGlb(runtimeFile(grip.file));
 assert.deepStrictEqual({ vertices: gripGlb.vertices, triangles: gripGlb.triangles }, { vertices: 3, triangles: 1 });
 assert.strictEqual(gripGlb.json.meshes?.length, 1);
 assert.strictEqual(gripGlb.json.skins?.length, 1);
 assert.strictEqual(gripGlb.json.skins[0].joints?.length, 65);
 assert.deepStrictEqual((gripGlb.json.animations || []).map(animation => animation.name), ['assault_rifle_grip']);
-assert.strictEqual(gripGlb.json.animations[0].channels?.length, 41);
-assert((gripGlb.json.animations[0].channels || []).every(channel => channel.target?.path === 'rotation'),
-  'approved grip must contain rotation tracks only');
+assert.strictEqual(gripGlb.json.animations[0].channels?.length, 195);
+const gripChannelCounts = (gripGlb.json.animations[0].channels || []).reduce((counts, channel) => {
+  const property = String(channel.target?.path || '');
+  counts[property] = Number(counts[property] || 0) + 1;
+  return counts;
+}, {});
+assert.deepStrictEqual(gripChannelCounts, { translation: 65, rotation: 65, scale: 65 });
 const gripNames = new Set((gripGlb.json.nodes || []).map(node => node.name));
 ['approved_assault_rifle_mount', 'hand_l', 'hand_r', 'thumb_01_l'].forEach(name => (
   assert(gripNames.has(name), `approved grip node is missing: ${name}`)
@@ -147,15 +177,22 @@ const runtimeSource = fs.readFileSync(
   'utf8'
 );
 [
-  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v2'",
+  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v5'",
+  'const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([',
   'function attachApprovedNpcAnimations(runtime)',
+  'const sourceMeshes = []',
+  "mesh.name = `approved_equipment_boots_${sourceMesh.material?.name || group.children.length}`",
   'new THREE.Skeleton(',
   'function applyApprovedBootsVisual(actor, eq = {})',
   'function compileApprovedGripPose(gltf)',
   'function captureApprovedAssaultRifleRestPose(root)',
   'function approvedGripTargetTransform(runtime, pose, boneName, transform)',
-  'mount.position.add(targetShoulder).sub(donorShoulder)',
+  'primaryHand.matrixWorld.clone().multiply(pose.primaryHandToMount)',
+  'function solveApprovedSupportArm(characterRoot, targetMatrix)',
+  "['clavicle_l', 'upperarm_l', 'lowerarm_l', 'hand_l']",
   'function applyApprovedAssaultRifleGrip(actor, weaponId = \'\')',
+  "actor.userData.characterGlbRuntime.currentAction === 'death'",
+  'return !!mountApprovedAssaultRifle(actor, pose)',
   "id !== 'assaultRifle'",
   'weaponGroup.parent !== runtime.root',
   'bone.quaternion.copy(target.quaternion)'
@@ -206,45 +243,225 @@ async function verifyThreeRuntime() {
     return box;
   };
 
-  const character = await load(path.join(
-    ROOT, 'public', 'assets', 'models', 'characters', 'base', 'character_male_medium.glb'
-  ));
-  const boots = await load(runtimeFile(byId.get('boots_male_medium').file));
-  let bootMesh = null;
-  boots.scene.traverse(node => {
-    if (!bootMesh && node?.isSkinnedMesh && node.skeleton) bootMesh = node;
-  });
-  assert(bootMesh, 'male_medium boots have no Three.js SkinnedMesh');
-  const targetBones = bootMesh.skeleton.bones.map(bone => character.scene.getObjectByName(bone.name));
-  assert.strictEqual(targetBones.length, 65);
-  assert(targetBones.every(Boolean), 'boots cannot resolve every bone on the current character rig');
-  const instance = new THREE.SkinnedMesh(bootMesh.geometry, bootMesh.material);
-  instance.bind(
-    new THREE.Skeleton(
-      targetBones,
-      bootMesh.skeleton.boneInverses.map(matrix => matrix.clone())
-    ),
-    bootMesh.bindMatrix.clone()
-  );
-  assert(instance.skeleton.bones.every(bone => character.scene.getObjectByName(bone.name) === bone));
-  const mixer = new THREE.AnimationMixer(character.scene);
-  const walk = character.animations.find(clip => clip.name === 'walk');
-  assert(walk, 'current character has no walk animation');
-  mixer.clipAction(walk).play();
-  mixer.update(Math.min(0.2, walk.duration / 2));
-  instance.skeleton.update();
+  const setBoneWorldQuaternion = (bone, worldQuaternion) => {
+    const parentQuaternion = bone.parent.getWorldQuaternion(new THREE.Quaternion());
+    bone.quaternion.copy(parentQuaternion.invert().multiply(worldQuaternion)).normalize();
+    bone.updateWorldMatrix(false, true);
+  };
+
+  const solveSupportArm = (root, targetMatrix) => {
+    const chain = ['clavicle_l', 'upperarm_l', 'lowerarm_l', 'hand_l'].map(name => (
+      root.getObjectByName(name)
+    ));
+    assert(chain.every(bone => bone?.isBone), 'support-arm IK chain is incomplete');
+    chain[0].updateWorldMatrix(true, true);
+    const positions = chain.map(bone => bone.getWorldPosition(new THREE.Vector3()));
+    const base = positions[0].clone();
+    const lengths = positions.slice(0, -1).map((position, index) => (
+      position.distanceTo(positions[index + 1])
+    ));
+    const targetPosition = new THREE.Vector3();
+    const targetQuaternion = new THREE.Quaternion();
+    targetMatrix.decompose(targetPosition, targetQuaternion, new THREE.Vector3());
+    const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+    if (base.distanceTo(targetPosition) >= totalLength) {
+      const direction = targetPosition.clone().sub(base).normalize();
+      for (let index = 1; index < positions.length; index += 1) {
+        positions[index] = positions[index - 1].clone().addScaledVector(direction, lengths[index - 1]);
+      }
+    } else {
+      for (let iteration = 0; iteration < 12; iteration += 1) {
+        positions[positions.length - 1] = targetPosition.clone();
+        for (let index = positions.length - 2; index >= 0; index -= 1) {
+          const direction = positions[index].clone().sub(positions[index + 1]).normalize();
+          positions[index] = positions[index + 1].clone().addScaledVector(direction, lengths[index]);
+        }
+        positions[0] = base.clone();
+        for (let index = 1; index < positions.length; index += 1) {
+          const direction = positions[index].clone().sub(positions[index - 1]).normalize();
+          positions[index] = positions[index - 1].clone().addScaledVector(direction, lengths[index - 1]);
+        }
+        if (positions[positions.length - 1].distanceTo(targetPosition) < 0.001) break;
+      }
+    }
+    for (let index = 0; index < chain.length - 1; index += 1) {
+      chain[index].updateWorldMatrix(true, true);
+      const currentStart = chain[index].getWorldPosition(new THREE.Vector3());
+      const currentEnd = chain[index + 1].getWorldPosition(new THREE.Vector3());
+      const currentDirection = currentEnd.sub(currentStart).normalize();
+      const wantedDirection = positions[index + 1].clone().sub(positions[index]).normalize();
+      const delta = new THREE.Quaternion().setFromUnitVectors(currentDirection, wantedDirection);
+      setBoneWorldQuaternion(
+        chain[index],
+        delta.multiply(chain[index].getWorldQuaternion(new THREE.Quaternion()))
+      );
+    }
+    setBoneWorldQuaternion(chain[chain.length - 1], targetQuaternion);
+    chain[0].updateWorldMatrix(true, true);
+    return chain[chain.length - 1].getWorldPosition(new THREE.Vector3()).distanceTo(targetPosition);
+  };
+
+  const skinComponent = ['getX', 'getY', 'getZ', 'getW'];
+  const footVertexIndices = (mesh, side) => {
+    const skinIndex = mesh.geometry.attributes.skinIndex;
+    const skinWeight = mesh.geometry.attributes.skinWeight;
+    const footBones = new Set([`foot_${side}`, `ball_${side}`, `ball_leaf_${side}`]);
+    const indices = [];
+    for (let vertexIndex = 0; vertexIndex < mesh.geometry.attributes.position.count; vertexIndex += 1) {
+      let footWeight = 0;
+      for (let component = 0; component < 4; component += 1) {
+        const boneIndex = skinIndex[skinComponent[component]](vertexIndex);
+        if (footBones.has(mesh.skeleton.bones[boneIndex]?.name)) {
+          footWeight += skinWeight[skinComponent[component]](vertexIndex);
+        }
+      }
+      if (footWeight > 0.5) indices.push(vertexIndex);
+    }
+    return indices;
+  };
+  const skinnedMinimumY = (mesh, indices) => {
+    const vertex = new THREE.Vector3();
+    let minimum = Infinity;
+    for (const vertexIndex of indices) {
+      vertex.fromBufferAttribute(mesh.geometry.attributes.position, vertexIndex);
+      mesh.boneTransform(vertexIndex, vertex);
+      minimum = Math.min(minimum, vertex.applyMatrix4(mesh.matrixWorld).y);
+    }
+    return minimum;
+  };
+
+  for (const bodyId of BODY_IDS) {
+    const character = await load(path.join(
+      ROOT, 'public', 'assets', 'models', 'characters', 'base', `character_${bodyId}.glb`
+    ));
+    const bodyMesh = character.scene.getObjectByName('body_base');
+    assert(bodyMesh?.isSkinnedMesh, `${bodyId}: current character body mesh is missing`);
+    const boots = await load(runtimeFile(byId.get(`boots_${bodyId}`).file));
+    boots.scene.updateMatrixWorld(true);
+    const bootMeshes = [];
+    boots.scene.traverse(node => {
+      if (node?.isSkinnedMesh && node.skeleton) bootMeshes.push(node);
+    });
+    assert.strictEqual(bootMeshes.length, 4, `${bodyId}: boots must expose all four skinned material parts`);
+    assert.deepStrictEqual(
+      bootMeshes.map(mesh => String(mesh.material?.name || '')).sort(),
+      ['boots_aged_hardware', 'boots_dusty_canvas', 'boots_rubberized_sole', 'boots_weathered_leather']
+    );
+    assert.strictEqual(
+      bootMeshes.reduce((total, mesh) => total + mesh.geometry.attributes.position.count, 0),
+      2532,
+      `${bodyId}: Three.js must retain every approved boot vertex`
+    );
+    const instances = bootMeshes.map(bootMesh => {
+      const targetBones = bootMesh.skeleton.bones.map(bone => character.scene.getObjectByName(bone.name));
+      assert.strictEqual(targetBones.length, 65);
+      assert(targetBones.every(Boolean), `${bodyId}: boots cannot resolve every current character bone`);
+      const instance = new THREE.SkinnedMesh(bootMesh.geometry, bootMesh.material);
+      bootMesh.matrixWorld.decompose(instance.position, instance.quaternion, instance.scale);
+      instance.bindMode = bootMesh.bindMode;
+      instance.bind(
+        new THREE.Skeleton(
+          targetBones,
+          bootMesh.skeleton.boneInverses.map(matrix => matrix.clone())
+        ),
+        bootMesh.bindMatrix.clone()
+      );
+      character.scene.add(instance);
+      assert(instance.skeleton.bones.every(bone => character.scene.getObjectByName(bone.name) === bone));
+      return instance;
+    });
+    const sole = instances.find(instance => instance.material?.name === 'boots_rubberized_sole');
+    assert(sole, `${bodyId}: rubberized sole is missing from the runtime instance`);
+    const bodyFootVertices = Object.fromEntries(['l', 'r'].map(side => (
+      [side, footVertexIndices(bodyMesh, side)]
+    )));
+    const soleVertices = Object.fromEntries(['l', 'r'].map(side => (
+      [side, footVertexIndices(sole, side)]
+    )));
+    assert(Object.values(bodyFootVertices).every(indices => indices.length > 0));
+    assert(Object.values(soleVertices).every(indices => indices.length > 0));
+    for (const clipName of ['walk', 'run']) {
+      const clip = character.animations.find(animation => animation.name === clipName);
+      assert(clip, `${bodyId}: current character has no ${clipName} animation`);
+      const mixer = new THREE.AnimationMixer(character.scene);
+      mixer.clipAction(clip).play();
+      for (let sample = 0; sample <= 48; sample += 1) {
+        mixer.setTime(clip.duration * sample / 48);
+        character.scene.updateMatrixWorld(true);
+        bodyMesh.skeleton.update();
+        instances.forEach(instance => instance.skeleton.update());
+        for (const side of ['l', 'r']) {
+          const clearance = skinnedMinimumY(bodyMesh, bodyFootVertices[side])
+            - skinnedMinimumY(sole, soleVertices[side]);
+          assert(
+            clearance >= 0.008,
+            `${bodyId}: ${side} foot pierces the sole in ${clipName} sample ${sample}: ${clearance}`
+          );
+        }
+      }
+      mixer.stopAllAction();
+    }
+  }
 
   const gripRuntime = await load(runtimeFile(grip.file));
   const gripClip = gripRuntime.animations.find(clip => clip.name === 'assault_rifle_grip');
   assert(gripClip, 'Three.js cannot read the approved assault-rifle grip clip');
-  assert.strictEqual(gripClip.tracks.length, 41);
-  assert(gripClip.tracks.every(track => track.name.endsWith('.quaternion')),
-    'approved grip contains an unsafe bone translation or scale track');
+  assert.strictEqual(gripClip.tracks.length, 195);
+  assert.deepStrictEqual(
+    gripClip.tracks.reduce((counts, track) => {
+      const property = track.name.slice(track.name.lastIndexOf('.') + 1);
+      counts[property] = Number(counts[property] || 0) + 1;
+      return counts;
+    }, {}),
+    { position: 65, quaternion: 65, scale: 65 }
+  );
   const handTrack = gripClip.tracks.find(track => track.name === 'hand_l.quaternion');
   assert(handTrack, 'approved support-hand quaternion track is missing');
   const handQuaternion = Array.from(handTrack.createInterpolant().evaluate(gripClip.duration * 0.5));
   assert.strictEqual(handQuaternion.length, 4);
   assert(Math.abs(Math.hypot(...handQuaternion) - 1) < 0.001, 'approved support-hand quaternion is invalid');
+  const gripSampleTime = gripClip.duration * 0.5;
+  const donorRest = new Map();
+  for (const boneName of gripBoneNames) {
+    const bone = gripRuntime.scene.getObjectByName(boneName);
+    assert(bone?.isBone, `approved grip donor bone is missing: ${boneName}`);
+    donorRest.set(boneName, {
+      position: bone.position.clone(),
+      quaternion: bone.quaternion.clone()
+    });
+  }
+  gripClip.tracks.filter(track => track.name.endsWith('.position')).forEach(track => {
+    const boneName = track.name.slice(0, -'.position'.length);
+    if (!gripBoneNames.has(boneName)) return;
+    const bone = gripRuntime.scene.getObjectByName(boneName);
+    const position = new THREE.Vector3().fromArray(Array.from(
+      track.createInterpolant().evaluate(gripSampleTime)
+    ));
+    const limit = boneName === 'thumb_01_l' ? 0.03 : 0.002;
+    assert(bone?.isBone && position.distanceTo(bone.position) <= limit,
+      `approved grip contains an unsafe bone translation: ${boneName}`);
+  });
+  gripClip.tracks.filter(track => track.name.endsWith('.scale')).forEach(track => {
+    const boneName = track.name.slice(0, -'.scale'.length);
+    if (!gripBoneNames.has(boneName)) return;
+    const bone = gripRuntime.scene.getObjectByName(boneName);
+    const scale = new THREE.Vector3().fromArray(Array.from(
+      track.createInterpolant().evaluate(gripSampleTime)
+    ));
+    assert(bone?.isBone && scale.distanceTo(bone.scale) <= 0.002,
+      `approved grip contains an unsafe bone scale: ${boneName}`);
+  });
+  const mount = gripRuntime.scene.getObjectByName('approved_assault_rifle_mount');
+  assert(mount, 'Three.js cannot resolve the approved rifle mount');
+  assert(Math.abs(mount.position.y - 1.3562635) < 0.0001, 'approved shoulder mount drifted');
+  const donorPoseMixer = new THREE.AnimationMixer(gripRuntime.scene);
+  donorPoseMixer.clipAction(gripClip).play();
+  donorPoseMixer.update(gripSampleTime);
+  gripRuntime.scene.updateMatrixWorld(true);
+  const donorPrimaryHand = gripRuntime.scene.getObjectByName('hand_r');
+  const donorSupportHand = gripRuntime.scene.getObjectByName('hand_l');
+  const primaryHandToMount = donorPrimaryHand.matrixWorld.clone().invert().multiply(mount.matrixWorld);
+  const mountToSupportHand = mount.matrixWorld.clone().invert().multiply(donorSupportHand.matrixWorld);
   for (const bodyId of BODY_IDS) {
     const posedCharacter = await load(path.join(
       ROOT, 'public', 'assets', 'models', 'characters', 'base', `character_${bodyId}.glb`
@@ -252,24 +469,47 @@ async function verifyThreeRuntime() {
     const bodyMesh = posedCharacter.scene.getObjectByName('body_base');
     assert(bodyMesh?.isSkinnedMesh, `${bodyId}: current character body mesh is missing`);
     gripClip.tracks.forEach(track => {
-      const boneName = track.name.slice(0, -'.quaternion'.length);
-      const donorBone = gripRuntime.scene.getObjectByName(boneName);
+      const dot = track.name.lastIndexOf('.');
+      const boneName = track.name.slice(0, dot);
+      const property = track.name.slice(dot + 1);
+      if (!gripBoneNames.has(boneName)) return;
       const targetBone = posedCharacter.scene.getObjectByName(boneName);
-      assert(donorBone?.isBone && targetBone?.isBone, `${bodyId}: grip bone is missing: ${boneName}`);
-      const poseQuaternion = new THREE.Quaternion().fromArray(Array.from(
-        track.createInterpolant().evaluate(gripClip.duration * 0.5)
-      )).normalize();
-      const delta = donorBone.quaternion.clone().invert().multiply(poseQuaternion);
-      targetBone.quaternion.multiply(delta).normalize();
+      const rest = donorRest.get(boneName);
+      assert(targetBone?.isBone && rest, `${bodyId}: grip bone is missing: ${boneName}`);
+      const value = Array.from(track.createInterpolant().evaluate(gripSampleTime));
+      if (property === 'quaternion') {
+        const poseQuaternion = new THREE.Quaternion().fromArray(value).normalize();
+        const delta = rest.quaternion.clone().invert().multiply(poseQuaternion);
+        targetBone.quaternion.multiply(delta).normalize();
+      }
+      if (property === 'position' && boneName === 'thumb_01_l') {
+        targetBone.position.add(new THREE.Vector3().fromArray(value).sub(rest.position));
+      }
     });
     posedCharacter.scene.updateMatrixWorld(true);
+    const primaryHand = posedCharacter.scene.getObjectByName('hand_r');
+    const mountWorld = primaryHand.matrixWorld.clone().multiply(primaryHandToMount);
+    const rifleInstance = await load(runtimeFile(rifle.file));
+    const mountLocal = posedCharacter.scene.matrixWorld.clone().invert().multiply(mountWorld);
+    mountLocal.decompose(rifleInstance.scene.position, rifleInstance.scene.quaternion, rifleInstance.scene.scale);
+    posedCharacter.scene.add(rifleInstance.scene);
+    posedCharacter.scene.updateMatrixWorld(true);
+    const supportTarget = mountWorld.clone().multiply(mountToSupportHand);
+    const supportError = solveSupportArm(posedCharacter.scene, supportTarget);
+    posedCharacter.scene.updateMatrixWorld(true);
+    assert(supportError < 0.01, `${bodyId}: support hand misses the approved IK target: ${supportError}`);
+    for (const side of ['l', 'r']) {
+      const hand = posedCharacter.scene.getObjectByName(`hand_${side}`);
+      const socket = rifleInstance.scene.getObjectByName(`socket_grip_${side}`);
+      const distance = hand.getWorldPosition(new THREE.Vector3())
+        .distanceTo(socket.getWorldPosition(new THREE.Vector3()));
+      assert(distance >= 0.045 && distance <= 0.075,
+        `${bodyId}: ${side} palm does not wrap its rifle socket: ${distance}`);
+    }
     const size = skinnedMeshBounds(bodyMesh).getSize(new THREE.Vector3());
     assert(size.y >= 1.6 && size.y <= 2.1 && size.x <= 1 && size.z <= 1,
       `${bodyId}: assault-rifle grip tears the character mesh: ${size.toArray()}`);
   }
-  const mount = gripRuntime.scene.getObjectByName('approved_assault_rifle_mount');
-  assert(mount, 'Three.js cannot resolve the approved rifle mount');
-  assert(Math.abs(mount.position.y - 1.3562635) < 0.0001, 'approved shoulder mount drifted');
 
   const rifleRuntime = await load(runtimeFile(rifle.file));
   rifleRuntime.scene.updateMatrixWorld(true);

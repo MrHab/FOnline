@@ -727,7 +727,8 @@
       }
       triggerMeleeAttackVisual(attacker.mesh, data.weapon || attacker.equipment?.weapon || attacker.weapon || 'fists', {
         targetX: data.targetX,
-        targetZ: data.targetZ
+        targetZ: data.targetZ,
+        attackToken: data.t || 0
       });
     });
     multiplayer.socket.on('enemyAttack', data => {
@@ -1168,6 +1169,9 @@
         enemyShooter.equipment = enemyEquipmentFromData(data);
         enemyShooter.weapon = enemyShooter.equipment.weapon;
         updateEnemyEquipmentVisuals(enemyShooter);
+      }
+      if (enemyShooter?.mesh && typeof triggerActorAttackAnimationPulse === 'function') {
+        triggerActorAttackAnimationPulse(enemyShooter.mesh, data.t || 0);
       }
       const start = row ? getRemoteMuzzlePoint(row, data) : getEnemyMuzzlePoint(enemyShooter, data);
       const shotWeaponId = data.weapon || row?.data?.weapon || enemyShooter?.equipment?.weapon || 'pistol';

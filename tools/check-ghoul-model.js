@@ -115,6 +115,13 @@ assert.deepStrictEqual(
   (json.animations || []).map(animation => String(animation.name || '').toLowerCase()).sort(),
   REQUIRED_ACTIONS
 );
+const deathAnimation = (json.animations || []).find(animation => (
+  String(animation.name || '').toLowerCase() === 'death'
+));
+const deathDuration = Math.max(...deathAnimation.samplers.map(sampler => (
+  Number(json.accessors?.[sampler.input]?.max?.[0] || 0)
+)));
+assert(deathDuration >= 1.2, 'ghoul death must include the full forward-collapse sequence');
 assert.strictEqual(
   (json.animations || []).reduce((sum, animation) => sum + Number(animation.channels?.length || 0), 0),
   1170,
@@ -144,7 +151,7 @@ assert.deepStrictEqual(collider.collision?.size, { x: 0.355851, y: 0.77, z: 0.19
 
 const staticRuntime = fs.readFileSync(STATIC_RUNTIME_FILE, 'utf8');
 [
-  "const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.9-ghoul-bc-v3';",
+  "const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.10-ghoul-bc-v3-death-v2';",
   'function cloneStaticModelSource(source)',
   'new THREE.Skeleton(bones, inverses)',
   'function staticModelAnimations(key)',
@@ -160,8 +167,11 @@ const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
   "modelKey !== 'enemyGhoul'",
   "function setEnemyStaticGlbAction(runtime, requested = 'idle'",
   'function updateEnemyStaticGlbAnimation(enemy, dt = 0.016, state = {})',
+  'characterOneShotRestart(runtime, action, state.attackToken)',
+  'attackActive: attackAnimation.active',
+  'attackToken: attackAnimation.token',
   "runtime.currentAction === 'walk' || runtime.currentAction === 'run'",
-  'updateEnemyStaticGlbAnimation(enemy, dt, { moving, visualSpeed, sleeping, inDialogue });',
+  'updateEnemyStaticGlbAnimation(enemy, dt, {',
   'updateEnemyStaticGlbAnimation(enemy, dt, { dead: true });'
 ].forEach(marker => assert(enemyRuntime.includes(marker), `ghoul animation integration is missing: ${marker}`));
 

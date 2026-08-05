@@ -164,48 +164,76 @@ def main() -> None:
 
     if armature.animation_data:
         armature.animation_data_clear()
-    for pose_bone in armature.pose.bones:
-        for constraint in list(pose_bone.constraints):
-            pose_bone.constraints.remove(constraint)
-        pose_bone.matrix_basis.identity()
-    bpy.context.view_layer.update()
-
-    depth = {}
-    for name in GRIP_BONES:
-        bone = armature.pose.bones[name]
-        level = 0
-        parent = bone.parent
-        while parent is not None:
-            level += 1
-            parent = parent.parent
-        depth[name] = level
-    for name in sorted(GRIP_BONES, key=lambda value: depth[value]):
-        armature.pose.bones[name].matrix = evaluated_matrices[name]
-    bpy.context.view_layer.update()
-    pose_rotations = {}
-    for name in GRIP_BONES:
-        _location, rotation, _scale = armature.pose.bones[name].matrix_basis.decompose()
-        pose_rotations[name] = rotation.copy()
 
     action = bpy.data.actions.new("assault_rifle_grip")
     action.use_fake_user = True
     armature.animation_data_create()
     armature.animation_data.action = action
-    for frame in (1, 2):
-        bpy.context.scene.frame_set(frame)
-        for name in GRIP_BONES:
-            bone = armature.pose.bones[name]
-            bone.rotation_mode = "QUATERNION"
-            # A humanoid grip must never translate or stretch individual bones.
-            # Blender's evaluated pose matrices are in armature space; exporting
-            # their decomposed locations creates metre-scale local offsets in
-            # glTF and tears the skinned character apart.  Rest translations and
-            # scales come from the shared 65-bone rig, while the approved pose is
-            # represented entirely by local rotations.
-            bone.location = (0.0, 0.0, 0.0)
-            bone.rotation_quaternion = pose_rotations[name]
-            bone.scale = (1.0, 1.0, 1.0)
-            bone.keyframe_insert("rotation_quaternion", frame=frame, group=name)
+    bpy.ops.object.select_all(action="DESELECT")
+    armature.select_set(True)
+    bpy.context.view_layer.objects.active = armature
+    bpy.ops.object.mode_set(mode="POSE")
+    for pose_bone in armature.pose.bones:
+        pose_bone.bone.select = pose_bone.name in GRIP_BONES
+        if pose_bone.name in GRIP_BONES:
+            pose_bone.rotation_mode = "QUATERNION"
+    result = bpy.ops.nla.bake(
+        frame_start=1,
+        frame_end=2,
+        step=1,
+        only_selected=True,
+        visual_keying=True,
+        clear_constraints=True,
+        clear_parents=False,
+        use_current_action=True,
+        clean_curves=False,
+        bake_types={"POSE"},
+    )
+    if "FINISHED" not in result:
+        raise RuntimeError(f"Cannot visually bake approved grip IK: {result}")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.context.scene.frame_set(1)
+    bpy.context.view_layer.update()
+    baked_pose_errors = {}
+    for name in GRIP_BONES:
+        expected_location, expected_rotation, _expected_scale = evaluated_matrices[name].decompose()
+        actual_location, actual_rotation, _actual_scale = armature.pose.bones[name].matrix.decompose()
+        baked_pose_errors[name] = {
+            "position": (actual_location - expected_location).length,
+            "rotationDegrees": actual_rotation.rotation_difference(expected_rotation).angle * 57.295779513,
+        }
+    worst_position = max(value["position"] for value in baked_pose_errors.values())
+    worst_rotation = max(value["rotationDegrees"] for value in baked_pose_errors.values())
+    if worst_position > 0.00001 or worst_rotation > 0.01:
+        raise RuntimeError(
+            "Visual IK bake drifted from the approved held pose: "
+            f"position={worst_position:.8f} m, rotation={worst_rotation:.6f} degrees"
+        )
+    print(
+        "REALM_GRIP_BAKE_ERROR="
+        + json.dumps(
+            {
+                "positionMetres": worst_position,
+                "rotationDegrees": worst_rotation,
+            },
+            sort_keys=True,
+        )
+    )
+
+    # Blender's visual bake creates location and scale curves as well.  The
+    # shared humanoid rig must keep its authored joint offsets and bone lengths;
+    # only the reviewed thumb root has a deliberate small positional correction.
+    for curve in list(action.fcurves):
+        data_path = str(curve.data_path)
+        bone_name = data_path.split('pose.bones["', 1)[-1].split('"]', 1)[0]
+        if bone_name not in GRIP_BONES:
+            action.fcurves.remove(curve)
+            continue
+        if data_path.endswith(".rotation_quaternion"):
+            continue
+        if bone_name == "thumb_01_l" and data_path.endswith(".location"):
+            continue
+        action.fcurves.remove(curve)
     for other_action in list(bpy.data.actions):
         if other_action != action:
             bpy.data.actions.remove(other_action)
@@ -236,7 +264,7 @@ def main() -> None:
         export_animations=True,
         export_animation_mode="ACTIONS",
         export_frame_range=False,
-        export_force_sampling=False,
+        export_force_sampling=True,
         export_def_bones=True,
         export_leaf_bone=False,
         export_armature_object_remove=False,
@@ -254,6 +282,10 @@ def main() -> None:
         "animation": "assault_rifle_grip",
         "gripBones": list(GRIP_BONES),
         "mountNode": "approved_assault_rifle_mount",
+        "visualBake": {
+            "maxPositionErrorMetres": worst_position,
+            "maxRotationErrorDegrees": worst_rotation,
+        },
         "actualGlb": parsed,
         "sha256": hashlib.sha256(args.output.read_bytes()).hexdigest().upper(),
     }

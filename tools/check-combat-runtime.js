@@ -318,9 +318,9 @@ function seedCharacterState(account, options, usersDb, savesDb) {
   const special = cloneJson(options.special);
   const maxHp = computedMaxHp(level, Number(special.end || 5));
   const maxAp = Math.max(5, 5 + Math.floor(Number(special.agi || 5) / 2));
-  // oldDepot's authored spawn is tile (19, 25), or world (1, 13).
-  // Starting from that known-walkable point keeps the PvP fixture independent
-  // of wall/collider changes elsewhere in the location.
+  const locationId = String(options.locationId || 'oldDepot');
+  // oldDepot's authored spawn is tile (19, 25), or world (1, 13). Individual
+  // feature probes can override both the location and a known-walkable point.
   const spawnX = Number.isFinite(Number(options.spawnX)) ? Number(options.spawnX) : 1;
   const spawnZ = Number.isFinite(Number(options.spawnZ)) ? Number(options.spawnZ) : 13;
 
@@ -331,9 +331,9 @@ function seedCharacterState(account, options, usersDb, savesDb) {
   if (options.talentRanks && typeof options.talentRanks === 'object') {
     state.talentRanks = cloneJson(options.talentRanks);
   }
-  state.currentLocationId = 'oldDepot';
+  state.currentLocationId = locationId;
   state.lastVisitedSettlementId = 'settlement';
-  state.serverLocationContext = { locationId: 'oldDepot' };
+  state.serverLocationContext = { locationId };
   state.player = {
     ...(state.player || {}),
     x: spawnX,
@@ -407,7 +407,7 @@ function seedCharacterState(account, options, usersDb, savesDb) {
     ...(row.summary || {}),
     level,
     xp: 0,
-    locationId: 'oldDepot'
+    locationId
   };
   account.seedState = cloneJson(state);
 }
@@ -481,6 +481,22 @@ function seedCombatFixtures(accounts) {
     special: { str: 5, per: 6, end: 5, cha: 5, int: 5, agi: 6, luck: 5 },
     skillRanks: { lightWeapons: 100, lockpick: 83 },
     talentRanks: { specialStr: 1 }
+  }, usersDb, savesDb);
+  seedCharacterState(accounts.trade, {
+    locationId: 'scrapTown',
+    spawnX: -2,
+    spawnZ: 1,
+    special: { str: 5, per: 5, end: 5, cha: 7, int: 5, agi: 7, luck: 5 },
+    weapon: 'pistol',
+    weaponRuntimeId: 'ui_pistol_trade_1',
+    additionalWeapons: [{
+      baseId: 'pistol',
+      runtimeId: 'ui_pistol_trade_2',
+      loaded: 5
+    }],
+    ammoType: 'ammo9',
+    loaded: 0,
+    reserveAmmo: 3
   }, usersDb, savesDb);
 
   fs.writeFileSync(savesFile, JSON.stringify(savesDb, null, 2));
@@ -699,6 +715,7 @@ async function bootstrapCharacters(accounts) {
     ['equipmentAp', 'equipment'],
     ['harvest', 'harvest'],
     ['progression', 'progression'],
+    ['trade', 'trade'],
     ['target', 'target']
   ]) {
     accounts[key] = await registerAccount(role, suffix);
@@ -1500,6 +1517,73 @@ async function assertEquipmentActionAuthority(accounts) {
     && Number(account.join.self?.equipmentRevision) === 0,
   'Reconnect charged AP or lost authoritative equipment', account.join.self);
   assertRuntimeWeaponInventory(account.join.self, pistolRuntimeId, 1, 'reconnected carried pistol');
+
+  await delay(700);
+  const reequippedRuntime = await sendEquipmentAction(account, pistolRuntimeId);
+  invariant(reequippedRuntime.ack.ok === true
+    && reequippedRuntime.ack.changed === true
+    && reequippedRuntime.ack.self?.equipmentRuntime?.weapon === pistolRuntimeId
+    && Number(reequippedRuntime.ack.equipmentRevision) === 1,
+  'Runtime weapon could not be equipped before the unequip regression probe', reequippedRuntime.ack);
+
+  await delay(700);
+  const unequippedRuntime = await sendEquipmentAction(account, '');
+  invariant(unequippedRuntime.ack.ok === true
+    && unequippedRuntime.ack.changed === true
+    && unequippedRuntime.ack.self?.equipment?.weapon === 'fists'
+    && unequippedRuntime.ack.self?.equipmentRuntime?.weapon === 'fists'
+    && Number(unequippedRuntime.ack.equipmentRevision) === 2,
+  'Equipped runtime weapon could not be removed to fists', unequippedRuntime.ack);
+  assertRuntimeWeaponInventory(
+    unequippedRuntime.ack.self,
+    pistolRuntimeId,
+    1,
+    'unequipped runtime pistol returned to inventory'
+  );
+  closeSocket(account);
+}
+
+async function assertLoadedWeaponAutoUnloadsOnTrade(accounts) {
+  const account = accounts.trade;
+  const soldRuntimeId = account.weaponRuntimeIds[1];
+  await connectAndJoin(account);
+  invariant(account.join.locationId === 'scrapTown',
+    'Trade fixture joined the wrong location', account.join);
+  assertRuntimeWeaponInventory(account.join.self, soldRuntimeId, 5, 'pre-sale loaded pistol');
+  const ammoBefore = inventoryRowQty(account.join.self?.inventory, 'ammo9');
+  const trader = (Array.isArray(account.join.worldState?.enemies) ? account.join.worldState.enemies : [])
+    .find(enemy => enemy?.hostileToPlayer === false
+      && enemy?.role === 'merchant'
+      && enemy?.traderProfile === 'scrap');
+  invariant(trader?.id, 'Scrap Town trader is missing from authoritative world state', account.join.worldState);
+  invariant(Math.hypot(
+    Number(account.join.x || 0) - Number(trader.x || 0),
+    Number(account.join.z || 0) - Number(trader.z || 0)
+  ) <= 5.2, 'Trade fixture spawned too far from the trader', { player: account.join, trader });
+
+  const sale = await socketAck(account.socket, 'npcTradeExchange', {
+    enemyId: trader.id,
+    buys: [],
+    sells: [{ id: 'pistol', itemRuntimeId: soldRuntimeId, qty: 1 }],
+    skillRanks: {},
+    talentRanks: {}
+  });
+  invariant(sale.ok === true, 'Trader rejected a loaded bag weapon', sale);
+  invariant(Array.isArray(sale.unloadedAmmo)
+    && sale.unloadedAmmo.length === 1
+    && sale.unloadedAmmo[0]?.id === 'ammo9'
+    && Number(sale.unloadedAmmo[0]?.qty) === 5,
+  'Sale did not acknowledge the five automatically unloaded rounds', sale);
+  invariant(inventoryRowQty(sale.self?.inventory, 'ammo9') === ammoBefore + 5,
+    'Automatically unloaded rounds were not returned to player inventory', {
+      before: ammoBefore,
+      after: sale.self?.inventory,
+      unloadedAmmo: sale.unloadedAmmo
+    });
+  invariant(!(sale.self?.weaponInventoryRuntime || []).some(row => row?.id === soldRuntimeId),
+    'Sold runtime weapon remained in player inventory', sale.self?.weaponInventoryRuntime);
+  invariant(sale.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
+    'Selling a bag weapon changed the equipped weapon', sale.self?.equipmentRuntime);
   closeSocket(account);
 }
 
@@ -1588,6 +1672,7 @@ async function main() {
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
     await assertEquipmentActionAuthority(accounts);
+    await assertLoadedWeaponAutoUnloadsOnTrade(accounts);
     await assertProgressionAllocationAuthority(accounts);
     // The shooter fixtures intentionally share one oldDepot room so they can
     // target each other. They must not influence the safe-spawn search for the
@@ -1608,7 +1693,8 @@ async function main() {
       + 'duplicate joins and loaded-runtime drops preserved live combat state, '
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
-      + 'equipment changes were revisioned/idempotent and spent exactly 1 server AP, '
+      + 'loaded bag weapons auto-unloaded into inventory when sold, '
+      + 'equipment changes were revisioned/idempotent, spent exactly 1 server AP, and runtime weapons could be unequipped, '
       + 'progression allocations could not be refunded or reassigned through profile/action/save payloads, '
       + 'and insufficient AP or unavailable runtime ids caused no mutation'
     );

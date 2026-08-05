@@ -29,10 +29,10 @@
 - исходная утверждённая гуманоидная модель v5:
   `npc_humanoid_base_unified_v5.glb`;
 - SHA-256 исходника:
-  `71D52C97C28F4654D4DB91A4D87D7517A5489372BD56561EA715C301F40F4F92`;
+  `EAC5248C381FD457E93A04094DAC51FA22C60EDE138C88E00EEFBB3EB4E6091E`;
 - review GLB: `creature_ghoul_unified_v3.glb`;
 - SHA-256 кандидата:
-  `6203193F87FD8B1FB3D0BDEB9E82F218BC7E1E1103827F3E09CA3D86861EF8D8`;
+  `DCAA6F7E2A2C48D3C89F9089399BE2BC4B12383265C2B16B5C825A2AB105CAF1`;
 - независимая фоновая пересборка Blender дала тот же SHA-256;
 - технические данные находятся в `technical-report.json`, покадровая проверка — в
   `action-review-report.json`, рендеры — в `renders/actions/`;

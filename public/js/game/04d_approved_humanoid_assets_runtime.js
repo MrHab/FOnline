@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v1';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v2';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_BOOT_URLS = Object.freeze({
@@ -228,25 +228,32 @@
     const sampleTime = Math.max(0, Number(clip.duration || 0)) * 0.5;
     const bones = new Map();
     const restBones = new Map();
+    let unsafeTransformTrack = false;
     clip.tracks.forEach(track => {
       const dot = String(track?.name || '').lastIndexOf('.');
       if (dot <= 0) return;
       const boneName = track.name.slice(0, dot);
       const property = track.name.slice(dot + 1);
-      if (!['position', 'quaternion', 'scale'].includes(property)) return;
+      if (property !== 'quaternion') {
+        unsafeTransformTrack = true;
+        return;
+      }
       const value = Array.from(track.createInterpolant().evaluate(sampleTime));
+      const length = Math.hypot(...value);
+      if (value.length !== 4 || value.some(component => !Number.isFinite(component)) || Math.abs(length - 1) > 0.01) {
+        unsafeTransformTrack = true;
+        return;
+      }
       if (!bones.has(boneName)) bones.set(boneName, {});
       bones.get(boneName)[property] = value;
     });
-    if (!bones.has('hand_l') || !bones.has('hand_r') || !bones.has('thumb_01_l')) return null;
+    if (unsafeTransformTrack || !bones.has('hand_l') || !bones.has('hand_r') || !bones.has('thumb_01_l')) return null;
     gltf.scene.updateMatrixWorld(true);
     bones.forEach((_transform, boneName) => {
       const bone = gltf.scene.getObjectByName?.(boneName);
       if (!bone) return;
       restBones.set(boneName, {
-        position: bone.position.clone(),
-        quaternion: bone.quaternion.clone(),
-        scale: bone.scale.clone()
+        quaternion: bone.quaternion.clone()
       });
     });
     const donorShoulder = gltf.scene.getObjectByName?.('upperarm_r');
@@ -289,23 +296,10 @@
     const targetRest = runtime?.approvedAssaultRifleRestPose?.bones?.get?.(boneName);
     if (!donorRest || !targetRest) return transform;
     const result = {};
-    if (transform.position?.length === 3) {
-      result.position = targetRest.position.clone().add(
-        new THREE.Vector3().fromArray(transform.position).sub(donorRest.position)
-      );
-    }
     if (transform.quaternion?.length === 4) {
       const poseQuaternion = new THREE.Quaternion().fromArray(transform.quaternion).normalize();
       const delta = donorRest.quaternion.clone().invert().multiply(poseQuaternion);
       result.quaternion = targetRest.quaternion.clone().multiply(delta).normalize();
-    }
-    if (transform.scale?.length === 3) {
-      const poseScale = new THREE.Vector3().fromArray(transform.scale);
-      result.scale = targetRest.scale.clone().multiply(new THREE.Vector3(
-        donorRest.scale.x ? poseScale.x / donorRest.scale.x : 1,
-        donorRest.scale.y ? poseScale.y / donorRest.scale.y : 1,
-        donorRest.scale.z ? poseScale.z / donorRest.scale.z : 1
-      ));
     }
     return result;
   }
@@ -332,6 +326,9 @@
     approvedAssaultGripState.promise = new Promise(resolve => {
       loader.load(approvedAssetUrl(APPROVED_ASSAULT_RIFLE_GRIP_URL), gltf => {
         const pose = compileApprovedGripPose(gltf);
+        if (gltf?.scene && typeof disposeCharacterGlbObject === 'function') {
+          disposeCharacterGlbObject(gltf.scene);
+        }
         if (!pose) {
           approvedAssaultGripState.failed = true;
           console.warn('Утверждённая поза хвата автомата повреждена.');
@@ -425,12 +422,8 @@
         boneName,
         transform
       );
-      if (target.position) bone.position.copy(target.position);
-      else if (transform.position?.length === 3) bone.position.fromArray(transform.position);
       if (target.quaternion) bone.quaternion.copy(target.quaternion);
       else if (transform.quaternion?.length === 4) bone.quaternion.fromArray(transform.quaternion).normalize();
-      if (target.scale) bone.scale.copy(target.scale);
-      else if (transform.scale?.length === 3) bone.scale.fromArray(transform.scale);
     });
     return true;
   }

@@ -1373,21 +1373,23 @@
     enemy.mesh.userData.enemyFlashApplied = stillActive;
   }
 
-  function rotateEnemyMeshTowards(enemy, x, z, originX, originZ, dt, rate = 12) {
+  function rotateEnemyMeshByVector(enemy, dx, dz, dt, rate = 12) {
     if (!enemy?.mesh) return false;
-    const tx = Number(x);
-    const tz = Number(z);
-    const ox = Number(originX);
-    const oz = Number(originZ);
-    if (!Number.isFinite(tx) || !Number.isFinite(tz) || !Number.isFinite(ox) || !Number.isFinite(oz)) return false;
-    const dx = tx - ox;
-    const dz = tz - oz;
-    if (Math.hypot(dx, dz) <= 0.05) return false;
-    const targetRot = Math.atan2(dx, dz) + Math.PI;
+    const targetRot = RealmActorFacing.actorFacingYaw(enemy, dx, dz);
+    if (!Number.isFinite(targetRot)) return false;
     const currentRot = Number(enemy.mesh.rotation.y || 0);
     const diff = Math.atan2(Math.sin(targetRot - currentRot), Math.cos(targetRot - currentRot));
     enemy.mesh.rotation.y = currentRot + diff * Math.min(1, Math.max(0.001, Number(dt || 0.016)) * rate);
     return true;
+  }
+
+  function rotateEnemyMeshForState(enemy, movementDx, movementDz, dt, rate = 12, fallbackTarget = null) {
+    const intent = RealmActorFacing.actorFacingIntent(enemy, movementDx, movementDz, {
+      epsilon: 0.006,
+      fallbackX: fallbackTarget?.x,
+      fallbackZ: fallbackTarget?.z
+    });
+    return intent ? rotateEnemyMeshByVector(enemy, intent.dx, intent.dz, dt, rate) : false;
   }
 
   function updateEnemies(dt) {
@@ -1447,16 +1449,13 @@
           e.z = nz;
           e.mesh.position.set(nx, 0, nz);
 
-          const serverLookApplied = rotateEnemyMeshTowards(e, e.lookX, e.lookZ, nx, nz, stepDt, 12);
-          if (!serverLookApplied) {
-            const mdx = nx - Number(e.prevVisualX ?? nx);
-            const mdz = nz - Number(e.prevVisualZ ?? nz);
-            if (Math.hypot(mdx, mdz) > 0.006) {
-              rotateEnemyMeshTowards(e, nx + mdx, nz + mdz, nx, nz, stepDt, 12);
-            } else if ((e.aiState === 'chase' || e.aiState === 'attack') && player) {
-              rotateEnemyMeshTowards(e, player.x, player.z, nx, nz, stepDt, 10);
-            }
-          }
+          const actualDx = nx - Number(e.prevVisualX ?? nx);
+          const actualDz = nz - Number(e.prevVisualZ ?? nz);
+          const hasActualMovement = Math.hypot(actualDx, actualDz) > 0.006;
+          const movementDx = hasActualMovement ? actualDx : Number(e.netVx || 0);
+          const movementDz = hasActualMovement ? actualDz : Number(e.netVz || 0);
+          const fallbackTarget = (e.aiState === 'chase' || e.aiState === 'attack') ? player : null;
+          rotateEnemyMeshForState(e, movementDx, movementDz, stepDt, 12, fallbackTarget);
           e.prevVisualX = nx;
           e.prevVisualZ = nz;
           if (typeof animateEnemyVisual === 'function') animateEnemyVisual(e, dt);
@@ -1468,6 +1467,8 @@
     if (typeof clientEnemyStateMayUseLocalFallback === 'function' && !clientEnemyStateMayUseLocalFallback()) return;
     enemies.forEach(e => {
       if (e.dead || (e.mesh && e.mesh.visible === false)) return;
+      const previousX = Number(e.x || 0);
+      const previousZ = Number(e.z || 0);
       const dist = Math.hypot(player.x - e.x, player.z - e.z);
       let detectRange = 15;
       if (player.crouching) {
@@ -1522,9 +1523,8 @@
       }
 
       e.mesh.position.set(e.x, 0, e.z);
-      if (!rotateEnemyMeshTowards(e, e.lookX, e.lookZ, e.x, e.z, dt, 14)) {
-        rotateEnemyMeshTowards(e, player.x, player.z, e.x, e.z, dt, 14);
-      }
+      const fallbackTarget = (e.aiState === 'chase' || e.aiState === 'attack') ? player : null;
+      rotateEnemyMeshForState(e, Number(e.x || 0) - previousX, Number(e.z || 0) - previousZ, dt, 14, fallbackTarget);
       if (typeof animateEnemyVisual === 'function') animateEnemyVisual(e, dt);
       applyEnemyFlashVisual(e, dt);
     });

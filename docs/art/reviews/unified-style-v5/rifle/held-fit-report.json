@@ -1,0 +1,123 @@
+{
+  "buttToShoulderContactDistanceMetres": 0.0,
+  "character": "character_male_medium.glb",
+  "fit": {
+    "l": {
+      "actualElbow": [
+        0.0316,
+        -0.3866,
+        1.3878
+      ],
+      "desiredElbow": [
+        0.0383,
+        -0.3807,
+        1.3785
+      ],
+      "elbowErrorMetres": 0.0129,
+      "hand": "hand_l",
+      "pole": [
+        0.68,
+        -0.18,
+        1.18
+      ],
+      "selectedPoleAngleRadians": 2.1598,
+      "target": [
+        -0.0666,
+        -0.6516,
+        1.4711
+      ]
+    },
+    "r": {
+      "actualElbow": [
+        -0.175,
+        -0.0214,
+        1.2466
+      ],
+      "desiredElbow": [
+        -0.175,
+        -0.0217,
+        1.247
+      ],
+      "elbowErrorMetres": 0.0004,
+      "hand": "hand_r",
+      "pole": [
+        -0.68,
+        -0.18,
+        1.18
+      ],
+      "selectedPoleAngleRadians": 0.0,
+      "target": [
+        -0.1589,
+        -0.3105,
+        1.3355
+      ]
+    }
+  },
+  "handHeadToSocketDistanceMetres": {
+    "l": 0.0599,
+    "r": 0.0599
+  },
+  "palmTailToGripSocketDistanceMetres": {
+    "l": 0.0,
+    "r": 0.0
+  },
+  "reviewPoseMethod": "weapon butt anchored to current right shoulder; right palm uses the pistol-grip socket; left palm uses a validated forward handguard socket",
+  "runtimeAttachmentBone": "hand_r",
+  "supportGripForwardOffsetMetres": 0.355,
+  "supportHandPose": {
+    "fingerCurlRadians": {
+      "index": [
+        -0.68,
+        -1.05,
+        -0.95
+      ],
+      "middle": [
+        -0.76,
+        -1.12,
+        -1.0
+      ],
+      "pinky": [
+        -0.88,
+        -1.2,
+        -1.08
+      ],
+      "ring": [
+        -0.82,
+        -1.16,
+        -1.04
+      ]
+    },
+    "fingerShape": "progressive closed C-grip",
+    "palmRollDegrees": 90,
+    "palmRollDeltaFromPreviousDegrees": 180,
+    "thumbBasisQuaternions": {
+      "thumb_01_l": [
+        0.756239652633667,
+        0.5436831116676331,
+        0.28363457322120667,
+        -0.22817036509513855
+      ],
+      "thumb_02_l": [
+        0.969728946685791,
+        -0.24020721018314362,
+        -0.029435506090521812,
+        -0.03255578503012657
+      ],
+      "thumb_03_l": [
+        0.9673327207565308,
+        -0.040539421141147614,
+        0.10893853008747101,
+        0.22529177367687225
+      ]
+    },
+    "thumbPlacement": "forward on the left wooden face, clear of the lower rail",
+    "thumbRootPoseOffset": [
+      0.017399609088897705,
+      0.003852546215057373,
+      0.006644606590270996
+    ],
+    "wristAlignment": "IK target rotation preserves forearm-to-hand axis"
+  },
+  "triggerFingerPose": "index extended; middle and distal joints partially curled",
+  "weapon": "rifle_unified_v5.glb"
+}

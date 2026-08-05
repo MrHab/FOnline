@@ -539,11 +539,100 @@
     return true;
   }
 
+  function unifiedHumanoidNpcHash(value = '') {
+    let hash = 2166136261;
+    const text = String(value || 'npc');
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function unifiedHumanoidNpcAppearance(type = {}) {
+    if (type.appearance && typeof type.appearance === 'object') {
+      return normalizeCharacterAppearance(type.appearance);
+    }
+    const seed = [
+      type.id,
+      type.name,
+      type.role,
+      type.faction,
+      type.visual,
+      type.modelKey
+    ].map(value => String(value || '')).join('|');
+    const hash = unifiedHumanoidNpcHash(seed);
+    const sex = (hash & 1) === 0 ? 'female' : 'male';
+    const bodyType = CHARACTER_BODY_TYPES[(hash >>> 1) % CHARACTER_BODY_TYPES.length];
+    const faces = CHARACTER_FACE_OPTIONS[sex] || CHARACTER_FACE_OPTIONS.male;
+    return normalizeCharacterAppearance({
+      sex,
+      bodyType,
+      faceId: faces[(hash >>> 4) % faces.length]?.id,
+      hairId: CHARACTER_HAIR_OPTIONS[(hash >>> 7) % CHARACTER_HAIR_OPTIONS.length]?.id,
+      hairColorId: CHARACTER_HAIR_COLOR_OPTIONS[(hash >>> 11) % CHARACTER_HAIR_COLOR_OPTIONS.length]?.id
+    });
+  }
+
+  function isUnifiedHumanoidNpcType(type = {}, visual = '') {
+    if (typeof isNaturalCreatureEnemy === 'function' && isNaturalCreatureEnemy(type)) return false;
+    const compact = [visual, type.visual, type.modelKey, type.species, type.role, type.name]
+      .map(value => String(value || '').toLowerCase())
+      .join('|')
+      .replace(/[^a-z0-9а-яё]+/gi, '');
+    if (
+      compact.includes('ghoul')
+      || compact.includes('гул')
+      || compact.includes('supermutant')
+      || compact.includes('супермутант')
+      || compact.includes('mutantant')
+      || compact.includes('мурав')
+      || compact.includes('gecko')
+      || compact.includes('геккон')
+      || compact.includes('wolf')
+      || compact.includes('волк')
+      || compact.includes('radscorpion')
+      || compact.includes('скорпион')
+      || compact.includes('brahmin')
+      || compact.includes('брамин')
+    ) return false;
+    return visual !== 'mutant' && visual !== 'ghoul';
+  }
+
+  function buildUnifiedHumanoidNpc(group, type = {}, visual = 'raider') {
+    const parts = {};
+    const modelScale = Math.max(0.75, Math.min(1.35, Number(type.scale || 1) || 1));
+    buildModernWastelandHumanoid(group, parts, { castShadow: !IS_MOBILE_DEVICE, isPlayer: false });
+    if (parts.motionRoot) parts.motionRoot.scale.setScalar(modelScale);
+    if (typeof captureCharacterProceduralBaseMeshes === 'function') {
+      captureCharacterProceduralBaseMeshes(group, parts);
+    }
+    buildModernCharacterArmorExtras(group, parts, !IS_MOBILE_DEVICE);
+    parts.kind = 'humanoidNpc';
+    parts.unifiedHumanoidNpc = true;
+    group.userData.parts = parts;
+    group.userData.actorParts = parts;
+    group.userData.characterAppearance = unifiedHumanoidNpcAppearance(type);
+    group.userData.weaponId = equipmentVisualBaseId(type?.equipment?.weapon || type.weapon || 'fists');
+    stabilizeCharacterNoCull(group);
+    if (typeof applyCharacterGlbAppearance === 'function') {
+      void applyCharacterGlbAppearance(group, group.userData.characterAppearance, {
+        castShadow: !IS_MOBILE_DEVICE,
+        equipment: type.equipment || {},
+        modelScale,
+        npcAnimations: true
+      });
+    }
+    return parts;
+  }
+
   function createEnemyModel(type) {
     const group = new THREE.Group();
     const name = String(type.name || '').toLowerCase();
     const visual = type.visual || (name.includes('скорпион') ? 'radscorpion' : name.includes('мурав') ? 'mutantAnt' : name.includes('огненный геккон') ? 'fireGecko' : name.includes('геккон') ? 'gecko' : name.includes('волк') ? 'wolf' : name.includes('супер') ? 'mutant' : name.includes('гул') ? 'ghoul' : 'raider');
-    if (!tryBuildStaticEnemyModel(group, type, visual)) {
+    if (isUnifiedHumanoidNpcType(type, visual)) {
+      buildUnifiedHumanoidNpc(group, type, visual);
+    } else if (!tryBuildStaticEnemyModel(group, type, visual)) {
       if (visual === 'brahmin') buildBrahminEnemy(group, type);
       else if (visual === 'radscorpion') buildRadscorpionEnemy(group, type);
       else if (visual === 'mutantAnt') buildMutantAntEnemy(group, type);
@@ -699,7 +788,11 @@
     const parts = mesh?.userData?.actorParts;
     if (!mesh || !parts) return;
     if (enemy.dead) {
-      updateEnemyStaticGlbAnimation(enemy, dt, { dead: true });
+      if (mesh.userData.characterGlbRuntime) {
+        updateCharacterGlbAnimation(mesh, dt, { dead: true, moving: false });
+      } else {
+        updateEnemyStaticGlbAnimation(enemy, dt, { dead: true });
+      }
       return;
     }
     const restoreK = Math.min(1, Math.max(0, Number(dt || 0.016)) * 10);
@@ -733,6 +826,31 @@
       Number(enemy.enemyVisualSpeed || 0),
       moved / Math.max(0.001, Number(dt || 0.016))
     );
+    if (parts.unifiedHumanoidNpc) {
+      const facingAngle = Number.isFinite(Number(enemy.angle))
+        ? Number(enemy.angle)
+        : Number(mesh.rotation.y || 0) - Math.PI;
+      updateCharacterLocomotionAnimation(mesh, dt, {
+        moving,
+        speed: visualSpeed,
+        moveX: visualX - Number(enemy.prevUnifiedAnimX ?? visualX),
+        moveZ: visualZ - Number(enemy.prevUnifiedAnimZ ?? visualZ),
+        facingAngle,
+        attacking: String(enemy.aiState || '').toLowerCase() === 'attack',
+        hurt: Number(enemy.flash || 0) > 0.02
+      });
+      enemy.prevUnifiedAnimX = visualX;
+      enemy.prevUnifiedAnimZ = visualZ;
+      if (mesh.userData.enemyWeaponGroup) {
+        updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, dt, enemy);
+      }
+      const accent = mesh.userData.variantAccent;
+      if (accent?.material) {
+        const baseOpacity = Number(accent.userData.baseOpacity || 0.4);
+        accent.material.opacity = baseOpacity + Math.sin(performance.now() * 0.0042) * 0.045;
+      }
+      return;
+    }
     updateEnemyStaticGlbAnimation(enemy, dt, { moving, visualSpeed, sleeping, inDialogue });
     if (!important) {
       enemy.idleVisualAnimTimer = Math.max(0, Number(enemy.idleVisualAnimTimer || 0) - Math.max(0, Number(dt || 0.016)));

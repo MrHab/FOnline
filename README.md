@@ -1,6 +1,6 @@
 # Realm of Ashes
 
-Текущая версия проекта: **7.76.6-global-map-motion-integrity**.
+Текущая версия проекта: **7.76.6-approved-humanoid-assets**.
 
 Публичная версия: [rangir.ru](https://rangir.ru).
 

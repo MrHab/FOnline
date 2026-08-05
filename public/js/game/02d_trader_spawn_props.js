@@ -1,12 +1,32 @@
   function createTraderNpc(tx, tz) {
     const traderProfile = currentLocation.trader || {};
+    const traderId = String(traderProfile.id || traderProfile.traderId || `${currentLocation.id || 'location'}_trader`)
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 64) || 'location_trader';
+    const traderEquipment = {
+      weapon: String(traderProfile.equipment?.weapon || 'pistol'),
+      armor: String(traderProfile.equipment?.armor || 'leather'),
+      helmet: String(traderProfile.equipment?.helmet || ''),
+      boots: String(traderProfile.equipment?.boots || 'boots'),
+      backpack: String(traderProfile.equipment?.backpack || 'backpack')
+    };
     const authoredPos = traderProfile.position && typeof traderProfile.position === 'object' ? traderProfile.position : traderProfile;
     const fallbackPos = tileToWorld(tx, tz);
     const pos = Number.isFinite(Number(authoredPos.x)) && Number.isFinite(Number(authoredPos.z))
       ? { x: Number(authoredPos.x), z: Number(authoredPos.z) }
       : fallbackPos;
     const angle = Number(traderProfile.rotation?.y ?? traderProfile.rotationY ?? 0);
-    const group = makeStaticModelGroup('traderNpc', pos.x, pos.z, angle, 'trader-npc');
+    const group = createEnemyModel({
+      id: traderId,
+      name: traderProfile.name || '\u0422\u043e\u0440\u0433\u043e\u0432\u0435\u0446',
+      role: 'trader',
+      visual: 'trader',
+      modelKey: 'traderNpc',
+      equipment: traderEquipment,
+      scale: 1
+    });
+    group.position.set(pos.x, 0, pos.z);
+    group.rotation.y = angle;
     const sign = makeLabelSprite(traderProfile.name || '\u0422\u043e\u0440\u0433\u043e\u0432\u0435\u0446', '#e6c979');
     sign.position.set(0, 2.35, 0);
     group.add(sign);
@@ -22,9 +42,6 @@
     registerTraderInteriorObject(crateA);
     registerTraderInteriorObject(crateB);
     const profiledStock = null;
-    const traderId = String(traderProfile.id || traderProfile.traderId || `${currentLocation.id || 'location'}_trader`)
-      .replace(/[^a-zA-Z0-9_-]/g, '')
-      .slice(0, 64) || 'location_trader';
     const dialogueProfile = String(traderProfile.dialogueProfile || traderProfile.profile || currentLocation.id || 'klim')
       .replace(/[^a-zA-Z0-9_-]/g, '')
       .slice(0, 64) || 'klim';
@@ -44,8 +61,11 @@
       traderId,
       dialogueProfile,
       traderQuests,
+      equipment: traderEquipment,
+      weapon: traderEquipment.weapon,
       inventory: caps > 0 ? [{ id: 'silver', qty: caps }] : []
     };
+    updateEnemyEquipmentVisuals(traderNpc);
     if (profiledStock) traderNpc.traderStock = profiledStock;
     if (Array.isArray(traderProfile.buyInterests)) {
       traderNpc.traderBuyInterests = traderProfile.buyInterests.map(x => String(x || '')).filter(Boolean);
@@ -395,4 +415,3 @@
     [12, 18, 24, 29].forEach(tz => place(5, tz, Math.PI / 2, tz === 18 ? 7.6 : 6.8));
     [12, 18, 24, 29].forEach(tz => place(33, tz, Math.PI / 2, tz === 18 ? 7.6 : 6.8));
   }
-

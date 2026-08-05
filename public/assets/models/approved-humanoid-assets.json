@@ -1,0 +1,81 @@
+{
+  "schema": "realm.approved-humanoid-assets.v1",
+  "artDirection": "geometry_b_materials_c",
+  "approval": {
+    "humanoidNpc": "71D52C97C28F4654D4DB91A4D87D7517A5489372BD56561EA715C301F40F4F92",
+    "bootsFitReport": "D02C6E45C7D88BAE2D02056E770D6DE611351EED01452D6D2B0E3D5D594F2CA1",
+    "assaultRifle": "81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28",
+    "assaultRifleGrip": "2DE6A6F02AE2BA2FD480B97EB12A5ED98D1328DF820ABF3E5546B78B414F37DE"
+  },
+  "files": [
+    {
+      "id": "npc_humanoid_animations",
+      "file": "/assets/models/characters/npc/npc_humanoid_animations.glb",
+      "sourceSha256": "71D52C97C28F4654D4DB91A4D87D7517A5489372BD56561EA715C301F40F4F92",
+      "runtimeSha256": "7A550742A40E922193FD8F5B3A8F90967AA7B8136DB6F38F7AB15BA152959B5B",
+      "bytes": 4137104
+    },
+    {
+      "id": "boots_female_slim",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/boots/equipment_boots_female_slim.glb",
+      "sourceSha256": "55D2B0F7841069E8FF7055EE4DD4519B82F518760B8412DC2E540D05E98D1C27",
+      "runtimeSha256": "E797CB88668E4154EBFA2CB96FF052523E9B64A90491D81E7EB5079DA703500F",
+      "bytes": 574400
+    },
+    {
+      "id": "boots_female_medium",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/boots/equipment_boots_female_medium.glb",
+      "sourceSha256": "DA09C652B465CBF645F3654EFA559328D34B040CA8C6B66641E80224B0F514A0",
+      "runtimeSha256": "0D084751BE33C19B1D99BBD12BAAB47D0FC97A1A0FEC73D2DFBA5225FC670602",
+      "bytes": 574420
+    },
+    {
+      "id": "boots_female_large",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/boots/equipment_boots_female_large.glb",
+      "sourceSha256": "F4639A7612ED9A6D2E133D2892FF75D76CFD6952D96A11CD652BD24D38902286",
+      "runtimeSha256": "090C2E2A595BC372A129341DCFD54106EDCD39175383DB9054E54B157BBEC276",
+      "bytes": 574416
+    },
+    {
+      "id": "boots_male_slim",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/boots/equipment_boots_male_slim.glb",
+      "sourceSha256": "1FA61F935D75E55B8AAAFCA1B396F597F9C606C4A296AE06F72CEB499B47E23F",
+      "runtimeSha256": "E62F495C4B744B624FA5D9480D33398E12E130C285D90990C9081F78DC83ACBE",
+      "bytes": 574360
+    },
+    {
+      "id": "boots_male_medium",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/boots/equipment_boots_male_medium.glb",
+      "sourceSha256": "D9BCEBB111601D24FB57FD8E0B7AE5BF402980076195705370D700A0556287EC",
+      "runtimeSha256": "3E665E7DD74A5EE53EC5D24D6A825B1E8A010A8C3B4B27972BEE19F97EBAB6BB",
+      "bytes": 574372
+    },
+    {
+      "id": "boots_male_large",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/boots/equipment_boots_male_large.glb",
+      "sourceSha256": "3406369D1704234329529906F2357202BB550C6B4F645C2880E116F94B5547D8",
+      "runtimeSha256": "F42CCABB409B5BB568457CE69C01AC9C350DBCBF5497DCBDE1E675620A9E9D11",
+      "bytes": 574364
+    },
+    {
+      "id": "assaultRifle",
+      "file": "/assets/models/weapons/weapon_assaultRifle.glb",
+      "sourceSha256": "81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28",
+      "runtimeSha256": "AF6C2A26E7DC05307322216FFCF31BB5CF9E3BC9D567EFFCD18E7D8F98204322",
+      "bytes": 525612
+    },
+    {
+      "id": "assaultRifleGrip",
+      "file": "/assets/models/weapons/approved_assault_rifle_grip.glb",
+      "sourceSha256": "2DE6A6F02AE2BA2FD480B97EB12A5ED98D1328DF820ABF3E5546B78B414F37DE",
+      "runtimeSha256": "2DE6A6F02AE2BA2FD480B97EB12A5ED98D1328DF820ABF3E5546B78B414F37DE",
+      "bytes": 54864
+    }
+  ]
+}

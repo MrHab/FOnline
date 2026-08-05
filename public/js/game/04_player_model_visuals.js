@@ -1484,6 +1484,7 @@
     const w = currentWeapon();
     const weaponId = equipmentVisualBaseId(w?.id || equipment.weapon || 'fists');
     playerGroup.userData.weaponId = weaponId;
+    playerGroup.userData.equipment = equipment;
     playerParts.weaponGroup.userData.weaponId = weaponId;
     let mesh = typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(weaponId) : null;
     if (!mesh && weaponId === 'pistol') mesh = makePistolMesh();

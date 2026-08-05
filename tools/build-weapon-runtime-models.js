@@ -140,6 +140,10 @@ function main() {
   if (!line) throw new Error('Blender did not report weapon build metadata');
   const report = JSON.parse(line.slice('REALM_WEAPON_BUILD='.length));
   const manifest = writeManifest(options.output, report);
+  // The generic builder deliberately regenerates its procedural fallback.
+  // Restore the separately reviewed assault rifle and grip as the final,
+  // approval-gated runtime assets.
+  require('./build-approved-humanoid-assets').main();
   console.log(
     `Weapon runtime models built: ${manifest.files.length} GLB, `
     + `${manifest.files.reduce((sum, row) => sum + row.bytes, 0)} bytes`

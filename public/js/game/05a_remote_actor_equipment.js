@@ -189,6 +189,10 @@
     if (!group) return null;
     if (group.userData.enemyWeaponGroup) return group.userData.enemyWeaponGroup;
     const parts = group.userData.actorParts || {};
+    if (parts.weaponGroup) {
+      group.userData.enemyWeaponGroup = parts.weaponGroup;
+      return parts.weaponGroup;
+    }
     const s = Number(enemy.scale || 1);
     const kind = parts.kind || group.userData.enemyVisual || 'raider';
     const weaponGroup = new THREE.Group();

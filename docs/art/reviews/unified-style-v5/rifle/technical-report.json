@@ -1,0 +1,60 @@
+{
+  "actualGlb": {
+    "animations": [
+      "idle",
+      "attack",
+      "reload"
+    ],
+    "images": 12,
+    "materials": 4,
+    "meshDefinitions": 3,
+    "nodes": [
+      "rifle_rebuilt_body",
+      "socket_butt",
+      "socket_grip_l",
+      "socket_grip_r",
+      "socket_muzzle",
+      "stock_repair_plate_l",
+      "stock_repair_plate_r",
+      "weapon_rifle_unified_v5"
+    ],
+    "positionVertices": 1893,
+    "textures": 12,
+    "triangles": 1116
+  },
+  "assetId": "rifle_unified_v5",
+  "dimensionsMetres": {
+    "height": 0.32,
+    "length": 1.05,
+    "width": 0.074
+  },
+  "file": "rifle_unified_v5.glb",
+  "gripRevision": {
+    "primaryGripXMetres": 0.03,
+    "primaryGripYMetres": -0.025,
+    "primaryGripZMetres": -0.02,
+    "purpose": "right palm wraps the pistol grip; left palm contacts the handguard ahead of the magazine",
+    "sourceAsset": "rifle_unified_v4",
+    "supportGripForwardOffsetMetres": 0.355,
+    "supportGripXMetres": -0.01,
+    "supportGripYMetres": 0.33,
+    "supportGripZMetres": 0.105
+  },
+  "materials": 4,
+  "packedTextures": 12,
+  "provenance": {
+    "directRuntimeUse": false,
+    "donor": "Quaternius Zombie Apocalypse Kit / Rifle.gltf",
+    "license": "CC0",
+    "rebuild": "detached spikes removed; target scale baked; stock reshaped; topology retriangulated and dissolved; original PBR materials and authored repair details"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28",
+  "sockets": [
+    "socket_butt",
+    "socket_grip_l",
+    "socket_grip_r",
+    "socket_muzzle"
+  ]
+}

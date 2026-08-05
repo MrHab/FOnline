@@ -777,4 +777,7 @@
         rz: aimBlend * -0.035 + reloadLift * 0.28
       };
     }
+    if (typeof applyApprovedAssaultRifleGrip === 'function') {
+      applyApprovedAssaultRifleGrip(actor, weaponId);
+    }
   }

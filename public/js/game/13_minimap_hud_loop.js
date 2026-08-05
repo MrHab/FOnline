@@ -393,6 +393,7 @@
           await preloadStaticWorldModels();
           await preloadServiceScoutBootModel();
           await preloadWeaponModelLibrary();
+          await preloadApprovedHumanoidAssets();
           document.body.dataset.worldRuntime = 'ready';
           return true;
         })

@@ -76,27 +76,29 @@
       "id": "assaultRifle",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_assaultRifle.glb",
-      "bytes": 146584,
-      "sha256": "5073493984e395c3af4630652d4040887784767d968e840e53eb55c48d9b4e2e",
-      "meshes": 12,
-      "runtimeScale": 0.52,
+      "bytes": 525612,
+      "sha256": "af6c2a26e7dc05307322216ffcf31bb5cf9e3bc9d567effcd18e7d8f98204322",
+      "meshes": 3,
+      "runtimeScale": 1,
       "boundsMeters": {
         "min": [
-          -0.0884,
-          -0.2496,
-          -0.181343
+          -0.037,
+          -0.395,
+          -0.1
         ],
         "max": [
-          0.07436,
-          0.6994,
-          0.1716
+          0.037,
+          0.655,
+          0.22
         ]
       },
       "animations": [
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "approvedReviewSha256": "81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28",
+      "source": "Quaternius Zombie Apocalypse Kit / Rifle.gltf (CC0), rebuilt and critic-approved"
     },
     {
       "id": "machineGun",

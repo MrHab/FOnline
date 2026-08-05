@@ -171,9 +171,11 @@
     const disposedTextures = new Set();
     root.traverse(obj => {
       if (!obj?.isMesh) return;
-      obj.geometry?.dispose?.();
+      const sharedApprovedAsset = !!obj.userData?.approvedEquipmentSharedAsset;
+      if (!sharedApprovedAsset) obj.geometry?.dispose?.();
       const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
       materials.filter(Boolean).forEach(material => {
+        if (sharedApprovedAsset) return;
         Object.values(material).forEach(value => {
           if (value?.isTexture && !disposedTextures.has(value)) {
             disposedTextures.add(value);
@@ -539,7 +541,12 @@
       if (!key || actions[key]) return;
       const action = mixer.clipAction(clip);
       action.enabled = true;
-      action.setLoop(THREE.LoopRepeat, Infinity);
+      if (['attack', 'hurt', 'death'].includes(key)) {
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+      } else {
+        action.setLoop(THREE.LoopRepeat, Infinity);
+      }
       actions[key] = action;
     });
     return actions;
@@ -717,11 +724,14 @@
     setCharacterProceduralBaseVisible(actor, false);
     const helmetOn = !!eq?.helmet;
     applyCharacterGlbVisualVariants(runtime.root, runtime.appearance, { helmetOn });
+    if (typeof applyApprovedBootsVisual === 'function') applyApprovedBootsVisual(actor, eq);
   }
 
   function removeCharacterGlbRuntime(actor) {
     const runtime = actor?.userData?.characterGlbRuntime;
     if (!runtime) return;
+    if (typeof restoreApprovedAssaultRifleGrip === 'function') restoreApprovedAssaultRifleGrip(actor);
+    if (typeof removeApprovedBootRuntime === 'function') removeApprovedBootRuntime(actor);
     runtime.mixer?.stopAllAction?.();
     if (runtime.root?.parent) runtime.root.parent.remove(runtime.root);
     disposeCharacterGlbObject(runtime.root);
@@ -738,6 +748,9 @@
       current.appearance = appearance;
       actor.userData.characterAppearance = appearance;
       refreshCharacterGlbEquipmentLayers(actor, options.equipment || {});
+      if (options.npcAnimations && typeof attachApprovedNpcAnimations === 'function') {
+        void attachApprovedNpcAnimations(current);
+      }
       return Promise.resolve(true);
     }
     const loader = characterGlbLoader();
@@ -761,7 +774,13 @@
         // Исходная GLB смотрит вдоль +Z, а actor-контейнер исторически ориентирован вдоль -Z.
         // Разворачиваем только базовую GLB, чтобы лицо, оружие и курсор совпадали по направлению.
         root.rotation.y = Math.PI;
+        root.scale.setScalar(Math.max(0.1, Number(options.modelScale || 1) || 1));
         root.name = `character_glb_${key}`;
+        root.traverse(node => {
+          if (actor.userData.enemy) node.userData.enemy = actor.userData.enemy;
+          if (actor.userData.traderNpc) node.userData.traderNpc = actor.userData.traderNpc;
+          if (actor.userData.remotePlayerRow) node.userData.remotePlayerRow = actor.userData.remotePlayerRow;
+        });
         const mixer = new THREE.AnimationMixer(root);
         const runtime = {
           key,
@@ -769,8 +788,12 @@
           root,
           mixer,
           actions: characterGlbActions(mixer, gltf.animations || []),
+          approvedAssaultRifleRestPose: typeof captureApprovedAssaultRifleRestPose === 'function'
+            ? captureApprovedAssaultRifleRestPose(root)
+            : null,
           currentAction: '',
           baseRotationY: Math.PI,
+          modelScale: Math.max(0.1, Number(options.modelScale || 1) || 1),
           directionalMoveBlend: 0,
           directionalLowerBodyYaw: 0,
           directionalSideAmount: 0,
@@ -792,6 +815,9 @@
         actor.userData.characterGlbRuntime = runtime;
         setCharacterGlbAction(runtime, 'idle', 0);
         refreshCharacterGlbEquipmentLayers(actor, options.equipment || {});
+        if (options.npcAnimations && typeof attachApprovedNpcAnimations === 'function') {
+          void attachApprovedNpcAnimations(runtime);
+        }
         if (previous?.root && previous.root !== root) {
           previous.mixer?.stopAllAction?.();
           previous.root.parent?.remove(previous.root);
@@ -813,7 +839,12 @@
     if (!runtime?.mixer) return false;
     const frameDt = Math.max(0, Math.min(0.08, Number(dt || 0.016)));
     const locomotion = characterDirectionalLocomotionState(state);
-    setCharacterGlbAction(runtime, locomotion.action);
+    const requestedAction = state.dead && runtime.actions?.death
+      ? 'death'
+      : (state.hurt && runtime.actions?.hurt
+        ? 'hurt'
+        : (state.attacking && runtime.actions?.attack ? 'attack' : locomotion.action));
+    setCharacterGlbAction(runtime, requestedAction, requestedAction === locomotion.action ? 0.16 : 0.08);
     if (locomotion.moving && !runtime.directionalWasMoving) {
       runtime.directionalPlaybackRate = locomotion.playbackRate;
     }

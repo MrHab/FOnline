@@ -134,7 +134,11 @@ function collectManifestRefs(node, key = '') {
 
 function manifestFiles() {
   return walkFiles(path.join(publicDir, 'assets'), [], new Set(['.json']))
-    .filter(file => path.basename(file).toLowerCase().includes('manifest') && path.extname(file) === '.json');
+    .filter(file => {
+      const basename = path.basename(file).toLowerCase();
+      return path.extname(file) === '.json'
+        && (basename.includes('manifest') || basename === 'approved-humanoid-assets.json');
+    });
 }
 
 const missing = [];

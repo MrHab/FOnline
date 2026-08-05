@@ -18,6 +18,71 @@ const BODY_IDS = Object.freeze([
   'male_medium',
   'male_large'
 ]);
+const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
+  {
+    itemId: 'leather',
+    slot: 'armor',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-leather-jacket-v1', 'jacket'],
+    sourcePrefix: 'equipment_leather_jacket_unified_v1',
+    runtimePrefix: 'equipment_leather_jacket',
+    meshCount: 2,
+    fitReportSha256: 'A5D518224794202F4EF4656B038BD24C28E76E621FC9FD36D1CD3238C1BBFF2C'
+  },
+  {
+    itemId: 'reinforcedBoots',
+    slot: 'boots',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-reinforced-boots-v1', 'boots'],
+    sourcePrefix: 'equipment_reinforced_boots_unified_v1',
+    runtimePrefix: 'equipment_reinforced_boots',
+    meshCount: 1,
+    fitReportSha256: 'C5389AB78639F29DC60C083244221F441CF108CD4AF73642A19B3533B35D6BA7'
+  },
+  {
+    itemId: 'helmet',
+    slot: 'helmet',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-steel-helmet-v1', 'helmet'],
+    sourcePrefix: 'equipment_steel_helmet_unified_v1',
+    runtimePrefix: 'equipment_steel_helmet',
+    meshCount: 1,
+    fitReportSha256: '4B77FD82FA6D19C0D29F8D612AF156F5E612688F96677F79E73D2C7680BB447E'
+  },
+  {
+    itemId: 'tacticalHelmet',
+    slot: 'helmet',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-tactical-helmet-v1', 'helmet'],
+    sourcePrefix: 'equipment_tactical_helmet_unified_v1',
+    runtimePrefix: 'equipment_tactical_helmet',
+    meshCount: 1,
+    fitReportSha256: '2C8548BC1E8222528070B14C0D96585264ED36E5C509645084AD6253ABD59895'
+  },
+  {
+    itemId: 'assaultHelmet',
+    slot: 'helmet',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-assault-helmet-v1', 'helmet'],
+    sourcePrefix: 'equipment_assault_helmet_unified_v1',
+    runtimePrefix: 'equipment_assault_helmet',
+    meshCount: 2,
+    fitReportSha256: '0C07FFDDA768B952B9D844D2561F0BA8A96D7860C20834BB083F44C0B4E895A5'
+  },
+  {
+    itemId: 'hazmatSuit',
+    slot: 'armor',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-hazmat-suit-v1', 'suit'],
+    sourcePrefix: 'equipment_hazmat_suit_unified_v1',
+    runtimePrefix: 'equipment_hazmat_suit',
+    meshCount: 3,
+    fitReportSha256: '4634A2060001669056D50A084A4FC564158788D95BC679C9CF86A018270BCECC'
+  },
+  {
+    itemId: 'energySuit',
+    slot: 'armor',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-energy-suit-v1', 'suit'],
+    sourcePrefix: 'equipment_energy_suit_unified_v1',
+    runtimePrefix: 'equipment_energy_suit',
+    meshCount: 3,
+    fitReportSha256: '0334FB653658D0C40B6BE649BEB9EAC4AACEBE889AF1CF214F1134DB74AA2781'
+  }
+]);
 
 function fromRoot(...segments) {
   return path.join(ROOT, ...segments);
@@ -98,6 +163,33 @@ function makeRuntimeGlb(source, destination, metadata = {}) {
     realm_approved_review_sha256: metadata.approvedReviewSha256,
     realm_runtime_asset_id: metadata.runtimeAssetId
   };
+  if (metadata.equipmentItemId) {
+    const sceneRootIndex = json.scenes?.[json.scene || 0]?.nodes?.[0];
+    const sceneRoot = Number.isInteger(sceneRootIndex) ? nodes[sceneRootIndex] : null;
+    const runtimeNodes = new Set([
+      root,
+      sceneRoot,
+      ...nodes.filter(node => Number.isInteger(node?.mesh))
+    ].filter(Boolean));
+    json.asset.extras.realm_schema = 'realm.equipment-runtime.approved.v1';
+    json.asset.extras.realm_item_id = metadata.equipmentItemId;
+    json.asset.extras.realm_equipment_slot = metadata.equipmentSlot;
+    json.asset.extras.realm_body_id = metadata.bodyId;
+    for (const node of runtimeNodes) {
+      node.extras = {
+        ...(node.extras || {}),
+        realm_preview_only: false,
+        realm_review_only: false,
+        realm_runtime_integration_allowed: true,
+        realm_approval_status: 'approved',
+        realm_approved_review_sha256: metadata.approvedReviewSha256,
+        realm_runtime_asset_id: metadata.runtimeAssetId,
+        realm_item_id: metadata.equipmentItemId,
+        realm_equipment_slot: metadata.equipmentSlot,
+        realm_body_id: metadata.bodyId
+      };
+    }
+  }
   if (metadata.weaponId) {
     root.extras.realm_schema = 'realm.weapon-runtime.approved.v1';
     root.extras.realm_weapon_id = metadata.weaponId;
@@ -109,6 +201,56 @@ function makeRuntimeGlb(source, destination, metadata = {}) {
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   fs.writeFileSync(destination, encodeGlb(json, chunks));
   return { sourceSha256: sha256(source), runtimeSha256: sha256(destination) };
+}
+
+function verifyEquipmentReviews() {
+  const variants = [];
+  for (const definition of APPROVED_EQUIPMENT_REVIEWS) {
+    const directory = fromRoot(...definition.reviewDirectory);
+    const fitReportFile = path.join(directory, 'fit-report-all.json');
+    assertFile(`${definition.itemId} fit report`, fitReportFile);
+    if (sha256(fitReportFile) !== definition.fitReportSha256) {
+      throw new Error(`${definition.itemId} fit report differs from the integration-approved bytes`);
+    }
+    const fitReport = JSON.parse(fs.readFileSync(fitReportFile, 'utf8'));
+    const reportedBodyIds = Array.isArray(fitReport.bodyIds)
+      ? fitReport.bodyIds
+      : (Array.isArray(fitReport.variants) ? fitReport.variants.map(row => row?.bodyId) : []);
+    if (reportedBodyIds.length !== BODY_IDS.length || BODY_IDS.some(bodyId => !reportedBodyIds.includes(bodyId))) {
+      throw new Error(`${definition.itemId} fit report does not cover all six body variants`);
+    }
+    for (const bodyId of BODY_IDS) {
+      const filename = `${definition.sourcePrefix}_${bodyId}`;
+      const glb = path.join(directory, `${filename}.glb`);
+      const reportFile = path.join(directory, `${filename}.report.json`);
+      assertFile(`${definition.itemId} ${bodyId} GLB`, glb);
+      assertFile(`${definition.itemId} ${bodyId} report`, reportFile);
+      const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+      if (String(report.bodyId || '') !== bodyId || String(report.sha256 || '') !== sha256(glb)) {
+        throw new Error(`${definition.itemId} ${bodyId} report does not describe its GLB`);
+      }
+      if (report.itemId && String(report.itemId) !== definition.itemId) {
+        throw new Error(`${definition.itemId} ${bodyId} report names another game item`);
+      }
+      if (report.reviewOnly !== true || report.runtimeIntegrationAllowed !== false) {
+        throw new Error(`${definition.itemId} ${bodyId} source must remain an immutable review asset`);
+      }
+      const parsed = parseGlb(glb);
+      if (parsed.json.skins?.length !== 1 || parsed.json.skins[0].joints?.length !== 65) {
+        throw new Error(`${definition.itemId} ${bodyId} does not use the current 65-bone rig`);
+      }
+      if (parsed.json.meshes?.length !== definition.meshCount) {
+        throw new Error(`${definition.itemId} ${bodyId} mesh count changed`);
+      }
+      variants.push({
+        ...definition,
+        bodyId,
+        glb,
+        approvedReviewSha256: String(report.sha256)
+      });
+    }
+  }
+  return variants;
 }
 
 function verifyNpcReview() {
@@ -190,6 +332,7 @@ function verifyRifleReview() {
 function main() {
   const npcSource = verifyNpcReview();
   const boots = verifyBootReviews();
+  const equipment = verifyEquipmentReviews();
   const rifle = verifyRifleReview();
   const rows = [];
 
@@ -216,6 +359,29 @@ function main() {
         approvedReviewSha256: boot.approvedReviewSha256,
         runtimeAssetId: `boots_${boot.bodyId}`,
         sourceRootName: 'character_root'
+      })
+    });
+  }
+
+  for (const asset of equipment) {
+    const output = fromRoot(
+      'public', 'assets', 'models', 'equipment', asset.slot,
+      `${asset.runtimePrefix}_${asset.bodyId}.glb`
+    );
+    const runtimeAssetId = `${asset.itemId}_${asset.bodyId}`;
+    rows.push({
+      id: runtimeAssetId,
+      itemId: asset.itemId,
+      slot: asset.slot,
+      bodyId: asset.bodyId,
+      file: `/assets/models/equipment/${asset.slot}/${asset.runtimePrefix}_${asset.bodyId}.glb`,
+      ...makeRuntimeGlb(asset.glb, output, {
+        approvedReviewSha256: asset.approvedReviewSha256,
+        runtimeAssetId,
+        sourceRootName: asset.sourcePrefix,
+        equipmentItemId: asset.itemId,
+        equipmentSlot: asset.slot,
+        bodyId: asset.bodyId
       })
     });
   }
@@ -265,11 +431,14 @@ function main() {
   });
 
   const manifest = {
-    schema: 'realm.approved-humanoid-assets.v1',
+    schema: 'realm.approved-humanoid-assets.v2',
     artDirection: 'geometry_b_materials_c',
     approval: {
       humanoidNpc: NPC_REVIEW_SHA256,
       bootsFitReport: BOOTS_FIT_REPORT_SHA256,
+      equipmentFitReports: Object.fromEntries(APPROVED_EQUIPMENT_REVIEWS.map(definition => (
+        [definition.itemId, definition.fitReportSha256]
+      ))),
       assaultRifle: RIFLE_REVIEW_SHA256,
       assaultRifleGrip: GRIP_RUNTIME_SHA256
     },
@@ -295,6 +464,7 @@ if (require.main === module) {
 
 module.exports = {
   BODY_IDS,
+  APPROVED_EQUIPMENT_REVIEWS,
   NPC_REVIEW_SHA256,
   RIFLE_REVIEW_SHA256,
   BOOTS_FIT_REPORT_SHA256,

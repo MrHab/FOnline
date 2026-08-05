@@ -1,9 +1,18 @@
 {
-  "schema": "realm.approved-humanoid-assets.v1",
+  "schema": "realm.approved-humanoid-assets.v2",
   "artDirection": "geometry_b_materials_c",
   "approval": {
     "humanoidNpc": "EAC5248C381FD457E93A04094DAC51FA22C60EDE138C88E00EEFBB3EB4E6091E",
     "bootsFitReport": "D02C6E45C7D88BAE2D02056E770D6DE611351EED01452D6D2B0E3D5D594F2CA1",
+    "equipmentFitReports": {
+      "leather": "A5D518224794202F4EF4656B038BD24C28E76E621FC9FD36D1CD3238C1BBFF2C",
+      "reinforcedBoots": "C5389AB78639F29DC60C083244221F441CF108CD4AF73642A19B3533B35D6BA7",
+      "helmet": "4B77FD82FA6D19C0D29F8D612AF156F5E612688F96677F79E73D2C7680BB447E",
+      "tacticalHelmet": "2C8548BC1E8222528070B14C0D96585264ED36E5C509645084AD6253ABD59895",
+      "assaultHelmet": "0C07FFDDA768B952B9D844D2561F0BA8A96D7860C20834BB083F44C0B4E895A5",
+      "hazmatSuit": "4634A2060001669056D50A084A4FC564158788D95BC679C9CF86A018270BCECC",
+      "energySuit": "0334FB653658D0C40B6BE649BEB9EAC4AACEBE889AF1CF214F1134DB74AA2781"
+    },
     "assaultRifle": "81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28",
     "assaultRifleGrip": "7B96493E5D26DCF12D10B03526036DCD529A74C26FD031BFE8DCBBA986FD4FE8"
   },
@@ -62,6 +71,426 @@
       "sourceSha256": "3406369D1704234329529906F2357202BB550C6B4F645C2880E116F94B5547D8",
       "runtimeSha256": "F42CCABB409B5BB568457CE69C01AC9C350DBCBF5497DCBDE1E675620A9E9D11",
       "bytes": 574364
+    },
+    {
+      "id": "leather_female_slim",
+      "itemId": "leather",
+      "slot": "armor",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/armor/equipment_leather_jacket_female_slim.glb",
+      "sourceSha256": "F0FA3092ED19E03AE380F801444C660A56CABB8D597021B315EB447015179E8A",
+      "runtimeSha256": "EAE20DC41CA428772C8AD77D7C5C47264356B78C84BC9702374C0405C01B379A",
+      "bytes": 631588
+    },
+    {
+      "id": "leather_female_medium",
+      "itemId": "leather",
+      "slot": "armor",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/armor/equipment_leather_jacket_female_medium.glb",
+      "sourceSha256": "8DD5F066F226714A344874B135C71C3FCABB807C5A7D26AC8ECC483443B5BB34",
+      "runtimeSha256": "BD96D52197B7A5C62849DE372F1D5D50AD7219F47CBF2F222347D2C25B199F5F",
+      "bytes": 656848
+    },
+    {
+      "id": "leather_female_large",
+      "itemId": "leather",
+      "slot": "armor",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/armor/equipment_leather_jacket_female_large.glb",
+      "sourceSha256": "01FDEA79ABF116B212E4A7BF36E7D49404FC6DAC6030C700AF640C6ACA6C3597",
+      "runtimeSha256": "CAC3937AA6A0FC94F9C3CF7215B0813E8C778B081A1413F7BC15982FB6C59FD6",
+      "bytes": 649596
+    },
+    {
+      "id": "leather_male_slim",
+      "itemId": "leather",
+      "slot": "armor",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/armor/equipment_leather_jacket_male_slim.glb",
+      "sourceSha256": "DF874FCEF62119667DE374ED933A4B38C2F413A979856ECA7751EB383333E411",
+      "runtimeSha256": "967F0BB50C82C3A348FB3CA910830B66156C00FF50E537C2BDBDE8B4F202CA62",
+      "bytes": 633828
+    },
+    {
+      "id": "leather_male_medium",
+      "itemId": "leather",
+      "slot": "armor",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/armor/equipment_leather_jacket_male_medium.glb",
+      "sourceSha256": "AC94A6255D1B1E5213015386CD1DF835303757DC4088A13603C777D9B853EDB9",
+      "runtimeSha256": "F3DF0C53FF8FAB3093A5888B07653B8471247E630E19AE3C93116BD18DC99729",
+      "bytes": 634132
+    },
+    {
+      "id": "leather_male_large",
+      "itemId": "leather",
+      "slot": "armor",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/armor/equipment_leather_jacket_male_large.glb",
+      "sourceSha256": "8A55FD1853B681634F9DDCB5F59555EE416F8B3920850DA33DC8F3D364F5734D",
+      "runtimeSha256": "6F1D40999C06FEDE513C2E008E6EEBA49516BA7DD367772E9B995F8A3204E175",
+      "bytes": 630276
+    },
+    {
+      "id": "reinforcedBoots_female_slim",
+      "itemId": "reinforcedBoots",
+      "slot": "boots",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/boots/equipment_reinforced_boots_female_slim.glb",
+      "sourceSha256": "C038D0DCD539B9A4146380335820E39D9A01F355E0E11AE4A92AAA4848D81BAB",
+      "runtimeSha256": "90E608A22956DED489299EDF36C1F890A2C358DC7D8DD65E6B70F61467FC49D3",
+      "bytes": 859508
+    },
+    {
+      "id": "reinforcedBoots_female_medium",
+      "itemId": "reinforcedBoots",
+      "slot": "boots",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/boots/equipment_reinforced_boots_female_medium.glb",
+      "sourceSha256": "8B784B8E2B00BEF169E73F8666B4EF78EC8C633E38FF8A42D2D010225B2E6303",
+      "runtimeSha256": "8790C0E32459757CE2BEC06DE53B83C71D415D20547E8134F0567330760C117B",
+      "bytes": 859528
+    },
+    {
+      "id": "reinforcedBoots_female_large",
+      "itemId": "reinforcedBoots",
+      "slot": "boots",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/boots/equipment_reinforced_boots_female_large.glb",
+      "sourceSha256": "820E59B7C1E120EBC7AB560116D53DDDABB8315F63D8CF121913740068D4ADA1",
+      "runtimeSha256": "41D26E1322995F0B3D5164932ABA98F7AA393EF46BDA270B1A0A55F2CE49AFF3",
+      "bytes": 859520
+    },
+    {
+      "id": "reinforcedBoots_male_slim",
+      "itemId": "reinforcedBoots",
+      "slot": "boots",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/boots/equipment_reinforced_boots_male_slim.glb",
+      "sourceSha256": "57757301592731D8F969936730E133CB396753587FF8892D67177AF6431D8E15",
+      "runtimeSha256": "9277ACE25F8DEA6B634639F6A4861EBA344F9409DBA4022A4A1F3950FCB8B796",
+      "bytes": 859460
+    },
+    {
+      "id": "reinforcedBoots_male_medium",
+      "itemId": "reinforcedBoots",
+      "slot": "boots",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/boots/equipment_reinforced_boots_male_medium.glb",
+      "sourceSha256": "84B016E7921B55EAD076C62656722169EE3CD005B07DAC78526E7F59D8415197",
+      "runtimeSha256": "DFADEA47D917509820C81500032360ADF9BF17E5FBE29B68C06B1A6847BAC2BB",
+      "bytes": 859476
+    },
+    {
+      "id": "reinforcedBoots_male_large",
+      "itemId": "reinforcedBoots",
+      "slot": "boots",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/boots/equipment_reinforced_boots_male_large.glb",
+      "sourceSha256": "F111FE8F381BE842DDDBE01A430AB81DC7602A091798A526F55823B294F49610",
+      "runtimeSha256": "4FF2862EF2FBD683C19413A02EBF0DBAC47AD210CBD09013219F4CD5EE20BAC2",
+      "bytes": 859468
+    },
+    {
+      "id": "helmet_female_slim",
+      "itemId": "helmet",
+      "slot": "helmet",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/helmet/equipment_steel_helmet_female_slim.glb",
+      "sourceSha256": "81003C2E41273481C8402010610DC358A7633968B769753DAAAB73425DF148A8",
+      "runtimeSha256": "C93A9FC4C72A14B634BB42A53E7D9948CE4A694485BF21B3BC9ABCA743C688D1",
+      "bytes": 243616
+    },
+    {
+      "id": "helmet_female_medium",
+      "itemId": "helmet",
+      "slot": "helmet",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/helmet/equipment_steel_helmet_female_medium.glb",
+      "sourceSha256": "26A7169C3B065A625245EE457A2F6D2D6D3C36C679E9EC443B8B174353EF0E6D",
+      "runtimeSha256": "4EC4C6F36B65ED90816F316051285D522BDEF0CBFAC7D887C518C9DC91C86CD1",
+      "bytes": 244208
+    },
+    {
+      "id": "helmet_female_large",
+      "itemId": "helmet",
+      "slot": "helmet",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/helmet/equipment_steel_helmet_female_large.glb",
+      "sourceSha256": "389933364AF939FB0BDA12AB04523C4D431AECC8222DF19A6AE4D40031378511",
+      "runtimeSha256": "8872A64DE5E5B05FB3D209733664D4A2101AEEDF24CA91B8DD94F76D3F9B2F14",
+      "bytes": 243436
+    },
+    {
+      "id": "helmet_male_slim",
+      "itemId": "helmet",
+      "slot": "helmet",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/helmet/equipment_steel_helmet_male_slim.glb",
+      "sourceSha256": "26A02702DF55550DA2921765B642A2E0E24E5855ECE4B92FDAB3479164BB7477",
+      "runtimeSha256": "06ABDCC916D40C59ED57B244C8C2189F4FCC17D548849F34357F73D687B1D54E",
+      "bytes": 243540
+    },
+    {
+      "id": "helmet_male_medium",
+      "itemId": "helmet",
+      "slot": "helmet",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/helmet/equipment_steel_helmet_male_medium.glb",
+      "sourceSha256": "20285A0BAC633CA75AA6CCA21E9650EBF55A79DA7BB6043D695E6F0C46678A49",
+      "runtimeSha256": "99CE023D19F7E854C0E7FF85A4A5537A8A314B82F5B0F60253C0ED78B237D9FE",
+      "bytes": 243876
+    },
+    {
+      "id": "helmet_male_large",
+      "itemId": "helmet",
+      "slot": "helmet",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/helmet/equipment_steel_helmet_male_large.glb",
+      "sourceSha256": "D8B21AA34B3DE4DBB43AAE1D6865D0EDB9CC7B25DD5CF2FB3A058FF1A79B5EA1",
+      "runtimeSha256": "00A343CACC28AFB3954F74AEC90016B52C944AD614F63A1A2B9609F1BFD9C3ED",
+      "bytes": 244924
+    },
+    {
+      "id": "tacticalHelmet_female_slim",
+      "itemId": "tacticalHelmet",
+      "slot": "helmet",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/helmet/equipment_tactical_helmet_female_slim.glb",
+      "sourceSha256": "4DA3D856388B241A597A8754514A3B746287CE2A38A7B58FB836AFDDF7524AAA",
+      "runtimeSha256": "1E59422F291B5BC5303013FC85A3601EC0FA73F6FDA3C5775FC5440264E78616",
+      "bytes": 347216
+    },
+    {
+      "id": "tacticalHelmet_female_medium",
+      "itemId": "tacticalHelmet",
+      "slot": "helmet",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/helmet/equipment_tactical_helmet_female_medium.glb",
+      "sourceSha256": "5636969701B778B1A36D4D29B7DF191FDADB487886880D844C08615FEB5E2D54",
+      "runtimeSha256": "DD98E7269E0A2AA3933B4A4D3841F09D352E0EA5F703E945941D62F3A8DE0792",
+      "bytes": 347752
+    },
+    {
+      "id": "tacticalHelmet_female_large",
+      "itemId": "tacticalHelmet",
+      "slot": "helmet",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/helmet/equipment_tactical_helmet_female_large.glb",
+      "sourceSha256": "80910084727AB49A675D59993018C5B141CC49E57F0B33673371C2703303BA4B",
+      "runtimeSha256": "D9DEDF0A0BFFF363DB585925D0F99CB6C9688F38BF640840D44E1F2BBD45BAE7",
+      "bytes": 346692
+    },
+    {
+      "id": "tacticalHelmet_male_slim",
+      "itemId": "tacticalHelmet",
+      "slot": "helmet",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/helmet/equipment_tactical_helmet_male_slim.glb",
+      "sourceSha256": "90BA295161695DC6F46637E158127D0D725B7091A39363C01F586F93D779846E",
+      "runtimeSha256": "B8016AC502D33DCB7266737F8919EC28B6BA4CC5A3492B146A591F07361BABB0",
+      "bytes": 347920
+    },
+    {
+      "id": "tacticalHelmet_male_medium",
+      "itemId": "tacticalHelmet",
+      "slot": "helmet",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/helmet/equipment_tactical_helmet_male_medium.glb",
+      "sourceSha256": "28C8EB0532636F834885B0F578FD9D617DEB7FBB4B04A0494E221D23D3D8DA65",
+      "runtimeSha256": "5610ED72D6142B2AE80363268E50F6CAB65C1B48FC676395B29CC329813D1639",
+      "bytes": 346880
+    },
+    {
+      "id": "tacticalHelmet_male_large",
+      "itemId": "tacticalHelmet",
+      "slot": "helmet",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/helmet/equipment_tactical_helmet_male_large.glb",
+      "sourceSha256": "E963FE6EDB8810248D780A060F4CAFBD7DBD52368A2C2FAC0B65F7D708457DCC",
+      "runtimeSha256": "88ABD989F8222C69D872946C6375BB26CFD08D93D6DF26278B0D38BD897F0F79",
+      "bytes": 346980
+    },
+    {
+      "id": "assaultHelmet_female_slim",
+      "itemId": "assaultHelmet",
+      "slot": "helmet",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/helmet/equipment_assault_helmet_female_slim.glb",
+      "sourceSha256": "C5183AA8C0DBAA84A39EF2D4090B5C741180691894D6D77E9D4E5568EFECA5D7",
+      "runtimeSha256": "B5D7F3B66F4EBA00D1E58FFC63F5A96CBD3E74CF6F21C7A88AE1B2FC2BBD31A3",
+      "bytes": 375984
+    },
+    {
+      "id": "assaultHelmet_female_medium",
+      "itemId": "assaultHelmet",
+      "slot": "helmet",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/helmet/equipment_assault_helmet_female_medium.glb",
+      "sourceSha256": "21F5F625346E9C1D36EE84FBAE996F7549E1D50B0CCF5CECA230C45772B23001",
+      "runtimeSha256": "C10DE6B0671887D47376E0C09DAB21EB1B659CC9DC4977D17D531F81B0E9C336",
+      "bytes": 374164
+    },
+    {
+      "id": "assaultHelmet_female_large",
+      "itemId": "assaultHelmet",
+      "slot": "helmet",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/helmet/equipment_assault_helmet_female_large.glb",
+      "sourceSha256": "B3FD800E5F04E9135CA6708C01D4180BBA58BE3A424DF420E741E5CB4F096E4F",
+      "runtimeSha256": "5CCBC730904AA47D55C8E27D8ACA2F5876918F4E969850C40098984BA87CC6EE",
+      "bytes": 375908
+    },
+    {
+      "id": "assaultHelmet_male_slim",
+      "itemId": "assaultHelmet",
+      "slot": "helmet",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/helmet/equipment_assault_helmet_male_slim.glb",
+      "sourceSha256": "93781019C63D38FF5EBE4687EA19F02019201240F8946879CF342C78F5BE4BF4",
+      "runtimeSha256": "713C71C453BDE8B2F0C2B1C9D8C73D55147BBDD03010591BD44A74C6ED3DFE76",
+      "bytes": 374576
+    },
+    {
+      "id": "assaultHelmet_male_medium",
+      "itemId": "assaultHelmet",
+      "slot": "helmet",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/helmet/equipment_assault_helmet_male_medium.glb",
+      "sourceSha256": "EA9397C31EEBEA7D240400C494381D219774CC412B30867F286FF7F40F3FBAC1",
+      "runtimeSha256": "C60F244AA536AEDFE68014E2C08B7243310746D3122D488E925A758B25491C51",
+      "bytes": 374908
+    },
+    {
+      "id": "assaultHelmet_male_large",
+      "itemId": "assaultHelmet",
+      "slot": "helmet",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/helmet/equipment_assault_helmet_male_large.glb",
+      "sourceSha256": "FCAB1455E6F6397FCFC6C9578D376EEBA6FEFB7AFE9E706FB71A884782EA0058",
+      "runtimeSha256": "B0EC151F9987B7E19C5677F5FEE88302414F72F3B5DF1624E905ABEA3B1C340C",
+      "bytes": 374868
+    },
+    {
+      "id": "hazmatSuit_female_slim",
+      "itemId": "hazmatSuit",
+      "slot": "armor",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/armor/equipment_hazmat_suit_female_slim.glb",
+      "sourceSha256": "E200587375D71C565CFCFCFE8704675760D47617EB088D33F5B4261CB5171605",
+      "runtimeSha256": "D25C58321E7C56004A7365D5DAB047853FC07295E603F128E98CFE37030D81DB",
+      "bytes": 3134556
+    },
+    {
+      "id": "hazmatSuit_female_medium",
+      "itemId": "hazmatSuit",
+      "slot": "armor",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/armor/equipment_hazmat_suit_female_medium.glb",
+      "sourceSha256": "B9DD1D79A79707187F3E237DF4A9C1BA9A0CCE5FD2F733BB76084CCD754EB1CC",
+      "runtimeSha256": "EDCD96F55F0BF8ED5789B2851B09229E899F07906614D4396940F10697CEDA4D",
+      "bytes": 3119392
+    },
+    {
+      "id": "hazmatSuit_female_large",
+      "itemId": "hazmatSuit",
+      "slot": "armor",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/armor/equipment_hazmat_suit_female_large.glb",
+      "sourceSha256": "F9ACB5E818CF24E2C6A484363473FE4DF83DA36A236EC1106578FC50FD85D19A",
+      "runtimeSha256": "1975241558E459483088C2BC836AFE1876D107348C0ACCB3FD0A54BE680A0863",
+      "bytes": 3110932
+    },
+    {
+      "id": "hazmatSuit_male_slim",
+      "itemId": "hazmatSuit",
+      "slot": "armor",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/armor/equipment_hazmat_suit_male_slim.glb",
+      "sourceSha256": "4782DA2F7E98C4DFBE61B6E0F30E670BDA99AAEDB5D69C2BB1777CE955BB8B3B",
+      "runtimeSha256": "55956C21A078E77AC5A91D1AF88F92752AABFC3CC61106F098514DF8B0A0DBD0",
+      "bytes": 3054036
+    },
+    {
+      "id": "hazmatSuit_male_medium",
+      "itemId": "hazmatSuit",
+      "slot": "armor",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/armor/equipment_hazmat_suit_male_medium.glb",
+      "sourceSha256": "A179A5B757048F7D62907F650AAA324FB0F26EBF20E19BB39943B05A0F6A5592",
+      "runtimeSha256": "624116DDF5B31396D2FA64D3202BD843FA5CC1096DD864BA2BF99A131F646A69",
+      "bytes": 3079500
+    },
+    {
+      "id": "hazmatSuit_male_large",
+      "itemId": "hazmatSuit",
+      "slot": "armor",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/armor/equipment_hazmat_suit_male_large.glb",
+      "sourceSha256": "089A0A7F4808E8ECD40D64CDBE3BE28F9E4FFE41D2F89A1721825D09578F9B8D",
+      "runtimeSha256": "53758E63ED385CB1E346F54A97580F7252F75DBA140D3EE59B053DB4E3A17E60",
+      "bytes": 3099628
+    },
+    {
+      "id": "energySuit_female_slim",
+      "itemId": "energySuit",
+      "slot": "armor",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/armor/equipment_energy_suit_female_slim.glb",
+      "sourceSha256": "2E5F00D4FBA17CAD237F1BE09D5A06FB52858656C88F356F6BA8666E5BF78D05",
+      "runtimeSha256": "E0A813595B73526C239C20107909403094A027306CEAE18725FB8F2EF16D7A30",
+      "bytes": 3055184
+    },
+    {
+      "id": "energySuit_female_medium",
+      "itemId": "energySuit",
+      "slot": "armor",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/armor/equipment_energy_suit_female_medium.glb",
+      "sourceSha256": "CE8EF929FB2828CA54947F67DE1B4A6ECE66B3E39B193772D2AF8CE9555222FF",
+      "runtimeSha256": "8FF046EA803B16CD4D9C272DEC0C2738A1A98EF858D67F99BDE692A17890C81F",
+      "bytes": 3043468
+    },
+    {
+      "id": "energySuit_female_large",
+      "itemId": "energySuit",
+      "slot": "armor",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/armor/equipment_energy_suit_female_large.glb",
+      "sourceSha256": "2473FBE1614C5A9E9F0C2B682846DB3E69CB7816AFE56F755475D336E23B47EA",
+      "runtimeSha256": "52CDCAB372BBB902E4F432FECB6839EDD36DB687B9F0A09B9DE9B4CF9D2B0105",
+      "bytes": 3033528
+    },
+    {
+      "id": "energySuit_male_slim",
+      "itemId": "energySuit",
+      "slot": "armor",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/armor/equipment_energy_suit_male_slim.glb",
+      "sourceSha256": "7DD7208A7D26F68140F3D41C7BCCB60AE74E5CCEDA996C7822AA1172F774753A",
+      "runtimeSha256": "F27ACC872B29184D912DC5419E8585D6BFDE09FA81FC6915F9C7A5E8EE303BFA",
+      "bytes": 2979104
+    },
+    {
+      "id": "energySuit_male_medium",
+      "itemId": "energySuit",
+      "slot": "armor",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/armor/equipment_energy_suit_male_medium.glb",
+      "sourceSha256": "6216091460B26710EEF3396B116CF1C2590D0F920E0B746102258F5C19CB0BAD",
+      "runtimeSha256": "42C9D0A00602A8EDD4C1F66BCFE196D3449BFF8CB9A31796412EDA0A7CDE5CEE",
+      "bytes": 3001188
+    },
+    {
+      "id": "energySuit_male_large",
+      "itemId": "energySuit",
+      "slot": "armor",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/armor/equipment_energy_suit_male_large.glb",
+      "sourceSha256": "C891317899E4A76B40FBC9A8A7E36614EC7BF9E8B9C621711BB93063AE5FC66B",
+      "runtimeSha256": "51B7F4B8FFB91A9602B0B721FB3DD076AAF1712CCA74DFCD81CB35CEA22E1C06",
+      "bytes": 3021876
     },
     {
       "id": "assaultRifle",

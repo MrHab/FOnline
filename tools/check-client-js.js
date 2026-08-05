@@ -8,6 +8,7 @@ const partsDir = path.join(root, 'public', 'js', 'game');
 const loaderFile = path.join(root, 'public', 'js', 'game.js');
 const partNames = [
   '00_save_generation_drain.js',
+  '00a_actor_facing.js',
   '01_bootstrap_online_save.js',
   '02_renderer_world_map.js',
   '02a_materials_static_models.js',

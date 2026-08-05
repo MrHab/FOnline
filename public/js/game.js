@@ -4,10 +4,11 @@
 (async () => {
   'use strict';
 
-  const GAME_CLIENT_VERSION = '7.76.6-weapon-scale-fix';
+  const GAME_CLIENT_VERSION = '7.76.6-creature-facing-v1';
   const MODEL_COLLIDER_CATALOG_URL = '/assets/models/wasteland/model-colliders.json';
   const GAME_SCRIPT_PARTS = [
     '/js/game/00_save_generation_drain.js',
+    '/js/game/00a_actor_facing.js',
     '/js/game/01_bootstrap_online_save.js',
     '/js/game/02_renderer_world_map.js',
     '/js/game/02a_materials_static_models.js',

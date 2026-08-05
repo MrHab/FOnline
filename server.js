@@ -75,6 +75,10 @@ const {
   resolveEphemeralRoomIdleTtlMs,
   temporaryRoomContextIsResumable
 } = require('./src/server/room-lifecycle');
+const {
+  actorFacingIntent: resolveActorFacingIntent,
+  actorFacingYaw: resolveActorFacingYaw
+} = require('./public/js/game/00a_actor_facing');
 
 const GAME_NAME = 'Realm of Ashes';
 
@@ -8612,15 +8616,14 @@ function enemyBodyRadius(enemy) {
 }
 
 function enemyMovementCollisionRotation(enemy = {}) {
-  const hasLook = enemy.lookX !== null && enemy.lookX !== undefined && enemy.lookZ !== null && enemy.lookZ !== undefined
-    && Number.isFinite(Number(enemy.lookX)) && Number.isFinite(Number(enemy.lookZ));
-  let dx = hasLook ? Number(enemy.lookX) - Number(enemy.x || 0) : NaN;
-  let dz = hasLook ? Number(enemy.lookZ) - Number(enemy.z || 0) : NaN;
-  if (!Number.isFinite(dx) || !Number.isFinite(dz) || Math.hypot(dx, dz) <= 0.01) {
-    dx = Number(enemy.vx || 0);
-    dz = Number(enemy.vz || 0);
+  const intent = resolveActorFacingIntent(enemy, enemy.vx, enemy.vz);
+  const yaw = intent ? resolveActorFacingYaw(enemy, intent.dx, intent.dz) : null;
+  if (Number.isFinite(yaw)) {
+    enemy.facingY = yaw;
+    return yaw;
   }
-  return Math.hypot(dx, dz) > 0.01 ? Math.atan2(dx, dz) + Math.PI : 0;
+  const heldYaw = Number(enemy.facingY);
+  return Number.isFinite(heldYaw) ? heldYaw : 0;
 }
 
 function enemyMovementCollisionBlockers(enemy = {}, x = enemy.x, z = enemy.z) {

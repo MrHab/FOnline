@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   BODY_IDS,
+  APPROVED_EQUIPMENT_REVIEWS,
   NPC_REVIEW_SHA256,
   RIFLE_REVIEW_SHA256,
   BOOTS_FIT_REPORT_SHA256,
@@ -55,15 +56,22 @@ function runtimeFile(url) {
 
 assert(fs.existsSync(MANIFEST_FILE), 'approved humanoid asset manifest is missing');
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf8'));
-assert.strictEqual(manifest.schema, 'realm.approved-humanoid-assets.v1');
+assert.strictEqual(manifest.schema, 'realm.approved-humanoid-assets.v2');
 assert.strictEqual(manifest.artDirection, 'geometry_b_materials_c');
 assert.deepStrictEqual(manifest.approval, {
   humanoidNpc: NPC_REVIEW_SHA256,
   bootsFitReport: BOOTS_FIT_REPORT_SHA256,
+  equipmentFitReports: Object.fromEntries(APPROVED_EQUIPMENT_REVIEWS.map(definition => (
+    [definition.itemId, definition.fitReportSha256]
+  ))),
   assaultRifle: RIFLE_REVIEW_SHA256,
   assaultRifleGrip: GRIP_RUNTIME_SHA256
 });
-assert.strictEqual(manifest.files?.length, 9, 'approved humanoid manifest must contain 9 runtime files');
+assert.strictEqual(
+  manifest.files?.length,
+  9 + APPROVED_EQUIPMENT_REVIEWS.length * BODY_IDS.length,
+  'approved humanoid manifest must contain every runtime body/equipment variant'
+);
 
 const byId = new Map(manifest.files.map(row => [row.id, row]));
 for (const row of manifest.files) {
@@ -123,6 +131,42 @@ for (const bodyId of BODY_IDS) {
   assert.strictEqual(root.extras.realm_approved_review_sha256, row.sourceSha256);
 }
 
+for (const definition of APPROVED_EQUIPMENT_REVIEWS) {
+  for (const bodyId of BODY_IDS) {
+    const runtimeAssetId = `${definition.itemId}_${bodyId}`;
+    const row = byId.get(runtimeAssetId);
+    assert(row, `${runtimeAssetId}: approved equipment runtime is missing`);
+    assert.strictEqual(row.itemId, definition.itemId);
+    assert.strictEqual(row.slot, definition.slot);
+    assert.strictEqual(row.bodyId, bodyId);
+    const reportFile = path.join(
+      ROOT,
+      ...definition.reviewDirectory,
+      `${definition.sourcePrefix}_${bodyId}.report.json`
+    );
+    const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
+    assert.strictEqual(row.sourceSha256, report.sha256, `${runtimeAssetId}: review SHA is stale`);
+    const parsed = parseGlb(runtimeFile(row.file));
+    assert.strictEqual(parsed.json.meshes?.length, definition.meshCount, `${runtimeAssetId}: mesh count changed`);
+    assert.strictEqual(parsed.json.skins?.length, 1, `${runtimeAssetId}: one skin is required`);
+    assert.strictEqual(parsed.json.skins[0].joints?.length, 65, `${runtimeAssetId}: current rig has 65 joints`);
+    assert.strictEqual(parsed.json.asset?.extras?.realm_schema, 'realm.equipment-runtime.approved.v1');
+    assert.strictEqual(parsed.json.asset?.extras?.realm_item_id, definition.itemId);
+    assert.strictEqual(parsed.json.asset?.extras?.realm_equipment_slot, definition.slot);
+    const meshNodes = (parsed.json.nodes || []).filter(node => Number.isInteger(node?.mesh));
+    assert.strictEqual(meshNodes.length, definition.meshCount, `${runtimeAssetId}: skinned mesh nodes changed`);
+    meshNodes.forEach(node => {
+      assert.strictEqual(node.extras?.realm_review_only, false, `${runtimeAssetId}: review-only flag leaked to runtime`);
+      assert.strictEqual(node.extras?.realm_runtime_integration_allowed, true);
+      assert.strictEqual(node.extras?.realm_approved_review_sha256, report.sha256);
+      assert.strictEqual(node.extras?.realm_runtime_asset_id, runtimeAssetId);
+      assert.strictEqual(node.extras?.realm_item_id, definition.itemId);
+      assert.strictEqual(node.extras?.realm_equipment_slot, definition.slot);
+      assert.strictEqual(node.extras?.realm_body_id, bodyId);
+    });
+  }
+}
+
 const rifle = byId.get('assaultRifle');
 assert(rifle, 'approved assault rifle is missing');
 assert.strictEqual(rifle.sourceSha256, RIFLE_REVIEW_SHA256);
@@ -177,12 +221,14 @@ const runtimeSource = fs.readFileSync(
   'utf8'
 );
 [
-  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v5'",
+  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v6-equipment'",
+  'const APPROVED_EQUIPMENT_ASSETS = Object.freeze({',
   'const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([',
   'function attachApprovedNpcAnimations(runtime)',
   'const sourceMeshes = []',
-  "mesh.name = `approved_equipment_boots_${sourceMesh.material?.name || group.children.length}`",
+  "mesh.name = `approved_equipment_${itemId}_${sourceMesh.material?.name || group.children.length}`",
   'new THREE.Skeleton(',
+  'function applyApprovedEquipmentVisuals(actor, eq = {})',
   'function applyApprovedBootsVisual(actor, eq = {})',
   'function compileApprovedGripPose(gltf)',
   'function captureApprovedAssaultRifleRestPose(root)',
@@ -201,7 +247,7 @@ const runtimeSource = fs.readFileSync(
 const characterSource = fs.readFileSync(path.join(ROOT, 'public', 'js', 'game', '04b_character_glb_runtime.js'), 'utf8');
 assert(characterSource.includes("state.dead && runtime.actions?.death"));
 assert(characterSource.includes("options.npcAnimations && typeof attachApprovedNpcAnimations === 'function'"));
-assert(characterSource.includes("typeof applyApprovedBootsVisual === 'function'"));
+assert(characterSource.includes("typeof applyApprovedEquipmentVisuals === 'function'"));
 assert(characterSource.includes("approvedAssaultRifleRestPose: typeof captureApprovedAssaultRifleRestPose === 'function'"));
 
 const enemySource = fs.readFileSync(path.join(ROOT, 'public', 'js', 'game', '05f_enemy_models_location_flow.js'), 'utf8');
@@ -401,6 +447,53 @@ async function verifyThreeRuntime() {
       }
       mixer.stopAllAction();
     }
+
+    for (const definition of APPROVED_EQUIPMENT_REVIEWS) {
+      const runtimeAssetId = `${definition.itemId}_${bodyId}`;
+      const equipment = await load(runtimeFile(byId.get(runtimeAssetId).file));
+      const equipmentJson = parseGlb(runtimeFile(byId.get(runtimeAssetId).file)).json;
+      const expectedSkinnedMeshes = (equipmentJson.meshes || []).reduce((total, mesh) => (
+        total + (mesh.primitives || []).length
+      ), 0);
+      equipment.scene.updateMatrixWorld(true);
+      const sourceMeshes = [];
+      equipment.scene.traverse(node => {
+        if (node?.isSkinnedMesh && node.skeleton) sourceMeshes.push(node);
+      });
+      assert.strictEqual(
+        sourceMeshes.length,
+        expectedSkinnedMeshes,
+        `${runtimeAssetId}: Three.js cannot resolve every skinned mesh`
+      );
+      const group = new THREE.Group();
+      for (const sourceMesh of sourceMeshes) {
+        const targetBones = sourceMesh.skeleton.bones.map(bone => character.scene.getObjectByName(bone.name));
+        assert.strictEqual(targetBones.length, 65, `${runtimeAssetId}: current rig must expose 65 bones`);
+        assert(targetBones.every(Boolean), `${runtimeAssetId}: cannot resolve every current character bone`);
+        const instance = new THREE.SkinnedMesh(sourceMesh.geometry, sourceMesh.material);
+        sourceMesh.matrixWorld.decompose(instance.position, instance.quaternion, instance.scale);
+        instance.bindMode = sourceMesh.bindMode;
+        instance.bind(
+          new THREE.Skeleton(
+            targetBones,
+            sourceMesh.skeleton.boneInverses.map(matrix => matrix.clone())
+          ),
+          sourceMesh.bindMatrix.clone()
+        );
+        instance.normalizeSkinWeights();
+        group.add(instance);
+      }
+      character.scene.add(group);
+      character.scene.updateMatrixWorld(true);
+      const equipmentBounds = new THREE.Box3().makeEmpty();
+      group.children.forEach(mesh => equipmentBounds.union(skinnedMeshBounds(mesh)));
+      const equipmentSize = equipmentBounds.getSize(new THREE.Vector3());
+      assert(
+        equipmentSize.toArray().every(value => Number.isFinite(value) && value > 0 && value < 5),
+        `${runtimeAssetId}: bound runtime equipment has invalid bounds: ${equipmentSize.toArray()}`
+      );
+      character.scene.remove(group);
+    }
   }
 
   const gripRuntime = await load(runtimeFile(grip.file));
@@ -522,6 +615,7 @@ async function verifyThreeRuntime() {
 
   console.log(
     `Approved humanoid assets OK: 1 NPC donor, ${BODY_IDS.length} fitted boot models, `
+    + `${APPROVED_EQUIPMENT_REVIEWS.length * BODY_IDS.length} fitted equipment models, `
     + `1 assault rifle and 1 exact grip pose`
   );
 }

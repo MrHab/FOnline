@@ -816,14 +816,16 @@
     setCharacterProceduralBaseVisible(actor, false);
     const helmetOn = !!eq?.helmet;
     applyCharacterGlbVisualVariants(runtime.root, runtime.appearance, { helmetOn });
-    if (typeof applyApprovedBootsVisual === 'function') applyApprovedBootsVisual(actor, eq);
+    if (typeof applyApprovedEquipmentVisuals === 'function') applyApprovedEquipmentVisuals(actor, eq);
+    else if (typeof applyApprovedBootsVisual === 'function') applyApprovedBootsVisual(actor, eq);
   }
 
   function removeCharacterGlbRuntime(actor) {
     const runtime = actor?.userData?.characterGlbRuntime;
     if (!runtime) return;
     if (typeof restoreApprovedAssaultRifleGrip === 'function') restoreApprovedAssaultRifleGrip(actor);
-    if (typeof removeApprovedBootRuntime === 'function') removeApprovedBootRuntime(actor);
+    if (typeof removeApprovedEquipmentRuntimes === 'function') removeApprovedEquipmentRuntimes(actor);
+    else if (typeof removeApprovedBootRuntime === 'function') removeApprovedBootRuntime(actor);
     runtime.mixer?.stopAllAction?.();
     if (runtime.root?.parent) runtime.root.parent.remove(runtime.root);
     disposeCharacterGlbObject(runtime.root);

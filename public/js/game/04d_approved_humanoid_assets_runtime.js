@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v5';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v6-equipment';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([
@@ -17,17 +17,62 @@
     'pinky_01_r', 'pinky_02_r', 'pinky_03_r',
     'thumb_01_r', 'thumb_02_r', 'thumb_03_r'
   ]);
-  const APPROVED_BOOT_URLS = Object.freeze({
-    female_slim: '/assets/models/equipment/boots/equipment_boots_female_slim.glb',
-    female_medium: '/assets/models/equipment/boots/equipment_boots_female_medium.glb',
-    female_large: '/assets/models/equipment/boots/equipment_boots_female_large.glb',
-    male_slim: '/assets/models/equipment/boots/equipment_boots_male_slim.glb',
-    male_medium: '/assets/models/equipment/boots/equipment_boots_male_medium.glb',
-    male_large: '/assets/models/equipment/boots/equipment_boots_male_large.glb'
+  function approvedEquipmentBodyUrls(slot = '', prefix = '') {
+    return Object.freeze(Object.fromEntries([
+      'female_slim', 'female_medium', 'female_large',
+      'male_slim', 'male_medium', 'male_large'
+    ].map(bodyId => [
+      bodyId,
+      `/assets/models/equipment/${slot}/${prefix}_${bodyId}.glb`
+    ])));
+  }
+
+  const APPROVED_EQUIPMENT_ASSETS = Object.freeze({
+    boots: Object.freeze({
+      itemId: 'boots',
+      slot: 'boots',
+      urls: approvedEquipmentBodyUrls('boots', 'equipment_boots')
+    }),
+    reinforcedBoots: Object.freeze({
+      itemId: 'reinforcedBoots',
+      slot: 'boots',
+      urls: approvedEquipmentBodyUrls('boots', 'equipment_reinforced_boots')
+    }),
+    leather: Object.freeze({
+      itemId: 'leather',
+      slot: 'armor',
+      urls: approvedEquipmentBodyUrls('armor', 'equipment_leather_jacket')
+    }),
+    hazmatSuit: Object.freeze({
+      itemId: 'hazmatSuit',
+      slot: 'armor',
+      urls: approvedEquipmentBodyUrls('armor', 'equipment_hazmat_suit')
+    }),
+    energySuit: Object.freeze({
+      itemId: 'energySuit',
+      slot: 'armor',
+      urls: approvedEquipmentBodyUrls('armor', 'equipment_energy_suit')
+    }),
+    helmet: Object.freeze({
+      itemId: 'helmet',
+      slot: 'helmet',
+      urls: approvedEquipmentBodyUrls('helmet', 'equipment_steel_helmet')
+    }),
+    tacticalHelmet: Object.freeze({
+      itemId: 'tacticalHelmet',
+      slot: 'helmet',
+      urls: approvedEquipmentBodyUrls('helmet', 'equipment_tactical_helmet')
+    }),
+    assaultHelmet: Object.freeze({
+      itemId: 'assaultHelmet',
+      slot: 'helmet',
+      urls: approvedEquipmentBodyUrls('helmet', 'equipment_assault_helmet')
+    })
   });
+  const APPROVED_BOOT_URLS = APPROVED_EQUIPMENT_ASSETS.boots.urls;
 
   const approvedNpcAnimationState = { promise: null, clips: null, failed: false };
-  const approvedBootState = { templates: new Map(), promises: new Map(), failed: new Set() };
+  const approvedEquipmentState = { templates: new Map(), promises: new Map(), failed: new Set() };
   const approvedAssaultGripState = { promise: null, pose: null, failed: false };
 
   function approvedHumanoidLoader() {
@@ -92,7 +137,7 @@
     return loadApprovedNpcAnimationClips().then(clips => installApprovedNpcAnimationClips(runtime, clips));
   }
 
-  function approvedBootBodyKey(actor) {
+  function approvedEquipmentBodyKey(actor) {
     const appearance = normalizeCharacterAppearance(
       actor?.userData?.characterGlbRuntime?.appearance
       || actor?.userData?.characterAppearance
@@ -101,7 +146,7 @@
     return `${appearance.sex}_${appearance.bodyType}`;
   }
 
-  function configureApprovedBootTemplate(scene) {
+  function configureApprovedEquipmentTemplate(scene) {
     if (!scene?.traverse) return null;
     scene.updateMatrixWorld(true);
     const sourceMeshes = [];
@@ -113,64 +158,94 @@
     return { scene, sourceMeshes };
   }
 
-  function loadApprovedBootTemplate(bodyKey = '') {
-    if (approvedBootState.templates.has(bodyKey)) {
-      return Promise.resolve(approvedBootState.templates.get(bodyKey));
+  function approvedEquipmentCacheKey(itemId = '', bodyKey = '') {
+    return `${itemId}:${bodyKey}`;
+  }
+
+  function loadApprovedEquipmentTemplate(itemId = '', bodyKey = '') {
+    const definition = APPROVED_EQUIPMENT_ASSETS[itemId];
+    const cacheKey = approvedEquipmentCacheKey(itemId, bodyKey);
+    if (approvedEquipmentState.templates.has(cacheKey)) {
+      return Promise.resolve(approvedEquipmentState.templates.get(cacheKey));
     }
-    if (approvedBootState.promises.has(bodyKey)) return approvedBootState.promises.get(bodyKey);
-    const url = APPROVED_BOOT_URLS[bodyKey];
+    if (approvedEquipmentState.promises.has(cacheKey)) return approvedEquipmentState.promises.get(cacheKey);
+    const url = definition?.urls?.[bodyKey];
     const loader = approvedHumanoidLoader();
-    if (!url || !loader || approvedBootState.failed.has(bodyKey)) return Promise.resolve(null);
+    if (!url || !loader || approvedEquipmentState.failed.has(cacheKey)) return Promise.resolve(null);
     const promise = new Promise(resolve => {
       loader.load(approvedAssetUrl(url), gltf => {
-        const template = configureApprovedBootTemplate(gltf?.scene || gltf?.scenes?.[0] || null);
+        const template = configureApprovedEquipmentTemplate(gltf?.scene || gltf?.scenes?.[0] || null);
         if (!template) {
-          approvedBootState.failed.add(bodyKey);
-          console.warn(`Утверждённые ботинки ${bodyKey} не содержат skinned mesh.`);
+          approvedEquipmentState.failed.add(cacheKey);
+          console.warn(`Утверждённая экипировка ${itemId} (${bodyKey}) не содержит skinned mesh.`);
           resolve(null);
           return;
         }
-        approvedBootState.templates.set(bodyKey, template);
+        approvedEquipmentState.templates.set(cacheKey, template);
         resolve(template);
       }, undefined, error => {
-        approvedBootState.failed.add(bodyKey);
-        console.warn(`Не удалось загрузить утверждённые ботинки ${bodyKey}.`, error);
+        approvedEquipmentState.failed.add(cacheKey);
+        console.warn(`Не удалось загрузить утверждённую экипировку ${itemId} (${bodyKey}).`, error);
         resolve(null);
       });
     }).finally(() => {
-      approvedBootState.promises.delete(bodyKey);
+      approvedEquipmentState.promises.delete(cacheKey);
     });
-    approvedBootState.promises.set(bodyKey, promise);
+    approvedEquipmentState.promises.set(cacheKey, promise);
     return promise;
   }
 
-  function approvedBootFallbackMeshes(parts = {}) {
-    return [
-      parts.baseBootL,
-      parts.baseBootR,
-      parts.baseGaiterL,
-      parts.baseGaiterR,
-      parts.bootL,
-      parts.bootR,
-      parts.serviceScoutBootL,
-      parts.serviceScoutBootR
-    ].filter(Boolean);
+  function loadApprovedBootTemplate(bodyKey = '') {
+    return loadApprovedEquipmentTemplate('boots', bodyKey);
   }
 
-  function removeApprovedBootRuntime(actor) {
-    const state = actor?.userData?.approvedBootRuntime;
+  function approvedEquipmentFallbackMeshes(parts = {}, slot = '') {
+    if (slot === 'boots') {
+      return [
+        parts.baseBootL, parts.baseBootR, parts.baseGaiterL, parts.baseGaiterR,
+        parts.bootL, parts.bootR, parts.serviceScoutBootL, parts.serviceScoutBootR
+      ].filter(Boolean);
+    }
+    if (slot === 'helmet') {
+      return [
+        parts.helmet, parts.helmetVisor, parts.helmetFront,
+        parts.helmetPodL, parts.helmetPodR
+      ].filter(Boolean);
+    }
+    if (slot === 'armor') {
+      return [
+        parts.chestPlate, parts.shoulderL, parts.shoulderR, parts.energyCore,
+        parts.visor, parts.canister, parts.leatherTorso, parts.leatherSleeveL,
+        parts.leatherSleeveR, parts.leatherCollarL, parts.leatherCollarR
+      ].filter(Boolean);
+    }
+    return [];
+  }
+
+  function removeApprovedEquipmentRuntime(actor, slot = '') {
+    const runtimes = actor?.userData?.approvedEquipmentRuntimes;
+    const state = runtimes?.[slot];
     if (!state) return;
     state.requestId = Number(state.requestId || 0) + 1;
     state.mesh?.parent?.remove?.(state.mesh);
-    delete actor.userData.approvedBootRuntime;
+    delete runtimes[slot];
   }
 
-  function makeApprovedBootInstance(template, characterRoot) {
+  function removeApprovedEquipmentRuntimes(actor) {
+    ['armor', 'helmet', 'boots'].forEach(slot => removeApprovedEquipmentRuntime(actor, slot));
+    if (actor?.userData) delete actor.userData.approvedEquipmentRuntimes;
+  }
+
+  function removeApprovedBootRuntime(actor) {
+    removeApprovedEquipmentRuntime(actor, 'boots');
+  }
+
+  function makeApprovedEquipmentInstance(template, characterRoot, itemId = '') {
     const sourceMeshes = Array.isArray(template?.sourceMeshes) ? template.sourceMeshes : [];
     if (!sourceMeshes.length || !characterRoot) return null;
     template.scene.updateMatrixWorld(true);
     const group = new THREE.Group();
-    group.name = 'approved_equipment_boots';
+    group.name = `approved_equipment_${itemId}`;
     for (const sourceMesh of sourceMeshes) {
       if (!sourceMesh?.skeleton) return null;
       const targetBones = sourceMesh.skeleton.bones.map(sourceBone => (
@@ -178,7 +253,7 @@
       ));
       if (targetBones.some(bone => !bone)) return null;
       const mesh = new THREE.SkinnedMesh(sourceMesh.geometry, sourceMesh.material);
-      mesh.name = `approved_equipment_boots_${sourceMesh.material?.name || group.children.length}`;
+      mesh.name = `approved_equipment_${itemId}_${sourceMesh.material?.name || group.children.length}`;
       sourceMesh.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);
       mesh.bindMode = sourceMesh.bindMode;
       mesh.bind(
@@ -198,46 +273,59 @@
     return group.children.length === sourceMeshes.length ? group : null;
   }
 
-  function applyApprovedBootsVisual(actor, eq = {}) {
+  function applyApprovedEquipmentSlot(actor, eq = {}, slot = '') {
     if (!actor?.userData) return false;
     const parts = actor.userData.parts || actor.userData.actorParts || {};
     const characterRuntime = actor.userData.characterGlbRuntime;
-    const bootsId = String(equipmentVisualBaseId(eq?.boots || '') || '');
-    const wanted = bootsId === 'boots' && !!characterRuntime?.root;
-    const current = actor.userData.approvedBootRuntime;
+    const itemId = String(equipmentVisualBaseId(eq?.[slot] || '') || '');
+    const definition = APPROVED_EQUIPMENT_ASSETS[itemId];
+    const wanted = definition?.slot === slot && !!characterRuntime?.root;
+    actor.userData.approvedEquipmentRuntimes = actor.userData.approvedEquipmentRuntimes || {};
+    const current = actor.userData.approvedEquipmentRuntimes[slot];
     if (!wanted) {
-      if (current) removeApprovedBootRuntime(actor);
+      if (current) removeApprovedEquipmentRuntime(actor, slot);
       return false;
     }
-    const bodyKey = approvedBootBodyKey(actor);
-    if (current?.bodyKey === bodyKey && current.mesh?.parent === characterRuntime.root) {
-      approvedBootFallbackMeshes(parts).forEach(mesh => { mesh.visible = false; });
+    const bodyKey = approvedEquipmentBodyKey(actor);
+    if (current?.itemId === itemId && current?.bodyKey === bodyKey && current.mesh?.parent === characterRuntime.root) {
+      approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
       return true;
     }
-    removeApprovedBootRuntime(actor);
-    const requestId = Number(actor.userData.approvedBootRequestId || 0) + 1;
-    actor.userData.approvedBootRequestId = requestId;
-    actor.userData.approvedBootRuntime = { bodyKey, requestId, mesh: null };
-    loadApprovedBootTemplate(bodyKey).then(template => {
-      const runtime = actor.userData.approvedBootRuntime;
+    removeApprovedEquipmentRuntime(actor, slot);
+    actor.userData.approvedEquipmentRequestIds = actor.userData.approvedEquipmentRequestIds || {};
+    const requestId = Number(actor.userData.approvedEquipmentRequestIds[slot] || 0) + 1;
+    actor.userData.approvedEquipmentRequestIds[slot] = requestId;
+    actor.userData.approvedEquipmentRuntimes[slot] = { itemId, bodyKey, requestId, mesh: null };
+    loadApprovedEquipmentTemplate(itemId, bodyKey).then(template => {
+      const runtime = actor.userData.approvedEquipmentRuntimes?.[slot];
       const activeCharacter = actor.userData.characterGlbRuntime;
+      const activeEquipment = actor.userData.enemyEquipment || actor.userData.equipment || eq;
       if (
         !template
         || runtime?.requestId !== requestId
+        || runtime?.itemId !== itemId
         || runtime?.bodyKey !== bodyKey
         || activeCharacter !== characterRuntime
-        || String(equipmentVisualBaseId((actor.userData.enemyEquipment || actor.userData.equipment || eq)?.boots || '') || '') !== 'boots'
+        || String(equipmentVisualBaseId(activeEquipment?.[slot] || '') || '') !== itemId
       ) return;
-      const mesh = makeApprovedBootInstance(template, activeCharacter.root);
+      const mesh = makeApprovedEquipmentInstance(template, activeCharacter.root, itemId);
       if (!mesh) {
-        console.warn(`Не удалось привязать утверждённые ботинки ${bodyKey} к персонажу.`);
+        console.warn(`Не удалось привязать утверждённую экипировку ${itemId} (${bodyKey}) к персонажу.`);
         return;
       }
       activeCharacter.root.add(mesh);
       runtime.mesh = mesh;
-      approvedBootFallbackMeshes(parts).forEach(fallback => { fallback.visible = false; });
+      approvedEquipmentFallbackMeshes(parts, slot).forEach(fallback => { fallback.visible = false; });
     });
     return false;
+  }
+
+  function applyApprovedEquipmentVisuals(actor, eq = {}) {
+    return ['armor', 'helmet', 'boots'].map(slot => applyApprovedEquipmentSlot(actor, eq, slot));
+  }
+
+  function applyApprovedBootsVisual(actor, eq = {}) {
+    return applyApprovedEquipmentSlot(actor, eq, 'boots');
   }
 
   function compileApprovedGripPose(gltf) {
@@ -552,7 +640,7 @@
     const appearance = normalizeCharacterAppearance(characterProfile?.appearance || {});
     return Promise.all([
       loadApprovedNpcAnimationClips(),
-      loadApprovedBootTemplate(`${appearance.sex}_${appearance.bodyType}`),
+      loadApprovedEquipmentTemplate('boots', `${appearance.sex}_${appearance.bodyType}`),
       loadApprovedAssaultRifleGrip()
     ]);
   }

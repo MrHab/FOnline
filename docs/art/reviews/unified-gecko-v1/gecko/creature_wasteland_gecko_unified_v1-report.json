@@ -1,0 +1,234 @@
+{
+  "assetId": "creature_wasteland_gecko_unified_v1",
+  "file": "creature_wasteland_gecko_unified_v1.glb",
+  "boundsIdleMetres": {
+    "minimum": [
+      -0.715127,
+      -1.382985,
+      -0.0
+    ],
+    "maximum": [
+      0.714968,
+      1.877569,
+      1.943988
+    ],
+    "size": [
+      1.430095,
+      3.260554,
+      1.943988
+    ]
+  },
+  "collider": {
+    "type": "box",
+    "size": [
+      1.430095,
+      3.260554,
+      1.943988
+    ],
+    "center": [
+      -8e-05,
+      0.247292,
+      0.971994
+    ]
+  },
+  "rig": {
+    "armatures": 1,
+    "boneCount": 29,
+    "bones": [
+      "Back",
+      "BackFoot.L",
+      "BackFoot.R",
+      "BackLeg.L",
+      "BackLeg.R",
+      "BackLowLeg.L",
+      "BackLowLeg.R",
+      "BackUpLeg.L",
+      "BackUpLeg.R",
+      "Body",
+      "FrontFoot.L",
+      "FrontFoot.R",
+      "FrontLeg.L",
+      "FrontLeg.R",
+      "FrontLowLeg.L",
+      "FrontLowLeg.R",
+      "FrontUpLeg.L",
+      "FrontUpLeg.R",
+      "Head",
+      "Hips",
+      "Neck",
+      "Shoulders",
+      "Tail1",
+      "Tail2",
+      "Tail3",
+      "Tail4",
+      "Tail5",
+      "Torso",
+      "root"
+    ]
+  },
+  "requiredAnimations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "hurt",
+    "death"
+  ],
+  "actualGlb": {
+    "meshDefinitions": 2,
+    "positionVertices": 3256,
+    "triangles": 1648,
+    "materials": 5,
+    "textures": 15,
+    "skins": 1,
+    "skinJointCounts": [
+      29
+    ],
+    "animations": [
+      "attack",
+      "death",
+      "hurt",
+      "idle",
+      "run",
+      "walk"
+    ],
+    "nodes": [
+      "FrontFoot.R",
+      "FrontLowLeg.R",
+      "FrontUpLeg.R",
+      "FrontLeg.R",
+      "BackLowLeg.R",
+      "BackUpLeg.R",
+      "BackLeg.R",
+      "FrontFoot.L",
+      "FrontLowLeg.L",
+      "FrontUpLeg.L",
+      "FrontLeg.L",
+      "BackLowLeg.L",
+      "BackUpLeg.L",
+      "BackLeg.L",
+      "Tail5",
+      "Tail4",
+      "Tail3",
+      "Tail2",
+      "Tail1",
+      "Back",
+      "Head",
+      "Neck",
+      "Shoulders",
+      "Torso",
+      "Hips",
+      "Body",
+      "BackFoot.R",
+      "BackFoot.L",
+      "root",
+      "gecko_continuous_body",
+      "gecko_facial_details",
+      "gecko_rig",
+      "creature_wasteland_gecko_unified_v1"
+    ]
+  },
+  "geometryAnalysis": {
+    "primaryBodyConnectedComponents": 1,
+    "primaryBodyTopology": "Quaternius continuous biped reptile topology, adjusted",
+    "flatShaded": true,
+    "facialDetailMesh": "gecko_facial_details",
+    "facialDetailObjects": 1,
+    "adjustments": {
+      "ridgePolygons": 62,
+      "materialPolygonCounts": {
+        "gecko_weathered_olive_scales": 430,
+        "gecko_dusty_ochre_underbelly": 92,
+        "gecko_burnt_rust_dorsal_ridge": 62,
+        "gecko_charcoal_eyes_claws": 80
+      }
+    }
+  },
+  "actionRefinements": {
+    "attack": {
+      "tailReference": "run frame 6",
+      "tailKeyframes": [
+        0,
+        5,
+        7,
+        9,
+        12,
+        16,
+        20
+      ],
+      "forelimbReference": "idle frame 30",
+      "forelimbBones": [
+        "FrontUpLeg.L",
+        "FrontLowLeg.L",
+        "FrontFoot.L",
+        "FrontUpLeg.R",
+        "FrontLowLeg.R",
+        "FrontFoot.R"
+      ],
+      "purpose": "low counterbalancing tail and neutral separated forelimbs expose the head-first lunge"
+    },
+    "death": {
+      "sourceToTargetPoseFrames": {
+        "0": 0,
+        "20": 12,
+        "31": 31
+      },
+      "purpose": "direct full-rig blend from stance through grounded collapse to final rest, without the donor's vertical neck extension"
+    }
+  },
+  "groundContactCorrections": {
+    "clearanceMetres": 0.0015,
+    "penetrationToleranceMetres": 0.0005,
+    "actions": {
+      "idle": {
+        "sampledFrames": 61,
+        "minimumBeforeMetres": 0.0,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.0
+      },
+      "walk": {
+        "sampledFrames": 59,
+        "minimumBeforeMetres": -0.042768,
+        "minimumAfterMetres": -0.000116,
+        "maximumVerticalCorrectionMetres": 0.044268
+      },
+      "run": {
+        "sampledFrames": 14,
+        "minimumBeforeMetres": -0.027529,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.029029
+      },
+      "attack": {
+        "sampledFrames": 21,
+        "minimumBeforeMetres": -0.001333,
+        "minimumAfterMetres": -0.000296,
+        "maximumVerticalCorrectionMetres": 0.002833
+      },
+      "hurt": {
+        "sampledFrames": 11,
+        "minimumBeforeMetres": 0.0,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.0
+      },
+      "death": {
+        "sampledFrames": 32,
+        "minimumBeforeMetres": -0.172689,
+        "minimumAfterMetres": 0.0,
+        "maximumVerticalCorrectionMetres": 0.174189
+      }
+    }
+  },
+  "provenance": {
+    "donor": "Quaternius Animated Dinosaur Pack / Velociraptor.blend",
+    "donorSha256": "ADDFA06B9851B61F8E53B0CD1468E45C43CA0F4F2D2C6B756F1C8C0EFA5FFFC1",
+    "license": "CC0 1.0 Universal",
+    "sourceUrl": "https://quaternius.com/packs/animateddinosaurs.html",
+    "geometry": "continuous donor topology with widened head and contact feet",
+    "rig": "Quaternius 29-bone biped reptile deform rig",
+    "animations": "Quaternius idle/walk/run/attack/death; original Realm hurt clip",
+    "materials": "original Realm of Ashes B+C packed PBR textures"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "7970765D978E9BB219557268445B795A50039E9717F2E13B1570073F35D2E454"
+}

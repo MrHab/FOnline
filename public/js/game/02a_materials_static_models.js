@@ -625,6 +625,20 @@
   });
 
   const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.9-ghoul-bc-v3';
+  const APPROVED_CREATURE_GLB_ASSET_VERSION = '7.77.0-approved-creatures-bc';
+  const APPROVED_CREATURE_STATIC_MODEL_KEYS = new Set([
+    'brahmin',
+    'friendlyBrahmin',
+    'enemyAshWolf',
+    'enemyRadscorpion',
+    'enemyMutantAnt',
+    'enemyGecko',
+    'enemyFireGecko'
+  ]);
+  const LAZY_SKINNED_STATIC_MODEL_KEYS = new Set([
+    'enemyGhoul',
+    ...APPROVED_CREATURE_STATIC_MODEL_KEYS
+  ]);
   const STATIC_MODEL_URLS = {
     barrel: '/assets/models/wasteland/rust_barrel_v1.glb',
     rustBarrel: '/assets/models/wasteland/rust_barrel_v1.glb',
@@ -1271,8 +1285,13 @@ varying float vInstanceOpacity;`
     if (usesFastModuleBlockRenderer(key)) return Promise.resolve(null);
     const sourceUrl = STATIC_MODEL_URLS[key];
     if (!sourceUrl) return Promise.resolve(null);
-    const url = key === 'enemyGhoul'
-      ? `${sourceUrl}?v=${encodeURIComponent(NPC_GHOUL_GLB_ASSET_VERSION)}`
+    const assetVersion = key === 'enemyGhoul'
+      ? NPC_GHOUL_GLB_ASSET_VERSION
+      : (APPROVED_CREATURE_STATIC_MODEL_KEYS.has(key)
+          ? APPROVED_CREATURE_GLB_ASSET_VERSION
+          : '');
+    const url = assetVersion
+      ? `${sourceUrl}?v=${encodeURIComponent(assetVersion)}`
       : sourceUrl;
     const state = staticModelState(key);
     if (state.source) return Promise.resolve(state.source);
@@ -1312,7 +1331,7 @@ varying float vInstanceOpacity;`
   function preloadStaticWorldModels() {
     return Promise.all(
       Object.keys(STATIC_MODEL_URLS)
-        .filter(key => key !== 'enemyGhoul')
+        .filter(key => !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))
         .map(requestStaticModel)
     );
   }

@@ -383,7 +383,10 @@
         scale: s,
         cloneMaterials: true,
         castShadow: !IS_MOBILE_DEVICE,
-        receiveShadow: false
+        receiveShadow: false,
+        afterApply: (_holder, instance, appliedKey) => {
+          configureEnemyStaticGlbAnimation(group, instance, appliedKey || modelKey);
+        }
       });
       model.position.set(0, 0, 0);
       group.add(model);
@@ -417,7 +420,13 @@
 
   function configureEnemyStaticGlbAnimation(actorGroup, model, modelKey) {
     if (
-      modelKey !== 'enemyGhoul'
+      (
+        modelKey !== 'enemyGhoul'
+        && (
+          typeof APPROVED_CREATURE_STATIC_MODEL_KEYS === 'undefined'
+          || !APPROVED_CREATURE_STATIC_MODEL_KEYS.has(modelKey)
+        )
+      )
       || !actorGroup
       || !model
       || typeof staticModelAnimations !== 'function'

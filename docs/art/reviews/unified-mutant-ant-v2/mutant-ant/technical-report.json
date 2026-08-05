@@ -1,0 +1,175 @@
+{
+  "schema": "realm.art-review.mutant-ant.v2",
+  "assetId": "creature_mutant_ant_unified_v2",
+  "sha256": "7419D9A522BE72424F2E94F31D2D2FE4B7B227DE25074A695FFE1C1B65B052FF",
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "approvedReviewSha256": "",
+  "artDirection": "geometry_b_materials_c",
+  "geometryDirection": "original organic Quaternius-principled topology; wedge-shaped head capsule, three-lobed thorax, two-node petiole, segmented gaster, six continuous legs, antennae and curved mandibles",
+  "materialDirection": "oxidized umber, dusty rust, dry ochre and charcoal with muted acid-gland accents and restrained contact wear",
+  "topology": {
+    "vertices": 1299,
+    "triangles": 2498,
+    "connectedComponents": 25,
+    "materialSlots": 7
+  },
+  "rig": {
+    "type": "full deforming skin",
+    "joints": 49,
+    "maximumVertexInfluences": 2,
+    "legChains": 6,
+    "legJointsPerChain": 5,
+    "antennaChains": 2,
+    "antennaJointsPerChain": 3,
+    "mandibleChains": 2,
+    "mandibleJointsPerChain": 2,
+    "gasterChainJoints": 5
+  },
+  "animations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "hurt",
+    "death"
+  ],
+  "groundContact": {
+    "idle": {
+      "sampledFrames": 49,
+      "minimumBeforeMetres": 0.011481,
+      "maximumBeforeMetres": 0.016778,
+      "minimumAfterMetres": 0.001,
+      "maximumAfterMetres": 0.001,
+      "maximumAbsoluteCorrectionMetres": 0.015778
+    },
+    "walk": {
+      "sampledFrames": 25,
+      "minimumBeforeMetres": 0.026076,
+      "maximumBeforeMetres": 0.071458,
+      "minimumAfterMetres": 0.001,
+      "maximumAfterMetres": 0.001,
+      "maximumAbsoluteCorrectionMetres": 0.070458
+    },
+    "run": {
+      "sampledFrames": 17,
+      "minimumBeforeMetres": 0.038571,
+      "maximumBeforeMetres": 0.095784,
+      "minimumAfterMetres": 0.001,
+      "maximumAfterMetres": 0.001,
+      "maximumAbsoluteCorrectionMetres": 0.094784
+    },
+    "attack": {
+      "sampledFrames": 22,
+      "minimumBeforeMetres": -0.02334,
+      "maximumBeforeMetres": 0.018087,
+      "minimumAfterMetres": 0.001,
+      "maximumAfterMetres": 0.001,
+      "maximumAbsoluteCorrectionMetres": 0.02434
+    },
+    "hurt": {
+      "sampledFrames": 15,
+      "minimumBeforeMetres": -0.014126,
+      "maximumBeforeMetres": 0.015068,
+      "minimumAfterMetres": 0.001,
+      "maximumAfterMetres": 0.001,
+      "maximumAbsoluteCorrectionMetres": 0.015126
+    },
+    "death": {
+      "sampledFrames": 30,
+      "minimumBeforeMetres": -0.034153,
+      "maximumBeforeMetres": 0.191827,
+      "minimumAfterMetres": 0.001,
+      "maximumAfterMetres": 0.001,
+      "maximumAbsoluteCorrectionMetres": 0.190827
+    }
+  },
+  "glb": {
+    "meshDefinitions": 1,
+    "positionVertices": 6788,
+    "triangles": 2498,
+    "materials": 7,
+    "textures": 21,
+    "skins": 1,
+    "skinJointCounts": [
+      49
+    ],
+    "animations": [
+      "attack",
+      "death",
+      "hurt",
+      "idle",
+      "run",
+      "walk"
+    ],
+    "nodes": [
+      "antenna_l_flagellum",
+      "antenna_l_pedicel",
+      "antenna_l_scape",
+      "mandible_l_tip",
+      "mandible_l_base",
+      "antenna_r_flagellum",
+      "antenna_r_pedicel",
+      "antenna_r_scape",
+      "mandible_r_tip",
+      "mandible_r_base",
+      "Head",
+      "neck",
+      "gaster_3",
+      "gaster_2",
+      "gaster_1",
+      "petiole_2",
+      "petiole_1",
+      "leg_0_l_tarsus",
+      "leg_0_l_basitarsus",
+      "leg_0_l_tibia",
+      "leg_0_l_femur",
+      "leg_0_l_coxa",
+      "leg_0_r_tarsus",
+      "leg_0_r_basitarsus",
+      "leg_0_r_tibia",
+      "leg_0_r_femur",
+      "leg_0_r_coxa",
+      "leg_1_l_tarsus",
+      "leg_1_l_basitarsus",
+      "leg_1_l_tibia",
+      "leg_1_l_femur",
+      "leg_1_l_coxa",
+      "leg_1_r_tarsus",
+      "leg_1_r_basitarsus",
+      "leg_1_r_tibia",
+      "leg_1_r_femur",
+      "leg_1_r_coxa",
+      "leg_2_l_tarsus",
+      "leg_2_l_basitarsus",
+      "leg_2_l_tibia",
+      "leg_2_l_femur",
+      "leg_2_l_coxa",
+      "leg_2_r_tarsus",
+      "leg_2_r_basitarsus",
+      "leg_2_r_tibia",
+      "leg_2_r_femur",
+      "leg_2_r_coxa",
+      "thorax",
+      "root",
+      "creature_mutant_ant_unified_v2_continuous_exoskeleton",
+      "creature_mutant_ant_unified_v2_rig",
+      "creature_mutant_ant_unified_v2"
+    ]
+  },
+  "textureSize": 512,
+  "materials": [
+    "mutant_ant_oxidized_umber_carapace",
+    "mutant_ant_dusty_rust_dorsal_plates",
+    "mutant_ant_dry_ochre_ventral_chitin",
+    "mutant_ant_charcoal_joint_membranes",
+    "mutant_ant_worn_black_mandibles_and_feet",
+    "mutant_ant_dull_amber_compound_eyes",
+    "mutant_ant_muted_acid_gland"
+  ],
+  "source": {
+    "geometry": "Original Realm of Ashes authored topology",
+    "method": "Reproducible Blender-authored exoskeleton following the silhouette, edge-flow and controlled-facet principles used by Quaternius",
+    "license": "Project-owned original work"
+  }
+}

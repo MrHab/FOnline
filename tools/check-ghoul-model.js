@@ -149,7 +149,9 @@ const staticRuntime = fs.readFileSync(STATIC_RUNTIME_FILE, 'utf8');
   'new THREE.Skeleton(bones, inverses)',
   'function staticModelAnimations(key)',
   'state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];',
-  ".filter(key => key !== 'enemyGhoul')"
+  'const LAZY_SKINNED_STATIC_MODEL_KEYS = new Set([',
+  "'enemyGhoul'",
+  '.filter(key => !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))'
 ].forEach(marker => assert(staticRuntime.includes(marker), `ghoul loader integration is missing: ${marker}`));
 
 const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');

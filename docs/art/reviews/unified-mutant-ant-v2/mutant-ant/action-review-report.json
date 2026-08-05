@@ -1,0 +1,272 @@
+{
+  "assetId": "creature_mutant_ant_unified_v2",
+  "model": "docs/art/reviews/unified-mutant-ant-v2/mutant-ant/creature_mutant_ant_unified_v2.glb",
+  "actions": {
+    "idle": [
+      1.0,
+      49.0
+    ],
+    "walk": [
+      1.0,
+      25.0
+    ],
+    "run": [
+      1.0,
+      17.0
+    ],
+    "attack": [
+      1.0,
+      22.0
+    ],
+    "hurt": [
+      1.0,
+      15.0
+    ],
+    "death": [
+      1.0,
+      30.0
+    ]
+  },
+  "frames": [
+    {
+      "action": "idle",
+      "frame": 25,
+      "bounds": {
+        "minimum": [
+          -1.00695,
+          -1.10414,
+          0.0
+        ],
+        "maximum": [
+          1.00294,
+          1.04959,
+          0.68685
+        ]
+      }
+    },
+    {
+      "action": "walk",
+      "frame": 1,
+      "bounds": {
+        "minimum": [
+          -0.98127,
+          -1.09905,
+          0.0
+        ],
+        "maximum": [
+          0.98129,
+          1.06592,
+          0.70841
+        ]
+      }
+    },
+    {
+      "action": "walk",
+      "frame": 8,
+      "bounds": {
+        "minimum": [
+          -1.01306,
+          -1.09901,
+          0.0
+        ],
+        "maximum": [
+          1.0137,
+          1.07967,
+          0.68016
+        ]
+      }
+    },
+    {
+      "action": "walk",
+      "frame": 16,
+      "bounds": {
+        "minimum": [
+          -1.02399,
+          -1.09911,
+          0.0
+        ],
+        "maximum": [
+          1.0187,
+          1.05656,
+          0.69371
+        ]
+      }
+    },
+    {
+      "action": "walk",
+      "frame": 24,
+      "bounds": {
+        "minimum": [
+          -0.97781,
+          -1.09908,
+          0.0
+        ],
+        "maximum": [
+          0.98189,
+          1.07165,
+          0.70328
+        ]
+      }
+    },
+    {
+      "action": "run",
+      "frame": 1,
+      "bounds": {
+        "minimum": [
+          -1.00077,
+          -1.09654,
+          0.0
+        ],
+        "maximum": [
+          1.00079,
+          1.06847,
+          0.77814
+        ]
+      }
+    },
+    {
+      "action": "run",
+      "frame": 6,
+      "bounds": {
+        "minimum": [
+          -1.02066,
+          -1.097,
+          0.0
+        ],
+        "maximum": [
+          1.01585,
+          1.08677,
+          0.7404
+        ]
+      }
+    },
+    {
+      "action": "run",
+      "frame": 12,
+      "bounds": {
+        "minimum": [
+          -1.01594,
+          -1.09687,
+          0.0
+        ],
+        "maximum": [
+          1.02068,
+          1.076,
+          0.74296
+        ]
+      }
+    },
+    {
+      "action": "run",
+      "frame": 17,
+      "bounds": {
+        "minimum": [
+          -1.00077,
+          -1.09654,
+          0.0
+        ],
+        "maximum": [
+          1.00079,
+          1.07553,
+          0.77814
+        ]
+      }
+    },
+    {
+      "action": "attack",
+      "frame": 7,
+      "bounds": {
+        "minimum": [
+          -1.00499,
+          -1.10705,
+          0.0
+        ],
+        "maximum": [
+          1.00501,
+          1.02247,
+          0.76751
+        ]
+      }
+    },
+    {
+      "action": "attack",
+      "frame": 14,
+      "bounds": {
+        "minimum": [
+          -1.00499,
+          -1.09511,
+          -0.0
+        ],
+        "maximum": [
+          1.00501,
+          0.90505,
+          0.92814
+        ]
+      }
+    },
+    {
+      "action": "attack",
+      "frame": 22,
+      "bounds": {
+        "minimum": [
+          -1.00285,
+          -1.09963,
+          0.0
+        ],
+        "maximum": [
+          1.00705,
+          1.06183,
+          0.67033
+        ]
+      }
+    },
+    {
+      "action": "hurt",
+      "frame": 5,
+      "bounds": {
+        "minimum": [
+          -0.93151,
+          -1.12738,
+          -0.0
+        ],
+        "maximum": [
+          1.10241,
+          1.08875,
+          0.73218
+        ]
+      }
+    },
+    {
+      "action": "death",
+      "frame": 9,
+      "bounds": {
+        "minimum": [
+          -0.98343,
+          -1.0628,
+          0.0
+        ],
+        "maximum": [
+          0.96885,
+          1.0803,
+          0.79593
+        ]
+      }
+    },
+    {
+      "action": "death",
+      "frame": 30,
+      "bounds": {
+        "minimum": [
+          -1.03622,
+          -0.78322,
+          0.0
+        ],
+        "maximum": [
+          0.95257,
+          0.77182,
+          1.00095
+        ]
+      }
+    }
+  ]
+}

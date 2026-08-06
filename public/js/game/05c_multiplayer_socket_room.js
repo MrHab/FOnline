@@ -744,6 +744,11 @@
         attackToken: data.t || 0
       });
     });
+    multiplayer.socket.on('enemyAttackMiss', data => {
+      if (!data || data.locationId !== (currentLocation?.id || 'settlement')) return;
+      createFloatingText(player.x, player.z, 'Промах', '#d8d2b5');
+      addLog(`${data.enemyName || 'Противник'} промахивается.`, null, 'combat');
+    });
     multiplayer.socket.on('enemyAttack', data => {
       if (!data || data.locationId !== (currentLocation?.id || 'settlement')) return;
       const attacker = enemies.find(e => e && e.id === data.enemyId);

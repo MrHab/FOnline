@@ -34,6 +34,17 @@ const {
   transferCorpseLoot
 } = require('./src/server/npc-inventory');
 const {
+  actorHostilityKeys,
+  actorIsExplicitlyHostileToPlayer,
+  markActorHostileToPlayer,
+  addPlayerThreat,
+  observePlayerThreat,
+  playerThreatScore,
+  targetInsideVisionArc,
+  npcAttackHitChance,
+  segmentIntersectsRotatedBlocker
+} = require('./src/server/enemy-ai');
+const {
   HAND_EQUIPMENT_SLOTS: SERVER_HAND_EQUIPMENT_SLOTS,
   activeWeaponId: equipmentActiveWeaponId,
   activeWeaponSlot: equipmentActiveWeaponSlot,
@@ -3002,6 +3013,7 @@ function serverFactionRelation(a = '', b = '') {
 function serverActorHostileToPlayer(actor = null, player = null) {
   if (!actor || !player || actor.dead || player.dead || Number(player.hp || 0) <= 0) return false;
   if (locationIsFactionCapital(player.locationId || player.currentLocationId || '')) return false;
+  if (actorIsExplicitlyHostileToPlayer(actor, player)) return true;
   const actorGroup = serverCombatFactionGroup(actor.faction || '');
   if (!actorGroup || actorGroup === 'neutral') return false;
   if (actor.hostileToPlayer === true) return true;
@@ -4531,8 +4543,44 @@ function serverNpcPrepareCombatWeapon(enemy = {}, target = null) {
     enemy.inventoryUpdatedAt = Date.now();
     enemy.lastWeaponSwitchAt = Date.now();
     enemy.lastWeaponSwitchFrom = prepared.previousWeapon;
+    enemy.npcMagazineWeaponId = '';
+    enemy.npcMagazineLoaded = 0;
+    enemy.npcReloadUntil = 0;
   }
   return prepared.weapon || SERVER_WEAPONS.fists;
+}
+
+function serverNpcReloadDurationMs(enemy = {}, weapon = null) {
+  const activeWeapon = weapon || serverNpcWeaponDef(enemy);
+  const agility = clamp(Number(enemy.npcProfile?.special?.AG || 5), 1, 10);
+  const base = 950 + Math.max(1, Number(activeWeapon.reloadApCost || 2)) * 260;
+  return Math.max(850, Math.round(base * (1.08 - (agility - 5) * 0.035)));
+}
+
+function serverNpcCombatWeaponReady(enemy = {}, weapon = null, now = Date.now()) {
+  const activeWeapon = weapon || serverNpcWeaponDef(enemy);
+  if (!activeWeapon?.ammoType) return { ready: true, reloading: false, loaded: 0 };
+  const weaponId = String(activeWeapon.id || '');
+  const remainingAmmo = serverInventoryQty(enemy.inventory || [], activeWeapon.ammoType);
+  if (String(enemy.npcMagazineWeaponId || '') !== weaponId) {
+    enemy.npcMagazineWeaponId = weaponId;
+    enemy.npcMagazineLoaded = Math.min(Math.max(1, Number(activeWeapon.magSize || 1)), remainingAmmo);
+    enemy.npcReloadUntil = 0;
+  }
+  if (Number(enemy.npcMagazineLoaded || 0) > 0) {
+    enemy.npcReloadUntil = 0;
+    return { ready: true, reloading: false, loaded: Number(enemy.npcMagazineLoaded || 0) };
+  }
+  if (remainingAmmo <= 0) return { ready: false, reloading: false, loaded: 0 };
+  if (!Number(enemy.npcReloadUntil || 0)) {
+    enemy.npcReloadUntil = now + serverNpcReloadDurationMs(enemy, activeWeapon);
+  }
+  if (now < Number(enemy.npcReloadUntil || 0)) {
+    return { ready: false, reloading: true, loaded: 0, until: Number(enemy.npcReloadUntil || 0) };
+  }
+  enemy.npcMagazineLoaded = Math.min(Math.max(1, Number(activeWeapon.magSize || 1)), remainingAmmo);
+  enemy.npcReloadUntil = 0;
+  return { ready: enemy.npcMagazineLoaded > 0, reloading: false, loaded: Number(enemy.npcMagazineLoaded || 0) };
 }
 
 function serverNpcConsumeCombatAmmo(enemy = {}, weapon = null, target = null, now = Date.now()) {
@@ -4546,9 +4594,15 @@ function serverNpcConsumeCombatAmmo(enemy = {}, weapon = null, target = null, no
     enemy.inventoryUpdatedAt = now;
     enemy.ammoSpent = Math.max(0, Math.floor(Number(enemy.ammoSpent || 0))) + Math.max(0, Number(result.consumed || 0));
   }
+  if (result.consumed > 0 && String(enemy.npcMagazineWeaponId || '') === String(activeWeapon.id || '')) {
+    enemy.npcMagazineLoaded = Math.max(0, Number(enemy.npcMagazineLoaded || 0) - result.consumed);
+  }
   if (result.switched) {
     enemy.lastWeaponSwitchAt = now;
     enemy.lastWeaponSwitchFrom = activeWeapon.id || '';
+    enemy.npcMagazineWeaponId = '';
+    enemy.npcMagazineLoaded = 0;
+    enemy.npcReloadUntil = 0;
   }
   return result;
 }
@@ -4630,7 +4684,7 @@ function serverNpcLineOfFireClear(room, shooter = {}, target = {}) {
     x: Number(target.x || 0),
     z: Number(target.z || 0),
     scale: Number(target.scale || 0.9)
-  });
+  }, { targetCrouching: !!target.crouching });
 }
 
 function emitServerNpcShot(room, shooter = {}, target = {}, weapon = null, opts = {}) {
@@ -7244,7 +7298,16 @@ function serverLineOfFireClearFrom(room, fromX, fromZ, enemy, opts = {}) {
   // выстрел, хотя клиент визуально навёлся прямо в моба.
   const checkDist = Math.max(0.15, dist - targetRadius);
   const clear = roomBlockingDistanceOnRay(room, fromX, fromZ, dx / len, dz / len, checkDist, { shooterCrouching: !!opts.shooterCrouching });
-  return clear + 0.35 >= checkDist;
+  if (clear + 0.35 < checkDist) return false;
+  if (opts.targetCrouching) {
+    const start = worldToTile(fromX, fromZ);
+    const end = worldToTile(enemyX, enemyZ);
+    if (isCrouchedTargetHiddenBehindLowCover(room, start.tx, start.tz, end.tx, end.tz)) return false;
+  }
+  return !roomStaticCollisionBlocksSegment(room, fromX, fromZ, enemyX, enemyZ, 0.045, {
+    startPadding: 0.32,
+    endPadding: targetRadius * 0.72
+  });
 }
 
 function serverLineOfFireClear(room, p, enemy, dist) {
@@ -7989,6 +8052,9 @@ const ENEMY_HIT_AGGRO_SEARCH_MS = 6200;
 const ENEMY_NOISE_MAX_INVESTIGATE_MS = 15500;
 const ENEMY_RETURN_HOME_DISTANCE = 10.0;
 const ENEMY_IDLE_HOME_RADIUS = 5.0;
+const ENEMY_RESPAWN_INTERVAL_MS = Math.max(15000, Number(process.env.ENEMY_RESPAWN_INTERVAL_MS || 120000));
+const ENEMY_RESPAWN_BATCH = Math.max(1, Math.min(4, Number(process.env.ENEMY_RESPAWN_BATCH || 2)));
+const ENEMY_RESPAWN_MIN_PLAYER_DISTANCE = Math.max(10, Number(process.env.ENEMY_RESPAWN_MIN_PLAYER_DISTANCE || 16));
 // Observed rooms keep the full server tick. An empty room only gets a short
 // settling window, or keeps ticking while a real-time battle / physical party
 // departure still needs local actors. The authoritative wasteland simulation
@@ -8037,7 +8103,14 @@ function enemyHearingRange(enemy, type = 'noise') {
   return enemyNumberStat(enemy, 'hearingShotRange', ENEMY_HEARING_SHOT_RANGE);
 }
 function enemyMemoryMs(enemy) { return enemyNumberStat(enemy, 'memoryMs', ENEMY_MEMORY_MS); }
-function enemyChaseMemoryMs(enemy) { return Math.max(enemyMemoryMs(enemy), enemyNumberStat(enemy, 'chaseMemoryMs', ENEMY_CHASE_MEMORY_MS)); }
+function enemyChaseMemoryMs(enemy) {
+  const memory = enemyMemoryMs(enemy);
+  const own = Number(enemy?.chaseMemoryMs);
+  const fromType = Number(enemyTypeDef(enemy)?.chaseMemoryMs);
+  if (Number.isFinite(own)) return Math.max(memory, own);
+  if (Number.isFinite(fromType)) return Math.max(memory, fromType);
+  return Math.min(ENEMY_CHASE_MEMORY_MS, Math.max(4500, memory * 1.8));
+}
 function enemyInvestigateMs(enemy) { return enemyNumberStat(enemy, 'investigateMs', ENEMY_INVESTIGATE_MS); }
 function enemySenseIntervalMs(enemy) { return enemyNumberStat(enemy, 'senseIntervalMs', ENEMY_SENSE_INTERVAL_MS); }
 function enemyNoiseReaction(enemy) { return clamp(enemyNumberStat(enemy, 'noiseReaction', 0.65), 0, 1); }
@@ -8063,6 +8136,10 @@ function beginEnemyReturnHome(enemy) {
   enemy.investigateZ = null;
   enemy.investigateStartedAt = 0;
   enemy.investigateUntil = 0;
+  enemy.searchPoints = null;
+  enemy.searchIndex = 0;
+  enemy.searchPauseUntil = 0;
+  enemy.searchUntil = 0;
   enemy.lastKnownX = home.x;
   enemy.lastKnownZ = home.z;
   enemy.wanderTimer = 0;
@@ -8163,6 +8240,7 @@ function isCrouchedTargetHiddenBehindLowCover(room, sx, sz, tx, tz) {
   return false;
 }
 function roomHasHighLineOfSight(room, fromX, fromZ, toX, toZ) {
+  if (roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, 0.055, { startPadding: 0.3, endPadding: 0.42 })) return false;
   const start = worldToTile(fromX, fromZ);
   const end = worldToTile(toX, toZ);
   if (!inBounds(start.tx, start.tz) || !inBounds(end.tx, end.tz)) return false;
@@ -8183,6 +8261,10 @@ function enemyCanSeePlayer(room, enemy, p, now = Date.now()) {
     visionRange *= Math.max(0.35, 1 - stealthReduction);
   }
   if (!closeEnough && d > visionRange) return false;
+  if (!targetInsideVisionArc(enemy, p, {
+    closeDistance: 1.7,
+    naturalCreature: serverNpcIsNaturalCreature(enemy, enemy)
+  })) return false;
   if (!roomHasHighLineOfSight(room, enemy.x, enemy.z, p.x, p.z)) return false;
   if (p.crouching) {
     const a = worldToTile(enemy.x, enemy.z);
@@ -8196,15 +8278,20 @@ function enemyCanSeePlayer(room, enemy, p, now = Date.now()) {
 }
 function chooseVisibleEnemyTarget(room, enemy, candidates, now = Date.now()) {
   let best = null;
-  let bestScore = Infinity;
+  let bestScore = -Infinity;
   for (const p of candidates) {
     if (!serverActorHostileToPlayer(enemy, p)) continue;
     const d = Math.hypot(Number(p.x || 0) - Number(enemy.x || 0), Number(p.z || 0) - Number(enemy.z || 0));
     if (d > enemyVisionRange(enemy)) continue;
     if (!enemyCanSeePlayer(room, enemy, p, now)) continue;
-    if (d < bestScore) { bestScore = d; best = p; }
+    observePlayerThreat(enemy, p, now);
+    const score = playerThreatScore(enemy, p, { now, distance: d, visible: true });
+    if (score > bestScore) { bestScore = score; best = p; }
   }
-  return { target: best, distance: bestScore };
+  const distance = best
+    ? Math.hypot(Number(best.x || 0) - Number(enemy.x || 0), Number(best.z || 0) - Number(enemy.z || 0))
+    : Infinity;
+  return { target: best, distance, threat: bestScore };
 }
 
 function chooseImmediatePlayerThreat(room, enemy, roomPlayers = [], now = Date.now()) {
@@ -8212,8 +8299,9 @@ function chooseImmediatePlayerThreat(room, enemy, roomPlayers = [], now = Date.n
   const currentTargetId = String(enemy.targetId || '');
   const remembered = currentTargetId ? roomPlayers.find(p => p && p.id === currentTargetId && !p.dead && Number(p.hp || 0) > 0 && serverActorHostileToPlayer(enemy, p)) : null;
   if (remembered && now - Number(enemy.lastSenseAt || 0) <= enemyChaseMemoryMs(enemy)) {
-    refreshEnemyTrackToMovingTarget(room, enemy, remembered, now);
-    return { target: remembered, visible: enemyCanSeePlayer(room, enemy, remembered, now), remembered: true };
+    const visible = enemyCanSeePlayer(room, enemy, remembered, now);
+    if (visible) refreshEnemyTrackToMovingTarget(room, enemy, remembered, now);
+    return { target: remembered, visible, remembered: true };
   }
   const sensed = chooseVisibleEnemyTarget(room, enemy, roomPlayers, now);
   if (!sensed.target) return null;
@@ -8228,6 +8316,13 @@ function findNearestFactionFoe(room, actor, actors = null) {
   for (const other of rows) {
     if (!other || other.dead || other.id === actor.id || !serverFactionsHostile(actor, other)) continue;
     const d = Math.hypot(Number(other.x || 0) - Number(actor.x || 0), Number(other.z || 0) - Number(actor.z || 0));
+    const detectionRange = Math.max(4.5, enemyVisionRange(actor) * 1.2);
+    const visible = d <= detectionRange && roomHasHighLineOfSight(room, actor.x, actor.z, other.x, other.z);
+    const remembered = String(actor.factionTargetId || '') === String(other.id || '')
+      && Date.now() - Number(actor.lastFactionSenseAt || 0) <= enemyMemoryMs(actor)
+      && d <= detectionRange * 1.8;
+    if (!visible && !remembered) continue;
+    if (visible) actor.lastFactionSenseAt = Date.now();
     if (d < bestDist) { bestDist = d; best = other; }
   }
   return { foe: best, distance: bestDist };
@@ -8282,7 +8377,114 @@ function extendEnemyInvestigationWithoutRetarget(enemy, until, now = Date.now())
   const startedAt = Number(enemy.investigateStartedAt || enemy.lastNoiseAt || now);
   const capped = Math.min(Number(until || now), startedAt + ENEMY_NOISE_MAX_INVESTIGATE_MS);
   enemy.investigateUntil = Math.max(Number(enemy.investigateUntil || 0), capped);
+  enemy.searchUntil = Math.max(Number(enemy.searchUntil || 0), enemy.investigateUntil + 1200);
 }
+
+function buildEnemySearchPoints(room, enemy, x, z, opts = {}) {
+  const center = opts.scatter === false
+    ? { x: Number(x || 0), z: Number(z || 0) }
+    : chooseNoiseInvestigationPoint(room, x, z, enemy);
+  const points = [];
+  const addPoint = (px, pz) => {
+    if (!Number.isFinite(px) || !Number.isFinite(pz)) return;
+    if (!isRoomWalkableWorld(room, px, pz, 0.28)) return;
+    if (points.some(point => Math.hypot(point.x - px, point.z - pz) < 0.65)) return;
+    points.push({ x: px, z: pz });
+  };
+  addPoint(center.x, center.z);
+  const seed = stableEnemyUnit(`${enemy.id}:${Math.round(center.x * 4)}:${Math.round(center.z * 4)}:search`);
+  const pointCount = Math.max(2, Math.min(4, Math.floor(Number(opts.pointCount || 3))));
+  for (let i = 0; i < pointCount * 4 && points.length < pointCount; i++) {
+    const angle = seed * Math.PI * 2 + i * 2.399963229728653;
+    const radius = 1.3 + (i % 3) * 0.85;
+    const px = center.x + Math.cos(angle) * radius;
+    const pz = center.z + Math.sin(angle) * radius;
+    if (isRoomWalkableWorld(room, px, pz, 0.28)) {
+      addPoint(px, pz);
+      continue;
+    }
+    const tile = worldToTile(px, pz);
+    const nearest = findNearestWalkablePathTile(room, tile.tx, tile.tz, 3);
+    if (nearest) {
+      const point = tileToWorld(nearest.tx, nearest.tz);
+      addPoint(point.x, point.z);
+    }
+  }
+  if (!points.length) points.push({ x: Number(enemy.x || 0), z: Number(enemy.z || 0) });
+  return points;
+}
+
+function beginEnemySearchAt(room, enemy, x, z, now = Date.now(), opts = {}) {
+  if (!room || !enemy || enemy.dead) return false;
+  const points = buildEnemySearchPoints(room, enemy, x, z, opts);
+  enemy.aiState = 'investigate';
+  enemy.targetId = '';
+  clearEnemyTacticalGoal(enemy);
+  enemy.searchPoints = points;
+  enemy.searchIndex = 0;
+  enemy.searchPauseUntil = 0;
+  enemy.investigateX = points[0].x;
+  enemy.investigateZ = points[0].z;
+  enemy.lastKnownX = Number(x || points[0].x);
+  enemy.lastKnownZ = Number(z || points[0].z);
+  enemy.investigateStartedAt = now;
+  const travelUntil = enemyTravelAwareInvestigateUntil(enemy, enemy.x, enemy.z, points[0].x, points[0].z, now, ENEMY_NOISE_ARRIVAL_SEARCH_MS);
+  enemy.investigateUntil = Math.max(Number(opts.until || 0), travelUntil);
+  enemy.searchUntil = Math.max(enemy.investigateUntil, now + enemyInvestigateMs(enemy) + 2200);
+  enemy.wanderTimer = 0;
+  invalidateEnemyPath(enemy);
+  return true;
+}
+
+function updateEnemySearch(room, enemy, dt, now = Date.now()) {
+  const hasLegacyPoint = Number.isFinite(Number(enemy.investigateX)) && Number.isFinite(Number(enemy.investigateZ));
+  if (enemy.aiState !== 'investigate' && !Array.isArray(enemy.searchPoints) && !hasLegacyPoint) return false;
+  if (!Array.isArray(enemy.searchPoints) || !enemy.searchPoints.length) {
+    if (!hasLegacyPoint) return false;
+    beginEnemySearchAt(room, enemy, enemy.investigateX, enemy.investigateZ, now, { scatter: false });
+  }
+  if (now > Number(enemy.searchUntil || enemy.investigateUntil || 0)) {
+    beginEnemyReturnHome(enemy);
+    return true;
+  }
+  const points = enemy.searchPoints || [];
+  const index = Math.max(0, Math.floor(Number(enemy.searchIndex || 0)));
+  const point = points[index];
+  if (!point) {
+    beginEnemyReturnHome(enemy);
+    return true;
+  }
+  enemy.aiState = 'investigate';
+  enemy.investigateX = point.x;
+  enemy.investigateZ = point.z;
+  if (now < Number(enemy.searchPauseUntil || 0)) {
+    enemy.vx = 0;
+    enemy.vz = 0;
+    const angle = stableEnemyUnit(`${enemy.id}:${index}:look`) * Math.PI * 2 + now / 620;
+    enemy.lookX = Number(enemy.x || 0) + Math.cos(angle) * 2;
+    enemy.lookZ = Number(enemy.z || 0) + Math.sin(angle) * 2;
+    return true;
+  }
+  if (Number(enemy.searchPauseUntil || 0) > 0) {
+    enemy.searchIndex = index + 1;
+    enemy.searchPauseUntil = 0;
+    if (enemy.searchIndex >= points.length) {
+      beginEnemyReturnHome(enemy);
+      return true;
+    }
+    invalidateEnemyPath(enemy);
+    return true;
+  }
+  const distance = moveEnemyTowards(room, enemy, point.x, point.z, enemy.speed * 0.72, dt);
+  if (distance < 0.72) {
+    enemy.vx = 0;
+    enemy.vz = 0;
+    enemy.searchPauseUntil = now + 650 + Math.floor(stableEnemyUnit(`${enemy.id}:${index}:pause`) * 650);
+    invalidateEnemyPath(enemy);
+  }
+  return true;
+}
+
 function forceEnemyInvestigatePoint(room, enemy, x, z, now = Date.now(), opts = {}) {
   if (!room || !enemy || enemy.dead) return;
   const px = Number(x || 0);
@@ -8291,16 +8493,12 @@ function forceEnemyInvestigatePoint(room, enemy, x, z, now = Date.now(), opts = 
   const shift = Number.isFinite(Number(enemy.investigateX)) && Number.isFinite(Number(enemy.investigateZ))
     ? Math.hypot(Number(enemy.investigateX) - investigate.x, Number(enemy.investigateZ) - investigate.z)
     : Infinity;
-  enemy.aiState = 'investigate';
-  enemy.targetId = '';
-  enemy.investigateX = investigate.x;
-  enemy.investigateZ = investigate.z;
-  enemy.lastKnownX = investigate.x;
-  enemy.lastKnownZ = investigate.z;
+  beginEnemySearchAt(room, enemy, investigate.x, investigate.z, now, { scatter: false, pointCount: opts.pointCount || 3 });
   enemy.lastNoiseAt = now;
   if (!Number(enemy.investigateStartedAt || 0) || opts.restart) enemy.investigateStartedAt = now;
   const extraMs = Number.isFinite(Number(opts.extraMs)) ? Number(opts.extraMs) : ENEMY_NOISE_ARRIVAL_SEARCH_MS;
   enemy.investigateUntil = enemyTravelAwareInvestigateUntil(enemy, enemy.x, enemy.z, investigate.x, investigate.z, now, extraMs);
+  enemy.searchUntil = Math.max(Number(enemy.searchUntil || 0), enemy.investigateUntil + 1600);
   enemy.lastNoiseType = String(opts.type || enemy.lastNoiseType || 'noise').slice(0, 24);
   enemy.lastNoiseSourceId = String(opts.sourceId || enemy.lastNoiseSourceId || '').slice(0, 64);
   enemy.noiseLockUntil = now + Math.max(ENEMY_NOISE_RETARGET_LOCK_MS, 4200);
@@ -8327,10 +8525,20 @@ function setEnemyChaseTarget(room, enemy, player, now = Date.now(), opts = {}) {
   enemy.investigateZ = null;
   enemy.investigateStartedAt = 0;
   enemy.investigateUntil = 0;
+  enemy.searchPoints = null;
+  enemy.searchIndex = 0;
+  enemy.searchPauseUntil = 0;
+  enemy.searchUntil = 0;
   enemy.noiseCooldownUntil = 0;
   enemy.wanderTimer = 0;
   enemy.trackingUntil = Math.max(Number(enemy.trackingUntil || 0), now + enemyChaseMemoryMs(enemy));
   enemy.nextTrackRefreshAt = now + (opts.visible ? 180 : 720);
+  addPlayerThreat(enemy, player, Number(opts.threat || (opts.visible ? 18 : 42)), now, {
+    visible: !!opts.visible,
+    heard: !opts.visible,
+    x: enemy.lastKnownX,
+    z: enemy.lastKnownZ
+  });
   setEnemyLookAt(enemy, player);
   invalidateEnemyPath(enemy);
   return true;
@@ -8340,6 +8548,7 @@ function refreshEnemyTrackToMovingTarget(room, enemy, target, now = Date.now()) 
   if (!room || !enemy || !target || enemy.dead || target.dead) return;
   if (now > Number(enemy.trackingUntil || 0)) return;
   if (now < Number(enemy.nextTrackRefreshAt || 0)) return;
+  if (!enemyCanSeePlayer(room, enemy, target, now)) return;
   const tx = Number(target.x || 0);
   const tz = Number(target.z || 0);
   const lx = Number(enemy.lastKnownX);
@@ -8370,6 +8579,12 @@ function aggroEnemyFromHit(room, enemy, player, now = Date.now()) {
   enemy.lastNoiseAt = now;
   enemy.lastNoiseType = 'combat';
   enemy.lastNoiseSourceId = String(player.id || player.characterId || '').slice(0, 64);
+  addPlayerThreat(enemy, player, 260, now, {
+    visible: canSee,
+    heard: !canSee,
+    x: player.x,
+    z: player.z
+  });
   if (canSee) {
     setEnemyChaseTarget(room, enemy, player, now, { type: 'combat', visible: true });
     return;
@@ -8420,6 +8635,22 @@ function roomFactionHasHostilityMemory(room, faction) {
   return !!(row && row.players instanceof Map && row.players.size > 0);
 }
 
+function roomFactionHostilePlayerIds(room, faction) {
+  if (!room || !faction || !(room.factionHostilityMemory instanceof Map)) return [];
+  const factionGroup = serverCombatFactionGroup(faction);
+  const ids = new Set();
+  for (const [rawFaction, row] of room.factionHostilityMemory.entries()) {
+    if (serverCombatFactionGroup(rawFaction) !== factionGroup || !(row?.players instanceof Map)) continue;
+    for (const [memoryKey, remembered] of row.players.entries()) {
+      [memoryKey, remembered?.playerId, remembered?.characterId].forEach(value => {
+        const id = String(value || '').slice(0, 96);
+        if (id) ids.add(id);
+      });
+    }
+  }
+  return [...ids];
+}
+
 function applyRememberedEncounterHostilityForPlayer(room, player, now = Date.now()) {
   if (!room || !player || !(room.factionHostilityMemory instanceof Map) || !encounterFactionHostilityAllowed(room)) return 0;
   const playerKey = playerHostilityMemoryKey(player);
@@ -8440,23 +8671,30 @@ function setEncounterFactionHostileToPlayer(room, faction, player, now = Date.no
   let changed = 0;
   for (const actor of room.enemies.values()) {
     if (!actor || actor.dead || serverCombatFactionGroup(actor.faction) !== factionKey) continue;
-    actor.hostileToPlayer = true;
-    actor.targetId = targetId;
-    actor.aiState = 'chase';
-    actor.lastKnownX = Number(player.x || 0);
-    actor.lastKnownZ = Number(player.z || 0);
-    actor.lastSenseAt = now;
-    actor.lastNoiseAt = now;
-    actor.trackingUntil = Math.max(Number(actor.trackingUntil || 0), now + enemyChaseMemoryMs(actor));
-    actor.nextTrackRefreshAt = now + 180;
-    actor.investigateX = null;
-    actor.investigateZ = null;
-    actor.investigateUntil = 0;
+    if (markActorHostileToPlayer(actor, player)) changed++;
+    const distance = Math.hypot(Number(player.x || 0) - Number(actor.x || 0), Number(player.z || 0) - Number(actor.z || 0));
+    const visible = enemyCanSeePlayer(room, actor, player, now);
+    const role = String(actor.role || actor.encounterRole || '').toLowerCase();
+    const radioAlert = ['guard', 'patrol', 'raider', 'attacker', 'defender'].includes(role) && distance <= 18;
+    const heard = distance <= enemyHearingRange(actor, 'combat');
+    addPlayerThreat(actor, player, visible ? 220 : (heard || radioAlert ? 105 : 30), now, {
+      visible,
+      heard: heard || radioAlert,
+      x: player.x,
+      z: player.z
+    });
     actor.dialogueFocusUntil = 0;
     actor.dialoguePlayerId = '';
-    setEnemyLookAt(actor, player);
-    invalidateEnemyPath(actor);
-    changed++;
+    if (visible) {
+      setEnemyChaseTarget(room, actor, player, now, { type: 'combat', visible: true, threat: 80 });
+    } else if (heard || radioAlert) {
+      const report = chooseNoiseInvestigationPoint(room, player.x, player.z, actor);
+      forceEnemyInvestigatePoint(room, actor, report.x, report.z, now, {
+        type: radioAlert ? 'radio' : 'combat',
+        sourceId: targetId,
+        pointCount: 3
+      });
+    }
   }
   return changed;
 }
@@ -8567,15 +8805,10 @@ function addRoomNoise(room, x, z, radius = ENEMY_HEARING_SHOT_RANGE, sourceId = 
     if (d > 1.2 && Math.random() > chance) continue;
 
     const investigate = chooseNoiseInvestigationPoint(room, nx, nz, enemy);
-    enemy.aiState = 'investigate';
-    enemy.targetId = '';
-    enemy.investigateX = investigate.x;
-    enemy.investigateZ = investigate.z;
-    enemy.lastKnownX = investigate.x;
-    enemy.lastKnownZ = investigate.z;
+    beginEnemySearchAt(room, enemy, investigate.x, investigate.z, now, { scatter: false, pointCount: noiseType === 'harvest' ? 2 : 3 });
     enemy.lastNoiseAt = now;
-    enemy.investigateStartedAt = now;
     enemy.investigateUntil = enemyTravelAwareInvestigateUntil(enemy, enemy.x, enemy.z, investigate.x, investigate.z, now, ENEMY_NOISE_ARRIVAL_SEARCH_MS);
+    enemy.searchUntil = Math.max(Number(enemy.searchUntil || 0), enemy.investigateUntil + 1400);
     enemy.lastNoiseType = noiseType;
     enemy.lastNoiseSourceId = noiseSource;
     enemy.noiseLockUntil = now + ENEMY_NOISE_RETARGET_LOCK_MS + Math.floor(Math.random() * 450);
@@ -8598,6 +8831,10 @@ function clearEnemyTarget(enemy) {
   enemy.investigateZ = null;
   enemy.investigateStartedAt = 0;
   enemy.investigateUntil = 0;
+  enemy.searchPoints = null;
+  enemy.searchIndex = 0;
+  enemy.searchPauseUntil = 0;
+  enemy.searchUntil = 0;
   enemy.lookX = null;
   enemy.lookZ = null;
   clearEnemyTacticalGoal(enemy);
@@ -9137,6 +9374,73 @@ function updateRangedNpcTacticalMovement(room, enemy, target, weapon, dt, opts =
   });
   return true;
 }
+
+function enemyRetreatHpRatio(enemy = {}) {
+  const bravery = clamp(Number(enemy.npcProfile?.personality?.bravery || 50), 5, 100);
+  const discipline = clamp(Number(enemy.npcProfile?.personality?.discipline || 50), 5, 100);
+  return clamp(0.12 + (55 - bravery) * 0.0032 - (discipline - 50) * 0.0012, 0.055, 0.24);
+}
+
+function updateEnemyCombatRetreat(room, enemy, target, dt, now = Date.now()) {
+  if (!room || !enemy || !target || serverNpcIsNaturalCreature(enemy, enemy)) return false;
+  const role = String(enemy.role || enemy.encounterRole || '').toLowerCase();
+  if (role === 'monster' || role === 'animal') return false;
+  const hpRatio = Math.max(0, Number(enemy.hp || 0)) / Math.max(1, Number(enemy.maxHp || enemy.hp || 1));
+  if (now >= Number(enemy.retreatUntil || 0)) {
+    if (Number(enemy.retreatUntil || 0) > 0) {
+      enemy.retreatUntil = 0;
+      enemy.retreatCooldownUntil = now + 9000;
+      enemy.retreatGoalX = null;
+      enemy.retreatGoalZ = null;
+      return false;
+    }
+    if (hpRatio > enemyRetreatHpRatio(enemy) || now < Number(enemy.retreatCooldownUntil || 0)) return false;
+    enemy.retreatUntil = now + 2300 + Math.floor(stableEnemyUnit(`${enemy.id}:retreat`) * 1500);
+    enemy.nextRetreatGoalAt = 0;
+  }
+  if (now >= Number(enemy.nextRetreatGoalAt || 0)
+    || !Number.isFinite(Number(enemy.retreatGoalX))
+    || !Number.isFinite(Number(enemy.retreatGoalZ))) {
+    const ex = Number(enemy.x || 0);
+    const ez = Number(enemy.z || 0);
+    let awayX = ex - Number(target.x || 0);
+    let awayZ = ez - Number(target.z || 0);
+    let length = Math.hypot(awayX, awayZ);
+    if (length < 0.1) {
+      const angle = stableEnemyUnit(`${enemy.id}:retreat-direction`) * Math.PI * 2;
+      awayX = Math.cos(angle);
+      awayZ = Math.sin(angle);
+      length = 1;
+    }
+    const side = stableEnemyUnit(`${enemy.id}:retreat-side`) < 0.5 ? -1 : 1;
+    const dirX = awayX / length;
+    const dirZ = awayZ / length;
+    let goalX = ex + dirX * 5.2 - dirZ * side * 1.8;
+    let goalZ = ez + dirZ * 5.2 + dirX * side * 1.8;
+    if (!isRoomWalkableWorld(room, goalX, goalZ, 0.3)) {
+      const rawTile = worldToTile(goalX, goalZ);
+      const tile = findNearestWalkablePathTile(room, rawTile.tx, rawTile.tz, 6);
+      if (tile) {
+        const point = tileToWorld(tile.tx, tile.tz);
+        goalX = point.x;
+        goalZ = point.z;
+      }
+    }
+    enemy.retreatGoalX = goalX;
+    enemy.retreatGoalZ = goalZ;
+    enemy.nextRetreatGoalAt = now + 720;
+    invalidateEnemyPath(enemy);
+  }
+  enemy.aiState = 'retreat';
+  setEnemyLookAt(enemy, target);
+  clearEnemyTacticalGoal(enemy);
+  moveEnemyTowards(room, enemy, enemy.retreatGoalX, enemy.retreatGoalZ, Math.max(0.9, Number(enemy.speed || 1.6) * 1.05), dt, {
+    ignoreSeparationIds: target.id,
+    separationWeight: 0.15
+  });
+  return true;
+}
+
 function moveEnemyDirectStep(room, enemy, tx, tz, speed, dt, opts = {}) {
   const dx = Number(tx || 0) - Number(enemy.x || 0);
   const dz = Number(tz || 0) - Number(enemy.z || 0);
@@ -10919,6 +11223,13 @@ function circleIntersectsRotatedBlocker(x, z, radius, blocker) {
   return circleRotatedBlockerPenalty(x, z, radius, blocker) > 0.0001;
 }
 
+function roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, radius = 0.04, opts = {}) {
+  for (const blocker of roomStaticCollisionObjects(room)) {
+    if (segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius, opts)) return true;
+  }
+  return false;
+}
+
 function circleRotatedBlockerPenalty(x, z, radius, blocker) {
   if (!blocker) return 0;
   const dx = Number(x || 0) - Number(blocker.x || 0);
@@ -12463,7 +12774,7 @@ function ensureRoomWorld(room) {
   restockRoomWorldContainersIfNeeded(room);
 }
 
-function publicEnemy(e) {
+function publicEnemy(e, viewer = null) {
   normalizeServerNaturalCreatureState(e);
   ensureServerFriendlyNpcSocialState(e);
   const now = Date.now();
@@ -12516,7 +12827,9 @@ function publicEnemy(e) {
     variantId: e.variantId || 'normal',
     variantName: e.variantName || '',
     faction: e.faction || 'wild',
-    hostileToPlayer: e.hostileToPlayer !== false,
+    hostileToPlayer: viewer
+      ? serverActorHostileToPlayer(e, viewer)
+      : (e.hostileToPlayer !== false || !!actorHostilityKeys(e, false)?.size),
     role: e.role || e.encounterRole || '',
     encounterRole: e.encounterRole || '',
     wastelandSiteId: String(e.wastelandSiteId || '').slice(0, 64),
@@ -13090,6 +13403,7 @@ function spawnServerEnemy(room, opts = {}) {
   const allowSafeLocationActor = forced && opts.allowSafeLocation === true;
   if ((loc.safe && !allowSafeLocationActor) || (!forced && loc.noRespawn) || aliveEnemyCount(room) >= (forced ? 80 : (loc.enemyCap || 12))) return null;
   const rng = room.rng || Math.random;
+  const requestedMinPlayerDistance = Math.max(0, Number(opts.minPlayerDistance ?? (forced ? 1.4 : 12)));
   const typeIndex = Number.isInteger(opts.typeIndex)
     ? clamp(opts.typeIndex, 0, SERVER_ENEMY_TYPES.length - 1)
     : (opts.typeName ? serverEnemyTypeIndexByName(opts.typeName) : Math.floor(rng() * SERVER_ENEMY_TYPES.length));
@@ -13102,7 +13416,7 @@ function spawnServerEnemy(room, opts = {}) {
       maxRadius: Number(opts.maxSpawnSearchRadius ?? (forced ? 10 : 6)),
       radius: 0.46,
       minEnemyDistance: Number(opts.minEnemyDistance ?? 1.25),
-      minPlayerDistance: Number(opts.minPlayerDistance ?? (forced ? 1.4 : 10.5))
+      minPlayerDistance: requestedMinPlayerDistance
     });
     if (safe) chosen = tileToWorld(safe.tx, safe.tz);
   }
@@ -13111,8 +13425,8 @@ function spawnServerEnemy(room, opts = {}) {
     const tz = 2 + Math.floor(rng() * (MAP_H - 4));
     if (!isRoomSpawnSafeTile(room, tx, tz, { radius: 0.46, minEnemyDistance: 1.15 })) continue;
     const pos = tileToWorld(tx, tz);
-    const farEnough = roomPlayers.every(p => Math.hypot(pos.x - p.x, pos.z - p.z) > 12);
-    if (farEnough || tries > 120) { chosen = pos; break; }
+    const farEnough = roomPlayers.every(p => Math.hypot(pos.x - p.x, pos.z - p.z) > requestedMinPlayerDistance);
+    if (farEnough) { chosen = pos; break; }
   }
   if (!chosen) return null;
   const naturalCreature = serverNpcIsNaturalCreature(type, opts);
@@ -13145,7 +13459,7 @@ function spawnServerEnemy(room, opts = {}) {
   const persistedInventoryVersion = Math.max(0, Math.floor(Number(opts.inventoryVersion || 0)));
   let enemyInventory = sanitizeServerInventorySnapshot(hasPersistedInventory ? opts.inventory : enemyLoot, { includeEquipped: true });
   if (naturalCreature) enemyInventory = stripServerCreatureInventoryRows(enemyInventory);
-  const rememberedHostile = roomFactionHasHostilityMemory(room, faction);
+  const rememberedHostilePlayerIds = roomFactionHostilePlayerIds(room, faction);
   const npcProfile = naturalCreature
     ? null
     : (opts.npcProfile && typeof opts.npcProfile === 'object'
@@ -13190,7 +13504,8 @@ function spawnServerEnemy(room, opts = {}) {
     aiState: 'idle',
     targetId: '',
     faction,
-    hostileToPlayer: rememberedHostile || opts.hostileToPlayer !== false,
+    hostileToPlayer: opts.hostileToPlayer !== false,
+    hostilePlayerIds: new Set(rememberedHostilePlayerIds),
     encounterRole: role,
     role,
     profile: String(opts.profile || '').slice(0, 64),
@@ -14226,6 +14541,7 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = []) {
     actor.lastKnownZ = foe.z;
     setEnemyLookAt(actor, foe);
     const dist = Math.hypot(foe.x - actor.x, foe.z - actor.z);
+    if (updateEnemyCombatRetreat(room, actor, foe, dt, now)) continue;
     const actorRadius = Math.max(0.35, Number(actor.scale || 1) * 0.42);
     const foeRadius = Math.max(0.35, Number(foe.scale || 1) * 0.42);
     const meleeGoalRange = Math.max(1.15, Math.min(2.1, actorRadius + foeRadius + 0.55));
@@ -14251,9 +14567,27 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = []) {
     clearEnemyTacticalGoal(actor);
     actor.vx = 0;
     actor.vz = 0;
+    const readiness = serverNpcCombatWeaponReady(actor, weapon, now);
+    if (!readiness.ready) {
+      actor.aiState = readiness.reloading ? 'reload' : 'factionCombat';
+      continue;
+    }
     if (now < Number(actor.nextFactionAttackAt || 0)) continue;
     actor.aiState = 'attack';
     actor.nextFactionAttackAt = now + Math.round(serverNpcAttackCooldownSeconds(actor, weapon, room.rng || Math.random) * 1000);
+    const hitChance = npcAttackHitChance(actor, foe, weapon, dist, {
+      attackRange,
+      naturalCreature: serverNpcIsNaturalCreature(actor, actor)
+    });
+    if ((room.rng || Math.random)() > hitChance) {
+      if (ranged) {
+        emitServerNpcShot(room, actor, foe, weapon, { hit: false });
+        serverNpcConsumeCombatAmmo(actor, weapon, foe, now);
+      } else {
+        emitServerNpcMelee(room, actor, foe, weapon, { hit: false });
+      }
+      continue;
+    }
     let raw = serverNpcDamageRoll(actor, weapon, room.rng || Math.random);
     raw = Math.max(1, Math.round(raw * serverNpcShotgunDamageMultiplier(actor, foe, weapon)));
     const attackProfile = serverEnemyAttackProfile(actor);
@@ -14425,10 +14759,15 @@ function updateServerEnemies(room, dt, opts = {}) {
   const factionCombatActors = updateEncounterFactionCombat(room, dt, roomPlayers);
   const isFactionCapital = locationIsFactionCapital(loc);
   const allowSpawn = opts.allowSpawn !== false && !isFactionCapital && !loc.safe && !loc.noRespawn && !room.locationWorldEvent;
-  room.enemySpawnTimer += dt;
-  if (allowSpawn && room.enemySpawnTimer >= 2.0) {
+  room.enemySpawnTimer = Math.max(0, Number(room.enemySpawnTimer || 0)) + dt;
+  if (allowSpawn && room.enemySpawnTimer * 1000 >= ENEMY_RESPAWN_INTERVAL_MS) {
     room.enemySpawnTimer = 0;
-    while (aliveEnemyCount(room) < (loc.enemyCap || 12)) spawnServerEnemy(room);
+    const missing = Math.max(0, Number(loc.enemyCap || 12) - aliveEnemyCount(room));
+    const count = Math.min(missing, ENEMY_RESPAWN_BATCH);
+    for (let i = 0; i < count; i++) {
+      const spawned = spawnServerEnemy(room, { minPlayerDistance: ENEMY_RESPAWN_MIN_PLAYER_DISTANCE });
+      if (!spawned) break;
+    }
   }
   const rng = room.rng || Math.random;
   const now = Date.now();
@@ -14497,6 +14836,10 @@ function updateServerEnemies(room, dt, opts = {}) {
         enemy.nextTrackRefreshAt = now + 220;
         enemy.investigateX = null;
         enemy.investigateZ = null;
+        enemy.searchPoints = null;
+        enemy.searchIndex = 0;
+        enemy.searchPauseUntil = 0;
+        enemy.searchUntil = 0;
       }
     } else if (enemy.targetId) {
       const oldTarget = roomPlayers.find(p => p.id === enemy.targetId);
@@ -14510,6 +14853,10 @@ function updateServerEnemies(room, dt, opts = {}) {
         enemy.lastSenseAt = now;
         enemy.trackingUntil = Math.max(Number(enemy.trackingUntil || 0), now + enemyChaseMemoryMs(enemy));
         enemy.nextTrackRefreshAt = now + 220;
+        enemy.searchPoints = null;
+        enemy.searchIndex = 0;
+        enemy.searchPauseUntil = 0;
+        enemy.searchUntil = 0;
       }
     }
 
@@ -14518,16 +14865,20 @@ function updateServerEnemies(room, dt, opts = {}) {
       const remembered = roomPlayers.find(p => p.id === enemy.targetId);
       if (remembered && serverActorHostileToPlayer(enemy, remembered) && now - Number(enemy.lastSenseAt || 0) <= enemyChaseMemoryMs(enemy)) {
         target = remembered;
-        refreshEnemyTrackToMovingTarget(room, enemy, remembered, now);
       } else if (now - Number(enemy.lastSenseAt || 0) > enemyChaseMemoryMs(enemy)) {
-        enemy.targetId = '';
-        clearEnemyTacticalGoal(enemy);
-        if (enemy.aiState === 'chase') enemy.aiState = 'investigate';
+        const searchX = Number(enemy.lastKnownX);
+        const searchZ = Number(enemy.lastKnownZ);
+        if (Number.isFinite(searchX) && Number.isFinite(searchZ)) {
+          beginEnemySearchAt(room, enemy, searchX, searchZ, now, { scatter: false, pointCount: 3 });
+        } else {
+          beginEnemyReturnHome(enemy);
+        }
       }
     }
 
     const hasFreshTarget = !!(target && enemy.targetId && now - Number(enemy.lastSenseAt || 0) <= enemyChaseMemoryMs(enemy));
     if (hasFreshTarget && target) {
+      if (visibleTarget && updateEnemyCombatRetreat(room, enemy, visibleTarget, dt, now)) continue;
       const weapon = serverNpcPrepareCombatWeapon(enemy, target);
       const ranged = !!weapon?.ammoType;
       const meleeGoal = visibleTarget && !ranged ? enemyMeleeGoalNearTarget(room, enemy, target) : null;
@@ -14551,18 +14902,7 @@ function updateServerEnemies(room, dt, opts = {}) {
           moveEnemyTowards(room, enemy, chaseX, chaseZ, enemy.speed, dt);
         }
         if (!visibleTarget && Math.hypot(chaseX - enemy.x, chaseZ - enemy.z) < 0.8) {
-          if (target && now <= Number(enemy.trackingUntil || 0)) {
-            enemy.lastKnownX = Number(target.x || chaseX);
-            enemy.lastKnownZ = Number(target.z || chaseZ);
-            enemy.nextTrackRefreshAt = now + 620;
-            invalidateEnemyPath(enemy);
-          } else {
-            enemy.aiState = 'investigate';
-            enemy.investigateX = chaseX;
-            enemy.investigateZ = chaseZ;
-            enemy.targetId = '';
-            clearEnemyTacticalGoal(enemy);
-          }
+          beginEnemySearchAt(room, enemy, chaseX, chaseZ, now, { scatter: false, pointCount: 3 });
         }
       } else {
         clearEnemyTacticalGoal(enemy);
@@ -14570,9 +14910,39 @@ function updateServerEnemies(room, dt, opts = {}) {
         enemy.vx = 0;
         enemy.vz = 0;
         enemy.aiState = 'attack';
+        const readiness = serverNpcCombatWeaponReady(enemy, weapon, now);
+        if (!readiness.ready) {
+          enemy.aiState = readiness.reloading ? 'reload' : 'chase';
+          enemy.attackTimer = Math.max(0.2, Number(enemy.attackTimer || 0));
+          continue;
+        }
         enemy.attackTimer -= dt;
         if (enemy.attackTimer <= 0) {
           enemy.attackTimer = serverNpcAttackCooldownSeconds(enemy, weapon, rng);
+          const hitChance = npcAttackHitChance(enemy, target, weapon, visibleDistance, {
+            attackRange,
+            naturalCreature: serverNpcIsNaturalCreature(enemy, enemy)
+          });
+          if (rng() > hitChance) {
+            if (ranged) {
+              emitServerNpcShot(room, enemy, target, weapon, { hit: false });
+              serverNpcConsumeCombatAmmo(enemy, weapon, target, now);
+            } else {
+              emitServerNpcMelee(room, enemy, target, weapon, { hit: false });
+            }
+            io.to(target.id).emit('enemyAttackMiss', {
+              locationId: room.locationId,
+              enemyId: enemy.id,
+              enemyName: enemy.name,
+              weapon: weapon.id,
+              ranged,
+              chance: Math.round(hitChance * 100),
+              x: Number(enemy.x.toFixed(2)),
+              z: Number(enemy.z.toFixed(2)),
+              t: now
+            });
+            continue;
+          }
           let raw = serverNpcDamageRoll(enemy, weapon, rng);
           raw = Math.max(1, Math.round(raw * serverNpcShotgunDamageMultiplier(enemy, target, weapon)));
           const attackProfile = serverEnemyAttackProfile(enemy);
@@ -14639,19 +15009,7 @@ function updateServerEnemies(room, dt, opts = {}) {
       continue;
     }
 
-    const hasInvestigatePoint = Number.isFinite(Number(enemy.investigateX)) && Number.isFinite(Number(enemy.investigateZ));
-    const investigateUntil = Number(enemy.investigateUntil || 0);
-    const startedAt = Number(enemy.investigateStartedAt || enemy.lastNoiseAt || 0);
-    const maxInvestigateUntil = startedAt ? startedAt + enemyInvestigateMs(enemy) : 0;
-    const investigating = hasInvestigatePoint && (now <= investigateUntil || now <= maxInvestigateUntil);
-    if (investigating) {
-      enemy.aiState = 'investigate';
-      const d = moveEnemyTowards(room, enemy, Number(enemy.investigateX), Number(enemy.investigateZ), enemy.speed * 0.72, dt);
-      if (d < 0.9) beginEnemyReturnHome(enemy);
-      continue;
-    } else if (hasInvestigatePoint && enemy.aiState === 'investigate') {
-      beginEnemyReturnHome(enemy);
-    }
+    if (updateEnemySearch(room, enemy, dt, now)) continue;
 
     const home = ensureEnemyHome(enemy);
     const homeDist = Math.hypot(home.x - Number(enemy.x || 0), home.z - Number(enemy.z || 0));
@@ -14712,7 +15070,15 @@ function emitEnemySnapshot(room, force = false) {
   const minInterval = roomNeedsHotEnemySnapshots(room) ? 80 : 360;
   if (!force && now - Number(room.lastEnemySnapshotAt || 0) < minInterval) return;
   room.lastEnemySnapshotAt = now;
-  io.to(room.id).emit('enemySnapshot', { roomId: room.id, locationId: room.locationId, t: now, enemies: [...room.enemies.values()].map(publicEnemy) });
+  for (const socketId of room.sockets) {
+    const viewer = players.get(socketId) || null;
+    io.to(socketId).emit('enemySnapshot', {
+      roomId: room.id,
+      locationId: room.locationId,
+      t: now,
+      enemies: [...room.enemies.values()].map(enemy => publicEnemy(enemy, viewer))
+    });
+  }
 }
 function mergeResourceSnapshots(room, resources) {
   ensureRoomWorld(room);

@@ -88,6 +88,14 @@ const {
   NPC_CAPS_INVENTORY_VERSION,
   materializeNpcCapsInventory
 } = require('./npc-inventory');
+const {
+  normalizeMarketStockRows,
+  normalizeRecipeCatalog,
+  normalizeRetailMarket,
+  normalizeTraderPlanRows,
+  normalizeTraderProfiles,
+  retailMarketKey
+} = require('./faction-economy');
 
 const SCHEMA = 'realm.wastelandSim.v1';
 const VERSION = 1;
@@ -98,6 +106,9 @@ const MAX_WORLD_TASK_HISTORY_COUNT = 400;
 const MAX_WORLD_ZONE_COUNT = 80;
 const WORLD_SIM_MAX_STEP_HOURS = 1;
 const WORLD_SIM_MAX_CATCHUP_STEPS = 360;
+const FACTION_ECONOMY_PLAN_INTERVAL_HOURS = 1;
+const RETAIL_MARKET_BOOTSTRAP_VERSION = 2;
+const MAX_PRODUCTION_QUEUE_ROWS = 8;
 const LEGACY_SITE_NAMES = {
   settlement: 'Old Klim Caravan Yard',
   scrapTown: 'Scrap Post',
@@ -374,6 +385,7 @@ function defaultSites(globalMap = {}) {
       capitalFaction: 'old_klim',
       locationId: 'settlement',
       traderProfiles: ['oldKlim', 'guardKlimPatrol'],
+      productionCapabilities: ['ammo_bench', 'weapon_bench', 'tool_bench', 'repair_bench', 'chem_station'],
       stockpile: { ...emptyStockpile(), silver: 520, water: 18, scrap: 14, ore: 7, medicine: 5, ammoParts: 8 },
       security: 62,
       prosperity: 40
@@ -390,6 +402,7 @@ function defaultSites(globalMap = {}) {
       capitalFaction: 'scrap_union',
       locationId: 'scrapTown',
       traderProfiles: ['scrap'],
+      productionCapabilities: ['ammo_bench', 'weapon_bench', 'tool_bench', 'repair_bench', 'chem_station'],
       stockpile: { ...emptyStockpile(), silver: 420, scrap: 42, ore: 12, ammoParts: 10 },
       security: 38,
       prosperity: 32,
@@ -411,6 +424,7 @@ function defaultSites(globalMap = {}) {
       capitalFaction: 'relay_order',
       locationId: 'relayStation',
       traderProfiles: ['relay'],
+      productionCapabilities: ['ammo_bench', 'energy_bench', 'weapon_bench', 'tool_bench', 'repair_bench', 'chem_station'],
       stockpile: { ...emptyStockpile(), silver: 460, electronics: 28, chemicals: 12, medicine: 4 },
       security: 45,
       prosperity: 36,
@@ -648,6 +662,7 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 140, water: 6, ammoParts: 4 },
       security: 55,
       production: { ammo9: 18, stim: 2 },
+      productionCapabilities: ['ammo_bench', 'chem_station'],
       workers: [
         { role: 'guard', label: 'дорожный патруль', count: 6 },
         { role: 'quartermaster', label: 'интендант', count: 1 },
@@ -669,6 +684,7 @@ function defaultSites(globalMap = {}) {
       security: 46,
       prosperity: 24,
       production: { ammoParts: 6, repairKit: 1 },
+      productionCapabilities: ['ammo_bench', 'tool_bench', 'repair_bench'],
       workers: [
         { role: 'guard', label: 'ополчение Свалочного союза', count: 5 },
         { role: 'quartermaster', label: 'снабженец', count: 1 },
@@ -690,6 +706,7 @@ function defaultSites(globalMap = {}) {
       security: 50,
       prosperity: 26,
       production: { energyCell: 4, napalm: 2, electronics: 2 },
+      productionCapabilities: ['energy_bench', 'chem_station', 'repair_bench'],
       workers: [
         { role: 'guard', label: 'охранники Ретранслятора', count: 4 },
         { role: 'quartermaster', label: 'интендант узла', count: 1 },
@@ -711,6 +728,7 @@ function defaultSites(globalMap = {}) {
       security: 48,
       prosperity: 28,
       production: { ammo9: 28, ammo556: 12 },
+      productionCapabilities: ['ammo_bench', 'weapon_bench', 'repair_bench'],
       workers: [
         { role: 'craftsman', label: 'оружейники', count: 4 },
         { role: 'guard', label: 'караульные', count: 3 }
@@ -730,6 +748,7 @@ function defaultSites(globalMap = {}) {
       security: 42,
       prosperity: 34,
       production: { weaponParts: 2, ammoParts: 12 },
+      productionCapabilities: ['weapon_bench', 'ammo_bench', 'tool_bench', 'repair_bench'],
       workers: [
         { role: 'worker', label: 'литейщики', count: 7 },
         { role: 'mechanic', label: 'механики пресса', count: 2 },
@@ -750,6 +769,7 @@ function defaultSites(globalMap = {}) {
       security: 46,
       prosperity: 38,
       production: { electronics: 4, energyCell: 10, napalm: 6, repairKit: 1 },
+      productionCapabilities: ['energy_bench', 'chem_station', 'repair_bench'],
       workers: [
         { role: 'mechanic', label: 'техники', count: 6 },
         { role: 'trader', label: 'кладовщик', count: 1 },
@@ -771,6 +791,7 @@ function defaultSites(globalMap = {}) {
       security: 46,
       prosperity: 36,
       production: { energyCell: 16, electronics: 2 },
+      productionCapabilities: ['energy_bench', 'repair_bench'],
       workers: [
         { role: 'mechanic', label: 'энергетики', count: 4 },
         { role: 'guard', label: 'охрана станции', count: 2 }
@@ -1932,6 +1953,34 @@ function normalizeState(input, globalMap = {}) {
     site.production = site.production && typeof site.production === 'object'
       ? compactStockpile(site.production)
       : (defaults.production && typeof defaults.production === 'object' ? compactStockpile(defaults.production) : {});
+    site.productionCapabilities = (Array.isArray(site.productionCapabilities) && site.productionCapabilities.length
+      ? site.productionCapabilities
+      : (Array.isArray(defaults.productionCapabilities) ? defaults.productionCapabilities : []))
+      .map(value => safeId(value, ''))
+      .filter(Boolean)
+      .slice(0, 12);
+    site.productionQueue = (Array.isArray(site.productionQueue) ? site.productionQueue : [])
+      .map((row, index) => ({
+        id: safeId(row?.id || `production_${site.id}_${index}`, `production_${site.id}_${index}`),
+        itemId: safeId(row?.itemId || row?.id || '', ''),
+        outputQty: Math.max(1, Math.floor(Number(row?.outputQty || row?.qty || 1))),
+        remainingHours: Math.max(0, Number(row?.remainingHours || 0)),
+        workHours: Math.max(0.1, Number(row?.workHours || row?.remainingHours || 1)),
+        priority: clamp(row?.priority ?? 50, 1, 100),
+        reservedInputs: compactStockpile(row?.reservedInputs || row?.inputs || {}),
+        createdHour: Number.isFinite(Number(row?.createdHour)) ? Number(row.createdHour) : Number(state.worldHour || 0)
+      }))
+      .filter(row => row.itemId && row.outputQty > 0)
+      .slice(0, MAX_PRODUCTION_QUEUE_ROWS);
+    site.productionDemand = compactStockpile(site.productionDemand || {});
+    site.retailDemand = compactStockpile(site.retailDemand || {});
+    site.retailMarkets = Object.fromEntries(Object.entries(site.retailMarkets && typeof site.retailMarkets === 'object' ? site.retailMarkets : {})
+      .map(([key, market]) => {
+        const normalized = normalizeRetailMarket(market, key);
+        return normalized.key ? [normalized.key, normalized] : null;
+      })
+      .filter(Boolean)
+      .slice(0, 24));
     site.supportDispatch = site.supportDispatch && typeof site.supportDispatch === 'object'
       ? {
           status: String(site.supportDispatch.status || '').slice(0, 32),
@@ -2147,6 +2196,8 @@ function createWastelandSimulation(options = {}) {
   const saveIntervalMs = Math.max(3000, Number(options.saveIntervalMs || 15000));
   const getGlobalMap = typeof options.getGlobalMap === 'function' ? options.getGlobalMap : () => ({});
   const itemIds = options.itemIds instanceof Set ? options.itemIds : new Set(options.itemIds || []);
+  const economyRecipes = normalizeRecipeCatalog(options.economyRecipes);
+  const traderProfiles = normalizeTraderProfiles(options.traderProfiles);
   let state = normalizeState(readJson(stateFile, defaultState(getGlobalMap())), getGlobalMap());
   let dirty = false;
   let lastSaveAt = 0;
@@ -6909,23 +6960,219 @@ function createWastelandSimulation(options = {}) {
 
   function productionInputRecipe(itemId = '') {
     const id = safeId(itemId || '');
-    const recipes = {
-      ammo9: { ammoParts: 0.22, scrap: 0.04 },
-      ammo556: { ammoParts: 0.34, scrap: 0.06 },
-      shotgunShell: { ammoParts: 0.42, scrap: 0.08 },
-      rocketAmmo: { ammoParts: 2.4, electronics: 0.8, oil: 0.6 },
-      ammoParts: { scrap: 0.7, ore: 0.35 },
-      energyCell: { electronics: 0.3, chemicals: 0.08 },
-      napalm: { oil: 0.45, chemicals: 0.18 },
-      repairKit: { scrap: 3, electronics: 0.8 },
-      electronics: { scrap: 1.2, chemicals: 0.35 },
-      weaponParts: { ore: 3.2, scrap: 2.4 },
-      stim: { medicine: 0.55, chemicals: 0.12 },
-      medkit: { medicine: 1.4, chemicals: 0.22 },
-      doctorBag: { medicine: 2.4, electronics: 0.4 },
-      antibiotics: { medicine: 0.8, chemicals: 0.35 }
+    return economyRecipes[id]?.inputs || null;
+  }
+
+  function siteCanCraftRecipe(site = {}, recipe = null) {
+    if (!site || !recipe) return false;
+    const group = factionGroup(site.owner || 'neutral');
+    if (recipe.factions.length && !recipe.factions.includes(group)) return false;
+    const capabilities = new Set(Array.isArray(site.productionCapabilities) ? site.productionCapabilities : []);
+    return capabilities.has(recipe.station) || Number(site.production?.[recipe.id] || 0) > 0;
+  }
+
+  function factionEconomySites(faction = '') {
+    const group = factionGroup(faction || 'neutral');
+    return Object.values(state.sites || {}).filter(site => site
+      && factionGroup(site.owner || 'neutral') === group
+      && isSettlementServiceSite(site));
+  }
+
+  function addEconomyAmount(target = {}, itemId = '', qty = 0) {
+    const id = safeId(itemId || '', '');
+    const amount = Math.max(0, Number(qty || 0));
+    if (!id || amount <= 0) return;
+    target[id] = Number((Number(target[id] || 0) + amount).toFixed(3));
+  }
+
+  function factionEconomyAvailable(faction = '') {
+    const available = {};
+    for (const site of factionEconomySites(faction)) {
+      for (const [id, qty] of Object.entries(site.stockpile || {})) addEconomyAmount(available, id, qty);
+      for (const market of Object.values(site.retailMarkets || {})) {
+        for (const row of normalizeMarketStockRows(market?.stock || [])) addEconomyAmount(available, row.id, row.qty);
+      }
+      for (const row of Array.isArray(site.productionQueue) ? site.productionQueue : []) {
+        addEconomyAmount(available, row.itemId, row.outputQty);
+      }
+    }
+    for (const party of Object.values(state.parties || {})) {
+      if (!party || party.destroyed || factionGroup(party.faction || '') !== factionGroup(faction || '')) continue;
+      for (const [id, qty] of Object.entries(party.cargo || {})) addEconomyAmount(available, id, qty);
+    }
+    return available;
+  }
+
+  function factionEconomyTargets(faction = '') {
+    const targets = {};
+    for (const site of factionEconomySites(faction)) {
+      const includedProfiles = new Set();
+      for (const profileId of Array.isArray(site.traderProfiles) ? site.traderProfiles : []) {
+        const profile = traderProfiles[profileId];
+        if (!profile) continue;
+        includedProfiles.add(profile.id);
+        for (const row of profile.stock) addEconomyAmount(targets, row.id, Math.max(row.shelfTarget, row.shelfMin) * 1.35);
+      }
+      for (const market of Object.values(site.retailMarkets || {})) {
+        if (!market || (market.profileId && includedProfiles.has(market.profileId))) continue;
+        for (const row of normalizeTraderPlanRows(market.plan || [])) {
+          addEconomyAmount(targets, row.id, Math.max(row.shelfTarget, row.shelfMin) * 1.35);
+        }
+      }
+      for (const [id, qty] of Object.entries(site.productionDemand || {})) addEconomyAmount(targets, id, qty);
+      for (const [id, qty] of Object.entries(site.retailDemand || {})) addEconomyAmount(targets, id, qty);
+    }
+    return targets;
+  }
+
+  function productionCandidateSites(faction = '', recipe = null) {
+    return factionEconomySites(faction)
+      .filter(site => siteCanCraftRecipe(site, recipe))
+      .sort((a, b) => {
+        const queueDelta = Number(a.productionQueue?.length || 0) - Number(b.productionQueue?.length || 0);
+        if (queueDelta) return queueDelta;
+        return resourceActivityPercent(b, state.worldHour) - resourceActivityPercent(a, state.worldHour)
+          || String(a.id || '').localeCompare(String(b.id || ''));
+      });
+  }
+
+  function productionInputAvailability(site = {}, recipe = null) {
+    if (!site || !recipe) return { ratio: 0, missing: {} };
+    const stock = site.stockpile || {};
+    const missing = {};
+    let ratio = 1;
+    for (const [id, need] of Object.entries(recipe.inputs || {})) {
+      const required = Math.max(0, Number(need || 0));
+      const have = Math.max(0, Number(stock[id] || 0));
+      if (required > 0) ratio = Math.min(ratio, have / required);
+      if (have + 0.0001 < required) missing[id] = Number((required - have).toFixed(3));
+    }
+    return { ratio: clamp(ratio, 0, 1), missing };
+  }
+
+  function enqueueFactionProduction(site = {}, recipe = null, priority = 50) {
+    if (!site || !recipe || !siteCanCraftRecipe(site, recipe)) return { ok: false, missing: {} };
+    site.productionQueue = Array.isArray(site.productionQueue) ? site.productionQueue : [];
+    if (site.productionQueue.length >= MAX_PRODUCTION_QUEUE_ROWS) return { ok: false, missing: {}, full: true };
+    if (site.productionQueue.some(row => row.itemId === recipe.id)) return { ok: false, missing: {}, queued: true };
+    const inputState = productionInputAvailability(site, recipe);
+    if (Object.keys(inputState.missing).length) {
+      site.productionDemand = site.productionDemand || {};
+      for (const [id, qty] of Object.entries(inputState.missing)) {
+        site.productionDemand[id] = Math.max(Number(site.productionDemand[id] || 0), qty);
+      }
+      return { ok: false, missing: inputState.missing };
+    }
+    const stock = site.stockpile || (site.stockpile = emptyStockpile());
+    const reservedInputs = {};
+    for (const [id, need] of Object.entries(recipe.inputs)) {
+      const qty = Math.max(0, Number(need || 0));
+      stock[id] = Math.max(0, Number(stock[id] || 0) - qty);
+      if (qty > 0) reservedInputs[id] = qty;
+      if (site.productionDemand) site.productionDemand[id] = Math.max(0, Number(site.productionDemand[id] || 0) - qty);
+    }
+    const workforceMul = clamp((Number(site.workforce || 35) + Number(site.prosperity || 25)) / 100, 0.45, 1.6);
+    const workHours = Math.max(0.25, Number(recipe.workHours || 1) / workforceMul);
+    const row = {
+      id: safeId(`production_${site.id}_${recipe.id}_${Math.floor(Number(state.worldHour || 0) * 100)}_${site.productionQueue.length}`, `production_${site.id}_${recipe.id}`),
+      itemId: recipe.id,
+      outputQty: recipe.outputQty,
+      remainingHours: Number(workHours.toFixed(3)),
+      workHours: Number(workHours.toFixed(3)),
+      priority: clamp(priority, 1, 100),
+      reservedInputs,
+      createdHour: Number(state.worldHour || 0)
     };
-    return recipes[id] || null;
+    site.productionQueue.push(row);
+    site.lastProductionOrder = { itemId: recipe.id, outputQty: recipe.outputQty, createdHour: row.createdHour };
+    dirty = true;
+    return { ok: true, row };
+  }
+
+  function planFactionProduction(hours = 0) {
+    state.factionEconomyPlanProgress = Number(state.factionEconomyPlanProgress || 0) + Math.max(0, Number(hours || 0));
+    if (state.factionEconomyPlanProgress < FACTION_ECONOMY_PLAN_INTERVAL_HOURS) return false;
+    state.factionEconomyPlanProgress %= FACTION_ECONOMY_PLAN_INTERVAL_HOURS;
+    const factions = [...new Set(Object.values(state.sites || {})
+      .map(site => factionGroup(site?.owner || 'neutral'))
+      .filter(isJoinableWorldFaction))];
+    let planned = 0;
+    for (const faction of factions) {
+      const available = factionEconomyAvailable(faction);
+      const targets = factionEconomyTargets(faction);
+      const orders = Object.entries(targets)
+        .map(([id, target]) => {
+          const recipe = economyRecipes[id];
+          const have = Math.max(0, Number(available[id] || 0));
+          const deficit = Math.max(0, Number(target || 0) - have);
+          const zeroBonus = have < 0.001 ? 140 : 0;
+          const ratio = target > 0 ? deficit / target : 0;
+          return { id, recipe, deficit, priority: zeroBonus + ratio * 100 + Math.min(35, deficit) };
+        })
+        .filter(row => row.recipe && row.deficit > 0.001)
+        .sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id));
+      for (const order of orders.slice(0, 24)) {
+        const candidates = productionCandidateSites(faction, order.recipe);
+        if (!candidates.length) continue;
+        candidates.sort((a, b) => productionInputAvailability(b, order.recipe).ratio - productionInputAvailability(a, order.recipe).ratio);
+        let result = null;
+        for (const site of candidates) {
+          result = enqueueFactionProduction(site, order.recipe, Math.min(100, order.priority));
+          if (result.ok || result.queued) break;
+          if (!result.full && Object.keys(result.missing || {}).length) break;
+        }
+        if (result?.ok) {
+          addEconomyAmount(available, order.id, order.recipe.outputQty);
+          planned++;
+        }
+      }
+    }
+    if (planned > 0) dirty = true;
+    return planned > 0;
+  }
+
+  function advanceFactionProduction(hours = 0) {
+    const elapsed = Math.max(0, Number(hours || 0));
+    if (elapsed <= 0) return false;
+    let changed = false;
+    for (const site of Object.values(state.sites || {})) {
+      const queue = Array.isArray(site?.productionQueue) ? site.productionQueue : [];
+      if (!queue.length) continue;
+      const activityMul = site.activeConflict
+        ? 0.45
+        : Number(site.raidUntil || 0) > Number(state.worldHour || 0)
+          ? 0.35
+          : Number(site.supplyDisruptedUntil || 0) > Number(state.worldHour || 0)
+            ? 0.65
+            : 1;
+      const completed = [];
+      for (const row of queue) {
+        row.remainingHours = Math.max(0, Number(row.remainingHours || 0) - elapsed * activityMul);
+        if (row.remainingHours <= 0.0001) completed.push(row);
+      }
+      for (const row of completed) {
+        site.stockpile = site.stockpile || emptyStockpile();
+        site.stockpile[row.itemId] = Number((Number(site.stockpile[row.itemId] || 0) + Number(row.outputQty || 0)).toFixed(3));
+        site.lastWarehouseDeposit = {
+          kind: 'planned_craft',
+          cargo: { [row.itemId]: row.outputQty },
+          worldHour: Number(Number(state.worldHour || 0).toFixed(2))
+        };
+        addEvent('planned_production_completed', `${site.name}: готово ${row.itemId} x${row.outputQty}.`, {
+          siteId: site.id,
+          itemId: row.itemId,
+          qty: row.outputQty
+        });
+      }
+      if (completed.length) {
+        const completedIds = new Set(completed.map(row => row.id));
+        site.productionQueue = queue.filter(row => !completedIds.has(row.id));
+        site.lastProductionHour = Number(state.worldHour || 0);
+      }
+      changed = true;
+    }
+    if (changed) dirty = true;
+    return changed;
   }
 
   function craftIntoStockpile(stock = {}, itemId = '', targetQty = 0) {
@@ -7439,7 +7686,10 @@ function createWastelandSimulation(options = {}) {
 
   function productionInputDemand(site = {}) {
     const production = site.production && typeof site.production === 'object' ? site.production : {};
-    const demand = {};
+    const demand = { ...(site.productionDemand && typeof site.productionDemand === 'object' ? site.productionDemand : {}) };
+    Object.entries(site.retailDemand && typeof site.retailDemand === 'object' ? site.retailDemand : {}).forEach(([id, qty]) => {
+      demand[id] = Math.max(Number(demand[id] || 0), Math.max(0, Number(qty || 0)));
+    });
     Object.entries(production).forEach(([itemId, amount]) => {
       const recipe = productionInputRecipe(itemId);
       if (!recipe) return;
@@ -7452,6 +7702,21 @@ function createWastelandSimulation(options = {}) {
     return compactStockpile(demand);
   }
 
+  function remoteFactionDemand(source = {}, itemId = '') {
+    const owner = factionGroup(source.owner || 'neutral');
+    return Object.values(state.sites || {}).reduce((sum, site) => {
+      if (!site || site.id === source.id || factionGroup(site.owner || 'neutral') !== owner || !isSettlementServiceSite(site)) return sum;
+      return sum + Math.max(0, Number(productionInputDemand(site)[itemId] || 0));
+    }, 0);
+  }
+
+  function cargoDemandAtSite(cargo = {}, site = {}) {
+    const demand = productionInputDemand(site);
+    return Object.entries(cargo || {}).reduce((sum, [id, qty]) => (
+      sum + Math.min(Math.max(0, Number(qty || 0)), Math.max(0, Number(demand[id] || 0)))
+    ), 0);
+  }
+
   function resourceExportCargoForSite(source = {}) {
     if (!source || !isHarvestSite(source)) return {};
     const ownerGroup = factionGroup(source.owner || 'neutral');
@@ -7459,22 +7724,26 @@ function createWastelandSimulation(options = {}) {
     const stock = source.stockpile && typeof source.stockpile === 'object' ? source.stockpile : {};
     const outputKeys = Object.keys(source.output || {}).filter(Boolean);
     if (!outputKeys.length) return {};
-    const reserve = source.type === 'pointOfInterest' ? 20 : 18;
+    const normalReserve = source.type === 'pointOfInterest' ? 20 : 18;
     const cargo = {};
     let total = 0;
+    let demandDriven = 0;
     outputKeys
       .sort((a, b) => Number(stock[b] || 0) - Number(stock[a] || 0))
       .forEach(id => {
         if (total >= 90) return;
         const have = Math.max(0, Math.floor(Number(stock[id] || 0)));
+        const requested = Math.max(0, Math.ceil(remoteFactionDemand(source, id)));
+        const reserve = requested > 0 ? Math.min(6, normalReserve) : normalReserve;
         const available = Math.max(0, have - reserve);
-        const take = Math.min(available, 60, 90 - total);
+        const take = Math.min(available, requested > 0 ? requested : 60, 90 - total);
         if (take > 0) {
           cargo[id] = take;
           total += take;
+          if (requested > 0) demandDriven += take;
         }
       });
-    return stockpileTotal(cargo) >= RESOURCE_EXPORT_THRESHOLD ? compactStockpile(cargo) : {};
+    return demandDriven > 0 || stockpileTotal(cargo) >= RESOURCE_EXPORT_THRESHOLD ? compactStockpile(cargo) : {};
   }
 
   function chooseResourceExportDestination(source = {}, cargo = {}) {
@@ -7516,7 +7785,7 @@ function createWastelandSimulation(options = {}) {
     const destination = chooseResourceExportDestination(source, cargoPlan);
     if (!destination || destination.id === source.id) return null;
     const cargo = takeStockpile(source.stockpile || (source.stockpile = emptyStockpile()), cargoPlan);
-    if (stockpileTotal(cargo) < RESOURCE_EXPORT_THRESHOLD) {
+    if (stockpileTotal(cargo) < RESOURCE_EXPORT_THRESHOLD && cargoDemandAtSite(cargo, destination) <= 0) {
       addStockpile(source.stockpile, cargo);
       return null;
     }
@@ -7605,7 +7874,8 @@ function createWastelandSimulation(options = {}) {
     ];
     return Array.from(new Set([
       ...authored,
-      ...producedGoods.filter(id => Number(stock[id] || 0) > 0)
+      ...producedGoods.filter(id => Number(stock[id] || 0) > 0),
+      ...Object.keys(economyRecipes).filter(id => Number(stock[id] || 0) > 0)
     ]));
   }
 
@@ -7616,22 +7886,26 @@ function createWastelandSimulation(options = {}) {
     const stock = source.stockpile && typeof source.stockpile === 'object' ? source.stockpile : {};
     const outputKeys = productionExportOutputKeys(source);
     if (!outputKeys.length) return {};
-    const reserve = siteTypeKey(source) === 'outpost' ? 26 : 18;
+    const normalReserve = siteTypeKey(source) === 'outpost' ? 26 : 18;
     const cargo = {};
     let total = 0;
+    let demandDriven = 0;
     outputKeys
       .sort((a, b) => Number(stock[b] || 0) - Number(stock[a] || 0))
       .forEach(id => {
         if (total >= 95) return;
         const have = Math.max(0, Math.floor(Number(stock[id] || 0)));
+        const requested = Math.max(0, Math.ceil(remoteFactionDemand(source, id)));
+        const reserve = requested > 0 ? 0 : normalReserve;
         const available = Math.max(0, have - reserve);
-        const take = Math.min(available, 64, 95 - total);
+        const take = Math.min(available, requested > 0 ? requested : 64, 95 - total);
         if (take > 0) {
           cargo[id] = take;
           total += take;
+          if (requested > 0) demandDriven += take;
         }
       });
-    return stockpileTotal(cargo) >= PRODUCTION_EXPORT_THRESHOLD ? compactStockpile(cargo) : {};
+    return demandDriven > 0 || stockpileTotal(cargo) >= PRODUCTION_EXPORT_THRESHOLD ? compactStockpile(cargo) : {};
   }
 
   function productionGoodsDemand(site = {}) {
@@ -7711,7 +7985,7 @@ function createWastelandSimulation(options = {}) {
     const destination = chooseProductionExportDestination(source, cargoPlan);
     if (!destination || destination.id === source.id) return null;
     const cargo = takeStockpile(source.stockpile || (source.stockpile = emptyStockpile()), cargoPlan);
-    if (stockpileTotal(cargo) < PRODUCTION_EXPORT_THRESHOLD) {
+    if (stockpileTotal(cargo) < PRODUCTION_EXPORT_THRESHOLD && cargoDemandAtSite(cargo, destination) <= 0) {
       addStockpile(source.stockpile, cargo);
       return null;
     }
@@ -8551,7 +8825,10 @@ function createWastelandSimulation(options = {}) {
     resolveSiteConflicts(hours);
     produceAtResourceSites(hours);
     createResourceExportCaravans(hours);
+    advanceFactionProduction(hours);
     produceAtSettlements(hours);
+    planFactionProduction(hours);
+    restockRetailMarkets();
     createProductionExportCaravans(hours);
     consumeSettlementSupplies(hours);
     createSurplusTradeCaravans(hours);
@@ -8926,6 +9203,128 @@ function createWastelandSimulation(options = {}) {
     return { ok: received > 0, received, siteId: site.id };
   }
 
+  function retailMarketCapsTarget(site = {}, market = {}, intel = siteMarketIntel(site)) {
+    let caps = Math.floor(Math.max(0, Number(market.baseCaps || 0)) * Number(intel.capsMultiplier || 1));
+    if (intel.recentlySupplied) caps += 60;
+    caps += Math.min(180, Math.floor(Number(site.prosperity || 0) * 1.2));
+    return clamp(caps, 0, 999999);
+  }
+
+  function refreshSiteRetailDemand(site = {}) {
+    if (!site) return {};
+    const demand = {};
+    for (const market of Object.values(site.retailMarkets || {})) {
+      const stock = normalizeMarketStockRows(market?.stock || []);
+      for (const planRow of normalizeTraderPlanRows(market?.plan || [])) {
+        const current = Number(stock.find(row => row.id === planRow.id)?.qty || 0);
+        addEconomyAmount(demand, planRow.id, Math.max(0, planRow.shelfTarget - current));
+      }
+    }
+    site.retailDemand = compactStockpile(demand);
+    return site.retailDemand;
+  }
+
+  function restockRetailMarket(site = {}, market = {}, force = false) {
+    if (!site || !market?.key) return false;
+    const now = Number(state.worldHour || 0);
+    const pile = site.stockpile || (site.stockpile = emptyStockpile());
+    const stock = normalizeMarketStockRows(market.stock || []);
+    const plan = normalizeTraderPlanRows(market.plan || []);
+    const urgent = plan.some(planRow => {
+      const current = Number(stock.find(row => row.id === planRow.id)?.qty || 0);
+      return current < planRow.shelfMin && Number(pile[planRow.id] || 0) >= 1;
+    });
+    if (!force && !urgent && now - Number(market.lastRestockHour || 0) < Number(market.restockHours || 24)) return false;
+    const intel = siteMarketIntel(site);
+    for (const planRow of plan) {
+      const adjusted = applyItemMarket({ id: planRow.id, qty: planRow.shelfTarget, price: planRow.price }, site, intel);
+      const target = Math.max(planRow.shelfMin, Math.floor(Number(adjusted.qty || 0)));
+      const max = Math.max(target, Math.floor(Number(planRow.shelfMax || target) * Number(intel.quantityMultiplier || 1)));
+      let row = stock.find(entry => entry.id === planRow.id);
+      if (!row) {
+        row = { id: planRow.id, qty: 0, price: adjusted.price };
+        stock.push(row);
+      }
+      row.price = adjusted.price;
+      if (row.qty > max) {
+        const overflow = row.qty - max;
+        row.qty = max;
+        pile[row.id] = Number((Number(pile[row.id] || 0) + overflow).toFixed(3));
+      }
+      const needed = Math.max(0, target - row.qty);
+      const moved = Math.min(needed, Math.max(0, Math.floor(Number(pile[row.id] || 0))));
+      if (moved > 0) {
+        pile[row.id] = Math.max(0, Number(pile[row.id] || 0) - moved);
+        row.qty += moved;
+      }
+    }
+    const capsTarget = retailMarketCapsTarget(site, market, intel);
+    const capsNeeded = Math.max(0, capsTarget - Number(market.caps || 0));
+    const capsMoved = Math.min(capsNeeded, Math.max(0, Math.floor(Number(pile.silver || 0))));
+    if (capsMoved > 0) {
+      pile.silver = Math.max(0, Number(pile.silver || 0) - capsMoved);
+      market.caps = Math.max(0, Math.floor(Number(market.caps || 0) + capsMoved));
+    }
+    market.stock = normalizeMarketStockRows(stock);
+    market.lastRestockHour = now;
+    market.updatedHour = now;
+    dirty = true;
+    return true;
+  }
+
+  function ensureRetailMarket(site = {}, profileId = '', trade = {}, context = {}) {
+    if (!site) return null;
+    site.retailMarkets = site.retailMarkets && typeof site.retailMarkets === 'object' ? site.retailMarkets : {};
+    const key = retailMarketKey(profileId, { ...context, siteId: site.id });
+    const incomingPlan = normalizeTraderPlanRows(trade.stock || trade.plan || []);
+    let market = site.retailMarkets[key] ? normalizeRetailMarket(site.retailMarkets[key], key) : null;
+    if (!market) {
+      market = normalizeRetailMarket({
+        key,
+        profileId,
+        role: context.role,
+        restockHours: trade.restockHours ?? context.restockHours ?? traderProfiles[profileId]?.restockHours ?? 24,
+        baseCaps: trade.caps,
+        caps: 0,
+        plan: incomingPlan,
+        stock: [],
+        lastRestockHour: Number(state.worldHour || 0)
+      }, key);
+    }
+    if (incomingPlan.length) market.plan = incomingPlan;
+    market.profileId = safeId(profileId || market.profileId || '', '');
+    market.role = safeId(context.role || market.role || 'trader', 'trader');
+    market.restockHours = clamp(trade.restockHours ?? context.restockHours ?? market.restockHours ?? 24, 1, 720);
+    market.baseCaps = Math.max(0, Math.floor(Number(trade.caps ?? market.baseCaps ?? 0)));
+    if (market.bootstrapVersion < RETAIL_MARKET_BOOTSTRAP_VERSION) {
+      market.stock = [];
+      market.caps = 0;
+      market.lastRestockHour = -999;
+      market.bootstrapVersion = RETAIL_MARKET_BOOTSTRAP_VERSION;
+      market.updatedHour = Number(state.worldHour || 0);
+      dirty = true;
+      restockRetailMarket(site, market, true);
+    } else {
+      restockRetailMarket(site, market, false);
+    }
+    site.retailMarkets[key] = market;
+    refreshSiteRetailDemand(site);
+    return market;
+  }
+
+  function restockRetailMarkets() {
+    let changed = false;
+    for (const site of Object.values(state.sites || {})) {
+      for (const [key, rawMarket] of Object.entries(site?.retailMarkets || {})) {
+        const market = normalizeRetailMarket(rawMarket, key);
+        if (restockRetailMarket(site, market, false)) changed = true;
+        site.retailMarkets[key] = market;
+      }
+      refreshSiteRetailDemand(site);
+    }
+    return changed;
+  }
+
   function applyTradeMachineTransaction(siteId = '', trade = {}) {
     const key = safeId(siteId || trade.siteId || '', '');
     const site = key ? state.sites[key] : null;
@@ -8936,6 +9335,64 @@ function createWastelandSimulation(options = {}) {
     const sells = mergeStockRows(trade.sells || trade.sellRows || [])
       .filter(row => row.id !== 'silver' && row.qty > 0);
     const silverDelta = Math.round(Number(trade.silverDelta || 0));
+    let marketKey = String(trade.marketKey || '').trim().replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120);
+    if (!marketKey) {
+      const candidates = Object.entries(site.retailMarkets || {}).filter(([, rawMarket]) => {
+        const candidateStock = normalizeMarketStockRows(rawMarket?.stock || []);
+        return buys.every(row => Number(candidateStock.find(entry => entry.id === row.id)?.qty || 0) >= row.qty);
+      });
+      if (candidates.length === 1) marketKey = candidates[0][0];
+    }
+    const storedMarket = marketKey && site.retailMarkets?.[marketKey]
+      ? normalizeRetailMarket(site.retailMarkets[marketKey], marketKey)
+      : null;
+    if (storedMarket) {
+      const nextStock = normalizeMarketStockRows(storedMarket.stock || []);
+      const nextCaps = Math.floor(Number(storedMarket.caps || 0)) + silverDelta;
+      if (nextCaps < 0) {
+        return { ok: false, error: 'insufficient_site_silver', siteId: site.id, silver: storedMarket.caps };
+      }
+      for (const row of buys) {
+        const offer = nextStock.find(entry => entry.id === row.id);
+        if (!offer || Number(offer.qty || 0) < row.qty) {
+          return { ok: false, error: 'insufficient_site_stock', itemId: row.id, siteId: site.id };
+        }
+        offer.qty -= row.qty;
+      }
+      const resaleRows = mergeStockRows(trade.resaleRows || sells);
+      for (const row of sells) {
+        const resale = resaleRows.find(entry => entry.id === row.id);
+        let offer = nextStock.find(entry => entry.id === row.id);
+        if (!offer) {
+          offer = { id: row.id, qty: 0, price: Math.max(1, Math.round(Number(resale?.price || 1))) };
+          nextStock.push(offer);
+        }
+        offer.qty += row.qty;
+      }
+      storedMarket.stock = normalizeMarketStockRows(nextStock);
+      storedMarket.caps = nextCaps;
+      storedMarket.updatedHour = Number(state.worldHour || 0);
+      storedMarket.sales = storedMarket.sales && typeof storedMarket.sales === 'object' ? storedMarket.sales : {};
+      for (const row of buys) {
+        const sale = storedMarket.sales[row.id] || { bought: 0, sold: 0 };
+        sale.bought = Math.max(0, Number(sale.bought || 0) + row.qty);
+        sale.lastHour = Number(state.worldHour || 0);
+        storedMarket.sales[row.id] = sale;
+      }
+      for (const row of sells) {
+        const sale = storedMarket.sales[row.id] || { bought: 0, sold: 0 };
+        sale.sold = Math.max(0, Number(sale.sold || 0) + row.qty);
+        sale.lastHour = Number(state.worldHour || 0);
+        storedMarket.sales[row.id] = sale;
+      }
+      site.retailMarkets[marketKey] = storedMarket;
+      refreshSiteRetailDemand(site);
+      site.lastTradeMachineHour = Number(state.worldHour || 0);
+      site.lastTradeMachineTransaction = { playerId: String(trade.playerId || '').slice(0, 64), buys, sells, silverDelta, marketKey };
+      dirty = true;
+      save(true);
+      return { ok: true, siteId: site.id, marketKey, stock: clone(storedMarket.stock), caps: storedMarket.caps, market: clone(storedMarket) };
+    }
     const next = {
       ...emptyStockpile(),
       ...(site.stockpile && typeof site.stockpile === 'object' ? clone(site.stockpile) : {})
@@ -8970,43 +9427,59 @@ function createWastelandSimulation(options = {}) {
     return { ok: true, siteId: site.id, stockpile: clone(site.stockpile) };
   }
 
+  function applyNpcTraderTransaction(profileId = '', trade = {}, context = {}) {
+    const site = traderSite(profileId, context);
+    if (!site) return { ok: false, error: 'missing_site', siteId: '' };
+    const key = retailMarketKey(profileId, { ...context, siteId: site.id });
+    if (!site.retailMarkets?.[key]) {
+      ensureRetailMarket(site, profileId, {
+        stock: trade.plan || trade.baseStock || trade.stock || [],
+        caps: trade.baseCaps ?? trade.caps ?? 0,
+        restockHours: trade.restockHours
+      }, { ...context, siteId: site.id, marketKey: key });
+    }
+    return applyTradeMachineTransaction(site.id, { ...trade, marketKey: key });
+  }
+
+  function syncTraderMarket(profileId = '', snapshot = {}, context = {}) {
+    const site = traderSite(profileId, context);
+    if (!site) return { ok: false, error: 'missing_site' };
+    const key = retailMarketKey(profileId, { ...context, siteId: site.id });
+    const market = site.retailMarkets?.[key] ? normalizeRetailMarket(site.retailMarkets[key], key) : null;
+    if (!market) return { ok: false, error: 'missing_market', marketKey: key };
+    if (Array.isArray(snapshot.stock)) market.stock = normalizeMarketStockRows(snapshot.stock);
+    if (Number.isFinite(Number(snapshot.caps))) market.caps = Math.max(0, Math.floor(Number(snapshot.caps)));
+    market.updatedHour = Number(state.worldHour || 0);
+    site.retailMarkets[key] = market;
+    refreshSiteRetailDemand(site);
+    dirty = true;
+    save(false);
+    return { ok: true, siteId: site.id, marketKey: key, stock: clone(market.stock), caps: market.caps };
+  }
+
   function applyTraderSupply(profileId, trade = {}, context = {}) {
     const site = traderSite(profileId, context);
     const stock = mergeStockRows(trade.stock || []);
     let caps = Math.max(0, Math.floor(Number(trade.caps || 0)));
     if (!site) return { ...trade, stock, caps };
-    const pile = site.stockpile || {};
+    const persistent = ensureRetailMarket(site, profileId, {
+      ...trade,
+      stock: trade.stock || stock,
+      caps,
+      restockHours: trade.restockHours ?? traderProfiles[profileId]?.restockHours ?? 24
+    }, context);
     const market = siteMarketIntel(site);
-    const bonus = [];
-    const addBonus = (id, qty, price) => {
-      const safeQty = Math.max(0, Math.floor(Number(qty || 0)));
-      if (safeQty > 0) bonus.push({ id, qty: safeQty, price });
-    };
-    addBonus('water', Math.floor(Number(pile.water || 0) * 0.35), 5);
-    addBonus('oil', Math.floor(Number(pile.oil || 0) * 0.34), 9);
-    addBonus('scrap', Math.floor(Number(pile.scrap || 0) * 0.28), 3);
-    addBonus('repairKit', Math.floor(Number(pile.scrap || 0) / 12), 18);
-    addBonus('ammo9', Math.floor(Number(pile.ammo9 || 0) + Number(pile.ammoParts || 0) * 1.8), 2);
-    addBonus('ammo556', Math.floor(Number(pile.ammo556 || 0) + Number(pile.ammoParts || 0)), 4);
-    addBonus('napalm', Math.floor(Number(pile.napalm || 0) + Math.min(Number(pile.oil || 0), Number(pile.chemicals || 0)) * 1.8), 6);
-    addBonus('stim', Math.floor(Number(pile.medicine || 0) * 0.5), 12);
-    addBonus('medkit', Math.floor(Number(pile.medicine || 0) / 3), 22);
-    addBonus('energyCell', Math.floor(Number(pile.electronics || 0) * 2.5), 4);
-    addBonus('rifle', Math.floor(Number(pile.weaponParts || 0) / 2), 80);
-    let merged = mergeStockRows([...stock, ...bonus]);
-    merged = merged
-      .map(row => applyItemMarket(row, site, market))
-      .map(row => ({ ...row, qty: backedTraderQuantity(row, site) }))
-      .filter(row => row.qty > 0);
-    caps = Math.floor(caps * Number(market.capsMultiplier || 1));
-    if (market.recentlySupplied) caps += 60;
-    caps += Math.min(180, Math.floor(Number(site.prosperity || 0) * 1.2));
     return {
       ...trade,
-      stock: merged,
-      caps: clamp(caps, 0, 999999),
+      stock: normalizeMarketStockRows(persistent?.stock || []),
+      baseStock: normalizeTraderPlanRows(persistent?.plan || trade.stock || []),
+      caps: Math.max(0, Math.floor(Number(persistent?.caps || 0))),
+      baseCaps: Math.max(0, Math.floor(Number(persistent?.baseCaps || caps))),
+      restockHours: Number(persistent?.restockHours || trade.restockHours || 24),
+      marketKey: String(persistent?.key || ''),
       market: {
         siteId: site.id,
+        marketKey: String(persistent?.key || ''),
         state: market.state,
         stateLabel: market.stateLabel,
         scarcity: market.scarcity,
@@ -10003,7 +10476,24 @@ function createWastelandSimulation(options = {}) {
           lastDelivery: site.lastDelivery || null,
           lastWarehouseDeposit: site.lastWarehouseDeposit || null,
           supportDispatch: site.supportDispatch || null,
-          traderProfiles: site.traderProfiles || []
+          traderProfiles: site.traderProfiles || [],
+          productionCapabilities: site.productionCapabilities || [],
+          productionQueue: (Array.isArray(site.productionQueue) ? site.productionQueue : []).map(row => ({
+            itemId: row.itemId,
+            outputQty: row.outputQty,
+            remainingHours: Number(Number(row.remainingHours || 0).toFixed(2)),
+            priority: row.priority
+          })),
+          productionDemand: site.productionDemand || {},
+          retailDemand: site.retailDemand || {},
+          retailMarkets: Object.values(site.retailMarkets || {}).map(row => ({
+            key: row.key,
+            profileId: row.profileId,
+            caps: row.caps,
+            stockKinds: normalizeMarketStockRows(row.stock || []).filter(entry => entry.qty > 0).length,
+            targetKinds: normalizeTraderPlanRows(row.plan || []).length,
+            lastRestockHour: row.lastRestockHour
+          }))
         };
       }),
       parties: Object.values(state.parties).map(publicParty),
@@ -10158,6 +10648,14 @@ function createWastelandSimulation(options = {}) {
       controlPressure: clamp(input.controlPressure ?? prev.controlPressure ?? 0, -30, 30),
       stockpile: parseStockpileObject(input.stockpile || prev.stockpile || emptyStockpile()),
       output: parseStockpileObject(input.output || prev.output || {}),
+      production: parseStockpileObject(input.production || prev.production || {}),
+      productionCapabilities: Array.isArray(input.productionCapabilities)
+        ? input.productionCapabilities.map(row => safeId(row, '')).filter(Boolean).slice(0, 12)
+        : (Array.isArray(prev.productionCapabilities) ? prev.productionCapabilities : []),
+      productionQueue: Array.isArray(prev.productionQueue) ? prev.productionQueue : [],
+      productionDemand: parseStockpileObject(prev.productionDemand || {}),
+      retailDemand: parseStockpileObject(prev.retailDemand || {}),
+      retailMarkets: prev.retailMarkets && typeof prev.retailMarkets === 'object' ? prev.retailMarkets : {},
       traderProfiles: Array.isArray(input.traderProfiles)
         ? input.traderProfiles.map(row => safeId(row, '')).filter(Boolean).slice(0, 12)
         : (Array.isArray(prev.traderProfiles) ? prev.traderProfiles : [])
@@ -10219,9 +10717,11 @@ function createWastelandSimulation(options = {}) {
     recordWorldTaskPlayerTransfer,
     syncGlobalMap,
     applyTraderSupply,
+    applyNpcTraderTransaction,
     consumeTraderStock,
     receiveTraderStock,
     applyTradeMachineTransaction,
+    syncTraderMarket,
     performVisibleSiteWork,
     recordEncounterOutcome,
     syncBattleZoneActors,

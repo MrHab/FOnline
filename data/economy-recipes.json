@@ -1,0 +1,54 @@
+{
+  "schema": "realm.economyRecipes.v1",
+  "version": 1,
+  "recipes": {
+    "ammoParts": { "station": "ammo_bench", "workHours": 1.5, "outputQty": 4, "inputs": { "scrap": 3, "ore": 1.5 } },
+    "electronics": { "station": "energy_bench", "workHours": 2, "outputQty": 2, "inputs": { "scrap": 3, "chemicals": 1 } },
+    "weaponParts": { "station": "weapon_bench", "workHours": 3, "outputQty": 2, "inputs": { "ore": 6, "scrap": 5 } },
+    "medicine": { "station": "chem_station", "workHours": 2, "outputQty": 3, "inputs": { "water": 4, "chemicals": 1 } },
+
+    "ammo9": { "station": "ammo_bench", "workHours": 1, "outputQty": 24, "inputs": { "ammoParts": 5, "scrap": 1 } },
+    "ammo556": { "station": "ammo_bench", "workHours": 1.5, "outputQty": 16, "inputs": { "ammoParts": 6, "scrap": 1 } },
+    "shotgunShell": { "station": "ammo_bench", "workHours": 1.5, "outputQty": 10, "inputs": { "ammoParts": 5, "scrap": 1 } },
+    "rocketAmmo": { "station": "ammo_bench", "workHours": 4, "outputQty": 2, "inputs": { "ammoParts": 5, "electronics": 2, "oil": 1 } },
+    "energyCell": { "station": "energy_bench", "workHours": 1.5, "outputQty": 12, "inputs": { "electronics": 4, "chemicals": 1 } },
+    "napalm": { "station": "chem_station", "workHours": 2, "outputQty": 6, "inputs": { "oil": 3, "chemicals": 1 } },
+
+    "stim": { "station": "chem_station", "workHours": 2, "outputQty": 3, "inputs": { "medicine": 2, "chemicals": 1 } },
+    "medkit": { "station": "chem_station", "workHours": 3, "outputQty": 2, "inputs": { "medicine": 4, "chemicals": 1, "scrap": 1 } },
+    "doctorBag": { "station": "chem_station", "workHours": 5, "outputQty": 1, "inputs": { "medicine": 5, "electronics": 1, "scrap": 2 } },
+    "antibiotics": { "station": "chem_station", "workHours": 3, "outputQty": 2, "inputs": { "medicine": 3, "chemicals": 2 } },
+
+    "repairKit": { "station": "repair_bench", "workHours": 3, "outputQty": 2, "inputs": { "scrap": 6, "electronics": 2 } },
+    "handPump": { "station": "tool_bench", "workHours": 5, "outputQty": 1, "inputs": { "scrap": 8, "electronics": 2, "wood": 2 } },
+    "pickaxe": { "station": "tool_bench", "workHours": 3, "outputQty": 1, "inputs": { "scrap": 5, "wood": 2 } },
+    "axe": { "station": "tool_bench", "workHours": 3, "outputQty": 1, "inputs": { "scrap": 4, "wood": 3 } },
+    "knife": { "station": "tool_bench", "workHours": 2, "outputQty": 1, "inputs": { "scrap": 3 } },
+
+    "pistol": { "station": "weapon_bench", "workHours": 5, "outputQty": 1, "inputs": { "weaponParts": 1, "scrap": 4, "ammoParts": 2 } },
+    "rifle": { "station": "weapon_bench", "workHours": 8, "outputQty": 1, "inputs": { "weaponParts": 2, "scrap": 5, "wood": 2 } },
+    "shotgun": { "station": "weapon_bench", "workHours": 9, "outputQty": 1, "inputs": { "weaponParts": 2, "scrap": 7, "wood": 2 } },
+    "assaultRifle": { "station": "weapon_bench", "workHours": 12, "outputQty": 1, "inputs": { "weaponParts": 4, "scrap": 8, "ammoParts": 4 } },
+    "machineGun": { "station": "weapon_bench", "workHours": 16, "outputQty": 1, "inputs": { "weaponParts": 6, "scrap": 12, "ammoParts": 6 } },
+    "laserPistol": { "station": "energy_bench", "workHours": 10, "outputQty": 1, "inputs": { "weaponParts": 2, "electronics": 7, "chemicals": 1 } },
+    "plasmaRifle": { "station": "energy_bench", "workHours": 18, "outputQty": 1, "inputs": { "weaponParts": 5, "electronics": 12, "chemicals": 5 } },
+    "flamethrower": { "station": "weapon_bench", "workHours": 14, "outputQty": 1, "inputs": { "weaponParts": 4, "scrap": 10, "oil": 4 } },
+    "rocketLauncher": { "station": "weapon_bench", "workHours": 20, "outputQty": 1, "inputs": { "weaponParts": 7, "scrap": 14, "electronics": 5 } },
+
+    "leather": { "station": "repair_bench", "workHours": 4, "outputQty": 1, "inputs": { "scrap": 5, "chemicals": 1 } },
+    "metalArmor": { "station": "repair_bench", "workHours": 8, "outputQty": 1, "inputs": { "scrap": 12, "ore": 4 } },
+    "ballisticVest": { "station": "repair_bench", "workHours": 10, "outputQty": 1, "inputs": { "scrap": 10, "ammoParts": 5, "chemicals": 2 } },
+    "combatArmor": { "station": "repair_bench", "workHours": 18, "outputQty": 1, "inputs": { "scrap": 18, "electronics": 6, "chemicals": 4 } },
+    "hazmatSuit": { "station": "chem_station", "workHours": 12, "outputQty": 1, "inputs": { "chemicals": 10, "scrap": 6 } },
+    "heavyArmor": { "station": "repair_bench", "workHours": 24, "outputQty": 1, "inputs": { "scrap": 26, "ore": 10, "electronics": 6 } },
+    "energySuit": { "station": "energy_bench", "workHours": 22, "outputQty": 1, "inputs": { "electronics": 16, "chemicals": 8, "scrap": 10 } },
+
+    "helmet": { "station": "repair_bench", "workHours": 3, "outputQty": 1, "inputs": { "scrap": 4 } },
+    "tacticalHelmet": { "station": "repair_bench", "workHours": 6, "outputQty": 1, "inputs": { "scrap": 6, "electronics": 2 } },
+    "assaultHelmet": { "station": "repair_bench", "workHours": 8, "outputQty": 1, "inputs": { "scrap": 8, "electronics": 3 } },
+    "boots": { "station": "tool_bench", "workHours": 2, "outputQty": 1, "inputs": { "scrap": 3, "chemicals": 1 } },
+    "scoutBoots": { "station": "tool_bench", "workHours": 4, "outputQty": 1, "inputs": { "scrap": 4, "chemicals": 2 } },
+    "reinforcedBoots": { "station": "repair_bench", "workHours": 5, "outputQty": 1, "inputs": { "scrap": 6, "ore": 2 } },
+    "backpack": { "station": "tool_bench", "workHours": 4, "outputQty": 1, "inputs": { "scrap": 5, "chemicals": 1 } }
+  }
+}

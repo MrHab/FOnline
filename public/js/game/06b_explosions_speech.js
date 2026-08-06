@@ -44,7 +44,7 @@
       return rejectPeacefulNpcCombat();
     }
     const radius = explosiveRadiusForWeapon(w);
-    const rawBase = Math.max(1, Math.round((damageRoll(w) + talentLevel('sharpshooter') * 2) * (modeInfo.damageMul || 1)));
+    const rawBaseRoll = Math.max(1, Math.round((damageRoll(w) + talentLevel('sharpshooter') * 2) * (modeInfo.damageMul || 1)));
     let anyHit = false;
     if (enemiesAreServerAuthoritative()) {
       return emitGuardedMultiplayerGameplayAction('explosionAttack', {
@@ -73,9 +73,12 @@
           const enemy = enemies.find(row => row && row.id === hit.enemyId);
           const x = enemy?.x ?? centerX;
           const z = enemy?.z ?? centerZ;
-          createFloatingText(x, z, '-' + Math.max(0, Number(hit.damage || 0)), '#ff9b5a');
+          const critical = hit.critical === true;
+          const damage = Math.max(0, Number(hit.damage || 0));
+          createFloatingText(x, z, critical ? `КРИТ! -${damage}` : `-${damage}`, critical ? '#ffd166' : '#ff9b5a');
           const absorbed = Number(hit.absorbed || 0) > 0 ? `, броня поглотила ${Number(hit.absorbed)}` : '';
-          addLog(`${w.icon} ${w.name}: ${hit.enemyName || 'цель'} получает ${Math.max(0, Number(hit.damage || 0))} взрывного урона${absorbed}.`, null, 'combat');
+          const criticalText = critical ? 'КРИТИЧЕСКИЙ ВЫСТРЕЛ! ' : '';
+          addLog(`${w.icon} ${criticalText}${w.name}: ${hit.enemyName || 'цель'} получает ${damage} взрывного урона${absorbed}.`, null, 'combat');
         });
         if (!ack.hit) setReadout(`${w.name}: взрыв никого не задел.`);
         renderInventoryIfVisibleDeferred();
@@ -83,6 +86,8 @@
         updateTargetHintFromHover();
       });
     }
+    const explosionCritical = rollCriticalShot(rawBaseRoll, w);
+    const rawBase = explosionCritical.rawDamage;
     enemies.forEach(enemy => {
       if (!enemy || enemy.dead || enemy._removed) return;
       const dist = Math.hypot(enemy.x - centerX, enemy.z - centerZ);
@@ -95,8 +100,10 @@
       const dmg = dmgInfo.damage;
       enemy.flash = 0.2;
       if (!enemiesAreServerAuthoritative()) {
-      const absorbedText = dmgInfo.absorbed > 0 ? `, броня поглотила ${dmgInfo.absorbed}` : '';
-      addLog(`${w.icon} ${w.name}: ${enemy.name} получает ${dmg} взрывного урона${absorbedText}.`, null, 'combat');
+        const criticalText = explosionCritical.critical ? 'КРИТИЧЕСКИЙ ВЫСТРЕЛ! ' : '';
+        createFloatingText(enemy.x, enemy.z, explosionCritical.critical ? `КРИТ! -${dmg}` : `-${dmg}`, explosionCritical.critical ? '#ffd166' : '#ff9b5a');
+        const absorbedText = dmgInfo.absorbed > 0 ? `, броня поглотила ${dmgInfo.absorbed}` : '';
+        addLog(`${w.icon} ${criticalText}${w.name}: ${enemy.name} получает ${dmg} взрывного урона${absorbedText}.`, null, 'combat');
       }
       anyHit = true;
       if (enemiesAreServerAuthoritative()) {
@@ -153,9 +160,10 @@
       const savedBySecondChance = player.hp - reduced <= 0 && typeof trySecondChance === 'function' && trySecondChance(reduced, 'взрыв');
       if (!savedBySecondChance) player.hp = Math.max(0, player.hp - reduced);
       player.invincible = 0.35;
-      createFloatingText(player.x, player.z, '-' + reduced, '#ff5b4a');
+      createFloatingText(player.x, player.z, explosionCritical.critical ? `КРИТ! -${reduced}` : `-${reduced}`, explosionCritical.critical ? '#ffd166' : '#ff5b4a');
       const absorbedText = incoming.absorbed > 0 ? `, броня поглотила ${incoming.absorbed}` : '';
-      addLog(`${w.icon} Взрыв задел вас: -${reduced} HP${absorbedText}.`, null, 'combat');
+      const criticalText = explosionCritical.critical ? 'КРИТИЧЕСКИЙ ВЫСТРЕЛ! ' : '';
+      addLog(`${w.icon} ${criticalText}Взрыв задел вас: -${reduced} HP${absorbedText}.`, null, 'combat');
       rollSelfInjuryFromHit(reduced, 'explosive', 'самоповреждение взрывом ракеты');
       anyHit = true;
       if (player.hp <= 0) playerDeath();

@@ -6,7 +6,7 @@
     { key: 'cha', code: 'CH', name: 'Харизма', desc: 'Формулы: продажа +(Харизма−5)×4%; речь +(Харизма−5)×3.5 п.п.; награды квестов +(Харизма−5)×2%. Даёт базу речи и бартера.' },
     { key: 'int', code: 'IN', name: 'Интеллект', desc: 'Формулы: терминалы +(Интеллект−5)×3 п.п.; лечение Доктором +(Интеллект−5)×2.5 п.п.; энергоурон +floor((Интеллект−5)/2). Даёт базу науки, ремонта и медицины.' },
     { key: 'agi', code: 'AG', name: 'Ловкость', desc: 'Формулы: ОД = 5 + floor(Ловкость/2) + Живчик; скорость = 4.35 + Ловкость×0.13; взлом замков получает бонус от Ловкости. Даёт базу оружейных и скрытных навыков.' },
-    { key: 'luck', code: 'LK', name: 'Удача', desc: 'Формулы: меткость +max(0, Удача−5)×0.6 п.п.; проверки удачи +max(0, Удача−5)×2.5 п.п.; влияет на Второй шанс, травмы, добычу и базу странника.' }
+    { key: 'luck', code: 'LK', name: 'Удача', desc: 'Формулы: шанс критического выстрела = Удача%; крит удваивает сырой урон до брони; меткость +max(0, Удача−5)×0.6 п.п.; проверки удачи +max(0, Удача−5)×2.5 п.п.' }
   ];
   const STAT_TOTAL = 40;
   const STAT_MIN = 1;
@@ -99,9 +99,10 @@
     const sell = Math.round((stats.cha - 5) * 4 + (has('traderStart') ? 15 : 0));
     const craft = Math.round((stats.int - 5) * 3 + (has('craftsmanStart') ? 10 : 0));
     const luckChecks = Math.round(Math.max(0, stats.luck - 5) * 2.5);
+    const criticalChance = Math.max(1, Math.min(15, Number(stats.luck) || 5));
     const visionRadius = Math.max(6, Math.min(16, Math.round(5.5 + stats.per * 0.7)));
     const resistAll = Math.max(0, Math.round(stats.end * 0.7));
-    return { maxHp, maxAp, speed, carry, hit, sell, craft, luckChecks, visionRadius, resistAll };
+    return { maxHp, maxAp, speed, carry, hit, sell, craft, luckChecks, criticalChance, visionRadius, resistAll };
   }
 
   function creatorSkillBasePreview(stats = creatorStats) {
@@ -353,6 +354,7 @@
       <div>Скорость: <b>${d.speed.toFixed(1)}</b></div>
       <div>Переносимый вес: <b>${d.carry}</b></div>
       <div>Меткость: <b>${d.hit >= 0 ? '+' : ''}${d.hit}%</b></div>
+      <div>Критический выстрел: <b>${d.criticalChance}% (×2)</b></div>
       <div>Обзор: <b>${d.visionRadius} кл.</b></div>
       <div>Сопротивление: <b>${d.resistAll}%</b></div>
       <div>Продажа: <b>${d.sell >= 0 ? '+' : ''}${d.sell}%</b></div>

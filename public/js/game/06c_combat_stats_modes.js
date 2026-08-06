@@ -409,6 +409,26 @@
     queueSave();
   }
 
+  const CRITICAL_SHOT_DAMAGE_MULTIPLIER = 2;
+
+  function criticalShotChance(w = currentWeapon()) {
+    if (!w?.ammoType) return 0;
+    const luck = Math.max(1, Math.min(15, Number(statValue('luck') || 5)));
+    return luck / 100;
+  }
+
+  function rollCriticalShot(rawDamage, w = currentWeapon(), rng = Math.random) {
+    const chance = criticalShotChance(w);
+    const critical = chance > 0 && rng() < chance;
+    const multiplier = critical ? CRITICAL_SHOT_DAMAGE_MULTIPLIER : 1;
+    return {
+      critical,
+      chance,
+      multiplier,
+      rawDamage: Math.max(0, Math.round((Number(rawDamage) || 0) * multiplier))
+    };
+  }
+
   function calculateHitChance(enemy, dist, w = currentWeapon(), modeInfo = getWeaponModeInfo(w), options = {}) {
     if (!enemy || enemy.dead || dist > effectiveWeaponRange(w, modeInfo)) return 0;
     const conditionPenalty = w.ammoType && typeof w.condition === 'number' ? Math.max(0, 70 - w.condition) * 0.0025 : 0;
@@ -492,7 +512,8 @@
     const est = estimatedWeaponDamageRange(enemy, w, info?.modeInfo || getWeaponModeInfo(w));
     if (!est) return 'нет данных';
     const range = est.min === est.max ? `${est.min}` : `${est.min}–${est.max}`;
-    const expected = Math.max(0, Math.round(est.avg * Math.max(0, Number(info?.chance || 0)) / 100));
+    const criticalExpectedMultiplier = 1 + criticalShotChance(w) * (CRITICAL_SHOT_DAMAGE_MULTIPLIER - 1);
+    const expected = Math.max(0, Math.round(est.avg * criticalExpectedMultiplier * Math.max(0, Number(info?.chance || 0)) / 100));
     return `${range} ${damageTypeLabel(est.type)} · средний ${est.avg} · с шансом ≈${expected}`;
   }
 
@@ -509,6 +530,7 @@
     const inRange = dist <= weaponRange;
     const chance = (!blocked && inRange) ? Math.round(calculateHitChance(enemy, dist, w, modeInfo) * 100) : 0;
     let note = `${modeInfo.label} · ${modeInfo.apCost} AP · ${Math.round(dist)} м`;
+    if (w.ammoType) note += ` · крит ${Math.round(criticalShotChance(w) * 100)}% (×${CRITICAL_SHOT_DAMAGE_MULTIPLIER})`;
     if (isEnergyWeapon(w)) note += ` · риск сбоя ${Math.round(energyFailureChance(w, modeInfo) * 100)}%`;
     if (!inRange) note = `Вне дальности · ${Math.round(dist)}/${Math.round(weaponRange)} м`;
     else if (blocked) note = 'Линия огня перекрыта';

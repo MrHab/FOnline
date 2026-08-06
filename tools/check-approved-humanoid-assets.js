@@ -171,8 +171,8 @@ const rifle = byId.get('assaultRifle');
 assert(rifle, 'approved assault rifle is missing');
 assert.strictEqual(rifle.sourceSha256, RIFLE_REVIEW_SHA256);
 const rifleGlb = parseGlb(runtimeFile(rifle.file));
-assert.deepStrictEqual({ vertices: rifleGlb.vertices, triangles: rifleGlb.triangles }, { vertices: 1893, triangles: 1116 });
-assert.strictEqual(rifleGlb.json.meshes?.length, 3);
+assert.deepStrictEqual({ vertices: rifleGlb.vertices, triangles: rifleGlb.triangles }, { vertices: 1940, triangles: 1116 });
+assert.strictEqual(rifleGlb.json.meshes?.length, 4);
 assert.strictEqual(rifleGlb.json.materials?.length, 4);
 assert.strictEqual(rifleGlb.json.images?.length, 12);
 assert.deepStrictEqual(
@@ -180,9 +180,14 @@ assert.deepStrictEqual(
   ['attack', 'idle', 'reload']
 );
 const rifleNames = new Set((rifleGlb.json.nodes || []).map(node => node.name));
-['socket_butt', 'socket_grip_l', 'socket_grip_r', 'socket_muzzle'].forEach(name => (
+['magazine', 'socket_butt', 'socket_grip_l', 'socket_grip_r', 'socket_muzzle', 'socket_reload'].forEach(name => (
   assert(rifleNames.has(name), `assault rifle socket is missing: ${name}`)
 ));
+const rifleReload = (rifleGlb.json.animations || []).find(animation => animation.name === 'reload');
+const rifleReloadTargets = new Set((rifleReload?.channels || []).map(channel => (
+  rifleGlb.json.nodes[channel.target.node]?.name
+)));
+assert(rifleReloadTargets.has('magazine'), 'assault-rifle reload clip does not animate its magazine');
 const rifleRoot = (rifleGlb.json.nodes || []).find(node => node.extras?.realm_weapon_id === 'assaultRifle');
 assert(rifleRoot, 'approved assault-rifle runtime root is missing');
 assert.strictEqual(rifleRoot.extras.realm_runtime_integration_allowed, true);
@@ -221,7 +226,7 @@ const runtimeSource = fs.readFileSync(
   'utf8'
 );
 [
-  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v6-equipment'",
+  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v13-weapon-interactions'",
   'const APPROVED_EQUIPMENT_ASSETS = Object.freeze({',
   'const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([',
   'function attachApprovedNpcAnimations(runtime)',
@@ -229,17 +234,25 @@ const runtimeSource = fs.readFileSync(
   "mesh.name = `approved_equipment_${itemId}_${sourceMesh.material?.name || group.children.length}`",
   'new THREE.Skeleton(',
   'function applyApprovedEquipmentVisuals(actor, eq = {})',
+  'const APPROVED_BACKPACK_ARMOR_OFFSETS = Object.freeze({',
+  'function approvedBackpackArmorOffset(eq = {})',
+  'function placeApprovedEquipmentRuntime(group, slot = \'\', eq = {})',
   'function applyApprovedBootsVisual(actor, eq = {})',
   'function compileApprovedGripPose(gltf)',
   'function captureApprovedAssaultRifleRestPose(root)',
   'function approvedGripTargetTransform(runtime, pose, boneName, transform)',
+  'function restoreApprovedWeaponGrip(actor)',
   'primaryHand.matrixWorld.clone().multiply(pose.primaryHandToMount)',
+  "function solveApprovedArm(characterRoot, side = 'l', targetMatrix)",
+  "const suffix = side === 'r' ? 'r' : 'l'",
   'function solveApprovedSupportArm(characterRoot, targetMatrix)',
-  "['clavicle_l', 'upperarm_l', 'lowerarm_l', 'hand_l']",
+  'const APPROVED_FIREARM_GRIP_PROFILES = Object.freeze({',
+  'function mountApprovedWeapon(actor, pose, weaponId = \'\')',
+  'function approvedWeaponSupportTarget(actor, weaponGroup, pose, profile)',
+  'function applyApprovedWeaponGrip(actor, weaponId = \'\')',
   'function applyApprovedAssaultRifleGrip(actor, weaponId = \'\')',
-  "actor.userData.characterGlbRuntime.currentAction === 'death'",
-  'return !!mountApprovedAssaultRifle(actor, pose)',
-  "id !== 'assaultRifle'",
+  "characterRuntime.currentAction === 'death'",
+  'return !!mountApprovedWeapon(actor, pose, id)',
   'weaponGroup.parent !== runtime.root',
   'bone.quaternion.copy(target.quaternion)'
 ].forEach(marker => assert(runtimeSource.includes(marker), `approved humanoid runtime marker is missing: ${marker}`));
@@ -492,6 +505,69 @@ async function verifyThreeRuntime() {
         equipmentSize.toArray().every(value => Number.isFinite(value) && value > 0 && value < 5),
         `${runtimeAssetId}: bound runtime equipment has invalid bounds: ${equipmentSize.toArray()}`
       );
+      if (
+        ['metalArmor', 'ballisticVest', 'combatArmor', 'heavyArmor', 'backpack'].includes(definition.itemId)
+        || definition.slot === 'boots'
+      ) {
+        const equipmentSole = definition.slot === 'boots'
+          ? group.children.find(mesh => String(mesh.material?.name || '') === (
+            definition.itemId === 'scoutBoots'
+              ? 'scout_boots_flexible_black_rubber'
+              : 'boots_rubberized_sole'
+          ))
+          : null;
+        const equipmentSoleVertices = equipmentSole
+          ? Object.fromEntries(['l', 'r'].map(side => [side, footVertexIndices(equipmentSole, side)]))
+          : null;
+        if (definition.slot === 'boots') {
+          assert(equipmentSole, `${runtimeAssetId}: animated sole material is missing`);
+          assert(Object.values(equipmentSoleVertices).every(indices => indices.length > 0));
+        }
+        for (const clipName of ['walk', 'run']) {
+          const clip = character.animations.find(animation => animation.name === clipName);
+          assert(clip, `${bodyId}: current character has no ${clipName} animation`);
+          const mixer = new THREE.AnimationMixer(character.scene);
+          mixer.clipAction(clip).play();
+          for (let sample = 0; sample <= 24; sample += 1) {
+            mixer.setTime(clip.duration * sample / 24);
+            character.scene.updateMatrixWorld(true);
+            bodyMesh.skeleton.update();
+            group.children.forEach(mesh => mesh.skeleton.update());
+            const animatedBounds = new THREE.Box3().makeEmpty();
+            group.children.forEach(mesh => animatedBounds.union(skinnedMeshBounds(mesh)));
+            const animatedSize = animatedBounds.getSize(new THREE.Vector3());
+            const armorCenter = animatedBounds.getCenter(new THREE.Vector3());
+            const bodyCenter = skinnedMeshBounds(bodyMesh).getCenter(new THREE.Vector3());
+            const centerTolerance = definition.itemId === 'backpack'
+              ? { x: 0.45, y: 0.7, z: 0.9 }
+              : (definition.slot === 'boots'
+                ? { x: 0.45, y: 1.0, z: 0.45 }
+                : { x: 0.45, y: 0.45, z: 0.75 });
+            assert(
+              animatedSize.toArray().every(value => Number.isFinite(value) && value > 0 && value < 2),
+              `${runtimeAssetId}: ${clipName} sample ${sample} has exploded armor bounds`
+            );
+            assert(
+              Math.abs(armorCenter.x - bodyCenter.x) < centerTolerance.x
+                && Math.abs(armorCenter.y - bodyCenter.y) < centerTolerance.y
+                && Math.abs(armorCenter.z - bodyCenter.z) < centerTolerance.z,
+              `${runtimeAssetId}: ${clipName} sample ${sample} detached from the animated body: `
+                + `equipment=${armorCenter.toArray()}, body=${bodyCenter.toArray()}`
+            );
+            if (equipmentSole) {
+              for (const side of ['l', 'r']) {
+                const clearance = skinnedMinimumY(bodyMesh, bodyFootVertices[side])
+                  - skinnedMinimumY(equipmentSole, equipmentSoleVertices[side]);
+                assert(
+                  clearance >= 0.008,
+                  `${runtimeAssetId}: ${side} foot pierces the sole in ${clipName} sample ${sample}: ${clearance}`
+                );
+              }
+            }
+          }
+          mixer.stopAllAction();
+        }
+      }
       character.scene.remove(group);
     }
   }

@@ -449,12 +449,30 @@
     const runtime = {
       mixer,
       actions,
+      root: model,
       model,
       modelKey,
       currentAction: ''
     };
     actorGroup.userData.npcCreatureGlbAnimation = runtime;
     setEnemyStaticGlbAction(runtime, 'idle', 0);
+    if (modelKey === 'enemySuperMutant') {
+      runtime.appearance = typeof normalizeCharacterAppearance === 'function'
+        ? normalizeCharacterAppearance({ sex: 'male', bodyType: 'large' })
+        : { sex: 'male', bodyType: 'large' };
+      runtime.approvedAssaultRifleRestPose = typeof captureApprovedAssaultRifleRestPose === 'function'
+        ? captureApprovedAssaultRifleRestPose(model)
+        : null;
+      actorGroup.userData.characterAppearance = runtime.appearance;
+      actorGroup.userData.approvedEquipmentCharacterRuntime = runtime;
+      actorGroup.userData.approvedEquipmentRefreshPending = true;
+      const enemy = actorGroup.userData.enemy;
+      if (enemy && typeof updateEnemyEquipmentVisuals === 'function') {
+        actorGroup.userData.enemyEquipmentKey = '';
+        updateEnemyEquipmentVisuals(enemy);
+        actorGroup.userData.approvedEquipmentRefreshPending = false;
+      }
+    }
     return runtime;
   }
 
@@ -796,6 +814,18 @@
     const mesh = enemy?.mesh;
     const parts = mesh?.userData?.actorParts;
     if (!mesh || !parts) return;
+    if (
+      mesh.userData.approvedEquipmentRefreshPending
+      && mesh.userData.approvedEquipmentCharacterRuntime?.root
+      && typeof updateEnemyEquipmentVisuals === 'function'
+    ) {
+      // The skinned GLB may finish before the network row is attached to the
+      // actor group. Refresh on the first animation frame where both exist so
+      // the old box overlay cannot survive a fast cache hit.
+      mesh.userData.enemyEquipmentKey = '';
+      updateEnemyEquipmentVisuals(enemy);
+      mesh.userData.approvedEquipmentRefreshPending = false;
+    }
     if (enemy.dead) {
       if (mesh.userData.characterGlbRuntime) {
         updateCharacterGlbAnimation(mesh, dt, { dead: true, moving: false });
@@ -853,7 +883,8 @@
         facingAngle,
         attacking: attackAnimation.active,
         attackToken: attackAnimation.token,
-        hurt: Number(enemy.flash || 0) > 0.02
+        hurt: Number(enemy.flash || 0) > 0.02,
+        talking: inDialogue
       });
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;
@@ -875,6 +906,12 @@
       attackActive: attackAnimation.active,
       attackToken: attackAnimation.token
     });
+    if (
+      mesh.userData.approvedEquipmentCharacterRuntime
+      && typeof applyApprovedWeaponGrip === 'function'
+    ) {
+      applyApprovedWeaponGrip(mesh, enemy.equipment?.weapon || enemy.weapon || 'fists');
+    }
     if (!important) {
       enemy.idleVisualAnimTimer = Math.max(0, Number(enemy.idleVisualAnimTimer || 0) - Math.max(0, Number(dt || 0.016)));
       if (enemy.idleVisualAnimTimer > 0) return;

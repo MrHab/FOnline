@@ -11,7 +11,7 @@
     wastelandSettler: '-Z',
     enemyRaider: '-Z',
     enemyGhoul: '+Z',
-    enemySuperMutant: '-Z',
+    enemySuperMutant: '+Z',
     enemyAshWolf: '+Z',
     enemyRadscorpion: '-Z',
     enemyMutantAnt: '-Z',

@@ -338,7 +338,15 @@
 
     const parts = group.userData.actorParts || {};
     applyArmorVisualSet(parts, eq);
-    updateEnemyStaticEquipmentOverlay(enemy, parts, eq);
+    if (
+      group.userData.approvedEquipmentCharacterRuntime?.root
+      && typeof applyApprovedEquipmentVisuals === 'function'
+    ) {
+      disposeEnemyStaticEquipmentOverlay(group);
+      applyApprovedEquipmentVisuals(group, eq);
+    } else {
+      updateEnemyStaticEquipmentOverlay(enemy, parts, eq);
+    }
     const weaponGroup = ensureEnemyWeaponGroup(enemy);
     if (parts.weaponStatic) parts.weaponStatic.visible = !eq.weapon || eq.weapon === 'fists';
     if (!weaponGroup) return;

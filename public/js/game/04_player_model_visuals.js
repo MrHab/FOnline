@@ -1086,7 +1086,9 @@
       triggerActorAttackAnimationPulse(actor, opts.attackToken || opts.t || 0);
     }
     const current = actor.userData?.meleeAnim;
-    if (current?.base) restoreMeleeVisualBase(current);
+    const physicalMeleeActive = String(actor.userData?.approvedPhysicalMeleeGripActive || '')
+      === String(profile.id || '');
+    if (current?.base && !physicalMeleeActive) restoreMeleeVisualBase(current);
     actor.userData.meleeAnim = {
       startedAt: now,
       duration: Math.max(0.18, Number(opts.duration || profile.duration || 0.32)),
@@ -1158,6 +1160,12 @@
     const elapsed = (performance.now() - Number(anim.startedAt || 0)) / 1000;
     const duration = Math.max(0.12, Number(anim.duration || 0.3));
     const phase = Math.max(0, Math.min(1, elapsed / duration));
+    const physicalMeleeActive = String(actor.userData?.approvedPhysicalMeleeGripActive || '')
+      === String(anim.weaponId || '');
+    if (physicalMeleeActive) {
+      if (phase >= 1) delete actor.userData.meleeAnim;
+      return;
+    }
     restoreMeleeVisualBase(anim);
     if (phase >= 1) {
       delete actor.userData.meleeAnim;

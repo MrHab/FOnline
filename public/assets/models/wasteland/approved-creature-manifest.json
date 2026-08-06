@@ -238,6 +238,43 @@
         "y": 0.354658,
         "z": 0.02032
       }
+    },
+    {
+      "id": "npc_super_mutant",
+      "category": "creature",
+      "species": "super_mutant",
+      "label": "Супермутант",
+      "file": "/assets/models/wasteland/npc_super_mutant.glb",
+      "sha256": "D0777568929942FEED5B420FD7802B0EAABCFDAC9727FBADEACD6764D1D8AA27",
+      "approvedReviewSha256": "69C7771D31926F2650BD1F2AED710979A4AE9724449F89123C13F2780570E311",
+      "runtimeScaleMultiplier": 1,
+      "runtimeScaleCompensation": null,
+      "bytes": 6400032,
+      "meshes": 4,
+      "vertices": 33578,
+      "triangles": 11216,
+      "materials": 8,
+      "images": 24,
+      "animations": [
+        "attack",
+        "death",
+        "hurt",
+        "idle",
+        "run",
+        "walk"
+      ],
+      "animationChannels": 1170,
+      "skins": 1,
+      "boundsMeters": {
+        "x": 2.676769,
+        "y": 2.579498,
+        "z": 0.548778
+      },
+      "centerMeters": {
+        "x": -0.003261,
+        "y": 1.273561,
+        "z": -0.01007
+      }
     }
   ]
 }

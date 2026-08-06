@@ -1,6 +1,167 @@
   // ===== SERVER GROUND ITEMS =====
+  const GROUND_ITEM_MODEL_ASSET_VERSION = '7.76.7-ground-items-bc-v1';
+  const GROUND_ITEM_LIBRARY_URL = '/assets/models/items/ground_item_library.glb';
+  const GROUND_ITEM_LIBRARY_IDS = new Set([
+    'ammo9', 'ammo556', 'energyCell', 'napalm', 'shotgunShell', 'rocketAmmo',
+    'medkit', 'stim', 'doctorBag', 'antibiotics', 'ore', 'wood', 'scrap',
+    'oil', 'chemicals', 'medicine', 'electronics', 'ammoParts', 'food',
+    'weaponParts', 'silver', 'trophy', 'water', 'repairKit'
+  ]);
+  const groundItemModelState = {
+    library: null,
+    libraryPromise: null,
+    libraryFailed: false,
+    requestCounter: 0
+  };
+
+  function loadGroundItemLibrary() {
+    if (groundItemModelState.library) return Promise.resolve(groundItemModelState.library);
+    if (groundItemModelState.libraryPromise) return groundItemModelState.libraryPromise;
+    if (groundItemModelState.libraryFailed || !THREE.GLTFLoader) return Promise.resolve(null);
+    groundItemModelState.libraryPromise = new Promise(resolve => {
+      const loader = new THREE.GLTFLoader();
+      loader.load(
+        `${GROUND_ITEM_LIBRARY_URL}?v=${encodeURIComponent(GROUND_ITEM_MODEL_ASSET_VERSION)}`,
+        gltf => {
+          const sceneRoot = gltf?.scene || gltf?.scenes?.[0] || null;
+          const complete = sceneRoot && [...GROUND_ITEM_LIBRARY_IDS].every(id => (
+            !!sceneRoot.getObjectByName?.(`ground_item_${id}`)
+          ));
+          if (!complete) {
+            groundItemModelState.libraryFailed = true;
+            console.warn('Библиотека физических предметов не содержит полный набор моделей.');
+            resolve(null);
+            return;
+          }
+          prepareStaticModelObject(sceneRoot);
+          groundItemModelState.library = sceneRoot;
+          resolve(sceneRoot);
+        },
+        undefined,
+        error => {
+          groundItemModelState.libraryFailed = true;
+          console.warn('Не удалось загрузить библиотеку физических предметов.', error);
+          resolve(null);
+        }
+      );
+    }).finally(() => { groundItemModelState.libraryPromise = null; });
+    return groundItemModelState.libraryPromise;
+  }
+
+  function groundItemModelKind(itemId = '') {
+    if (GROUND_ITEM_LIBRARY_IDS.has(itemId)) return 'library';
+    if (typeof weaponModelCatalogEntry === 'function' && weaponModelCatalogEntry(itemId)) return 'weapon';
+    if (typeof APPROVED_EQUIPMENT_ASSETS !== 'undefined' && APPROVED_EQUIPMENT_ASSETS[itemId]) return 'equipment';
+    return '';
+  }
+
+  function loadGroundItemPhysicalModel(itemId = '') {
+    const kind = groundItemModelKind(itemId);
+    if (kind === 'library') {
+      return loadGroundItemLibrary().then(library => {
+        const source = library?.getObjectByName?.(`ground_item_${itemId}`) || null;
+        return source ? source.clone(true) : null;
+      });
+    }
+    if (kind === 'weapon') {
+      const entry = weaponModelCatalogEntry(itemId);
+      return loadWeaponModelTemplate(entry).then(template => (
+        template?.scene ? cloneStaticModelSource(template.scene) : null
+      ));
+    }
+    if (kind === 'equipment') {
+      return loadApprovedEquipmentTemplate(itemId, 'male_medium').then(template => (
+        template?.scene ? cloneStaticModelSource(template.scene) : null
+      ));
+    }
+    return Promise.resolve(null);
+  }
+
+  function fitGroundItemPhysicalModel(model, itemId = '', kind = '') {
+    if (!model) return null;
+    model.position.set(0, 0, 0);
+    model.rotation.set(0, 0, 0);
+    model.scale.setScalar(1);
+    model.updateMatrixWorld(true);
+    let bounds = new THREE.Box3().setFromObject(model);
+    if (bounds.isEmpty()) return null;
+    const initialSize = bounds.getSize(new THREE.Vector3());
+    if (kind === 'equipment' || initialSize.y > Math.max(initialSize.x, initialSize.z) * 1.2) {
+      model.rotation.x = -Math.PI / 2;
+      model.rotation.z = kind === 'equipment' ? 0.18 : 0.08;
+      model.updateMatrixWorld(true);
+      bounds = new THREE.Box3().setFromObject(model);
+    } else if (kind === 'weapon') {
+      model.rotation.y = 0.24;
+      model.rotation.z = 0.04;
+      model.updateMatrixWorld(true);
+      bounds = new THREE.Box3().setFromObject(model);
+    }
+    const targetFootprint = kind === 'weapon' ? 1.02 : kind === 'equipment' ? 0.92 : 0.68;
+    const size = bounds.getSize(new THREE.Vector3());
+    const footprint = Math.max(size.x, size.z, size.y * 0.55, 0.001);
+    const scale = Math.min(1.35, targetFootprint / footprint);
+    model.scale.multiplyScalar(scale);
+    model.updateMatrixWorld(true);
+    bounds = new THREE.Box3().setFromObject(model);
+    const center = bounds.getCenter(new THREE.Vector3());
+    model.position.x -= center.x;
+    model.position.z -= center.z;
+    model.position.y += 0.025 - bounds.min.y;
+    model.updateMatrixWorld(true);
+    bounds = new THREE.Box3().setFromObject(model);
+    model.name = `ground_item_physical_${itemId}`;
+    model.traverse(part => {
+      part.frustumCulled = false;
+      if (!part.isMesh) return;
+      part.castShadow = true;
+      part.receiveShadow = true;
+    });
+    return bounds;
+  }
+
+  function removeGroundItemFallback(group) {
+    const fallback = group?.userData?.groundItemFallback;
+    if (!fallback) return;
+    fallback.geometry?.dispose?.();
+    fallback.material?.dispose?.();
+    fallback.parent?.remove?.(fallback);
+    group.userData.groundItemFallback = null;
+  }
+
+  function requestGroundItemPhysicalModel(group, itemId = '') {
+    const kind = groundItemModelKind(itemId);
+    if (!group || !kind) return;
+    const requestId = ++groundItemModelState.requestCounter;
+    group.userData.groundItemModelRequestId = requestId;
+    loadGroundItemPhysicalModel(itemId).then(model => {
+      if (
+        !model
+        || group.userData.groundItemModelActive === false
+        || group.userData.groundItemModelRequestId !== requestId
+      ) return;
+      const bounds = fitGroundItemPhysicalModel(model, itemId, kind);
+      if (!bounds) return;
+      removeGroundItemFallback(group);
+      group.add(model);
+      group.userData.groundItemPhysicalModel = model;
+      const row = group.userData.groundItem;
+      model.traverse(child => { child.userData.groundItem = row; });
+      const size = bounds.getSize(new THREE.Vector3());
+      const shadow = group.userData.groundItemShadow;
+      if (shadow) {
+        shadow.scale.set(
+          Math.max(0.48, size.x / 0.76),
+          Math.max(0.42, size.z / 0.76),
+          1
+        );
+      }
+    });
+  }
+
   function clearGroundItemsVisuals() {
     multiplayer.groundItemMeshes.forEach(mesh => {
+      if (mesh?.userData) mesh.userData.groundItemModelActive = false;
       forgetNetworkRevealObject(mesh);
       try { scene.remove(mesh); } catch (_) {}
     });
@@ -16,6 +177,8 @@
     shadow.position.y = 0.012;
     shadow.visible = true; // v7.74.81: cheap pseudo contact shadow while real shadow maps are disabled
     group.add(shadow);
+    group.userData.groundItemShadow = shadow;
+    group.userData.groundItemModelActive = true;
 
     const colorByType = {
       weapon: 0x7e6b4f,
@@ -34,6 +197,9 @@
     body.rotation.y = 0.65;
     body.castShadow = true;
     group.add(body);
+    group.userData.groundItemFallback = body;
+
+    requestGroundItemPhysicalModel(group, itemId);
 
     // Предметы на земле тоже без надписей над объектом.
     // Текстовая информация остаётся в окне лута/инвентаря и системных подсказках.
@@ -45,6 +211,7 @@
     if (!row) return;
     const idx = multiplayer.groundItemMeshes.indexOf(row.mesh);
     if (idx >= 0) multiplayer.groundItemMeshes.splice(idx, 1);
+    if (row.mesh?.userData) row.mesh.userData.groundItemModelActive = false;
     forgetNetworkRevealObject(row.mesh);
     if (row.mesh) scene.remove(row.mesh);
     multiplayer.groundItems.delete(id);
@@ -62,21 +229,23 @@
       multiplayer.groundItems.set(src.id, row);
       multiplayer.groundItemMeshes.push(mesh);
     } else {
+      const previousItemId = row.itemId;
       row.itemId = src.itemId;
       row.qty = Number(src.qty || row.qty || 1);
       row.x = Number(src.x ?? row.x ?? 0);
       row.z = Number(src.z ?? row.z ?? 0);
-      if (row.mesh) {
+      if (row.mesh && previousItemId !== row.itemId) {
+        row.mesh.userData.groundItemModelActive = false;
         forgetNetworkRevealObject(row.mesh);
         scene.remove(row.mesh);
         const idx = multiplayer.groundItemMeshes.indexOf(row.mesh);
         if (idx >= 0) multiplayer.groundItemMeshes.splice(idx, 1);
+        row.mesh = createGroundItemMesh(row.itemId, row.qty);
+        row.mesh.userData.groundItem = row;
+        row.mesh.traverse(child => { if (child.isMesh) child.userData.groundItem = row; });
+        scene.add(row.mesh);
+        multiplayer.groundItemMeshes.push(row.mesh);
       }
-      row.mesh = createGroundItemMesh(row.itemId, row.qty);
-      row.mesh.userData.groundItem = row;
-      row.mesh.traverse(child => { if (child.isMesh) child.userData.groundItem = row; });
-      scene.add(row.mesh);
-      multiplayer.groundItemMeshes.push(row.mesh);
     }
     row.x = Number(src.x ?? row.x ?? 0);
     row.z = Number(src.z ?? row.z ?? 0);

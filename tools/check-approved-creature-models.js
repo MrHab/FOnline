@@ -16,6 +16,8 @@ const MANIFEST_FILE = path.join(MODEL_DIRECTORY, MANIFEST_NAME);
 const COLLIDER_FILE = path.join(MODEL_DIRECTORY, 'model-colliders.json');
 const STATIC_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '02a_materials_static_models.js');
 const ENEMY_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05f_enemy_models_location_flow.js');
+const EQUIPMENT_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05a_remote_actor_equipment.js');
+const HUMANOID_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '04d_approved_humanoid_assets_runtime.js');
 const REQUIRED_ACTIONS = ['attack', 'death', 'hurt', 'idle', 'run', 'walk'];
 const EXPECTED_BOUNDS = {
   brahmin: {
@@ -41,6 +43,10 @@ const EXPECTED_BOUNDS = {
   npc_mutant_ant: {
     center: { x: 0.000012, y: 0.354658, z: 0.02032 },
     size: { x: 2.009994, y: 0.675568, z: 2.15746 }
+  },
+  npc_super_mutant: {
+    center: { x: -0.003261, y: 1.273561, z: -0.01007 },
+    size: { x: 2.676769, y: 2.579498, z: 0.548778 }
   }
 };
 
@@ -220,6 +226,8 @@ const staticRuntime = fs.readFileSync(STATIC_RUNTIME_FILE, 'utf8');
   "'enemyMutantAnt'",
   "'enemyGecko'",
   "'enemyFireGecko'",
+  "'enemySuperMutant'",
+  "const NPC_SUPER_MUTANT_GLB_ASSET_VERSION = '7.78.0-super-mutant-bc-v1';",
   '? APPROVED_CREATURE_GLB_ASSET_VERSION',
   '.filter(key => !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))',
   'function cloneStaticModelSource(source)',
@@ -239,12 +247,36 @@ const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
   'characterOneShotRestart(runtime, action, state.attackToken)',
   'attackActive: attackAnimation.active',
   'attackToken: attackAnimation.token',
+  'root: model,',
+  'actorGroup.userData.approvedEquipmentCharacterRuntime = runtime;',
+  'actorGroup.userData.approvedEquipmentRefreshPending = true;',
+  'mesh.userData.approvedEquipmentRefreshPending',
+  "applyApprovedWeaponGrip(mesh, enemy.equipment?.weapon || enemy.weapon || 'fists');",
   '&& runtime.actions.run',
   "runtime.currentAction === 'walk' || runtime.currentAction === 'run'",
   'updateEnemyStaticGlbAnimation(enemy, dt, {',
   'updateEnemyStaticGlbAnimation(enemy, dt, { dead: true });'
 ].forEach(marker => {
   assert(enemyRuntime.includes(marker), `approved creature animation integration is missing: ${marker}`);
+});
+
+const equipmentRuntime = fs.readFileSync(EQUIPMENT_RUNTIME_FILE, 'utf8');
+[
+  'group.userData.approvedEquipmentCharacterRuntime?.root',
+  'disposeEnemyStaticEquipmentOverlay(group);',
+  'applyApprovedEquipmentVisuals(group, eq);'
+].forEach(marker => {
+  assert(equipmentRuntime.includes(marker), `super mutant equipment integration is missing: ${marker}`);
+});
+
+const humanoidRuntime = fs.readFileSync(HUMANOID_RUNTIME_FILE, 'utf8');
+[
+  'function approvedActorCharacterRuntime(actor)',
+  'actor?.userData?.approvedEquipmentCharacterRuntime',
+  'const characterRuntime = approvedActorCharacterRuntime(actor);',
+  'if ((!firearmProfile && !meleeProfile) || !characterRuntime?.root)'
+].forEach(marker => {
+  assert(humanoidRuntime.includes(marker), `super mutant humanoid integration is missing: ${marker}`);
 });
 
 async function verifyThreeRuntime() {

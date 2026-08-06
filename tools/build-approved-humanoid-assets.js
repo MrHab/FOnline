@@ -7,8 +7,8 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const NPC_REVIEW_SHA256 = 'EAC5248C381FD457E93A04094DAC51FA22C60EDE138C88E00EEFBB3EB4E6091E';
-const RIFLE_REVIEW_SHA256 = '81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28';
-const BOOTS_FIT_REPORT_SHA256 = 'D02C6E45C7D88BAE2D02056E770D6DE611351EED01452D6D2B0E3D5D594F2CA1';
+const RIFLE_REVIEW_SHA256 = '322D14E2D07059AB4458C65CB0E6B7019B8F030F3386B05016908E41E6591FC6';
+const BOOTS_FIT_REPORT_SHA256 = '6CA7122CB054A5F585CD190AFB1643F26B44C55DE4A4AF17303356DDA8CF9853';
 const GRIP_RUNTIME_SHA256 = '7B96493E5D26DCF12D10B03526036DCD529A74C26FD031BFE8DCBBA986FD4FE8';
 const BODY_IDS = Object.freeze([
   'female_slim',
@@ -26,7 +26,52 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_leather_jacket_unified_v1',
     runtimePrefix: 'equipment_leather_jacket',
     meshCount: 2,
-    fitReportSha256: 'A5D518224794202F4EF4656B038BD24C28E76E621FC9FD36D1CD3238C1BBFF2C'
+    fitReportSha256: '3186BCEBA191368F278CBA74675A998513494CB6597C6A1DEA95D4B6E5BA23C5'
+  },
+  {
+    itemId: 'metalArmor',
+    slot: 'armor',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-metal-armor-v1', 'armor'],
+    sourcePrefix: 'equipment_metal_armor_unified_v1',
+    runtimePrefix: 'equipment_metal_armor',
+    meshCount: 2,
+    fitReportSha256: '6C759B4C873E54BA224B00A8C5D597AF6806881AE79152D510C5881BF8839E2A'
+  },
+  {
+    itemId: 'ballisticVest',
+    slot: 'armor',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-ballistic-vest-v1', 'vest'],
+    sourcePrefix: 'equipment_ballistic_vest_unified_v1',
+    runtimePrefix: 'equipment_ballistic_vest',
+    meshCount: 2,
+    fitReportSha256: 'B86FBEB87974F9AF7EF313A1E413401B9F7B7930DBAC0F67839F917213983ADC'
+  },
+  {
+    itemId: 'combatArmor',
+    slot: 'armor',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-combat-armor-v1', 'armor'],
+    sourcePrefix: 'equipment_combat_armor_unified_v1',
+    runtimePrefix: 'equipment_combat_armor',
+    meshCount: 2,
+    fitReportSha256: '2051BD18AEE6A3993BC9C03437AC4F2022E36995C597E1AAE12852BFAC8099E7'
+  },
+  {
+    itemId: 'heavyArmor',
+    slot: 'armor',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-heavy-armor-v1', 'armor'],
+    sourcePrefix: 'equipment_heavy_armor_unified_v1',
+    runtimePrefix: 'equipment_heavy_armor',
+    meshCount: 2,
+    fitReportSha256: 'ED76707B9481F843881898BC7BFBA25AF0452084792A1FB9006DC4651F0E3550'
+  },
+  {
+    itemId: 'backpack',
+    slot: 'backpack',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-backpack-v1', 'backpack'],
+    sourcePrefix: 'equipment_backpack_unified_v1',
+    runtimePrefix: 'equipment_backpack',
+    meshCount: 2,
+    fitReportSha256: 'E70691AAE14BBC2CA5CD608567EFFA532EFED46AF3F4B2625DCBAAC281BF5F39'
   },
   {
     itemId: 'reinforcedBoots',
@@ -35,7 +80,16 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_reinforced_boots_unified_v1',
     runtimePrefix: 'equipment_reinforced_boots',
     meshCount: 1,
-    fitReportSha256: 'C5389AB78639F29DC60C083244221F441CF108CD4AF73642A19B3533B35D6BA7'
+    fitReportSha256: '464C7FB32BD4DB740CCB73A81EC2CB9BD14F1374F1593AE92CE409C84A66210E'
+  },
+  {
+    itemId: 'scoutBoots',
+    slot: 'boots',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-scout-boots-v1', 'boots'],
+    sourcePrefix: 'equipment_scout_boots_unified_v1',
+    runtimePrefix: 'equipment_scout_boots',
+    meshCount: 1,
+    fitReportSha256: '21E7C91E968CBB117392BFC0BED30A7DDD08AA5C588AF7CA60B0DE07D2E14BC4'
   },
   {
     itemId: 'helmet',
@@ -44,7 +98,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_steel_helmet_unified_v1',
     runtimePrefix: 'equipment_steel_helmet',
     meshCount: 1,
-    fitReportSha256: '4B77FD82FA6D19C0D29F8D612AF156F5E612688F96677F79E73D2C7680BB447E'
+    fitReportSha256: '26CC38A7A718E7FCB7DA7DDF45512C3DC43D21508BBB148FCA6C1F30DCBF8AE6'
   },
   {
     itemId: 'tacticalHelmet',
@@ -300,13 +354,14 @@ function verifyBootReviews() {
 }
 
 function verifyRifleReview() {
-  const directory = fromRoot('docs', 'art', 'reviews', 'unified-style-v5', 'rifle');
-  const glb = path.join(directory, 'rifle_unified_v5.glb');
+  const directory = fromRoot('docs', 'art', 'reviews', 'unified-style-v6', 'rifle');
+  const gripDirectory = fromRoot('docs', 'art', 'reviews', 'unified-style-v5', 'rifle');
+  const glb = path.join(directory, 'rifle_unified_v6.glb');
   const reportFile = path.join(directory, 'technical-report.json');
-  const approvalFile = path.join(directory, 'CRITIC_APPROVAL_GRIP_V5.md');
-  const heldFitFile = path.join(directory, 'held-fit-report.json');
-  const gripRuntime = path.join(directory, 'assault_rifle_grip_runtime.glb');
-  const gripReportFile = path.join(directory, 'assault_rifle_grip_runtime-report.json');
+  const approvalFile = path.join(directory, 'RUNTIME_APPROVAL_RU.md');
+  const heldFitFile = path.join(gripDirectory, 'held-fit-report.json');
+  const gripRuntime = path.join(gripDirectory, 'assault_rifle_grip_runtime.glb');
+  const gripReportFile = path.join(gripDirectory, 'assault_rifle_grip_runtime-report.json');
   [glb, reportFile, approvalFile, heldFitFile, gripRuntime, gripReportFile].forEach(file => (
     assertFile('approved assault-rifle asset', file)
   ));
@@ -319,6 +374,15 @@ function verifyRifleReview() {
   }
   if (!approval.includes('APPROVE') || !approval.includes(RIFLE_REVIEW_SHA256)) {
     throw new Error('Assault-rifle critic approval is missing or stale');
+  }
+  const reload = report.actualGlb?.animations?.find(animation => animation.name === 'reload');
+  if (
+    report.interactionProfile !== 'physical_grips_reload_v2'
+    || report.reloadPart !== 'magazine'
+    || !reload?.targets?.includes('magazine')
+    || !report.actualGlb?.nodes?.includes('socket_reload')
+  ) {
+    throw new Error('Assault-rifle v6 has no verified physical magazine reload');
   }
   if (heldFit.supportHandPose?.palmRollDeltaFromPreviousDegrees !== 180) {
     throw new Error('Approved 180-degree support-wrist correction is missing');
@@ -393,7 +457,7 @@ function main() {
     ...makeRuntimeGlb(rifle.glb, rifleOutput, {
       approvedReviewSha256: RIFLE_REVIEW_SHA256,
       runtimeAssetId: 'assaultRifle',
-      sourceRootName: 'weapon_rifle_unified_v5',
+      sourceRootName: 'weapon_rifle_unified_v6',
       weaponId: 'assaultRifle'
     })
   });
@@ -408,13 +472,16 @@ function main() {
     file: '/assets/models/weapons/weapon_assaultRifle.glb',
     bytes: fs.statSync(rifleOutput).size,
     sha256: String(rifleRuntime.runtimeSha256 || '').toLowerCase(),
-    meshes: 3,
+    meshes: 4,
     runtimeScale: 1,
     boundsMeters: {
       min: [-0.037, -0.395, -0.1],
       max: [0.037, 0.655, 0.22]
     },
     animations: ['idle', 'attack', 'reload'],
+    gripSockets: ['socket_grip_r', 'socket_grip_l', 'socket_reload'],
+    reloadKind: 'magazine',
+    reloadPart: 'magazine',
     approvedReviewSha256: RIFLE_REVIEW_SHA256,
     source: 'Quaternius Zombie Apocalypse Kit / Rifle.gltf (CC0), rebuilt and critic-approved'
   });

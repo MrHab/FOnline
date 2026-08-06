@@ -1,0 +1,188 @@
+{
+  "schema": "realm.priority-environment-report.v1",
+  "style": "geometry_b_materials_c",
+  "textureSize": 128,
+  "models": {
+    "car_wreck": {
+      "file": "car_wreck_bc_v1.glb",
+      "sha256": "ABDEA140AFCDD1C58C831AC5A3B34E70AB0ED2C160151A39D75B5BD59B5C0DCC",
+      "meshes": 30,
+      "vertices": 1064,
+      "triangles": 1990,
+      "minimumMetres": [
+        -2.15,
+        -1.05,
+        0.006
+      ],
+      "maximumMetres": [
+        2.15,
+        1.05,
+        1.606872
+      ],
+      "sizeMetres": [
+        4.3,
+        2.1,
+        1.600872
+      ]
+    },
+    "dead_tree_a": {
+      "file": "dead_tree_a_bc_v1.glb",
+      "sha256": "2DE3AAFEC17F5690180188FC20594C8481C465FD9F3A2E7FC8F5611450D2F3E4",
+      "meshes": 17,
+      "vertices": 294,
+      "triangles": 490,
+      "minimumMetres": [
+        -0.795568,
+        -0.609006,
+        -0.045405
+      ],
+      "maximumMetres": [
+        0.78,
+        0.568076,
+        2.62922
+      ],
+      "sizeMetres": [
+        1.575568,
+        1.177082,
+        2.674625
+      ]
+    },
+    "dead_tree_b": {
+      "file": "dead_tree_b_bc_v1.glb",
+      "sha256": "6E792B12468B34E31332DED94AB2B1F8D48B5CD766097ABAC9BE71AB324D4C27",
+      "meshes": 17,
+      "vertices": 294,
+      "triangles": 490,
+      "minimumMetres": [
+        -0.78,
+        -0.609006,
+        -0.045405
+      ],
+      "maximumMetres": [
+        0.78,
+        0.568076,
+        2.57822
+      ],
+      "sizeMetres": [
+        1.56,
+        1.177082,
+        2.623625
+      ]
+    },
+    "dead_tree_c": {
+      "file": "dead_tree_c_bc_v1.glb",
+      "sha256": "04A5B43AEBECFACCD86DA292DA851CCF76DD2BC8444B51D9E98E398B85331AFC",
+      "meshes": 20,
+      "vertices": 344,
+      "triangles": 578,
+      "minimumMetres": [
+        -0.78,
+        -0.609006,
+        -0.045405
+      ],
+      "maximumMetres": [
+        1.004408,
+        0.568076,
+        2.882991
+      ],
+      "sizeMetres": [
+        1.784408,
+        1.177082,
+        2.928396
+      ]
+    },
+    "dry_bush": {
+      "file": "dry_bush_bc_v1.glb",
+      "sha256": "19E3FABA19C13565CBD382BF958230244E1A5E030A745277AB7FEE6335AAFDF9",
+      "meshes": 52,
+      "vertices": 678,
+      "triangles": 1118,
+      "minimumMetres": [
+        -0.774605,
+        -0.667998,
+        0.006
+      ],
+      "maximumMetres": [
+        0.74,
+        0.737276,
+        0.804723
+      ],
+      "sizeMetres": [
+        1.514605,
+        1.405274,
+        0.798723
+      ]
+    },
+    "rubble_rock": {
+      "file": "rubble_rock_bc_v1.glb",
+      "sha256": "F15BDC751B8C9C0F6254DA7B7E7370C5875A2F368E43D2056ADB0E5C47289602",
+      "meshes": 9,
+      "vertices": 136,
+      "triangles": 206,
+      "minimumMetres": [
+        -1.1,
+        -0.910011,
+        0.009812
+      ],
+      "maximumMetres": [
+        1.180248,
+        0.821361,
+        1.330188
+      ],
+      "sizeMetres": [
+        2.280248,
+        1.731373,
+        1.320375
+      ]
+    },
+    "scrap_heap": {
+      "file": "scrap_heap_bc_v1.glb",
+      "sha256": "151BBA7FBEB0C5356A1BBC3681E717B94089F236BAC2D7D4C4A2ADEC5208FAC5",
+      "meshes": 11,
+      "vertices": 416,
+      "triangles": 762,
+      "minimumMetres": [
+        -1.25,
+        -0.92,
+        -0.043414
+      ],
+      "maximumMetres": [
+        1.25,
+        0.92,
+        0.961468
+      ],
+      "sizeMetres": [
+        2.5,
+        1.84,
+        1.004882
+      ]
+    },
+    "wasteland_shack": {
+      "file": "wasteland_shack_bc_v1.glb",
+      "sha256": "FDB92773BC746486DF775A45A247D0B48BC914AD08155931A5BDCAE9D2791BBA",
+      "meshes": 38,
+      "vertices": 856,
+      "triangles": 1530,
+      "minimumMetres": [
+        -2.35,
+        -1.972124,
+        0.006
+      ],
+      "maximumMetres": [
+        2.35,
+        1.85,
+        3.615
+      ],
+      "sizeMetres": [
+        4.7,
+        3.822124,
+        3.609
+      ]
+    }
+  },
+  "totals": {
+    "meshes": 194,
+    "vertices": 4082,
+    "triangles": 7164
+  }
+}

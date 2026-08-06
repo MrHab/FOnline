@@ -1,6 +1,6 @@
 {
   "schema": "realm.weapon-model-catalog.v1",
-  "version": 1,
+  "version": 2,
   "generator": "tools/build-weapon-runtime-models.js",
   "blenderGenerator": "tools/blender/build_weapon_runtime_models.py",
   "artDirection": "geometry_b_materials_c",
@@ -16,17 +16,28 @@
   "textureSize": 96,
   "requiredAnimations": [
     "idle",
-    "attack",
-    "reload"
+    "attack"
   ],
+  "reloadAnimationWeapons": [
+    "pistol",
+    "rifle",
+    "assaultRifle",
+    "machineGun",
+    "laserPistol",
+    "flamethrower",
+    "plasmaRifle",
+    "shotgun",
+    "rocketLauncher"
+  ],
+  "interactionProfile": "physical_grips_reload_v2",
   "files": [
     {
       "id": "pistol",
       "family": "sidearm",
       "file": "/assets/models/weapons/weapon_pistol.glb",
-      "bytes": 95316,
-      "sha256": "ffae6570317c10fc23b8ddd50af46e5d87a00fec09ca8a1273f748bd0d09211b",
-      "meshes": 8,
+      "bytes": 100648,
+      "sha256": "c96749c8ca05fc3c69dec530579461dd1c7c824f47521728d342fb0c24f40460",
+      "meshes": 9,
       "runtimeScale": 0.34,
       "boundsMeters": {
         "min": [
@@ -44,15 +55,22 @@
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "magazine",
+      "reloadPart": "magazine"
     },
     {
       "id": "rifle",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_rifle.glb",
-      "bytes": 109348,
-      "sha256": "18e5138c52735aa1b6411c1d883c0229a9de1ffa9d85016a3584f50e62b2ffb8",
-      "meshes": 9,
+      "bytes": 115368,
+      "sha256": "51848ad56f15893c939377a9150f12630afefa236f0abea2a794de82faba8fbf",
+      "meshes": 10,
       "runtimeScale": 0.52,
       "boundsMeters": {
         "min": [
@@ -70,15 +88,22 @@
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "bolt_clip",
+      "reloadPart": "cartridge_clip"
     },
     {
       "id": "assaultRifle",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_assaultRifle.glb",
-      "bytes": 525612,
-      "sha256": "af6c2a26e7dc05307322216ffcf31bb5cf9e3bc9d567effcd18e7d8f98204322",
-      "meshes": 3,
+      "bytes": 531224,
+      "sha256": "7f84c9e6f67f76f4a83bbb1b8daeb568c9ba785319909a7e15dfec198e34610d",
+      "meshes": 4,
       "runtimeScale": 1,
       "boundsMeters": {
         "min": [
@@ -97,15 +122,22 @@
         "attack",
         "reload"
       ],
-      "approvedReviewSha256": "81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28",
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "magazine",
+      "reloadPart": "magazine",
+      "approvedReviewSha256": "322D14E2D07059AB4458C65CB0E6B7019B8F030F3386B05016908E41E6591FC6",
       "source": "Quaternius Zombie Apocalypse Kit / Rifle.gltf (CC0), rebuilt and critic-approved"
     },
     {
       "id": "machineGun",
       "family": "heavy",
       "file": "/assets/models/weapons/weapon_machineGun.glb",
-      "bytes": 148724,
-      "sha256": "41457d2c96a97901942c2de4c004b7115d8552136a7a1062fc699d1c9d03789e",
+      "bytes": 149520,
+      "sha256": "b37efc9106ca8d72f77ba9c95fb36f859a7ab15c35decf117febd4d2b350a73e",
       "meshes": 11,
       "runtimeScale": 0.56,
       "boundsMeters": {
@@ -124,14 +156,21 @@
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "ammo_box",
+      "reloadPart": "ammo_box"
     },
     {
       "id": "laserPistol",
       "family": "energy_sidearm",
       "file": "/assets/models/weapons/weapon_laserPistol.glb",
-      "bytes": 108888,
-      "sha256": "98565c8ecd145bce6c45e5f83cd786129b8b98201fa8fca1ce62a1884a648aed",
+      "bytes": 110304,
+      "sha256": "bf5757c06d4774eccd0001b8e99f2561b0a376030f587a863e1268b600d99419",
       "meshes": 9,
       "runtimeScale": 0.4,
       "boundsMeters": {
@@ -150,14 +189,21 @@
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "energy_cell",
+      "reloadPart": "energy_core"
     },
     {
       "id": "flamethrower",
       "family": "heavy",
       "file": "/assets/models/weapons/weapon_flamethrower.glb",
-      "bytes": 140840,
-      "sha256": "77bc264adb2514f73b4de043d3c0d3a39dd76d4f8041f8d3b086a27a11f5f52b",
+      "bytes": 141624,
+      "sha256": "72dad6e3d2348f57f65d3d9645dd69dcd54620cdb99acae023e9be286a73639b",
       "meshes": 9,
       "runtimeScale": 0.55,
       "boundsMeters": {
@@ -176,14 +222,21 @@
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "fuel_tank",
+      "reloadPart": "fuel_tank"
     },
     {
       "id": "plasmaRifle",
       "family": "energy_long_gun",
       "file": "/assets/models/weapons/weapon_plasmaRifle.glb",
-      "bytes": 129528,
-      "sha256": "62473268219c839783624358b3590b4cd56a89de95c02b1ce1985444a7424563",
+      "bytes": 130944,
+      "sha256": "4c3f7d516f7f5709814fab976e943e0f21091c560245cfc9f3617359c6b84ab0",
       "meshes": 11,
       "runtimeScale": 0.54,
       "boundsMeters": {
@@ -202,19 +255,26 @@
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "energy_cell",
+      "reloadPart": "energy_core"
     },
     {
       "id": "shotgun",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_shotgun.glb",
-      "bytes": 107108,
-      "sha256": "6df431a2af44c8d2a2ab3a339c2e7322e953dd49a442c73e08a3461b59d62b5e",
-      "meshes": 9,
+      "bytes": 112204,
+      "sha256": "4dc34d814158b5acd8383406b9fa65b807e6e869e0fb7623710b9b20116829f1",
+      "meshes": 10,
       "runtimeScale": 0.52,
       "boundsMeters": {
         "min": [
-          -0.0988,
+          -0.182017,
           -0.2808,
           -0.176143
         ],
@@ -228,15 +288,22 @@
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "shells",
+      "reloadPart": "reload_shell"
     },
     {
       "id": "rocketLauncher",
       "family": "launcher",
       "file": "/assets/models/weapons/weapon_rocketLauncher.glb",
-      "bytes": 125796,
-      "sha256": "bb2a270b76632a9d8adcd9e634a8596689946aeef59ca8c8dfe89dd430ea7472",
-      "meshes": 9,
+      "bytes": 130760,
+      "sha256": "4ac8996407df2474931870c84860fd73e4821de1bba5c3f1bedcd2201fe64e4b",
+      "meshes": 10,
       "runtimeScale": 0.58,
       "boundsMeters": {
         "min": [
@@ -254,111 +321,137 @@
         "idle",
         "attack",
         "reload"
-      ]
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l",
+        "socket_reload"
+      ],
+      "reloadKind": "rocket",
+      "reloadPart": "rocket_round"
     },
     {
       "id": "knife",
       "family": "melee_light",
       "file": "/assets/models/weapons/weapon_knife.glb",
-      "bytes": 106128,
-      "sha256": "5a300e5019be57edec46d5ce1f41da572d12bd96f1f8a13fd6dcf0f85471944b",
+      "bytes": 104636,
+      "sha256": "748eae8583157359b1d3a7de3356f94d5d276ac3992af119347ddc9aafca0340",
       "meshes": 8,
       "runtimeScale": 0.22,
       "boundsMeters": {
         "min": [
-          -0.0341,
-          -0.11,
-          -0.0198
+          -0.066958,
+          -0.113088,
+          -0.049
         ],
         "max": [
-          0.0341,
-          0.2024,
-          0.0198
+          0.042747,
+          0.199096,
+          0.043328
         ]
       },
       "animations": [
         "idle",
-        "attack",
-        "reload"
-      ]
+        "attack"
+      ],
+      "gripSockets": [
+        "socket_grip_r"
+      ],
+      "reloadKind": "none",
+      "reloadPart": null
     },
     {
       "id": "pickaxe",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_pickaxe.glb",
-      "bytes": 98456,
-      "sha256": "c031aa7636e3211875e3dedea4d3300ec5f4b8dc47a51cd6332450db14ff7420",
+      "bytes": 97076,
+      "sha256": "c7dfb68c5ca81e31b4c77836764520b71a168608d6456e8f3b75bcb0fe30f6e1",
       "meshes": 6,
       "runtimeScale": 0.45,
       "boundsMeters": {
         "min": [
-          -0.324,
-          -0.25875,
-          -0.054
+          -0.433766,
+          -0.259295,
+          -0.170542
         ],
         "max": [
-          0.324,
-          0.54,
-          0.054
+          0.22676,
+          0.59649,
+          0.086329
         ]
       },
       "animations": [
         "idle",
-        "attack",
-        "reload"
-      ]
+        "attack"
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l"
+      ],
+      "reloadKind": "none",
+      "reloadPart": null
     },
     {
       "id": "axe",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_axe.glb",
-      "bytes": 97876,
-      "sha256": "37ba1d46684eace5e8041fa0cacf7b96a0ac9f9aad798a24a20f63df4c70d58a",
+      "bytes": 96512,
+      "sha256": "5a266b47f9f8ae61db8061b85a35e5009d8a3b18f07cbbe4a1532b87c0d4c819",
       "meshes": 6,
       "runtimeScale": 0.44,
       "boundsMeters": {
         "min": [
-          -0.1826,
-          -0.2552,
-          -0.044
+          -0.283316,
+          -0.256183,
+          -0.150003
         ],
         "max": [
-          0.2288,
-          0.5368,
-          0.044
+          0.143641,
+          0.565383,
+          0.086179
         ]
       },
       "animations": [
         "idle",
-        "attack",
-        "reload"
-      ]
+        "attack"
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l"
+      ],
+      "reloadKind": "none",
+      "reloadPart": null
     },
     {
       "id": "handPump",
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_handPump.glb",
-      "bytes": 119036,
-      "sha256": "d5dc5136e9a66f5f89250929f4f361bd900d8b916012f5f4a0061cd57ffe5e35",
+      "bytes": 117088,
+      "sha256": "26bbf4adb7d1a15c51bd4bd54328c03664e3f34faa8f76b924c95c9725374b85",
       "meshes": 7,
       "runtimeScale": 0.5,
       "boundsMeters": {
         "min": [
-          -0.13,
-          -0.2075,
-          -0.184477
+          -0.203798,
+          -0.23078,
+          -0.190154
         ],
         "max": [
-          0.13,
-          0.535,
-          0.0625
+          0.172129,
+          0.522388,
+          0.096517
         ]
       },
       "animations": [
         "idle",
-        "attack",
-        "reload"
-      ]
+        "attack"
+      ],
+      "gripSockets": [
+        "socket_grip_r",
+        "socket_grip_l"
+      ],
+      "reloadKind": "none",
+      "reloadPart": null
     }
   ]
 }

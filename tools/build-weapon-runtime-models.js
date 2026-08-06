@@ -78,12 +78,15 @@ function writeManifest(outputDirectory, report) {
       meshes: Number(row.meshes || 0),
       runtimeScale: Number(row.runtimeScale || 1),
       boundsMeters: row.boundsBlender || null,
-      animations: ['idle', 'attack', 'reload']
+      animations: Array.isArray(row.animations) ? row.animations : ['idle', 'attack'],
+      gripSockets: Array.isArray(row.gripSockets) ? row.gripSockets : [],
+      reloadKind: String(row.reloadKind || 'none'),
+      reloadPart: row.reloadPart ? String(row.reloadPart) : null
     };
   });
   const manifest = {
     schema: 'realm.weapon-model-catalog.v1',
-    version: 1,
+    version: 2,
     generator: 'tools/build-weapon-runtime-models.js',
     blenderGenerator: 'tools/blender/build_weapon_runtime_models.py',
     artDirection: 'geometry_b_materials_c',
@@ -97,7 +100,11 @@ function writeManifest(outputDirectory, report) {
       origin: 'primary grip'
     },
     textureSize: Number(report.textureSize || 96),
-    requiredAnimations: ['idle', 'attack', 'reload'],
+    requiredAnimations: ['idle', 'attack'],
+    reloadAnimationWeapons: WEAPONS
+      .filter(([, family]) => !family.startsWith('melee'))
+      .map(([id]) => id),
+    interactionProfile: 'physical_grips_reload_v2',
     files
   };
   fs.writeFileSync(

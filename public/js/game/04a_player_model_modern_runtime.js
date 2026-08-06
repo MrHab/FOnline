@@ -622,15 +622,18 @@
 
   function triggerCharacterReloadVisual(actor, weaponId = 'pistol', duration = 0.82) {
     if (!actor?.userData) return;
+    const reloadDuration = Math.max(0.5, Number(duration || 0.82));
     actor.userData.reloadAnim = {
       startedAt: performance.now(),
-      duration: Math.max(0.5, Number(duration || 0.82)),
+      duration: reloadDuration,
       weaponId: String(weaponId || 'pistol')
     };
     const weaponGroup = (typeof activeActorWeaponGroup === 'function' ? activeActorWeaponGroup(actor) : null)
       || actorAnimationParts(actor)?.weaponGroup
       || actor.userData?.enemyWeaponGroup;
-    if (typeof triggerWeaponModelAction === 'function') triggerWeaponModelAction(weaponGroup, 'reload');
+    if (typeof triggerWeaponModelAction === 'function') {
+      triggerWeaponModelAction(weaponGroup, 'reload', { duration: reloadDuration });
+    }
   }
 
   function triggerCharacterHitReaction(actor, direction = 1, duration = 0.34) {
@@ -813,7 +816,9 @@
         };
       }
     }
-    if (typeof applyApprovedAssaultRifleGrip === 'function') {
+    if (typeof applyApprovedWeaponGrip === 'function') {
+      applyApprovedWeaponGrip(actor, weaponId);
+    } else if (typeof applyApprovedAssaultRifleGrip === 'function') {
       applyApprovedAssaultRifleGrip(actor, weaponId);
     }
   }

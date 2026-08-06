@@ -158,7 +158,7 @@
     if (!w.ammoType) return;
     const fx = weaponFxProfile(w);
     const weaponId = weaponBaseId(w);
-    triggerWeaponVisualRecoil(playerParts.weaponGroup, weaponId);
+    triggerWeaponVisualRecoil(activeActorWeaponGroup(playerGroup) || playerParts.weaponGroup, weaponId);
 
     // Visual shots must follow the same gameplay ray axis. Do not draw tracer
     // from the laterally offset muzzle to the collision point: at close range

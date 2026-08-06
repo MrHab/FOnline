@@ -1206,6 +1206,7 @@
     });
     applyCharacterInjuryVisual(playerGroup, player.injuries || {}, dt);
     updateWeaponVisualAnimation(playerParts.weaponGroup, dt, player);
+    updateWeaponVisualAnimation(playerParts.offhandWeaponGroup, dt, player);
     updateCharacterMeleeAnimation(playerGroup, dt);
   }
 

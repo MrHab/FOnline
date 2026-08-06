@@ -44,6 +44,7 @@
         buildModernWastelandHumanoid(modelRoot, parts, { castShadow: false, isPlayer: true });
         if (typeof buildModernCharacterArmorExtras === 'function') buildModernCharacterArmorExtras(modelRoot, parts, false);
         if (parts.weaponGroup && typeof initWeaponVisualState === 'function') initWeaponVisualState(parts.weaponGroup);
+        if (parts.offhandWeaponGroup && typeof initWeaponVisualState === 'function') initWeaponVisualState(parts.offhandWeaponGroup);
       } else {
         modelRoot.add(buildGlobalMapFallbackPlayerModel());
       }
@@ -93,8 +94,16 @@
     } catch (_) {
       weaponId = eq.weapon || 'fists';
     }
+    const rightWeaponId = typeof equipmentVisualBaseId === 'function'
+      ? (equipmentVisualBaseId(eq.weapon || 'fists') || 'fists')
+      : (eq.weapon || 'fists');
+    const leftWeaponId = typeof equipmentVisualBaseId === 'function'
+      ? equipmentVisualBaseId(eq.offhand || '')
+      : (eq.offhand || '');
     const signature = [
       weaponId,
+      rightWeaponId,
+      leftWeaponId,
       eq.armor || '',
       eq.helmet || '',
       eq.boots || '',
@@ -102,14 +111,22 @@
     ].join('|');
     if (marker.userData.equipmentSignature === signature) return;
     marker.userData.equipmentSignature = signature;
-    if (parts.weaponGroup) {
-      parts.weaponGroup.clear();
-      if (typeof initWeaponVisualState === 'function') initWeaponVisualState(parts.weaponGroup);
-      parts.weaponGroup.userData.weaponId = weaponId;
-      marker.userData.modelRoot.userData.weaponId = weaponId;
-      const weaponMesh = globalMapPlayerWeaponMesh(weaponId);
-      if (weaponMesh) parts.weaponGroup.add(weaponMesh);
-    }
+    marker.userData.modelRoot.userData.weaponId = weaponId;
+    marker.userData.modelRoot.userData.weaponHandSlot = typeof activeWeaponEquipmentSlot === 'function'
+      ? activeWeaponEquipmentSlot()
+      : weaponHandSlotFromEquipment(eq, weaponId);
+    [
+      [parts.weaponGroup, rightWeaponId, 'weapon'],
+      [parts.offhandWeaponGroup, leftWeaponId, 'offhand']
+    ].forEach(([weaponGroup, slotWeaponId, handSlot]) => {
+      if (!weaponGroup) return;
+      weaponGroup.clear();
+      if (typeof initWeaponVisualState === 'function') initWeaponVisualState(weaponGroup);
+      weaponGroup.userData.handSlot = handSlot;
+      weaponGroup.userData.weaponId = slotWeaponId || 'fists';
+      const weaponMesh = slotWeaponId && slotWeaponId !== 'fists' ? globalMapPlayerWeaponMesh(slotWeaponId) : null;
+      if (weaponMesh) weaponGroup.add(weaponMesh);
+    });
     if (typeof applyArmorVisualSet === 'function') applyArmorVisualSet(parts, eq);
     if (typeof stabilizeCharacterNoCull === 'function') stabilizeCharacterNoCull(marker);
   }

@@ -500,7 +500,13 @@
 
     const weaponGroup = modernCharacterJoint(torsoRig, [0.5, 0.34, -0.27]);
     weaponGroup.rotation.set(0.04, 0, -0.08);
+    weaponGroup.userData.handSlot = 'weapon';
     parts.weaponGroup = weaponGroup;
+
+    const offhandWeaponGroup = modernCharacterJoint(torsoRig, [-0.5, 0.34, -0.27]);
+    offhandWeaponGroup.rotation.set(0.04, 0, 0.08);
+    offhandWeaponGroup.userData.handSlot = 'offhand';
+    parts.offhandWeaponGroup = offhandWeaponGroup;
 
     parts.cosmeticLodMeshes = cosmeticMeshes;
     parts.baseMaterials = {
@@ -607,8 +613,9 @@
   }
 
   function modernAnimationWeaponId(actor) {
-    const parts = actorAnimationParts(actor);
-    const weaponGroup = parts.weaponGroup;
+    const weaponGroup = typeof activeActorWeaponGroup === 'function'
+      ? activeActorWeaponGroup(actor)
+      : actorAnimationParts(actor).weaponGroup;
     if (!weaponGroup || !weaponGroup.children || !weaponGroup.children.length) return 'fists';
     return String(actor.userData?.weaponId || weaponGroup.userData?.weaponId || 'ranged');
   }
@@ -620,7 +627,9 @@
       duration: Math.max(0.5, Number(duration || 0.82)),
       weaponId: String(weaponId || 'pistol')
     };
-    const weaponGroup = actorAnimationParts(actor)?.weaponGroup || actor.userData?.enemyWeaponGroup;
+    const weaponGroup = (typeof activeActorWeaponGroup === 'function' ? activeActorWeaponGroup(actor) : null)
+      || actorAnimationParts(actor)?.weaponGroup
+      || actor.userData?.enemyWeaponGroup;
     if (typeof triggerWeaponModelAction === 'function') triggerWeaponModelAction(weaponGroup, 'reload');
   }
 
@@ -783,8 +792,8 @@
       }
     }
 
-    if (parts.weaponGroup) {
-      parts.weaponGroup.userData.characterPose = {
+    if (parts.weaponGroup || parts.offhandWeaponGroup) {
+      const rightPose = {
         x: -aimBlend * 0.025 + reloadLift * 0.04,
         y: aimBlend * 0.04 + reloadLift * 0.11 + bob * 0.35,
         z: -aimBlend * 0.12 + reloadLift * 0.09,
@@ -792,6 +801,17 @@
         ry: reloadLift * -0.16,
         rz: aimBlend * -0.035 + reloadLift * 0.28
       };
+      if (parts.weaponGroup) parts.weaponGroup.userData.characterPose = rightPose;
+      if (parts.offhandWeaponGroup) {
+        parts.offhandWeaponGroup.userData.characterPose = {
+          x: -rightPose.x,
+          y: rightPose.y,
+          z: rightPose.z,
+          rx: rightPose.rx,
+          ry: -rightPose.ry,
+          rz: -rightPose.rz
+        };
+      }
     }
     if (typeof applyApprovedAssaultRifleGrip === 'function') {
       applyApprovedAssaultRifleGrip(actor, weaponId);

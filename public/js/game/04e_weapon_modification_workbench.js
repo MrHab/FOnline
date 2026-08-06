@@ -258,9 +258,19 @@
     lastFrameAt: 0
   };
 
+  function weaponModificationMountRoot() {
+    const fullscreenRoot = document.fullscreenElement;
+    if (fullscreenRoot?.isConnected) return fullscreenRoot;
+    return document.getElementById('game-container') || document.body;
+  }
+
   function ensureWeaponModificationWindow() {
     let modal = document.getElementById('weapon-modification-window');
-    if (modal) return modal;
+    const root = weaponModificationMountRoot();
+    if (modal) {
+      if (modal.parentElement !== root) root.appendChild(modal);
+      return modal;
+    }
     modal = document.createElement('div');
     modal.id = 'weapon-modification-window';
     modal.className = 'weapon-modification-overlay';
@@ -299,7 +309,7 @@
           <div id="wm-status" class="wm-status" aria-live="polite">Сборка готова к настройке.</div>
         </footer>
       </div>`;
-    document.body.appendChild(modal);
+    root.appendChild(modal);
     modal.addEventListener('pointerdown', event => {
       if (event.target === modal) closeWeaponModificationWorkbench();
     });

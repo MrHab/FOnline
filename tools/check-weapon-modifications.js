@@ -158,10 +158,15 @@ for (const requiredSnippet of [
 for (const requiredSnippet of [
   "action: 'modifyWeapon'",
   "modal.setAttribute('aria-hidden', 'false')",
+  'function weaponModificationMountRoot()',
+  'document.fullscreenElement',
+  "document.getElementById('game-container') || document.body",
+  'root.appendChild(modal)',
   'loadWeaponModificationModel(itemId)',
   'applyWeaponModificationStats(target)'
 ]) {
   assert(clientSource.includes(requiredSnippet), `client workbench hook is missing: ${requiredSnippet}`);
 }
+assert(!clientSource.includes('document.body.appendChild(modal)'), 'workbench modal must stay inside the game fullscreen root');
 
 console.log(`Weapon modification contract OK (${clientIds.length} modifications, ${weapons.length} weapons).`);

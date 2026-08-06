@@ -73,6 +73,26 @@ for (const [id, hands] of Object.entries(expectedHands)) {
   assert(weaponLine.test(clientSource), `Client weapon ${id} must declare hands: ${hands}`);
 }
 
+for (const id of ['pistol', 'laserPistol']) {
+  const dualLine = new RegExp(`\\n\\s*${id}: \\{[^\\n]*hands: 1, dualWield: true`);
+  assert(dualLine.test(serverSource), `Server weapon ${id} must allow dual-pistol use`);
+  assert(dualLine.test(clientSource), `Client weapon ${id} must allow dual-pistol use`);
+}
+assert(!/\n\s*knife: \{[^\n]*dualWield: true/.test(serverSource), 'A knife must not unlock paired pistol fire');
+assert(serverSource.includes("id: 'dual'")
+  && serverSource.includes('hitBonus: -0.15')
+  && serverSource.includes('hitCap: 0.78')
+  && serverSource.includes('rangeMul: 0.85'),
+'Server paired volley must own its AP/accuracy/range rules');
+assert((serverSource.match(/for \(const entry of spend\.entries\)/g) || []).length >= 2,
+  'NPC and PvP damage must resolve each paired bullet independently');
+assert(shootingVisualSource.includes("player.dualPistolNextHandSlot = bullets[0].slot === 'weapon' ? 'offhand' : 'weapon'"),
+  'Single pistol fire must alternate the next hand');
+assert(shootingVisualSource.includes('setTimeout(draw, 90 * index)'),
+  'Paired volley visuals must draw right then left with a short delay');
+assert(shootingVisualSource.includes("pair ? 'два пистолета' : w.name"),
+  'Reload must cover both equipped pistols');
+
 assert(clientSource.includes("offhand: 'Левая рука'"), 'Client equipment UI must expose the left-hand slot');
 assert(serverSource.includes("offhand: new Set([...VALID_HAND_EQUIPMENT, ''])"), 'Server must authorize the offhand slot');
 assert(combatClientSource.includes("equipment?.[activeSlot] || w?.id"), 'Combat snapshots must target the active hand runtime id');

@@ -4063,11 +4063,11 @@ const SERVER_CONTAINER_LOOT_TABLES = SERVER_LOOT_TABLES.containers;
 const SERVER_ENEMY_LOOT_TABLES = SERVER_LOOT_TABLES.enemies;
 
 const SERVER_WEAPONS = {
-  pistol: { id: 'pistol', name: '9mm пистолет', hands: 1, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 8, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
+  pistol: { id: 'pistol', name: '9mm пистолет', hands: 1, dualWield: true, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 8, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
   rifle: { id: 'rifle', name: 'Охотничья винтовка', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [28, 40], range: 24, ammoType: 'ammo556', magSize: 5, fireRate: 0.9, apCost: 4, reloadApCost: 3 },
   assaultRifle: { id: 'assaultRifle', name: 'Ржавый автомат', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, dmg: [13, 19], range: 18, ammoType: 'ammo556', magSize: 30, fireRate: 0.42, apCost: 4, reloadApCost: 4, automatic: true },
   machineGun: { id: 'machineGun', name: 'Самодельный пулемёт', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'ballistic', requiredStrength: 7, dmg: [12, 18], range: 20, ammoType: 'ammo556', magSize: 45, fireRate: 0.58, apCost: 5, reloadApCost: 6, automatic: true },
-  laserPistol: { id: 'laserPistol', name: 'Лазерный пистолет', hands: 1, weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 3, dmg: [22, 32], range: 16, ammoType: 'energyCell', magSize: 12, fireRate: 0.62, apCost: 4, reloadApCost: 4 },
+  laserPistol: { id: 'laserPistol', name: 'Лазерный пистолет', hands: 1, dualWield: true, weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 3, dmg: [22, 32], range: 16, ammoType: 'energyCell', magSize: 12, fireRate: 0.62, apCost: 4, reloadApCost: 4 },
   flamethrower: { id: 'flamethrower', name: 'Огнемёт', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'fire', requiredStrength: 6, dmg: [14, 22], range: 8, ammoType: 'napalm', magSize: 30, fireRate: 0.34, apCost: 5, reloadApCost: 6, automatic: true },
   plasmaRifle: { id: 'plasmaRifle', name: 'Плазменное ружьё', hands: 2, weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 5, dmg: [32, 48], range: 18, ammoType: 'energyCell', magSize: 14, fireRate: 0.48, apCost: 5, reloadApCost: 5 },
   shotgun: { id: 'shotgun', name: 'Дробовик', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, dmg: [26, 40], range: 11, ammoType: 'shotgunShell', magSize: 6, fireRate: 0.52, apCost: 5, reloadApCost: 4 },
@@ -4107,6 +4107,30 @@ function serverEquippedWeaponRuntimeEntries(player = {}) {
       itemKey: serverRuntimeItemKey(runtime[slot] || equipment[slot], baseId)
     };
   }).filter(Boolean);
+}
+
+function serverEquippedWeaponEntryForSlot(player = {}, requestedSlot = 'weapon') {
+  const slot = requestedSlot === 'offhand' ? 'offhand' : 'weapon';
+  const equipment = player?.equipment && typeof player.equipment === 'object' ? player.equipment : {};
+  const runtime = player?.equipmentRuntime && typeof player.equipmentRuntime === 'object' ? player.equipmentRuntime : {};
+  const baseId = serverBaseItemId(equipment[slot] || '');
+  const weapon = baseId && SERVER_WEAPONS[baseId] ? SERVER_WEAPONS[baseId] : null;
+  if (!weapon || weapon.id === 'fists') return null;
+  return {
+    slot,
+    weapon,
+    baseId: weapon.id,
+    itemKey: serverRuntimeItemKey(runtime[slot] || equipment[slot], weapon.id)
+  };
+}
+
+function serverDualWieldPistolPair(player = {}) {
+  const right = serverEquippedWeaponEntryForSlot(player, 'weapon');
+  const left = serverEquippedWeaponEntryForSlot(player, 'offhand');
+  if (!right || !left) return null;
+  if (!right.weapon.dualWield || !left.weapon.dualWield) return null;
+  if (Number(right.weapon.hands || 1) !== 1 || Number(left.weapon.hands || 1) !== 1) return null;
+  return { right, left, entries: [right, left] };
 }
 const SERVER_COMBAT_AP_EPSILON = 0.0001;
 const SERVER_COMBAT_COOLDOWN_EPSILON_MS = 2;
@@ -6077,6 +6101,7 @@ function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = [], 
         : 0,
       reserve: weapon.ammoType ? serverInventoryQty(inventory, weapon.ammoType) : 0,
       ammoType: weapon.ammoType || '',
+      condition: clamp(Number(savedRow.condition ?? 100), 1, 100),
       updatedAt: now
     };
   }
@@ -6089,6 +6114,7 @@ function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = [], 
       loaded: 0,
       reserve: weapon.ammoType ? serverInventoryQty(inventory, weapon.ammoType) : 0,
       ammoType: weapon.ammoType || '',
+      condition: 100,
       updatedAt: now
     };
   }
@@ -6101,6 +6127,7 @@ function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = [], 
       loaded: 0,
       reserve: activeWeapon.ammoType ? serverInventoryQty(inventory, activeWeapon.ammoType) : 0,
       ammoType: activeWeapon.ammoType || '',
+      condition: 100,
       updatedAt: now
     };
   }
@@ -6137,7 +6164,7 @@ function serverCombatRuntimeForSave(runtime = {}, player = {}) {
     out[rawId] = {
       ...savedRow,
       baseId,
-      condition: Number(serverPlayerItemCondition(player, baseId) ?? savedRow.condition ?? 100),
+      condition: clamp(Number(combatRow?.condition ?? savedRow.condition ?? serverPlayerItemCondition(player, baseId) ?? 100), 1, 100),
       loaded: weapon.ammoType
         ? clamp(Math.round(Number(combatRow?.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
         : 0,
@@ -6154,7 +6181,7 @@ function serverCombatRuntimeForSave(runtime = {}, player = {}) {
     out[itemKey] = {
       ...savedRow,
       baseId,
-      condition: Number(serverPlayerItemCondition(player, baseId) ?? savedRow.condition ?? 100),
+      condition: clamp(Number(combatRow.condition ?? savedRow.condition ?? serverPlayerItemCondition(player, baseId) ?? 100), 1, 100),
       loaded: weapon.ammoType
         ? clamp(Math.round(Number(combatRow.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
         : 0,
@@ -7213,6 +7240,23 @@ function serverAutomaticApCost(p = {}, w = SERVER_WEAPONS.fists) {
   return Math.max(1, skill >= 70 ? Math.floor(half) : Math.ceil(half));
 }
 
+function serverDualPistolMode(p = {}) {
+  const pair = serverDualWieldPistolPair(p);
+  if (!pair) return null;
+  return {
+    id: 'dual',
+    label: 'Парный залп',
+    apCost: Math.max(1, Math.ceil(pair.entries.reduce((sum, entry) => sum + Number(entry.weapon.apCost || 3), 0) * 0.75)),
+    shots: 2,
+    hitBonus: -0.15,
+    hitCap: 0.78,
+    damageMul: 1,
+    rangeMul: 0.85,
+    fireRateMul: 1.15,
+    dual: true
+  };
+}
+
 function serverWeaponModes(p = {}, w = SERVER_WEAPONS.fists) {
   if (!w || !w.ammoType) return [{ id: 'melee', label: 'Ближний бой', apCost: w?.apCost || 2, shots: 1, hitBonus: 0, damageMul: 1, fireRateMul: 1 }];
   const baseAp = Math.max(1, Math.round(Number(w.apCost || 3)));
@@ -7221,6 +7265,8 @@ function serverWeaponModes(p = {}, w = SERVER_WEAPONS.fists) {
     { id: 'aimed', label: 'Прицельный', apCost: baseAp + 2, shots: 1, hitBonus: 0.24, damageMul: 1.05, fireRateMul: 1.12 }
   ];
   if (w.automatic) modes.push({ id: 'auto', label: 'Автоматический', apCost: serverAutomaticApCost(p, w), shots: 1, hitBonus: 0, damageMul: 1, fireRateMul: 0.72 });
+  const dualMode = w.dualWield ? serverDualPistolMode(p) : null;
+  if (dualMode) modes.push(dualMode);
   return modes;
 }
 
@@ -7355,8 +7401,13 @@ function serverCombatTargetPoint(enemy = {}, data = {}, weapon = SERVER_WEAPONS.
   return { x: serverX, z: serverZ, drift, compensated: false };
 }
 
-function serverCombatWeaponCondition(player = {}, weapon = SERVER_WEAPONS.fists) {
-  return serverPlayerItemCondition(player, weapon?.id || 'fists');
+function serverCombatWeaponCondition(player = {}, weapon = SERVER_WEAPONS.fists, handSlot = serverActiveWeaponSlot(player)) {
+  const combat = serverEnsureCombatState(player);
+  const itemKey = serverCombatWeaponStateKey(player, weapon, handSlot);
+  const runtimeCondition = Number(combat.weapons?.[itemKey]?.condition);
+  return Number.isFinite(runtimeCondition)
+    ? clamp(runtimeCondition, 1, 100)
+    : serverPlayerItemCondition(player, weapon?.id || 'fists');
 }
 
 function serverAutomaticAccuracyPenalty(p = {}, w = SERVER_WEAPONS.fists, client = {}) {
@@ -7492,8 +7543,9 @@ function serverValidateMultiTargetHit(spend = {}, p = {}, weapon = SERVER_WEAPON
 }
 
 function serverHitChance(p = {}, enemy, dist, w = SERVER_WEAPONS.fists, modeInfo = {}, client = {}) {
-  if (!enemy || enemy.dead || dist > Number(w.range || 1)) return 0;
-  const condition = serverCombatWeaponCondition(p, w);
+  const effectiveRange = Number(w.range || 1) * Math.max(0.1, Number(modeInfo.rangeMul || 1));
+  if (!enemy || enemy.dead || dist > effectiveRange) return 0;
+  const condition = serverCombatWeaponCondition(p, w, modeInfo.handSlot || serverActiveWeaponSlot(p));
   const conditionPenalty = w.ammoType && condition !== null ? Math.max(0, 70 - condition) * 0.0025 : 0;
   const statAimBonus = (serverStatValue(p, 'per') - 5) * 0.025 + (serverHasTrait(p, 'trainedEye') ? 0.06 : 0);
   const luckBonus = Math.max(0, serverStatValue(p, 'luck') - 5) * 0.006;
@@ -7524,7 +7576,9 @@ function serverHitChance(p = {}, enemy, dist, w = SERVER_WEAPONS.fists, modeInfo
   } else {
     base = 0.72 + skillBonus + Math.max(0, serverStatValue(p, 'str') - 5) * 0.012 + luckBonus - strengthPenalty - traumaPenalty;
   }
-  const cap = modeInfo.id === 'aimed' ? 0.99 : (w.ammoType ? 0.96 : 0.94);
+  const cap = Number.isFinite(Number(modeInfo.hitCap))
+    ? Number(modeInfo.hitCap)
+    : (modeInfo.id === 'aimed' ? 0.99 : (w.ammoType ? 0.96 : 0.94));
   return Math.min(cap, Math.max(0.05, base));
 }
 
@@ -7597,23 +7651,24 @@ function serverPruneSpentTokens(p = {}, now = Date.now()) {
   }
 }
 
-function serverCombatWeaponStateKey(p = {}, weapon = SERVER_WEAPONS.fists) {
-  const activeSlot = serverActiveWeaponSlot(p);
+function serverCombatWeaponStateKey(p = {}, weapon = SERVER_WEAPONS.fists, handSlot = serverActiveWeaponSlot(p)) {
+  const activeSlot = handSlot === 'offhand' ? 'offhand' : 'weapon';
   const rawId = p.equipmentRuntime?.[activeSlot] || p.equipment?.[activeSlot] || p.weapon || weapon.id;
   return serverBaseItemId(rawId) === weapon.id
     ? serverRuntimeItemKey(rawId, weapon.id)
     : weapon.id;
 }
 
-function serverWeaponState(p = {}, weapon = SERVER_WEAPONS.fists, client = {}, now = Date.now()) {
+function serverWeaponState(p = {}, weapon = SERVER_WEAPONS.fists, client = {}, now = Date.now(), handSlot = serverActiveWeaponSlot(p)) {
   const combat = serverEnsureCombatState(p, now);
-  const id = serverCombatWeaponStateKey(p, weapon);
-  if (!combat.weapons[id]) combat.weapons[id] = { weaponId: weapon.id || 'fists', loaded: 0, reserve: 0, ammoType: weapon.ammoType || '', updatedAt: now };
+  const id = serverCombatWeaponStateKey(p, weapon, handSlot);
+  if (!combat.weapons[id]) combat.weapons[id] = { weaponId: weapon.id || 'fists', loaded: 0, reserve: 0, ammoType: weapon.ammoType || '', condition: Number(serverPlayerItemCondition(p, weapon.id) ?? 100), updatedAt: now };
   const row = combat.weapons[id];
   row.weaponId = weapon.id || 'fists';
   row.loaded = clamp(Number(row.loaded || 0), 0, Math.max(0, Number(weapon.magSize || 0)));
   row.reserve = weapon.ammoType ? serverInventoryQty(p.inventory || [], weapon.ammoType) : 0;
   row.ammoType = weapon.ammoType || '';
+  row.condition = clamp(Number(row.condition ?? serverPlayerItemCondition(p, weapon.id) ?? 100), 1, 100);
   return row;
 }
 
@@ -7623,39 +7678,140 @@ function serverWeaponCooldownMs(weapon = SERVER_WEAPONS.fists, modeInfo = {}) {
   return Math.max(45, Math.round(fireRateSeconds * modeMultiplier * 1000));
 }
 
-function serverCombatAck(p = {}, weapon = SERVER_WEAPONS.fists, now = Date.now()) {
+function serverCombatAck(p = {}, weapon = SERVER_WEAPONS.fists, now = Date.now(), handSlot = serverActiveWeaponSlot(p)) {
   const combat = serverEnsureCombatState(p, now);
-  const row = serverWeaponState(p, weapon, {}, now);
+  const row = serverWeaponState(p, weapon, {}, now, handSlot);
   return {
     ap: Number(Number(p.ap || 0).toFixed(2)),
     maxAp: Math.round(Number(p.maxAp || 0)),
     weapon: weapon.id,
-    weaponRuntimeId: serverCombatWeaponStateKey(p, weapon),
+    weaponRuntimeId: serverCombatWeaponStateKey(p, weapon, handSlot),
+    handSlot: handSlot === 'offhand' ? 'offhand' : 'weapon',
     ammoType: weapon.ammoType || '',
     loaded: Math.round(Number(row.loaded || 0)),
     magSize: Math.round(Number(weapon.magSize || 0)),
     reserveAmmo: Math.round(Number(row.reserve || 0)),
-    condition: serverCombatWeaponCondition(p, weapon),
+    condition: Number(row.condition),
     cooldownRemainingMs: Math.max(0, Math.ceil(Number(combat.nextAttackAt || 0) - now))
   };
 }
 
-function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS.fists, modeInfo = {}, now = Date.now()) {
+function serverCombatAcksForEntries(p = {}, entries = [], now = Date.now()) {
+  return entries.map(entry => serverCombatAck(p, entry.weapon, now, entry.slot));
+}
+
+function serverResolvePlayerAttackPlan(p = {}, data = {}, now = Date.now()) {
+  const requestedMode = String(data.mode || data.combat?.mode || 'single');
+  const pair = serverDualWieldPistolPair(p);
+  if (requestedMode === 'dual') {
+    if (!pair) return { ok: false, error: 'Сервер: для парного залпа нужны два одноручных пистолета.' };
+    const loadedEntries = pair.entries.filter(entry => Number(serverWeaponState(p, entry.weapon, {}, now, entry.slot).loaded || 0) > 0);
+    if (!loadedEntries.length) return { ok: false, error: 'Сервер: оба магазина пусты. Перезарядитесь.' };
+    if (loadedEntries.length === 1) {
+      const entry = loadedEntries[0];
+      const modeInfo = { ...serverWeaponModeInfo(p, entry.weapon, 'single'), handSlot: entry.slot };
+      return {
+        ok: true,
+        requestedMode,
+        resolvedMode: 'single',
+        fallback: true,
+        modeInfo,
+        apCost: serverAttackApCost(p, entry.weapon, modeInfo),
+        entries: [{ ...entry, modeInfo }]
+      };
+    }
+    const dualMode = serverDualPistolMode(p);
+    const entries = pair.entries.map(entry => ({ ...entry, modeInfo: { ...dualMode, shots: 1, handSlot: entry.slot } }));
+    return {
+      ok: true,
+      requestedMode,
+      resolvedMode: 'dual',
+      fallback: false,
+      modeInfo: dualMode,
+      apCost: serverAttackApCost(p, entries[0].weapon, dualMode),
+      entries
+    };
+  }
+
+  const activeSlot = serverActiveWeaponSlot(p);
+  let handSlot = activeSlot;
+  if (requestedMode === 'single' && pair && (data.handSlot === 'weapon' || data.handSlot === 'offhand')) handSlot = data.handSlot;
+  if (requestedMode === 'aimed') handSlot = activeSlot;
+  let entry = serverEquippedWeaponEntryForSlot(p, handSlot);
+  if (!entry && activeSlot === 'weapon') {
+    const weapon = serverWeaponDef('fists');
+    entry = { slot: 'weapon', weapon, baseId: weapon.id, itemKey: weapon.id };
+  }
+  if (!entry) return { ok: false, error: 'Сервер: активное оружие не найдено.' };
+
+  if (requestedMode === 'single' && pair && entry.weapon.ammoType
+    && Number(serverWeaponState(p, entry.weapon, {}, now, entry.slot).loaded || 0) <= 0) {
+    const alternate = pair.entries.find(row => row.slot !== entry.slot
+      && Number(serverWeaponState(p, row.weapon, {}, now, row.slot).loaded || 0) > 0);
+    if (alternate) entry = alternate;
+  }
+
+  const requestedWeapon = serverBaseItemId(data.weapon || data.combat?.weapon || entry.weapon.id);
+  if (requestedWeapon && requestedWeapon !== entry.weapon.id && !(requestedMode === 'single' && pair)) {
+    return { ok: false, error: 'Сервер: выбранное оружие не экипировано в указанной руке.' };
+  }
+  const requestedRuntimeId = String(data.weaponRuntimeId || data.combat?.weaponRuntimeId || '');
+  if (requestedRuntimeId && serverRuntimeItemKey(requestedRuntimeId, entry.weapon.id) !== entry.itemKey) {
+    return { ok: false, error: 'Сервер: экземпляр оружия в руке изменился.' };
+  }
+  const modeInfo = { ...serverWeaponModeInfo(p, entry.weapon, requestedMode), handSlot: entry.slot };
+  return {
+    ok: true,
+    requestedMode,
+    resolvedMode: modeInfo.id,
+    fallback: false,
+    modeInfo,
+    apCost: serverAttackApCost(p, entry.weapon, modeInfo),
+    entries: [{ ...entry, modeInfo }]
+  };
+}
+
+function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS.fists, modeInfo = {}, now = Date.now(), providedPlan = null) {
   const client = data.combat && typeof data.combat === 'object' ? data.combat : data;
   const token = serverCombatToken(data.attackToken || client.token || '');
   const combat = serverEnsureCombatState(p, now);
-  const weaponRuntimeId = serverCombatWeaponStateKey(p, weapon);
+  const plan = providedPlan || {
+    ok: true,
+    requestedMode: modeInfo.id,
+    resolvedMode: modeInfo.id,
+    fallback: false,
+    modeInfo,
+    apCost: serverAttackApCost(p, weapon, modeInfo),
+    entries: [{
+      slot: serverActiveWeaponSlot(p),
+      weapon,
+      baseId: weapon.id,
+      itemKey: serverCombatWeaponStateKey(p, weapon),
+      modeInfo: { ...modeInfo, handSlot: serverActiveWeaponSlot(p) }
+    }]
+  };
+  if (!plan.ok || !plan.entries?.length) {
+    return { ok: false, error: plan.error || 'Сервер: атака отклонена.', combat: serverCombatAck(p, weapon, now) };
+  }
+  const entries = plan.entries;
+  const weaponRuntimeIds = entries.map(entry => entry.itemKey);
+  const attackSignature = weaponRuntimeIds.join(',');
+  const requestedRuntimeIds = Array.isArray(client.hands)
+    ? client.hands.map(row => String(row?.weaponRuntimeId || '')).filter(Boolean)
+    : [String(data.weaponRuntimeId || client.weaponRuntimeId || '')].filter(Boolean);
+  const requestedAttackSignature = requestedRuntimeIds.join(',') || attackSignature;
   serverPruneSpentTokens(p, now);
   serverRegenPlayerAp(p, now);
   if (token && combat.spentTokens[token]) {
     const prev = combat.spentTokens[token];
-    if (prev.weapon === weapon.id && prev.weaponRuntimeId === weaponRuntimeId && prev.mode === modeInfo.id) {
-      return { ok: true, reused: true, token, spent: prev, combat: serverCombatAck(p, weapon, now) };
+    if (prev.attackSignature === requestedAttackSignature && prev.mode === plan.requestedMode) {
+      const combats = serverCombatAcksForEntries(p, entries, now);
+      return { ok: true, reused: true, token, spent: prev, combat: combats[0], combats, entries };
     }
     return { ok: false, error: 'Сервер: устаревшая атака.', combat: serverCombatAck(p, weapon, now) };
   }
 
-  const cooldownMs = serverWeaponCooldownMs(weapon, modeInfo);
+  const cooldownMs = Math.max(...entries.map(entry => serverWeaponCooldownMs(entry.weapon, entry.modeInfo || plan.modeInfo)));
   const retryAfterMs = Math.max(0, Math.ceil(Number(combat.nextAttackAt || 0) - now));
   if (retryAfterMs > SERVER_COMBAT_COOLDOWN_EPSILON_MS) {
     return {
@@ -7665,7 +7821,7 @@ function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS
       combat: serverCombatAck(p, weapon, now)
     };
   }
-  const apCost = serverAttackApCost(p, weapon, modeInfo);
+  const apCost = Math.max(0, Number(plan.apCost || 0));
   if (Number(p.ap || 0) + SERVER_COMBAT_AP_EPSILON < apCost) {
     return {
       ok: false,
@@ -7674,49 +7830,123 @@ function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS
     };
   }
 
-  const shots = Math.max(1, Math.floor(Number(modeInfo.shots || client.shots || 1)));
-  let weaponRow = null;
-  if (weapon.ammoType) {
-    weaponRow = serverWeaponState(p, weapon, client, now);
-    if (Number(weaponRow.loaded || 0) < shots) return { ok: false, error: 'Сервер: магазин пуст. Перезарядитесь.', combat: serverCombatAck(p, weapon, now) };
-    weaponRow.loaded = Math.max(0, Number(weaponRow.loaded || 0) - shots);
-    weaponRow.updatedAt = now;
+  const resourceEntries = entries.map(entry => ({
+    ...entry,
+    row: serverWeaponState(p, entry.weapon, client, now, entry.slot)
+  }));
+  for (const entry of resourceEntries) {
+    if (entry.weapon.ammoType && Number(entry.row.loaded || 0) < 1) {
+      const combats = serverCombatAcksForEntries(p, entries, now);
+      return { ok: false, error: 'Сервер: магазин пуст. Перезарядитесь.', combat: combats[0], combats };
+    }
+  }
+  for (const entry of resourceEntries) {
+    if (!entry.weapon.ammoType) continue;
+    entry.row.loaded = Math.max(0, Number(entry.row.loaded || 0) - 1);
+    const wear = Math.max(0.25, 0.55 - serverTalentLevel(p, 'weaponSmith') * 0.12);
+    entry.row.condition = Math.max(1, Number(entry.row.condition || 100) - wear);
+    entry.row.updatedAt = now;
   }
   p.ap = Math.max(0, Number(p.ap || 0) - apCost);
   p.serverCombat.lastApAt = now;
   combat.lastAttackAt = now;
   combat.nextAttackAt = now + cooldownMs;
-  if (weapon.ammoType) {
-    const wear = Math.max(0.25, 0.55 - serverTalentLevel(p, 'weaponSmith') * 0.12);
-    serverWearPlayerItem(p, weapon.id, wear * shots);
-  }
-  if (token) combat.spentTokens[token] = { t: now, weapon: weapon.id, weaponRuntimeId, mode: modeInfo.id, apCost, shots, cooldownMs };
-  return { ok: true, reused: false, token, spent: token ? combat.spentTokens[token] : null, apCost, shots, cooldownMs, combat: serverCombatAck(p, weapon, now) };
+  const shots = entries.length;
+  if (token) combat.spentTokens[token] = {
+    t: now,
+    weapon: entries[0].weapon.id,
+    weaponRuntimeId: entries[0].itemKey,
+    weaponRuntimeIds,
+    attackSignature,
+    mode: plan.requestedMode,
+    resolvedMode: plan.resolvedMode,
+    fallback: !!plan.fallback,
+    apCost,
+    shots,
+    cooldownMs
+  };
+  const combats = serverCombatAcksForEntries(p, entries, now);
+  return {
+    ok: true,
+    reused: false,
+    token,
+    spent: token ? combat.spentTokens[token] : null,
+    apCost,
+    shots,
+    cooldownMs,
+    mode: plan.resolvedMode,
+    fallback: !!plan.fallback,
+    entries,
+    combat: combats[0],
+    combats
+  };
 }
 
 function serverApplyReload(p = {}, data = {}, now = Date.now()) {
-  const activeWeaponId = serverActiveWeaponId(p);
-  const weapon = serverWeaponDef(data.weapon || activeWeaponId);
-  if (weapon.id !== activeWeaponId) return { ok: false, error: 'Сервер: это оружие не является активным.' };
-  if (!weapon.ammoType) return { ok: false, error: 'Это оружие не требует перезарядки.' };
+  const pair = serverDualWieldPistolPair(p);
+  const activeSlot = serverActiveWeaponSlot(p);
+  const activeEntry = serverEquippedWeaponEntryForSlot(p, activeSlot);
+  const entries = pair?.entries || (activeEntry ? [activeEntry] : []);
+  if (!entries.length) return { ok: false, error: 'Это оружие не требует перезарядки.' };
+  const requestedWeapon = serverBaseItemId(data.weapon || entries[0].weapon.id);
+  if (!pair && requestedWeapon !== entries[0].weapon.id) return { ok: false, error: 'Сервер: это оружие не является активным.' };
+  if (!entries.some(entry => entry.weapon.ammoType)) return { ok: false, error: 'Это оружие не требует перезарядки.' };
   serverRegenPlayerAp(p, now);
+  const plans = entries.map(entry => {
+    const row = serverWeaponState(p, entry.weapon, {}, now, entry.slot);
+    const loadedBefore = Number(row.loaded || 0);
+    return {
+      ...entry,
+      row,
+      loadedBefore,
+      need: Math.max(0, Number(entry.weapon.magSize || 0) - loadedBefore),
+      take: 0
+    };
+  });
   const client = data.combat && typeof data.combat === 'object' ? data.combat : data;
-  const apCost = serverReloadApCost(p, weapon);
+  const requestedSingleTake = pair ? Infinity : Math.max(0, Math.floor(Number(data.take ?? client.take ?? Infinity)));
+  const ammoTypes = [...new Set(plans.map(plan => plan.weapon.ammoType).filter(Boolean))];
+  for (const ammoType of ammoTypes) {
+    let reserve = Math.min(serverInventoryQty(p.inventory || [], ammoType), requestedSingleTake || Infinity);
+    const candidates = plans.filter(plan => plan.weapon.ammoType === ammoType && plan.need > 0);
+    while (reserve > 0 && candidates.some(plan => plan.take < plan.need)) {
+      candidates.sort((a, b) => {
+        const aFill = (a.loadedBefore + a.take) / Math.max(1, Number(a.weapon.magSize || 1));
+        const bFill = (b.loadedBefore + b.take) / Math.max(1, Number(b.weapon.magSize || 1));
+        if (aFill !== bFill) return aFill - bFill;
+        return a.slot === 'weapon' ? -1 : 1;
+      });
+      const next = candidates.find(plan => plan.take < plan.need);
+      if (!next) break;
+      next.take += 1;
+      reserve -= 1;
+    }
+  }
+  const fundedPlans = plans.filter(plan => plan.take > 0);
+  if (!fundedPlans.length) return { ok: false, error: 'Сервер: нечего перезаряжать.' };
+  const apCost = fundedPlans.reduce((sum, plan) => sum + serverReloadApCost(p, plan.weapon), 0);
   if (Number(p.ap || 0) + SERVER_COMBAT_AP_EPSILON < apCost) return { ok: false, error: `Сервер: не хватает ОД на перезарядку. Нужно ${apCost.toFixed(Number.isInteger(apCost) ? 0 : 1)}.` };
-  const row = serverWeaponState(p, weapon, client, now);
-  const loadedBefore = Number(row.loaded || 0);
-  const reserveBefore = serverInventoryQty(p.inventory || [], weapon.ammoType);
-  const need = Math.max(0, Number(weapon.magSize || 0) - loadedBefore);
-  const requested = Math.max(0, Math.floor(Number(data.take ?? client.take ?? need)));
-  const take = Math.min(need, reserveBefore, requested || need);
-  if (take <= 0) return { ok: false, error: 'Сервер: нечего перезаряжать.' };
   p.ap = Math.max(0, Number(p.ap || 0) - apCost);
   p.serverCombat.lastApAt = now;
-  row.loaded = Math.min(Number(weapon.magSize || 0), loadedBefore + take);
-  serverInventoryRemove(p, weapon.ammoType, take);
-  row.reserve = serverInventoryQty(p.inventory || [], weapon.ammoType);
-  row.updatedAt = now;
-  return { ok: true, take, apCost, combat: serverCombatAck(p, weapon, now) };
+  for (const ammoType of ammoTypes) {
+    const total = fundedPlans.filter(plan => plan.weapon.ammoType === ammoType).reduce((sum, plan) => sum + plan.take, 0);
+    if (total > 0) serverInventoryRemove(p, ammoType, total);
+  }
+  for (const plan of fundedPlans) {
+    plan.row.loaded = Math.min(Number(plan.weapon.magSize || 0), plan.loadedBefore + plan.take);
+    plan.row.reserve = serverInventoryQty(p.inventory || [], plan.weapon.ammoType);
+    plan.row.updatedAt = now;
+  }
+  const combats = serverCombatAcksForEntries(p, entries, now);
+  return {
+    ok: true,
+    take: fundedPlans.reduce((sum, plan) => sum + plan.take, 0),
+    takes: fundedPlans.map(plan => ({ handSlot: plan.slot, weapon: plan.weapon.id, weaponRuntimeId: plan.itemKey, take: plan.take })),
+    apCost,
+    dualReload: !!pair,
+    combat: combats[0],
+    combats
+  };
 }
 
 function serverDropPvpInventory(room, target, killer, now = Date.now()) {
@@ -17911,6 +18141,9 @@ io.on('connection', (socket) => {
     if (!room) return;
     if (locationIsFactionCapital(roomLocation(room))) return;
     if (!locationAllowsNpcCombat(roomLocation(room)) && !room.locationWorldEvent) return;
+    const handSlot = data.handSlot === 'offhand' ? 'offhand' : 'weapon';
+    const handWeapon = serverEquippedWeaponEntryForSlot(p, handSlot);
+    if (!handWeapon) return;
     const shot = {
       shooterId: socket.id,
       characterId: p.characterId || '',
@@ -17930,7 +18163,8 @@ io.on('connection', (socket) => {
       endX: Number.isFinite(Number(data.endX)) ? Number(data.endX) : null,
       endZ: Number.isFinite(Number(data.endZ)) ? Number(data.endZ) : null,
       angle: Number.isFinite(Number(data.angle)) ? Number(data.angle) : p.angle,
-      weapon: String(data.weapon || p.weapon).slice(0, 32),
+      weapon: handWeapon.weapon.id,
+      handSlot,
       // v7.74.55: shot is a visual action event, not an authoritative
       // inventory/equipment sync. Keep it tiny so it does not lag behind
       // movement packets during long runs or auto-fire.
@@ -18007,6 +18241,7 @@ io.on('connection', (socket) => {
     const weapon = serverWeaponDef(equippedWeaponId);
     const currentCombat = () => ({
       combat: serverCombatAck(p, weapon, Date.now()),
+      combats: serverCombatAcksForEntries(p, serverDualWieldPistolPair(p)?.entries || [{ slot: serverActiveWeaponSlot(p), weapon }], Date.now()),
       self: publicAuthoritativePlayerState(p)
     });
     if (locationIsFactionCapital(loc)
@@ -18014,22 +18249,22 @@ io.on('connection', (socket) => {
       return fail('В этой локации нельзя использовать оружие.', currentCombat());
     }
     syncServerActionProgressionPlayer(p, data);
-    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', currentCombat());
     }
-    if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.', currentCombat());
     const attackToken = serverCombatToken(data.attackToken || data.combat?.token || '');
     if (!attackToken) return fail('Сервер: отсутствует токен атаки.', currentCombat());
-    const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || data.combat?.mode || 'single'));
-    const spend = serverValidateAndSpendAttack(p, { ...data, attackToken }, weapon, modeInfo, Date.now());
+    const attackPlan = serverResolvePlayerAttackPlan(p, data, Date.now());
+    if (!attackPlan.ok) return fail(attackPlan.error || 'Сервер: атака отклонена.', currentCombat());
+    const attackWeapon = attackPlan.entries[0].weapon;
+    const spend = serverValidateAndSpendAttack(p, { ...data, attackToken }, attackWeapon, attackPlan.modeInfo, Date.now(), attackPlan);
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.', {
       ...currentCombat(),
       retryAfterMs: Number(spend.retryAfterMs || 0)
     });
     if (!spend.reused) {
-      const noiseRadius = weapon.ammoType
+      const noiseRadius = attackPlan.entries.some(entry => entry.weapon.ammoType)
         ? ENEMY_HEARING_SHOT_RANGE
         : ENEMY_HEARING_HARVEST_RANGE;
       addRoomNoise(
@@ -18038,13 +18273,18 @@ io.on('connection', (socket) => {
         p.z,
         serverPlayerNoiseRadius(p, noiseRadius),
         socket.id,
-        weapon.ammoType ? 'combat' : 'melee'
+        attackPlan.entries.some(entry => entry.weapon.ammoType) ? 'combat' : 'melee'
       );
     }
     if (typeof ack === 'function') ack({
       ok: true,
       reused: !!spend.reused,
       combat: spend.combat,
+      combats: spend.combats,
+      mode: spend.mode,
+      fallback: !!spend.fallback,
+      apCost: spend.apCost,
+      shots: spend.shots,
       self: publicAuthoritativePlayerState(p)
     });
   });
@@ -18226,32 +18466,35 @@ io.on('connection', (socket) => {
 
     syncServerActionProgressionPlayer(p, data);
     const equippedWeaponId = serverActiveWeaponId(p);
-    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     const equippedWeapon = serverWeaponDef(equippedWeaponId);
     failureContext = () => ({
       enemy: publicEnemy(enemy),
       combat: serverCombatAck(p, equippedWeapon, Date.now()),
+      combats: serverCombatAcksForEntries(p, serverDualWieldPistolPair(p)?.entries || [{ slot: serverActiveWeaponSlot(p), weapon: equippedWeapon }], Date.now()),
       self: publicAuthoritativePlayerState(p)
     });
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.');
     }
-    if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.');
-    const weapon = serverWeaponDef(weaponId);
+    const attackPlan = serverResolvePlayerAttackPlan(p, data, Date.now());
+    if (!attackPlan.ok) return fail(attackPlan.error || 'Сервер: атака отклонена.');
+    const weapon = attackPlan.entries[0].weapon;
     if (weapon.id === 'rocketLauncher' || data.explosive) return fail('Взрыв обрабатывается отдельным серверным действием.');
-    const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || 'single'));
+    const modeInfo = attackPlan.modeInfo;
     const origin = serverCombatOrigin(p, data);
     const targetPoint = serverCombatTargetPoint(enemy, data, weapon);
     const targetProxy = { ...enemy, x: targetPoint.x, z: targetPoint.z };
     const dist = Math.hypot(origin.x - targetPoint.x, origin.z - targetPoint.z);
-    const effectiveRange = Math.max(0.4, Number(weapon.range || 1)) + 0.85;
+    const effectiveRange = Math.min(...attackPlan.entries.map(entry => (
+      Math.max(0.4, Number(entry.weapon.range || 1) * Math.max(0.1, Number(entry.modeInfo?.rangeMul || 1))) + 0.85
+    )));
     if (dist > effectiveRange) return fail('Цель слишком далеко.');
     if (!serverLineOfFireClearFrom(room, origin.x, origin.z, targetProxy, { shooterCrouching: !!p.crouching })) return fail('Линия атаки перекрыта.');
 
     const now = Date.now();
     const isMultiTargetHit = !!data.multiTarget;
-    const spend = serverValidateAndSpendAttack(p, data, weapon, modeInfo, now);
+    const spend = serverValidateAndSpendAttack(p, data, weapon, modeInfo, now, attackPlan);
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.');
     if (!isMultiTargetHit && spend.reused) return fail('Сервер: эта атака уже обработана.');
     const multiTarget = isMultiTargetHit
@@ -18274,54 +18517,69 @@ io.on('connection', (socket) => {
     const hitClientCombat = shotgunSpread
       ? { ...clientCombat, conePerp: shotgunSpread.perp, coneWidth: shotgunSpread.width, shotgunPerp: shotgunSpread.perp, shotgunWidth: shotgunSpread.width }
       : clientCombat;
-    const hitChance = serverHitChance(p, enemy, Math.min(dist, Number(weapon.range || dist)), weapon, modeInfo, hitClientCombat);
-    const forceHit = !!data.explosive && weapon.id === 'rocketLauncher';
-    if (!forceHit && Math.random() > hitChance) {
-      aggroEnemyFromHit(room, enemy, p, now);
-      emitEnemySnapshot(room, true);
-      if (typeof ack === 'function') ack({
-        ok: true,
-        hit: false,
-        enemy: publicEnemy(enemy),
-        killed: false,
-        weapon: weapon.id,
-        mode: modeInfo.id,
-        chance: Math.round(hitChance * 100),
-        damage: 0,
-        rawDamage: 0,
-        absorbed: 0,
-        damageType: weapon.damageType || 'ballistic',
-        combat: spend.combat
-      });
-      return;
-    }
-
-    let raw = serverDamageRoll(p, weapon, modeInfo);
     const ambushLevel = serverAmbushLevel(p, enemy, now);
-    if (ambushLevel > 0) raw = Math.max(1, Math.round(raw * (1 + ambushLevel * 0.14)));
-    if (shotgunSpread) {
-      raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(weapon, dist, shotgunSpread.perp, shotgunSpread.width)));
+    const hits = [];
+    for (const entry of spend.entries) {
+      const bulletWeapon = entry.weapon;
+      const bulletMode = entry.modeInfo || modeInfo;
+      const bulletRange = Number(bulletWeapon.range || dist) * Math.max(0.1, Number(bulletMode.rangeMul || 1));
+      const chance = serverHitChance(p, enemy, Math.min(dist, bulletRange), bulletWeapon, bulletMode, hitClientCombat);
+      const landed = Math.random() <= chance;
+      if (!landed) {
+        hits.push({
+          handSlot: entry.slot,
+          weapon: bulletWeapon.id,
+          weaponRuntimeId: entry.itemKey,
+          hit: false,
+          chance: Math.round(chance * 100),
+          damage: 0,
+          rawDamage: 0,
+          absorbed: 0,
+          damageType: bulletWeapon.damageType || 'ballistic'
+        });
+        continue;
+      }
+      let raw = serverDamageRoll(p, bulletWeapon, bulletMode);
+      if (ambushLevel > 0) raw = Math.max(1, Math.round(raw * (1 + ambushLevel * 0.14)));
+      if (shotgunSpread) raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(bulletWeapon, dist, shotgunSpread.perp, shotgunSpread.width)));
+      const type = DAMAGE_TYPES.includes(bulletWeapon.damageType) ? bulletWeapon.damageType : 'ballistic';
+      const dmgInfo = serverMitigateEnemyDamage(raw, enemy, type);
+      enemy.hp = Math.max(0, enemy.hp - dmgInfo.damage);
+      hits.push({
+        handSlot: entry.slot,
+        weapon: bulletWeapon.id,
+        weaponRuntimeId: entry.itemKey,
+        hit: true,
+        chance: Math.round(chance * 100),
+        damage: dmgInfo.damage,
+        rawDamage: raw,
+        absorbed: dmgInfo.absorbed,
+        damageType: dmgInfo.type
+      });
     }
-    const type = DAMAGE_TYPES.includes(weapon.damageType) ? weapon.damageType : 'ballistic';
-    const dmgInfo = serverMitigateEnemyDamage(raw, enemy, type);
-    const damage = dmgInfo.damage;
-    enemy.hp = Math.max(0, enemy.hp - damage);
+    const anyHit = hits.some(row => row.hit);
+    const damage = hits.reduce((sum, row) => sum + Number(row.damage || 0), 0);
+    const rawDamage = hits.reduce((sum, row) => sum + Number(row.rawDamage || 0), 0);
+    const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
     if (enemy.hp > 0) aggroEnemyFromHit(room, enemy, p, now);
-    const killed = serverFinishEnemyKilledByPlayer(room, enemy, p, now);
+    const killed = anyHit ? serverFinishEnemyKilledByPlayer(room, enemy, p, now) : false;
     refreshRoomWorldState(room);
     if (typeof ack === 'function') ack({
       ok: true,
-      hit: true,
+      hit: anyHit,
+      hits,
       enemy: publicEnemy(enemy),
       killed,
       weapon: weapon.id,
-      mode: modeInfo.id,
-      chance: Math.round(hitChance * 100),
+      mode: spend.mode || modeInfo.id,
+      fallback: !!spend.fallback,
+      chance: hits.length ? Math.round(hits.reduce((sum, row) => sum + Number(row.chance || 0), 0) / hits.length) : 0,
       damage,
-      rawDamage: raw,
-      absorbed: dmgInfo.absorbed,
-      damageType: dmgInfo.type,
+      rawDamage,
+      absorbed,
+      damageType: hits.find(row => row.hit)?.damageType || weapon.damageType || 'ballistic',
       combat: spend.combat,
+      combats: spend.combats,
       self: publicAuthoritativePlayerState(p)
     });
     emitEnemySnapshot(room, true);
@@ -18349,14 +18607,14 @@ io.on('connection', (socket) => {
       && !serverEquipmentSnapshotMatchesAuthority(attacker, data.equipment)) {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', {
         combat: serverCombatAck(attacker, currentWeapon, Date.now()),
+        combats: serverCombatAcksForEntries(attacker, serverDualWieldPistolPair(attacker)?.entries || [{ slot: serverActiveWeaponSlot(attacker), weapon: currentWeapon }], Date.now()),
         self: publicAuthoritativePlayerState(attacker)
       });
     }
-    const equippedWeaponId = serverActiveWeaponId(attacker);
-    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
-    if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не является активным.');
-    const weapon = serverWeaponDef(weaponId);
-    const modeInfo = serverWeaponModeInfo(attacker, weapon, String(data.mode || 'single'));
+    const attackPlan = serverResolvePlayerAttackPlan(attacker, data, Date.now());
+    if (!attackPlan.ok) return fail(attackPlan.error || 'Сервер: атака отклонена.');
+    const weapon = attackPlan.entries[0].weapon;
+    const modeInfo = attackPlan.modeInfo;
     const origin = serverCombatOrigin(attacker, data);
     const targetProxy = {
       id: target.id,
@@ -18370,12 +18628,14 @@ io.on('connection', (socket) => {
       crouching: !!target.crouching
     };
     const dist = Math.hypot(origin.x - targetProxy.x, origin.z - targetProxy.z);
-    const effectiveRange = Math.max(0.4, Number(weapon.range || 1)) + 0.85;
+    const effectiveRange = Math.min(...attackPlan.entries.map(entry => (
+      Math.max(0.4, Number(entry.weapon.range || 1) * Math.max(0.1, Number(entry.modeInfo?.rangeMul || 1))) + 0.85
+    )));
     if (dist > effectiveRange) return fail('Цель слишком далеко.');
     if (!serverLineOfFireClearFrom(room, origin.x, origin.z, targetProxy, { shooterCrouching: !!attacker.crouching })) return fail('Линия атаки перекрыта.');
 
     const now = Date.now();
-    const spend = serverValidateAndSpendAttack(attacker, data, weapon, modeInfo, now);
+    const spend = serverValidateAndSpendAttack(attacker, data, weapon, modeInfo, now, attackPlan);
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.', spend.combat ? { combat: spend.combat } : {});
     if (spend.reused) return fail('Сервер: эта атака уже обработана.', spend.combat ? { combat: spend.combat } : {});
 
@@ -18389,37 +18649,55 @@ io.on('connection', (socket) => {
     const hitClientCombat = shotgunSpread
       ? { ...clientCombat, conePerp: shotgunSpread.perp, coneWidth: shotgunSpread.width, shotgunPerp: shotgunSpread.perp, shotgunWidth: shotgunSpread.width }
       : clientCombat;
-    const hitChance = serverHitChance(attacker, targetProxy, Math.min(dist, Number(weapon.range || dist)), weapon, modeInfo, hitClientCombat);
-    if (Math.random() > hitChance) {
-      if (typeof ack === 'function') ack({
-        ok: true,
-        hit: false,
-        target: publicPlayer(target),
-        killed: false,
-        weapon: weapon.id,
-        mode: modeInfo.id,
-        pvpMode,
-        chance: Math.round(hitChance * 100),
-        damage: 0,
-        rawDamage: 0,
-        absorbed: 0,
-        damageType: weapon.damageType || 'ballistic',
-        combat: spend.combat
+    const hits = [];
+    const newInjuries = [];
+    for (const entry of spend.entries) {
+      const bulletWeapon = entry.weapon;
+      const bulletMode = entry.modeInfo || modeInfo;
+      const bulletRange = Number(bulletWeapon.range || dist) * Math.max(0.1, Number(bulletMode.rangeMul || 1));
+      const chance = serverHitChance(attacker, targetProxy, Math.min(dist, bulletRange), bulletWeapon, bulletMode, hitClientCombat);
+      if (Math.random() > chance) {
+        hits.push({
+          handSlot: entry.slot,
+          weapon: bulletWeapon.id,
+          weaponRuntimeId: entry.itemKey,
+          hit: false,
+          chance: Math.round(chance * 100),
+          damage: 0,
+          rawDamage: 0,
+          absorbed: 0,
+          damageType: bulletWeapon.damageType || 'ballistic'
+        });
+        continue;
+      }
+      let raw = serverDamageRoll(attacker, bulletWeapon, bulletMode);
+      if (shotgunSpread) raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(bulletWeapon, dist, shotgunSpread.perp, shotgunSpread.width)));
+      const damageType = DAMAGE_TYPES.includes(bulletWeapon.damageType) ? bulletWeapon.damageType : 'ballistic';
+      const dmgInfo = serverMitigateDamage(raw, target, damageType);
+      const secondChance = serverTrySecondChance(target, dmgInfo.damage, now);
+      if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - dmgInfo.damage);
+      newInjuries.push(...serverApplyInjuriesFromHit(target, dmgInfo.damage, damageType, attacker.name || 'player attack'));
+      hits.push({
+        handSlot: entry.slot,
+        weapon: bulletWeapon.id,
+        weaponRuntimeId: entry.itemKey,
+        hit: true,
+        chance: Math.round(chance * 100),
+        damage: dmgInfo.damage,
+        rawDamage: raw,
+        absorbed: dmgInfo.absorbed,
+        damageType: dmgInfo.type,
+        secondChance
       });
-      return;
+      targetProxy.hp = target.hp;
     }
-
-    let raw = serverDamageRoll(attacker, weapon, modeInfo);
-    if (shotgunSpread) raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(weapon, dist, shotgunSpread.perp, shotgunSpread.width)));
-    const damageType = DAMAGE_TYPES.includes(weapon.damageType) ? weapon.damageType : 'ballistic';
-    const dmgInfo = serverMitigateDamage(raw, target, damageType);
-    const damage = dmgInfo.damage;
-    const secondChance = serverTrySecondChance(target, damage, now);
-    if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - damage);
-    const newInjuries = serverApplyInjuriesFromHit(target, damage, damageType, attacker.name || 'player attack');
+    const anyHit = hits.some(row => row.hit);
+    const damage = hits.reduce((sum, row) => sum + Number(row.damage || 0), 0);
+    const rawDamage = hits.reduce((sum, row) => sum + Number(row.rawDamage || 0), 0);
+    const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
+    const secondChance = hits.some(row => row.secondChance);
     target.lastServerDamageAt = now;
-    targetProxy.hp = target.hp;
-    const killed = Number(target.hp || 0) <= 0 && !secondChance;
+    const killed = anyHit && Number(target.hp || 0) <= 0;
     let droppedItems = [];
     if (killed) {
       target.dead = true;
@@ -18439,10 +18717,11 @@ io.on('connection', (socket) => {
       hp: Math.round(Number(target.hp || 0)),
       maxHp: Math.round(Number(target.maxHp || 100)),
       damage,
-      rawDamage: raw,
-      absorbed: dmgInfo.absorbed,
-      damageType: dmgInfo.type,
-      hit: true,
+      rawDamage,
+      absorbed,
+      damageType: hits.find(row => row.hit)?.damageType || weapon.damageType || 'ballistic',
+      hit: anyHit,
+      hits,
       killed,
       secondChance,
       injuries: sanitizeInjuries(target.injuries || {}),
@@ -18451,25 +18730,28 @@ io.on('connection', (socket) => {
       droppedItems,
       t: now
     };
-    io.to(room.id).emit('playerDamaged', payload);
+    if (anyHit) io.to(room.id).emit('playerDamaged', payload);
 
     if (typeof ack === 'function') ack({
       ok: true,
-      hit: true,
+      hit: anyHit,
+      hits,
       target: publicPlayer(target),
       killed,
       weapon: weapon.id,
-      mode: modeInfo.id,
+      mode: spend.mode || modeInfo.id,
+      fallback: !!spend.fallback,
       pvpMode,
-      chance: Math.round(hitChance * 100),
+      chance: hits.length ? Math.round(hits.reduce((sum, row) => sum + Number(row.chance || 0), 0) / hits.length) : 0,
       damage,
-      rawDamage: raw,
-      absorbed: dmgInfo.absorbed,
-      damageType: dmgInfo.type,
+      rawDamage,
+      absorbed,
+      damageType: hits.find(row => row.hit)?.damageType || weapon.damageType || 'ballistic',
       secondChance,
       fullDrop: locationHasFullInventoryDrop(loc),
       droppedItems,
-      combat: spend.combat
+      combat: spend.combat,
+      combats: spend.combats
     });
 
     if (killed) {

@@ -10,46 +10,154 @@
     });
   }
 
+  function buildPlayerAttackPlan(w, modeInfo = getWeaponModeInfo(w)) {
+    const pair = typeof dualWieldPistolPair === 'function' ? dualWieldPistolPair() : null;
+    const requestedMode = modeInfo?.id || player.fireMode || 'single';
+    if (requestedMode === 'dual' && pair) {
+      const loaded = pair.entries.filter(entry => Number(entry.weapon.loaded || 0) > 0);
+      if (!loaded.length) return { ok: false, error: 'Оба магазина пусты. Нажмите R для перезарядки.' };
+      if (loaded.length === 1) {
+        const entry = loaded[0];
+        const singleMode = getWeaponModes(entry.weapon).find(mode => mode.id === 'single') || getWeaponModes(entry.weapon)[0];
+        return {
+          ok: true,
+          requestedMode,
+          resolvedMode: 'single',
+          fallback: true,
+          modeInfo: singleMode,
+          apCost: Math.max(0, Number(singleMode.apCost || entry.weapon.apCost || 2) + injuryApPenalty('attack')),
+          bullets: [{ ...entry, modeInfo: singleMode }]
+        };
+      }
+      return {
+        ok: true,
+        requestedMode,
+        resolvedMode: 'dual',
+        fallback: false,
+        modeInfo,
+        apCost: Math.max(0, Number(modeInfo.apCost || 5) + injuryApPenalty('attack')),
+        bullets: pair.entries.map(entry => ({ ...entry, modeInfo: { ...modeInfo, shots: 1 } }))
+      };
+    }
+
+    let slot = typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon';
+    if (requestedMode === 'single' && pair) {
+      const preferred = player.dualPistolNextHandSlot === 'offhand' ? 'offhand' : 'weapon';
+      const alternate = preferred === 'weapon' ? 'offhand' : 'weapon';
+      const selected = pair.entries.find(entry => entry.slot === preferred && Number(entry.weapon.loaded || 0) > 0)
+        || pair.entries.find(entry => entry.slot === alternate && Number(entry.weapon.loaded || 0) > 0)
+        || pair.entries.find(entry => entry.slot === preferred)
+        || pair.entries[0];
+      slot = selected.slot;
+      w = selected.weapon;
+    }
+    const runtimeId = String(equipment?.[slot] || w?.id || '');
+    return {
+      ok: true,
+      requestedMode,
+      resolvedMode: requestedMode,
+      fallback: false,
+      modeInfo,
+      apCost: Math.max(0, Number(modeInfo.apCost || w.apCost || 2) + injuryApPenalty('attack')),
+      bullets: [{ slot, weapon: w, runtimeId, modeInfo }]
+    };
+  }
+
   function spendAttackCost(w, modeInfo = getWeaponModeInfo(w)) {
     if (player.fireCooldown > 0 || player.reloadTimer > 0) return false;
-    const apCost = Math.max(0, Number(modeInfo.apCost || w.apCost || 2) + injuryApPenalty('attack'));
+    const plan = buildPlayerAttackPlan(w, modeInfo);
+    if (!plan.ok) {
+      setReadout(plan.error || 'Атака недоступна.');
+      return false;
+    }
+    const apCost = plan.apCost;
     const apBefore = Number(player.ap || 0);
-    const loadedBefore = w.ammoType ? Number(w.loaded || 0) : 0;
-    const conditionBefore = Number.isFinite(Number(w?.condition)) ? Number(w.condition) : null;
     if (player.ap < apCost) {
       setReadout(`Недостаточно очков действий. Нужно ${formatActionCost(apCost)} ОД.`);
       return false;
     }
-    if (w.ammoType && w.loaded <= 0) {
+    if (plan.bullets.some(bullet => bullet.weapon.ammoType && Number(bullet.weapon.loaded || 0) <= 0)) {
       addLog('Щёлк! Магазин пуст. Нажмите R для перезарядки.', null, 'combat');
       setReadout('Оружие разряжено. R — перезарядить.');
       return false;
     }
-    if (rollEnergyFailure(w, modeInfo)) {
-      const risk = Math.round(energyFailureChance(w, modeInfo) * 100);
+    const failedBullet = plan.bullets.find(bullet => rollEnergyFailure(bullet.weapon, bullet.modeInfo));
+    if (failedBullet) {
+      const failedWeapon = failedBullet.weapon;
+      const risk = Math.round(energyFailureChance(failedWeapon, failedBullet.modeInfo) * 100);
       player.fireCooldown = Math.max(player.fireCooldown, 1.0 + risk / 100);
-      if (typeof w.condition === 'number') w.condition = Math.max(1, w.condition - Math.max(0.35, 1 - talentLevel('weaponSmith') * 0.18));
-      addLog(`${w.icon} ${w.name}: перегрев/сбой (${risk}%). Выстрел заблокирован.`, null, 'combat');
-      setReadout(`${w.name}: перегрев/сбой. Навык Энергетическое снижает этот риск.`);
+      if (typeof failedWeapon.condition === 'number') failedWeapon.condition = Math.max(1, failedWeapon.condition - Math.max(0.35, 1 - talentLevel('weaponSmith') * 0.18));
+      addLog(`${failedWeapon.icon} ${failedWeapon.name}: перегрев/сбой (${risk}%). Выстрел заблокирован.`, null, 'combat');
+      setReadout(`${failedWeapon.name}: перегрев/сбой. Навык Энергетическое снижает этот риск.`);
       renderWeaponReadout();
       updateTargetHintFromHover();
       queueSave();
       return false;
     }
-    const shots = w.ammoType ? Math.max(1, Math.min(modeInfo.shots || 1, w.loaded)) : 1;
     player.ap = Math.max(0, player.ap - apCost);
-    player.fireCooldown = (w.fireRate || 0.5) * (modeInfo.fireRateMul || 1);
-    if (w.ammoType) w.loaded = Math.max(0, w.loaded - shots);
-    if (w.ammoType && typeof w.condition === 'number') {
-      const wear = Math.max(0.25, 0.55 - talentLevel('weaponSmith') * 0.12);
-      w.condition = Math.max(1, w.condition - wear * shots);
+    player.fireCooldown = Math.max(...plan.bullets.map(bullet => (bullet.weapon.fireRate || 0.5) * (bullet.modeInfo.fireRateMul || 1)));
+    const wear = Math.max(0.25, 0.55 - talentLevel('weaponSmith') * 0.12);
+    const bullets = plan.bullets.map(bullet => {
+      const weapon = bullet.weapon;
+      const loadedBefore = weapon.ammoType ? Number(weapon.loaded || 0) : 0;
+      const conditionBefore = Number.isFinite(Number(weapon.condition)) ? Number(weapon.condition) : null;
+      if (weapon.ammoType) weapon.loaded = Math.max(0, loadedBefore - 1);
+      if (weapon.ammoType && typeof weapon.condition === 'number') weapon.condition = Math.max(1, weapon.condition - wear);
+      return {
+        ...bullet,
+        loadedBefore,
+        loadedAfter: weapon.ammoType ? Number(weapon.loaded || 0) : 0,
+        conditionBefore,
+        conditionAfter: Number.isFinite(Number(weapon.condition)) ? Number(weapon.condition) : conditionBefore
+      };
+    });
+    if (plan.requestedMode === 'single' && dualWieldPistolPair()) {
+      player.dualPistolNextHandSlot = bullets[0].slot === 'weapon' ? 'offhand' : 'weapon';
     }
-    const conditionAfter = Number.isFinite(Number(w?.condition)) ? Number(w.condition) : conditionBefore;
-    const spend = { token: makeAttackToken(), shots, apCost, apBefore, apAfter: Number(player.ap || 0), loadedBefore, loadedAfter: w.ammoType ? Number(w.loaded || 0) : 0, conditionBefore, conditionAfter };
+    const primary = bullets[0];
+    const spend = {
+      token: makeAttackToken(),
+      shots: bullets.length,
+      apCost,
+      apBefore,
+      apAfter: Number(player.ap || 0),
+      loadedBefore: primary.loadedBefore,
+      loadedAfter: primary.loadedAfter,
+      conditionBefore: primary.conditionBefore,
+      conditionAfter: primary.conditionAfter,
+      bullets,
+      requestedMode: plan.requestedMode,
+      resolvedMode: plan.resolvedMode,
+      fallback: plan.fallback,
+      modeInfo: plan.modeInfo
+    };
     renderQuickbar();
     renderWeaponReadout();
     updateTargetHintFromHover();
     return spend;
+  }
+
+  function primaryAttackBullet(spend, fallbackWeapon = currentWeapon(), fallbackMode = getWeaponModeInfo(fallbackWeapon)) {
+    return Array.isArray(spend?.bullets) && spend.bullets.length
+      ? spend.bullets[0]
+      : {
+          slot: typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon',
+          weapon: fallbackWeapon,
+          runtimeId: String(equipment?.[typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon'] || fallbackWeapon?.id || ''),
+          modeInfo: fallbackMode
+        };
+  }
+
+  function attackNetworkFields(w, modeInfo, spend) {
+    const primary = primaryAttackBullet(spend, w, modeInfo);
+    return {
+      weapon: weaponBaseId(primary.weapon || w),
+      weaponRuntimeId: String(primary.runtimeId || equipment?.[primary.slot] || primary.weapon?.id || ''),
+      handSlot: primary.slot === 'offhand' ? 'offhand' : 'weapon',
+      mode: spend?.requestedMode || modeInfo?.id || player.fireMode || 'single',
+      attackToken: spend?.token || '',
+      combat: combatResourceSnapshot(primary.weapon || w, modeInfo, spend || {})
+    };
   }
 
   function submitUntargetedServerAttack(w, modeInfo, spend) {
@@ -57,13 +165,10 @@
     return emitGuardedMultiplayerGameplayAction('combatAttack', {
       ...multiplayerProgressionSnapshot(),
       equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
-      weapon: weaponBaseId(w),
-      mode: modeInfo?.id || player.fireMode || 'single',
-      attackToken: spend.token || '',
-      combat: combatResourceSnapshot(w, modeInfo, spend)
+      ...attackNetworkFields(w, modeInfo, spend)
     }, ack => {
       if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
-      if (ack?.combat) applyServerCombatState(ack.combat);
+      applyServerCombatPayload(ack);
       if (ack && !ack.ok && ack.error) setReadout(ack.error);
     });
   }
@@ -85,15 +190,12 @@
         equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
         clientPredictedDamage: raw,
         clientHitChance: Math.round(hitChance * 100),
-        weapon: weaponBaseId(w),
-        mode: modeInfo.id,
+        ...attackNetworkFields(w, modeInfo, options.spend),
         multiTarget: !!options.multiTarget,
         conePerp: Number.isFinite(Number(options.conePerp)) ? Number(options.conePerp) : 0,
         coneWidth: Number.isFinite(Number(options.coneWidth)) ? Number(options.coneWidth) : coneWeaponWidthAtDistance(w, dist),
         shotDirX: Number.isFinite(Number(options.shotDirX)) ? Number(options.shotDirX) : null,
         shotDirZ: Number.isFinite(Number(options.shotDirZ)) ? Number(options.shotDirZ) : null,
-        attackToken: options.spend?.token || '',
-        combat: combatResourceSnapshot(w, modeInfo, options.spend || {}),
         x: player.x,
         z: player.z,
         targetX: observedTarget.x,
@@ -115,12 +217,12 @@
             addLog(`${w.icon} ${w.name} (${modeInfo.label}, ${damageTypeLabel(type)}): ${enemy.name} получает ${damage} урона${absorbedText}.`, null, 'combat');
           }
           applyNetworkEnemies([serverEnemy], { allowPositionSync: true, fromServer: true, pruneMissing: false });
-          if (ack.combat) applyServerCombatState(ack.combat);
+          applyServerCombatPayload(ack);
           if (ack.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
           restoreMobileAutoTargetById(preservedTargetId);
         } else if (ack && ack.error) {
           if (ack.enemy) applyNetworkEnemies([ack.enemy], { allowPositionSync: true, fromServer: true, pruneMissing: false });
-          if (ack.combat) applyServerCombatState(ack.combat);
+          applyServerCombatPayload(ack);
           if (ack.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
           setReadout(ack.error);
           restoreMobileAutoTargetById(preservedTargetId);
@@ -158,7 +260,9 @@
     if (!w.ammoType) return;
     const fx = weaponFxProfile(w);
     const weaponId = weaponBaseId(w);
-    triggerWeaponVisualRecoil(activeActorWeaponGroup(playerGroup) || playerParts.weaponGroup, weaponId);
+    const handSlot = options.handSlot === 'offhand' ? 'offhand' : 'weapon';
+    const handWeaponGroup = typeof actorWeaponGroupForSlot === 'function' ? actorWeaponGroupForSlot(playerGroup, handSlot) : null;
+    triggerWeaponVisualRecoil(handWeaponGroup || activeActorWeaponGroup(playerGroup) || playerParts.weaponGroup, weaponId);
 
     // Visual shots must follow the same gameplay ray axis. Do not draw tracer
     // from the laterally offset muzzle to the collision point: at close range
@@ -248,6 +352,7 @@
       endZ,
       angle: player.angle,
       weapon: weaponBaseId(w),
+      handSlot: options.handSlot === 'offhand' ? 'offhand' : 'weapon',
       mode: modeInfo?.id || player.fireMode || 'single',
       explosiveRadius: options.explosiveRadius || 0,
       deviceType: getDeviceType(),
@@ -257,6 +362,25 @@
     // volatile and compact: authoritative damage still goes through enemyHit.
     const shotSocket = multiplayer.socket.volatile || multiplayer.socket;
     shotSocket.emit('shoot', payload);
+  }
+
+  function renderRangedAttackVisuals(spend, fallbackWeapon, fallbackMode, endX, endZ, options = {}) {
+    const bullets = Array.isArray(spend?.bullets) && spend.bullets.length
+      ? spend.bullets
+      : [primaryAttackBullet(spend, fallbackWeapon, fallbackMode)];
+    bullets.forEach((bullet, index) => {
+      const draw = () => {
+        const weapon = bullet.weapon || fallbackWeapon;
+        const bulletMode = bullet.modeInfo || fallbackMode;
+        const handSlot = bullet.slot === 'offhand' ? 'offhand' : 'weapon';
+        const muzzle = getWeaponMuzzlePoint(weapon, handSlot);
+        const fxOptions = { ...options, handSlot };
+        spawnWeaponTracers(weapon, 1, muzzle, endX, endZ, bulletMode, fxOptions);
+        if (!options.closeBlocked) emitShootFxPacket(weapon, bulletMode, muzzle, endX, endZ, fxOptions);
+      };
+      if (index > 0) setTimeout(draw, 90 * index);
+      else draw();
+    });
   }
 
   function emitMeleeFxPacket(w, target = null) {
@@ -382,14 +506,11 @@
       equipment: typeof multiplayerEquipmentSnapshot === 'function' ? multiplayerEquipmentSnapshot() : null,
       inventory: typeof multiplayerInventorySnapshot === 'function' ? multiplayerInventorySnapshot() : null,
       clientHitChance: Math.round(hitChance * 100),
-      weapon: weaponBaseId(w),
-      mode: modeInfo.id,
+      ...attackNetworkFields(w, modeInfo, options.spend),
       conePerp: Number.isFinite(Number(options.conePerp)) ? Number(options.conePerp) : target.perp || 0,
       coneWidth: Number.isFinite(Number(options.coneWidth)) ? Number(options.coneWidth) : coneWeaponWidthAtDistance(w, dist),
       shotDirX: Number.isFinite(Number(options.shotDirX)) ? Number(options.shotDirX) : null,
       shotDirZ: Number.isFinite(Number(options.shotDirZ)) ? Number(options.shotDirZ) : null,
-      attackToken: options.spend?.token || '',
-      combat: combatResourceSnapshot(w, modeInfo, options.spend || {}),
       x: player.x,
       z: player.z,
       angle: player.angle
@@ -412,9 +533,9 @@
             if (typeof removeRemotePlayerFromNetworkEvent === 'function') removeRemotePlayerFromNetworkEvent({ id: target.id, characterId: ack.target.characterId });
           }
         }
-        if (ack.combat) applyServerCombatState(ack.combat);
+        applyServerCombatPayload(ack);
       } else if (ack && ack.error) {
-        if (ack.combat) applyServerCombatState(ack.combat);
+        applyServerCombatPayload(ack);
         setReadout(ack.error);
       }
       updateTargetHintFromHover();
@@ -428,6 +549,7 @@
     if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     const w = currentWeapon();
     const modeInfo = ensureWeaponMode(w);
+    const previewPlan = buildPlayerAttackPlan(w, modeInfo);
     let dx = x - player.x;
     let dz = z - player.z;
     let len = Math.hypot(dx, dz);
@@ -440,7 +562,9 @@
     const dir = { x: dx / Math.max(0.001, len), z: dz / Math.max(0.001, len) };
     if (len >= 0.15) facePoint(x, z);
 
-    const maxRange = Math.max(0.4, w.range);
+    const maxRange = Math.max(0.4, previewPlan.ok && previewPlan.resolvedMode !== 'dual'
+      ? effectiveWeaponRange(previewPlan.bullets[0].weapon, previewPlan.modeInfo)
+      : effectiveWeaponRange(w, modeInfo));
     const isRocket = isExplosionWeapon(w);
     const intendedDist = isRocket ? Math.min(maxRange, Math.max(0.15, len)) : maxRange;
     const staticBlockDist = typeof staticCollisionRayHitDistance === 'function'
@@ -478,10 +602,8 @@
     }
 
     if (w.ammoType) {
-      const muzzle = getWeaponMuzzlePoint(w);
-      spawnWeaponTracers(w, spend.shots, muzzle, endX, endZ, modeInfo, { blockedByStatic: shotBlockedByStatic, closeBlocked: closeBlockedShot, originX: player.x, originZ: player.z, dirX: dir.x, dirZ: dir.z, endDist });
+      renderRangedAttackVisuals(spend, w, modeInfo, endX, endZ, { blockedByStatic: shotBlockedByStatic, closeBlocked: closeBlockedShot, originX: player.x, originZ: player.z, dirX: dir.x, dirZ: dir.z, endDist, fxSuppressed: closeBlockedShot });
       if (isRocket) spawnExplosionFx(endX, endZ, explosiveRadiusForWeapon(w));
-      if (!closeBlockedShot) emitShootFxPacket(w, modeInfo, muzzle, endX, endZ, { explosiveRadius: isRocket ? explosiveRadiusForWeapon(w) : 0, originX: player.x, originZ: player.z, dirX: dir.x, dirZ: dir.z, endDist, fxSuppressed: closeBlockedShot });
     }
     if (isRocket) {
       const hit = applyExplosionDamage(endX, endZ, w, modeInfo, { selfDamage: true, spend });
@@ -501,11 +623,7 @@
       return applyConeWeaponDamage(coneTargets, w, modeInfo, spend.shots, spend);
     }
     if (primaryPvpTarget) {
-      let hit = false;
-      for (let i = 0; i < spend.shots; i++) {
-        hit = applyPlayerWeaponDamage(primaryPvpTarget, Math.max(0.1, primaryPvpTarget.dist), w, modeInfo, { spend, shotDirX: dir.x, shotDirZ: dir.z }) || hit;
-      }
-      return hit;
+      return applyPlayerWeaponDamage(primaryPvpTarget, Math.max(0.1, primaryPvpTarget.dist), w, modeInfo, { spend, shotDirX: dir.x, shotDirZ: dir.z });
     }
     if (!effectiveEnemy) {
       submitUntargetedServerAttack(w, modeInfo, spend);
@@ -514,9 +632,11 @@
       renderInventoryIfVisibleDeferred();
       return false;
     }
+    if (enemiesAreServerAuthoritative()) return applyWeaponDamage(effectiveEnemy, endDist, w, modeInfo, { spend });
     let hit = false;
-    for (let i = 0; i < spend.shots && effectiveEnemy && !effectiveEnemy.dead; i++) {
-      hit = applyWeaponDamage(effectiveEnemy, endDist, w, modeInfo, { spend }) || hit;
+    for (const bullet of spend.bullets || []) {
+      if (!effectiveEnemy || effectiveEnemy.dead) break;
+      hit = applyWeaponDamage(effectiveEnemy, endDist, bullet.weapon, bullet.modeInfo, { spend }) || hit;
     }
     return hit;
   }
@@ -528,8 +648,12 @@
     const w = currentWeapon();
     const modeInfo = ensureWeaponMode(w);
     const dist = distanceToEnemy(enemy);
-    if (dist > w.range) {
-      if (!fromAuto) setReadout(`Цель вне дальности: ${w.name} бьёт до ${w.range} м.`);
+    const previewPlan = buildPlayerAttackPlan(w, modeInfo);
+    const attackRange = Math.max(0.4, previewPlan.ok && previewPlan.resolvedMode !== 'dual'
+      ? effectiveWeaponRange(previewPlan.bullets[0].weapon, previewPlan.modeInfo)
+      : effectiveWeaponRange(w, modeInfo));
+    if (dist > attackRange) {
+      if (!fromAuto) setReadout(`Цель вне дальности: ${w.name} бьёт до ${Math.round(attackRange)} м.`);
       return false;
     }
     const dx = enemy.x - player.x;
@@ -541,7 +665,7 @@
       return false;
     }
     facePoint(enemy.x, enemy.z);
-    const coneTargets = isMultiTargetConeWeapon(w) ? findEnemiesInWeaponCone(dir, w.range, w) : [];
+    const coneTargets = isMultiTargetConeWeapon(w) ? findEnemiesInWeaponCone(dir, attackRange, w) : [];
     const spend = spendAttackCost(w, modeInfo);
     if (!spend) return false;
     if (!w.ammoType) {
@@ -552,15 +676,13 @@
     const visualEndDist = isRocket
       ? dist
       : (isMultiTargetConeWeapon(w)
-        ? Math.min(w.range, coneTargets.length ? Math.max(...coneTargets.map(t => t.proj)) + 0.75 : dist)
+        ? Math.min(attackRange, coneTargets.length ? Math.max(...coneTargets.map(t => t.proj)) + 0.75 : dist)
         : dist);
     const visualEndX = (isRocket || !isMultiTargetConeWeapon(w)) ? enemy.x : player.x + dir.x * visualEndDist;
     const visualEndZ = (isRocket || !isMultiTargetConeWeapon(w)) ? enemy.z : player.z + dir.z * visualEndDist;
     if (w.ammoType) {
-      const muzzle = getWeaponMuzzlePoint(w);
-      spawnWeaponTracers(w, spend.shots, muzzle, visualEndX, visualEndZ, modeInfo, { blockedByStatic: false, originX: player.x, originZ: player.z, dirX: dir.x, dirZ: dir.z, endDist: visualEndDist });
+      renderRangedAttackVisuals(spend, w, modeInfo, visualEndX, visualEndZ, { blockedByStatic: false, originX: player.x, originZ: player.z, dirX: dir.x, dirZ: dir.z, endDist: visualEndDist, explosiveRadius: isRocket ? explosiveRadiusForWeapon(w) : 0 });
       if (isRocket) spawnExplosionFx(visualEndX, visualEndZ, explosiveRadiusForWeapon(w));
-      emitShootFxPacket(w, modeInfo, muzzle, visualEndX, visualEndZ, { explosiveRadius: isRocket ? explosiveRadiusForWeapon(w) : 0, originX: player.x, originZ: player.z, dirX: dir.x, dirZ: dir.z, endDist: visualEndDist });
     }
     if (isRocket) {
       return applyExplosionDamage(visualEndX, visualEndZ, w, modeInfo, { selfDamage: true, spend });
@@ -576,9 +698,11 @@
         dirZ: dir.z
       }], w, modeInfo, spend.shots, spend);
     }
+    if (enemiesAreServerAuthoritative()) return applyWeaponDamage(enemy, dist, w, modeInfo, { spend });
     let hit = false;
-    for (let i = 0; i < spend.shots && enemy && !enemy.dead; i++) {
-      hit = applyWeaponDamage(enemy, dist, w, modeInfo, { spend }) || hit;
+    for (const bullet of spend.bullets || []) {
+      if (!enemy || enemy.dead) break;
+      hit = applyWeaponDamage(enemy, dist, bullet.weapon, bullet.modeInfo, { spend }) || hit;
     }
     return hit;
   }
@@ -587,53 +711,84 @@
     if (typeof rejectBlockedGameplayAction === 'function' && rejectBlockedGameplayAction()) return false;
     const w = currentWeapon();
     const preservedAutoTarget = isMobileControlsEnabled() ? player.attackTarget : null;
-    if (!w.ammoType) {
+    const pair = typeof dualWieldPistolPair === 'function' ? dualWieldPistolPair() : null;
+    const activeSlot = typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon';
+    const entries = pair?.entries || [{ slot: activeSlot, weapon: w, runtimeId: String(equipment?.[activeSlot] || w.id) }];
+    if (!entries.some(entry => entry.weapon.ammoType)) {
       setReadout('Это оружие не требует перезарядки.');
       restoreMobileAutoTargetAfterReload(preservedAutoTarget);
       return;
     }
-    if (w.loaded >= w.magSize) {
-      setReadout('Магазин уже полный.');
-      restoreMobileAutoTargetAfterReload(preservedAutoTarget);
-      return;
+    const plans = entries.map(entry => ({
+      ...entry,
+      loadedBefore: Number(entry.weapon.loaded || 0),
+      need: Math.max(0, Number(entry.weapon.magSize || 0) - Number(entry.weapon.loaded || 0)),
+      take: 0
+    }));
+    const ammoTypes = [...new Set(plans.map(plan => plan.weapon.ammoType).filter(Boolean))];
+    for (const ammoType of ammoTypes) {
+      let available = Math.max(0, Number(inventory.get(ammoType) || 0));
+      const candidates = plans.filter(plan => plan.weapon.ammoType === ammoType && plan.need > 0);
+      while (available > 0 && candidates.some(plan => plan.take < plan.need)) {
+        candidates.sort((a, b) => {
+          const aFill = (a.loadedBefore + a.take) / Math.max(1, Number(a.weapon.magSize || 1));
+          const bFill = (b.loadedBefore + b.take) / Math.max(1, Number(b.weapon.magSize || 1));
+          if (aFill !== bFill) return aFill - bFill;
+          return a.slot === 'weapon' ? -1 : 1;
+        });
+        const next = candidates.find(plan => plan.take < plan.need);
+        if (!next) break;
+        next.take += 1;
+        available -= 1;
+      }
     }
-    const available = inventory.get(w.ammoType) || 0;
-    if (available <= 0) {
+    const fundedPlans = plans.filter(plan => plan.take > 0);
+    if (!fundedPlans.length) {
       addLog('Нет подходящих патронов.', null, 'combat');
-      setReadout('Нет патронов для выбранного оружия.');
+      setReadout(plans.every(plan => plan.need <= 0) ? 'Оба магазина уже полные.' : 'Нет патронов для выбранного оружия.');
       restoreMobileAutoTargetAfterReload(preservedAutoTarget);
       return;
     }
-    const apCost = reloadApCost(w);
+    const apCost = fundedPlans.reduce((sum, plan) => sum + reloadApCost(plan.weapon), 0);
     if (player.ap < apCost) {
       setReadout(`Недостаточно очков действий для перезарядки. Нужно ${formatActionCost(apCost)} ОД.`);
       restoreMobileAutoTargetAfterReload(preservedAutoTarget);
       return;
     }
-    const need = w.magSize - w.loaded;
-    const take = Math.min(need, available);
     const apBefore = Number(player.ap || 0);
-    const loadedBefore = Number(w.loaded || 0);
-    const reserveBefore = Number(available || 0);
     player.ap = Math.max(0, player.ap - apCost);
-    removeItem(w.ammoType, take);
-    w.loaded += take;
+    for (const ammoType of ammoTypes) {
+      const total = fundedPlans.filter(plan => plan.weapon.ammoType === ammoType).reduce((sum, plan) => sum + plan.take, 0);
+      if (total > 0) removeItem(ammoType, total);
+    }
+    fundedPlans.forEach(plan => { plan.weapon.loaded = Math.min(Number(plan.weapon.magSize || 0), plan.loadedBefore + plan.take); });
+    const primary = fundedPlans[0];
+    const take = fundedPlans.reduce((sum, plan) => sum + plan.take, 0);
     const reloadCombat = {
-      weapon: weaponBaseId(w),
+      weapon: weaponBaseId(primary.weapon),
+      weaponRuntimeId: String(primary.runtimeId || equipment?.[primary.slot] || primary.weapon.id),
+      handSlot: primary.slot,
       mode: getWeaponModeInfo(w)?.id || player.fireMode || 'single',
       apCost,
       take,
       apBefore,
       apAfter: Number(player.ap || 0),
-      loadedBefore,
-      loadedAfter: Number(w.loaded || 0),
-      ammoType: w.ammoType,
-      reserveBefore,
-      reserveAmmo: Math.max(0, Number(inventory.get(w.ammoType) || 0))
+      loadedBefore: primary.loadedBefore,
+      loadedAfter: Number(primary.weapon.loaded || 0),
+      ammoType: primary.weapon.ammoType,
+      reserveAmmo: Math.max(0, Number(inventory.get(primary.weapon.ammoType) || 0)),
+      hands: fundedPlans.map(plan => ({
+        handSlot: plan.slot,
+        weapon: weaponBaseId(plan.weapon),
+        weaponRuntimeId: String(plan.runtimeId || equipment?.[plan.slot] || plan.weapon.id),
+        take: plan.take,
+        loadedBefore: plan.loadedBefore,
+        loadedAfter: Number(plan.weapon.loaded || 0)
+      }))
     };
     player.reloadTimer = 0;
     triggerCharacterReloadVisual(playerGroup, weaponBaseId(w));
-    addLog(`⟳ Перезарядка: +${take} патр. в ${w.name}. Потрачено ${formatActionCost(apCost)} ОД.`, null, 'system');
+    addLog(`⟳ Перезарядка: +${take} патр. в ${pair ? 'два пистолета' : w.name}. Потрачено ${formatActionCost(apCost)} ОД.`, null, 'system');
     setReadout(`Перезарядка: -${formatActionCost(apCost)} ОД.`);
     if (multiplayer.socket && multiplayer.socket.connected && multiplayer.joined) {
       emitGuardedMultiplayerGameplayAction('reloadWeapon', {
@@ -646,10 +801,12 @@
         traits: multiplayerTraitSnapshot(),
         injuries: multiplayerInjurySnapshot(),
         take,
+        dualReload: !!pair,
+        takes: reloadCombat.hands,
         combat: reloadCombat
       }, ack => {
         if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
-        if (ack?.combat) applyServerCombatState(ack.combat);
+        applyServerCombatPayload(ack);
         if (ack && !ack.ok && ack.error) setReadout(ack.error);
       });
     }

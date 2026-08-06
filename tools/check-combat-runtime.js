@@ -513,6 +513,20 @@ function seedCombatFixtures(accounts) {
     loaded: 0,
     reserveAmmo: 3
   }, usersDb, savesDb);
+  seedCharacterState(accounts.modification, {
+    special: { str: 6, per: 6, end: 5, cha: 5, int: 6, agi: 8, luck: 5 },
+    weapon: 'assaultRifle',
+    weaponRuntimeId: 'ui_assaultRifle_modification_1',
+    ammoType: 'ammo556',
+    loaded: 30,
+    reserveAmmo: 20,
+    carriedItems: [
+      { id: 'scrap', qty: 20 },
+      { id: 'weaponParts', qty: 20 },
+      { id: 'electronics', qty: 10 },
+      { id: 'wood', qty: 10 }
+    ]
+  }, usersDb, savesDb);
 
   fs.writeFileSync(savesFile, JSON.stringify(savesDb, null, 2));
 }
@@ -732,6 +746,7 @@ async function bootstrapCharacters(accounts) {
     ['harvest', 'harvest'],
     ['progression', 'progression'],
     ['trade', 'trade'],
+    ['modification', 'modification'],
     ['target', 'target']
   ]) {
     accounts[key] = await registerAccount(role, suffix);
@@ -1083,7 +1098,115 @@ async function assertMagazineAfterReconnect(accounts) {
     'A/B reloads violated total ammunition conservation', {
       pistolA: toppedACombat,
       pistolB: toppedBCombat
-    });
+  });
+}
+
+function modificationRow(self, runtimeId) {
+  return (Array.isArray(self?.weaponModifications) ? self.weaponModifications : [])
+    .find(row => String(row?.id || '') === String(runtimeId || '')) || null;
+}
+
+async function assertWeaponModificationAuthority(accounts) {
+  const account = accounts.modification;
+  const runtimeId = account.weaponRuntimeId;
+  await connectAndJoin(account);
+  assertCombat(account.join.combat, {
+    weapon: 'assaultRifle',
+    weaponRuntimeId: runtimeId,
+    loaded: 30,
+    magSize: 30,
+    reserveAmmo: 20
+  }, 'modification join combat');
+
+  const initialScrap = inventoryRowQty(account.join.self?.inventory, 'scrap');
+  const initialParts = inventoryRowQty(account.join.self?.inventory, 'weaponParts');
+  const initialAmmo = inventoryRowQty(account.join.self?.inventory, 'ammo556');
+  invariant(initialScrap === 20 && initialParts === 20 && initialAmmo === 20,
+    'Modification fixture inventory is incomplete', account.join.self?.inventory);
+
+  const modify = (slot, modificationId, itemRuntimeId = runtimeId) => socketAck(account.socket, 'inventoryItemAction', {
+    action: 'modifyWeapon',
+    itemId: 'assaultRifle',
+    itemRuntimeId,
+    modSlot: slot,
+    modificationId,
+    equipment: runtimeEquipmentSnapshot(runtimeId)
+  });
+
+  const suppressor = await modify('barrel', 'barrel_suppressor');
+  invariant(suppressor.ok
+    && suppressor.weaponMods?.barrel === 'barrel_suppressor'
+    && suppressor.combat?.weaponMods?.barrel === 'barrel_suppressor',
+  'Compatible suppressor installation was rejected', suppressor);
+  invariant(inventoryRowQty(suppressor.self?.inventory, 'scrap') === 18
+    && inventoryRowQty(suppressor.self?.inventory, 'weaponParts') === 18,
+  'Suppressor cost was not charged exactly once', suppressor.self?.inventory);
+  invariant(modificationRow(suppressor.self, runtimeId)?.weaponMods?.barrel === 'barrel_suppressor',
+    'Authoritative player state omitted installed suppressor', suppressor.self?.weaponModifications);
+
+  const forgedRuntime = await modify('scope', 'scope_reflex', 'ui_assaultRifle_forged_9');
+  invariant(forgedRuntime.ok === false
+    && inventoryRowQty(forgedRuntime.self?.inventory, 'scrap') === 18
+    && inventoryRowQty(forgedRuntime.self?.inventory, 'weaponParts') === 18,
+  'Forged runtime modification changed inventory', forgedRuntime);
+
+  const incompatible = await modify('barrel', 'barrel_choke');
+  invariant(incompatible.ok === false
+    && inventoryRowQty(incompatible.self?.inventory, 'scrap') === 18
+    && modificationRow(incompatible.self, runtimeId)?.weaponMods?.barrel === 'barrel_suppressor',
+  'Incompatible modification changed the build or materials', incompatible);
+
+  const extended = await modify('magazine', 'mag_extended');
+  invariant(extended.ok
+    && extended.weaponMods?.magazine === 'mag_extended'
+    && Number(extended.combat?.magSize) === 41
+    && Number(extended.combat?.loaded) === 30,
+  'Extended magazine did not publish its effective capacity', extended);
+  invariant(inventoryRowQty(extended.self?.inventory, 'scrap') === 15
+    && inventoryRowQty(extended.self?.inventory, 'weaponParts') === 16,
+  'Extended magazine cost was incorrect', extended.self?.inventory);
+
+  const quick = await modify('magazine', 'mag_quick');
+  invariant(quick.ok
+    && quick.weaponMods?.magazine === 'mag_quick'
+    && Number(quick.combat?.magSize) === 26
+    && Number(quick.combat?.loaded) === 26
+    && Number(quick.returnedAmmo) === 4,
+  'Magazine replacement did not clamp and return excess ammunition', quick);
+  invariant(inventoryRowQty(quick.self?.inventory, 'scrap') === 13
+    && inventoryRowQty(quick.self?.inventory, 'weaponParts') === 14
+    && inventoryRowQty(quick.self?.inventory, 'ammo556') === 24,
+  'Magazine replacement did not conserve materials/ammunition', quick.self?.inventory);
+
+  const removed = await modify('magazine', '');
+  invariant(removed.ok
+    && removed.weaponMods?.barrel === 'barrel_suppressor'
+    && !removed.weaponMods?.magazine
+    && Number(removed.combat?.magSize) === 30
+    && Number(removed.combat?.loaded) === 26,
+  'Free magazine removal did not restore the base capacity', removed);
+  invariant(inventoryRowQty(removed.self?.inventory, 'scrap') === 13
+    && inventoryRowQty(removed.self?.inventory, 'weaponParts') === 14
+    && inventoryRowQty(removed.self?.inventory, 'ammo556') === 24,
+  'Removing a modification changed materials or ammunition', removed.self?.inventory);
+
+  await delay(250);
+  const persisted = readSavedCharacterState(account);
+  invariant(persisted.itemRuntime?.[runtimeId]?.weaponMods?.barrel === 'barrel_suppressor'
+    && !persisted.itemRuntime?.[runtimeId]?.weaponMods?.magazine,
+  'Weapon modifications were not persisted by runtime instance', persisted.itemRuntime?.[runtimeId]);
+
+  closeSocket(account);
+  await delay(300);
+  await connectAndJoin(account);
+  invariant(account.join.combat?.weaponMods?.barrel === 'barrel_suppressor'
+    && Number(account.join.combat?.magSize) === 30
+    && Number(account.join.combat?.loaded) === 26
+    && Number(account.join.combat?.reserveAmmo) === 24,
+  'Reconnect did not restore modified weapon combat state', account.join.combat);
+  invariant(modificationRow(account.join.self, runtimeId)?.weaponMods?.barrel === 'barrel_suppressor',
+    'Reconnect omitted the runtime modification snapshot', account.join.self?.weaponModifications);
+  closeSocket(account);
 }
 
 async function assertUntargetedAttack(accounts) {
@@ -1821,6 +1944,7 @@ async function main() {
     await bootstrapCharacters(accounts);
     await exerciseMagazineBeforeReconnect(accounts);
     await assertMagazineAfterReconnect(accounts);
+    await assertWeaponModificationAuthority(accounts);
     await assertUntargetedAttack(accounts);
     await assertDualPistolRuntime(accounts);
     await assertServerFireRate(accounts);
@@ -1845,6 +1969,7 @@ async function main() {
     console.log(
       'Combat runtime OK: runtime-id profile sync and reload/fire survived save + reconnect, '
       + 'same-base magazines stayed separate, stale save did not roll back live equipment, '
+      + 'weapon modifications charged materials, enforced compatibility and survived reconnect, '
       + 'duplicate joins and loaded-runtime drops preserved live combat state, '
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'paired pistols spent both runtime magazines atomically, fell back to one loaded hand, and reloaded both magazines, '

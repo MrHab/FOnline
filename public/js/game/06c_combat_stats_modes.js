@@ -54,7 +54,8 @@
     if (skillId === 'lightWeapons') perkReduction += talentLevel('automaticMan') * 0.03;
     if (skillId === 'heavyWeapons') perkReduction += talentLevel('machineGunner') * 0.04;
     if (skillId === 'energyWeapons') perkReduction += talentLevel('energyTech') * 0.03;
-    return Math.max(0.04, Math.min(0.32, 0.18 - skillReduction + strengthPenalty + movementPenalty + conditionPenalty - crouchBonus - perkReduction));
+    const modificationReduction = Math.max(0, Number(w?.modAutoPenaltyReduction || 0));
+    return Math.max(0.04, Math.min(0.32, 0.18 - skillReduction + strengthPenalty + movementPenalty + conditionPenalty - crouchBonus - perkReduction - modificationReduction));
   }
 
   function automaticAccuracyPenaltyPercent(w = currentWeapon()) {
@@ -428,7 +429,7 @@
     const traumaPenalty = injuryHitPenalty();
     let base;
     if (w.ammoType) {
-      base = Math.max(0.38, 0.82 - dist / (w.range * 3.1)) + skillBonus + statAimBonus + luckBonus + modeBonus - conditionPenalty - strengthPenalty - movementPenalty - traumaPenalty;
+      base = Math.max(0.38, 0.82 - dist / (w.range * 3.1)) + skillBonus + statAimBonus + luckBonus + modeBonus + Number(w.modAccuracyBonus || 0) - conditionPenalty - strengthPenalty - movementPenalty - traumaPenalty;
       if (modeInfo?.id === 'auto') base -= automaticAccuracyPenalty(w);
       if (isShotgunWeapon(w)) base *= shotgunHitMultiplierAt(w, dist, options.conePerp || 0, options.coneWidth);
     } else {
@@ -598,6 +599,10 @@
     }
     if (w && runtimeMatches && combat.weapon && weaponBaseId(w) === String(combat.weapon) && Number.isFinite(Number(combat.condition))) {
       w.condition = Math.max(1, Math.min(100, Number(combat.condition)));
+    }
+    if (w && runtimeMatches && combat.weapon && weaponBaseId(w) === String(combat.weapon) && combat.weaponMods && typeof combat.weaponMods === 'object') {
+      w.weaponMods = { ...combat.weaponMods };
+      if (typeof applyWeaponModificationStats === 'function') applyWeaponModificationStats(w);
     }
     renderQuickbar();
     renderWeaponReadout();

@@ -9,6 +9,7 @@ const {
 const root = path.resolve(__dirname, '..');
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const clientStatsSource = fs.readFileSync(path.join(root, 'public/js/game/06c_combat_stats_modes.js'), 'utf8');
+const clientExplosionSource = fs.readFileSync(path.join(root, 'public/js/game/06b_explosions_speech.js'), 'utf8');
 const clientDamageSource = fs.readFileSync(path.join(root, 'public/js/game/06d_combat_damage_shooting.js'), 'utf8');
 
 function invariant(condition, message) {
@@ -34,6 +35,8 @@ invariant(!melee.critical && melee.chance === 0 && melee.rawDamage === 21,
   'Weapons without ammunition must not trigger critical shots');
 
 for (const snippet of [
+  "resolveCriticalShot(baseRawRoll, serverStatValue(p, 'luck'), weapon)",
+  'critical: explosionCritical.critical',
   "resolveCriticalShot(raw, serverStatValue(p, 'luck'), bulletWeapon)",
   "resolveCriticalShot(raw, serverStatValue(attacker, 'luck'), bulletWeapon)",
   'criticalHits = hits.filter(row => row.critical).length',
@@ -57,5 +60,12 @@ for (const snippet of [
 ]) {
   invariant(clientDamageSource.includes(snippet), `Client critical-shot feedback missing: ${snippet}`);
 }
+for (const snippet of [
+  'rollCriticalShot(rawBaseRoll, w)',
+  "critical ? `КРИТ! -${damage}`",
+  "explosionCritical.critical ? `КРИТ! -${dmg}`"
+]) {
+  invariant(clientExplosionSource.includes(snippet), `Client explosion critical-shot integration missing: ${snippet}`);
+}
 
-console.log('Combat critical OK: Luck 1–15 gives 1–15% firearm critical chance, including per-shot dual-pistol rolls, and critical hits deal x2 raw damage.');
+console.log('Combat critical OK: Luck 1–15 gives 1–15% firearm critical chance for bullets and rocket explosions, including per-shot dual-pistol rolls, and critical hits deal x2 raw damage.');

@@ -51,10 +51,15 @@
     const eq = (data && typeof data.equipment === 'object') ? data.equipment : {};
     const primary = String(networkEquipmentBaseId(eq.weapon || '', ''));
     const offhand = String(networkEquipmentBaseId(eq.offhand || '', ''));
-    const weapon = data.weapon || (primary && primary !== 'fists' ? primary : (offhand || primary || 'pistol'));
+    const activeWeapon = String(networkEquipmentBaseId(
+      data.weapon || (primary && primary !== 'fists' ? primary : (offhand || primary || 'pistol')),
+      'pistol'
+    ));
+    const rightWeapon = primary || (!offhand ? activeWeapon : 'fists');
     return {
-      weapon: String(networkEquipmentBaseId(weapon, 'pistol')),
+      weapon: rightWeapon,
       offhand,
+      activeWeapon,
       armor: String(networkEquipmentBaseId(eq.armor || '')),
       helmet: String(networkEquipmentBaseId(eq.helmet || '')),
       boots: String(networkEquipmentBaseId(eq.boots || '')),
@@ -116,17 +121,23 @@
     if (group.userData.equipmentKey === key) return;
     group.userData.equipmentKey = key;
     group.userData.equipment = eq;
-    group.userData.weaponId = eq.weapon;
+    group.userData.weaponId = eq.activeWeapon;
+    group.userData.weaponHandSlot = weaponHandSlotFromEquipment(eq, eq.activeWeapon);
 
     const parts = group.userData.parts || {};
     applyArmorVisualSet(parts, eq);
-    if (parts.weaponGroup) {
-      disposeGroupChildren(parts.weaponGroup);
-      initWeaponVisualState(parts.weaponGroup);
-      parts.weaponGroup.userData.weaponId = eq.weapon;
-      const mesh = makeRemoteWeaponMesh(eq.weapon);
-      if (mesh) parts.weaponGroup.add(mesh);
-    }
+    [
+      [parts.weaponGroup, eq.weapon, 'weapon'],
+      [parts.offhandWeaponGroup, eq.offhand, 'offhand']
+    ].forEach(([weaponGroup, weaponId, handSlot]) => {
+      if (!weaponGroup) return;
+      disposeGroupChildren(weaponGroup);
+      initWeaponVisualState(weaponGroup);
+      weaponGroup.userData.handSlot = handSlot;
+      weaponGroup.userData.weaponId = weaponId || 'fists';
+      const mesh = weaponId && weaponId !== 'fists' ? makeRemoteWeaponMesh(weaponId) : null;
+      if (mesh) weaponGroup.add(mesh);
+    });
   }
 
   function enemyEquipmentFromData(data = {}) {
@@ -393,8 +404,11 @@
     if (Number.isFinite(sx) && Number.isFinite(sz)) return new THREE.Vector3(sx, Number.isFinite(sy) ? sy : 1.05, sz);
     const group = row?.group;
     if (group) {
-      const weaponId = networkEquipmentBaseId(row.data?.equipment?.weapon || row.data?.weapon || shotData.weapon || 'pistol', 'pistol');
-      return group.localToWorld(new THREE.Vector3(0.48, 1.05, remoteWeaponMuzzleLocalZ(weaponId)));
+      const weaponId = networkEquipmentBaseId(row.data?.weapon || shotData.weapon || group.userData?.weaponId || 'pistol', 'pistol');
+      const weaponGroup = typeof activeActorWeaponGroup === 'function' ? activeActorWeaponGroup(group) : null;
+      if (weaponGroup) return weaponGroup.localToWorld(new THREE.Vector3(0, 0, remoteWeaponMuzzleLocalZ(weaponId)));
+      const handX = group.userData?.weaponHandSlot === 'offhand' ? -0.48 : 0.48;
+      return group.localToWorld(new THREE.Vector3(handX, 1.05, remoteWeaponMuzzleLocalZ(weaponId)));
     }
     const x = Number(shotData.x || 0), z = Number(shotData.z || 0);
     return new THREE.Vector3(x, 1.05, z);

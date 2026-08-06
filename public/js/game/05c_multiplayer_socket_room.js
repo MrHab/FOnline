@@ -1189,7 +1189,10 @@
       const start = row ? getRemoteMuzzlePoint(row, data) : getEnemyMuzzlePoint(enemyShooter, data);
       const shotWeaponId = data.weapon || row?.data?.weapon || enemyShooter?.equipment?.weapon || 'pistol';
       const fx = weaponFxProfile(shotWeaponId);
-      triggerWeaponVisualRecoil(row?.group?.userData?.parts?.weaponGroup || enemyShooter?.mesh?.userData?.enemyWeaponGroup, shotWeaponId);
+      const remoteWeaponGroup = row?.group && typeof activeActorWeaponGroup === 'function'
+        ? activeActorWeaponGroup(row.group)
+        : row?.group?.userData?.parts?.weaponGroup;
+      triggerWeaponVisualRecoil(remoteWeaponGroup || enemyShooter?.mesh?.userData?.enemyWeaponGroup, shotWeaponId);
       let ox = Number(data.originX);
       let oz = Number(data.originZ);
       if (!Number.isFinite(ox) || !Number.isFinite(oz)) { ox = sx; oz = sz; }

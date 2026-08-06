@@ -718,8 +718,16 @@
     const weaponGroup = new THREE.Group();
     weaponGroup.position.set(0.53, 1.04, -0.27);
     weaponGroup.rotation.set(0.04, 0, -0.08);
+    weaponGroup.userData.handSlot = 'weapon';
     root.add(weaponGroup);
     parts.weaponGroup = weaponGroup;
+
+    const offhandWeaponGroup = new THREE.Group();
+    offhandWeaponGroup.position.set(-0.53, 1.04, -0.27);
+    offhandWeaponGroup.rotation.set(0.04, 0, 0.08);
+    offhandWeaponGroup.userData.handSlot = 'offhand';
+    root.add(offhandWeaponGroup);
+    parts.offhandWeaponGroup = offhandWeaponGroup;
 
     parts.cosmeticLodMeshes = [
       chestPlate, bellyPlate, coatBack, coatLeft, coatRight, shoulderL, shoulderR,
@@ -758,6 +766,7 @@
     }
     buildModernCharacterArmorExtras(playerGroup, playerParts, true);
     initWeaponVisualState(playerParts.weaponGroup);
+    initWeaponVisualState(playerParts.offhandWeaponGroup);
     playerGroup.userData.parts = playerParts;
     stabilizeCharacterNoCull(playerGroup);
     updatePlayerEquipmentVisuals();
@@ -995,10 +1004,32 @@
     return actor.userData?.parts || actor.userData?.actorParts || {};
   }
 
+  function weaponHandSlotFromEquipment(eq = {}, activeWeaponId = '') {
+    const primary = equipmentVisualBaseId(eq.weapon || 'fists') || 'fists';
+    const offhand = equipmentVisualBaseId(eq.offhand || '');
+    const active = equipmentVisualBaseId(activeWeaponId || primary || offhand || 'fists') || 'fists';
+    if (offhand && offhand !== 'fists' && (primary === 'fists' || (active === offhand && active !== primary))) return 'offhand';
+    return 'weapon';
+  }
+
+  function actorWeaponGroupForSlot(actor, slot = 'weapon') {
+    const parts = actorAnimationParts(actor);
+    return slot === 'offhand' ? (parts.offhandWeaponGroup || null) : (parts.weaponGroup || null);
+  }
+
+  function activeActorWeaponGroup(actor) {
+    if (!actor) return null;
+    const slot = actor.userData?.weaponHandSlot === 'offhand' ? 'offhand' : 'weapon';
+    return actorWeaponGroupForSlot(actor, slot)
+      || actorAnimationParts(actor).weaponGroup
+      || actor.userData?.enemyWeaponGroup
+      || null;
+  }
+
   function actorWeaponGroup(actor) {
     if (!actor) return null;
-    const parts = actorAnimationParts(actor);
-    if (parts.weaponGroup) return parts.weaponGroup;
+    const activeGroup = activeActorWeaponGroup(actor);
+    if (activeGroup) return activeGroup;
     if (actor.userData?.enemyWeaponGroup) return actor.userData.enemyWeaponGroup;
     if (actor.userData?.enemy && typeof ensureEnemyWeaponGroup === 'function') return ensureEnemyWeaponGroup(actor.userData.enemy);
     return null;
@@ -1063,6 +1094,7 @@
       family: opts.family || profile.family,
       reach: Number(opts.reach || profile.reach || 0.2),
       arc: Number(opts.arc || profile.arc || 0.5),
+      handSlot: actor.userData?.weaponHandSlot || weaponGroup?.userData?.handSlot || 'weapon',
       base: captureMeleeVisualBase(actor, parts, weaponGroup)
     };
   }
@@ -1091,6 +1123,12 @@
     const arc = Number(anim.arc || 0.45);
     const windup = phase < 0.34 ? (phase / 0.34) : 0;
     const bodyTwist = Math.sin(phase * Math.PI) * (heavy ? 0.13 : 0.07);
+    const leftHand = anim.handSlot === 'offhand' && !heavy;
+    const primaryArm = leftHand ? base.armL : base.armR;
+    const primaryForearm = leftHand ? base.forearmL : base.forearmR;
+    const supportArm = leftHand ? base.armR : base.armL;
+    const supportForearm = leftHand ? base.forearmR : base.forearmL;
+    const handSign = leftHand ? -1 : 1;
 
     if (heavy) {
       applyCapturedOffset(base.armR, -0.7 * windup + strike * 0.62, -strike * 0.12, 0.42 - strike * 1.35);
@@ -1099,15 +1137,15 @@
       applyCapturedOffset(base.forearmL, -0.18 * windup + strike * 0.25, 0, -0.1 + strike * 0.28);
       applyCapturedOffset(base.weapon, -0.86 * windup + strike * 1.12, strike * 0.16, -0.32 - strike * arc, 0, strike * 0.04, -strike * reach);
     } else if (knife) {
-      applyCapturedOffset(base.armR, -0.12 + strike * 0.5, strike * 0.08, 0.18 - strike * 0.58);
-      applyCapturedOffset(base.forearmR, strike * 0.82, 0, -strike * 0.28);
-      applyCapturedOffset(base.weapon, strike * 0.72, strike * 0.08, -strike * 0.34, 0, 0, -strike * reach);
+      applyCapturedOffset(primaryArm, -0.12 + strike * 0.5, handSign * strike * 0.08, handSign * (0.18 - strike * 0.58));
+      applyCapturedOffset(primaryForearm, strike * 0.82, 0, handSign * -strike * 0.28);
+      applyCapturedOffset(base.weapon, strike * 0.72, handSign * strike * 0.08, handSign * -strike * 0.34, 0, 0, -strike * reach);
     } else {
-      applyCapturedOffset(base.armR, -0.05 + strike * 0.58, 0, 0.24 - strike * 0.62);
-      applyCapturedOffset(base.forearmR, strike * 0.72, 0, -strike * 0.36, 0, 0, -strike * 0.05);
-      applyCapturedOffset(base.armL, 0, 0, -0.12 + recoil * 0.24);
-      applyCapturedOffset(base.forearmL, recoil * 0.28, 0, -recoil * 0.18);
-      applyCapturedOffset(base.weapon, strike * 0.35, 0, -strike * 0.22, 0, 0, -strike * reach);
+      applyCapturedOffset(primaryArm, -0.05 + strike * 0.58, 0, handSign * (0.24 - strike * 0.62));
+      applyCapturedOffset(primaryForearm, strike * 0.72, 0, handSign * -strike * 0.36, 0, 0, -strike * 0.05);
+      applyCapturedOffset(supportArm, 0, 0, handSign * (-0.12 + recoil * 0.24));
+      applyCapturedOffset(supportForearm, recoil * 0.28, 0, handSign * -recoil * 0.18);
+      applyCapturedOffset(base.weapon, strike * 0.35, 0, handSign * -strike * 0.22, 0, 0, -strike * reach);
     }
     applyCapturedOffset(base.body, 0, bodyTwist * 0.35, -bodyTwist * 0.22);
     applyCapturedOffset(base.chest, 0, bodyTwist * 0.3, -bodyTwist * 0.18);
@@ -1480,15 +1518,8 @@
     return g;
   }
 
-  function updatePlayerEquipmentVisuals() {
-    if (!playerParts.weaponGroup) return;
-    playerParts.weaponGroup.clear();
-    initWeaponVisualState(playerParts.weaponGroup);
-    const w = currentWeapon();
-    const weaponId = equipmentVisualBaseId(w?.id || equipment.weapon || 'fists');
-    playerGroup.userData.weaponId = weaponId;
-    playerGroup.userData.equipment = equipment;
-    playerParts.weaponGroup.userData.weaponId = weaponId;
+  function makePlayerWeaponMesh(weaponId = '') {
+    if (!weaponId || weaponId === 'fists') return null;
     let mesh = typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(weaponId) : null;
     if (!mesh && weaponId === 'pistol') mesh = makePistolMesh();
     else if (!mesh && weaponId === 'rifle') mesh = makeRifleMesh();
@@ -1503,7 +1534,34 @@
     else if (!mesh && weaponId === 'pickaxe') mesh = makePickaxeMesh();
     else if (!mesh && weaponId === 'axe') mesh = makeAxeMesh();
     else if (!mesh && weaponId === 'handPump') mesh = makeHandPumpMesh();
-    if (mesh) playerParts.weaponGroup.add(mesh);
+    return mesh;
+  }
+
+  function updatePlayerEquipmentVisuals() {
+    if (!playerParts.weaponGroup) return;
+    const w = currentWeapon();
+    const weaponId = equipmentVisualBaseId(w?.id || equipment.weapon || 'fists') || 'fists';
+    const rightWeaponId = equipmentVisualBaseId(equipment.weapon || 'fists') || 'fists';
+    const leftWeaponId = equipmentVisualBaseId(equipment.offhand || '');
+    const activeHandSlot = typeof activeWeaponEquipmentSlot === 'function'
+      ? activeWeaponEquipmentSlot()
+      : weaponHandSlotFromEquipment(equipment, weaponId);
+    playerGroup.userData.weaponId = weaponId;
+    playerGroup.userData.weaponHandSlot = activeHandSlot;
+    playerGroup.userData.equipment = equipment;
+
+    [
+      [playerParts.weaponGroup, rightWeaponId, 'weapon'],
+      [playerParts.offhandWeaponGroup, leftWeaponId, 'offhand']
+    ].forEach(([weaponGroup, slotWeaponId, handSlot]) => {
+      if (!weaponGroup) return;
+      weaponGroup.clear();
+      initWeaponVisualState(weaponGroup);
+      weaponGroup.userData.handSlot = handSlot;
+      weaponGroup.userData.weaponId = slotWeaponId || 'fists';
+      const mesh = makePlayerWeaponMesh(slotWeaponId);
+      if (mesh) weaponGroup.add(mesh);
+    });
     stabilizeCharacterNoCull(playerGroup);
 
     applyArmorVisualSet(playerParts, equipment);

@@ -533,6 +533,7 @@
     }
     buildModernCharacterArmorExtras(g, parts, remoteCastShadow);
     initWeaponVisualState(parts.weaponGroup);
+    initWeaponVisualState(parts.offhandWeaponGroup);
 
     const nameSprite = makeRemoteNameSprite(data.name || 'Игрок', data.deviceType || 'desktop');
     g.add(nameSprite);
@@ -571,7 +572,7 @@
 
   function remoteEquipmentKey(data = {}) {
     const eq = data.equipment || {};
-    return [data.weapon || eq.weapon || '', eq.weapon || '', eq.armor || '', eq.helmet || '', eq.boots || '', eq.backpack || ''].join('|');
+    return [data.weapon || eq.weapon || eq.offhand || '', eq.weapon || '', eq.offhand || '', eq.armor || '', eq.helmet || '', eq.boots || '', eq.backpack || ''].join('|');
   }
 
   function remoteNameKey(data = {}) {
@@ -1425,11 +1426,13 @@
         facingAngle: Number(g.rotation.y || 0) - Math.PI
       });
       applyCharacterInjuryVisual(g, row.data?.injuries || {}, dt);
-      updateWeaponVisualAnimation(g.userData.parts?.weaponGroup, dt, {
+      const remoteWeaponOwner = {
         x: row.x,
         z: row.z,
         angle: Number.isFinite(Number(row.netAngle)) ? Number(row.netAngle) : Number(g.userData.targetAngle || 0)
-      });
+      };
+      updateWeaponVisualAnimation(g.userData.parts?.weaponGroup, dt, remoteWeaponOwner);
+      updateWeaponVisualAnimation(g.userData.parts?.offhandWeaponGroup, dt, remoteWeaponOwner);
       updateCharacterMeleeAnimation(g, dt);
     });
   }

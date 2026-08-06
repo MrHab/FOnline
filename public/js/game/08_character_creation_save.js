@@ -589,6 +589,7 @@
       if (item.runtimeInstance || item.baseId) row.baseId = baseItemId(id);
       if (typeof item.loaded === 'number') row.loaded = item.loaded;
       if (typeof item.condition === 'number') row.condition = item.condition;
+      if (item.weaponMods && typeof item.weaponMods === 'object' && Object.keys(item.weaponMods).length) row.weaponMods = { ...item.weaponMods };
       if (Object.keys(row).length) out[id] = row;
     });
     return out;
@@ -697,6 +698,10 @@
       if (row.baseId) ITEMS[id].baseId = row.baseId;
       if (typeof row.loaded === 'number') ITEMS[id].loaded = row.loaded;
       if (typeof row.condition === 'number') ITEMS[id].condition = row.condition;
+      if (ITEMS[id].type === 'weapon' && ITEMS[id].ammoType) {
+        ITEMS[id].weaponMods = row.weaponMods && typeof row.weaponMods === 'object' ? { ...row.weaponMods } : {};
+      }
+      if (typeof applyWeaponModificationStats === 'function') applyWeaponModificationStats(ITEMS[id]);
     });
     normalizeUniqueEquipmentState();
     quickbarSlots.fill(null);

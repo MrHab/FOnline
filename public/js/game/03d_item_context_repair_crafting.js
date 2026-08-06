@@ -247,6 +247,7 @@
     if (equippedSlot === activeWeaponEquipmentSlot() && item.type === 'weapon' && item.ammoType) {
       addCtxOption(menu, 'Разрядить', () => unloadWeapon(id), (item.loaded || 0) <= 0);
     }
+    if (item.type === 'weapon' && item.ammoType) addCtxOption(menu, 'Модификация', () => openWeaponModificationWorkbench(id));
     if (item.type === 'weapon' || item.slot || item.type === 'tool') addCtxOption(menu, 'Починить', () => repairItem(id));
     if (isSalvageCandidateItem(id)) {
       const reason = salvageUnavailableReason(id);
@@ -258,7 +259,7 @@
     addQuickAssignCtxOption(menu, id, e);
     addCtxOption(menu, equippedSlot ? 'Выбросить на землю (сначала снять)' : 'Выбросить на землю', () => requestDropInventoryItem(id), !!equippedSlot || !groundItemsAreServerAuthoritative() || (inventory.get(id) || 0) <= 0 || id === 'fists');
     if (!menu.children.length) addCtxOption(menu, 'Нет действий', () => {}, true);
-    positionItemContextMenu(menu, e);
+    positionItemContextMenu(menu, e, 210, 270);
   }
 
   function showEquippedItemContextMenu(e, slot) {
@@ -271,9 +272,10 @@
     if (slot === activeWeaponEquipmentSlot() && item.type === 'weapon' && item.ammoType) {
       addCtxOption(menu, 'Разрядить', () => unloadWeapon(id), (item.loaded || 0) <= 0);
     }
+    if (item.type === 'weapon' && item.ammoType) addCtxOption(menu, 'Модификация', () => openWeaponModificationWorkbench(id));
     if (item.type === 'weapon' || item.slot || item.type === 'tool') addCtxOption(menu, 'Починить', () => repairItem(id));
     addQuickAssignCtxOption(menu, id, e);
-    positionItemContextMenu(menu, e);
+    positionItemContextMenu(menu, e, 210, 220);
   }
 
 

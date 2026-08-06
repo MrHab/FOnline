@@ -509,9 +509,12 @@
       const skill = item.weaponSkill ? ` · навык: ${skillName(item.weaponSkill)}` : '';
       const energyRisk = item.weaponSkill === 'energyWeapons' ? ` · риск сбоя ${Math.round(energyFailureChance(item, { id: 'single' }) * 100)}%` : '';
       const condition = typeof item.condition === 'number' ? ` · состояние ${Math.round(item.condition)}%` : '';
+      const modifications = typeof weaponModificationCount === 'function' && weaponModificationCount(item) > 0
+        ? ` · модификации ${weaponModificationCount(item)}`
+        : '';
       const harvestLabels = { ore: 'руда', wood: 'древесина', liquid: 'вода/нефть' };
       const harvest = item.harvestTool ? ` · добыча: ${harvestLabels[item.harvestTool] || item.harvestTool}` : '';
-      return `Урон ${item.dmg[0]}-${item.dmg[1]} · тип ${damageTypeLabel(item.damageType || 'ballistic')}${grip} · дальность ${item.range}${ammo}${modes}${req}${skill}${energyRisk}${condition}${harvest} · Вес ${formatWeight(itemWeight(item.id))}`;
+      return `Урон ${item.dmg[0]}-${item.dmg[1]} · тип ${damageTypeLabel(item.damageType || 'ballistic')}${grip} · дальность ${item.range}${ammo}${modes}${req}${skill}${energyRisk}${condition}${modifications}${harvest} · Вес ${formatWeight(itemWeight(item.id))}`;
     }
     if (item.armor || item.protection || item.thresholds) {
       const condition = typeof item.condition === 'number' ? ` · состояние ${Math.round(item.condition)}%` : '';
@@ -1332,7 +1335,9 @@
       const count = qty > 1 || ['ammo', 'money', 'material', 'loot'].includes(item.type) ? `<div class="inv-count${countClass}">${qty}</div>` : '';
       const weight = `<div class="inv-weight">${formatWeight(itemWeight(id) * qty)}</div>`;
       const quickPick = quickable ? '<button type="button" class="mobile-quick-pick" aria-label="Назначить в быстрый доступ">⚡</button>' : '';
-      card.innerHTML = `${tag}${weight}<div class="inv-emoji">${itemArtHtml(item)}</div><div class="inv-name">${item.name}</div>${quickPick}${price}${count}`;
+      const modificationCount = typeof weaponModificationCount === 'function' ? weaponModificationCount(item) : 0;
+      const modificationBadge = modificationCount > 0 ? `<div class="inv-tag inv-modification-badge">МОД ${modificationCount}</div>` : '';
+      card.innerHTML = `${tag}${modificationBadge}${weight}<div class="inv-emoji">${itemArtHtml(item)}</div><div class="inv-name">${item.name}</div>${quickPick}${price}${count}`;
       card.setAttribute('draggable', isMobileControlsEnabled() ? 'false' : 'true');
       const hasDirectUse = itemHasInventoryUseAction(item);
       const itemHint = traderWindowOpen && sellable

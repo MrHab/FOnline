@@ -314,8 +314,14 @@
     const base = ITEMS[baseId];
     if (!id || !base) return null;
     const row = { ...base, ...source, id, baseId, runtimeInstance: true };
+    if (base.type === 'weapon' && base.ammoType) {
+      row.weaponMods = source.weaponMods && typeof source.weaponMods === 'object'
+        ? { ...source.weaponMods }
+        : {};
+    }
     if (isUniqueEquipmentItem(baseId) && typeof row.condition !== 'number') row.condition = 100;
     ITEMS[id] = row;
+    if (typeof weaponModificationStatsReady !== 'undefined' && weaponModificationStatsReady && typeof applyWeaponModificationStats === 'function') applyWeaponModificationStats(row);
     return id;
   }
 

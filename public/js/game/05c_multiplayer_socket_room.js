@@ -159,16 +159,31 @@
             ensureSavedRuntimeItem(resolvedId, {
               baseId,
               loaded: Number(row.loaded || 0),
-              condition: Number(row.condition || 100)
+              condition: Number(row.condition || 100),
+              weaponMods: row.weaponMods && typeof row.weaponMods === 'object' ? { ...row.weaponMods } : {}
             });
           }
           if (!ITEMS[resolvedId]) return;
           if (Number.isFinite(Number(row.loaded))) ITEMS[resolvedId].loaded = Math.max(0, Math.round(Number(row.loaded)));
           if (Number.isFinite(Number(row.condition))) ITEMS[resolvedId].condition = Math.max(1, Math.min(100, Number(row.condition)));
+          if (row.weaponMods && typeof row.weaponMods === 'object') ITEMS[resolvedId].weaponMods = { ...row.weaponMods };
+          if (typeof applyWeaponModificationStats === 'function') applyWeaponModificationStats(ITEMS[resolvedId]);
           inventory.set(resolvedId, Math.max(0, Number(inventory.get(resolvedId) || 0)) + 1);
         });
       });
       if (typeof normalizeUniqueEquipmentState === 'function') normalizeUniqueEquipmentState();
+    }
+    if (Array.isArray(snapshot.weaponModifications)) {
+      snapshot.weaponModifications.slice(0, 80).forEach(row => {
+        const runtimeId = String(row?.id || '');
+        const baseId = String(row?.baseId || '');
+        if (!runtimeId || !baseId) return;
+        if (!ITEMS[runtimeId] && typeof ensureSavedRuntimeItem === 'function') ensureSavedRuntimeItem(runtimeId, { baseId });
+        const item = ITEMS[runtimeId];
+        if (!item) return;
+        item.weaponMods = row.weaponMods && typeof row.weaponMods === 'object' ? { ...row.weaponMods } : {};
+        if (typeof applyWeaponModificationStats === 'function') applyWeaponModificationStats(item);
+      });
     }
     if (Array.isArray(snapshot.storage) && typeof applyServerStorageSnapshot === 'function') {
       applyServerStorageSnapshot(snapshot.storage);

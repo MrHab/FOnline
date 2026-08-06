@@ -520,7 +520,8 @@
     if (!combat || typeof combat !== 'object') return false;
     if (Number.isFinite(Number(combat.ap))) player.ap = Math.min(player.maxAp, Math.max(0, Number(combat.ap)));
     const w = currentWeapon();
-    const currentRuntimeId = String(equipment?.weapon || w?.id || '');
+    const activeSlot = typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon';
+    const currentRuntimeId = String(equipment?.[activeSlot] || w?.id || '');
     const runtimeMatches = !combat.weaponRuntimeId || String(combat.weaponRuntimeId) === currentRuntimeId;
     if (w && runtimeMatches && combat.weapon && weaponBaseId(w) === String(combat.weapon) && w.ammoType && Number.isFinite(Number(combat.loaded))) {
       w.loaded = Math.max(0, Math.min(Number(w.magSize || combat.magSize || 0), Math.round(Number(combat.loaded))));

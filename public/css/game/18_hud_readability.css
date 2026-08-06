@@ -952,6 +952,12 @@ body.device-desktop #weapon-readout.weapon-ui-panel .weapon-ui-stage .fallout-we
   box-shadow: 0 0 18px rgba(240, 198, 91, 0.18), inset 0 0 16px rgba(240, 198, 91, 0.10);
 }
 
+#inventory-window .inventory-equip-slot.two-handed-occupied {
+  border-style: dashed !important;
+  border-color: rgba(213, 184, 100, 0.56) !important;
+  background: rgba(44, 35, 19, 0.78) !important;
+}
+
 .inventory-equip-label {
   grid-column: 1 / -1;
   color: #d5b864;
@@ -1022,9 +1028,14 @@ body.device-desktop #weapon-readout.weapon-ui-panel .weapon-ui-stage .fallout-we
   top: 116px;
 }
 
-#inventory-window .inventory-equip-slot-armor {
+#inventory-window .inventory-equip-slot-offhand {
   right: 10px;
   top: 116px;
+}
+
+#inventory-window .inventory-equip-slot-armor {
+  left: 10px;
+  top: 218px;
 }
 
 #inventory-window .inventory-equip-slot-backpack {

@@ -818,7 +818,7 @@ function assertHarvestIntegrity() {
 
   const serverHarvest = socketEventSource(server, 'harvestResource');
   assertContainsAll('server harvest condition contract', serverHarvest, [
-    "const equippedToolId = serverBaseItemId(p.equipment?.weapon || '')",
+    'const equippedToolId = serverActiveWeaponId(p)',
     'if (equippedToolId !== expectedTool)',
     'serverPlayerItemCondition(p, expectedTool)',
     'condition > 40',

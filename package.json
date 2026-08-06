@@ -43,6 +43,7 @@
     "check:movement": "node --check tools/check-movement-collision.js && node --check tools/check-global-exit-direction.js && node tools/check-movement-collision.js && node tools/check-global-exit-direction.js",
     "check:storage": "node --check tools/check-faction-storage.js && node tools/check-faction-storage.js",
     "check:combat": "node --check tools/check-combat-runtime.js && node tools/check-combat-runtime.js",
+    "check:equipment-hands": "node --check src/server/equipment-hands.js && node --check tools/check-equipment-hands.js && node tools/check-equipment-hands.js",
     "check:dev-access": "node --check src/server/dev-access.js && node --check tools/check-dev-access.js && node tools/check-dev-access.js",
     "check:world-party": "node --check src/server/world-party-integrity.js && node --check src/server/wasteland-sim-utils.js && node --check src/server/wasteland-factions.js && node --check src/server/wasteland-map-geometry.js && node --check src/server/wasteland-district-sites.js && node --check src/server/wasteland-localization.js && node --check src/server/wasteland-world-tasks.js && node --check src/server/wasteland-site-instances.js && node --check src/server/wasteland-stockpile.js && node --check src/server/wasteland-sim.js && node --check tools/check-world-party-integrity.js && node tools/check-world-party-integrity.js",
     "smoke": "node tools/smoke-check.js",

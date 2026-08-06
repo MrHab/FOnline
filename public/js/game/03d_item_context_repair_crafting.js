@@ -233,10 +233,18 @@
     menu.innerHTML = '';
     const equipSlot = itemEquipSlot(item);
     const equippedSlot = equippedSlotForItem(id);
-    if (equippedSlot) addCtxOption(menu, equippedSlot === 'weapon' ? 'Снять из рук' : 'Снять', () => unequipSlot(equippedSlot));
-    else if (equipSlot) addCtxOption(menu, equipSlot === 'weapon' ? 'В руки' : 'Надеть', () => equipItem(id));
+    if (equippedSlot) {
+      const handLabel = equippedSlot === 'weapon' ? 'правой руки' : 'левой руки';
+      addCtxOption(menu, isHandEquipmentSlot(equippedSlot) ? `Снять из ${handLabel}` : 'Снять', () => unequipSlot(equippedSlot));
+    } else if (equipSlot === 'weapon') {
+      if (itemHands(item) === 2) addCtxOption(menu, 'В обе руки', () => equipItem(id, 'weapon'));
+      else {
+        addCtxOption(menu, 'В правую руку', () => equipItem(id, 'weapon'));
+        addCtxOption(menu, 'В левую руку', () => equipItem(id, 'offhand'));
+      }
+    } else if (equipSlot) addCtxOption(menu, 'Надеть', () => equipItem(id));
     if (itemHasInventoryUseAction(item)) addCtxOption(menu, 'Использовать', () => useInventoryItem(id));
-    if (equippedSlot === 'weapon' && item.type === 'weapon' && item.ammoType) {
+    if (equippedSlot === activeWeaponEquipmentSlot() && item.type === 'weapon' && item.ammoType) {
       addCtxOption(menu, 'Разрядить', () => unloadWeapon(id), (item.loaded || 0) <= 0);
     }
     if (item.type === 'weapon' || item.slot || item.type === 'tool') addCtxOption(menu, 'Починить', () => repairItem(id));
@@ -259,8 +267,10 @@
     if (!item) return;
     const menu = document.getElementById('item-context-menu');
     menu.innerHTML = '';
-    addCtxOption(menu, slot === 'weapon' ? 'Снять из рук' : 'Снять', () => unequipSlot(slot));
-    if (item.type === 'weapon' && item.ammoType) addCtxOption(menu, 'Разрядить', () => unloadWeapon(id), (item.loaded || 0) <= 0);
+    addCtxOption(menu, isHandEquipmentSlot(slot) ? 'Снять из руки' : 'Снять', () => unequipSlot(slot));
+    if (slot === activeWeaponEquipmentSlot() && item.type === 'weapon' && item.ammoType) {
+      addCtxOption(menu, 'Разрядить', () => unloadWeapon(id), (item.loaded || 0) <= 0);
+    }
     if (item.type === 'weapon' || item.slot || item.type === 'tool') addCtxOption(menu, 'Починить', () => repairItem(id));
     addQuickAssignCtxOption(menu, id, e);
     positionItemContextMenu(menu, e);
@@ -530,7 +540,7 @@
 
   function updateProgressionHero() {
     const name = characterProfile?.name || player.name || 'Странник';
-    const weaponName = ITEMS[equipment.weapon]?.name || 'без оружия';
+    const weaponName = currentWeapon()?.name || 'без оружия';
     const armorName = ITEMS[equipment.armor]?.name || 'обычная одежда';
     const carry = `${formatWeight(inventoryWeight())}/${formatWeight(carryCapacity())}`;
     const heroName = document.getElementById('progression-hero-name');

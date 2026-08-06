@@ -34,6 +34,13 @@ const {
   transferCorpseLoot
 } = require('./src/server/npc-inventory');
 const {
+  HAND_EQUIPMENT_SLOTS: SERVER_HAND_EQUIPMENT_SLOTS,
+  activeWeaponId: equipmentActiveWeaponId,
+  activeWeaponSlot: equipmentActiveWeaponSlot,
+  isTwoHandedWeapon: equipmentIsTwoHandedWeapon,
+  normalizeHandEquipment: normalizeServerHandEquipment
+} = require('./src/server/equipment-hands');
+const {
   globalExitDirectionFromTile,
   directedGlobalExitPoint
 } = require('./src/server/global-exit-direction');
@@ -2272,8 +2279,10 @@ function currentGameHour(now = Date.now()) {
 }
 function safeName(name) { return String(name || 'Wanderer').slice(0, 24).replace(/[<>]/g, ''); }
 
+const VALID_HAND_EQUIPMENT = new Set(['pistol', 'rifle', 'assaultRifle', 'machineGun', 'laserPistol', 'flamethrower', 'plasmaRifle', 'shotgun', 'rocketLauncher', 'knife', 'fists', 'medkit', 'stim', 'doctorBag', 'antibiotics', 'pickaxe', 'axe', 'handPump']);
 const VALID_EQUIPMENT = {
-  weapon: new Set(['pistol', 'rifle', 'assaultRifle', 'machineGun', 'laserPistol', 'flamethrower', 'plasmaRifle', 'shotgun', 'rocketLauncher', 'knife', 'fists', 'medkit', 'stim', 'doctorBag', 'antibiotics', 'pickaxe', 'axe', 'handPump']),
+  weapon: VALID_HAND_EQUIPMENT,
+  offhand: new Set([...VALID_HAND_EQUIPMENT, '']),
   armor: new Set(['leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit', 'heavyArmor', 'energySuit', '']),
   helmet: new Set(['helmet', 'tacticalHelmet', 'assaultHelmet', '']),
   boots: new Set(['boots', 'scoutBoots', 'reinforcedBoots', '']),
@@ -2285,6 +2294,7 @@ function sanitizeEquipment(input = {}, fallback = {}) {
   const base = fallback && typeof fallback === 'object' ? fallback : {};
   const out = {
     weapon: serverBaseItemId(src.weapon ?? base.weapon ?? 'fists'),
+    offhand: serverBaseItemId(src.offhand ?? base.offhand ?? ''),
     armor: serverBaseItemId(src.armor ?? base.armor ?? ''),
     helmet: serverBaseItemId(src.helmet ?? base.helmet ?? ''),
     boots: serverBaseItemId(src.boots ?? base.boots ?? ''),
@@ -2293,7 +2303,7 @@ function sanitizeEquipment(input = {}, fallback = {}) {
   Object.keys(out).forEach(slot => {
     if (!VALID_EQUIPMENT[slot] || !VALID_EQUIPMENT[slot].has(out[slot])) out[slot] = slot === 'weapon' ? 'fists' : '';
   });
-  return out;
+  return normalizeServerHandEquipment(out, SERVER_WEAPONS);
 }
 
 function sanitizeInjuries(input = {}, fallback = {}) {
@@ -4036,21 +4046,51 @@ const SERVER_CONTAINER_LOOT_TABLES = SERVER_LOOT_TABLES.containers;
 const SERVER_ENEMY_LOOT_TABLES = SERVER_LOOT_TABLES.enemies;
 
 const SERVER_WEAPONS = {
-  pistol: { id: 'pistol', name: '9mm пистолет', weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 8, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
-  rifle: { id: 'rifle', name: 'Охотничья винтовка', weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [28, 40], range: 24, ammoType: 'ammo556', magSize: 5, fireRate: 0.9, apCost: 4, reloadApCost: 3 },
-  assaultRifle: { id: 'assaultRifle', name: 'Ржавый автомат', weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, dmg: [13, 19], range: 18, ammoType: 'ammo556', magSize: 30, fireRate: 0.42, apCost: 4, reloadApCost: 4, automatic: true },
-  machineGun: { id: 'machineGun', name: 'Самодельный пулемёт', weaponSkill: 'heavyWeapons', damageType: 'ballistic', requiredStrength: 7, dmg: [12, 18], range: 20, ammoType: 'ammo556', magSize: 45, fireRate: 0.58, apCost: 5, reloadApCost: 6, automatic: true },
-  laserPistol: { id: 'laserPistol', name: 'Лазерный пистолет', weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 3, dmg: [22, 32], range: 16, ammoType: 'energyCell', magSize: 12, fireRate: 0.62, apCost: 4, reloadApCost: 4 },
-  flamethrower: { id: 'flamethrower', name: 'Огнемёт', weaponSkill: 'heavyWeapons', damageType: 'fire', requiredStrength: 6, dmg: [14, 22], range: 8, ammoType: 'napalm', magSize: 30, fireRate: 0.34, apCost: 5, reloadApCost: 6, automatic: true },
-  plasmaRifle: { id: 'plasmaRifle', name: 'Плазменное ружьё', weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 5, dmg: [32, 48], range: 18, ammoType: 'energyCell', magSize: 14, fireRate: 0.48, apCost: 5, reloadApCost: 5 },
-  shotgun: { id: 'shotgun', name: 'Дробовик', weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, dmg: [26, 40], range: 11, ammoType: 'shotgunShell', magSize: 6, fireRate: 0.52, apCost: 5, reloadApCost: 4 },
-  rocketLauncher: { id: 'rocketLauncher', name: 'Ракетница', weaponSkill: 'heavyWeapons', damageType: 'explosive', requiredStrength: 7, dmg: [54, 78], range: 22, ammoType: 'rocketAmmo', magSize: 1, fireRate: 1.1, apCost: 6, reloadApCost: 7, explosiveRadius: 4.2 },
-  knife: { id: 'knife', name: 'Боевой нож', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 1, dmg: [9, 15], range: 2.1, ammoType: null, magSize: 0, fireRate: 0.55, apCost: 2 },
-  pickaxe: { id: 'pickaxe', name: 'Кирка', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 4, dmg: [13, 21], range: 2.0, ammoType: null, magSize: 0, fireRate: 0.68, apCost: 3 },
-  axe: { id: 'axe', name: 'Топор', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, dmg: [11, 19], range: 2.1, ammoType: null, magSize: 0, fireRate: 0.62, apCost: 3 },
-  handPump: { id: 'handPump', name: 'Ручной насос', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, dmg: [7, 12], range: 1.8, ammoType: null, magSize: 0, fireRate: 0.72, apCost: 3 },
-  fists: { id: 'fists', name: 'Кулаки', weaponSkill: 'unarmed', damageType: 'ballistic', requiredStrength: 1, dmg: [2, 4], range: 1.35, ammoType: null, magSize: 0, fireRate: 0.62, apCost: 2 }
+  pistol: { id: 'pistol', name: '9mm пистолет', hands: 1, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 8, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
+  rifle: { id: 'rifle', name: 'Охотничья винтовка', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [28, 40], range: 24, ammoType: 'ammo556', magSize: 5, fireRate: 0.9, apCost: 4, reloadApCost: 3 },
+  assaultRifle: { id: 'assaultRifle', name: 'Ржавый автомат', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, dmg: [13, 19], range: 18, ammoType: 'ammo556', magSize: 30, fireRate: 0.42, apCost: 4, reloadApCost: 4, automatic: true },
+  machineGun: { id: 'machineGun', name: 'Самодельный пулемёт', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'ballistic', requiredStrength: 7, dmg: [12, 18], range: 20, ammoType: 'ammo556', magSize: 45, fireRate: 0.58, apCost: 5, reloadApCost: 6, automatic: true },
+  laserPistol: { id: 'laserPistol', name: 'Лазерный пистолет', hands: 1, weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 3, dmg: [22, 32], range: 16, ammoType: 'energyCell', magSize: 12, fireRate: 0.62, apCost: 4, reloadApCost: 4 },
+  flamethrower: { id: 'flamethrower', name: 'Огнемёт', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'fire', requiredStrength: 6, dmg: [14, 22], range: 8, ammoType: 'napalm', magSize: 30, fireRate: 0.34, apCost: 5, reloadApCost: 6, automatic: true },
+  plasmaRifle: { id: 'plasmaRifle', name: 'Плазменное ружьё', hands: 2, weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 5, dmg: [32, 48], range: 18, ammoType: 'energyCell', magSize: 14, fireRate: 0.48, apCost: 5, reloadApCost: 5 },
+  shotgun: { id: 'shotgun', name: 'Дробовик', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, dmg: [26, 40], range: 11, ammoType: 'shotgunShell', magSize: 6, fireRate: 0.52, apCost: 5, reloadApCost: 4 },
+  rocketLauncher: { id: 'rocketLauncher', name: 'Ракетница', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'explosive', requiredStrength: 7, dmg: [54, 78], range: 22, ammoType: 'rocketAmmo', magSize: 1, fireRate: 1.1, apCost: 6, reloadApCost: 7, explosiveRadius: 4.2 },
+  knife: { id: 'knife', name: 'Боевой нож', hands: 1, weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 1, dmg: [9, 15], range: 2.1, ammoType: null, magSize: 0, fireRate: 0.55, apCost: 2 },
+  pickaxe: { id: 'pickaxe', name: 'Кирка', hands: 2, weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 4, dmg: [13, 21], range: 2.0, ammoType: null, magSize: 0, fireRate: 0.68, apCost: 3 },
+  axe: { id: 'axe', name: 'Топор', hands: 2, weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, dmg: [11, 19], range: 2.1, ammoType: null, magSize: 0, fireRate: 0.62, apCost: 3 },
+  handPump: { id: 'handPump', name: 'Ручной насос', hands: 2, weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, dmg: [7, 12], range: 1.8, ammoType: null, magSize: 0, fireRate: 0.72, apCost: 3 },
+  fists: { id: 'fists', name: 'Кулаки', hands: 1, weaponSkill: 'unarmed', damageType: 'ballistic', requiredStrength: 1, dmg: [2, 4], range: 1.35, ammoType: null, magSize: 0, fireRate: 0.62, apCost: 2 }
 };
+
+function serverActiveWeaponSlot(entity = {}) {
+  const equipment = entity?.equipment && typeof entity.equipment === 'object' ? entity.equipment : entity;
+  return equipmentActiveWeaponSlot({
+    weapon: serverBaseItemId(equipment?.weapon || ''),
+    offhand: serverBaseItemId(equipment?.offhand || '')
+  }, SERVER_WEAPONS);
+}
+
+function serverActiveWeaponId(entity = {}) {
+  const equipment = entity?.equipment && typeof entity.equipment === 'object' ? entity.equipment : entity;
+  return equipmentActiveWeaponId({
+    weapon: serverBaseItemId(equipment?.weapon || ''),
+    offhand: serverBaseItemId(equipment?.offhand || '')
+  }, SERVER_WEAPONS);
+}
+
+function serverEquippedWeaponRuntimeEntries(player = {}) {
+  const equipment = player?.equipment && typeof player.equipment === 'object' ? player.equipment : {};
+  const runtime = player?.equipmentRuntime && typeof player.equipmentRuntime === 'object' ? player.equipmentRuntime : {};
+  return SERVER_HAND_EQUIPMENT_SLOTS.map(slot => {
+    const baseId = serverBaseItemId(equipment[slot] || '');
+    if (!baseId || baseId === 'fists' || !SERVER_WEAPONS[baseId]) return null;
+    return {
+      slot,
+      baseId,
+      itemKey: serverRuntimeItemKey(runtime[slot] || equipment[slot], baseId)
+    };
+  }).filter(Boolean);
+}
 const SERVER_COMBAT_AP_EPSILON = 0.0001;
 const SERVER_COMBAT_COOLDOWN_EPSILON_MS = 2;
 const SERVER_EQUIPMENT_SLOT_AP_COST = 1;
@@ -4273,7 +4313,7 @@ function serverNpcIsNaturalCreature(type = {}, opts = {}) {
 }
 
 function serverNaturalCreatureEquipment() {
-  return { weapon: 'fists', armor: '', helmet: '', boots: '', backpack: '' };
+  return { weapon: 'fists', offhand: '', armor: '', helmet: '', boots: '', backpack: '' };
 }
 
 function stripServerCreatureInventoryRows(rows = []) {
@@ -4429,13 +4469,14 @@ function sanitizeServerNpcEquipment(input = {}, fallback = {}) {
     const id = serverBaseItemId(raw);
     return VALID_EQUIPMENT[slot]?.has(id) ? id : defaultValue;
   };
-  return {
+  return normalizeServerHandEquipment({
     weapon: cleanSlot('weapon', 'fists'),
+    offhand: cleanSlot('offhand', ''),
     armor: cleanSlot('armor', ''),
     helmet: cleanSlot('helmet', ''),
     boots: cleanSlot('boots', ''),
     backpack: cleanSlot('backpack', '')
-  };
+  }, SERVER_WEAPONS);
 }
 
 function serverNpcEquipmentSnapshot(eq = {}) {
@@ -4923,13 +4964,13 @@ function serverConsumeOwnedItem(p = {}, itemId = '', qty = 1) {
     remaining -= fromBag;
   }
   if (remaining > 0) {
-    for (const slot of ['weapon', 'armor', 'helmet', 'boots', 'backpack']) {
+    for (const slot of Object.keys(VALID_EQUIPMENT)) {
       if (remaining <= 0) break;
       if (serverBaseItemId(p.equipment?.[slot] || '') !== id) continue;
       p.equipment[slot] = slot === 'weapon' ? 'fists' : '';
       remaining -= 1;
     }
-    p.weapon = p.equipment?.weapon || 'fists';
+    p.weapon = serverActiveWeaponId(p);
   }
   p.inventoryUpdatedAt = Date.now();
   return remaining <= 0;
@@ -5216,7 +5257,7 @@ function performServerSalvageItem(player = {}, data = {}) {
 function performServerUnloadWeapon(player = {}, data = {}) {
   const requestedRawId = String(data.itemRuntimeId || data.itemId || data.weapon || data.id || '').trim();
   const id = serverBaseItemId(requestedRawId);
-  if (id !== serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists')) return { ok: false, error: 'Это оружие не экипировано.' };
+  if (id !== serverActiveWeaponId(player)) return { ok: false, error: 'Это оружие не является активным.' };
   const weapon = serverWeaponDef(id);
   if (!weapon.ammoType) return { ok: false, error: 'Это оружие не использует боеприпасы.' };
   const equippedRuntimeId = serverCombatWeaponStateKey(player, weapon);
@@ -5667,14 +5708,13 @@ function serverValidateWeaponRuntimeRemoval(player = {}, row = {}, options = {})
   const weapon = SERVER_WEAPONS[baseId];
   if (!weapon?.ammoType) return { ok: true, baseId, runtimeIds: [], ammoReturns: [] };
   const combat = serverEnsureCombatState(player, Date.now());
-  const equippedBaseId = serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists');
-  const equippedKey = equippedBaseId === baseId
-    ? serverCombatWeaponStateKey(player, weapon)
-    : '';
+  const equippedKeys = new Set(serverEquippedWeaponRuntimeEntries(player)
+    .filter(entry => entry.baseId === baseId)
+    .map(entry => entry.itemKey));
   const candidates = Object.entries(combat.weapons || {})
     .filter(([rawId, state]) => serverBaseItemId(state?.weaponId || rawId) === baseId)
     .map(([rawId, state]) => ({ itemKey: serverRuntimeItemKey(rawId, baseId), state }))
-    .filter(entry => entry.itemKey && entry.itemKey !== equippedKey);
+    .filter(entry => entry.itemKey && !equippedKeys.has(entry.itemKey));
   const trustedBagIds = new Set(serverWeaponInventoryRuntimeSnapshot(player)
     .filter(entry => serverBaseItemId(entry?.baseId || entry?.id || '') === baseId)
     .map(entry => serverRuntimeItemKey(entry.id, baseId)));
@@ -5758,17 +5798,16 @@ function serverPruneWeaponRuntimeToOwnership(player = {}, baseId = '') {
   if (!weapon) return;
   const combat = serverEnsureCombatState(player, Date.now());
   const ownedCount = serverOwnedItemQty(player, weapon.id);
-  const equippedBaseId = serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists');
-  const equippedKey = equippedBaseId === weapon.id
-    ? serverCombatWeaponStateKey(player, weapon)
-    : '';
+  const equippedKeys = new Set(serverEquippedWeaponRuntimeEntries(player)
+    .filter(entry => entry.baseId === weapon.id)
+    .map(entry => entry.itemKey));
   const keys = Object.entries(combat.weapons || {})
     .filter(([rawId, state]) => serverBaseItemId(state?.weaponId || rawId) === weapon.id)
     .map(([rawId]) => serverRuntimeItemKey(rawId, weapon.id))
     .filter(Boolean);
   let excess = Math.max(0, new Set(keys).size - ownedCount);
   const removable = [...new Set(keys)]
-    .filter(itemKey => itemKey !== equippedKey && Number(combat.weapons?.[itemKey]?.loaded || 0) <= 0)
+    .filter(itemKey => !equippedKeys.has(itemKey) && Number(combat.weapons?.[itemKey]?.loaded || 0) <= 0)
     .sort((a, b) => b.localeCompare(a));
   for (const itemKey of removable) {
     if (excess <= 0) break;
@@ -5864,9 +5903,16 @@ function serverEquipmentRuntimeFromRequest(requested = {}, equipment = {}, fallb
       out[slot] = '';
       continue;
     }
-    const hasRequested = Object.prototype.hasOwnProperty.call(source, slot);
+    let hasRequested = Object.prototype.hasOwnProperty.call(source, slot);
     const previousId = serverRuntimeItemKey(previous[slot], baseId);
-    const requestedId = hasRequested ? String(source[slot] || '').trim() : '';
+    let requestedId = hasRequested ? String(source[slot] || '').trim() : '';
+    const migratedTwoHandedOffhand = slot === 'weapon'
+      && equipmentIsTwoHandedWeapon(baseId, SERVER_WEAPONS)
+      && serverBaseItemId(source.offhand || '') === baseId;
+    if (migratedTwoHandedOffhand) {
+      hasRequested = true;
+      requestedId = String(source.offhand || '').trim();
+    }
     // Legacy clients only send the base id in their frequent profile packets.
     // Treat that as "identity unchanged" when the server already knows the
     // concrete runtime instance; otherwise the first sync would select a fresh
@@ -5877,6 +5923,7 @@ function serverEquipmentRuntimeFromRequest(requested = {}, equipment = {}, fallb
     out[slot] = serverRuntimeItemKey(rawId, baseId);
   }
   if (!out.weapon) out.weapon = 'fists';
+  if (!out.offhand) out.offhand = '';
   return out;
 }
 
@@ -5973,14 +6020,27 @@ function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = [], 
       updatedAt: now
     };
   }
-  const weapon = serverWeaponDef(equipment?.weapon || 'fists');
-  const activeWeaponKey = serverRuntimeItemKey(equipmentRuntime?.weapon || equipment?.weapon || weapon.id, weapon.id);
-  if (!weapons[activeWeaponKey]) {
-    weapons[activeWeaponKey] = {
+  const equippedWeapons = serverEquippedWeaponRuntimeEntries({ equipment, equipmentRuntime });
+  for (const entry of equippedWeapons) {
+    const weapon = serverWeaponDef(entry.baseId);
+    if (weapons[entry.itemKey]) continue;
+    weapons[entry.itemKey] = {
       weaponId: weapon.id,
       loaded: 0,
       reserve: weapon.ammoType ? serverInventoryQty(inventory, weapon.ammoType) : 0,
       ammoType: weapon.ammoType || '',
+      updatedAt: now
+    };
+  }
+  const activeWeapon = serverWeaponDef(serverActiveWeaponId({ equipment }));
+  const activeSlot = serverActiveWeaponSlot({ equipment });
+  const activeWeaponKey = serverRuntimeItemKey(equipmentRuntime?.[activeSlot] || equipment?.[activeSlot] || activeWeapon.id, activeWeapon.id);
+  if (!weapons[activeWeaponKey]) {
+    weapons[activeWeaponKey] = {
+      weaponId: activeWeapon.id,
+      loaded: 0,
+      reserve: activeWeapon.ammoType ? serverInventoryQty(inventory, activeWeapon.ammoType) : 0,
+      ammoType: activeWeapon.ammoType || '',
       updatedAt: now
     };
   }
@@ -6001,7 +6061,7 @@ function serverCombatRuntimeForSave(runtime = {}, player = {}) {
     out[String(rawId || '')] = { ...savedRow };
   }
 
-  const equippedWeapon = serverWeaponDef(player.equipment?.weapon || player.weapon || 'fists');
+  const equippedWeapon = serverWeaponDef(serverActiveWeaponId(player));
   serverWeaponState(player, equippedWeapon, {}, Date.now());
   const combat = serverEnsureCombatState(player, Date.now());
 
@@ -6100,7 +6160,7 @@ function initialServerCharacterState(data = {}, characterId = '') {
   const taggedSkills = sanitizeTaggedSkills(data.taggedSkills || []);
   const special = sanitizeSpecial(data.special || {});
   const appearance = sanitizeCharacterAppearance(data.appearance || {});
-  const equipment = { weapon: 'fists', armor: '', helmet: '', boots: '', backpack: '' };
+  const equipment = { weapon: 'fists', offhand: '', armor: '', helmet: '', boots: '', backpack: '' };
   const inventory = serverInventoryRowsToObject(serverStarterInventoryRows(traits));
   inventory.knife = 1;
   const spawn = playerSpawnWorld('settlement', 'spawn');
@@ -6232,12 +6292,12 @@ function serverCanonicalWeaponInventoryPresentation(player = {}, sourceInventory
   }
 
   const combat = serverEnsureCombatState(player, Date.now());
-  const equipmentRuntime = serverEquipmentRuntimePresentation(player);
-  const equippedWeaponBase = serverBaseItemId(player.equipment?.weapon || player.weapon || 'fists');
-  const equippedWeaponKey = serverRuntimeItemKey(equipmentRuntime.weapon || equippedWeaponBase, equippedWeaponBase);
+  const equippedWeapons = serverEquippedWeaponRuntimeEntries(player);
   for (const baseId of Object.keys(SERVER_WEAPONS)) {
     if (baseId === 'fists') continue;
-    const equippedCount = equippedWeaponBase === baseId ? 1 : 0;
+    const equippedForBase = equippedWeapons.filter(entry => entry.baseId === baseId);
+    const equippedKeys = new Set(equippedForBase.map(entry => entry.itemKey));
+    const equippedCount = equippedForBase.length;
     const totalOwned = serverInventoryQty(player.inventory || [], baseId) + equippedCount;
     if (totalOwned <= 0) continue;
     const knownKeys = Object.entries(combat.weapons || {})
@@ -6245,8 +6305,7 @@ function serverCanonicalWeaponInventoryPresentation(player = {}, sourceInventory
       .map(([rawId]) => serverRuntimeItemKey(rawId, baseId))
       .filter(Boolean)
       .sort((a, b) => {
-        if (a === equippedWeaponKey) return -1;
-        if (b === equippedWeaponKey) return 1;
+        if (equippedKeys.has(a) !== equippedKeys.has(b)) return equippedKeys.has(a) ? -1 : 1;
         if (a === baseId) return 1;
         if (b === baseId) return -1;
         return a.localeCompare(b);
@@ -6254,7 +6313,7 @@ function serverCanonicalWeaponInventoryPresentation(player = {}, sourceInventory
     const uniqueKnownKeys = [...new Set(knownKeys)];
     const runtimeOwnershipAmbiguous = uniqueKnownKeys.length > totalOwned;
     const selected = runtimeOwnershipAmbiguous
-      ? uniqueKnownKeys.filter(itemKey => itemKey === equippedWeaponKey).slice(0, 1)
+      ? uniqueKnownKeys.filter(itemKey => equippedKeys.has(itemKey)).slice(0, equippedCount)
       : uniqueKnownKeys.slice(0, totalOwned);
     for (const itemKey of selected) {
       out[itemKey] = itemKey === baseId
@@ -6269,9 +6328,8 @@ function serverCanonicalWeaponInventoryPresentation(player = {}, sourceInventory
 
 function serverWeaponInventoryRuntimeSnapshot(player = {}) {
   const fullInventory = serverCanonicalWeaponInventoryPresentation(player, {});
-  const equipmentRuntime = serverEquipmentRuntimePresentation(player);
-  const equippedKey = String(equipmentRuntime.weapon || '');
-  if (equippedKey && equippedKey !== 'fists' && Number(fullInventory[equippedKey] || 0) > 0) {
+  for (const { itemKey: equippedKey } of serverEquippedWeaponRuntimeEntries(player)) {
+    if (!equippedKey || Number(fullInventory[equippedKey] || 0) <= 0) continue;
     fullInventory[equippedKey] = Math.max(0, Number(fullInventory[equippedKey] || 0) - 1);
     if (fullInventory[equippedKey] <= 0) delete fullInventory[equippedKey];
   }
@@ -6311,7 +6369,7 @@ function authoritativeInventoryPresentation(state = {}, previousState = {}, play
   let inventory = serverInventoryRowsToObject(player.inventory || []);
   const equipment = serverEquipmentRuntimePresentation(player);
   for (const [slot, rawItemId] of Object.entries(equipment)) {
-    if (slot === 'weapon') continue;
+    if (SERVER_HAND_EQUIPMENT_SLOTS.includes(slot)) continue;
     const id = serverBaseItemId(rawItemId);
     if (id && id !== 'fists') inventory[rawItemId] = Math.max(1, Number(inventory[rawItemId] || 0) + 1);
   }
@@ -6361,13 +6419,24 @@ function serverApplyEquipmentRequest(player = {}, requested = {}, now = Date.now
   for (const [id, qty] of available.entries()) {
     if (qty > 0) rows.push({ id, qty });
   }
-  desiredRuntime.weapon = serverResolveWeaponRuntimeRequest(
-    player,
-    desiredRuntime.weapon,
-    currentRuntime.weapon,
-    desired.weapon || 'fists',
-    { mutate: false }
-  );
+  for (const handSlot of SERVER_HAND_EQUIPMENT_SLOTS) {
+    const fallback = handSlot === 'weapon' ? 'fists' : '';
+    desiredRuntime[handSlot] = serverResolveWeaponRuntimeRequest(
+      player,
+      desiredRuntime[handSlot],
+      currentRuntime[handSlot],
+      desired[handSlot] || fallback,
+      { mutate: false }
+    );
+  }
+  const desiredWeaponKeys = SERVER_HAND_EQUIPMENT_SLOTS.map(handSlot => {
+    const baseId = serverBaseItemId(desired[handSlot] || '');
+    if (!baseId || baseId === 'fists' || !SERVER_WEAPONS[baseId]) return '';
+    return serverRuntimeItemKey(desiredRuntime[handSlot], baseId);
+  }).filter(Boolean);
+  if (new Set(desiredWeaponKeys).size !== desiredWeaponKeys.length) {
+    return reject('Сервер: один экземпляр оружия нельзя держать сразу в двух руках.');
+  }
   const changedSlots = Object.keys(VALID_EQUIPMENT).filter(slot => {
     const currentBaseId = serverBaseItemId(current[slot] || (slot === 'weapon' ? 'fists' : ''));
     const desiredBaseId = serverBaseItemId(desired[slot] || (slot === 'weapon' ? 'fists' : ''));
@@ -6392,17 +6461,20 @@ function serverApplyEquipmentRequest(player = {}, requested = {}, now = Date.now
       return reject(`Сервер: для изменения экипировки нужно ${apCost} ОД.`);
     }
   }
-  desiredRuntime.weapon = serverResolveWeaponRuntimeRequest(
-    player,
-    desiredRuntime.weapon,
-    currentRuntime.weapon,
-    desired.weapon || 'fists'
-  );
+  for (const handSlot of SERVER_HAND_EQUIPMENT_SLOTS) {
+    const fallback = handSlot === 'weapon' ? 'fists' : '';
+    desiredRuntime[handSlot] = serverResolveWeaponRuntimeRequest(
+      player,
+      desiredRuntime[handSlot],
+      currentRuntime[handSlot],
+      desired[handSlot] || fallback
+    );
+  }
   if (apCost > 0) player.ap = Math.max(0, Number(player.ap || 0) - apCost);
   player.inventory = sanitizeServerInventorySnapshot(rows, { includeEquipped: true });
   player.equipment = desired;
   player.equipmentRuntime = desiredRuntime;
-  player.weapon = desired.weapon || 'fists';
+  player.weapon = serverActiveWeaponId(player);
   player.inventoryUpdatedAt = now;
   return {
     ok: true,
@@ -6492,10 +6564,12 @@ function serverApplyEquipmentAction(player = {}, data = {}, now = Date.now()) {
   if (rawItemRuntimeId && serverRuntimeItemKey(rawItemRuntimeId, desiredBaseId) !== rawItemRuntimeId) {
     return finish({ ok: false, error: 'Сервер: неверный id экземпляра экипировки.' });
   }
-  // An empty weapon id means "put the weapon away" and intentionally falls
-  // back to fists. Fists are a built-in combat state, not a physical runtime
-  // item that has to be present in the player's inventory.
-  if (slot === 'weapon' && rawItemRuntimeId) {
+  const handSlot = SERVER_HAND_EQUIPMENT_SLOTS.includes(slot);
+  const twoHanded = handSlot && equipmentIsTwoHandedWeapon(desiredBaseId, SERVER_WEAPONS);
+  const targetSlot = slot === 'offhand' && twoHanded ? 'weapon' : slot;
+  // Empty right-hand ids intentionally fall back to fists. Fists are a built-in
+  // combat state, not a physical runtime item that must exist in the inventory.
+  if (handSlot && rawItemRuntimeId) {
     const currentEquipment = sanitizeEquipment(player.equipment || {}, { weapon: 'fists' });
     const currentRuntime = serverEquipmentRuntimeFromRequest(
       player.equipmentRuntime || {},
@@ -6506,7 +6580,7 @@ function serverApplyEquipmentAction(player = {}, data = {}, now = Date.now()) {
     const resolvedKey = serverResolveWeaponRuntimeRequest(
       player,
       rawItemRuntimeId || fallback,
-      currentRuntime.weapon,
+      currentRuntime[targetSlot],
       desiredBaseId,
       { mutate: false, strict: true }
     );
@@ -6515,17 +6589,25 @@ function serverApplyEquipmentAction(player = {}, data = {}, now = Date.now()) {
     }
   }
 
-  const requested = {
-    ...serverEquipmentRuntimePresentation(player),
-    [slot]: rawItemRuntimeId || fallback
-  };
+  const requested = { ...serverEquipmentRuntimePresentation(player) };
+  if (handSlot && twoHanded) {
+    requested.weapon = rawItemRuntimeId;
+    requested.offhand = '';
+  } else {
+    requested[slot] = rawItemRuntimeId || fallback;
+    if (slot === 'offhand' && rawItemRuntimeId
+      && equipmentIsTwoHandedWeapon(serverBaseItemId(player.equipment?.weapon || ''), SERVER_WEAPONS)) {
+      requested.weapon = 'fists';
+    }
+  }
   const result = serverApplyEquipmentRequest(player, requested, now);
   if (!result.ok) return finish(result);
 
   const authoritativeRuntime = serverEquipmentRuntimePresentation(player);
-  const authoritativeBaseId = serverBaseItemId(player.equipment?.[slot] || fallback);
+  const targetFallback = targetSlot === 'weapon' ? 'fists' : '';
+  const authoritativeBaseId = serverBaseItemId(player.equipment?.[targetSlot] || targetFallback);
   const requestedKey = serverRuntimeItemKey(rawItemRuntimeId || fallback, desiredBaseId);
-  const authoritativeKey = serverRuntimeItemKey(authoritativeRuntime[slot], authoritativeBaseId);
+  const authoritativeKey = serverRuntimeItemKey(authoritativeRuntime[targetSlot], authoritativeBaseId);
   if (desiredBaseId !== authoritativeBaseId || requestedKey !== authoritativeKey) {
     return finish({ ok: false, error: 'Сервер: выбранный экземпляр предмета недоступен.' });
   }
@@ -7447,7 +7529,8 @@ function serverPruneSpentTokens(p = {}, now = Date.now()) {
 }
 
 function serverCombatWeaponStateKey(p = {}, weapon = SERVER_WEAPONS.fists) {
-  const rawId = p.equipmentRuntime?.weapon || p.equipment?.weapon || p.weapon || weapon.id;
+  const activeSlot = serverActiveWeaponSlot(p);
+  const rawId = p.equipmentRuntime?.[activeSlot] || p.equipment?.[activeSlot] || p.weapon || weapon.id;
   return serverBaseItemId(rawId) === weapon.id
     ? serverRuntimeItemKey(rawId, weapon.id)
     : weapon.id;
@@ -7543,8 +7626,9 @@ function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS
 }
 
 function serverApplyReload(p = {}, data = {}, now = Date.now()) {
-  const weapon = serverWeaponDef(data.weapon || p.equipment?.weapon || p.weapon || 'fists');
-  if (weapon.id !== serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists')) return { ok: false, error: 'Сервер: это оружие не экипировано.' };
+  const activeWeaponId = serverActiveWeaponId(p);
+  const weapon = serverWeaponDef(data.weapon || activeWeaponId);
+  if (weapon.id !== activeWeaponId) return { ok: false, error: 'Сервер: это оружие не является активным.' };
   if (!weapon.ammoType) return { ok: false, error: 'Это оружие не требует перезарядки.' };
   serverRegenPlayerAp(p, now);
   const client = data.combat && typeof data.combat === 'object' ? data.combat : data;
@@ -15495,7 +15579,7 @@ function publicPlayer(p) {
     maxAp: Math.round(Number(p.maxAp || 0)),
     ap: Number(Number.isFinite(Number(p.ap)) ? Number(p.ap).toFixed(1) : 0),
     dead: !!p.dead,
-    weapon: p.weapon,
+    weapon: serverActiveWeaponId(p),
     equipment: sanitizeEquipment(p.equipment, { weapon: p.weapon || 'pistol' }),
     injuries: sanitizeInjuries(p.injuries || {}),
     level: p.level,
@@ -15542,7 +15626,7 @@ function serverAuthoritativeGlobalMapState(p = {}) {
 
 function publicAuthoritativePlayerState(p = {}) {
   const globalMap = serverAuthoritativeGlobalMapState(p);
-  const combat = serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now());
+  const combat = serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now());
   const storageFaction = serverPlayerStorageFaction(p);
   const storage = storageFaction ? serverFactionStorageRows(p, storageFaction) : [];
   const worldTaskAccepted = sanitizeServerWorldTaskIds(p.worldTaskAccepted || []);
@@ -16264,7 +16348,7 @@ function currentJoinedSocketAck(p, options = {}) {
     characterLeaseId: p.characterLeaseId || '',
     x: Number(Number(p.x || 0).toFixed(3)),
     z: Number(Number(p.z || 0).toFixed(3)),
-    combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()),
+    combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()),
     self: publicAuthoritativePlayerState(p),
     players: others,
     worldState: room ? (room.worldState || publicWorldState(room, true)) : null,
@@ -16326,7 +16410,7 @@ io.on('connection', (socket) => {
           ok: false,
           error: 'Этот сокет уже присоединён к другому персонажу или игровой сессии.',
           self: publicAuthoritativePlayerState(joinedPlayer),
-          combat: serverCombatAck(joinedPlayer, serverWeaponDef(joinedPlayer.equipment?.weapon || joinedPlayer.weapon || 'fists'), Date.now())
+          combat: serverCombatAck(joinedPlayer, serverWeaponDef(serverActiveWeaponId(joinedPlayer)), Date.now())
         });
       }
       return;
@@ -16498,7 +16582,7 @@ io.on('connection', (socket) => {
       equipmentRuntime: savedEquipmentRuntime,
       equipmentRevision: 0,
       serverEquipmentRequests: {},
-      weapon: savedEquipment.weapon,
+      weapon: serverActiveWeaponId({ equipment: savedEquipment }),
       level: Math.max(1, Math.floor(Number(savedPlayer.level || 1))),
       xp: Math.max(0, Math.floor(Number(savedPlayer.xp || 0))),
       xpNeeded: Math.max(1, Math.floor(Number(savedPlayer.xpNeeded || 100))),
@@ -16600,7 +16684,7 @@ io.on('connection', (socket) => {
         characterLeaseId,
         x: Number(p.x.toFixed(3)),
         z: Number(p.z.toFixed(3)),
-        combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()),
+        combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()),
         self: publicAuthoritativePlayerState(p),
         players: [],
         worldState: null,
@@ -16612,7 +16696,7 @@ io.on('connection', (socket) => {
 
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     refreshRoomWorldState(room);
-    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: room.worldState || publicWorldState(room, true), serverAuthoritativeEnemies: true });
+    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: room.worldState || publicWorldState(room, true), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemySnapshot(room, true);
     emitGroundItemsSnapshot(room, true);
@@ -17389,7 +17473,7 @@ io.on('connection', (socket) => {
     if (!room) return;
     if (locationIsFactionCapital(roomLocation(room))) return;
     if (!locationAllowsNpcCombat(roomLocation(room)) && !room.locationWorldEvent) return;
-    const weapon = String(data.weapon || p.weapon || p.equipment?.weapon || 'fists').slice(0, 32);
+    const weapon = String(data.weapon || serverActiveWeaponId(p)).slice(0, 32);
     const payload = {
       shooterId: socket.id,
       characterId: p.characterId || '',
@@ -17415,7 +17499,7 @@ io.on('connection', (socket) => {
     serverApplyProgressionRequest(p, data);
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
-      const weapon = serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists');
+      const weapon = serverWeaponDef(serverActiveWeaponId(p));
       return fail('Сервер: экипировка изменилась; повторите перезарядку после сверки.', {
         inventory: syncServerInventorySnapshot(p),
         self: publicAuthoritativePlayerState(p),
@@ -17423,13 +17507,13 @@ io.on('connection', (socket) => {
       });
     }
     const result = serverApplyReload(p, data, Date.now());
-    if (!result.ok) return fail(result.error || 'Сервер: перезарядка отклонена.', { inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), combat: serverCombatAck(p, serverWeaponDef(p.equipment?.weapon || p.weapon || 'fists'), Date.now()) });
+    if (!result.ok) return fail(result.error || 'Сервер: перезарядка отклонена.', { inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()) });
     socket.to(p.roomId).emit('playerReloaded', {
       shooterId: socket.id,
       characterId: p.characterId || '',
       roomId: p.roomId,
       locationId: p.locationId || '',
-      weapon: serverBaseItemId(p.equipment?.weapon || p.weapon || 'pistol'),
+      weapon: serverActiveWeaponId(p),
       t: Date.now()
     });
     if (typeof ack === 'function') ack({ ok: true, ...result, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
@@ -17442,7 +17526,7 @@ io.on('connection', (socket) => {
     const room = rooms.get(p.roomId);
     if (!room) return fail('Локация не найдена.');
     const loc = roomLocation(room);
-    const equippedWeaponId = serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists');
+    const equippedWeaponId = serverActiveWeaponId(p);
     const weapon = serverWeaponDef(equippedWeaponId);
     const currentCombat = () => ({
       combat: serverCombatAck(p, weapon, Date.now()),
@@ -17496,7 +17580,7 @@ io.on('connection', (socket) => {
     if (!room) return fail('Локация не найдена.');
     ensureRoomWorld(room);
     syncServerActionProgressionPlayer(p, data);
-    const equippedWeaponId = serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists');
+    const equippedWeaponId = serverActiveWeaponId(p);
     const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     const weapon = serverWeaponDef(equippedWeaponId);
     const currentCombat = () => ({ combat: serverCombatAck(p, weapon, Date.now()), self: publicAuthoritativePlayerState(p) });
@@ -17664,7 +17748,7 @@ io.on('connection', (socket) => {
     if (!enemy || enemy.dead) return fail('Цель уже недоступна.');
 
     syncServerActionProgressionPlayer(p, data);
-    const equippedWeaponId = serverBaseItemId(p.equipment?.weapon || p.weapon || 'fists');
+    const equippedWeaponId = serverActiveWeaponId(p);
     const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     const equippedWeapon = serverWeaponDef(equippedWeaponId);
     failureContext = () => ({
@@ -17783,7 +17867,7 @@ io.on('connection', (socket) => {
     if (!target || target.id === attacker.id || target.roomId !== room.id || target.dead || Number(target.hp || 0) <= 0) return fail('Цель недоступна.');
 
     syncServerActionProgressionPlayer(attacker, data);
-    const currentWeapon = serverWeaponDef(attacker.equipment?.weapon || attacker.weapon || 'fists');
+    const currentWeapon = serverWeaponDef(serverActiveWeaponId(attacker));
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(attacker, data.equipment)) {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', {
@@ -17791,8 +17875,9 @@ io.on('connection', (socket) => {
         self: publicAuthoritativePlayerState(attacker)
       });
     }
-    const weaponId = serverBaseItemId(data.weapon || attacker.equipment?.weapon || attacker.weapon || 'fists');
-    if (weaponId !== serverBaseItemId(attacker.equipment?.weapon || attacker.weapon || 'fists')) return fail('Сервер: это оружие не экипировано.');
+    const equippedWeaponId = serverActiveWeaponId(attacker);
+    const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
+    if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не является активным.');
     const weapon = serverWeaponDef(weaponId);
     const modeInfo = serverWeaponModeInfo(attacker, weapon, String(data.mode || 'single'));
     const origin = serverCombatOrigin(attacker, data);
@@ -17947,7 +18032,7 @@ io.on('connection', (socket) => {
     if (baseToolId !== expectedTool && toolId !== expectedTool) {
       return fail(resourceDef.needTool);
     }
-    const equippedToolId = serverBaseItemId(p.equipment?.weapon || '');
+    const equippedToolId = serverActiveWeaponId(p);
     if (equippedToolId !== expectedTool) {
       return fail(resourceDef.needTool);
     }

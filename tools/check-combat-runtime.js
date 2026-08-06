@@ -463,7 +463,8 @@ function seedCombatFixtures(accounts) {
     ammoType: 'ammo9',
     loaded: 1,
     reserveAmmo: 0,
-    initialAp: 0
+    initialAp: 0,
+    carriedItems: [{ id: 'rifle', qty: 1 }]
   }, usersDb, savesDb);
   seedCharacterState(accounts.harvest, {
     special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 10, luck: 5 },
@@ -1540,6 +1541,49 @@ async function assertEquipmentActionAuthority(accounts) {
     1,
     'unequipped runtime pistol returned to inventory'
   );
+
+  await delay(700);
+  const leftHandPistol = await sendEquipmentAction(account, pistolRuntimeId, { slot: 'offhand' });
+  invariant(leftHandPistol.ack.ok === true
+    && leftHandPistol.ack.self?.equipment?.weapon === 'fists'
+    && leftHandPistol.ack.self?.equipmentRuntime?.offhand === pistolRuntimeId
+    && leftHandPistol.ack.self?.combat?.weaponRuntimeId === pistolRuntimeId
+    && Number(leftHandPistol.ack.apCost) === 1,
+  'One-handed weapon could not become active from the left hand', leftHandPistol.ack);
+
+  await delay(700);
+  const dualOneHanded = await sendEquipmentAction(account, 'knife');
+  invariant(dualOneHanded.ack.ok === true
+    && dualOneHanded.ack.self?.equipmentRuntime?.weapon === 'knife'
+    && dualOneHanded.ack.self?.equipmentRuntime?.offhand === pistolRuntimeId
+    && dualOneHanded.ack.self?.combat?.weaponRuntimeId === 'knife'
+    && Number(dualOneHanded.ack.apCost) === 1,
+  'Two different one-handed weapons could not occupy both hand slots', dualOneHanded.ack);
+
+  await delay(1250);
+  const twoHanded = await sendEquipmentAction(account, 'rifle');
+  invariant(twoHanded.ack.ok === true
+    && twoHanded.ack.self?.equipmentRuntime?.weapon === 'rifle'
+    && twoHanded.ack.self?.equipmentRuntime?.offhand === ''
+    && twoHanded.ack.self?.combat?.weaponRuntimeId === 'rifle'
+    && Number(twoHanded.ack.apCost) === 2,
+  'Two-handed weapon did not atomically occupy both hands', twoHanded.ack);
+
+  await delay(1250);
+  const replaceTwoHandedFromLeft = await sendEquipmentAction(account, pistolRuntimeId, { slot: 'offhand' });
+  invariant(replaceTwoHandedFromLeft.ack.ok === true
+    && replaceTwoHandedFromLeft.ack.self?.equipment?.weapon === 'fists'
+    && replaceTwoHandedFromLeft.ack.self?.equipmentRuntime?.offhand === pistolRuntimeId
+    && replaceTwoHandedFromLeft.ack.self?.combat?.weaponRuntimeId === pistolRuntimeId
+    && Number(replaceTwoHandedFromLeft.ack.apCost) === 2,
+  'Equipping the left hand did not atomically release a two-handed weapon', replaceTwoHandedFromLeft.ack);
+  closeSocket(account);
+  await delay(650);
+  await connectAndJoin(account);
+  invariant(account.join.self?.equipment?.weapon === 'fists'
+    && account.join.self?.equipmentRuntime?.offhand === pistolRuntimeId
+    && account.join.self?.combat?.weaponRuntimeId === pistolRuntimeId,
+  'Left-hand equipment did not survive save and reconnect', account.join.self);
   closeSocket(account);
 }
 
@@ -1694,7 +1738,7 @@ async function main() {
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
       + 'loaded bag weapons auto-unloaded into inventory when sold, '
-      + 'equipment changes were revisioned/idempotent, spent exactly 1 server AP, and runtime weapons could be unequipped, '
+      + 'equipment changes were revisioned/idempotent, hand slots persisted, and one-/two-handed conflicts were atomic, '
       + 'progression allocations could not be refunded or reassigned through profile/action/save payloads, '
       + 'and insufficient AP or unavailable runtime ids caused no mutation'
     );

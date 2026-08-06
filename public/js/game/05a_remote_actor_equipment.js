@@ -49,8 +49,12 @@
 
   function remoteEquipmentFromData(data = {}) {
     const eq = (data && typeof data.equipment === 'object') ? data.equipment : {};
+    const primary = String(networkEquipmentBaseId(eq.weapon || '', ''));
+    const offhand = String(networkEquipmentBaseId(eq.offhand || '', ''));
+    const weapon = data.weapon || (primary && primary !== 'fists' ? primary : (offhand || primary || 'pistol'));
     return {
-      weapon: String(networkEquipmentBaseId(eq.weapon || data.weapon || 'pistol', 'pistol')),
+      weapon: String(networkEquipmentBaseId(weapon, 'pistol')),
+      offhand,
       armor: String(networkEquipmentBaseId(eq.armor || '')),
       helmet: String(networkEquipmentBaseId(eq.helmet || '')),
       boots: String(networkEquipmentBaseId(eq.boots || '')),
@@ -130,6 +134,7 @@
     const eq = (data && typeof data.equipment === 'object') ? data.equipment : {};
     return {
       weapon: String(networkEquipmentBaseId(eq.weapon || data.weapon || 'fists', 'fists')),
+      offhand: String(networkEquipmentBaseId(eq.offhand || '')),
       armor: String(networkEquipmentBaseId(eq.armor || '')),
       helmet: String(networkEquipmentBaseId(eq.helmet || '')),
       boots: String(networkEquipmentBaseId(eq.boots || '')),
@@ -138,7 +143,7 @@
   }
 
   function naturalCreatureEquipment() {
-    return { weapon: 'fists', armor: '', helmet: '', boots: '', backpack: '' };
+    return { weapon: 'fists', offhand: '', armor: '', helmet: '', boots: '', backpack: '' };
   }
 
   function isNaturalCreatureEnemy(data = {}) {

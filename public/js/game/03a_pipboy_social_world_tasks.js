@@ -1774,7 +1774,7 @@
   function renderPipboyInfoPanels() {
     const name = characterProfile?.name || player.name || 'Странник';
     const locationName = currentLocation?.name || 'Пустошь';
-    const weaponName = ITEMS[equipment.weapon]?.name || 'без оружия';
+    const weaponName = currentWeapon()?.name || 'без оружия';
     const carry = `${formatWeight(inventoryWeight())}/${formatWeight(carryCapacity())}`;
     const questInfo = typeof npcQuestPanelText === 'function'
       ? npcQuestPanelText()

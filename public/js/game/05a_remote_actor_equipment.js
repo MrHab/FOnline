@@ -404,10 +404,13 @@
     if (Number.isFinite(sx) && Number.isFinite(sz)) return new THREE.Vector3(sx, Number.isFinite(sy) ? sy : 1.05, sz);
     const group = row?.group;
     if (group) {
-      const weaponId = networkEquipmentBaseId(row.data?.weapon || shotData.weapon || group.userData?.weaponId || 'pistol', 'pistol');
-      const weaponGroup = typeof activeActorWeaponGroup === 'function' ? activeActorWeaponGroup(group) : null;
+      const weaponId = networkEquipmentBaseId(shotData.weapon || row.data?.weapon || group.userData?.weaponId || 'pistol', 'pistol');
+      const handSlot = shotData.handSlot === 'offhand' ? 'offhand' : 'weapon';
+      const weaponGroup = typeof actorWeaponGroupForSlot === 'function'
+        ? actorWeaponGroupForSlot(group, handSlot)
+        : (typeof activeActorWeaponGroup === 'function' ? activeActorWeaponGroup(group) : null);
       if (weaponGroup) return weaponGroup.localToWorld(new THREE.Vector3(0, 0, remoteWeaponMuzzleLocalZ(weaponId)));
-      const handX = group.userData?.weaponHandSlot === 'offhand' ? -0.48 : 0.48;
+      const handX = handSlot === 'offhand' ? -0.48 : 0.48;
       return group.localToWorld(new THREE.Vector3(handX, 1.05, remoteWeaponMuzzleLocalZ(weaponId)));
     }
     const x = Number(shotData.x || 0), z = Number(shotData.z || 0);

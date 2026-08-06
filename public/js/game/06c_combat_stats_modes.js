@@ -308,6 +308,51 @@
     return Math.max(0, Math.min(1, v));
   }
 
+  function equippedWeaponForHandSlot(slot = 'weapon') {
+    const safeSlot = slot === 'offhand' ? 'offhand' : 'weapon';
+    const w = ITEMS[equipment?.[safeSlot]];
+    return w && w.id !== 'fists' && (w.type === 'weapon' || Array.isArray(w.dmg)) ? w : null;
+  }
+
+  function dualWieldPistolPair() {
+    const right = equippedWeaponForHandSlot('weapon');
+    const left = equippedWeaponForHandSlot('offhand');
+    if (!right?.dualWield || !left?.dualWield || Number(right.hands || 1) !== 1 || Number(left.hands || 1) !== 1) return null;
+    return {
+      right: { slot: 'weapon', weapon: right, runtimeId: String(equipment.weapon || right.id) },
+      left: { slot: 'offhand', weapon: left, runtimeId: String(equipment.offhand || left.id) },
+      entries: [
+        { slot: 'weapon', weapon: right, runtimeId: String(equipment.weapon || right.id) },
+        { slot: 'offhand', weapon: left, runtimeId: String(equipment.offhand || left.id) }
+      ]
+    };
+  }
+
+  function dualPistolModeInfo() {
+    const pair = dualWieldPistolPair();
+    if (!pair) return null;
+    return {
+      id: 'dual',
+      label: 'Парный залп',
+      apCost: Math.max(1, Math.ceil(pair.entries.reduce((sum, entry) => sum + Number(entry.weapon.apCost || 3), 0) * 0.75)),
+      shots: 2,
+      hitBonus: -0.15,
+      hitCap: 0.78,
+      damageMul: 1,
+      rangeMul: 0.85,
+      fireRateMul: 1.15,
+      dual: true
+    };
+  }
+
+  function effectiveWeaponRange(w = currentWeapon(), modeInfo = getWeaponModeInfo(w)) {
+    if (modeInfo?.id === 'dual') {
+      const pair = dualWieldPistolPair();
+      if (pair) return Math.min(...pair.entries.map(entry => Number(entry.weapon.range || 1) * Math.max(0.1, Number(modeInfo.rangeMul || 1))));
+    }
+    return Number(w?.range || 1) * Math.max(0.1, Number(modeInfo?.rangeMul || 1));
+  }
+
   function getWeaponModes(w) {
     if (!w || !w.ammoType) return [{ id: 'melee', label: 'Ближний бой', apCost: w?.apCost || 2, shots: 1, hitBonus: 0, damageMul: 1 }];
     const baseAp = w.apCost || 3;
@@ -330,6 +375,8 @@
         fireRateMul: 0.72
       });
     }
+    const dualMode = w.dualWield ? dualPistolModeInfo() : null;
+    if (dualMode) modes.push(dualMode);
     return modes;
   }
 
@@ -362,7 +409,7 @@
   }
 
   function calculateHitChance(enemy, dist, w = currentWeapon(), modeInfo = getWeaponModeInfo(w), options = {}) {
-    if (!enemy || enemy.dead || dist > w.range) return 0;
+    if (!enemy || enemy.dead || dist > effectiveWeaponRange(w, modeInfo)) return 0;
     const conditionPenalty = w.ammoType && typeof w.condition === 'number' ? Math.max(0, 70 - w.condition) * 0.0025 : 0;
     const statAimBonus = (statValue('per') - 5) * 0.025 + (hasStartTrait('trainedEye') ? 0.06 : 0);
     const luckBonus = Math.max(0, statValue('luck') - 5) * 0.006;
@@ -387,7 +434,9 @@
     } else {
       base = 0.72 + skillBonus + Math.max(0, statValue('str') - 5) * 0.012 + luckBonus - strengthPenalty - traumaPenalty;
     }
-    const cap = modeInfo?.id === 'aimed' ? 0.99 : (w.ammoType ? 0.96 : 0.94);
+    const cap = Number.isFinite(Number(modeInfo?.hitCap))
+      ? Number(modeInfo.hitCap)
+      : (modeInfo?.id === 'aimed' ? 0.99 : (w.ammoType ? 0.96 : 0.94));
     return Math.min(cap, Math.max(0.05, base));
   }
 
@@ -455,11 +504,12 @@
     const len = Math.hypot(dx, dz) || 1;
     const dir = { x: dx / len, z: dz / len };
     const blocked = blockingDistanceOnRay(dir, dist) + 0.25 < dist;
-    const inRange = dist <= w.range;
+    const weaponRange = effectiveWeaponRange(w, modeInfo);
+    const inRange = dist <= weaponRange;
     const chance = (!blocked && inRange) ? Math.round(calculateHitChance(enemy, dist, w, modeInfo) * 100) : 0;
     let note = `${modeInfo.label} · ${modeInfo.apCost} AP · ${Math.round(dist)} м`;
     if (isEnergyWeapon(w)) note += ` · риск сбоя ${Math.round(energyFailureChance(w, modeInfo) * 100)}%`;
-    if (!inRange) note = `Вне дальности · ${Math.round(dist)}/${w.range} м`;
+    if (!inRange) note = `Вне дальности · ${Math.round(dist)}/${Math.round(weaponRange)} м`;
     else if (blocked) note = 'Линия огня перекрыта';
     return { chance, note, modeInfo, dist, inRange, blocked };
   }
@@ -485,10 +535,26 @@
     const loadedNow = w?.ammoType ? Math.max(0, Number(w.loaded || 0)) : 0;
     const ammoType = w?.ammoType || '';
     const reserveNow = ammoType ? Math.max(0, Number(inventory.get(ammoType) || 0)) : 0;
+    const primaryBullet = Array.isArray(spend.bullets) ? spend.bullets[0] : null;
+    const handSlot = primaryBullet?.slot || spend.handSlot || (typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon');
+    const weaponRuntimeId = String(primaryBullet?.runtimeId || equipment?.[handSlot] || w?.id || '');
+    const hands = Array.isArray(spend.bullets) ? spend.bullets.map(bullet => ({
+      handSlot: bullet.slot,
+      weapon: weaponBaseId(bullet.weapon),
+      weaponRuntimeId: String(bullet.runtimeId || equipment?.[bullet.slot] || bullet.weapon?.id || ''),
+      loadedBefore: Number(bullet.loadedBefore ?? bullet.weapon?.loaded ?? 0),
+      loadedAfter: Number(bullet.loadedAfter ?? bullet.weapon?.loaded ?? 0),
+      conditionBefore: Number.isFinite(Number(bullet.conditionBefore)) ? Number(bullet.conditionBefore) : null,
+      conditionAfter: Number.isFinite(Number(bullet.conditionAfter)) ? Number(bullet.conditionAfter) : null
+    })) : [];
     return {
       token: spend.token || '',
-      weapon: weaponBaseId(w),
-      mode: modeInfo?.id || player.fireMode || 'single',
+      weapon: weaponBaseId(primaryBullet?.weapon || w),
+      weaponRuntimeId,
+      handSlot,
+      hands,
+      mode: spend.requestedMode || modeInfo?.id || player.fireMode || 'single',
+      resolvedMode: spend.resolvedMode || modeInfo?.id || player.fireMode || 'single',
       apCost: Number(spend.apCost ?? (modeInfo?.apCost || w?.apCost || 0)),
       shots: Math.max(1, Math.floor(Number(spend.shots || 1))),
       apBefore: Number(spend.apBefore ?? player.ap ?? 0),
@@ -519,8 +585,12 @@
   function applyServerCombatState(combat = null) {
     if (!combat || typeof combat !== 'object') return false;
     if (Number.isFinite(Number(combat.ap))) player.ap = Math.min(player.maxAp, Math.max(0, Number(combat.ap)));
-    const w = currentWeapon();
-    const activeSlot = typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon';
+    let activeSlot = combat.handSlot === 'offhand' ? 'offhand' : (combat.handSlot === 'weapon' ? 'weapon' : '');
+    if (!activeSlot && combat.weaponRuntimeId) {
+      activeSlot = ['weapon', 'offhand'].find(slot => String(equipment?.[slot] || '') === String(combat.weaponRuntimeId)) || '';
+    }
+    if (!activeSlot) activeSlot = typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon';
+    const w = ITEMS[equipment?.[activeSlot]] || (activeSlot === (typeof activeWeaponEquipmentSlot === 'function' ? activeWeaponEquipmentSlot() : 'weapon') ? currentWeapon() : null);
     const currentRuntimeId = String(equipment?.[activeSlot] || w?.id || '');
     const runtimeMatches = !combat.weaponRuntimeId || String(combat.weaponRuntimeId) === currentRuntimeId;
     if (w && runtimeMatches && combat.weapon && weaponBaseId(w) === String(combat.weapon) && w.ammoType && Number.isFinite(Number(combat.loaded))) {
@@ -533,6 +603,16 @@
     renderWeaponReadout();
     renderUI();
     return true;
+  }
+
+  function applyServerCombatPayload(payload = null) {
+    if (!payload || typeof payload !== 'object') return false;
+    const rows = Array.isArray(payload.combats) && payload.combats.length
+      ? payload.combats
+      : (payload.combat ? [payload.combat] : []);
+    let applied = false;
+    rows.forEach(row => { applied = applyServerCombatState(row) || applied; });
+    return applied;
   }
 
 

@@ -169,7 +169,7 @@
     return anyHit;
   }
 
-  function getWeaponMuzzlePoint(w = currentWeapon()) {
+  function getWeaponMuzzlePoint(w = currentWeapon(), handSlot = 'weapon') {
     // Локальная точка конца ствола в модели игрока. Модель развёрнута отдельно,
     // поэтому берём реальный world-space через playerGroup.localToWorld.
     const weaponId = weaponBaseId(w);
@@ -186,7 +186,10 @@
     else if (weaponId === 'knife') localZ = -0.72;
     playerGroup.position.set(player.x, player.y, player.z);
     playerGroup.rotation.y = player.angle + Math.PI;
-    return playerGroup.localToWorld(new THREE.Vector3(0.48, 1.05, localZ));
+    const handX = handSlot === 'offhand' ? -0.48 : 0.48;
+    const weaponGroup = typeof actorWeaponGroupForSlot === 'function' ? actorWeaponGroupForSlot(playerGroup, handSlot) : null;
+    if (weaponGroup) return weaponGroup.localToWorld(new THREE.Vector3(0, 0, localZ));
+    return playerGroup.localToWorld(new THREE.Vector3(handX, 1.05, localZ));
   }
 
   function createFloatingText(x, z, text, color = '#f0d28a') {

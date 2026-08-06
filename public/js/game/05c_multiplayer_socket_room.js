@@ -1194,9 +1194,12 @@
       const start = row ? getRemoteMuzzlePoint(row, data) : getEnemyMuzzlePoint(enemyShooter, data);
       const shotWeaponId = data.weapon || row?.data?.weapon || enemyShooter?.equipment?.weapon || 'pistol';
       const fx = weaponFxProfile(shotWeaponId);
-      const remoteWeaponGroup = row?.group && typeof activeActorWeaponGroup === 'function'
-        ? activeActorWeaponGroup(row.group)
-        : row?.group?.userData?.parts?.weaponGroup;
+      const shotHandSlot = data.handSlot === 'offhand' ? 'offhand' : 'weapon';
+      const remoteWeaponGroup = row?.group && typeof actorWeaponGroupForSlot === 'function'
+        ? actorWeaponGroupForSlot(row.group, shotHandSlot)
+        : (row?.group && typeof activeActorWeaponGroup === 'function'
+          ? activeActorWeaponGroup(row.group)
+          : row?.group?.userData?.parts?.weaponGroup);
       triggerWeaponVisualRecoil(remoteWeaponGroup || enemyShooter?.mesh?.userData?.enemyWeaponGroup, shotWeaponId);
       let ox = Number(data.originX);
       let oz = Number(data.originZ);

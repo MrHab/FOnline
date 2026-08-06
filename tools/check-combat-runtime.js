@@ -449,6 +449,20 @@ function seedCombatFixtures(accounts) {
     loaded: 3,
     reserveAmmo: 5
   }, usersDb, savesDb);
+  seedCharacterState(accounts.dualPistols, {
+    level: 50,
+    special: { str: 5, per: 5, end: 10, cha: 5, int: 5, agi: 10, luck: 5 },
+    weapon: 'pistol',
+    weaponRuntimeId: 'ui_pistol_dualright_1',
+    additionalWeapons: [{
+      baseId: 'pistol',
+      runtimeId: 'ui_pistol_dualleft_1',
+      loaded: 1
+    }],
+    ammoType: 'ammo9',
+    loaded: 3,
+    reserveAmmo: 6
+  }, usersDb, savesDb);
   seedCharacterState(accounts.strictAp, {
     special: { str: 8, per: 8, end: 8, cha: 5, int: 4, agi: 2, luck: 5 },
     weapon: 'pistol',
@@ -712,6 +726,7 @@ async function bootstrapCharacters(accounts) {
     ['persistence', 'persist'],
     ['cadence', 'cadence'],
     ['untargeted', 'air'],
+    ['dualPistols', 'dual'],
     ['strictAp', 'strict'],
     ['equipmentAp', 'equipment'],
     ['harvest', 'harvest'],
@@ -1141,6 +1156,100 @@ async function assertUntargetedAttack(accounts) {
     loaded: 2,
     reserveAmmo: 5
   }, 'untargeted cooldown rejection combat');
+  closeSocket(account);
+}
+
+async function assertDualPistolRuntime(accounts) {
+  const account = accounts.dualPistols;
+  const rightRuntimeId = 'ui_pistol_dualright_1';
+  const leftRuntimeId = 'ui_pistol_dualleft_1';
+  await connectAndJoin(account);
+
+  const equippedLeft = await sendEquipmentAction(account, leftRuntimeId, { slot: 'offhand' });
+  invariant(equippedLeft.ack.ok === true
+    && equippedLeft.ack.self?.equipmentRuntime?.weapon === rightRuntimeId
+    && equippedLeft.ack.self?.equipmentRuntime?.offhand === leftRuntimeId,
+  'Dual-pistol fixture could not equip a distinct pistol in each hand', equippedLeft.ack);
+
+  const dualToken = `combat_runtime_dual_${Date.now().toString(36)}_${++attackSequence}`;
+  const dualPayload = {
+    weapon: 'pistol',
+    weaponRuntimeId: rightRuntimeId,
+    handSlot: 'weapon',
+    mode: 'dual',
+    attackToken: dualToken,
+    combat: {
+      token: dualToken,
+      weapon: 'pistol',
+      weaponRuntimeId: rightRuntimeId,
+      handSlot: 'weapon',
+      mode: 'dual',
+      hands: [
+        { handSlot: 'weapon', weapon: 'pistol', weaponRuntimeId: rightRuntimeId },
+        { handSlot: 'offhand', weapon: 'pistol', weaponRuntimeId: leftRuntimeId }
+      ]
+    },
+    skillRanks: {},
+    talentRanks: {}
+  };
+  const dual = await socketAck(account.socket, 'combatAttack', dualPayload);
+  const rightAfterDual = dual.combats?.find(row => row.weaponRuntimeId === rightRuntimeId);
+  const leftAfterDual = dual.combats?.find(row => row.weaponRuntimeId === leftRuntimeId);
+  invariant(dual.ok === true
+    && dual.mode === 'dual'
+    && dual.fallback === false
+    && Number(dual.apCost) === 5
+    && Number(dual.shots) === 2
+    && Number(rightAfterDual?.loaded) === 2
+    && Number(leftAfterDual?.loaded) === 0
+    && Number(rightAfterDual?.condition) < 100
+    && Number(leftAfterDual?.condition) < 100,
+  'Paired volley did not atomically spend 5 AP and one round/condition tick from each runtime pistol', dual);
+
+  const replay = await socketAck(account.socket, 'combatAttack', dualPayload);
+  invariant(replay.ok === true && replay.reused === true,
+    'Paired-volley token replay was not idempotent after one hand became empty', replay);
+
+  await delay(700);
+  const fallbackToken = `combat_runtime_dual_${Date.now().toString(36)}_${++attackSequence}`;
+  const fallbackPayload = {
+    ...dualPayload,
+    attackToken: fallbackToken,
+    combat: {
+      ...dualPayload.combat,
+      token: fallbackToken,
+      hands: [{ handSlot: 'weapon', weapon: 'pistol', weaponRuntimeId: rightRuntimeId }]
+    }
+  };
+  const fallback = await socketAck(account.socket, 'combatAttack', fallbackPayload);
+  const fallbackInjuryPenalty = fallback.self?.injuries?.brokenArm ? 1 : 0;
+  invariant(fallback.ok === true
+    && fallback.fallback === true
+    && fallback.mode === 'single'
+    && Number(fallback.apCost) === 3 + fallbackInjuryPenalty
+    && Number(fallback.shots) === 1
+    && Number(fallback.combat?.loaded) === 1,
+  'Empty offhand did not downgrade a paired volley to one normal single shot', fallback);
+
+  await delay(3700);
+  const reload = await socketAck(account.socket, 'reloadWeapon', {
+    weapon: 'pistol',
+    dualReload: true,
+    skillRanks: {},
+    talentRanks: {}
+  });
+  const reloadedRight = reload.combats?.find(row => row.weaponRuntimeId === rightRuntimeId);
+  const reloadedLeft = reload.combats?.find(row => row.weaponRuntimeId === leftRuntimeId);
+  const reloadInjuryPenalty = reload.self?.injuries?.brokenArm ? 2 : 0;
+  invariant(reload.ok === true
+    && reload.dualReload === true
+    && Number(reload.apCost) === 4 + reloadInjuryPenalty
+    && Number(reload.take) === 6
+    && Number(reloadedRight?.loaded || 0) + Number(reloadedLeft?.loaded || 0) === 7
+    && Number(reloadedRight?.reserveAmmo) === 0
+    && Number(reloadedLeft?.reserveAmmo) === 0,
+  'Shared dual-pistol reload did not charge per magazine and conserve the common reserve', reload);
+
   closeSocket(account);
 }
 
@@ -1713,6 +1822,7 @@ async function main() {
     await exerciseMagazineBeforeReconnect(accounts);
     await assertMagazineAfterReconnect(accounts);
     await assertUntargetedAttack(accounts);
+    await assertDualPistolRuntime(accounts);
     await assertServerFireRate(accounts);
     await assertStrictServerAp(accounts);
     await assertEquipmentActionAuthority(accounts);
@@ -1725,6 +1835,7 @@ async function main() {
       'persistence',
       'cadence',
       'untargeted',
+      'dualPistols',
       'strictAp',
       'equipmentAp',
       'target'
@@ -1736,6 +1847,7 @@ async function main() {
       + 'same-base magazines stayed separate, stale save did not roll back live equipment, '
       + 'duplicate joins and loaded-runtime drops preserved live combat state, '
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
+      + 'paired pistols spent both runtime magazines atomically, fell back to one loaded hand, and reloaded both magazines, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
       + 'loaded bag weapons auto-unloaded into inventory when sold, '
       + 'equipment changes were revisioned/idempotent, hand slots persisted, and one-/two-handed conflicts were atomic, '

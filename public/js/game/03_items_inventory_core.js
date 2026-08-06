@@ -1,16 +1,16 @@
   // ===== ITEMS / INVENTORY / EQUIPMENT =====
   const ITEMS = {
-    pistol: { id: 'pistol', weight: 1.5, name: '9mm пистолет', icon: '🔫', type: 'weapon', slot: 'weapon', weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, desc: 'Лёгкое оружие. Режимы: одиночный и прицельный.', dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 8, loaded: 8, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
-    rifle: { id: 'rifle', weight: 4.0, name: 'Охотничья винтовка', icon: '🟫', type: 'weapon', slot: 'weapon', weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, desc: 'Лёгкое оружие большой дальности. Режимы: одиночный и прицельный.', dmg: [28, 40], range: 24, ammoType: 'ammo556', magSize: 5, loaded: 5, fireRate: 0.9, apCost: 4, reloadApCost: 3 },
-    assaultRifle: { id: 'assaultRifle', weight: 4.8, name: 'Ржавый автомат', icon: '🔫', type: 'weapon', slot: 'weapon', weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, desc: 'Автоматическое лёгкое оружие под .223. Режимы: одиночный, прицельный и автоматический. Автоматический режим стреляет одиночными пулями при удержании кнопки.', dmg: [13, 19], range: 18, ammoType: 'ammo556', magSize: 30, loaded: 30, fireRate: 0.42, apCost: 4, reloadApCost: 4, automatic: true },
-    machineGun: { id: 'machineGun', weight: 8.8, name: 'Самодельный пулемёт', icon: '🧨', type: 'weapon', slot: 'weapon', weaponSkill: 'heavyWeapons', damageType: 'ballistic', requiredStrength: 7, desc: 'Тяжёлое автоматическое оружие. Автоматический режим стреляет одиночными пулями при удержании кнопки. Требует высокой Силы.', dmg: [12, 18], range: 20, ammoType: 'ammo556', magSize: 45, loaded: 45, fireRate: 0.58, apCost: 5, reloadApCost: 6, automatic: true },
-    laserPistol: { id: 'laserPistol', weight: 2.2, name: 'Лазерный пистолет', icon: '🔴', type: 'weapon', slot: 'weapon', weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 3, energyFailureBase: 0.18, desc: 'Энергетическое оружие. Режимы: одиночный и прицельный. Может перегреться или дать сбой.', dmg: [22, 32], range: 16, ammoType: 'energyCell', magSize: 12, loaded: 12, fireRate: 0.62, apCost: 4, reloadApCost: 4 },
-    flamethrower: { id: 'flamethrower', weight: 7.4, name: 'Огнемёт', icon: '🔥', type: 'weapon', slot: 'weapon', weaponSkill: 'heavyWeapons', damageType: 'fire', requiredStrength: 6, desc: 'Тяжёлое оружие ближнего боя. Наносит огненный урон струёй, поддерживает автоматический режим. Использует напалм.', dmg: [14, 22], range: 8, ammoType: 'napalm', magSize: 30, loaded: 30, fireRate: 0.34, apCost: 5, reloadApCost: 6, automatic: true },
-    plasmaRifle: { id: 'plasmaRifle', weight: 5.1, name: 'Плазменное ружьё', icon: '🟢', type: 'weapon', slot: 'weapon', weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 5, energyFailureBase: 0.14, desc: 'Мощное энергетическое ружьё. Тяжёлое, точное и опасное.', dmg: [32, 48], range: 18, ammoType: 'energyCell', magSize: 14, loaded: 14, fireRate: 0.48, apCost: 5, reloadApCost: 5 },
-    shotgun: { id: 'shotgun', weight: 4.2, name: 'Дробовик', icon: '💥', type: 'weapon', slot: 'weapon', weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, desc: 'Оружие для ближней и средней дистанции. Стреляет дробовым зарядом.', dmg: [26, 40], range: 11, ammoType: 'shotgunShell', magSize: 6, loaded: 6, fireRate: 0.52, apCost: 5, reloadApCost: 4 },
-    rocketLauncher: { id: 'rocketLauncher', weight: 9.6, name: 'Ракетница', icon: '🚀', type: 'weapon', slot: 'weapon', weaponSkill: 'heavyWeapons', damageType: 'explosive', requiredStrength: 7, desc: 'Тяжёлое оружие с взрывным уроном по области. Взрыв задевает всех в радиусе, включая стрелка.', dmg: [54, 78], range: 22, ammoType: 'rocketAmmo', magSize: 1, loaded: 1, fireRate: 1.1, apCost: 6, reloadApCost: 7, explosiveRadius: 4.2 },
-    knife: { id: 'knife', weight: 0.5, name: 'Боевой нож', icon: '🗡️', type: 'weapon', slot: 'weapon', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 1, desc: 'Ближний бой. Не требует патронов.', dmg: [9, 15], range: 2.1, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.55, apCost: 2 },
-    fists: { id: 'fists', weight: 0, name: 'Кулаки', icon: '✊', type: 'weapon', weaponSkill: 'unarmed', damageType: 'ballistic', requiredStrength: 1, desc: 'Без оружия. Низкий урон, но всегда доступно.', dmg: [2, 4], range: 1.35, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.62, apCost: 2 },
+    pistol: { id: 'pistol', weight: 1.5, name: '9mm пистолет', icon: '🔫', type: 'weapon', slot: 'weapon', hands: 1, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, desc: 'Лёгкое одноручное оружие. Режимы: одиночный и прицельный.', dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 8, loaded: 8, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
+    rifle: { id: 'rifle', weight: 4.0, name: 'Охотничья винтовка', icon: '🟫', type: 'weapon', slot: 'weapon', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, desc: 'Двуручное лёгкое оружие большой дальности. Режимы: одиночный и прицельный.', dmg: [28, 40], range: 24, ammoType: 'ammo556', magSize: 5, loaded: 5, fireRate: 0.9, apCost: 4, reloadApCost: 3 },
+    assaultRifle: { id: 'assaultRifle', weight: 4.8, name: 'Ржавый автомат', icon: '🔫', type: 'weapon', slot: 'weapon', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, desc: 'Двуручное автоматическое лёгкое оружие под .223. Режимы: одиночный, прицельный и автоматический. Автоматический режим стреляет одиночными пулями при удержании кнопки.', dmg: [13, 19], range: 18, ammoType: 'ammo556', magSize: 30, loaded: 30, fireRate: 0.42, apCost: 4, reloadApCost: 4, automatic: true },
+    machineGun: { id: 'machineGun', weight: 8.8, name: 'Самодельный пулемёт', icon: '🧨', type: 'weapon', slot: 'weapon', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'ballistic', requiredStrength: 7, desc: 'Двуручное тяжёлое автоматическое оружие. Автоматический режим стреляет одиночными пулями при удержании кнопки. Требует высокой Силы.', dmg: [12, 18], range: 20, ammoType: 'ammo556', magSize: 45, loaded: 45, fireRate: 0.58, apCost: 5, reloadApCost: 6, automatic: true },
+    laserPistol: { id: 'laserPistol', weight: 2.2, name: 'Лазерный пистолет', icon: '🔴', type: 'weapon', slot: 'weapon', hands: 1, weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 3, energyFailureBase: 0.18, desc: 'Одноручное энергетическое оружие. Режимы: одиночный и прицельный. Может перегреться или дать сбой.', dmg: [22, 32], range: 16, ammoType: 'energyCell', magSize: 12, loaded: 12, fireRate: 0.62, apCost: 4, reloadApCost: 4 },
+    flamethrower: { id: 'flamethrower', weight: 7.4, name: 'Огнемёт', icon: '🔥', type: 'weapon', slot: 'weapon', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'fire', requiredStrength: 6, desc: 'Двуручное тяжёлое оружие ближнего боя. Наносит огненный урон струёй, поддерживает автоматический режим. Использует напалм.', dmg: [14, 22], range: 8, ammoType: 'napalm', magSize: 30, loaded: 30, fireRate: 0.34, apCost: 5, reloadApCost: 6, automatic: true },
+    plasmaRifle: { id: 'plasmaRifle', weight: 5.1, name: 'Плазменное ружьё', icon: '🟢', type: 'weapon', slot: 'weapon', hands: 2, weaponSkill: 'energyWeapons', damageType: 'energy', requiredStrength: 5, energyFailureBase: 0.14, desc: 'Мощное двуручное энергетическое ружьё. Тяжёлое, точное и опасное.', dmg: [32, 48], range: 18, ammoType: 'energyCell', magSize: 14, loaded: 14, fireRate: 0.48, apCost: 5, reloadApCost: 5 },
+    shotgun: { id: 'shotgun', weight: 4.2, name: 'Дробовик', icon: '💥', type: 'weapon', slot: 'weapon', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, desc: 'Двуручное оружие для ближней и средней дистанции. Стреляет дробовым зарядом.', dmg: [26, 40], range: 11, ammoType: 'shotgunShell', magSize: 6, loaded: 6, fireRate: 0.52, apCost: 5, reloadApCost: 4 },
+    rocketLauncher: { id: 'rocketLauncher', weight: 9.6, name: 'Ракетница', icon: '🚀', type: 'weapon', slot: 'weapon', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'explosive', requiredStrength: 7, desc: 'Двуручное тяжёлое оружие с взрывным уроном по области. Взрыв задевает всех в радиусе, включая стрелка.', dmg: [54, 78], range: 22, ammoType: 'rocketAmmo', magSize: 1, loaded: 1, fireRate: 1.1, apCost: 6, reloadApCost: 7, explosiveRadius: 4.2 },
+    knife: { id: 'knife', weight: 0.5, name: 'Боевой нож', icon: '🗡️', type: 'weapon', slot: 'weapon', hands: 1, weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 1, desc: 'Одноручное оружие ближнего боя. Не требует патронов.', dmg: [9, 15], range: 2.1, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.55, apCost: 2 },
+    fists: { id: 'fists', weight: 0, name: 'Кулаки', icon: '✊', type: 'weapon', hands: 1, weaponSkill: 'unarmed', damageType: 'ballistic', requiredStrength: 1, desc: 'Без оружия. Низкий урон, но всегда доступно.', dmg: [2, 4], range: 1.35, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.62, apCost: 2 },
     leather: { id: 'leather', weight: 3.0, name: 'Кожаная куртка', icon: '🧥', type: 'armor', slot: 'armor', desc: 'Лёгкая броня. Немного защищает от баллистического урона: слабые удары, укусы, ножи, когти.', armor: 3, protection: { ballistic: 0.08, fire: 0.03 }, thresholds: { ballistic: 1 } },
     metalArmor: { id: 'metalArmor', weight: 7.5, name: 'Металлическая броня', icon: '🦾', type: 'armor', slot: 'armor', desc: 'Металлическая броня. Защищает от баллистического урона и частично от взрывного.', armor: 6, protection: { ballistic: 0.16, explosive: 0.06, fire: 0.08 }, thresholds: { ballistic: 2, explosive: 1 } },
     ballisticVest: { id: 'ballisticVest', weight: 5.5, name: 'Бронежилет', icon: '🎽', type: 'armor', slot: 'armor', desc: 'Бронежилет. Хорошо защищает от баллистического урона и немного от взрывного.', armor: 7, protection: { ballistic: 0.26, explosive: 0.05 }, thresholds: { ballistic: 4 } },
@@ -48,14 +48,15 @@
     silver: { id: 'silver', weight: 0, name: 'Крышки', icon: '🪙', type: 'money', desc: 'Местная валюта.' },
     trophy: { id: 'trophy', weight: 0.5, name: 'Трофей', icon: '💎', type: 'loot', desc: 'Добыча с редкого противника.' },
     water: { id: 'water', weight: 1.0, name: 'Фляга воды', icon: '🍶', type: 'misc', desc: 'Чистая вода. Ценный предмет в пепельной зоне.' },
-    pickaxe: { id: 'pickaxe', weight: 3.0, name: 'Кирка', icon: '⛏️', type: 'tool', equipSlot: 'weapon', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 4, desc: 'Инструмент для добычи железной руды. В бою работает как тяжёлое оружие ближнего боя.', condition: 100, harvestTool: 'ore', dmg: [13, 21], range: 2.0, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.68, apCost: 3 },
-    axe: { id: 'axe', weight: 2.5, name: 'Топор', icon: '🪓', type: 'tool', equipSlot: 'weapon', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, desc: 'Инструмент для заготовки древесины. В бою работает как оружие ближнего боя.', condition: 100, harvestTool: 'wood', dmg: [11, 19], range: 2.1, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.62, apCost: 3 },
-    handPump: { id: 'handPump', weight: 2.7, name: 'Ручной насос', icon: 'P', type: 'tool', equipSlot: 'weapon', weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, desc: 'Инструмент для откачки воды и нефти. В бою работает как короткое тяжёлое оружие ближнего боя.', condition: 100, harvestTool: 'liquid', dmg: [7, 12], range: 1.8, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.72, apCost: 3 },
+    pickaxe: { id: 'pickaxe', weight: 3.0, name: 'Кирка', icon: '⛏️', type: 'tool', equipSlot: 'weapon', hands: 2, weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 4, desc: 'Двуручный инструмент для добычи железной руды. В бою работает как тяжёлое оружие ближнего боя.', condition: 100, harvestTool: 'ore', dmg: [13, 21], range: 2.0, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.68, apCost: 3 },
+    axe: { id: 'axe', weight: 2.5, name: 'Топор', icon: '🪓', type: 'tool', equipSlot: 'weapon', hands: 2, weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, desc: 'Двуручный инструмент для заготовки древесины. В бою работает как оружие ближнего боя.', condition: 100, harvestTool: 'wood', dmg: [11, 19], range: 2.1, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.62, apCost: 3 },
+    handPump: { id: 'handPump', weight: 2.7, name: 'Ручной насос', icon: 'P', type: 'tool', equipSlot: 'weapon', hands: 2, weaponSkill: 'melee', damageType: 'ballistic', requiredStrength: 3, desc: 'Двуручный инструмент для откачки воды и нефти. В бою работает как короткое тяжёлое оружие ближнего боя.', condition: 100, harvestTool: 'liquid', dmg: [7, 12], range: 1.8, ammoType: null, magSize: 0, loaded: 0, fireRate: 0.72, apCost: 3 },
     repairKit: { id: 'repairKit', weight: 1.5, name: 'Ремкомплект', icon: '🧰', type: 'consumable', desc: 'Позволяет починить оружие, броню или инструмент.', repair: 40 }
   };
 
   const SLOT_LABELS = {
-    weapon: 'Руки',
+    weapon: 'Правая рука',
+    offhand: 'Левая рука',
     armor: 'Корпус',
     helmet: 'Голова',
     boots: 'Ноги',
@@ -139,6 +140,7 @@
   }
   const equipment = {
     weapon: 'pistol',
+    offhand: null,
     armor: 'leather',
     helmet: 'helmet',
     boots: 'boots',
@@ -160,8 +162,49 @@
     return item.slot || item.equipSlot || '';
   }
 
+  const HAND_EQUIPMENT_SLOTS = ['weapon', 'offhand'];
+
+  function itemHands(itemOrId) {
+    const item = typeof itemOrId === 'string' ? ITEMS[itemOrId] : itemOrId;
+    return Number(item?.hands) === 2 ? 2 : 1;
+  }
+
+  function isHandEquipmentSlot(slot = '') {
+    return HAND_EQUIPMENT_SLOTS.includes(String(slot || ''));
+  }
+
+  function itemFitsEquipmentSlot(itemOrId, slot = '') {
+    const item = typeof itemOrId === 'string' ? ITEMS[itemOrId] : itemOrId;
+    if (!item) return false;
+    const preferred = itemEquipSlot(item);
+    return isHandEquipmentSlot(slot) ? preferred === 'weapon' : preferred === slot;
+  }
+
+  function primaryTwoHandedItem() {
+    const item = ITEMS[equipment.weapon];
+    return item && itemHands(item) === 2 ? item : null;
+  }
+
+  function equipmentItemForSlot(slot = '') {
+    if (slot === 'offhand') return ITEMS[equipment.offhand] || primaryTwoHandedItem();
+    return ITEMS[equipment[slot]] || null;
+  }
+
+  function equipmentSlotIsTwoHandedOccupancy(slot = '') {
+    return slot === 'offhand' && !equipment.offhand && Boolean(primaryTwoHandedItem());
+  }
+
+  function activeWeaponEquipmentSlot() {
+    const primary = ITEMS[equipment.weapon];
+    if (primary && primary.id !== 'fists' && (primary.type === 'weapon' || Array.isArray(primary.dmg))) return 'weapon';
+    const secondary = ITEMS[equipment.offhand];
+    if (secondary && secondary.id !== 'fists' && (secondary.type === 'weapon' || Array.isArray(secondary.dmg))) return 'offhand';
+    return 'weapon';
+  }
+
   function currentHeldItem() {
-    const id = equipment.weapon;
+    const primaryId = equipment.weapon;
+    const id = primaryId && primaryId !== 'fists' ? primaryId : (equipment.offhand || primaryId);
     const item = id ? ITEMS[id] : null;
     return item ? { id, item } : null;
   }
@@ -308,9 +351,10 @@
     return total;
   }
 
-  function findFirstItemInstanceInMap(mapObj, wantedBaseId, slot = null) {
+  function findFirstItemInstanceInMap(mapObj, wantedBaseId, slot = null, excludedIds = null) {
     for (const [id, qty] of mapObj.entries()) {
       if (qty <= 0 || baseItemId(id) !== wantedBaseId) continue;
+      if (excludedIds?.has?.(id)) continue;
       const item = ITEMS[id];
       if (slot && itemEquipSlot(item) !== slot) continue;
       return id;
@@ -345,14 +389,19 @@
 
   function normalizeEquipmentReferencesToUnique() {
     let changed = false;
+    const claimedRuntimeIds = new Set(Object.values(equipment).filter(id => isRuntimeItemId(id)));
     Object.keys(equipment).forEach(slot => {
       const id = equipment[slot];
       if (!id) return;
       const item = ITEMS[id];
       if (!item) { equipment[slot] = null; changed = true; return; }
       if (isUniqueEquipmentItem(id) && !isRuntimeItemId(id)) {
-        const runtimeId = findFirstItemInstanceInMap(inventory, id, itemEquipSlot(item) || slot);
-        if (runtimeId) { equipment[slot] = runtimeId; changed = true; }
+        const runtimeId = findFirstItemInstanceInMap(inventory, id, itemEquipSlot(item) || slot, claimedRuntimeIds);
+        if (runtimeId) {
+          equipment[slot] = runtimeId;
+          claimedRuntimeIds.add(runtimeId);
+          changed = true;
+        }
       }
     });
     return changed;
@@ -427,7 +476,16 @@
       const id = baseItemId(row?.id || row?.itemId || '');
       const qty = Math.max(0, Math.floor(Number(row?.qty ?? row?.count ?? 0)));
       if (!id || id === 'fists' || !ITEMS[id] || qty <= 0) return;
-      next.set(id, Math.max(0, Math.floor(Number(next.get(id) || 0))) + qty);
+      let remaining = qty;
+      if (isUniqueEquipmentItem(id)) {
+        for (const [runtimeId, runtimeQty] of inventory.entries()) {
+          if (remaining <= 0) break;
+          if (runtimeQty <= 0 || !isRuntimeItemId(runtimeId) || baseItemId(runtimeId) !== id || next.has(runtimeId)) continue;
+          next.set(runtimeId, 1);
+          remaining -= 1;
+        }
+      }
+      if (remaining > 0) next.set(id, Math.max(0, Math.floor(Number(next.get(id) || 0))) + remaining);
     });
     inventory.clear();
     next.forEach((qty, id) => inventory.set(id, qty));

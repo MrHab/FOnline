@@ -374,7 +374,7 @@
     }
 
     const toolId = resourceDef.toolId;
-    const heldToolId = equipment.weapon || '';
+    const heldToolId = equipment[activeWeaponEquipmentSlot()] || '';
     const heldToolBaseId = baseRuntimeItemId(heldToolId);
     if (heldToolBaseId !== toolId) {
       setReadout(resourceDef.hold);

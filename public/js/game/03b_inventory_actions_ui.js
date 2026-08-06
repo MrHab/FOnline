@@ -46,7 +46,7 @@
   normalizeUniqueEquipmentState();
 
   function currentWeapon() {
-    const held = ITEMS[equipment.weapon];
+    const held = ITEMS[equipment[activeWeaponEquipmentSlot()]];
     return held && (held.type === 'weapon' || Array.isArray(held.dmg)) ? held : ITEMS.fists;
   }
 
@@ -371,7 +371,10 @@
         renderWeaponReadout();
         return;
       }
-      if (ack.changed !== false && options.logText) addLog(options.logText, null, 'system');
+      if (ack.changed !== false && options.logText) {
+        const logText = typeof options.logText === 'function' ? options.logText(ack) : options.logText;
+        if (logText) addLog(logText, null, 'system');
+      }
       if (options.readoutText) setReadout(options.readoutText);
       updatePlayerEquipmentVisuals();
       renderInventory();
@@ -499,6 +502,7 @@
     if (!item) return '';
     if (item.stat) return item.stat;
     if (item.type === 'weapon' || (item.type === 'tool' && Array.isArray(item.dmg))) {
+      const grip = ` · ${itemHands(item) === 2 ? 'двуручное' : 'одноручное'}`;
       const ammo = item.ammoType ? ` · магазин ${item.loaded}/${item.magSize}` : ' · без патронов';
       const modes = item.ammoType ? (item.automatic ? ' · режимы: одиночный/прицельный/авто' : ' · режимы: одиночный/прицельный') : '';
       const req = item.requiredStrength ? ` · треб. Сила ${item.requiredStrength}` : '';
@@ -507,7 +511,7 @@
       const condition = typeof item.condition === 'number' ? ` · состояние ${Math.round(item.condition)}%` : '';
       const harvestLabels = { ore: 'руда', wood: 'древесина', liquid: 'вода/нефть' };
       const harvest = item.harvestTool ? ` · добыча: ${harvestLabels[item.harvestTool] || item.harvestTool}` : '';
-      return `Урон ${item.dmg[0]}-${item.dmg[1]} · тип ${damageTypeLabel(item.damageType || 'ballistic')} · дальность ${item.range}${ammo}${modes}${req}${skill}${energyRisk}${condition}${harvest} · Вес ${formatWeight(itemWeight(item.id))}`;
+      return `Урон ${item.dmg[0]}-${item.dmg[1]} · тип ${damageTypeLabel(item.damageType || 'ballistic')}${grip} · дальность ${item.range}${ammo}${modes}${req}${skill}${energyRisk}${condition}${harvest} · Вес ${formatWeight(itemWeight(item.id))}`;
     }
     if (item.armor || item.protection || item.thresholds) {
       const condition = typeof item.condition === 'number' ? ` · состояние ${Math.round(item.condition)}%` : '';
@@ -527,29 +531,35 @@
     return weightText;
   }
 
-  function equipItem(id) {
+  function equipItem(id, preferredSlot = '') {
     const item = ITEMS[id];
-    const slot = itemEquipSlot(item);
+    const naturalSlot = itemEquipSlot(item);
+    const slot = naturalSlot === 'weapon'
+      ? (itemHands(item) === 2 ? 'weapon' : (isHandEquipmentSlot(preferredSlot) ? preferredSlot : 'weapon'))
+      : naturalSlot;
     if (!item || !slot || !Object.prototype.hasOwnProperty.call(equipment, slot)) return;
     if ((inventory.get(id) || 0) <= 0) return;
     if (equipment[slot] === id) {
       setReadout(`${item.name}: уже экипировано.`);
       return;
     }
-    const actionText = slot === 'weapon' ? 'В руках' : 'Надето';
+    const actionText = slot === 'weapon'
+      ? (itemHands(item) === 2 ? 'В обеих руках' : 'В правой руке')
+      : (slot === 'offhand' ? 'В левой руке' : 'Надето');
     requestServerEquipmentAction(slot, id, {
-      logText: `${actionText}: ${item.name}. Потрачено ${INVENTORY_MANIPULATION_AP_COST} ОД.`,
+      logText: ack => `${actionText}: ${item.name}. Потрачено ${Math.max(0, Number(ack?.apCost || INVENTORY_MANIPULATION_AP_COST))} ОД.`,
       readoutText: `${actionText}: ${item.name}.`
     });
   }
 
 
   function unequipSlot(slot) {
-    const id = equipment[slot];
+    const actualSlot = equipmentSlotIsTwoHandedOccupancy(slot) ? 'weapon' : slot;
+    const id = equipment[actualSlot];
     if (!id) return;
     const item = ITEMS[id];
-    requestServerEquipmentAction(slot, '', {
-      logText: item ? `Снято: ${item.name}. Потрачено ${INVENTORY_MANIPULATION_AP_COST} ОД.` : '',
+    requestServerEquipmentAction(actualSlot, '', {
+      logText: item ? (ack => `Снято: ${item.name}. Потрачено ${Math.max(0, Number(ack?.apCost || INVENTORY_MANIPULATION_AP_COST))} ОД.`) : '',
       readoutText: item ? `Снято: ${item.name}.` : 'Предмет снят.'
     });
   }
@@ -618,9 +628,10 @@
     const grid = document.getElementById('equipment-grid');
     grid.innerHTML = '';
     Object.keys(SLOT_LABELS).forEach(slot => {
-      const item = ITEMS[equipment[slot]];
+      const item = equipmentItemForSlot(slot);
+      const twoHandedOccupancy = equipmentSlotIsTwoHandedOccupancy(slot);
       const div = document.createElement('div');
-      div.className = 'equip-slot' + (item ? '' : ' empty');
+      div.className = 'equip-slot' + (item ? '' : ' empty') + (twoHandedOccupancy ? ' two-handed-occupied' : '');
       div.dataset.slot = slot;
       div.innerHTML = `<div class="equip-icon">${item ? itemArtHtml(item) : '<span class="item-art-empty">—</span>'}</div><div><div class="equip-name">${item ? item.name : 'Пусто'}</div><div class="equip-type">${SLOT_LABELS[slot]}</div></div>${item ? '<button type="button" class="equip-clear" aria-label="Снять">×</button>' : ''}`;
 
@@ -636,13 +647,13 @@
         div.classList.remove('drag-over');
         const itemId = e.dataTransfer.getData('text/item-id') || e.dataTransfer.getData('text/plain') || draggedInventoryItem;
         const dropItem = ITEMS[itemId];
-        if (dropItem && itemEquipSlot(dropItem) === slot) equipItem(itemId);
+        if (dropItem && itemFitsEquipmentSlot(dropItem, slot)) equipItem(itemId, slot);
         else setReadout(`В слот «${SLOT_LABELS[slot]}» можно положить только подходящий предмет.`);
         draggedInventoryItem = null;
       });
 
       if (item) {
-        div.addEventListener('contextmenu', e => { e.preventDefault(); showEquippedItemContextMenu(e, slot); });
+        div.addEventListener('contextmenu', e => { e.preventDefault(); showEquippedItemContextMenu(e, twoHandedOccupancy ? 'weapon' : slot); });
         const clearBtn = div.querySelector('.equip-clear');
         if (clearBtn) {
           clearBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); });
@@ -656,9 +667,8 @@
     });
 
     const stats = document.getElementById('stats-box');
-    const held = currentHeldItem();
     const w = currentWeapon();
-    const heldItem = held?.item || w;
+    const heldItem = w;
     const ammoText = w.ammoType ? `${w.loaded}/${w.magSize} · запас ${inventory.get(w.ammoType) || 0}` : 'не нужны';
     const specialRows = specialStatDefs().map(def => {
       const base = Number(characterProfile?.special?.[def.key] ?? DEFAULT_SPECIAL[def.key] ?? 5);
@@ -677,7 +687,9 @@
         <div class="special-status-title">SPECIAL</div>
         <div class="special-status-grid">${specialRows}</div>
       </div>
-      <div class="stat-line">В руках: <b>${heldItem.name}</b></div>
+      <div class="stat-line">Активно: <b>${heldItem.name}</b></div>
+      <div class="stat-line">Правая рука: <b>${equipmentItemForSlot('weapon')?.name || 'пусто'}</b></div>
+      <div class="stat-line">Левая рука: <b>${equipmentItemForSlot('offhand')?.name || 'пусто'}</b></div>
       <div class="stat-line">Урон: <b>${weaponDamageText(w)}</b></div>
       <div class="stat-line">Дальность: <b>${w.range}</b></div>
       <div class="stat-line">Патроны: <b>${ammoText}</b></div>
@@ -711,10 +723,11 @@
 
   function equippedSlotSummary(slot, item) {
     if (!item) return 'Перетащите предмет в подходящий слот.';
-    if (slot === 'weapon' && Array.isArray(item.dmg)) {
+    if (isHandEquipmentSlot(slot) && Array.isArray(item.dmg)) {
       const ap = Number(item.apCost || 0);
       const range = Number(item.range || 0);
-      return `Урон ${item.dmg[0]}-${item.dmg[1]}${range ? ` · ${range} м` : ''}${ap ? ` · ${Math.round(ap)} ОД` : ''}`;
+      const grip = itemHands(item) === 2 ? 'двуручное' : 'одноручное';
+      return `${grip} · урон ${item.dmg[0]}-${item.dmg[1]}${range ? ` · ${range} м` : ''}${ap ? ` · ${Math.round(ap)} ОД` : ''}`;
     }
     if (item.armor || item.protection || item.thresholds) {
       if (typeof armorProtectionText === 'function') return armorProtectionText(item);
@@ -729,10 +742,11 @@
     const panel = document.getElementById('inventory-character-panel');
     if (!panel) return;
     const equippedIds = Object.values(equipment).filter(Boolean);
+    const occupiedSlotCount = equippedIds.length + (primaryTwoHandedItem() && !equipment.offhand ? 1 : 0);
     const characterName = characterProfile?.name || player.name || 'Странник';
     const armor = ITEMS[equipment.armor];
     const helmet = ITEMS[equipment.helmet];
-    const weapon = ITEMS[equipment.weapon];
+    const weapon = currentWeapon();
     const stageClasses = [
       'pipboy-character-model',
       armor ? 'has-armor' : '',
@@ -746,7 +760,7 @@
           <span>Модель</span>
           <b>${escapeHtml(characterName)}</b>
         </div>
-        <small>${equippedIds.length}/${Object.keys(SLOT_LABELS).length} слотов</small>
+        <small>${occupiedSlotCount}/${Object.keys(SLOT_LABELS).length} слотов</small>
       </div>
       <div class="inventory-character-stage">
         <div class="inventory-character-grid-glow" aria-hidden="true"></div>
@@ -766,10 +780,12 @@
 
     const grid = panel.querySelector('#inventory-equipped-grid');
     Object.keys(SLOT_LABELS).forEach(slot => {
-      const id = equipment[slot];
-      const item = ITEMS[id];
+      const twoHandedOccupancy = equipmentSlotIsTwoHandedOccupancy(slot);
+      const actualSlot = twoHandedOccupancy ? 'weapon' : slot;
+      const id = equipment[actualSlot];
+      const item = equipmentItemForSlot(slot);
       const slotEl = document.createElement('div');
-      slotEl.className = `equip-slot inventory-equip-slot inventory-equip-slot-${slot}${item ? '' : ' empty'}`;
+      slotEl.className = `equip-slot inventory-equip-slot inventory-equip-slot-${slot}${item ? '' : ' empty'}${twoHandedOccupancy ? ' two-handed-occupied' : ''}`;
       slotEl.dataset.slot = slot;
       slotEl.innerHTML = `
         <div class="inventory-equip-label">${escapeHtml(SLOT_LABELS[slot])}</div>
@@ -793,13 +809,13 @@
         slotEl.classList.remove('drag-over');
         const itemId = e.dataTransfer.getData('text/item-id') || e.dataTransfer.getData('text/plain') || draggedInventoryItem;
         const dropItem = ITEMS[itemId];
-        if (dropItem && itemEquipSlot(dropItem) === slot) equipItem(itemId);
+        if (dropItem && itemFitsEquipmentSlot(dropItem, slot)) equipItem(itemId, slot);
         else setReadout(`В слот «${SLOT_LABELS[slot]}» можно положить только подходящий предмет.`);
         draggedInventoryItem = null;
       });
 
       if (item) {
-        slotEl.addEventListener('contextmenu', e => { e.preventDefault(); showEquippedItemContextMenu(e, slot); });
+        slotEl.addEventListener('contextmenu', e => { e.preventDefault(); showEquippedItemContextMenu(e, actualSlot); });
         slotEl.addEventListener('mouseenter', e => showTooltip(e, item));
         slotEl.addEventListener('mousemove', moveTooltip);
         slotEl.addEventListener('mouseleave', hideTooltip);
@@ -1104,8 +1120,8 @@
     if (target.kind === 'equipment') {
       const item = ITEMS[payload.itemId];
       const slot = target.el.dataset.slot;
-      if (item && itemEquipSlot(item) === slot) {
-        equipItem(payload.itemId);
+      if (item && itemFitsEquipmentSlot(item, slot)) {
+        equipItem(payload.itemId, slot);
         return true;
       }
       setReadout(slot && SLOT_LABELS[slot] ? `В слот «${SLOT_LABELS[slot]}» можно положить только подходящий предмет.` : 'Сюда нельзя положить этот предмет.');

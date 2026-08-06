@@ -107,7 +107,7 @@
       multiplayer.equipmentRevision = Math.max(0, Math.floor(Number(snapshot.equipmentRevision)));
     }
     if (snapshot.equipment && typeof snapshot.equipment === 'object') {
-      ['weapon', 'armor', 'helmet', 'boots', 'backpack'].forEach(slot => {
+      ['weapon', 'offhand', 'armor', 'helmet', 'boots', 'backpack'].forEach(slot => {
         const fallback = slot === 'weapon' ? 'fists' : '';
         const serverBaseId = typeof baseItemId === 'function'
           ? baseItemId(snapshot.equipment[slot] || fallback)
@@ -132,9 +132,18 @@
     if (Array.isArray(snapshot.weaponInventoryRuntime)) {
       const rows = snapshot.weaponInventoryRuntime.slice(0, 80);
       const weaponBases = new Set(rows.map(row => String(row?.baseId || '')).filter(Boolean));
-      const equippedWeaponId = String(equipment?.weapon || '');
+      const equippedWeaponIds = new Set(['weapon', 'offhand'].map(slot => String(equipment?.[slot] || '')).filter(Boolean));
+      const stableRuntimeIdsByBase = new Map();
+      for (const [itemId, qty] of inventory.entries()) {
+        if (equippedWeaponIds.has(itemId) || qty <= 0 || typeof isRuntimeItemId !== 'function' || !isRuntimeItemId(itemId)) continue;
+        const baseId = typeof baseItemId === 'function' ? baseItemId(itemId) : itemId;
+        if (!weaponBases.has(String(baseId))) continue;
+        const ids = stableRuntimeIdsByBase.get(String(baseId)) || [];
+        ids.push(itemId);
+        stableRuntimeIdsByBase.set(String(baseId), ids);
+      }
       for (const [itemId] of Array.from(inventory.entries())) {
-        if (itemId === equippedWeaponId) continue;
+        if (equippedWeaponIds.has(itemId)) continue;
         const baseId = typeof baseItemId === 'function' ? baseItemId(itemId) : itemId;
         if (weaponBases.has(String(baseId))) inventory.delete(itemId);
       }
@@ -143,17 +152,21 @@
         const baseId = String(row?.baseId || '');
         const qty = Math.max(0, Math.floor(Number(row?.qty || 0)));
         if (!rawId || !baseId || qty <= 0) return;
-        if (!ITEMS[rawId] && typeof ensureSavedRuntimeItem === 'function') {
-          ensureSavedRuntimeItem(rawId, {
-            baseId,
-            loaded: Number(row.loaded || 0),
-            condition: Number(row.condition || 100)
-          });
-        }
-        if (!ITEMS[rawId]) return;
-        if (Number.isFinite(Number(row.loaded))) ITEMS[rawId].loaded = Math.max(0, Math.round(Number(row.loaded)));
-        if (Number.isFinite(Number(row.condition))) ITEMS[rawId].condition = Math.max(1, Math.min(100, Number(row.condition)));
-        inventory.set(rawId, qty);
+        const stableIds = rawId === baseId ? (stableRuntimeIdsByBase.get(baseId) || []).splice(0, qty) : [];
+        const resolvedIds = stableIds.concat(Array.from({ length: Math.max(0, qty - stableIds.length) }, () => rawId));
+        resolvedIds.forEach(resolvedId => {
+          if (!ITEMS[resolvedId] && typeof ensureSavedRuntimeItem === 'function') {
+            ensureSavedRuntimeItem(resolvedId, {
+              baseId,
+              loaded: Number(row.loaded || 0),
+              condition: Number(row.condition || 100)
+            });
+          }
+          if (!ITEMS[resolvedId]) return;
+          if (Number.isFinite(Number(row.loaded))) ITEMS[resolvedId].loaded = Math.max(0, Math.round(Number(row.loaded)));
+          if (Number.isFinite(Number(row.condition))) ITEMS[resolvedId].condition = Math.max(1, Math.min(100, Number(row.condition)));
+          inventory.set(resolvedId, Math.max(0, Number(inventory.get(resolvedId) || 0)) + 1);
+        });
       });
       if (typeof normalizeUniqueEquipmentState === 'function') normalizeUniqueEquipmentState();
     }

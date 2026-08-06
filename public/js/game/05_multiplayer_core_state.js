@@ -426,8 +426,8 @@
   }
 
   function multiplayerWeaponId() {
-    try { return networkEquipmentBaseId(equipment.weapon || currentWeapon()?.id || 'fists', 'fists'); }
-    catch (_) { return networkEquipmentBaseId(equipment.weapon || 'fists', 'fists'); }
+    try { return networkEquipmentBaseId(equipment[activeWeaponEquipmentSlot()] || currentWeapon()?.id || 'fists', 'fists'); }
+    catch (_) { return networkEquipmentBaseId(equipment.weapon || equipment.offhand || 'fists', 'fists'); }
   }
 
   function multiplayerEquipmentSnapshot() {
@@ -436,6 +436,7 @@
       // equipment to other players, but it needs the local runtime id to keep
       // each physical weapon's magazine separate.
       weapon: String(equipment.weapon || 'fists').slice(0, 96),
+      offhand: String(equipment.offhand || '').slice(0, 96),
       armor: String(equipment.armor || '').slice(0, 96),
       helmet: String(equipment.helmet || '').slice(0, 96),
       boots: String(equipment.boots || '').slice(0, 96),

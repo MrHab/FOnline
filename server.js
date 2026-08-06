@@ -3118,7 +3118,11 @@ function normalizeServerTraderStock(stock = []) {
       if (!SERVER_ITEM_IDS.has(id) || id === 'fists') return null;
       const qty = clamp(Math.floor(Number(row.qty ?? row.count ?? 1)), 1, serverItemStackLimit(id));
       const price = clamp(Math.round(Number(row.price ?? 1)), 1, 999999);
-      return { id, qty, price };
+      const shelfTarget = clamp(Math.floor(Number(row.shelfTarget ?? qty)), 1, serverItemStackLimit(id));
+      const shelfMin = clamp(Math.floor(Number(row.shelfMin ?? (shelfTarget <= 1 ? 0 : Math.max(1, Math.floor(shelfTarget * 0.3))))), 0, shelfTarget);
+      const shelfMax = clamp(Math.floor(Number(row.shelfMax ?? Math.ceil(shelfTarget * 1.35))), shelfTarget, serverItemStackLimit(id));
+      const priority = clamp(Math.round(Number(row.priority ?? 60)), 1, 100);
+      return { id, qty: shelfTarget, price, shelfMin, shelfTarget, shelfMax, priority };
     })
     .filter(Boolean);
 }
@@ -3159,7 +3163,8 @@ const WASTELAND_SIM = createWastelandSimulation({
   gameDayRealMs: GAME_DAY_REAL_MS,
   saveIntervalMs: WASTELAND_SIM_SAVE_INTERVAL_MS,
   getGlobalMap: () => GLOBAL_MAP,
-  itemIds: SERVER_ITEM_IDS
+  itemIds: SERVER_ITEM_IDS,
+  traderProfiles: SERVER_TRADER_PROFILES
 });
 
 function reconcileSavedWorldPartyMembers() {
@@ -5431,6 +5436,7 @@ function performServerNpcQuestAction(player = {}, actor = {}, data = {}) {
   player.inventory = nextInventory;
   player.inventoryUpdatedAt = Date.now();
   if (paidSilver > 0) serverNpcSetInventoryCaps(actor, serverNpcInventoryCaps(actor) - paidSilver);
+  if (paidSilver > 0) serverSyncFactionTraderMarket(actor);
   const xp = Math.max(0, Math.round(Number(quest.reward.xp || 0) * multiplier));
   serverGrantXp(player, xp);
   state[questId] = 'done';
@@ -10426,7 +10432,11 @@ function serverTradeMachineAuthoredStock(row = {}) {
   return source.slice(0, 80).map(entry => ({
     id: serverBaseItemId(entry?.id || ''),
     price: clamp(Math.round(Number(entry?.price || 1)), 1, 9999),
-    qty: clamp(Math.floor(Number(entry?.qty || 0)), 0, 9999)
+    qty: clamp(Math.floor(Number(entry?.shelfTarget ?? entry?.qty ?? 0)), 0, 9999),
+    shelfMin: clamp(Math.floor(Number(entry?.shelfMin ?? 0)), 0, 9999),
+    shelfTarget: clamp(Math.floor(Number(entry?.shelfTarget ?? entry?.qty ?? 0)), 0, 9999),
+    shelfMax: clamp(Math.floor(Number(entry?.shelfMax ?? entry?.qty ?? 0)), 0, 9999),
+    priority: clamp(Math.floor(Number(entry?.priority ?? 60)), 1, 100)
   })).filter(entry => entry.id && entry.id !== 'silver' && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
 }
 
@@ -10439,15 +10449,19 @@ function serverTradeMachineMarket(room = null, loc = {}, row = {}) {
   const buyInterests = (Array.isArray(interactive.buyInterests) ? interactive.buyInterests : (Array.isArray(entity.buyInterests) ? entity.buyInterests : []))
     .map(value => String(value || '').toLowerCase()).filter(Boolean).slice(0, 24);
   const caps = Math.max(0, Math.floor(Number(site.stockpile?.silver || 0)));
+  const restockHours = clamp(Math.floor(Number(interactive.restockHours ?? entity.restockHours ?? 24)), 1, 720);
+  const marketKey = `${site.id}:machine:${String(row.id || traderProfile).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)}`;
   const supplied = WASTELAND_SIM.applyTraderSupply(traderProfile, {
     stock: serverTradeMachineAuthoredStock(row),
     caps,
+    restockHours,
     buyInterests
   }, {
     siteId: site.id,
     locationId: String(loc?.id || room?.locationId || ''),
     role: 'tradeMachine',
-    traderProfile
+    traderProfile,
+    marketKey
   });
   const stock = (Array.isArray(supplied?.stock) ? supplied.stock : []).slice(0, 80).map(entry => ({
     id: serverBaseItemId(entry?.id || ''),
@@ -10462,7 +10476,10 @@ function serverTradeMachineMarket(room = null, loc = {}, row = {}) {
     traderProfile,
     buyInterests,
     stock,
-    caps,
+    caps: Math.max(0, Math.floor(Number(supplied?.caps ?? caps))),
+    baseCaps: Math.max(0, Math.floor(Number(supplied?.baseCaps ?? caps))),
+    restockHours: Number(supplied?.restockHours || restockHours),
+    marketKey: String(supplied?.marketKey || marketKey),
     market: supplied?.market || null,
     worldHour: Number(WASTELAND_SIM.state()?.worldHour || 0)
   };
@@ -10589,8 +10606,13 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
   const applied = WASTELAND_SIM.applyTradeMachineTransaction(market.siteId, {
     buys,
     sells,
+    resaleRows: sells.map(entry => ({
+      ...entry,
+      price: serverNpcTradeResalePrice(entry.id, market, player)
+    })),
     silverDelta: net,
-    playerId: player?.id || ''
+    playerId: player?.id || '',
+    marketKey: market.marketKey
   });
   if (!applied?.ok) {
     const updatedMarket = serverTradeMachineMarket(room, loc, row);
@@ -10681,6 +10703,25 @@ function ensureServerFriendlyNpcSocialState(actor = {}) {
 function serverNpcTradeMarket(actor = {}) {
   ensureServerFriendlyNpcSocialState(actor);
   serverRefreshPersonalNpcTradeStock(actor);
+  if (actor.personalTrade !== true
+    && Array.isArray(actor.traderBaseStock)
+    && actor.traderBaseStock.length
+    && typeof WASTELAND_SIM.applyTraderSupply === 'function') {
+    const profileId = actor.traderProfile || actor.tradeProfile || actor.traderId || '';
+    const supplied = WASTELAND_SIM.applyTraderSupply(profileId, {
+      stock: actor.traderBaseStock,
+      caps: actor.traderBaseCaps,
+      restockHours: actor.traderRestockHours,
+      buyInterests: actor.traderBuyInterests
+    }, serverNpcFactionTradeContext(actor));
+    if (supplied?.marketKey) {
+      actor.traderStock = supplied.stock;
+      actor.traderMarket = supplied.market || actor.traderMarket || null;
+      actor.traderMarketKey = supplied.marketKey;
+      actor.traderRestockHours = supplied.restockHours;
+      serverNpcSetInventoryCaps(actor, supplied.caps);
+    }
+  }
   const stock = (Array.isArray(actor.traderStock) ? actor.traderStock : []).slice(0, 80).map(entry => ({
     id: serverBaseItemId(entry?.id || ''),
     price: clamp(Math.round(Number(entry?.price || 1)), 1, 9999),
@@ -10689,8 +10730,31 @@ function serverNpcTradeMarket(actor = {}) {
   return {
     stock,
     caps: serverNpcInventoryCaps(actor),
-    buyInterests: Array.isArray(actor.traderBuyInterests) ? actor.traderBuyInterests.map(value => String(value || '').toLowerCase()).filter(Boolean).slice(0, 24) : []
+    buyInterests: Array.isArray(actor.traderBuyInterests) ? actor.traderBuyInterests.map(value => String(value || '').toLowerCase()).filter(Boolean).slice(0, 24) : [],
+    marketKey: String(actor.traderMarketKey || ''),
+    siteId: String(actor.traderMarket?.siteId || actor.wastelandSiteId || '')
   };
+}
+
+function serverNpcFactionTradeContext(actor = {}, room = null) {
+  return {
+    siteId: actor.traderMarket?.siteId || actor.wastelandSiteId || '',
+    locationId: room?.locationId || actor.authoredLocationId || actor.wastelandSiteWorkerLocationId || '',
+    role: actor.role || actor.encounterRole || 'trader',
+    traderProfile: actor.traderProfile || '',
+    tradeProfile: actor.tradeProfile || '',
+    marketKey: actor.traderMarketKey || ''
+  };
+}
+
+function serverSyncFactionTraderMarket(actor = {}, room = null) {
+  if (!actor || actor.personalTrade === true || !actor.traderMarketKey || typeof WASTELAND_SIM.syncTraderMarket !== 'function') return false;
+  const profileId = actor.traderProfile || actor.tradeProfile || actor.traderId || '';
+  const result = WASTELAND_SIM.syncTraderMarket(profileId, {
+    stock: actor.traderStock || [],
+    caps: serverNpcInventoryCaps(actor)
+  }, serverNpcFactionTradeContext(actor, room));
+  return result?.ok === true;
 }
 
 function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
@@ -10744,7 +10808,6 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   for (const row of buys) {
     const offer = nextStock.find(entry => entry.id === row.id);
     offer.qty = Math.max(0, Number(offer.qty || 0) - row.qty);
-    if (serverInventoryQty(actor.inventory || [], row.id) >= row.qty) actor.inventory = serverInventorySetRows(actor.inventory || [], row.id, serverInventoryQty(actor.inventory || [], row.id) - row.qty);
   }
   for (const row of sells) {
     let offer = nextStock.find(entry => entry.id === row.id);
@@ -10753,10 +10816,38 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
       nextStock.push(offer);
     }
     offer.qty = Math.min(9999, Number(offer.qty || 0) + row.qty);
-    actor.inventory = serverInventoryMergeRows(actor.inventory || [], [row]);
   }
-  actor.traderStock = nextStock.filter(row => Number(row.qty || 0) > 0);
-  serverNpcSetInventoryCaps(actor, market.caps + net);
+  const stockContext = serverNpcFactionTradeContext(actor, room);
+  const profileId = actor.traderProfile || actor.tradeProfile || actor.traderId || '';
+  let persistentTrade = null;
+  if (actor.personalTrade !== true && actor.traderMarketKey && typeof WASTELAND_SIM.applyNpcTraderTransaction === 'function') {
+    persistentTrade = WASTELAND_SIM.applyNpcTraderTransaction(profileId, {
+      buys,
+      sells,
+      resaleRows: nextStock.filter(entry => sells.some(row => row.id === entry.id)),
+      silverDelta: net,
+      playerId: player?.id || '',
+      baseStock: actor.traderBaseStock || [],
+      baseCaps: actor.traderBaseCaps,
+      restockHours: actor.traderRestockHours,
+      marketKey: actor.traderMarketKey
+    }, stockContext);
+    if (!persistentTrade?.ok) {
+      const updatedMarket = serverNpcTradeMarket(actor);
+      const error = persistentTrade?.error === 'insufficient_site_silver'
+        ? '? ???????? ??????????? ??????.'
+        : '????? ???????? ?????????. ????????? ?????.';
+      return { ok: false, error, market: updatedMarket };
+    }
+  }
+  if (actor.personalTrade === true) {
+    for (const row of buys) {
+      if (serverInventoryQty(actor.inventory || [], row.id) >= row.qty) actor.inventory = serverInventorySetRows(actor.inventory || [], row.id, serverInventoryQty(actor.inventory || [], row.id) - row.qty);
+    }
+    for (const row of sells) actor.inventory = serverInventoryMergeRows(actor.inventory || [], [row]);
+  }
+  actor.traderStock = persistentTrade?.stock || nextStock.filter(row => Number(row.qty || 0) > 0);
+  serverNpcSetInventoryCaps(actor, persistentTrade?.caps ?? (market.caps + net));
   actor.inventoryUpdatedAt = Date.now();
   player.inventory = nextInventory;
   player.inventoryUpdatedAt = Date.now();
@@ -10765,15 +10856,8 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   }
   player.carry = { weight: Number(weight.toFixed(3)), capacity: Number(capacity.toFixed(3)), serverCapacity: Number(capacity.toFixed(3)), updatedAt: Date.now() };
 
-  const stockContext = {
-    siteId: actor.traderMarket?.siteId || actor.wastelandSiteId || '',
-    locationId: room.locationId || '',
-    traderProfile: actor.traderProfile || '',
-    tradeProfile: actor.tradeProfile || ''
-  };
-  const profileId = actor.traderProfile || actor.tradeProfile || actor.traderId || '';
-  if (!actor.personalTrade && buys.length && typeof WASTELAND_SIM.consumeTraderStock === 'function') WASTELAND_SIM.consumeTraderStock(profileId, buys, stockContext);
-  if (!actor.personalTrade && sells.length && typeof WASTELAND_SIM.receiveTraderStock === 'function') WASTELAND_SIM.receiveTraderStock(profileId, sells, stockContext);
+  if (actor.personalTrade !== true && !persistentTrade && buys.length && typeof WASTELAND_SIM.consumeTraderStock === 'function') WASTELAND_SIM.consumeTraderStock(profileId, buys, stockContext);
+  if (actor.personalTrade !== true && !persistentTrade && sells.length && typeof WASTELAND_SIM.receiveTraderStock === 'function') WASTELAND_SIM.receiveTraderStock(profileId, sells, stockContext);
   refreshRoomWorldState(room);
   return { ok: true, net, buyTotal, sellTotal, buys, sells, unloadedAmmo, inventory: player.inventory, carry: player.carry, market: serverNpcTradeMarket(actor), enemy: publicEnemy(actor), self: publicAuthoritativePlayerState(player) };
 }
@@ -11602,7 +11686,7 @@ function authoredNpcDefaultRole(row = {}) {
   return 'npc';
 }
 
-function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {}) {
+function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {}, marketKey = '') {
   const profile = serverTraderProfileById(
     entity.tradeProfile,
     entity.traderProfile,
@@ -11617,6 +11701,7 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
       stock: profile.stock.map(row => ({ ...row })),
       buyInterests: profile.buyInterests.slice(),
       caps: profile.caps,
+      restockHours: profile.restockHours,
       quests: profile.quests.slice(),
       dialogueProfile: profile.dialogueProfile
     };
@@ -11624,7 +11709,8 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
       locationId: String(loc?.id || ''),
       role,
       faction,
-      traderProfile: profile.id
+      traderProfile: profile.id,
+      marketKey
     });
   }
   if (role === 'guard') {
@@ -11633,7 +11719,8 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
       locationId: String(loc?.id || ''),
       role,
       faction,
-      traderProfile: String(entity.tradeProfile || entity.traderProfile || '').slice(0, 64)
+      traderProfile: String(entity.tradeProfile || entity.traderProfile || '').slice(0, 64),
+      marketKey
     });
   }
   const locStock = Array.isArray(loc?.trader?.stock) ? loc.trader.stock : null;
@@ -11642,6 +11729,7 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
       .filter(row => row && SERVER_ITEM_IDS.has(String(row.id || ''))),
     buyInterests: Array.isArray(loc?.trader?.buyInterests) ? loc.trader.buyInterests.slice() : ['materials', 'tools', 'weapons', 'armor', 'aid', 'ammo'],
     caps: Number.isFinite(Number(loc?.trader?.caps)) ? Math.max(0, Math.floor(Number(loc.trader.caps))) : 720,
+    restockHours: clamp(Math.floor(Number(loc?.trader?.restockHours ?? 24)), 1, 720),
     quests: Array.isArray(loc?.trader?.quests) ? loc.trader.quests.slice() : [],
     dialogueProfile: String(loc?.trader?.dialogueProfile || '').slice(0, 64)
   };
@@ -11649,7 +11737,8 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
     locationId: String(loc?.id || ''),
     role,
     faction,
-    traderProfile: String(loc?.trader?.id || loc?.trader?.traderProfile || loc?.trader?.tradeProfile || '').slice(0, 64)
+    traderProfile: String(loc?.trader?.id || loc?.trader?.traderProfile || loc?.trader?.tradeProfile || '').slice(0, 64),
+    marketKey
   });
 }
 
@@ -11679,7 +11768,7 @@ function spawnAuthoredLocationActors(room, loc) {
     const hostileToPlayer = authoredNpcDefaultHostility(row);
     const visual = authoredNpcVisual(row);
     const trade = (role === 'merchant' || role === 'guard' || locationDefinitionObjectIsTrader(row))
-      ? authoredNpcDefaultStock(role === 'npc' ? 'merchant' : role, faction, loc, entity)
+      ? authoredNpcDefaultStock(role === 'npc' ? 'merchant' : role, faction, loc, entity, `${loc.id}:${row.id || `npc_${index + 1}`}`)
       : { stock: [], buyInterests: [], caps: 0 };
     const actor = spawnServerEnemy(room, {
       force: true,
@@ -11708,8 +11797,12 @@ function spawnAuthoredLocationActors(room, loc) {
       stationary: entity.stationary === true || role === 'merchant',
       equipment: entity.equipment || {},
       traderStock: trade.stock,
+      traderBaseStock: trade.baseStock || trade.stock,
       traderBuyInterests: trade.buyInterests,
       traderMarket: trade.market || null,
+      traderMarketKey: trade.marketKey || trade.market?.marketKey || '',
+      traderRestockHours: trade.restockHours,
+      traderBaseCaps: trade.baseCaps ?? trade.caps,
       caps: Number.isFinite(Number(entity.caps)) ? Math.max(0, Math.floor(Number(entity.caps))) : trade.caps,
       loot: Array.isArray(entity.loot) ? entity.loot : undefined
     });
@@ -12341,6 +12434,7 @@ function wastelandSiteWorkerTrade(role = '', faction = '', loc = {}, site = {}) 
         stock: profile.stock.map(row => ({ ...row })),
         buyInterests: profile.buyInterests.slice(),
         caps: profile.caps,
+        restockHours: profile.restockHours,
         quests: profile.quests.slice(),
         dialogueProfile: profile.dialogueProfile
       }
@@ -12379,7 +12473,8 @@ function wastelandSiteWorkerTrade(role = '', faction = '', loc = {}, site = {}) 
     locationId: String(loc?.id || ''),
     role: normalizedRole,
     faction,
-    traderProfile: profile?.id || normalizedRole
+    traderProfile: profile?.id || normalizedRole,
+    marketKey: `${site.id || loc?.id || 'site'}:worker:${normalizedRole}:${profile?.id || normalizedRole}`
   });
 }
 
@@ -12452,8 +12547,12 @@ function spawnWastelandSiteWorkers(room, loc) {
           stationary: !laborWorker && role !== 'guard',
           equipment: workerEquipment,
           traderStock: trade.stock,
+          traderBaseStock: trade.baseStock || trade.stock,
           traderBuyInterests: trade.buyInterests,
           traderMarket: trade.market || null,
+          traderMarketKey: trade.marketKey || trade.market?.marketKey || '',
+          traderRestockHours: trade.restockHours,
+          traderBaseCaps: trade.baseCaps ?? trade.caps,
           caps: trade.caps,
           loot: []
         });
@@ -13529,6 +13628,18 @@ function spawnServerEnemy(room, opts = {}) {
       price: clamp(Math.round(Number(x.price || 1)), 1, 9999),
       qty: clamp(Math.round(Number(x.qty || 1)), 1, 9999)
     })).filter(x => x.id) : [],
+    traderBaseStock: Array.isArray(opts.traderBaseStock) ? opts.traderBaseStock.map(x => ({
+      id: String(x.id || '').slice(0, 64),
+      price: clamp(Math.round(Number(x.price || 1)), 1, 9999),
+      qty: clamp(Math.round(Number(x.shelfTarget ?? x.qty ?? 1)), 1, 9999),
+      shelfMin: clamp(Math.round(Number(x.shelfMin ?? 0)), 0, 9999),
+      shelfTarget: clamp(Math.round(Number(x.shelfTarget ?? x.qty ?? 1)), 1, 9999),
+      shelfMax: clamp(Math.round(Number(x.shelfMax ?? x.qty ?? 1)), 1, 9999),
+      priority: clamp(Math.round(Number(x.priority ?? 60)), 1, 100)
+    })).filter(x => x.id) : [],
+    traderMarketKey: String(opts.traderMarketKey || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120),
+    traderRestockHours: clamp(Math.floor(Number(opts.traderRestockHours ?? 24)), 1, 720),
+    traderBaseCaps: Math.max(0, Math.floor(Number(opts.traderBaseCaps ?? opts.caps ?? opts.traderCaps ?? 0))),
     traderBuyInterests: Array.isArray(opts.traderBuyInterests)
       ? opts.traderBuyInterests.map(x => String(x || '').slice(0, 32)).filter(Boolean)
       : [],

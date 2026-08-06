@@ -1,5 +1,5 @@
   // ===== B+C WEAPON GLB RUNTIME =====
-  const WEAPON_MODEL_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v1';
+  const WEAPON_MODEL_ASSET_VERSION = '7.76.6-physical-grips-reloads-v2';
   const WEAPON_MODEL_CATALOG = Object.freeze({
     pistol: { file: '/assets/models/weapons/weapon_pistol.glb', family: 'sidearm' },
     rifle: { file: '/assets/models/weapons/weapon_rifle.glb', family: 'long_gun' },
@@ -151,7 +151,7 @@
     return weaponGroup.children?.find(child => child?.userData?.weaponAnimationRuntime) || null;
   }
 
-  function triggerWeaponModelAction(weaponGroup, actionName = 'attack') {
+  function triggerWeaponModelAction(weaponGroup, actionName = 'attack', options = {}) {
     const root = weaponModelRootFromGroup(weaponGroup);
     const runtime = root?.userData?.weaponAnimationRuntime;
     const clip = runtime?.clips?.get(String(actionName || '').toLowerCase());
@@ -159,6 +159,10 @@
     runtime.mixer.stopAllAction();
     const action = runtime.mixer.clipAction(clip);
     action.reset();
+    const requestedDuration = Number(options?.duration || 0);
+    action.timeScale = requestedDuration > 0 && Number(clip.duration) > 0
+      ? Number(clip.duration) / requestedDuration
+      : 1;
     action.setLoop(THREE.LoopOnce, 1);
     action.clampWhenFinished = true;
     action.play();

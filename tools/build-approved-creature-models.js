@@ -137,6 +137,27 @@ const APPROVED_CREATURES = [
     builderArgs: [],
     runtimeScaleMultiplier: 1,
     expected: { meshes: 1, vertices: 6788, triangles: 2498, materials: 7, images: 21, channels: 888, joints: 49 }
+  },
+  {
+    id: 'npc_super_mutant',
+    label: 'Супермутант',
+    species: 'super_mutant',
+    outputFile: 'npc_super_mutant.glb',
+    reviewDirectory: fromRoot('docs', 'art', 'reviews', 'unified-super-mutant-v1', 'super-mutant'),
+    reviewFile: 'creature_super_mutant_unified_v1.glb',
+    reviewReport: 'technical-report.json',
+    approvalFile: 'VISUAL_ACCEPTANCE_V1_RU.md',
+    approvedReviewSha256: '69C7771D31926F2650BD1F2AED710979A4AE9724449F89123C13F2780570E311',
+    expectedRuntimeSha256: 'D0777568929942FEED5B420FD7802B0EAABCFDAC9727FBADEACD6764D1D8AA27',
+    generator: fromRoot('tools', 'blender', 'build_unified_super_mutant_review.py'),
+    sourceGlb: fromRoot(
+      'docs', 'art', 'reviews', 'unified-humanoid-npc-v5', 'base',
+      'npc_humanoid_base_unified_v5.glb'
+    ),
+    sourceBlend: null,
+    builderArgs: [],
+    runtimeScaleMultiplier: 1,
+    expected: { meshes: 4, vertices: 33578, triangles: 11216, materials: 8, images: 24, channels: 1170, joints: 65 }
   }
 ];
 
@@ -239,6 +260,9 @@ function verifyApproval(definition) {
   if (definition.sourceBlend && !fs.existsSync(definition.sourceBlend)) {
     throw new Error(`${definition.id} donor source is missing: ${definition.sourceBlend}`);
   }
+  if (definition.sourceGlb && !fs.existsSync(definition.sourceGlb)) {
+    throw new Error(`${definition.id} donor source is missing: ${definition.sourceGlb}`);
+  }
   const approval = fs.readFileSync(approvalFile, 'utf8');
   const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
   if (!approval.includes('APPROVE') || !approval.includes(definition.approvedReviewSha256)) {
@@ -266,6 +290,9 @@ function buildCreature(definition, blender, temporaryDirectory, outputDirectory)
   ];
   if (definition.sourceBlend) {
     builderArguments.push('--source-blend', definition.sourceBlend);
+  }
+  if (definition.sourceGlb) {
+    builderArguments.push('--source', definition.sourceGlb);
   }
   builderArguments.push(
     '--output', runtimeGlb,

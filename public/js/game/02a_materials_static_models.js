@@ -626,6 +626,12 @@
 
   const NPC_GHOUL_GLB_ASSET_VERSION = '7.76.10-ghoul-bc-v3-death-v2';
   const APPROVED_CREATURE_GLB_ASSET_VERSION = '7.77.0-approved-creatures-bc';
+  const NPC_SUPER_MUTANT_GLB_ASSET_VERSION = '7.78.0-super-mutant-bc-v1';
+  const PRIORITY_ENVIRONMENT_GLB_ASSET_VERSION = '7.79.0-priority-environment-bc-v1';
+  const PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS = new Set([
+    'carWreck', 'deadTreeA', 'deadTreeB', 'deadTreeC',
+    'dryBush', 'rubbleRock', 'scrapHeap', 'wastelandShack'
+  ]);
   const APPROVED_CREATURE_STATIC_MODEL_KEYS = new Set([
     'brahmin',
     'friendlyBrahmin',
@@ -633,7 +639,8 @@
     'enemyRadscorpion',
     'enemyMutantAnt',
     'enemyGecko',
-    'enemyFireGecko'
+    'enemyFireGecko',
+    'enemySuperMutant'
   ]);
   const LAZY_SKINNED_STATIC_MODEL_KEYS = new Set([
     'enemyGhoul',
@@ -1287,9 +1294,13 @@ varying float vInstanceOpacity;`
     if (!sourceUrl) return Promise.resolve(null);
     const assetVersion = key === 'enemyGhoul'
       ? NPC_GHOUL_GLB_ASSET_VERSION
-      : (APPROVED_CREATURE_STATIC_MODEL_KEYS.has(key)
+      : (key === 'enemySuperMutant'
+          ? NPC_SUPER_MUTANT_GLB_ASSET_VERSION
+          : (APPROVED_CREATURE_STATIC_MODEL_KEYS.has(key)
           ? APPROVED_CREATURE_GLB_ASSET_VERSION
-          : '');
+          : (PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS.has(key)
+              ? PRIORITY_ENVIRONMENT_GLB_ASSET_VERSION
+              : '')));
     const url = assetVersion
       ? `${sourceUrl}?v=${encodeURIComponent(assetVersion)}`
       : sourceUrl;

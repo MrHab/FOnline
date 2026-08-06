@@ -1,0 +1,800 @@
+{
+  "schema": "realm.equipment-scout-boots-review.v1",
+  "assetFamily": "equipment_scout_boots_unified_v1",
+  "itemId": "scoutBoots",
+  "itemNameRu": "Разведботинки",
+  "artDirection": "геометрия B, материалы и износ C",
+  "bodyIds": [
+    "female_slim",
+    "female_medium",
+    "female_large",
+    "male_slim",
+    "male_medium",
+    "male_large"
+  ],
+  "variantCount": 6,
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "variants": [
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 7,
+        "meshDefinitions": 1,
+        "positionVertices": 3850,
+        "skins": 1,
+        "textures": 21,
+        "triangles": 1994
+      },
+      "animationStress": {
+        "rigCompatibility": true,
+        "run": {
+          "frame": 6,
+          "rendered": true
+        },
+        "walk": {
+          "frame": 10,
+          "rendered": true
+        }
+      },
+      "assetId": "equipment_scout_boots_unified_v1_female_slim",
+      "bodyId": "female_slim",
+      "design": {
+        "features": [
+          "лёгкий носовой бампер",
+          "пылезащитная гетра",
+          "гибкая защита лодыжки",
+          "стабилизирующие ремни",
+          "раздельные грунтозацепы",
+          "петля на пятке"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "dimensionsMetres": {
+        "depth": 0.35,
+        "height": 0.3057,
+        "width": 0.4049
+      },
+      "file": "equipment_scout_boots_unified_v1_female_slim.glb",
+      "fit": {
+        "l": {
+          "footBounds": {
+            "maximum": [
+              0.18195,
+              0.12906,
+              0.09127
+            ],
+            "minimum": [
+              0.06723,
+              -0.13026,
+              -0.00841
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01841,
+            "halfWidth": 0.06736,
+            "heelY": 0.14706,
+            "toeY": -0.17026,
+            "topZ": 0.01159
+          }
+        },
+        "r": {
+          "footBounds": {
+            "maximum": [
+              -0.06723,
+              0.12906,
+              0.09127
+            ],
+            "minimum": [
+              -0.18195,
+              -0.13026,
+              -0.00841
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01841,
+            "halfWidth": 0.06736,
+            "heelY": 0.14706,
+            "toeY": -0.17026,
+            "topZ": 0.01159
+          }
+        }
+      },
+      "itemId": "scoutBoots",
+      "itemNameRu": "Разведботинки",
+      "provenance": {
+        "base": "approved original equipment boots v21 anatomical fit",
+        "directRuntimeUse": false,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original light field geometry and B+C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "scoutDetails": {
+        "l": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_l",
+            "ball_l",
+            "calf_l"
+          ]
+        },
+        "r": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_r",
+            "ball_r",
+            "calf_r"
+          ]
+        }
+      },
+      "sha256": "94DA885C62747C69A243109562F6FE47E533C3B4B3AB0628950C424308D9CBC3",
+      "slot": "boots"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 7,
+        "meshDefinitions": 1,
+        "positionVertices": 3850,
+        "skins": 1,
+        "textures": 21,
+        "triangles": 1994
+      },
+      "animationStress": {
+        "rigCompatibility": true,
+        "run": {
+          "frame": 6,
+          "rendered": true
+        },
+        "walk": {
+          "frame": 10,
+          "rendered": true
+        }
+      },
+      "assetId": "equipment_scout_boots_unified_v1_female_medium",
+      "bodyId": "female_medium",
+      "design": {
+        "features": [
+          "лёгкий носовой бампер",
+          "пылезащитная гетра",
+          "гибкая защита лодыжки",
+          "стабилизирующие ремни",
+          "раздельные грунтозацепы",
+          "петля на пятке"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "dimensionsMetres": {
+        "depth": 0.3501,
+        "height": 0.3057,
+        "width": 0.4049
+      },
+      "file": "equipment_scout_boots_unified_v1_female_medium.glb",
+      "fit": {
+        "l": {
+          "footBounds": {
+            "maximum": [
+              0.18195,
+              0.13141,
+              0.09117
+            ],
+            "minimum": [
+              0.06723,
+              -0.13026,
+              -0.00841
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01841,
+            "halfWidth": 0.06736,
+            "heelY": 0.14941,
+            "toeY": -0.17026,
+            "topZ": 0.01159
+          }
+        },
+        "r": {
+          "footBounds": {
+            "maximum": [
+              -0.06723,
+              0.13141,
+              0.09117
+            ],
+            "minimum": [
+              -0.18195,
+              -0.13026,
+              -0.00841
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01841,
+            "halfWidth": 0.06736,
+            "heelY": 0.14941,
+            "toeY": -0.17026,
+            "topZ": 0.01159
+          }
+        }
+      },
+      "itemId": "scoutBoots",
+      "itemNameRu": "Разведботинки",
+      "provenance": {
+        "base": "approved original equipment boots v21 anatomical fit",
+        "directRuntimeUse": false,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original light field geometry and B+C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "scoutDetails": {
+        "l": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_l",
+            "ball_l",
+            "calf_l"
+          ]
+        },
+        "r": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_r",
+            "ball_r",
+            "calf_r"
+          ]
+        }
+      },
+      "sha256": "A90FCB14AEF47004F04EB6E9BE5353CC9A54BA540F7A940E79223B56F5CC781C",
+      "slot": "boots"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 7,
+        "meshDefinitions": 1,
+        "positionVertices": 3850,
+        "skins": 1,
+        "textures": 21,
+        "triangles": 1994
+      },
+      "animationStress": {
+        "rigCompatibility": true,
+        "run": {
+          "frame": 6,
+          "rendered": true
+        },
+        "walk": {
+          "frame": 10,
+          "rendered": true
+        }
+      },
+      "assetId": "equipment_scout_boots_unified_v1_female_large",
+      "bodyId": "female_large",
+      "design": {
+        "features": [
+          "лёгкий носовой бампер",
+          "пылезащитная гетра",
+          "гибкая защита лодыжки",
+          "стабилизирующие ремни",
+          "раздельные грунтозацепы",
+          "петля на пятке"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "dimensionsMetres": {
+        "depth": 0.352,
+        "height": 0.3057,
+        "width": 0.4049
+      },
+      "file": "equipment_scout_boots_unified_v1_female_large.glb",
+      "fit": {
+        "l": {
+          "footBounds": {
+            "maximum": [
+              0.18195,
+              0.13376,
+              0.09107
+            ],
+            "minimum": [
+              0.06723,
+              -0.13026,
+              -0.00841
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01841,
+            "halfWidth": 0.06736,
+            "heelY": 0.15176,
+            "toeY": -0.17026,
+            "topZ": 0.01159
+          }
+        },
+        "r": {
+          "footBounds": {
+            "maximum": [
+              -0.06723,
+              0.13376,
+              0.09107
+            ],
+            "minimum": [
+              -0.18195,
+              -0.13026,
+              -0.00841
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01841,
+            "halfWidth": 0.06736,
+            "heelY": 0.15176,
+            "toeY": -0.17026,
+            "topZ": 0.01159
+          }
+        }
+      },
+      "itemId": "scoutBoots",
+      "itemNameRu": "Разведботинки",
+      "provenance": {
+        "base": "approved original equipment boots v21 anatomical fit",
+        "directRuntimeUse": false,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original light field geometry and B+C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "scoutDetails": {
+        "l": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_l",
+            "ball_l",
+            "calf_l"
+          ]
+        },
+        "r": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_r",
+            "ball_r",
+            "calf_r"
+          ]
+        }
+      },
+      "sha256": "70630AE5628142DC0D1F37AD250F72DAD1D1BBD52AE4A38DBF44B989FDF24474",
+      "slot": "boots"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 7,
+        "meshDefinitions": 1,
+        "positionVertices": 3850,
+        "skins": 1,
+        "textures": 21,
+        "triangles": 1994
+      },
+      "animationStress": {
+        "rigCompatibility": true,
+        "run": {
+          "frame": 6,
+          "rendered": true
+        },
+        "walk": {
+          "frame": 10,
+          "rendered": true
+        }
+      },
+      "assetId": "equipment_scout_boots_unified_v1_male_slim",
+      "bodyId": "male_slim",
+      "design": {
+        "features": [
+          "лёгкий носовой бампер",
+          "пылезащитная гетра",
+          "гибкая защита лодыжки",
+          "стабилизирующие ремни",
+          "раздельные грунтозацепы",
+          "петля на пятке"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "dimensionsMetres": {
+        "depth": 0.3475,
+        "height": 0.2995,
+        "width": 0.4058
+      },
+      "file": "equipment_scout_boots_unified_v1_male_slim.glb",
+      "fit": {
+        "l": {
+          "footBounds": {
+            "maximum": [
+              0.18629,
+              0.13988,
+              0.10382
+            ],
+            "minimum": [
+              0.07624,
+              -0.12804,
+              -0.00951
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01951,
+            "halfWidth": 0.06502,
+            "heelY": 0.15788,
+            "toeY": -0.16804,
+            "topZ": 0.01049
+          }
+        },
+        "r": {
+          "footBounds": {
+            "maximum": [
+              -0.07624,
+              0.13988,
+              0.10382
+            ],
+            "minimum": [
+              -0.18629,
+              -0.12804,
+              -0.00951
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01951,
+            "halfWidth": 0.06502,
+            "heelY": 0.15788,
+            "toeY": -0.16804,
+            "topZ": 0.01049
+          }
+        }
+      },
+      "itemId": "scoutBoots",
+      "itemNameRu": "Разведботинки",
+      "provenance": {
+        "base": "approved original equipment boots v21 anatomical fit",
+        "directRuntimeUse": false,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original light field geometry and B+C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "scoutDetails": {
+        "l": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_l",
+            "ball_l",
+            "calf_l"
+          ]
+        },
+        "r": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_r",
+            "ball_r",
+            "calf_r"
+          ]
+        }
+      },
+      "sha256": "C8511DF80D6970AEBC42D0B867BC451F684738FC0F3A1B6A8DA00F4022F25225",
+      "slot": "boots"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 7,
+        "meshDefinitions": 1,
+        "positionVertices": 3850,
+        "skins": 1,
+        "textures": 21,
+        "triangles": 1994
+      },
+      "animationStress": {
+        "rigCompatibility": true,
+        "run": {
+          "frame": 6,
+          "rendered": true
+        },
+        "walk": {
+          "frame": 10,
+          "rendered": true
+        }
+      },
+      "assetId": "equipment_scout_boots_unified_v1_male_medium",
+      "bodyId": "male_medium",
+      "design": {
+        "features": [
+          "лёгкий носовой бампер",
+          "пылезащитная гетра",
+          "гибкая защита лодыжки",
+          "стабилизирующие ремни",
+          "раздельные грунтозацепы",
+          "петля на пятке"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "dimensionsMetres": {
+        "depth": 0.3493,
+        "height": 0.2995,
+        "width": 0.4058
+      },
+      "file": "equipment_scout_boots_unified_v1_male_medium.glb",
+      "fit": {
+        "l": {
+          "footBounds": {
+            "maximum": [
+              0.18629,
+              0.14159,
+              0.10367
+            ],
+            "minimum": [
+              0.07624,
+              -0.12804,
+              -0.00951
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01951,
+            "halfWidth": 0.06502,
+            "heelY": 0.15959,
+            "toeY": -0.16804,
+            "topZ": 0.01049
+          }
+        },
+        "r": {
+          "footBounds": {
+            "maximum": [
+              -0.07624,
+              0.14159,
+              0.10367
+            ],
+            "minimum": [
+              -0.18629,
+              -0.12804,
+              -0.00951
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01951,
+            "halfWidth": 0.06502,
+            "heelY": 0.15959,
+            "toeY": -0.16804,
+            "topZ": 0.01049
+          }
+        }
+      },
+      "itemId": "scoutBoots",
+      "itemNameRu": "Разведботинки",
+      "provenance": {
+        "base": "approved original equipment boots v21 anatomical fit",
+        "directRuntimeUse": false,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original light field geometry and B+C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "scoutDetails": {
+        "l": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_l",
+            "ball_l",
+            "calf_l"
+          ]
+        },
+        "r": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_r",
+            "ball_r",
+            "calf_r"
+          ]
+        }
+      },
+      "sha256": "024534F03C72700AC1582A7A22A04F0D13534C38E0EFC4B12E8865DBB449D4D8",
+      "slot": "boots"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 7,
+        "meshDefinitions": 1,
+        "positionVertices": 3850,
+        "skins": 1,
+        "textures": 21,
+        "triangles": 1994
+      },
+      "animationStress": {
+        "rigCompatibility": true,
+        "run": {
+          "frame": 6,
+          "rendered": true
+        },
+        "walk": {
+          "frame": 10,
+          "rendered": true
+        }
+      },
+      "assetId": "equipment_scout_boots_unified_v1_male_large",
+      "bodyId": "male_large",
+      "design": {
+        "features": [
+          "лёгкий носовой бампер",
+          "пылезащитная гетра",
+          "гибкая защита лодыжки",
+          "стабилизирующие ремни",
+          "раздельные грунтозацепы",
+          "петля на пятке"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "dimensionsMetres": {
+        "depth": 0.3511,
+        "height": 0.2995,
+        "width": 0.4058
+      },
+      "file": "equipment_scout_boots_unified_v1_male_large.glb",
+      "fit": {
+        "l": {
+          "footBounds": {
+            "maximum": [
+              0.18629,
+              0.14331,
+              0.10352
+            ],
+            "minimum": [
+              0.07624,
+              -0.12804,
+              -0.00951
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01951,
+            "halfWidth": 0.06502,
+            "heelY": 0.16131,
+            "toeY": -0.16804,
+            "topZ": 0.01049
+          }
+        },
+        "r": {
+          "footBounds": {
+            "maximum": [
+              -0.07624,
+              0.14331,
+              0.10352
+            ],
+            "minimum": [
+              -0.18629,
+              -0.12804,
+              -0.00951
+            ]
+          },
+          "sole": {
+            "bottomZ": -0.01951,
+            "halfWidth": 0.06502,
+            "heelY": 0.16131,
+            "toeY": -0.16804,
+            "topZ": 0.01049
+          }
+        }
+      },
+      "itemId": "scoutBoots",
+      "itemNameRu": "Разведботинки",
+      "provenance": {
+        "base": "approved original equipment boots v21 anatomical fit",
+        "directRuntimeUse": false,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original light field geometry and B+C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "scoutDetails": {
+        "l": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_l",
+            "ball_l",
+            "calf_l"
+          ]
+        },
+        "r": {
+          "ankleStraps": 2,
+          "gaiterCollar": true,
+          "heelKickPad": true,
+          "outerFlexiblePatch": true,
+          "pullLoop": true,
+          "strapHooks": 2,
+          "toeGuard": true,
+          "trailLugs": 5,
+          "weights": [
+            "foot_r",
+            "ball_r",
+            "calf_r"
+          ]
+        }
+      },
+      "sha256": "409EE6948A23138DF05A2DC3BB6C8F2E4A7876A171C9E65C509FAD0974A1C7C1",
+      "slot": "boots"
+    }
+  ]
+}

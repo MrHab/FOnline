@@ -1,0 +1,278 @@
+{
+  "assetId": "creature_super_mutant_unified_v1",
+  "file": "creature_super_mutant_unified_v1.glb",
+  "source": "npc_humanoid_base_unified_v5.glb",
+  "sourceSha256": "EAC5248C381FD457E93A04094DAC51FA22C60EDE138C88E00EEFBB3EB4E6091E",
+  "boundsIdleMetres": {
+    "minimum": [
+      -0.419825,
+      -0.365817,
+      -0.01624
+    ],
+    "maximum": [
+      0.459697,
+      0.478544,
+      2.094078
+    ],
+    "size": [
+      0.879522,
+      0.844361,
+      2.110318
+    ]
+  },
+  "collider": {
+    "type": "box",
+    "size": [
+      0.879522,
+      0.844361,
+      2.110318
+    ],
+    "center": [
+      0.019936,
+      0.056363,
+      1.038919
+    ]
+  },
+  "rig": {
+    "armatures": 1,
+    "boneCount": 65,
+    "bones": [
+      "ball_l",
+      "ball_leaf_l",
+      "ball_leaf_r",
+      "ball_r",
+      "calf_l",
+      "calf_r",
+      "clavicle_l",
+      "clavicle_r",
+      "foot_l",
+      "foot_r",
+      "hand_l",
+      "hand_r",
+      "head",
+      "index_01_l",
+      "index_01_r",
+      "index_02_l",
+      "index_02_r",
+      "index_03_l",
+      "index_03_r",
+      "index_04_leaf_l",
+      "index_04_leaf_r",
+      "lowerarm_l",
+      "lowerarm_r",
+      "middle_01_l",
+      "middle_01_r",
+      "middle_02_l",
+      "middle_02_r",
+      "middle_03_l",
+      "middle_03_r",
+      "middle_04_leaf_l",
+      "middle_04_leaf_r",
+      "neck_01",
+      "pelvis",
+      "pinky_01_l",
+      "pinky_01_r",
+      "pinky_02_l",
+      "pinky_02_r",
+      "pinky_03_l",
+      "pinky_03_r",
+      "pinky_04_leaf_l",
+      "pinky_04_leaf_r",
+      "ring_01_l",
+      "ring_01_r",
+      "ring_02_l",
+      "ring_02_r",
+      "ring_03_l",
+      "ring_03_r",
+      "ring_04_leaf_l",
+      "ring_04_leaf_r",
+      "root",
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "thigh_l",
+      "thigh_r",
+      "thumb_01_l",
+      "thumb_01_r",
+      "thumb_02_l",
+      "thumb_02_r",
+      "thumb_03_l",
+      "thumb_03_r",
+      "thumb_04_leaf_l",
+      "thumb_04_leaf_r",
+      "upperarm_l",
+      "upperarm_r"
+    ]
+  },
+  "requiredAnimations": [
+    "idle",
+    "walk",
+    "run",
+    "attack",
+    "hurt",
+    "death"
+  ],
+  "actualGlb": {
+    "meshDefinitions": 4,
+    "positionVertices": 33578,
+    "triangles": 11216,
+    "materials": 8,
+    "textures": 24,
+    "skins": 1,
+    "skinJointCounts": [
+      65
+    ],
+    "animations": [
+      "attack",
+      "death",
+      "hurt",
+      "idle",
+      "run",
+      "walk"
+    ],
+    "nodes": [
+      "head",
+      "neck_01",
+      "index_04_leaf_l",
+      "index_03_l",
+      "index_02_l",
+      "index_01_l",
+      "middle_04_leaf_l",
+      "middle_03_l",
+      "middle_02_l",
+      "middle_01_l",
+      "pinky_04_leaf_l",
+      "pinky_03_l",
+      "pinky_02_l",
+      "pinky_01_l",
+      "ring_04_leaf_l",
+      "ring_03_l",
+      "ring_02_l",
+      "ring_01_l",
+      "thumb_04_leaf_l",
+      "thumb_03_l",
+      "thumb_02_l",
+      "thumb_01_l",
+      "hand_l",
+      "lowerarm_l",
+      "upperarm_l",
+      "clavicle_l",
+      "index_04_leaf_r",
+      "index_03_r",
+      "index_02_r",
+      "index_01_r",
+      "middle_04_leaf_r",
+      "middle_03_r",
+      "middle_02_r",
+      "middle_01_r",
+      "pinky_04_leaf_r",
+      "pinky_03_r",
+      "pinky_02_r",
+      "pinky_01_r",
+      "ring_04_leaf_r",
+      "ring_03_r",
+      "ring_02_r",
+      "ring_01_r",
+      "thumb_04_leaf_r",
+      "thumb_03_r",
+      "thumb_02_r",
+      "thumb_01_r",
+      "hand_r",
+      "lowerarm_r",
+      "upperarm_r",
+      "clavicle_r",
+      "spine_03",
+      "spine_02",
+      "spine_01",
+      "ball_leaf_l",
+      "ball_l",
+      "foot_l",
+      "calf_l",
+      "thigh_l",
+      "ball_leaf_r",
+      "ball_r",
+      "foot_r",
+      "calf_r",
+      "thigh_r",
+      "pelvis",
+      "root",
+      "mutant_tusk_left",
+      "mutant_tusk_right",
+      "super_mutant_amber_eyes",
+      "super_mutant_connected_heavy_body",
+      "super_mutant_full_humanoid_rig"
+    ]
+  },
+  "geometryAnalysis": {
+    "bodyTopology": {
+      "verticesBefore": 31662,
+      "verticesAfter": 5416,
+      "mergedVertices": 26246,
+      "thresholdMetres": 1e-06,
+      "connectedComponents": 1
+    },
+    "anatomicalReshape": {
+      "changedVertices": 5006,
+      "torsoVertices": 1126,
+      "limbInfluences": 2942,
+      "handInfluences": 402,
+      "headVertices": 1095,
+      "maximumDisplacementMetres": 0.082145,
+      "policy": "weight-feathered barrel chest, wide shoulders, thick limbs and hands, shortened neck, low cranium, heavy cheeks and projecting jaw"
+    },
+    "bodyPolygons": 10554,
+    "faceDetailMeshes": [
+      "mutant_tusk_left",
+      "mutant_tusk_right"
+    ],
+    "flatShaded": true,
+    "removedHumanLayers": [
+      "face_eyebrows",
+      "hair_short_crop"
+    ]
+  },
+  "combatAnimation": {
+    "style": "heavy whole-body hook with guarded support arm",
+    "frames": [
+      1,
+      7,
+      13,
+      23
+    ],
+    "fullyKeyedBones": 65,
+    "fingerPose": "both hands use articulated curled fingers"
+  },
+  "materials": {
+    "bodyMaterialPolygonCounts": {
+      "skin": 5312,
+      "shadow": 758,
+      "scar": 93,
+      "callus": 2514,
+      "cloth": 754,
+      "nail": 1123
+    },
+    "materialCount": 8,
+    "textureResolution": [
+      512,
+      512
+    ],
+    "policy": "weathered olive skin, deep folds, old scars, callused hands, charcoal underwear, chipped nails, amber eyes and worn tusks"
+  },
+  "design": {
+    "bodyScale": 1.2,
+    "underwearIncluded": true,
+    "barefoot": true,
+    "equipmentBakedIntoBody": false,
+    "inventoryDrivenEquipment": true
+  },
+  "provenance": {
+    "base": "approved humanoid NPC v5 / current player anatomy",
+    "baseLicense": "Quaternius CC0-1.0 plus Realm adaptations",
+    "geometry": "welded approved humanoid body with weight-feathered, project-authored super mutant anatomy and facial landmarks",
+    "rigAndAnimations": "approved 65-joint humanoid skin and six complete actions",
+    "externalDonorBeyondApprovedHumanoid": null
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "69C7771D31926F2650BD1F2AED710979A4AE9724449F89123C13F2780570E311"
+}

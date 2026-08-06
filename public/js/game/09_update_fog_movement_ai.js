@@ -1398,7 +1398,8 @@
       updateCharacterLocomotionAnimation(traderNpc.mesh, dt, {
         moving: false,
         speed: 0,
-        facingAngle: Number(traderNpc.mesh.rotation.y || 0) - Math.PI
+        facingAngle: Number(traderNpc.mesh.rotation.y || 0) - Math.PI,
+        talking: !!String(traderNpc.speechText || '').trim()
       });
       if (traderNpc.mesh.userData.enemyWeaponGroup) {
         updateWeaponVisualAnimation(traderNpc.mesh.userData.enemyWeaponGroup, dt, traderNpc);

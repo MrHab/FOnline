@@ -3,6 +3,17 @@ const path = require('path');
 
 let unitBeveledBoxGeometry = null;
 
+const APPROVED_PRIORITY_ENVIRONMENT_FILES = new Set([
+  'car_wreck.glb',
+  'dead_tree_a.glb',
+  'dead_tree_b.glb',
+  'dead_tree_c.glb',
+  'dry_bush.glb',
+  'rubble_rock.glb',
+  'scrap_heap.glb',
+  'wasteland_shack.glb'
+]);
+
 global.window = {
   FileReader: class {
     readAsArrayBuffer(blob) {
@@ -73,9 +84,17 @@ async function main() {
   };
 
   const requested = process.argv.slice(2).filter(Boolean);
-  const entries = requested.length
+  const requestedApproved = requested.filter(value => APPROVED_PRIORITY_ENVIRONMENT_FILES.has(
+    value.endsWith('.glb') ? value : `${value}.glb`
+  ));
+  if (requestedApproved.length) {
+    throw new Error(
+      `Approved B+C environment models are published by tools/build-priority-environment-models.js: ${requestedApproved.join(', ')}`
+    );
+  }
+  const entries = (requested.length
     ? Object.entries(models).filter(([file]) => requested.includes(file) || requested.includes(file.replace(/\.glb$/, '')))
-    : Object.entries(models);
+    : Object.entries(models)).filter(([file]) => !APPROVED_PRIORITY_ENVIRONMENT_FILES.has(file));
   if (requested.length && !entries.length) throw new Error(`No matching model found for: ${requested.join(', ')}`);
 
   for (const [file, factory] of entries) {

@@ -103,6 +103,9 @@ for (const row of manifest.files) {
   assert(Array.isArray(json.materials) && json.materials.length <= 4, `${fileName}: too many materials`);
   assert(Array.isArray(json.skins) && json.skins.length === 1, `${fileName}: expected one humanoid skin`);
   assert(json.skins[0].joints?.length >= 60, `${fileName}: incomplete humanoid rig`);
+  const nodeNames = new Set((json.nodes || []).map(node => String(node.name || '').toLowerCase()));
+  assert(nodeNames.has('face_eyes'), `${fileName}: separate animated eye mesh is missing`);
+  assert(nodeNames.has('face_eyebrows'), `${fileName}: separate animated eyebrow mesh is missing`);
   const animations = new Set((json.animations || []).map(animation => String(animation.name || '').toLowerCase()));
   for (const animation of ['idle', 'walk', 'run']) {
     assert(animations.has(animation), `${fileName}: missing ${animation} animation`);
@@ -133,8 +136,20 @@ for (const id of [
 assert(runtime.includes('function applyCharacterGlbVisualVariants('));
 assert(runtime.includes('function applyCharacterFaceShape('));
 assert(runtime.includes('function addCharacterHairVariant('));
+assert(runtime.includes('function ensureCharacterFacialRuntime(')
+  && runtime.includes('function updateCharacterFacialAnimation(')
+  && runtime.includes("root.userData.characterFacialState = dead"),
+  'character faces do not expose blink and reaction animation states');
+assert(runtime.includes('runtime.blinkUntil = runtime.elapsed + 0.105;')
+  && runtime.includes("hurt: !!state.hurt || hitReactionActive")
+  && runtime.includes('attacking: facialAttackActive'),
+  'natural blink, hit or attack facial reactions are missing');
 assert(runtime.includes('applyCharacterFaceShapeFrame(runtime.root);'));
+assert(runtime.includes('updateCharacterFacialAnimation(runtime.root, frameDt,'),
+  'in-game GLB faces are not animated each frame');
 assert(runtime.includes('applyCharacterFaceShapeFrame(characterPreviewState.model);'));
+assert(runtime.includes('updateCharacterFacialAnimation(characterPreviewState.model, dt, { preview: true });'),
+  'character creator preview does not animate the face');
 assert(runtime.includes('function characterTurnInPlaceState(')
   && modernRuntime.includes('characterTurnInPlaceState(actor, state.facingAngle, moving, dt)'),
   'stationary cursor turns do not enter turn-in-place locomotion');
@@ -212,6 +227,8 @@ this.__characterAppearanceFitApi = {
   characterVariantMaterial,
   addCharacterHairVariant,
   applyCharacterFaceShape,
+  ensureCharacterFacialRuntime,
+  updateCharacterFacialAnimation,
   characterHeadRestMatrix,
   attachCharacterVariantToHead,
   characterDirectionalLocomotionState,
@@ -265,6 +282,45 @@ assert.deepStrictEqual(actionCalls, { reset: 0, play: 0 },
 fitApi.setCharacterGlbAction(repeatedAttackRuntime, 'attack', 0, { restart: true });
 assert.deepStrictEqual(actionCalls, { reset: 1, play: 1 },
   'a new event does not reset and replay the current attack clip');
+
+const facialRoot = new THREE.Group();
+facialRoot.name = 'character_glb_test_face';
+const facialEyes = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.01));
+facialEyes.name = 'face_eyes';
+facialEyes.userData.realm_character_layer = 'eyes';
+facialEyes.position.set(0, 1.72, -0.08);
+const facialBrows = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.015, 0.01));
+facialBrows.name = 'face_eyebrows';
+facialBrows.userData.realm_character_layer = 'eyebrows';
+facialBrows.position.set(0, 1.76, -0.085);
+facialRoot.add(facialEyes, facialBrows);
+assert.strictEqual(fitApi.updateCharacterFacialAnimation(facialRoot, 0.016, {}), true,
+  'facial runtime did not initialize from the separate face meshes');
+const facialRuntime = fitApi.ensureCharacterFacialRuntime(facialRoot);
+const baseBrowY = facialRuntime.browsBasePosition.y;
+facialRuntime.nextBlink = facialRuntime.elapsed + 0.01;
+fitApi.updateCharacterFacialAnimation(facialRoot, 0.02, {});
+assert.strictEqual(facialEyes.visible, false, 'natural blink did not close the eyes');
+assert.strictEqual(facialRoot.userData.characterFacialState, 'blink');
+fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, {});
+fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, {});
+assert.strictEqual(facialEyes.visible, true, 'eyes stayed closed after a natural blink');
+fitApi.updateCharacterFacialAnimation(facialRoot, 0.016, { hurt: true });
+assert.strictEqual(facialEyes.visible, false, 'hit reaction did not close the eyes');
+assert.strictEqual(facialRoot.userData.characterFacialState, 'hurt');
+assert(facialBrows.position.y < baseBrowY, 'hit reaction did not lower the brows');
+for (let frame = 0; frame < 4; frame += 1) {
+  fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, { hurt: false });
+}
+assert.strictEqual(facialEyes.visible, true, 'hit reaction left the eyes permanently closed');
+fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, { attacking: true });
+assert.strictEqual(facialRoot.userData.characterFacialState, 'attack');
+assert(facialBrows.position.y < baseBrowY, 'attack reaction did not focus the brows');
+fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, { talking: true });
+assert.strictEqual(facialRoot.userData.characterFacialState, 'talk');
+fitApi.updateCharacterFacialAnimation(facialRoot, 0.016, { dead: true });
+assert.strictEqual(facialEyes.visible, false, 'death reaction did not close the eyes');
+assert.strictEqual(facialRoot.userData.characterFacialState, 'dead');
 
 function closeTo(actual, expected, tolerance, label) {
   assert(Math.abs(actual - expected) <= tolerance,
@@ -578,5 +634,5 @@ firstAttachment.matrix.elements.forEach((value, index) => {
 console.log(
   'Character models OK: 6 GLB bases, 8 faces, 8 hairstyles, 8 hair colors, '
   + '1536 fit combinations, stable rest-pose attachment, 8-way cursor-relative locomotion and turn-in-place steps, '
-  + 'rig/animations and hashes checked'
+  + 'blink/hurt/attack/talk/death facial reactions, rig/animations and hashes checked'
 );

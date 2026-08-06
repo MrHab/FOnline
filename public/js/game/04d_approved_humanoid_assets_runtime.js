@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v6-equipment';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v13-weapon-interactions';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([
@@ -17,6 +17,69 @@
     'pinky_01_r', 'pinky_02_r', 'pinky_03_r',
     'thumb_01_r', 'thumb_02_r', 'thumb_03_r'
   ]);
+  const APPROVED_FIREARM_GRIP_PROFILES = Object.freeze({
+    pistol: Object.freeze({ reloadNodes: ['magazine', 'socket_reload'], reloadRotation: [0.05, -0.25, -1.0], fallbackReload: [0, -0.13, 0.015] }),
+    rifle: Object.freeze({ reloadNodes: ['cartridge_clip', 'bolt', 'socket_reload'], reloadRotation: [-0.55, 0.05, -0.25], fallbackReload: [0, 0.02, -0.11] }),
+    assaultRifle: Object.freeze({ reloadNodes: ['magazine', 'socket_reload'], reloadRotation: [0.05, -0.25, -0.9], fallbackReload: [0, -0.16, -0.07] }),
+    machineGun: Object.freeze({ reloadNodes: ['ammo_box', 'socket_reload'], reloadRotation: [-0.15, -0.35, -0.55], fallbackReload: [0.1, -0.13, -0.08] }),
+    laserPistol: Object.freeze({ reloadNodes: ['energy_core', 'socket_reload'], reloadRotation: [0.0, -0.4, -0.85], fallbackReload: [0, 0.04, -0.08] }),
+    flamethrower: Object.freeze({ reloadNodes: ['fuel_tank', 'socket_reload'], reloadRotation: [-0.3, -0.15, -0.65], fallbackReload: [0, 0.07, 0.1] }),
+    plasmaRifle: Object.freeze({ reloadNodes: ['energy_core', 'socket_reload'], reloadRotation: [-0.2, -0.5, -0.55], fallbackReload: [0, 0.09, -0.13] }),
+    shotgun: Object.freeze({ reloadNodes: ['reload_shell', 'socket_reload', 'pump'], reloadRotation: [-0.55, 0.0, -0.35], fallbackReload: [-0.07, -0.02, -0.13] }),
+    rocketLauncher: Object.freeze({ reloadNodes: ['rocket_round', 'socket_reload'], reloadRotation: [-0.15, -0.55, -0.4], fallbackReload: [0, 0.08, 0.22] })
+  });
+  const APPROVED_MELEE_GRIP_PROFILES = Object.freeze({
+    knife: Object.freeze({
+      family: 'knife',
+      twoHanded: false,
+      sourceAxis: [0, 1, 0],
+      roll: -0.18,
+      poses: Object.freeze({
+        idle: Object.freeze({ primary: [-0.27, 1.22, 0.24], direction: [0.04, 0.02, 1] }),
+        windup: Object.freeze({ primary: [-0.34, 1.40, 0.08], direction: [0.12, 0.42, -0.90] }),
+        strike: Object.freeze({ primary: [-0.16, 1.18, 0.56], direction: [0.02, -0.05, 1] })
+      }),
+      spine: Object.freeze({ windup: [0.04, -0.20, -0.06], strike: [-0.10, 0.18, 0.05] })
+    }),
+    pickaxe: Object.freeze({
+      family: 'heavy',
+      twoHanded: true,
+      supportRotation: [0.06, 0.02, 0.12],
+      roll: 0.12,
+      poses: Object.freeze({
+        idle: Object.freeze({ primary: [-0.22, 1.18, 0.22], direction: [0.95, 0.29, 0.08] }),
+        windup: Object.freeze({ primary: [-0.31, 1.47, 0.05], direction: [0.76, 0.64, -0.08] }),
+        strike: Object.freeze({ primary: [-0.22, 1.04, 0.53], direction: [0.98, 0.14, 0.03] })
+      }),
+      spine: Object.freeze({ windup: [0.10, -0.24, -0.10], strike: [-0.18, 0.22, 0.08] })
+    }),
+    axe: Object.freeze({
+      family: 'heavy',
+      twoHanded: true,
+      supportRotation: [0.06, 0.02, 0.12],
+      roll: 0.24,
+      poses: Object.freeze({
+        idle: Object.freeze({ primary: [-0.21, 1.18, 0.23], direction: [0.95, 0.29, 0.08] }),
+        windup: Object.freeze({ primary: [-0.30, 1.46, 0.06], direction: [0.76, 0.64, -0.08] }),
+        strike: Object.freeze({ primary: [-0.21, 1.05, 0.52], direction: [0.98, 0.14, 0.03] })
+      }),
+      spine: Object.freeze({ windup: [0.09, -0.22, -0.09], strike: [-0.16, 0.20, 0.07] })
+    }),
+    handPump: Object.freeze({
+      family: 'heavy',
+      twoHanded: true,
+      supportRotation: [0.10, -0.04, 0.18],
+      roll: -0.08,
+      poses: Object.freeze({
+        idle: Object.freeze({ primary: [-0.20, 1.18, 0.24], direction: [0.94, 0.31, 0.11] }),
+        windup: Object.freeze({ primary: [-0.28, 1.43, 0.08], direction: [0.74, 0.66, -0.10] }),
+        strike: Object.freeze({ primary: [-0.20, 1.07, 0.49], direction: [0.97, 0.20, 0.05] })
+      }),
+      spine: Object.freeze({ windup: [0.08, -0.20, -0.08], strike: [-0.14, 0.18, 0.06] })
+    })
+  });
+  const APPROVED_ASSAULT_PRIMARY_SOCKET = Object.freeze([0.03, -0.02, 0.025]);
+  const APPROVED_ASSAULT_SUPPORT_SOCKET = Object.freeze([-0.01, 0.105, -0.33]);
   function approvedEquipmentBodyUrls(slot = '', prefix = '') {
     return Object.freeze(Object.fromEntries([
       'female_slim', 'female_medium', 'female_large',
@@ -38,10 +101,40 @@
       slot: 'boots',
       urls: approvedEquipmentBodyUrls('boots', 'equipment_reinforced_boots')
     }),
+    scoutBoots: Object.freeze({
+      itemId: 'scoutBoots',
+      slot: 'boots',
+      urls: approvedEquipmentBodyUrls('boots', 'equipment_scout_boots')
+    }),
     leather: Object.freeze({
       itemId: 'leather',
       slot: 'armor',
       urls: approvedEquipmentBodyUrls('armor', 'equipment_leather_jacket')
+    }),
+    metalArmor: Object.freeze({
+      itemId: 'metalArmor',
+      slot: 'armor',
+      urls: approvedEquipmentBodyUrls('armor', 'equipment_metal_armor')
+    }),
+    ballisticVest: Object.freeze({
+      itemId: 'ballisticVest',
+      slot: 'armor',
+      urls: approvedEquipmentBodyUrls('armor', 'equipment_ballistic_vest')
+    }),
+    combatArmor: Object.freeze({
+      itemId: 'combatArmor',
+      slot: 'armor',
+      urls: approvedEquipmentBodyUrls('armor', 'equipment_combat_armor')
+    }),
+    heavyArmor: Object.freeze({
+      itemId: 'heavyArmor',
+      slot: 'armor',
+      urls: approvedEquipmentBodyUrls('armor', 'equipment_heavy_armor')
+    }),
+    backpack: Object.freeze({
+      itemId: 'backpack',
+      slot: 'backpack',
+      urls: approvedEquipmentBodyUrls('backpack', 'equipment_backpack')
     }),
     hazmatSuit: Object.freeze({
       itemId: 'hazmatSuit',
@@ -70,6 +163,16 @@
     })
   });
   const APPROVED_BOOT_URLS = APPROVED_EQUIPMENT_ASSETS.boots.urls;
+  const APPROVED_BACKPACK_ARMOR_OFFSETS = Object.freeze({
+    '': 0,
+    leather: 0.02,
+    metalArmor: 0.04,
+    ballisticVest: 0.035,
+    combatArmor: 0.05,
+    hazmatSuit: 0.03,
+    heavyArmor: 0.07,
+    energySuit: 0.04
+  });
 
   const approvedNpcAnimationState = { promise: null, clips: null, failed: false };
   const approvedEquipmentState = { templates: new Map(), promises: new Map(), failed: new Set() };
@@ -137,9 +240,16 @@
     return loadApprovedNpcAnimationClips().then(clips => installApprovedNpcAnimationClips(runtime, clips));
   }
 
+  function approvedActorCharacterRuntime(actor) {
+    return actor?.userData?.characterGlbRuntime
+      || actor?.userData?.approvedEquipmentCharacterRuntime
+      || null;
+  }
+
   function approvedEquipmentBodyKey(actor) {
+    const runtime = approvedActorCharacterRuntime(actor);
     const appearance = normalizeCharacterAppearance(
-      actor?.userData?.characterGlbRuntime?.appearance
+      runtime?.appearance
       || actor?.userData?.characterAppearance
       || {}
     );
@@ -219,6 +329,12 @@
         parts.leatherSleeveR, parts.leatherCollarL, parts.leatherCollarR
       ].filter(Boolean);
     }
+    if (slot === 'backpack') {
+      return [...new Set([
+        parts.backpack, parts.backpackTop, parts.bedroll,
+        ...(Array.isArray(parts.packAccessories) ? parts.packAccessories : [])
+      ].filter(Boolean))];
+    }
     return [];
   }
 
@@ -232,7 +348,7 @@
   }
 
   function removeApprovedEquipmentRuntimes(actor) {
-    ['armor', 'helmet', 'boots'].forEach(slot => removeApprovedEquipmentRuntime(actor, slot));
+    ['armor', 'helmet', 'boots', 'backpack'].forEach(slot => removeApprovedEquipmentRuntime(actor, slot));
     if (actor?.userData) delete actor.userData.approvedEquipmentRuntimes;
   }
 
@@ -268,15 +384,40 @@
       mesh.receiveShadow = false;
       mesh.frustumCulled = false;
       mesh.userData.approvedEquipmentSharedAsset = true;
+      mesh.userData.approvedEquipmentSourceName = sourceMesh.name;
+      mesh.userData.approvedBackpackLayer = String(
+        sourceMesh.userData?.realm_backpack_layer
+        || sourceMesh.parent?.userData?.realm_backpack_layer
+        || ''
+      );
+      mesh.userData.approvedEquipmentBasePositionZ = mesh.position.z;
       group.add(mesh);
     }
     return group.children.length === sourceMeshes.length ? group : null;
   }
 
+  function approvedBackpackArmorOffset(eq = {}) {
+    const armorId = String(equipmentVisualBaseId(eq?.armor || '') || '');
+    return Number(APPROVED_BACKPACK_ARMOR_OFFSETS[armorId] || 0);
+  }
+
+  function placeApprovedEquipmentRuntime(group, slot = '', eq = {}) {
+    if (slot !== 'backpack' || !group) return;
+    const offset = approvedBackpackArmorOffset(eq);
+    group.children.forEach(child => {
+      const baseZ = Number(child.userData?.approvedEquipmentBasePositionZ);
+      if (!Number.isFinite(baseZ)) return;
+      child.position.z = baseZ - (
+        child.userData.approvedBackpackLayer === 'pack' ? offset : 0
+      );
+    });
+    group.userData.approvedBackpackArmorOffset = offset;
+  }
+
   function applyApprovedEquipmentSlot(actor, eq = {}, slot = '') {
     if (!actor?.userData) return false;
     const parts = actor.userData.parts || actor.userData.actorParts || {};
-    const characterRuntime = actor.userData.characterGlbRuntime;
+    const characterRuntime = approvedActorCharacterRuntime(actor);
     const itemId = String(equipmentVisualBaseId(eq?.[slot] || '') || '');
     const definition = APPROVED_EQUIPMENT_ASSETS[itemId];
     const wanted = definition?.slot === slot && !!characterRuntime?.root;
@@ -288,6 +429,7 @@
     }
     const bodyKey = approvedEquipmentBodyKey(actor);
     if (current?.itemId === itemId && current?.bodyKey === bodyKey && current.mesh?.parent === characterRuntime.root) {
+      placeApprovedEquipmentRuntime(current.mesh, slot, eq);
       approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
       return true;
     }
@@ -298,7 +440,7 @@
     actor.userData.approvedEquipmentRuntimes[slot] = { itemId, bodyKey, requestId, mesh: null };
     loadApprovedEquipmentTemplate(itemId, bodyKey).then(template => {
       const runtime = actor.userData.approvedEquipmentRuntimes?.[slot];
-      const activeCharacter = actor.userData.characterGlbRuntime;
+      const activeCharacter = approvedActorCharacterRuntime(actor);
       const activeEquipment = actor.userData.enemyEquipment || actor.userData.equipment || eq;
       if (
         !template
@@ -313,6 +455,7 @@
         console.warn(`Не удалось привязать утверждённую экипировку ${itemId} (${bodyKey}) к персонажу.`);
         return;
       }
+      placeApprovedEquipmentRuntime(mesh, slot, activeEquipment);
       activeCharacter.root.add(mesh);
       runtime.mesh = mesh;
       approvedEquipmentFallbackMeshes(parts, slot).forEach(fallback => { fallback.visible = false; });
@@ -321,7 +464,7 @@
   }
 
   function applyApprovedEquipmentVisuals(actor, eq = {}) {
-    return ['armor', 'helmet', 'boots'].map(slot => applyApprovedEquipmentSlot(actor, eq, slot));
+    return ['armor', 'helmet', 'boots', 'backpack'].map(slot => applyApprovedEquipmentSlot(actor, eq, slot));
   }
 
   function applyApprovedBootsVisual(actor, eq = {}) {
@@ -415,11 +558,19 @@
     gltf.scene.updateMatrixWorld(true);
     const primaryHandToMount = primaryHand.matrixWorld.clone().invert().multiply(mount.matrixWorld);
     const mountToSupportHand = mount.matrixWorld.clone().invert().multiply(supportHand.matrixWorld);
+    const supportHandPosition = new THREE.Vector3();
+    const supportHandQuaternion = new THREE.Quaternion();
+    mountToSupportHand.decompose(supportHandPosition, supportHandQuaternion, new THREE.Vector3());
+    const supportHandOffset = supportHandPosition.sub(
+      new THREE.Vector3().fromArray(APPROVED_ASSAULT_SUPPORT_SOCKET)
+    );
     return {
       bones,
       restBones,
       primaryHandToMount,
-      mountToSupportHand
+      mountToSupportHand,
+      supportHandQuaternion,
+      supportHandOffset
     };
   }
 
@@ -490,8 +641,8 @@
     return parts.weaponGroup || actor?.userData?.enemyWeaponGroup || null;
   }
 
-  function restoreApprovedAssaultRifleGrip(actor) {
-    const state = actor?.userData?.approvedAssaultRifleGrip;
+  function restoreApprovedWeaponGrip(actor) {
+    const state = actor?.userData?.approvedWeaponGripMount || actor?.userData?.approvedAssaultRifleGrip;
     if (!state) return;
     const weaponGroup = state.weaponGroup;
     if (weaponGroup && state.parent) {
@@ -503,7 +654,13 @@
       weaponGroup.userData.baseRotation = state.baseRotation.clone();
       weaponGroup.userData.characterPose = {};
     }
+    delete actor.userData.approvedWeaponGripMount;
     delete actor.userData.approvedAssaultRifleGrip;
+    delete actor.userData.approvedPhysicalMeleeGripActive;
+  }
+
+  function restoreApprovedAssaultRifleGrip(actor) {
+    restoreApprovedWeaponGrip(actor);
   }
 
   function setApprovedBoneWorldQuaternion(bone, worldQuaternion) {
@@ -514,8 +671,9 @@
     return true;
   }
 
-  function solveApprovedSupportArm(characterRoot, targetMatrix) {
-    const chain = ['clavicle_l', 'upperarm_l', 'lowerarm_l', 'hand_l'].map(name => (
+  function solveApprovedArm(characterRoot, side = 'l', targetMatrix) {
+    const suffix = side === 'r' ? 'r' : 'l';
+    const chain = [`clavicle_${suffix}`, `upperarm_${suffix}`, `lowerarm_${suffix}`, `hand_${suffix}`].map(name => (
       characterRoot?.getObjectByName?.(name) || null
     ));
     if (chain.some(bone => !bone?.isBone) || !targetMatrix) return false;
@@ -567,14 +725,45 @@
       .distanceTo(targetPosition) < 0.01;
   }
 
-  function mountApprovedAssaultRifle(actor, pose) {
-    const runtime = actor?.userData?.characterGlbRuntime;
+  function solveApprovedSupportArm(characterRoot, targetMatrix) {
+    return solveApprovedArm(characterRoot, 'l', targetMatrix);
+  }
+
+  function approvedWeaponSocket(weaponGroup, names = []) {
+    if (!weaponGroup?.getObjectByName) return null;
+    for (const name of names) {
+      const socket = weaponGroup.getObjectByName(name);
+      if (socket) return socket;
+    }
+    return null;
+  }
+
+  function approvedWeaponObjectLocalPose(weaponGroup, object) {
+    if (!weaponGroup || !object) return null;
+    weaponGroup.updateMatrixWorld(true);
+    object.updateWorldMatrix(true, false);
+    const matrix = weaponGroup.matrixWorld.clone().invert().multiply(object.matrixWorld);
+    const position = new THREE.Vector3();
+    const quaternion = new THREE.Quaternion();
+    matrix.decompose(position, quaternion, new THREE.Vector3());
+    return { position, quaternion };
+  }
+
+  function mountApprovedWeapon(actor, pose, weaponId = '') {
+    const runtime = approvedActorCharacterRuntime(actor);
     const weaponGroup = approvedActorWeaponGroup(actor);
     const primaryHand = runtime?.root?.getObjectByName?.('hand_r');
-    if (!runtime?.root || !weaponGroup || !pose?.primaryHandToMount || !primaryHand?.isBone) return null;
-    let state = actor.userData.approvedAssaultRifleGrip;
+    const primarySocket = approvedWeaponSocket(weaponGroup, ['socket_grip_r']);
+    if (
+      !runtime?.root
+      || !weaponGroup
+      || !pose?.primaryHandToMount
+      || !primaryHand?.isBone
+      || !primarySocket
+    ) return null;
+    let state = actor.userData.approvedWeaponGripMount || actor.userData.approvedAssaultRifleGrip;
     if (!state || state.weaponGroup !== weaponGroup) {
-      if (state) restoreApprovedAssaultRifleGrip(actor);
+      if (state) restoreApprovedWeaponGrip(actor);
       initWeaponVisualState(weaponGroup);
       state = {
         weaponGroup,
@@ -585,25 +774,305 @@
         basePosition: weaponGroup.userData.basePosition.clone(),
         baseRotation: weaponGroup.userData.baseRotation.clone()
       };
-      actor.userData.approvedAssaultRifleGrip = state;
+      actor.userData.approvedWeaponGripMount = state;
+      delete actor.userData.approvedAssaultRifleGrip;
     }
+    state.weaponId = weaponId;
     runtime.root.updateMatrixWorld(true);
     const mountWorld = primaryHand.matrixWorld.clone().multiply(pose.primaryHandToMount);
+    const primaryTargetWorld = mountWorld.clone().multiply(
+      new THREE.Matrix4().makeTranslation(...APPROVED_ASSAULT_PRIMARY_SOCKET)
+    );
+    const primaryLocal = approvedWeaponObjectLocalPose(weaponGroup, primarySocket);
+    if (!primaryLocal) return null;
+    const primaryLocalMatrix = new THREE.Matrix4().compose(
+      primaryLocal.position,
+      primaryLocal.quaternion,
+      new THREE.Vector3(1, 1, 1)
+    );
+    const weaponWorld = primaryTargetWorld.clone().multiply(primaryLocalMatrix.invert());
     if (weaponGroup.parent !== runtime.root) runtime.root.add(weaponGroup);
-    const mountLocal = runtime.root.matrixWorld.clone().invert().multiply(mountWorld);
+    const mountLocal = runtime.root.matrixWorld.clone().invert().multiply(weaponWorld);
     mountLocal.decompose(weaponGroup.position, weaponGroup.quaternion, weaponGroup.scale);
     weaponGroup.userData.basePosition = weaponGroup.position.clone();
     weaponGroup.userData.baseRotation = new THREE.Euler().setFromQuaternion(weaponGroup.quaternion);
     weaponGroup.userData.characterPose = {};
     weaponGroup.updateMatrixWorld(true);
-    return mountWorld;
+    return { mountWorld, weaponGroup };
   }
 
-  function applyApprovedAssaultRifleGrip(actor, weaponId = '') {
+  function mountApprovedAssaultRifle(actor, pose) {
+    return mountApprovedWeapon(actor, pose, 'assaultRifle')?.mountWorld || null;
+  }
+
+  function approvedWeaponLocalHandTarget(weaponGroup, pose, profile, options = {}) {
+    if (!weaponGroup || !pose?.supportHandQuaternion) return null;
+    const object = options.object || null;
+    const localPose = object ? approvedWeaponObjectLocalPose(weaponGroup, object) : null;
+    const position = localPose?.position?.clone?.() || new THREE.Vector3().fromArray(
+      options.fallback || profile?.fallbackReload || [0, 0, 0]
+    );
+    if (options.grip === true && pose.supportHandOffset) position.add(pose.supportHandOffset);
+    const quaternion = pose.supportHandQuaternion.clone();
+    if (Array.isArray(options.rotation) && options.rotation.length === 3) {
+      quaternion.multiply(new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(options.rotation[0], options.rotation[1], options.rotation[2], 'XYZ')
+      ));
+    }
+    const localMatrix = new THREE.Matrix4().compose(
+      position,
+      quaternion,
+      new THREE.Vector3(1, 1, 1)
+    );
+    weaponGroup.updateMatrixWorld(true);
+    return weaponGroup.matrixWorld.clone().multiply(localMatrix);
+  }
+
+  function approvedWeaponReloadPhase(actor) {
+    const reload = actor?.userData?.reloadAnim;
+    if (!reload) return null;
+    const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now();
+    const duration = Math.max(0.5, Number(reload.duration || 0.82));
+    const phase = (now - Number(reload.startedAt || 0)) / (duration * 1000);
+    return phase >= 0 && phase < 1 ? Math.max(0, Math.min(1, phase)) : null;
+  }
+
+  function approvedWeaponSupportTarget(actor, weaponGroup, pose, profile) {
+    const gripSocket = approvedWeaponSocket(weaponGroup, ['socket_grip_l']);
+    if (!gripSocket) return null;
+    const gripTarget = approvedWeaponLocalHandTarget(weaponGroup, pose, profile, {
+      object: gripSocket,
+      grip: true
+    });
+    const phase = approvedWeaponReloadPhase(actor);
+    if (phase === null) return gripTarget;
+    const reloadObject = approvedWeaponSocket(weaponGroup, profile.reloadNodes || []);
+    const reloadTarget = approvedWeaponLocalHandTarget(weaponGroup, pose, profile, {
+      object: reloadObject,
+      fallback: profile.fallbackReload,
+      rotation: profile.reloadRotation
+    });
+    if (!reloadTarget || !gripTarget) return gripTarget || reloadTarget;
+    const edge = 0.22;
+    const rawBlend = phase < edge
+      ? phase / edge
+      : (phase > 1 - edge ? (1 - phase) / edge : 1);
+    const blend = Math.max(0, Math.min(1, rawBlend));
+    const eased = blend * blend * (3 - 2 * blend);
+    const gripPosition = new THREE.Vector3();
+    const gripQuaternion = new THREE.Quaternion();
+    const reloadPosition = new THREE.Vector3();
+    const reloadQuaternion = new THREE.Quaternion();
+    gripTarget.decompose(gripPosition, gripQuaternion, new THREE.Vector3());
+    reloadTarget.decompose(reloadPosition, reloadQuaternion, new THREE.Vector3());
+    return new THREE.Matrix4().compose(
+      gripPosition.lerp(reloadPosition, eased),
+      gripQuaternion.slerp(reloadQuaternion, eased),
+      new THREE.Vector3(1, 1, 1)
+    );
+  }
+
+  function approvedMeleeSmoothStep(value = 0) {
+    const t = Math.max(0, Math.min(1, Number(value || 0)));
+    return t * t * (3 - 2 * t);
+  }
+
+  function approvedMeleePoseState(actor, weaponId = '') {
+    const anim = actor?.userData?.meleeAnim;
+    if (!anim || String(equipmentVisualBaseId(anim.weaponId || '') || '') !== weaponId) {
+      return { from: 'idle', to: 'idle', blend: 0, phase: 0 };
+    }
+    const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now();
+    const duration = Math.max(0.18, Number(anim.duration || 0.36));
+    const phase = Math.max(0, Math.min(1, (now - Number(anim.startedAt || 0)) / (duration * 1000)));
+    if (phase < 0.34) {
+      return {
+        from: 'idle',
+        to: 'windup',
+        blend: approvedMeleeSmoothStep(phase / 0.34),
+        phase
+      };
+    }
+    if (phase < 0.58) {
+      return {
+        from: 'windup',
+        to: 'strike',
+        blend: approvedMeleeSmoothStep((phase - 0.34) / 0.24),
+        phase
+      };
+    }
+    return {
+      from: 'strike',
+      to: 'idle',
+      blend: approvedMeleeSmoothStep((phase - 0.58) / 0.42),
+      phase
+    };
+  }
+
+  function approvedMeleeVector(value = [], fallback = [0, 0, 0]) {
+    const source = Array.isArray(value) && value.length === 3 ? value : fallback;
+    return new THREE.Vector3(Number(source[0] || 0), Number(source[1] || 0), Number(source[2] || 0));
+  }
+
+  function approvedMeleeInterpolatedPose(profile, poseState) {
+    const from = profile?.poses?.[poseState.from] || profile?.poses?.idle;
+    const to = profile?.poses?.[poseState.to] || from;
+    if (!from || !to) return null;
+    const blend = Math.max(0, Math.min(1, Number(poseState.blend || 0)));
+    const primary = approvedMeleeVector(from.primary).lerp(approvedMeleeVector(to.primary), blend);
+    const direction = approvedMeleeVector(from.direction, [0, 0, 1])
+      .lerp(approvedMeleeVector(to.direction, [0, 0, 1]), blend)
+      .normalize();
+    return { primary, direction };
+  }
+
+  function approvedMeleeSpineRotation(profile, poseState) {
+    const zero = [0, 0, 0];
+    const from = poseState.from === 'idle' ? zero : (profile?.spine?.[poseState.from] || zero);
+    const to = poseState.to === 'idle' ? zero : (profile?.spine?.[poseState.to] || zero);
+    return approvedMeleeVector(from).lerp(
+      approvedMeleeVector(to),
+      Math.max(0, Math.min(1, Number(poseState.blend || 0)))
+    );
+  }
+
+  function applyApprovedMeleeSpinePose(characterRoot, profile, poseState) {
+    const rotation = approvedMeleeSpineRotation(profile, poseState);
+    const weights = { spine_01: 0.18, spine_02: 0.34, spine_03: 0.48 };
+    Object.entries(weights).forEach(([name, weight]) => {
+      const bone = characterRoot?.getObjectByName?.(name);
+      if (!bone?.isBone) return;
+      bone.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(
+        rotation.x * weight,
+        rotation.y * weight,
+        rotation.z * weight,
+        'XYZ'
+      ))).normalize();
+    });
+    characterRoot?.updateMatrixWorld?.(true);
+  }
+
+  function approvedGripBoneIsFinger(name = '') {
+    return /^(?:index|middle|ring|pinky|thumb)_0[123]_[lr]$/.test(String(name || ''));
+  }
+
+  function applyApprovedMeleeFingerPose(characterRuntime, pose) {
+    const characterRoot = characterRuntime?.root;
+    if (!characterRoot || !pose?.bones) return;
+    pose.bones.forEach((transform, boneName) => {
+      if (!approvedGripBoneIsFinger(boneName)) return;
+      const bone = characterRoot.getObjectByName?.(boneName);
+      if (!bone?.isBone) return;
+      const target = approvedGripTargetTransform(characterRuntime, pose, boneName, transform);
+      if (target.position) bone.position.copy(target.position);
+      if (target.quaternion) bone.quaternion.copy(target.quaternion);
+      else if (transform.quaternion?.length === 4) bone.quaternion.fromArray(transform.quaternion).normalize();
+    });
+    characterRoot.updateMatrixWorld(true);
+  }
+
+  function captureApprovedWeaponMountState(actor, weaponGroup) {
+    let state = actor?.userData?.approvedWeaponGripMount || actor?.userData?.approvedAssaultRifleGrip;
+    if (!state || state.weaponGroup !== weaponGroup) {
+      if (state) restoreApprovedWeaponGrip(actor);
+      initWeaponVisualState(weaponGroup);
+      state = {
+        weaponGroup,
+        parent: weaponGroup.parent,
+        position: weaponGroup.position.clone(),
+        quaternion: weaponGroup.quaternion.clone(),
+        scale: weaponGroup.scale.clone(),
+        basePosition: weaponGroup.userData.basePosition.clone(),
+        baseRotation: weaponGroup.userData.baseRotation.clone()
+      };
+      actor.userData.approvedWeaponGripMount = state;
+      delete actor.userData.approvedAssaultRifleGrip;
+    }
+    return state;
+  }
+
+  function placeApprovedMeleeWeapon(actor, characterRuntime, pose, profile, meleePose, weaponId = '') {
+    const weaponGroup = approvedActorWeaponGroup(actor);
+    const primarySocket = approvedWeaponSocket(weaponGroup, ['socket_grip_r']);
+    if (!weaponGroup || !primarySocket || !meleePose || !characterRuntime?.root) return null;
+    const supportSocket = profile.twoHanded
+      ? approvedWeaponSocket(weaponGroup, ['socket_grip_l'])
+      : null;
+    if (profile.twoHanded && !supportSocket) return null;
+    const primaryLocal = approvedWeaponObjectLocalPose(weaponGroup, primarySocket);
+    const supportLocal = supportSocket ? approvedWeaponObjectLocalPose(weaponGroup, supportSocket) : null;
+    if (!primaryLocal || (profile.twoHanded && !supportLocal)) return null;
+    const state = captureApprovedWeaponMountState(actor, weaponGroup);
+    state.weaponId = weaponId;
+    const sourceDirection = supportLocal
+      ? supportLocal.position.clone().sub(primaryLocal.position)
+      : approvedMeleeVector(profile.sourceAxis, [0, 1, 0]);
+    if (sourceDirection.lengthSq() < 0.000001) return null;
+    sourceDirection.normalize();
+    const weaponQuaternion = new THREE.Quaternion().setFromUnitVectors(
+      sourceDirection,
+      meleePose.direction.clone().normalize()
+    );
+    const roll = Number(profile.roll || 0);
+    if (Math.abs(roll) > 0.0001) {
+      weaponQuaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(meleePose.direction, roll));
+    }
+    const scaledPrimary = primaryLocal.position.clone().multiply(state.scale).applyQuaternion(weaponQuaternion);
+    const weaponPosition = meleePose.primary.clone().sub(scaledPrimary);
+    if (weaponGroup.parent !== characterRuntime.root) characterRuntime.root.add(weaponGroup);
+    weaponGroup.position.copy(weaponPosition);
+    weaponGroup.quaternion.copy(weaponQuaternion).normalize();
+    weaponGroup.scale.copy(state.scale);
+    weaponGroup.userData.basePosition = weaponGroup.position.clone();
+    weaponGroup.userData.baseRotation = new THREE.Euler().setFromQuaternion(weaponGroup.quaternion);
+    weaponGroup.userData.characterPose = {};
+    weaponGroup.updateMatrixWorld(true);
+    return { weaponGroup, primarySocket, supportSocket };
+  }
+
+  function approvedMeleePrimaryHandTarget(mounted, pose) {
+    if (!mounted?.primarySocket || !pose?.primaryHandToMount) return null;
+    mounted.primarySocket.updateWorldMatrix(true, false);
+    const handToSocket = pose.primaryHandToMount.clone().multiply(
+      new THREE.Matrix4().makeTranslation(...APPROVED_ASSAULT_PRIMARY_SOCKET)
+    );
+    return mounted.primarySocket.matrixWorld.clone().multiply(handToSocket.invert());
+  }
+
+  function applyApprovedMeleeGrip(actor, characterRuntime, pose, profile, weaponId = '') {
+    const poseState = approvedMeleePoseState(actor, weaponId);
+    const meleePose = approvedMeleeInterpolatedPose(profile, poseState);
+    if (!meleePose) return false;
+    applyApprovedMeleeSpinePose(characterRuntime.root, profile, poseState);
+    applyApprovedMeleeFingerPose(characterRuntime, pose);
+    const mounted = placeApprovedMeleeWeapon(actor, characterRuntime, pose, profile, meleePose, weaponId);
+    if (!mounted) return false;
+    actor.userData.approvedPhysicalMeleeGripActive = weaponId;
+    const primaryTarget = approvedMeleePrimaryHandTarget(mounted, pose);
+    if (!primaryTarget || !solveApprovedArm(characterRuntime.root, 'r', primaryTarget)) return false;
+    if (!profile.twoHanded) return true;
+    characterRuntime.root.updateMatrixWorld(true);
+    mounted.weaponGroup.updateMatrixWorld(true);
+    const supportTarget = approvedWeaponLocalHandTarget(mounted.weaponGroup, pose, profile, {
+      object: mounted.supportSocket,
+      grip: true,
+      rotation: profile.supportRotation
+    });
+    return !!supportTarget && solveApprovedArm(characterRuntime.root, 'l', supportTarget);
+  }
+
+  function applyApprovedWeaponGrip(actor, weaponId = '') {
     if (!actor?.userData) return false;
     const id = String(equipmentVisualBaseId(weaponId || actor.userData.weaponId || '') || '');
-    if (id !== 'assaultRifle' || !actor.userData.characterGlbRuntime?.root) {
-      restoreApprovedAssaultRifleGrip(actor);
+    const firearmProfile = APPROVED_FIREARM_GRIP_PROFILES[id];
+    const meleeProfile = APPROVED_MELEE_GRIP_PROFILES[id];
+    const characterRuntime = approvedActorCharacterRuntime(actor);
+    if ((!firearmProfile && !meleeProfile) || !characterRuntime?.root) {
+      restoreApprovedWeaponGrip(actor);
       return false;
     }
     const pose = approvedAssaultGripState.pose;
@@ -611,16 +1080,23 @@
       void loadApprovedAssaultRifleGrip();
       return false;
     }
-    const characterRoot = actor.userData.characterGlbRuntime.root;
-    if (actor.userData.characterGlbRuntime.currentAction === 'death') {
+    const characterRoot = characterRuntime.root;
+    if (characterRuntime.currentAction === 'death') {
+      delete actor.userData.approvedPhysicalMeleeGripActive;
       characterRoot.updateMatrixWorld(true);
-      return !!mountApprovedAssaultRifle(actor, pose);
+      return !!mountApprovedWeapon(actor, pose, id);
     }
+    if (meleeProfile) {
+      const applied = applyApprovedMeleeGrip(actor, characterRuntime, pose, meleeProfile, id);
+      if (!applied) restoreApprovedWeaponGrip(actor);
+      return applied;
+    }
+    delete actor.userData.approvedPhysicalMeleeGripActive;
     pose.bones.forEach((transform, boneName) => {
       const bone = characterRoot.getObjectByName?.(boneName);
       if (!bone?.isBone) return;
       const target = approvedGripTargetTransform(
-        actor.userData.characterGlbRuntime,
+        characterRuntime,
         pose,
         boneName,
         transform
@@ -630,10 +1106,18 @@
       else if (transform.quaternion?.length === 4) bone.quaternion.fromArray(transform.quaternion).normalize();
     });
     characterRoot.updateMatrixWorld(true);
-    const mountWorld = mountApprovedAssaultRifle(actor, pose);
-    if (!mountWorld) return false;
-    const supportTarget = mountWorld.clone().multiply(pose.mountToSupportHand);
+    const mounted = mountApprovedWeapon(actor, pose, id);
+    if (!mounted) {
+      restoreApprovedWeaponGrip(actor);
+      return false;
+    }
+    const supportTarget = approvedWeaponSupportTarget(actor, mounted.weaponGroup, pose, firearmProfile);
+    if (!supportTarget) return true;
     return solveApprovedSupportArm(characterRoot, supportTarget);
+  }
+
+  function applyApprovedAssaultRifleGrip(actor, weaponId = '') {
+    return applyApprovedWeaponGrip(actor, weaponId);
   }
 
   function preloadApprovedHumanoidAssets() {

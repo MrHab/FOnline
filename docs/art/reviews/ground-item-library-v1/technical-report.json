@@ -1,0 +1,522 @@
+{
+  "schema": "realm.ground-item-library-report.v1",
+  "file": "ground_item_library_bc_v1.glb",
+  "sha256": "03FF39155E05996809DF49223C77E29420656305B330D34DF942CA27013B12D4",
+  "style": "geometry_b_materials_c",
+  "textureSize": 128,
+  "itemIds": [
+    "ammo9",
+    "ammo556",
+    "energyCell",
+    "napalm",
+    "shotgunShell",
+    "rocketAmmo",
+    "medkit",
+    "stim",
+    "doctorBag",
+    "antibiotics",
+    "ore",
+    "wood",
+    "scrap",
+    "oil",
+    "chemicals",
+    "medicine",
+    "electronics",
+    "ammoParts",
+    "food",
+    "weaponParts",
+    "silver",
+    "trophy",
+    "water",
+    "repairKit"
+  ],
+  "items": {
+    "ammo9": {
+      "meshes": 6,
+      "vertices": 288,
+      "triangles": 552,
+      "minimumMetres": [
+        -0.1675,
+        -0.101,
+        0.0045
+      ],
+      "maximumMetres": [
+        0.1635,
+        0.151407,
+        0.11
+      ],
+      "sizeMetres": [
+        0.331,
+        0.252407,
+        0.1055
+      ]
+    },
+    "ammo556": {
+      "meshes": 9,
+      "vertices": 312,
+      "triangles": 588,
+      "minimumMetres": [
+        -0.22,
+        -0.133,
+        0.005
+      ],
+      "maximumMetres": [
+        0.175,
+        0.193,
+        0.1755
+      ],
+      "sizeMetres": [
+        0.395,
+        0.326,
+        0.1705
+      ]
+    },
+    "energyCell": {
+      "meshes": 5,
+      "vertices": 216,
+      "triangles": 412,
+      "minimumMetres": [
+        -0.17,
+        -0.139,
+        0.0075
+      ],
+      "maximumMetres": [
+        0.17,
+        0.12,
+        0.165
+      ],
+      "sizeMetres": [
+        0.34,
+        0.259,
+        0.1575
+      ]
+    },
+    "napalm": {
+      "meshes": 4,
+      "vertices": 204,
+      "triangles": 396,
+      "minimumMetres": [
+        -0.115,
+        -0.1495,
+        0.005
+      ],
+      "maximumMetres": [
+        0.115,
+        0.115,
+        0.406
+      ],
+      "sizeMetres": [
+        0.23,
+        0.2645,
+        0.401
+      ]
+    },
+    "shotgunShell": {
+      "meshes": 9,
+      "vertices": 504,
+      "triangles": 972,
+      "minimumMetres": [
+        -0.2145,
+        -0.1,
+        0.0025
+      ],
+      "maximumMetres": [
+        0.19,
+        0.172813,
+        0.1075
+      ],
+      "sizeMetres": [
+        0.4045,
+        0.272813,
+        0.105
+      ]
+    },
+    "rocketAmmo": {
+      "meshes": 5,
+      "vertices": 168,
+      "triangles": 316,
+      "minimumMetres": [
+        -0.465,
+        -0.085534,
+        0.015
+      ],
+      "maximumMetres": [
+        0.400143,
+        0.085534,
+        0.183
+      ],
+      "sizeMetres": [
+        0.865143,
+        0.171068,
+        0.168
+      ]
+    },
+    "medkit": {
+      "meshes": 5,
+      "vertices": 168,
+      "triangles": 320,
+      "minimumMetres": [
+        -0.2,
+        -0.135,
+        0.01
+      ],
+      "maximumMetres": [
+        0.2,
+        0.135,
+        0.344
+      ],
+      "sizeMetres": [
+        0.4,
+        0.27,
+        0.334
+      ]
+    },
+    "stim": {
+      "meshes": 4,
+      "vertices": 168,
+      "triangles": 320,
+      "minimumMetres": [
+        -0.31,
+        -0.08,
+        0.01
+      ],
+      "maximumMetres": [
+        0.1775,
+        0.08,
+        0.12
+      ],
+      "sizeMetres": [
+        0.4875,
+        0.16,
+        0.11
+      ]
+    },
+    "doctorBag": {
+      "meshes": 5,
+      "vertices": 192,
+      "triangles": 368,
+      "minimumMetres": [
+        -0.24,
+        -0.135,
+        0.01
+      ],
+      "maximumMetres": [
+        0.24,
+        0.135,
+        0.518
+      ],
+      "sizeMetres": [
+        0.48,
+        0.27,
+        0.508
+      ]
+    },
+    "antibiotics": {
+      "meshes": 9,
+      "vertices": 200,
+      "triangles": 364,
+      "minimumMetres": [
+        -0.17,
+        -0.08,
+        0.005
+      ],
+      "maximumMetres": [
+        0.250007,
+        0.115159,
+        0.225
+      ],
+      "sizeMetres": [
+        0.420007,
+        0.195159,
+        0.22
+      ]
+    },
+    "ore": {
+      "meshes": 5,
+      "vertices": 72,
+      "triangles": 124,
+      "minimumMetres": [
+        -0.294288,
+        -0.210148,
+        -0.018
+      ],
+      "maximumMetres": [
+        0.283431,
+        0.231226,
+        0.246
+      ],
+      "sizeMetres": [
+        0.577719,
+        0.441374,
+        0.264
+      ]
+    },
+    "wood": {
+      "meshes": 7,
+      "vertices": 414,
+      "triangles": 808,
+      "minimumMetres": [
+        -0.24,
+        -0.162286,
+        0.003
+      ],
+      "maximumMetres": [
+        0.24,
+        0.162537,
+        0.237
+      ],
+      "sizeMetres": [
+        0.48,
+        0.324824,
+        0.234
+      ]
+    },
+    "scrap": {
+      "meshes": 4,
+      "vertices": 168,
+      "triangles": 324,
+      "minimumMetres": [
+        -0.258232,
+        -0.21219,
+        -0.014992
+      ],
+      "maximumMetres": [
+        0.274378,
+        0.227496,
+        0.17829
+      ],
+      "sizeMetres": [
+        0.53261,
+        0.439686,
+        0.193282
+      ]
+    },
+    "oil": {
+      "meshes": 4,
+      "vertices": 132,
+      "triangles": 248,
+      "minimumMetres": [
+        -0.17,
+        -0.216,
+        0.005
+      ],
+      "maximumMetres": [
+        0.172798,
+        0.09,
+        0.4975
+      ],
+      "sizeMetres": [
+        0.342798,
+        0.306,
+        0.4925
+      ]
+    },
+    "chemicals": {
+      "meshes": 5,
+      "vertices": 240,
+      "triangles": 460,
+      "minimumMetres": [
+        -0.19,
+        -0.125,
+        0.005
+      ],
+      "maximumMetres": [
+        0.19,
+        0.125,
+        0.3425
+      ],
+      "sizeMetres": [
+        0.38,
+        0.25,
+        0.3375
+      ]
+    },
+    "medicine": {
+      "meshes": 5,
+      "vertices": 188,
+      "triangles": 356,
+      "minimumMetres": [
+        -0.195,
+        -0.11,
+        0.004805
+      ],
+      "maximumMetres": [
+        0.25,
+        0.192,
+        0.145195
+      ],
+      "sizeMetres": [
+        0.445,
+        0.302,
+        0.14039
+      ]
+    },
+    "electronics": {
+      "meshes": 6,
+      "vertices": 204,
+      "triangles": 388,
+      "minimumMetres": [
+        -0.226033,
+        -0.199983,
+        0.003799
+      ],
+      "maximumMetres": [
+        0.303993,
+        0.164551,
+        0.145
+      ],
+      "sizeMetres": [
+        0.530026,
+        0.364535,
+        0.141201
+      ]
+    },
+    "ammoParts": {
+      "meshes": 8,
+      "vertices": 444,
+      "triangles": 856,
+      "minimumMetres": [
+        -0.202121,
+        -0.135,
+        0.0075
+      ],
+      "maximumMetres": [
+        0.19,
+        0.135,
+        0.091168
+      ],
+      "sizeMetres": [
+        0.392121,
+        0.27,
+        0.083668
+      ]
+    },
+    "food": {
+      "meshes": 5,
+      "vertices": 168,
+      "triangles": 316,
+      "minimumMetres": [
+        -0.185,
+        -0.125,
+        0.005
+      ],
+      "maximumMetres": [
+        0.185,
+        0.218078,
+        0.175
+      ],
+      "sizeMetres": [
+        0.37,
+        0.343078,
+        0.17
+      ]
+    },
+    "weaponParts": {
+      "meshes": 4,
+      "vertices": 192,
+      "triangles": 372,
+      "minimumMetres": [
+        -0.276209,
+        -0.179345,
+        0.02
+      ],
+      "maximumMetres": [
+        0.294677,
+        0.187288,
+        0.134161
+      ],
+      "sizeMetres": [
+        0.570885,
+        0.366633,
+        0.114161
+      ]
+    },
+    "silver": {
+      "meshes": 16,
+      "vertices": 832,
+      "triangles": 1600,
+      "minimumMetres": [
+        -0.163872,
+        -0.130725,
+        0.00382
+      ],
+      "maximumMetres": [
+        0.197819,
+        0.153406,
+        0.107657
+      ],
+      "sizeMetres": [
+        0.36169,
+        0.284131,
+        0.103837
+      ]
+    },
+    "trophy": {
+      "meshes": 7,
+      "vertices": 146,
+      "triangles": 264,
+      "minimumMetres": [
+        -0.303173,
+        -0.17,
+        0.0052
+      ],
+      "maximumMetres": [
+        0.206666,
+        0.1008,
+        0.348334
+      ],
+      "sizeMetres": [
+        0.509839,
+        0.2708,
+        0.343134
+      ]
+    },
+    "water": {
+      "meshes": 5,
+      "vertices": 296,
+      "triangles": 576,
+      "minimumMetres": [
+        -0.194,
+        -0.055,
+        -0.024
+      ],
+      "maximumMetres": [
+        0.194,
+        0.055,
+        0.3725
+      ],
+      "sizeMetres": [
+        0.388,
+        0.11,
+        0.3965
+      ]
+    },
+    "repairKit": {
+      "meshes": 5,
+      "vertices": 240,
+      "triangles": 468,
+      "minimumMetres": [
+        -0.23,
+        -0.142204,
+        0.01
+      ],
+      "maximumMetres": [
+        0.23,
+        0.125,
+        0.431615
+      ],
+      "sizeMetres": [
+        0.46,
+        0.267204,
+        0.421615
+      ]
+    }
+  },
+  "totals": {
+    "meshes": 147,
+    "vertices": 6156,
+    "triangles": 11768
+  },
+  "materials": 18,
+  "embeddedTextureImages": 54
+}

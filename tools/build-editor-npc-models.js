@@ -29,7 +29,6 @@ async function main() {
     'npc_wasteland_settler.glb': () => humanoid(THREE, mat, { coat: mat.canvas, plain: true }),
     'npc_raider.glb': () => humanoid(THREE, mat, { coat: mat.raiderCloth, plain: true }),
     'npc_ghoul.glb': () => ghoul(THREE, mat),
-    'npc_super_mutant.glb': () => superMutant(THREE, mat),
     'npc_ash_wolf.glb': () => ashWolf(THREE, mat),
     'npc_radscorpion.glb': () => radscorpion(THREE, mat),
     'npc_mutant_ant.glb': () => mutantAnt(THREE, mat),
@@ -69,7 +68,6 @@ function makeMaterials(THREE) {
     scrapArmor: material('npc_scrap_armor', 0x68655a, { roughness: 0.64, metalness: 0.28 }),
     metalArmor: material('npc_patrol_metal_armor', 0x555f5f, { roughness: 0.58, metalness: 0.36 }),
     ghoulSkin: material('npc_ghoul_skin', 0x766d50),
-    mutantSkin: material('npc_mutant_skin', 0x6a8157),
     wolfHide: material('npc_ash_wolf_hide', 0x5d5a50),
     scorpion: material('npc_radscorpion_shell', 0x3c2f23, { roughness: 0.78, metalness: 0.06 }),
     ant: material('npc_mutant_ant_shell', 0x40281d, { roughness: 0.82, metalness: 0.05 }),
@@ -225,20 +223,6 @@ function ghoul(THREE, mat) {
   sphere(THREE, g, mat.toxic, 'glowing_wound_a', [-0.12, 1.04, -0.23], 0.045, [1, 1, 1], 8);
   sphere(THREE, g, mat.toxic, 'glowing_wound_b', [0.16, 0.78, -0.20], 0.035, [1, 1, 1], 8);
   addCreatureDetailPass(THREE, g, mat, 'ghoul');
-  return g;
-}
-
-function superMutant(THREE, mat) {
-  const g = new THREE.Group();
-  g.scale.set(1.18, 1.18, 1.18);
-  box(THREE, g, mat.mutantSkin, 'left_mutant_leg', [-0.22, 0.34, 0.04], [0.23, 0.56, 0.28]);
-  box(THREE, g, mat.mutantSkin, 'right_mutant_leg', [0.22, 0.34, 0.04], [0.23, 0.56, 0.28]);
-  cyl(THREE, g, mat.mutantSkin, 'mutant_body', [0, 0.98, 0.03], 0.42, 0.58, 1.02, 11);
-  sphere(THREE, g, mat.mutantSkin, 'mutant_head', [0, 1.62, -0.02], 0.27, [1.1, 1, 0.95], 12);
-  box(THREE, g, mat.bone, 'mutant_jaw', [0, 1.49, -0.20], [0.36, 0.14, 0.12]);
-  box(THREE, g, mat.mutantSkin, 'left_mutant_arm', [-0.67, 0.93, -0.02], [0.19, 0.72, 0.22], [0.02, 0, -0.22]);
-  box(THREE, g, mat.mutantSkin, 'right_mutant_arm', [0.67, 0.93, -0.02], [0.19, 0.72, 0.22], [0.02, 0, 0.22]);
-  addCreatureDetailPass(THREE, g, mat, 'mutant');
   return g;
 }
 

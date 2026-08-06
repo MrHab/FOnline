@@ -1,0 +1,47 @@
+{
+  "schema": "realm.ground-item-model-manifest.v1",
+  "assetVersion": "7.76.7-ground-items-bc-v1",
+  "style": "geometry_b_materials_c",
+  "file": "/assets/models/items/ground_item_library.glb",
+  "sha256": "03FF39155E05996809DF49223C77E29420656305B330D34DF942CA27013B12D4",
+  "sourceReview": "docs/art/reviews/ground-item-library-v1/ground_item_library_bc_v1.glb",
+  "itemIds": [
+    "ammo9",
+    "ammo556",
+    "energyCell",
+    "napalm",
+    "shotgunShell",
+    "rocketAmmo",
+    "medkit",
+    "stim",
+    "doctorBag",
+    "antibiotics",
+    "ore",
+    "wood",
+    "scrap",
+    "oil",
+    "chemicals",
+    "medicine",
+    "electronics",
+    "ammoParts",
+    "food",
+    "weaponParts",
+    "silver",
+    "trophy",
+    "water",
+    "repairKit"
+  ],
+  "totals": {
+    "meshes": 147,
+    "vertices": 6156,
+    "triangles": 11768
+  },
+  "materials": 18,
+  "embeddedTextureImages": 54,
+  "textureSize": 128,
+  "reuse": {
+    "weapons": "/assets/models/weapons/manifest.json",
+    "equipment": "/assets/models/approved-humanoid-assets.json",
+    "bodyVariant": "male_medium"
+  }
+}

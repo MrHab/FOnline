@@ -15,29 +15,34 @@ const loaderPath = path.join(root, 'public', 'js', 'game.js');
 const loadingPath = path.join(root, 'public', 'js', 'game', '13_minimap_hud_loop.js');
 
 const expected = new Map([
-  ['pistol', { family: 'sidearm', scale: 0.34, length: [0.24, 0.38], nodes: ['muzzle', 'slide'] }],
-  ['rifle', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'bolt'] }],
+  ['pistol', { family: 'sidearm', scale: 0.34, length: [0.24, 0.38], nodes: ['muzzle', 'slide'], reloadKind: 'magazine', reloadPart: 'magazine' }],
+  ['rifle', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'bolt'], reloadKind: 'bolt_clip', reloadPart: 'cartridge_clip' }],
   ['assaultRifle', {
     family: 'long_gun',
     scale: 1,
     length: [1.04, 1.06],
     nodes: ['socket_muzzle', 'socket_grip_l', 'socket_grip_r'],
+    reloadKind: 'magazine',
+    reloadPart: 'magazine',
     approved: true,
     minMeshes: 3,
     maxBytes: 600_000
   }],
-  ['machineGun', { family: 'heavy', scale: 0.56, length: [1.00, 1.28], nodes: ['muzzle', 'ammo_box'] }],
-  ['laserPistol', { family: 'energy_sidearm', scale: 0.40, length: [0.32, 0.48], nodes: ['muzzle', 'energy_core'] }],
-  ['flamethrower', { family: 'heavy', scale: 0.55, length: [0.90, 1.22], nodes: ['pilot', 'fuel_tank'] }],
-  ['plasmaRifle', { family: 'energy_long_gun', scale: 0.54, length: [0.88, 1.18], nodes: ['muzzle', 'energy_core'] }],
-  ['shotgun', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'pump'] }],
-  ['rocketLauncher', { family: 'launcher', scale: 0.58, length: [1.00, 1.26], nodes: ['muzzle', 'launcher_tube'] }],
-  ['knife', { family: 'melee_light', scale: 0.22, length: [0.25, 0.36], nodes: ['blade', 'grip'] }],
-  ['pickaxe', { family: 'melee_heavy', scale: 0.45, length: [0.68, 0.90], nodes: ['head_socket', 'pick_left'] }],
-  ['axe', { family: 'melee_heavy', scale: 0.44, length: [0.68, 0.90], nodes: ['blade', 'handle'] }],
-  ['handPump', { family: 'melee_heavy', scale: 0.50, length: [0.62, 0.84], nodes: ['pump_handle', 'nozzle'] }]
+  ['machineGun', { family: 'heavy', scale: 0.56, length: [1.00, 1.28], nodes: ['muzzle', 'ammo_box'], reloadKind: 'ammo_box', reloadPart: 'ammo_box' }],
+  ['laserPistol', { family: 'energy_sidearm', scale: 0.40, length: [0.32, 0.48], nodes: ['muzzle', 'energy_core'], reloadKind: 'energy_cell', reloadPart: 'energy_core' }],
+  ['flamethrower', { family: 'heavy', scale: 0.55, length: [0.90, 1.22], nodes: ['pilot', 'fuel_tank'], reloadKind: 'fuel_tank', reloadPart: 'fuel_tank' }],
+  ['plasmaRifle', { family: 'energy_long_gun', scale: 0.54, length: [0.88, 1.18], nodes: ['muzzle', 'energy_core'], reloadKind: 'energy_cell', reloadPart: 'energy_core' }],
+  ['shotgun', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'pump'], reloadKind: 'shells', reloadPart: 'reload_shell' }],
+  ['rocketLauncher', { family: 'launcher', scale: 0.58, length: [1.00, 1.26], nodes: ['muzzle', 'launcher_tube'], reloadKind: 'rocket', reloadPart: 'rocket_round' }],
+  ['knife', { family: 'melee_light', scale: 0.22, length: [0.25, 0.36], nodes: ['blade', 'grip'], reloadKind: 'none', hands: 1 }],
+  ['pickaxe', { family: 'melee_heavy', scale: 0.45, length: [0.68, 0.90], nodes: ['head_socket', 'pick_left'], reloadKind: 'none', hands: 2 }],
+  ['axe', { family: 'melee_heavy', scale: 0.44, length: [0.68, 0.90], nodes: ['blade', 'handle'], reloadKind: 'none', hands: 2 }],
+  ['handPump', { family: 'melee_heavy', scale: 0.50, length: [0.62, 0.84], nodes: ['pump_handle', 'nozzle'], reloadKind: 'none', hands: 2 }]
 ]);
-const requiredAnimations = ['idle', 'attack', 'reload'];
+const requiredAnimations = ['idle', 'attack'];
+const reloadAnimationWeapons = [...expected]
+  .filter(([, config]) => Boolean(config.reloadPart))
+  .map(([id]) => id);
 
 function sha256(file) {
   return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
@@ -66,8 +71,11 @@ function parseGlb(file) {
 assert(fs.existsSync(manifestPath), 'weapon model manifest is missing');
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 assert.strictEqual(manifest.schema, 'realm.weapon-model-catalog.v1');
+assert.strictEqual(manifest.version, 2);
 assert.strictEqual(manifest.artDirection, 'geometry_b_materials_c');
+assert.strictEqual(manifest.interactionProfile, 'physical_grips_reload_v2');
 assert.deepStrictEqual(manifest.requiredAnimations, requiredAnimations);
+assert.deepStrictEqual(manifest.reloadAnimationWeapons, reloadAnimationWeapons);
 assert.strictEqual(manifest.files?.length, expected.size);
 
 const manifestById = new Map(manifest.files.map(row => [row.id, row]));
@@ -96,7 +104,14 @@ for (const [id, config] of expected) {
       && runtimeLength <= config.length[1],
     `${id}: runtime length ${runtimeLength}m is outside ${config.length[0]}-${config.length[1]}m`
   );
-  assert.deepStrictEqual(row.animations, requiredAnimations, `${id}: manifest animations drifted`);
+  const expectedAnimations = config.reloadPart ? [...requiredAnimations, 'reload'] : requiredAnimations;
+  assert.deepStrictEqual(row.animations, expectedAnimations, `${id}: manifest animations drifted`);
+  const expectedGripSockets = config.reloadPart
+    ? ['socket_grip_r', 'socket_grip_l', 'socket_reload']
+    : (config.hands === 2 ? ['socket_grip_r', 'socket_grip_l'] : ['socket_grip_r']);
+  assert.deepStrictEqual(row.gripSockets, expectedGripSockets, `${id}: manifest grip sockets drifted`);
+  assert.strictEqual(row.reloadKind, config.reloadKind, `${id}: manifest reload kind drifted`);
+  assert.strictEqual(row.reloadPart ?? null, config.reloadPart || null, `${id}: manifest reload part drifted`);
   const file = path.join(root, 'public', row.file.replace(/^\//, ''));
   assert(fs.existsSync(file), `${id}: GLB file is missing`);
   assert.strictEqual(fs.statSync(file).size, row.bytes, `${id}: manifest byte size is stale`);
@@ -122,6 +137,8 @@ for (const [id, config] of expected) {
 
   const names = new Set((json.nodes || []).map(node => node.name));
   config.nodes.forEach(name => assert(names.has(name), `${id}: required animated/readable part is missing: ${name}`));
+  expectedGripSockets.forEach(name => assert(names.has(name), `${id}: interaction socket is missing: ${name}`));
+  if (config.reloadPart) assert(names.has(config.reloadPart), `${id}: physical reload part is missing: ${config.reloadPart}`);
   const rootNode = (json.nodes || []).find(node => node.extras?.realm_weapon_id === id);
   assert(rootNode, `${id}: runtime root metadata is missing`);
   assert.strictEqual(
@@ -131,18 +148,26 @@ for (const [id, config] of expected) {
   assert.strictEqual(rootNode.extras.realm_animation_family, config.family);
   assert.strictEqual(rootNode.extras.realm_art_direction, 'geometry_b_materials_c');
   assert.strictEqual(rootNode.extras.realm_runtime_scale, config.scale);
+  assert.strictEqual(rootNode.extras.realm_interaction_profile, 'physical_grips_reload_v2');
+  assert.strictEqual(rootNode.extras.realm_reload_kind, config.reloadKind);
   assert(Array.isArray(rootNode.scale) && rootNode.scale.length === 3, `${id}: root scale is missing`);
   rootNode.scale.forEach(value => {
     assert(Math.abs(value - config.scale) < 1e-6, `${id}: exported root scale drifted`);
   });
 
   const animations = new Map((json.animations || []).map(animation => [animation.name, animation]));
-  assert.deepStrictEqual([...animations.keys()].sort(), [...requiredAnimations].sort(), `${id}: GLB clips drifted`);
-  requiredAnimations.forEach(name => {
+  assert.deepStrictEqual([...animations.keys()].sort(), [...expectedAnimations].sort(), `${id}: GLB clips drifted`);
+  expectedAnimations.forEach(name => {
     const animation = animations.get(name);
     assert((animation.channels?.length || 0) >= 2, `${id}/${name}: animation has no useful channels`);
     totalAnimationChannels += animation.channels.length;
   });
+  if (config.reloadPart) {
+    const reloadTargets = new Set((animations.get('reload')?.channels || []).map(channel => (
+      json.nodes[channel.target.node]?.name
+    )));
+    assert(reloadTargets.has(config.reloadPart), `${id}: reload clip does not move ${config.reloadPart}`);
+  }
 
   const materialNames = (json.materials || []).map(material => String(material.name || ''));
   assert(
@@ -154,7 +179,7 @@ for (const [id, config] of expected) {
   if (config.approved) {
     assert.strictEqual(
       row.approvedReviewSha256,
-      '81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28'
+      '322D14E2D07059AB4458C65CB0E6B7019B8F030F3386B05016908E41E6591FC6'
     );
     assert.strictEqual(rootNode.extras.realm_runtime_integration_allowed, true);
     assert.strictEqual(rootNode.extras.realm_approved_review_sha256, row.approvedReviewSha256);
@@ -182,7 +207,9 @@ for (const [id, config] of expected) {
   'function makeWeaponModelMesh(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
-  "const WEAPON_MODEL_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v1';",
+  "const WEAPON_MODEL_ASSET_VERSION = '7.76.6-physical-grips-reloads-v2';",
+  "function triggerWeaponModelAction(weaponGroup, actionName = 'attack', options = {})",
+  'Number(clip.duration) / requestedDuration',
   "action.setLoop(THREE.LoopOnce, 1)"
 ].forEach(marker => assert(runtime.includes(marker), `weapon runtime integration is missing: ${marker}`));
 
@@ -191,7 +218,8 @@ assert(visuals.includes("triggerWeaponModelAction(weaponGroup, 'attack')"));
 assert(visuals.includes('updateWeaponModelAnimation(weaponGroup, dt)'));
 assert(visuals.includes('makeWeaponModelMesh(weaponId)'));
 const modernRuntime = fs.readFileSync(modernRuntimePath, 'utf8');
-assert(modernRuntime.includes("triggerWeaponModelAction(weaponGroup, 'reload')"));
+assert(modernRuntime.includes("triggerWeaponModelAction(weaponGroup, 'reload', { duration: reloadDuration })"));
+assert(modernRuntime.includes('applyApprovedWeaponGrip(actor, weaponId)'));
 const remote = fs.readFileSync(remotePath, 'utf8');
 assert(remote.includes('makeWeaponModelMesh(weaponId)'));
 assert(remote.includes('!obj.userData?.weaponSharedAsset'));

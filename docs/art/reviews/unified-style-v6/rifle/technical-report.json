@@ -1,0 +1,61 @@
+{
+  "actualGlb": {
+    "animations": [
+      {
+        "name": "reload",
+        "targets": [
+          "magazine",
+          "weapon_rifle_unified_v6"
+        ]
+      },
+      {
+        "name": "attack",
+        "targets": [
+          "weapon_rifle_unified_v6"
+        ]
+      },
+      {
+        "name": "idle",
+        "targets": [
+          "weapon_rifle_unified_v6"
+        ]
+      }
+    ],
+    "images": 12,
+    "materials": 4,
+    "meshes": 4,
+    "nodes": [
+      "socket_reload",
+      "magazine",
+      "rifle_rebuilt_body",
+      "socket_butt",
+      "socket_grip_l",
+      "socket_grip_r",
+      "socket_muzzle",
+      "stock_repair_plate_l",
+      "stock_repair_plate_r",
+      "weapon_rifle_unified_v6"
+    ],
+    "triangles": 1116,
+    "vertices": 1940
+  },
+  "artDirection": "geometry_b_materials_c",
+  "assetId": "rifle_unified_v6",
+  "bytes": 530792,
+  "file": "rifle_unified_v6.glb",
+  "interactionProfile": "physical_grips_reload_v2",
+  "reloadKind": "magazine",
+  "reloadPart": "magazine",
+  "reloadSocket": "socket_reload",
+  "renders": [
+    "rifle_unified_v6_idle.png",
+    "rifle_unified_v6_reload_draw.png",
+    "rifle_unified_v6_reload_service.png"
+  ],
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "schema": "realm.weapon-review.v2",
+  "sha256": "322D14E2D07059AB4458C65CB0E6B7019B8F030F3386B05016908E41E6591FC6",
+  "sourceAsset": "rifle_unified_v5",
+  "sourceFile": "rifle_unified_v5.glb"
+}

@@ -97,6 +97,10 @@ const {
   actorFacingIntent: resolveActorFacingIntent,
   actorFacingYaw: resolveActorFacingYaw
 } = require('./public/js/game/00a_actor_facing');
+const {
+  criticalShotChanceFromLuck,
+  resolveCriticalShot
+} = require('./src/server/combat-critical');
 
 const GAME_NAME = 'Realm of Ashes';
 
@@ -18343,7 +18347,9 @@ io.on('connection', (socket) => {
     if (spend.reused) return fail('Сервер: этот взрыв уже обработан.', currentCombat());
     addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, 'combat');
 
-    const baseRaw = serverDamageRoll(p, weapon, modeInfo);
+    const baseRawRoll = serverDamageRoll(p, weapon, modeInfo);
+    const explosionCritical = resolveCriticalShot(baseRawRoll, serverStatValue(p, 'luck'), weapon);
+    const baseRaw = explosionCritical.rawDamage;
     const enemyHits = [];
     for (const enemy of enemyTargets) {
       if (enemy.hostileToPlayer === false) setEncounterFactionHostileToPlayer(room, enemy.faction, p, now);
@@ -18362,6 +18368,9 @@ io.on('connection', (socket) => {
         damage: dmgInfo.damage,
         rawDamage: raw,
         absorbed: dmgInfo.absorbed,
+        critical: explosionCritical.critical,
+        criticalChance: Math.round(explosionCritical.chance * 100),
+        criticalMultiplier: explosionCritical.multiplier,
         killed
       });
     }
@@ -18407,6 +18416,10 @@ io.on('connection', (socket) => {
         rawDamage: raw,
         absorbed: dmgInfo.absorbed,
         damageType: 'explosive',
+        critical: explosionCritical.critical,
+        criticalHits: explosionCritical.critical ? 1 : 0,
+        criticalChance: Math.round(explosionCritical.chance * 100),
+        criticalMultiplier: explosionCritical.multiplier,
         hit: true,
         killed,
         secondChance,
@@ -18426,6 +18439,10 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({
       ok: true,
       hit: enemyHits.length > 0 || playerHits.length > 0,
+      critical: explosionCritical.critical,
+      criticalHits: explosionCritical.critical ? 1 : 0,
+      criticalChance: Math.round(explosionCritical.chance * 100),
+      criticalMultiplier: explosionCritical.multiplier,
       enemyHits,
       playerHits: playerHits.map(row => ({ ...row, injuries: undefined })),
       enemies: enemyTargets.map(publicEnemy),
@@ -18535,13 +18552,19 @@ io.on('connection', (socket) => {
           damage: 0,
           rawDamage: 0,
           absorbed: 0,
-          damageType: bulletWeapon.damageType || 'ballistic'
+          damageType: bulletWeapon.damageType || 'ballistic',
+          critical: false,
+          criticalChance: bulletWeapon.ammoType
+            ? Math.round(criticalShotChanceFromLuck(serverStatValue(p, 'luck')) * 100)
+            : 0
         });
         continue;
       }
       let raw = serverDamageRoll(p, bulletWeapon, bulletMode);
       if (ambushLevel > 0) raw = Math.max(1, Math.round(raw * (1 + ambushLevel * 0.14)));
       if (shotgunSpread) raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(bulletWeapon, dist, shotgunSpread.perp, shotgunSpread.width)));
+      const criticalShot = resolveCriticalShot(raw, serverStatValue(p, 'luck'), bulletWeapon);
+      raw = criticalShot.rawDamage;
       const type = DAMAGE_TYPES.includes(bulletWeapon.damageType) ? bulletWeapon.damageType : 'ballistic';
       const dmgInfo = serverMitigateEnemyDamage(raw, enemy, type);
       enemy.hp = Math.max(0, enemy.hp - dmgInfo.damage);
@@ -18554,10 +18577,14 @@ io.on('connection', (socket) => {
         damage: dmgInfo.damage,
         rawDamage: raw,
         absorbed: dmgInfo.absorbed,
-        damageType: dmgInfo.type
+        damageType: dmgInfo.type,
+        critical: criticalShot.critical,
+        criticalChance: Math.round(criticalShot.chance * 100),
+        criticalMultiplier: criticalShot.multiplier
       });
     }
     const anyHit = hits.some(row => row.hit);
+    const criticalHits = hits.filter(row => row.critical).length;
     const damage = hits.reduce((sum, row) => sum + Number(row.damage || 0), 0);
     const rawDamage = hits.reduce((sum, row) => sum + Number(row.rawDamage || 0), 0);
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
@@ -18578,6 +18605,10 @@ io.on('connection', (socket) => {
       rawDamage,
       absorbed,
       damageType: hits.find(row => row.hit)?.damageType || weapon.damageType || 'ballistic',
+      critical: criticalHits > 0,
+      criticalHits,
+      criticalChance: Math.max(0, ...hits.map(row => Number(row.criticalChance || 0))),
+      criticalMultiplier: criticalHits > 0 ? 2 : 1,
       combat: spend.combat,
       combats: spend.combats,
       self: publicAuthoritativePlayerState(p)
@@ -18666,12 +18697,18 @@ io.on('connection', (socket) => {
           damage: 0,
           rawDamage: 0,
           absorbed: 0,
-          damageType: bulletWeapon.damageType || 'ballistic'
+          damageType: bulletWeapon.damageType || 'ballistic',
+          critical: false,
+          criticalChance: bulletWeapon.ammoType
+            ? Math.round(criticalShotChanceFromLuck(serverStatValue(attacker, 'luck')) * 100)
+            : 0
         });
         continue;
       }
       let raw = serverDamageRoll(attacker, bulletWeapon, bulletMode);
       if (shotgunSpread) raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(bulletWeapon, dist, shotgunSpread.perp, shotgunSpread.width)));
+      const criticalShot = resolveCriticalShot(raw, serverStatValue(attacker, 'luck'), bulletWeapon);
+      raw = criticalShot.rawDamage;
       const damageType = DAMAGE_TYPES.includes(bulletWeapon.damageType) ? bulletWeapon.damageType : 'ballistic';
       const dmgInfo = serverMitigateDamage(raw, target, damageType);
       const secondChance = serverTrySecondChance(target, dmgInfo.damage, now);
@@ -18687,11 +18724,15 @@ io.on('connection', (socket) => {
         rawDamage: raw,
         absorbed: dmgInfo.absorbed,
         damageType: dmgInfo.type,
+        critical: criticalShot.critical,
+        criticalChance: Math.round(criticalShot.chance * 100),
+        criticalMultiplier: criticalShot.multiplier,
         secondChance
       });
       targetProxy.hp = target.hp;
     }
     const anyHit = hits.some(row => row.hit);
+    const criticalHits = hits.filter(row => row.critical).length;
     const damage = hits.reduce((sum, row) => sum + Number(row.damage || 0), 0);
     const rawDamage = hits.reduce((sum, row) => sum + Number(row.rawDamage || 0), 0);
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
@@ -18720,6 +18761,10 @@ io.on('connection', (socket) => {
       rawDamage,
       absorbed,
       damageType: hits.find(row => row.hit)?.damageType || weapon.damageType || 'ballistic',
+      critical: criticalHits > 0,
+      criticalHits,
+      criticalChance: Math.max(0, ...hits.map(row => Number(row.criticalChance || 0))),
+      criticalMultiplier: criticalHits > 0 ? 2 : 1,
       hit: anyHit,
       hits,
       killed,
@@ -18747,6 +18792,10 @@ io.on('connection', (socket) => {
       rawDamage,
       absorbed,
       damageType: hits.find(row => row.hit)?.damageType || weapon.damageType || 'ballistic',
+      critical: criticalHits > 0,
+      criticalHits,
+      criticalChance: Math.max(0, ...hits.map(row => Number(row.criticalChance || 0))),
+      criticalMultiplier: criticalHits > 0 ? 2 : 1,
       secondChance,
       fullDrop: locationHasFullInventoryDrop(loc),
       droppedItems,

@@ -790,9 +790,15 @@
         applyServerInjuryPayload(data);
         player.invincible = Math.max(player.invincible || 0, 0.22);
         triggerCharacterHitReaction(playerGroup, Number(data.damage || 0) % 2 ? -1 : 1);
-        createFloatingText(player.x, player.z, data.secondChance ? '1 HP' : '-' + Math.max(0, Number(data.damage || 0)), data.secondChance ? '#ffe28a' : '#ff5b4a');
+        const critical = data.critical === true;
+        const criticalHits = Math.max(1, Math.round(Number(data.criticalHits || 1)));
+        const damageText = critical
+          ? `КРИТ${criticalHits > 1 ? ` ×${criticalHits}` : ''}! -${Math.max(0, Number(data.damage || 0))}`
+          : '-' + Math.max(0, Number(data.damage || 0));
+        createFloatingText(player.x, player.z, data.secondChance ? '1 HP' : damageText, data.secondChance || critical ? '#ffe28a' : '#ff5b4a');
         const absorbedText = Number(data.absorbed || 0) > 0 ? `, броня поглотила ${Math.max(0, Number(data.absorbed || 0))}` : '';
-        addLog(`${data.attackerName || 'Игрок'} атакует (${damageTypeLabel(data.damageType || 'ballistic')}): -${Math.max(0, Number(data.damage || 0))} HP${absorbedText}.`, null, 'combat');
+        const criticalText = critical ? `КРИТИЧЕСКИЙ ВЫСТРЕЛ${criticalHits > 1 ? ` ×${criticalHits}` : ''}! ` : '';
+        addLog(`${criticalText}${data.attackerName || 'Игрок'} атакует (${damageTypeLabel(data.damageType || 'ballistic')}): -${Math.max(0, Number(data.damage || 0))} HP${absorbedText}.`, null, 'combat');
         if (data.secondChance) addLog('⟲ Второй шанс: смертельный удар оставил вас на ногах.', null, 'level');
         renderUI();
         queueSave(true);
@@ -804,7 +810,12 @@
         triggerCharacterHitReaction(row.group, Number(data.damage || 0) % 2 ? -1 : 1);
         const x = row.group?.position?.x ?? Number(row.data.x || 0);
         const z = row.group?.position?.z ?? Number(row.data.z || 0);
-        createFloatingText(x, z, '-' + Math.max(0, Number(data.damage || 0)), '#ff5b4a');
+        const critical = data.critical === true;
+        const criticalHits = Math.max(1, Math.round(Number(data.criticalHits || 1)));
+        const damageText = critical
+          ? `КРИТ${criticalHits > 1 ? ` ×${criticalHits}` : ''}! -${Math.max(0, Number(data.damage || 0))}`
+          : '-' + Math.max(0, Number(data.damage || 0));
+        createFloatingText(x, z, damageText, critical ? '#ffd166' : '#ff5b4a');
       }
       if (Number(data.hp || 0) <= 0) {
         removeRemotePlayerFromNetworkEvent({ id: data.playerId, characterId: data.characterId });

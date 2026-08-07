@@ -67,6 +67,16 @@
     };
   }
 
+  // Runtime weapon models carry a generated socket_muzzle at the real barrel
+  // tip. Prefer it over the per-weapon offsets below, which are only a fallback
+  // for melee models and any asset built before the socket existed.
+  function weaponMuzzleSocketWorldPoint(weaponGroup) {
+    const socket = weaponGroup?.getObjectByName?.('socket_muzzle');
+    if (!socket) return null;
+    socket.updateWorldMatrix(true, false);
+    return socket.getWorldPosition(new THREE.Vector3());
+  }
+
   function remoteWeaponMuzzleLocalZ(weaponId = 'pistol') {
     weaponId = networkEquipmentBaseId(weaponId, 'pistol');
     if (weaponId === 'pistol') return -0.92;
@@ -398,7 +408,10 @@
     const weaponId = networkEquipmentBaseId(enemy?.equipment?.weapon || shotData.weapon || 'pistol', 'pistol');
     if (group) {
       const weaponGroup = group.userData.enemyWeaponGroup;
-      if (weaponGroup) return weaponGroup.localToWorld(new THREE.Vector3(0, 0, remoteWeaponMuzzleLocalZ(weaponId)));
+      if (weaponGroup) {
+        return weaponMuzzleSocketWorldPoint(weaponGroup)
+          || weaponGroup.localToWorld(new THREE.Vector3(0, 0, remoteWeaponMuzzleLocalZ(weaponId)));
+      }
       return group.localToWorld(new THREE.Vector3(0.48, 1.05, remoteWeaponMuzzleLocalZ(weaponId)));
     }
     const sx = Number(shotData.startX), sy = Number(shotData.startY), sz = Number(shotData.startZ);
@@ -417,7 +430,10 @@
       const weaponGroup = typeof actorWeaponGroupForSlot === 'function'
         ? actorWeaponGroupForSlot(group, handSlot)
         : (typeof activeActorWeaponGroup === 'function' ? activeActorWeaponGroup(group) : null);
-      if (weaponGroup) return weaponGroup.localToWorld(new THREE.Vector3(0, 0, remoteWeaponMuzzleLocalZ(weaponId)));
+      if (weaponGroup) {
+        return weaponMuzzleSocketWorldPoint(weaponGroup)
+          || weaponGroup.localToWorld(new THREE.Vector3(0, 0, remoteWeaponMuzzleLocalZ(weaponId)));
+      }
       const handX = handSlot === 'offhand' ? -0.48 : 0.48;
       return group.localToWorld(new THREE.Vector3(handX, 1.05, remoteWeaponMuzzleLocalZ(weaponId)));
     }

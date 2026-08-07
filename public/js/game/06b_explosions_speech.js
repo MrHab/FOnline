@@ -196,7 +196,13 @@
     playerGroup.rotation.y = player.angle + Math.PI;
     const handX = handSlot === 'offhand' ? -0.48 : 0.48;
     const weaponGroup = typeof actorWeaponGroupForSlot === 'function' ? actorWeaponGroupForSlot(playerGroup, handSlot) : null;
-    if (weaponGroup) return weaponGroup.localToWorld(new THREE.Vector3(0, 0, localZ));
+    if (weaponGroup) {
+      const socketPoint = typeof weaponMuzzleSocketWorldPoint === 'function'
+        ? weaponMuzzleSocketWorldPoint(weaponGroup)
+        : null;
+      if (socketPoint) return socketPoint;
+      return weaponGroup.localToWorld(new THREE.Vector3(0, 0, localZ));
+    }
     return playerGroup.localToWorld(new THREE.Vector3(handX, 1.05, localZ));
   }
 

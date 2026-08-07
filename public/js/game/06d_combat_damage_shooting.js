@@ -301,23 +301,29 @@
       return;
     }
 
-    // Start the visible shot at the actual muzzle, but keep the ray parallel to
-    // the gameplay axis. This avoids both old problems: no sideward diagonal to
-    // the centre-hit point, and no tracer coming out of the character centre.
+    // The visible shot has to converge on the aim point. Running parallel to the
+    // gameplay axis from the laterally offset muzzle keeps the tracer beside the
+    // crosshair instead of through it, so aim the visual at the same impact
+    // point the gameplay ray resolves to.
     const muzzleX = Number.isFinite(Number(start?.x)) ? Number(start.x) : originX;
     const muzzleZ = Number.isFinite(Number(start?.z)) ? Number(start.z) : originZ;
-    const muzzleAlong = (muzzleX - originX) * dirX + (muzzleZ - originZ) * dirZ;
-    const remainingDist = requestedEndDist - Math.max(0, muzzleAlong);
-    if (remainingDist < 0.16) {
+    const aimEndX = originX + dirX * requestedEndDist;
+    const aimEndZ = originZ + dirZ * requestedEndDist;
+    let visualDirX = aimEndX - muzzleX;
+    let visualDirZ = aimEndZ - muzzleZ;
+    const visualLen = Math.hypot(visualDirX, visualDirZ);
+    if (!Number.isFinite(visualLen) || visualLen < 0.16) {
       spawnBlockedMuzzleFlash(start, w);
       return;
     }
+    visualDirX /= visualLen;
+    visualDirZ /= visualLen;
     const fxStartX = muzzleX;
     const fxStartZ = muzzleZ;
-    const baseEndX = muzzleX + dirX * remainingDist;
-    const baseEndZ = muzzleZ + dirZ * remainingDist;
-    const rightX = -dirZ;
-    const rightZ = dirX;
+    const baseEndX = aimEndX;
+    const baseEndZ = aimEndZ;
+    const rightX = -visualDirZ;
+    const rightZ = visualDirX;
     const visualJitter = blockedFx ? 0 : (modeInfo.id === 'auto' ? 0.28 : 0.12);
 
     if (weaponId === 'flamethrower') {

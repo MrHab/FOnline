@@ -35,8 +35,8 @@
       "id": "pistol",
       "family": "sidearm",
       "file": "/assets/models/weapons/weapon_pistol.glb",
-      "bytes": 100648,
-      "sha256": "c96749c8ca05fc3c69dec530579461dd1c7c824f47521728d342fb0c24f40460",
+      "bytes": 100780,
+      "sha256": "c542c39ae175f4bbbb6b60625f011da0e77755629b42567dcf526fdb217ed2c7",
       "meshes": 9,
       "runtimeScale": 0.34,
       "boundsMeters": {
@@ -68,8 +68,8 @@
       "id": "rifle",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_rifle.glb",
-      "bytes": 115368,
-      "sha256": "51848ad56f15893c939377a9150f12630afefa236f0abea2a794de82faba8fbf",
+      "bytes": 115504,
+      "sha256": "6f784becc2958ec3feb9eec2e7e4aca8556493a5447069bd60f59aa359eb4b3b",
       "meshes": 10,
       "runtimeScale": 0.52,
       "boundsMeters": {
@@ -136,8 +136,8 @@
       "id": "machineGun",
       "family": "heavy",
       "file": "/assets/models/weapons/weapon_machineGun.glb",
-      "bytes": 149520,
-      "sha256": "b37efc9106ca8d72f77ba9c95fb36f859a7ab15c35decf117febd4d2b350a73e",
+      "bytes": 149652,
+      "sha256": "527cab1764225f9a2cc020164a76ff7c3da976273180c798bda42f173fb994d0",
       "meshes": 11,
       "runtimeScale": 0.56,
       "boundsMeters": {
@@ -169,8 +169,8 @@
       "id": "laserPistol",
       "family": "energy_sidearm",
       "file": "/assets/models/weapons/weapon_laserPistol.glb",
-      "bytes": 110304,
-      "sha256": "bf5757c06d4774eccd0001b8e99f2561b0a376030f587a863e1268b600d99419",
+      "bytes": 110440,
+      "sha256": "8c6abd3ff3976a733b51781e85f0ed6b0fb2e0dcbd5f2fbdd499f44a74825e19",
       "meshes": 9,
       "runtimeScale": 0.4,
       "boundsMeters": {
@@ -202,8 +202,8 @@
       "id": "flamethrower",
       "family": "heavy",
       "file": "/assets/models/weapons/weapon_flamethrower.glb",
-      "bytes": 141624,
-      "sha256": "72dad6e3d2348f57f65d3d9645dd69dcd54620cdb99acae023e9be286a73639b",
+      "bytes": 141756,
+      "sha256": "ac87850e99a74253cbe0ab3bda789d063fefc628195ab3ed9dc50e85b226c983",
       "meshes": 9,
       "runtimeScale": 0.55,
       "boundsMeters": {
@@ -235,8 +235,8 @@
       "id": "plasmaRifle",
       "family": "energy_long_gun",
       "file": "/assets/models/weapons/weapon_plasmaRifle.glb",
-      "bytes": 130944,
-      "sha256": "4c3f7d516f7f5709814fab976e943e0f21091c560245cfc9f3617359c6b84ab0",
+      "bytes": 131076,
+      "sha256": "dbba8a2e3c178f4dfdc2922ced48c159c10ac2e3a6813d4c1ea401d7f744947c",
       "meshes": 11,
       "runtimeScale": 0.54,
       "boundsMeters": {
@@ -268,8 +268,8 @@
       "id": "shotgun",
       "family": "long_gun",
       "file": "/assets/models/weapons/weapon_shotgun.glb",
-      "bytes": 112204,
-      "sha256": "4dc34d814158b5acd8383406b9fa65b807e6e869e0fb7623710b9b20116829f1",
+      "bytes": 112336,
+      "sha256": "9a13b31706ae2ab2ee94a315b48a590375d83d3b96ceac2f53c00274c199cb94",
       "meshes": 10,
       "runtimeScale": 0.52,
       "boundsMeters": {
@@ -301,8 +301,8 @@
       "id": "rocketLauncher",
       "family": "launcher",
       "file": "/assets/models/weapons/weapon_rocketLauncher.glb",
-      "bytes": 130760,
-      "sha256": "4ac8996407df2474931870c84860fd73e4821de1bba5c3f1bedcd2201fe64e4b",
+      "bytes": 130896,
+      "sha256": "8738264e86f9631d04138659a399e5390a6e5ca5c8d677ab4fbb7866cdc0c56c",
       "meshes": 10,
       "runtimeScale": 0.58,
       "boundsMeters": {
@@ -335,7 +335,7 @@
       "family": "melee_light",
       "file": "/assets/models/weapons/weapon_knife.glb",
       "bytes": 104636,
-      "sha256": "748eae8583157359b1d3a7de3356f94d5d276ac3992af119347ddc9aafca0340",
+      "sha256": "a7b7209f9f58ce6c7f2e32554e1b87ecf25cd6dd0aa2bbe76c4f2064d98ec514",
       "meshes": 8,
       "runtimeScale": 0.22,
       "boundsMeters": {
@@ -365,7 +365,7 @@
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_pickaxe.glb",
       "bytes": 97076,
-      "sha256": "c7dfb68c5ca81e31b4c77836764520b71a168608d6456e8f3b75bcb0fe30f6e1",
+      "sha256": "3c570b9930a1ad12673c324845989e810e067ec81cc3d44dee6ee378254dce6b",
       "meshes": 6,
       "runtimeScale": 0.45,
       "boundsMeters": {
@@ -396,7 +396,7 @@
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_axe.glb",
       "bytes": 96512,
-      "sha256": "5a266b47f9f8ae61db8061b85a35e5009d8a3b18f07cbbe4a1532b87c0d4c819",
+      "sha256": "28fc4e0200d7574c1fce6361c7cbd245f4ce635de9fa622b7bca67ba85b74828",
       "meshes": 6,
       "runtimeScale": 0.44,
       "boundsMeters": {
@@ -427,7 +427,7 @@
       "family": "melee_heavy",
       "file": "/assets/models/weapons/weapon_handPump.glb",
       "bytes": 117088,
-      "sha256": "26bbf4adb7d1a15c51bd4bd54328c03664e3f34faa8f76b924c95c9725374b85",
+      "sha256": "379a96ed60b819de361c19439150bc92a9fb6839e56b87f1193abd9b222e0641",
       "meshes": 7,
       "runtimeScale": 0.5,
       "boundsMeters": {

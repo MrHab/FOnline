@@ -972,6 +972,10 @@
 
   function weaponVisualConvergenceYaw(weaponGroup, pose, owner = null) {
     if (!weaponGroup || !pose) return 0;
+    // The approved grip rig already pivots the weapon onto the aim point and
+    // rewrites baseRotation from the converged pose. Adding a second delta here
+    // would double the toe-in.
+    if (weaponGroup.userData?.approvedAimConverged) return 0;
     const aim = weaponVisualAimPoint(pose, owner);
     if (!aim) return 0;
     const muzzle = weaponGroup.userData.aimWorldPosition || new THREE.Vector3();

@@ -750,6 +750,59 @@
     return solveApprovedArm(characterRoot, 'l', targetMatrix);
   }
 
+  const APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT = 0.28;
+
+  function approvedWeaponAimPoint(actor) {
+    if (typeof playerGroup === 'undefined' || actor !== playerGroup) return null;
+    if (typeof pointerHasWorld === 'undefined' || !pointerHasWorld) return null;
+    if (typeof pointerWorld === 'undefined' || !pointerWorld) return null;
+    const x = Number(pointerWorld.x);
+    const z = Number(pointerWorld.z);
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+    return { x, z };
+  }
+
+  // The grip pose seats the weapon in the hand, which sits off the character
+  // centre, so the barrel stays parallel to the aim line and the shot passes
+  // beside the cursor. Pivot the weapon about its own grip until the barrel
+  // axis runs through the aim point. The grip pose itself is untouched, so the
+  // hand keeps holding the weapon exactly where the animation put it.
+  function applyApprovedWeaponAimConvergence(actor, weaponGroup, primarySocket, runtimeRoot) {
+    if (weaponGroup) weaponGroup.userData.approvedAimConverged = false;
+    const aim = approvedWeaponAimPoint(actor);
+    if (!aim || !weaponGroup || !primarySocket || !runtimeRoot) return;
+    const muzzle = approvedWeaponSocket(weaponGroup, ['socket_muzzle']);
+    if (!muzzle) return;
+    primarySocket.updateWorldMatrix(true, false);
+    muzzle.updateWorldMatrix(true, false);
+    const pivot = primarySocket.getWorldPosition(new THREE.Vector3());
+    const tip = muzzle.getWorldPosition(new THREE.Vector3());
+    const barrelX = tip.x - pivot.x;
+    const barrelZ = tip.z - pivot.z;
+    if (Math.hypot(barrelX, barrelZ) < 0.05) return;
+    const aimX = aim.x - pivot.x;
+    const aimZ = aim.z - pivot.z;
+    if (Math.hypot(aimX, aimZ) < 0.35) return;
+    let delta = Math.atan2(aimX, aimZ) - Math.atan2(barrelX, barrelZ);
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    delta = Math.max(
+      -APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT,
+      Math.min(APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT, delta)
+    );
+    if (Math.abs(delta) < 0.0005) return;
+    const pivoted = new THREE.Matrix4()
+      .makeTranslation(pivot.x, pivot.y, pivot.z)
+      .multiply(new THREE.Matrix4().makeRotationY(delta))
+      .multiply(new THREE.Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z))
+      .multiply(weaponGroup.matrixWorld);
+    runtimeRoot.updateMatrixWorld(true);
+    runtimeRoot.matrixWorld.clone().invert().multiply(pivoted)
+      .decompose(weaponGroup.position, weaponGroup.quaternion, weaponGroup.scale);
+    weaponGroup.updateMatrixWorld(true);
+    weaponGroup.userData.approvedAimConverged = true;
+  }
+
   function approvedWeaponSocket(weaponGroup, names = []) {
     if (!weaponGroup?.getObjectByName) return null;
     for (const name of names) {
@@ -815,6 +868,8 @@
     if (weaponGroup.parent !== runtime.root) runtime.root.add(weaponGroup);
     const mountLocal = runtime.root.matrixWorld.clone().invert().multiply(weaponWorld);
     mountLocal.decompose(weaponGroup.position, weaponGroup.quaternion, weaponGroup.scale);
+    weaponGroup.updateMatrixWorld(true);
+    applyApprovedWeaponAimConvergence(actor, weaponGroup, primarySocket, runtime.root);
     weaponGroup.userData.basePosition = weaponGroup.position.clone();
     weaponGroup.userData.baseRotation = new THREE.Euler().setFromQuaternion(weaponGroup.quaternion);
     weaponGroup.userData.characterPose = {};

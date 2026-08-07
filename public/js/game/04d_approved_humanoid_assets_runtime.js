@@ -750,7 +750,11 @@
     return solveApprovedArm(characterRoot, 'l', targetMatrix);
   }
 
-  const APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT = 0.28;
+  // Замер на живом кадре: стоя нужно 9–11°, но во время бега анимация уводит
+  // руку так, что для попадания в прицел требуется до 48°. Прежний предел в
+  // 0.28 рад (16°) насыщался и оставлял ствол недокрученным именно в движении.
+  // Предел оставлен только как защита от вырожденных случаев.
+  const APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT = 1.05;
 
   function approvedWeaponAimPoint(actor) {
     if (typeof playerGroup === 'undefined' || actor !== playerGroup) return null;

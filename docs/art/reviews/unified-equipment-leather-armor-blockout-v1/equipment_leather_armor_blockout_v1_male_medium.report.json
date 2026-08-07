@@ -1,0 +1,83 @@
+{
+  "actualGlb": {
+    "materials": 4,
+    "meshes": 3,
+    "skins": 1,
+    "triangles": 10172
+  },
+  "artisticApproval": false,
+  "assetId": "equipment_leather_armor_blockout_v1",
+  "bodyId": "male_medium",
+  "bytes": 596384,
+  "fit": {
+    "jacket": {
+      "ankleLimitZ": 0.125,
+      "lowerHemZ": 0.955,
+      "polygons": 5496,
+      "sleeveLimitX": 0.646144630908966,
+      "torsoBounds": {
+        "maximum": [
+          0.206,
+          0.16345,
+          1.5333
+        ],
+        "minimum": [
+          -0.206,
+          -0.12534,
+          0.89362
+        ]
+      },
+      "trouserWaistZ": 1.025,
+      "upperLimitZ": 1.535,
+      "vertices": 2800
+    },
+    "trousers": {
+      "ankleLimitZ": 0.125,
+      "lowerHemZ": 0.955,
+      "polygons": 3924,
+      "sleeveLimitX": 0.646144630908966,
+      "torsoBounds": {
+        "maximum": [
+          0.206,
+          0.16345,
+          1.5333
+        ],
+        "minimum": [
+          -0.206,
+          -0.12534,
+          0.89362
+        ]
+      },
+      "trouserWaistZ": 1.025,
+      "upperLimitZ": 1.535,
+      "vertices": 2012
+    }
+  },
+  "garments": [
+    "hip-length leather jacket",
+    "high-waisted reinforced leather trousers"
+  ],
+  "materials": [
+    "blockout_jacket_warm_brown",
+    "blockout_trousers_dark_umber",
+    "blockout_reinforcement_mid_brown",
+    "blockout_hardware_charcoal"
+  ],
+  "omittedUntilApproval": [
+    "PBR textures",
+    "micro detail",
+    "hardware",
+    "final topology",
+    "six-body adaptation",
+    "runtime integration"
+  ],
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "09A926FADA9F8F530FB433CEE703844EE08608B6FE3F6DD2523E98EB3FDD392C",
+  "silhouette": {
+    "ankleLimitZ": 0.125,
+    "jacketHemZ": 0.955,
+    "trouserWaistZ": 1.025
+  },
+  "stage": "blockout"
+}

@@ -19,7 +19,7 @@
     {
       "actualGlb": {
         "materials": 6,
-        "meshDefinitions": 3,
+        "meshDefinitions": 2,
         "nodes": [
           "head",
           "neck_01",
@@ -87,19 +87,19 @@
           "pelvis",
           "root",
           "equipment_energy_suit_unified_v1_female_slim_field_details",
-          "equipment_energy_suit_unified_v1_female_slim_inner_seal",
           "equipment_energy_suit_unified_v1_female_slim_sealed_shell",
           "character_root"
         ],
-        "positionVertices": 49373,
+        "positionVertices": 15215,
         "skins": 1,
         "textures": 6,
-        "triangles": 26952
+        "triangles": 11218
       },
       "assetId": "equipment_energy_suit_unified_v1_female_slim",
       "bodyId": "female_slim",
       "file": "equipment_energy_suit_unified_v1_female_slim.glb",
       "fit": {
+        "anatomyProjectionStrength": 0.84,
         "bodyBounds": {
           "maximum": [
             0.64216,
@@ -112,8 +112,8 @@
             -0.00841
           ]
         },
-        "detailPolygons": 281,
-        "detailVertices": 522,
+        "detailPolygons": 373,
+        "detailVertices": 682,
         "energyCore": [
           0,
           -0.19959,
@@ -131,9 +131,11 @@
             1.48329
           ]
         },
+        "innerSealRequired": false,
         "rubberMaterialPolygons": 3574,
-        "shellPolygons": 17611,
-        "shellVertices": 8880,
+        "shellPolygons": 9995,
+        "shellVertices": 5054,
+        "silhouetteProfile": "energy",
         "torsoBounds": {
           "maximum": [
             0.1602,
@@ -165,16 +167,16 @@
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "2E5F00D4FBA17CAD237F1BE09D5A06FB52858656C88F356F6BA8666E5BF78D05"
+      "sha256": "1DA48E9FD6F82E7EA29FAF5F50349FCDD267800D1441C1CE6234E4F45E5D4352"
     },
     {
       "actualGlb": {
         "materials": 6,
-        "meshDefinitions": 3,
+        "meshDefinitions": 2,
         "nodes": [
           "head",
           "neck_01",
@@ -242,19 +244,19 @@
           "pelvis",
           "root",
           "equipment_energy_suit_unified_v1_female_medium_field_details",
-          "equipment_energy_suit_unified_v1_female_medium_inner_seal",
           "equipment_energy_suit_unified_v1_female_medium_sealed_shell",
           "character_root"
         ],
-        "positionVertices": 49109,
+        "positionVertices": 15497,
         "skins": 1,
         "textures": 6,
-        "triangles": 27054
+        "triangles": 11314
       },
       "assetId": "equipment_energy_suit_unified_v1_female_medium",
       "bodyId": "female_medium",
       "file": "equipment_energy_suit_unified_v1_female_medium.glb",
       "fit": {
+        "anatomyProjectionStrength": 0.84,
         "bodyBounds": {
           "maximum": [
             0.64122,
@@ -267,8 +269,8 @@
             -0.00841
           ]
         },
-        "detailPolygons": 281,
-        "detailVertices": 522,
+        "detailPolygons": 373,
+        "detailVertices": 682,
         "energyCore": [
           0,
           -0.21323,
@@ -286,9 +288,11 @@
             1.4846
           ]
         },
+        "innerSealRequired": false,
         "rubberMaterialPolygons": 3544,
-        "shellPolygons": 17703,
-        "shellVertices": 8930,
+        "shellPolygons": 10063,
+        "shellVertices": 5094,
+        "silhouetteProfile": "energy",
         "torsoBounds": {
           "maximum": [
             0.173,
@@ -320,16 +324,16 @@
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "CE8EF929FB2828CA54947F67DE1B4A6ECE66B3E39B193772D2AF8CE9555222FF"
+      "sha256": "1528E192329B56B8442CF6C301FB4120B8F34532AB3912063F5B3677B61F3EEE"
     },
     {
       "actualGlb": {
         "materials": 6,
-        "meshDefinitions": 3,
+        "meshDefinitions": 2,
         "nodes": [
           "head",
           "neck_01",
@@ -397,19 +401,19 @@
           "pelvis",
           "root",
           "equipment_energy_suit_unified_v1_female_large_field_details",
-          "equipment_energy_suit_unified_v1_female_large_inner_seal",
           "equipment_energy_suit_unified_v1_female_large_sealed_shell",
           "character_root"
         ],
-        "positionVertices": 48923,
+        "positionVertices": 15619,
         "skins": 1,
         "textures": 6,
-        "triangles": 27159
+        "triangles": 11438
       },
       "assetId": "equipment_energy_suit_unified_v1_female_large",
       "bodyId": "female_large",
       "file": "equipment_energy_suit_unified_v1_female_large.glb",
       "fit": {
+        "anatomyProjectionStrength": 0.84,
         "bodyBounds": {
           "maximum": [
             0.64233,
@@ -422,8 +426,8 @@
             -0.00841
           ]
         },
-        "detailPolygons": 281,
-        "detailVertices": 522,
+        "detailPolygons": 373,
+        "detailVertices": 682,
         "energyCore": [
           0,
           -0.24267,
@@ -441,9 +445,11 @@
             1.48035
           ]
         },
+        "innerSealRequired": false,
         "rubberMaterialPolygons": 3507,
-        "shellPolygons": 17805,
-        "shellVertices": 8990,
+        "shellPolygons": 10138,
+        "shellVertices": 5140,
+        "silhouetteProfile": "energy",
         "torsoBounds": {
           "maximum": [
             0.1955,
@@ -475,16 +481,16 @@
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "2473FBE1614C5A9E9F0C2B682846DB3E69CB7816AFE56F755475D336E23B47EA"
+      "sha256": "727E2943F708CCEFA37E18C831F6EA40E07F0FB5077BBA1EC7CD76386260332C"
     },
     {
       "actualGlb": {
         "materials": 6,
-        "meshDefinitions": 3,
+        "meshDefinitions": 2,
         "nodes": [
           "head",
           "neck_01",
@@ -552,19 +558,19 @@
           "pelvis",
           "root",
           "equipment_energy_suit_unified_v1_male_slim_field_details",
-          "equipment_energy_suit_unified_v1_male_slim_inner_seal",
           "equipment_energy_suit_unified_v1_male_slim_sealed_shell",
           "character_root"
         ],
-        "positionVertices": 47900,
+        "positionVertices": 14577,
         "skins": 1,
         "textures": 6,
-        "triangles": 26873
+        "triangles": 11330
       },
       "assetId": "equipment_energy_suit_unified_v1_male_slim",
       "bodyId": "male_slim",
       "file": "equipment_energy_suit_unified_v1_male_slim.glb",
       "fit": {
+        "anatomyProjectionStrength": 0.84,
         "bodyBounds": {
           "maximum": [
             0.70616,
@@ -577,8 +583,8 @@
             -0.00951
           ]
         },
-        "detailPolygons": 281,
-        "detailVertices": 522,
+        "detailPolygons": 373,
+        "detailVertices": 682,
         "energyCore": [
           0,
           -0.18643,
@@ -596,9 +602,11 @@
             1.51691
           ]
         },
+        "innerSealRequired": false,
         "rubberMaterialPolygons": 3775,
-        "shellPolygons": 17629,
-        "shellVertices": 8884,
+        "shellPolygons": 10034,
+        "shellVertices": 5064,
+        "silhouetteProfile": "energy",
         "torsoBounds": {
           "maximum": [
             0.19315,
@@ -630,16 +638,16 @@
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "7DD7208A7D26F68140F3D41C7BCCB60AE74E5CCEDA996C7822AA1172F774753A"
+      "sha256": "2EC44CF4F19B3F9A94A2D95570832E4FCB5ED627C1847D294360253C3385DCE4"
     },
     {
       "actualGlb": {
         "materials": 6,
-        "meshDefinitions": 3,
+        "meshDefinitions": 2,
         "nodes": [
           "head",
           "neck_01",
@@ -707,19 +715,19 @@
           "pelvis",
           "root",
           "equipment_energy_suit_unified_v1_male_medium_field_details",
-          "equipment_energy_suit_unified_v1_male_medium_inner_seal",
           "equipment_energy_suit_unified_v1_male_medium_sealed_shell",
           "character_root"
         ],
-        "positionVertices": 48333,
+        "positionVertices": 14906,
         "skins": 1,
         "textures": 6,
-        "triangles": 26800
+        "triangles": 11314
       },
       "assetId": "equipment_energy_suit_unified_v1_male_medium",
       "bodyId": "male_medium",
       "file": "equipment_energy_suit_unified_v1_male_medium.glb",
       "fit": {
+        "anatomyProjectionStrength": 0.84,
         "bodyBounds": {
           "maximum": [
             0.70614,
@@ -732,8 +740,8 @@
             -0.00951
           ]
         },
-        "detailPolygons": 281,
-        "detailVertices": 522,
+        "detailPolygons": 401,
+        "detailVertices": 738,
         "energyCore": [
           0,
           -0.19834,
@@ -751,9 +759,11 @@
             1.51807
           ]
         },
+        "innerSealRequired": false,
         "rubberMaterialPolygons": 3762,
-        "shellPolygons": 17604,
-        "shellVertices": 8874,
+        "shellPolygons": 10001,
+        "shellVertices": 5050,
+        "silhouetteProfile": "energy",
         "torsoBounds": {
           "maximum": [
             0.206,
@@ -785,16 +795,16 @@
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "6216091460B26710EEF3396B116CF1C2590D0F920E0B746102258F5C19CB0BAD"
+      "sha256": "95CA16D1CC31FFE2DC7167B1011BCC5B107C13781C18D67BF5152C9BA71DA5F7"
     },
     {
       "actualGlb": {
         "materials": 6,
-        "meshDefinitions": 3,
+        "meshDefinitions": 2,
         "nodes": [
           "head",
           "neck_01",
@@ -862,19 +872,19 @@
           "pelvis",
           "root",
           "equipment_energy_suit_unified_v1_male_large_field_details",
-          "equipment_energy_suit_unified_v1_male_large_inner_seal",
           "equipment_energy_suit_unified_v1_male_large_sealed_shell",
           "character_root"
         ],
-        "positionVertices": 48738,
+        "positionVertices": 14394,
         "skins": 1,
         "textures": 6,
-        "triangles": 26786
+        "triangles": 11246
       },
       "assetId": "equipment_energy_suit_unified_v1_male_large",
       "bodyId": "male_large",
       "file": "equipment_energy_suit_unified_v1_male_large.glb",
       "fit": {
+        "anatomyProjectionStrength": 0.84,
         "bodyBounds": {
           "maximum": [
             0.70613,
@@ -887,8 +897,8 @@
             -0.00951
           ]
         },
-        "detailPolygons": 281,
-        "detailVertices": 522,
+        "detailPolygons": 373,
+        "detailVertices": 682,
         "energyCore": [
           0,
           -0.22533,
@@ -906,9 +916,11 @@
             1.51934
           ]
         },
+        "innerSealRequired": false,
         "rubberMaterialPolygons": 3728,
-        "shellPolygons": 17626,
-        "shellVertices": 8884,
+        "shellPolygons": 10007,
+        "shellVertices": 5052,
+        "silhouetteProfile": "energy",
         "torsoBounds": {
           "maximum": [
             0.23082,
@@ -940,11 +952,11 @@
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "C891317899E4A76B40FBC9A8A7E36614EC7BF9E8B9C621711BB93063AE5FC66B"
+      "sha256": "928507C20DD9C97F0F5B8C1183A1FE4F554ACACD165B8ADA081D1B21AA52621A"
     }
   ]
 }

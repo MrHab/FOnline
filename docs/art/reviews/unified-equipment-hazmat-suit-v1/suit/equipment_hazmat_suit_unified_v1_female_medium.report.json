@@ -68,20 +68,21 @@
       "thigh_r",
       "pelvis",
       "root",
-      "equipment_hazmat_suit_unified_v1_female_medium_inner_seal",
-      "equipment_hazmat_suit_unified_v1_female_medium_sealed_details",
-      "equipment_hazmat_suit_unified_v1_female_medium_sealed_shell",
+      "equipment_hazmat_suit_unified_v1_helmet_optional_hood",
+      "equipment_hazmat_suit_unified_v1_sealed_details",
+      "equipment_hazmat_suit_unified_v1_sealed_shell",
       "character_root"
     ],
-    "positionVertices": 49649,
+    "positionVertices": 15264,
     "skins": 1,
     "textures": 6,
-    "triangles": 27660
+    "triangles": 12280
   },
-  "assetId": "equipment_hazmat_suit_unified_v1_female_medium",
+  "assetId": "equipment_hazmat_suit_unified_v1",
   "bodyId": "female_medium",
   "file": "equipment_hazmat_suit_unified_v1_female_medium.glb",
   "fit": {
+    "anatomyProjectionStrength": 0.78,
     "bodyBounds": {
       "maximum": [
         0.64122,
@@ -94,8 +95,8 @@
         -0.00841
       ]
     },
-    "detailPolygons": 598,
-    "detailVertices": 839,
+    "detailPolygons": 410,
+    "detailVertices": 784,
     "headBounds": {
       "maximum": [
         0.08888,
@@ -109,13 +110,18 @@
       ]
     },
     "headRadii": [
-      0.11688,
-      0.1444,
-      0.17102
+      0.09888,
+      0.1244,
+      0.15302
     ],
+    "helmetCompatibilityMode": "hide_hood_assembly_when_helmet_equipped",
+    "hoodPolygons": 466,
+    "hoodVertices": 611,
+    "innerSealRequired": false,
     "rubberMaterialPolygons": 3544,
-    "shellPolygons": 17703,
-    "shellVertices": 8930,
+    "shellPolygons": 10060,
+    "shellVertices": 5092,
+    "silhouetteProfile": "coverall",
     "torsoBounds": {
       "maximum": [
         0.173,
@@ -130,7 +136,7 @@
     },
     "visorCenter": [
       0.0,
-      -0.16391,
+      -0.13191,
       1.63762
     ]
   },
@@ -148,9 +154,9 @@
     "directRuntimeUse": false,
     "donor": null,
     "license": "Realm of Ashes project asset",
-    "rebuild": "original body-fitted B geometry with authored B+C hazmat details on the exact current 65-bone player rig"
+    "rebuild": "Blender-authored loose coverall silhouette with a sealed helmet-optional hood assembly and B+C hazmat details on the exact current 65-bone player rig"
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "B9DD1D79A79707187F3E237DF4A9C1BA9A0CCE5FD2F733BB76084CCD754EB1CC"
+  "sha256": "24955156808603E23E86D3F752BE18B079836B52934B020928F5C0E61481A07D"
 }

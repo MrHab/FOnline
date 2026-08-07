@@ -1,7 +1,7 @@
 {
   "actualGlb": {
     "materials": 6,
-    "meshDefinitions": 3,
+    "meshDefinitions": 2,
     "nodes": [
       "head",
       "neck_01",
@@ -69,19 +69,19 @@
       "pelvis",
       "root",
       "equipment_energy_suit_unified_v1_male_large_field_details",
-      "equipment_energy_suit_unified_v1_male_large_inner_seal",
       "equipment_energy_suit_unified_v1_male_large_sealed_shell",
       "character_root"
     ],
-    "positionVertices": 48738,
+    "positionVertices": 14394,
     "skins": 1,
     "textures": 6,
-    "triangles": 26786
+    "triangles": 11246
   },
   "assetId": "equipment_energy_suit_unified_v1_male_large",
   "bodyId": "male_large",
   "file": "equipment_energy_suit_unified_v1_male_large.glb",
   "fit": {
+    "anatomyProjectionStrength": 0.84,
     "bodyBounds": {
       "maximum": [
         0.70613,
@@ -94,8 +94,8 @@
         -0.00951
       ]
     },
-    "detailPolygons": 281,
-    "detailVertices": 522,
+    "detailPolygons": 373,
+    "detailVertices": 682,
     "energyCore": [
       0.0,
       -0.22533,
@@ -113,9 +113,11 @@
         1.51934
       ]
     },
+    "innerSealRequired": false,
     "rubberMaterialPolygons": 3728,
-    "shellPolygons": 17626,
-    "shellVertices": 8884,
+    "shellPolygons": 10007,
+    "shellVertices": 5052,
+    "silhouetteProfile": "energy",
     "torsoBounds": {
       "maximum": [
         0.23082,
@@ -147,9 +149,9 @@
     "directRuntimeUse": false,
     "donor": null,
     "license": "Realm of Ashes project asset",
-    "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+    "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "C891317899E4A76B40FBC9A8A7E36614EC7BF9E8B9C621711BB93063AE5FC66B"
+  "sha256": "928507C20DD9C97F0F5B8C1183A1FE4F554ACACD165B8ADA081D1B21AA52621A"
 }

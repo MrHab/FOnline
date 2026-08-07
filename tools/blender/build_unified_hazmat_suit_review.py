@@ -1,9 +1,9 @@
 """Build the B+C hazmat-suit review asset for the current player rig.
 
-The suit shell is sampled from each shipped body in rest pose so all six
-player proportions share the exact current 65-bone skeleton.  Original
-project geometry adds the sealed hood, panoramic visor, respirator filters,
-rubber gloves, taped seams and restrained wasteland repairs.
+The suit keeps the exact skin weights from each shipped body, then reshapes
+the sampled surface into a loose coverall envelope instead of copying visible
+anatomy.  Original project geometry adds the compact helmet-compatible hood,
+panoramic visor, respirator filters, taped seams and field repairs.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
-from math import cos, pi, sin
+from math import atan2, cos, pi, sin
 from pathlib import Path
 import random
 import struct
@@ -183,6 +183,153 @@ def copy_shell_weights(
                 vertex_groups[name].add([new_index], assignment.weight, "REPLACE")
 
 
+def local_section_bounds(
+    points: list[Vector],
+    axis: int,
+    value: float,
+    cache: dict[tuple[int, int], tuple[Vector, Vector]],
+) -> tuple[Vector, Vector]:
+    """Measure a stable local cross-section without preserving muscle bumps."""
+    key = (axis, round(value / 0.025))
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    nearby = [point for point in points if abs(point[axis] - value) <= 0.045]
+    if len(nearby) < 16:
+        nearby = sorted(points, key=lambda point: abs(point[axis] - value))[:64]
+    measured = BASE.bounds(nearby)
+    cache[key] = measured
+    return measured
+
+
+def regularize_coverall_position(
+    position: Vector,
+    group: str | None,
+    torso_minimum: Vector,
+    torso_maximum: Vector,
+    arm_points: dict[str, list[Vector]],
+    leg_points: dict[str, list[Vector]],
+    section_caches: dict[str, dict[tuple[int, int], tuple[Vector, Vector]]],
+    profile: str,
+) -> Vector:
+    """Project body-derived points toward smooth, deliberately loose sections."""
+    structured = profile == "energy"
+    torso_clearance = 0.026 if structured else 0.036
+    limb_clearance = 0.020 if structured else 0.029
+    strength = 0.84 if structured else 0.78
+    torso_center_y = (torso_minimum.y + torso_maximum.y) * 0.5
+
+    # The donor's centreline cap is useful for keeping the mesh watertight but
+    # visually reads as anatomy.  Tuck it inside the loose pelvis yoke; the
+    # outer yoke supplies the garment silhouette while this hidden surface
+    # continues to close the suit between the legs during animation.
+    if 0.74 < position.z < 1.09 and abs(position.x) < 0.19:
+        position = position.copy()
+        position.y = max(torso_center_y - 0.072, min(torso_center_y + 0.072, position.y))
+
+    if group in TORSO_GROUPS or (group and group.startswith("clavicle_")):
+        center_y = torso_center_y
+        source_radius_x = max(abs(torso_minimum.x), abs(torso_maximum.x))
+        source_radius_y = max(
+            abs(torso_minimum.y - center_y),
+            abs(torso_maximum.y - center_y),
+        )
+        height = max(0.001, torso_maximum.z - torso_minimum.z)
+        progression = max(0.0, min(1.0, (position.z - torso_minimum.z) / height))
+        # Straight coverall sides, with only enough taper to keep the waist from
+        # reading as a barrel.  Constant depth suppresses chest/seat anatomy.
+        waist_taper = 0.94 + 0.06 * min(1.0, abs(progression - 0.34) / 0.34)
+        target_radius_x = (source_radius_x + torso_clearance) * waist_taper
+        target_radius_y = (source_radius_y + torso_clearance) * (0.97 + progression * 0.03)
+        angle = atan2(
+            (position.y - center_y) / max(0.001, source_radius_y),
+            position.x / max(0.001, source_radius_x),
+        )
+        target = Vector((
+            cos(angle) * target_radius_x,
+            center_y + sin(angle) * target_radius_y,
+            position.z,
+        ))
+        if position.z > 1.16 and position.y < center_y:
+            centrality = max(0.0, 1.0 - abs(position.x) / max(0.001, target_radius_x * 0.90))
+            front_plane_y = center_y - target_radius_y
+            plane_strength = centrality * (0.82 if structured else 0.76)
+            target.y = target.y * (1.0 - plane_strength) + front_plane_y * plane_strength
+        if group in {"root", "pelvis"} and position.z < 1.04:
+            centrality = max(0.0, 1.0 - abs(position.x) / max(0.001, target_radius_x * 0.78))
+            plane_y = center_y + (-target_radius_y if position.y < center_y else target_radius_y)
+            target.y = target.y * (1.0 - centrality * 0.72) + plane_y * centrality * 0.72
+        result = position.lerp(target, strength)
+        source_radius = Vector((position.x, position.y - center_y)).length
+        result_radius = Vector((result.x, result.y - center_y)).length
+        # The pelvis receives a separate loose coverall yoke below.  Let this
+        # inner shell lose the donor body's seat/crotch silhouette here instead
+        # of re-expanding every smoothed point back to the anatomical radius.
+        preserve_source_radius = not (
+            group in {"root", "pelvis"}
+            and position.z < 1.12
+        )
+        if preserve_source_radius and result_radius < source_radius and result_radius > 0.0001:
+            scale = source_radius / result_radius
+            result.x *= scale
+            result.y = center_y + (result.y - center_y) * scale
+        return result
+
+    if group and group.startswith(("upperarm_", "lowerarm_")):
+        side = group.rsplit("_", 1)[-1]
+        points = arm_points[side]
+        minimum, maximum = local_section_bounds(points, 0, position.x, section_caches[f"arm_{side}"])
+        center_y = (minimum.y + maximum.y) * 0.5
+        center_z = (minimum.z + maximum.z) * 0.5
+        source_radius_y = max(0.018, (maximum.y - minimum.y) * 0.5)
+        source_radius_z = max(0.018, (maximum.z - minimum.z) * 0.5)
+        angle = atan2(
+            (position.z - center_z) / source_radius_z,
+            (position.y - center_y) / source_radius_y,
+        )
+        target = Vector((
+            position.x,
+            center_y + cos(angle) * (source_radius_y + limb_clearance),
+            center_z + sin(angle) * (source_radius_z + limb_clearance),
+        ))
+        result = position.lerp(target, strength)
+        source_radius = Vector((position.y - center_y, position.z - center_z)).length
+        result_radius = Vector((result.y - center_y, result.z - center_z)).length
+        if result_radius < source_radius and result_radius > 0.0001:
+            scale = source_radius / result_radius
+            result.y = center_y + (result.y - center_y) * scale
+            result.z = center_z + (result.z - center_z) * scale
+        return result
+
+    if group and group.startswith(("thigh_", "calf_")):
+        side = group.rsplit("_", 1)[-1]
+        points = leg_points[side]
+        minimum, maximum = local_section_bounds(points, 2, position.z, section_caches[f"leg_{side}"])
+        center_x = (minimum.x + maximum.x) * 0.5
+        center_y = (minimum.y + maximum.y) * 0.5
+        source_radius_x = max(0.025, (maximum.x - minimum.x) * 0.5)
+        source_radius_y = max(0.025, (maximum.y - minimum.y) * 0.5)
+        angle = atan2(
+            (position.y - center_y) / source_radius_y,
+            (position.x - center_x) / source_radius_x,
+        )
+        target = Vector((
+            center_x + cos(angle) * (source_radius_x + limb_clearance),
+            center_y + sin(angle) * (source_radius_y + limb_clearance),
+            position.z,
+        ))
+        result = position.lerp(target, strength)
+        source_radius = Vector((position.x - center_x, position.y - center_y)).length
+        result_radius = Vector((result.x - center_x, result.y - center_y)).length
+        if result_radius < source_radius and result_radius > 0.0001:
+            scale = source_radius / result_radius
+            result.x = center_x + (result.x - center_x) * scale
+            result.y = center_y + (result.y - center_y) * scale
+        return result
+
+    return position
+
+
 def build_inner_liner(
     body: bpy.types.Object,
     armature: bpy.types.Object,
@@ -205,6 +352,20 @@ def build_inner_liner(
     materials: list[int] = []
     for polygon in body.data.polygons:
         center = world_to_armature @ body.matrix_world @ polygon.center
+        polygon_points = [
+            world_to_armature @ body.matrix_world @ body.data.vertices[index].co
+            for index in polygon.vertices
+        ]
+        # The donor body closes its lower pelvis with a broad front-to-back fan.
+        # On a loose suit that fan becomes a visible horizontal spike.  Remove
+        # only that hidden donor cap; a purpose-built rounded cloth gusset below
+        # closes the coverall with animation-friendly weights.
+        if (
+            0.76 <= center.z <= 0.97
+            and abs(center.x) <= 0.18
+            and max(point.y for point in polygon_points) - min(point.y for point in polygon_points) > 0.18
+        ):
+            continue
         if center.z > cutoff_z:
             continue
         dominant = [dominant_group(body, vertex_index) for vertex_index in polygon.vertices]
@@ -262,6 +423,7 @@ def build_shell(
     body: bpy.types.Object,
     armature: bpy.types.Object,
     asset_id: str,
+    profile: str = "coverall",
 ) -> tuple[bpy.types.Object, dict[str, object]]:
     world_to_armature = armature.matrix_world.inverted()
     normal_transform = world_to_armature.to_3x3() @ body.matrix_world.to_3x3()
@@ -278,6 +440,18 @@ def build_shell(
     head_minimum, head_maximum = BASE.bounds(head_points)
     torso_points = BASE.group_points(body, armature, TORSO_GROUPS)
     torso_minimum, torso_maximum = BASE.bounds(torso_points)
+    arm_points = {
+        side: BASE.group_points(body, armature, {f"upperarm_{side}", f"lowerarm_{side}"})
+        for side in ("l", "r")
+    }
+    leg_points = {
+        side: BASE.group_points(body, armature, {f"thigh_{side}", f"calf_{side}"})
+        for side in ("l", "r")
+    }
+    section_caches = {
+        name: {}
+        for name in ("arm_l", "arm_r", "leg_l", "leg_r")
+    }
 
     for polygon in body.data.polygons:
         dominant = [dominant_group(body, vertex_index) for vertex_index in polygon.vertices]
@@ -299,12 +473,22 @@ def build_shell(
                 normal = (normal_transform @ source_vertex.normal).normalized()
                 group = dominant_group(body, source_index)
                 if is_hand_group(group) or group in FOOT_GROUPS:
-                    allowance = 0.024
+                    allowance = 0.014
                 elif group in TORSO_GROUPS:
-                    allowance = 0.032
+                    allowance = 0.018
                 else:
-                    allowance = 0.025
+                    allowance = 0.016
                 position = base_position + normal * allowance
+                position = regularize_coverall_position(
+                    position,
+                    group,
+                    torso_minimum,
+                    torso_maximum,
+                    arm_points,
+                    leg_points,
+                    section_caches,
+                    profile,
+                )
                 key = tuple(round(value * 100000.0) for value in base_position)
                 new_index = position_to_new.get(key)
                 if new_index is None:
@@ -344,21 +528,37 @@ def build_shell(
     ]
     if smooth_vertices:
         smooth_mask.add(smooth_vertices, 1.0, "REPLACE")
+    pelvis_mask = shell.vertex_groups.new(name="coverall_pelvis_ironing_mask")
+    pelvis_vertices = [
+        vertex.index
+        for vertex in shell.data.vertices
+        if 0.74 < vertex.co.z < 1.17 and abs(vertex.co.x) < 0.34
+    ]
+    if pelvis_vertices:
+        pelvis_mask.add(pelvis_vertices, 1.0, "REPLACE")
 
     bpy.context.view_layer.objects.active = shell
     shell.select_set(True)
     smooth = shell.modifiers.new("hazmat_soft_folds", "LAPLACIANSMOOTH")
-    smooth.iterations = 6
-    smooth.lambda_factor = 0.080
+    smooth.iterations = 5
+    smooth.lambda_factor = 0.055
     smooth.use_volume_preserve = True
     smooth.vertex_group = smooth_mask.name
     bpy.ops.object.modifier_apply(modifier=smooth.name)
-    wrap = shell.modifiers.new("hazmat_body_clearance", "SHRINKWRAP")
-    wrap.target = body
-    wrap.wrap_method = "NEAREST_SURFACEPOINT"
-    wrap.wrap_mode = "OUTSIDE_SURFACE"
-    wrap.offset = 0.024
-    bpy.ops.object.modifier_apply(modifier=wrap.name)
+    # A second, pelvis-only pass runs before decimation, thickness and the
+    # armature modifier.  That ordering irons out donor crotch/seat creases
+    # without baking the rig or shrinking gloves and boots in posed reviews.
+    pelvis_smooth = shell.modifiers.new("coverall_pelvis_ironing", "LAPLACIANSMOOTH")
+    pelvis_smooth.iterations = 11 if profile == "energy" else 15
+    pelvis_smooth.lambda_factor = 0.045 if profile == "energy" else 0.055
+    pelvis_smooth.use_volume_preserve = True
+    pelvis_smooth.vertex_group = pelvis_mask.name
+    bpy.ops.object.modifier_apply(modifier=pelvis_smooth.name)
+    decimate = shell.modifiers.new("coverall_gameplay_topology", "DECIMATE")
+    decimate.decimate_type = "COLLAPSE"
+    decimate.ratio = 0.56
+    decimate.use_collapse_triangulate = True
+    bpy.ops.object.modifier_apply(modifier=decimate.name)
     solidify = shell.modifiers.new("sealed_canvas_thickness", "SOLIDIFY")
     solidify.thickness = 0.0038
     solidify.offset = -0.10
@@ -396,10 +596,45 @@ def build_shell(
         "shellVertices": len(mesh.vertices),
         "shellPolygons": len(mesh.polygons),
         "rubberMaterialPolygons": sum(index == 1 for index in material_indices),
+        "silhouetteProfile": profile,
+        "anatomyProjectionStrength": 0.84 if profile == "energy" else 0.78,
+        "innerSealRequired": False,
     }
 
 
 class HazmatBuilder(BASE.DetailBuilder):
+    def ellipse_frustum_z(
+        self,
+        center: tuple[float, float],
+        bottom_radii: tuple[float, float],
+        top_radii: tuple[float, float],
+        z0: float,
+        z1: float,
+        material: int,
+        bottom_weights: dict[str, float],
+        top_weights: dict[str, float],
+        segments: int = 24,
+    ) -> None:
+        rings: list[list[int]] = []
+        for z, radii, weights in (
+            (z0, bottom_radii, bottom_weights),
+            (z1, top_radii, top_weights),
+        ):
+            rings.append([
+                self.vertex(
+                    (
+                        center[0] + cos(angle) * radii[0],
+                        center[1] + sin(angle) * radii[1],
+                        z,
+                    ),
+                    weights,
+                )
+                for angle in (2.0 * pi * index / segments for index in range(segments))
+            ])
+        for index in range(segments):
+            following = (index + 1) % segments
+            self.face((rings[0][index], rings[0][following], rings[1][following], rings[1][index]), material)
+
     def cylinder_y(
         self,
         center: tuple[float, float, float],
@@ -483,6 +718,27 @@ class HazmatBuilder(BASE.DetailBuilder):
             following = (index + 1) % segments
             self.face((outer_ring[index], outer_ring[following], inner_ring[following], inner_ring[index]), material)
 
+    def ellipse_ring_z(
+        self,
+        center: tuple[float, float],
+        outer: tuple[float, float],
+        inner: tuple[float, float],
+        z: float,
+        material: int,
+        weights: dict[str, float],
+        segments: int = 24,
+    ) -> None:
+        """Create a horizontal gasket annulus that closes a visible collar gap."""
+        outer_ring = []
+        inner_ring = []
+        for index in range(segments):
+            angle = 2.0 * pi * index / segments
+            outer_ring.append(self.vertex((center[0] + cos(angle) * outer[0], center[1] + sin(angle) * outer[1], z), weights))
+            inner_ring.append(self.vertex((center[0] + cos(angle) * inner[0], center[1] + sin(angle) * inner[1], z + 0.002), weights))
+        for index in range(segments):
+            following = (index + 1) % segments
+            self.face((outer_ring[index], outer_ring[following], inner_ring[following], inner_ring[index]), material)
+
     def ellipsoid(
         self,
         center: tuple[float, float, float],
@@ -559,13 +815,66 @@ class HazmatBuilder(BASE.DetailBuilder):
             self.face((rings[0][index], rings[0][following], rings[1][following], rings[1][index]), material)
 
 
+def finalize_detail_builder(
+    builder: HazmatBuilder,
+    armature: bpy.types.Object,
+    asset_id: str,
+    suffix: str,
+    hide_when_helmet_equipped: bool = False,
+) -> bpy.types.Object:
+    mesh = bpy.data.meshes.new(f"{asset_id}_{suffix}_mesh")
+    mesh.from_pydata(builder.vertices, [], builder.faces)
+    mesh.update()
+    for polygon, material_index in zip(mesh.polygons, builder.materials):
+        polygon.material_index = material_index
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(mesh)
+    bm.free()
+    details = bpy.data.objects.new(f"{asset_id}_{suffix}", mesh)
+    bpy.context.collection.objects.link(details)
+    details.parent = armature
+    details.matrix_parent_inverse = Matrix.Identity(4)
+    details.matrix_world = armature.matrix_world.copy()
+    group_names = sorted({name for weights in builder.weights for name, weight in weights.items() if weight > 0.0})
+    vertex_groups = {name: details.vertex_groups.new(name=name) for name in group_names}
+    for vertex_index, weights in enumerate(builder.weights):
+        total = sum(weights.values())
+        for name, weight in weights.items():
+            if total > 0.0 and weight > 0.0:
+                vertex_groups[name].add([vertex_index], weight / total, "REPLACE")
+    modifier = details.modifiers.new("current_player_rig", "ARMATURE")
+    modifier.object = armature
+    bpy.context.view_layer.objects.active = details
+    details.select_set(True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(angle_limit=0.85, island_margin=0.014)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for polygon in details.data.polygons:
+        polygon.use_smooth = polygon.material_index in (0, 1, 2, 3)
+    details.select_set(False)
+    details["realm_asset_id"] = asset_id
+    details["realm_item_id"] = "hazmatSuit"
+    details["realm_item_name_ru"] = "Костюм химзащиты"
+    details["realm_art_direction"] = "character_geometry_b_materials_c"
+    details["realm_review_only"] = True
+    details["realm_runtime_integration_allowed"] = False
+    if hide_when_helmet_equipped:
+        details["realm_hide_when_helmet_equipped"] = True
+        details["realm_hazmat_hood_assembly"] = True
+    return details
+
+
 def build_details(
     body: bpy.types.Object,
     armature: bpy.types.Object,
     asset_id: str,
     fit: dict[str, object],
-) -> bpy.types.Object:
+) -> tuple[bpy.types.Object, bpy.types.Object]:
     builder = HazmatBuilder()
+    hood_builder = HazmatBuilder()
     torso_minimum = Vector(fit["torsoBounds"]["minimum"])
     torso_maximum = Vector(fit["torsoBounds"]["maximum"])
     head_minimum = Vector(fit["headBounds"]["minimum"])
@@ -576,31 +885,58 @@ def build_details(
     front_y = torso_minimum.y - 0.030
     back_y = torso_maximum.y + 0.035
 
-    # A soft protective hood with a broad gasket-mounted visor.  The hood stays
-    # close to the head instead of becoming an oversized sci-fi helmet.
+    # A compact soft hood stays inside the minimum clearance shared by all
+    # three shipped helmet families.  The respirator remains readable below
+    # their brow line without forcing a second oversized head silhouette.
     head_center = (head_minimum + head_maximum) * 0.5
     head_radii = (
-        (head_maximum.x - head_minimum.x) * 0.5 + 0.028,
-        (head_maximum.y - head_minimum.y) * 0.5 + 0.032,
-        (head_maximum.z - head_minimum.z) * 0.5 + 0.030,
+        (head_maximum.x - head_minimum.x) * 0.5 + 0.010,
+        (head_maximum.y - head_minimum.y) * 0.5 + 0.012,
+        (head_maximum.z - head_minimum.z) * 0.5 + 0.012,
     )
-    builder.ellipsoid(tuple(head_center), head_radii, 0, {"head": 0.92, "neck_01": 0.08})
-    visor_center = (head_center.x, head_minimum.y - 0.052, head_center.z + 0.012)
+    hood_builder.ellipsoid(tuple(head_center), head_radii, 0, {"head": 0.92, "neck_01": 0.08})
+    # The ellipsoid naturally pinches to a point below the skull.  A short,
+    # overlapping skirt closes that pinch so neck skin never shows between the
+    # hood and the shoulder cowl in rear or animated views.
+    hood_builder.ellipse_band_z(
+        (head_center.x, head_center.y),
+        (head_radii[0] * 1.12, head_radii[1] * 1.12),
+        head_minimum.z - 0.055,
+        head_minimum.z + 0.095,
+        0,
+        {"head": 0.58, "neck_01": 0.42},
+        24,
+    )
+    visor_center = (head_center.x, head_minimum.y - 0.020, head_center.z + 0.012)
     visor_radii = (head_radii[0] * 0.88, head_radii[2] * 0.47)
-    builder.ellipse_disc_y(visor_center, visor_radii, 3, {"head": 1.0})
-    builder.ellipse_ring_y((visor_center[0], visor_center[1] - 0.006, visor_center[2]), (visor_radii[0] + 0.018, visor_radii[1] + 0.018), 0.018, 1, {"head": 1.0})
+    hood_builder.ellipse_disc_y(visor_center, visor_radii, 3, {"head": 1.0})
+    hood_builder.ellipse_ring_y((visor_center[0], visor_center[1] - 0.006, visor_center[2]), (visor_radii[0] + 0.018, visor_radii[1] + 0.018), 0.018, 1, {"head": 1.0})
 
     respirator_z = head_center.z - head_radii[2] * 0.51
-    respirator_y = visor_center[1] - 0.032
-    builder.box((0.0, respirator_y, respirator_z), (0.092, 0.052, 0.062), 1, {"head": 0.88, "neck_01": 0.12})
+    respirator_y = visor_center[1] - 0.022
+    hood_builder.box((0.0, respirator_y, respirator_z), (0.086, 0.044, 0.058), 1, {"head": 0.88, "neck_01": 0.12})
     for direction in (-1.0, 1.0):
         filter_x = direction * (visor_radii[0] * 0.68)
-        builder.cylinder_y((filter_x, respirator_y - 0.010, respirator_z - 0.003), 0.037, 0.056, 1, {"head": 0.86, "neck_01": 0.14}, 16)
-        builder.cylinder_y((filter_x, respirator_y - 0.041, respirator_z - 0.003), 0.029, 0.012, 2, {"head": 0.86, "neck_01": 0.14}, 16)
+        hood_builder.cylinder_y((filter_x, respirator_y - 0.008, respirator_z - 0.003), 0.032, 0.048, 1, {"head": 0.86, "neck_01": 0.14}, 16)
+        hood_builder.cylinder_y((filter_x, respirator_y - 0.035, respirator_z - 0.003), 0.025, 0.010, 2, {"head": 0.86, "neck_01": 0.14}, 16)
 
     # Neck cowl and sealed waist seam follow each body's measured ellipse.
-    cowl_z0 = max(torso_maximum.z - 0.015, head_minimum.z - 0.080)
-    builder.ellipse_band_z((0.0, torso_center_y), (torso_half_x * 0.58, torso_radius_y * 0.86), cowl_z0, cowl_z0 + 0.065, 0, {"spine_03": 0.58, "neck_01": 0.42}, 22)
+    cowl_z0 = max(torso_maximum.z - 0.065, head_minimum.z - 0.115)
+    cowl_radii = (torso_half_x * 0.72, torso_radius_y * 1.00)
+    cowl_weights = {"spine_03": 0.58, "neck_01": 0.42}
+    hood_builder.ellipse_band_z((0.0, torso_center_y), cowl_radii, cowl_z0, cowl_z0 + 0.100, 0, cowl_weights, 22)
+    hood_builder.ellipse_ring_z(
+        (0.0, torso_center_y),
+        cowl_radii,
+        (
+            0.012,
+            0.015,
+        ),
+        cowl_z0 + 0.098,
+        0,
+        cowl_weights,
+        22,
+    )
     waist_z = max(torso_minimum.z + 0.19, 1.015)
     waist_points = [
         point
@@ -612,6 +948,26 @@ def build_details(
     waist_radii = (
         max(abs(waist_minimum.x), abs(waist_maximum.x)) + 0.012,
         (waist_maximum.y - waist_minimum.y) * 0.5 + 0.013,
+    )
+    # A continuous loose pelvis yoke bridges the body-derived crotch and seat.
+    # It reads as the lower half of a one-piece coverall, tucks beneath the
+    # waist seam, and stays open at the thighs so it deforms cleanly in motion.
+    pelvis_points = BASE.group_points(body, armature, {"pelvis", "thigh_l", "thigh_r"})
+    pelvis_band_points = [point for point in pelvis_points if 0.80 <= point.z <= 1.08]
+    pelvis_minimum, pelvis_maximum = BASE.bounds(pelvis_band_points or pelvis_points)
+    pelvis_center_y = (pelvis_minimum.y + pelvis_maximum.y) * 0.5
+    pelvis_radius_x = max(abs(pelvis_minimum.x), abs(pelvis_maximum.x)) + 0.064
+    pelvis_radius_y = (pelvis_maximum.y - pelvis_minimum.y) * 0.5 + 0.076
+    builder.ellipse_frustum_z(
+        (0.0, pelvis_center_y),
+        (pelvis_radius_x * 1.02, pelvis_radius_y * 1.02),
+        (max(pelvis_radius_x * 0.94, waist_radii[0] + 0.010), max(pelvis_radius_y * 0.94, waist_radii[1] + 0.012)),
+        0.785,
+        waist_z + 0.016,
+        0,
+        {"pelvis": 0.58, "thigh_l": 0.21, "thigh_r": 0.21},
+        {"pelvis": 0.74, "spine_01": 0.26},
+        28,
     )
     builder.ellipse_band_z((0.0, waist_center_y), waist_radii, waist_z, waist_z + 0.022, 4, BASE.torso_weights(waist_z), 24)
 
@@ -644,6 +1000,36 @@ def build_details(
         x0, x1 = sorted((direction * (distance - 0.105), direction * (distance - 0.018)))
         builder.ellipse_band_x(x0, x1, wrist_center, wrist_radii, 1, {f"lowerarm_{side}": 0.82, f"hand_{side}": 0.18}, 16)
 
+        # Three shallow accordion folds give the sleeve room to bend without
+        # turning it into a body-tight rubber tube.
+        arm_points = BASE.group_points(body, armature, {f"upperarm_{side}", f"lowerarm_{side}"})
+        arm_minimum_all, arm_maximum_all = BASE.bounds(arm_points)
+        inner_distance = min(abs(arm_minimum_all.x), abs(arm_maximum_all.x))
+        outer_distance = max(abs(arm_minimum_all.x), abs(arm_maximum_all.x))
+        elbow_x = direction * (inner_distance + (outer_distance - inner_distance) * 0.56)
+        elbow_points = [point for point in arm_points if abs(point.x - elbow_x) <= 0.050]
+        elbow_minimum, elbow_maximum = BASE.bounds(elbow_points)
+        elbow_center = (
+            (elbow_minimum.y + elbow_maximum.y) * 0.5,
+            (elbow_minimum.z + elbow_maximum.z) * 0.5,
+        )
+        elbow_radii = (
+            (elbow_maximum.y - elbow_minimum.y) * 0.5 + 0.022,
+            (elbow_maximum.z - elbow_minimum.z) * 0.5 + 0.022,
+        )
+        for offset in (-0.024, 0.0, 0.024):
+            fold_center_x = elbow_x + direction * offset
+            fold_x0, fold_x1 = sorted((fold_center_x - 0.005, fold_center_x + 0.005))
+            builder.ellipse_band_x(
+                fold_x0,
+                fold_x1,
+                elbow_center,
+                elbow_radii,
+                0,
+                {f"upperarm_{side}": 0.42, f"lowerarm_{side}": 0.58},
+                16,
+            )
+
         calf = BASE.group_points(body, armature, {f"calf_{side}"})
         calf_low = [point for point in calf if 0.18 <= point.z <= 0.34]
         if calf_low:
@@ -655,6 +1041,31 @@ def build_details(
             )
             builder.ellipse_band_z((direction * abs((calf_minimum.x + calf_maximum.x) * 0.5), calf_center_y), calf_radii, 0.205, 0.265, 1, {f"calf_{side}": 1.0}, 18)
 
+        knee_points = [
+            point
+            for point in BASE.group_points(body, armature, {f"thigh_{side}", f"calf_{side}"})
+            if 0.49 <= point.z <= 0.66
+        ]
+        knee_minimum, knee_maximum = BASE.bounds(knee_points)
+        knee_center = (
+            direction * abs((knee_minimum.x + knee_maximum.x) * 0.5),
+            (knee_minimum.y + knee_maximum.y) * 0.5,
+        )
+        knee_radii = (
+            (knee_maximum.x - knee_minimum.x) * 0.5 + 0.022,
+            (knee_maximum.y - knee_minimum.y) * 0.5 + 0.022,
+        )
+        for fold_z in (0.535, 0.565, 0.595):
+            builder.ellipse_band_z(
+                knee_center,
+                knee_radii,
+                fold_z - 0.005,
+                fold_z + 0.005,
+                0,
+                {f"thigh_{side}": 0.38, f"calf_{side}": 0.62},
+                18,
+            )
+
     # One restrained field repair on the rear shoulder and one knee patch add
     # C-level wear without turning the suit into a patchwork costume.
     builder.box((torso_half_x * 0.48, back_y + 0.006, min(1.405, torso_maximum.z - 0.10)), (0.105, 0.011, 0.068), 4, {"spine_03": 0.70, "clavicle_r": 0.30})
@@ -662,50 +1073,22 @@ def build_details(
     thigh_minimum, thigh_maximum = BASE.bounds(left_thigh)
     builder.box(((thigh_minimum.x + thigh_maximum.x) * 0.5, thigh_minimum.y - 0.020, (thigh_minimum.z + thigh_maximum.z) * 0.5 - 0.045), ((thigh_maximum.x - thigh_minimum.x) * 0.48, 0.011, 0.100), 4, {"thigh_l": 1.0})
 
-    mesh = bpy.data.meshes.new(f"{asset_id}_details_mesh")
-    mesh.from_pydata(builder.vertices, [], builder.faces)
-    mesh.update()
-    for polygon, material_index in zip(mesh.polygons, builder.materials):
-        polygon.material_index = material_index
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
-    bm.to_mesh(mesh)
-    bm.free()
-    details = bpy.data.objects.new(f"{asset_id}_sealed_details", mesh)
-    bpy.context.collection.objects.link(details)
-    details.parent = armature
-    details.matrix_parent_inverse = Matrix.Identity(4)
-    details.matrix_world = armature.matrix_world.copy()
-    group_names = sorted({name for weights in builder.weights for name, weight in weights.items() if weight > 0.0})
-    vertex_groups = {name: details.vertex_groups.new(name=name) for name in group_names}
-    for vertex_index, weights in enumerate(builder.weights):
-        total = sum(weights.values())
-        for name, weight in weights.items():
-            if total > 0.0 and weight > 0.0:
-                vertex_groups[name].add([vertex_index], weight / total, "REPLACE")
-    modifier = details.modifiers.new("current_player_rig", "ARMATURE")
-    modifier.object = armature
-    bpy.context.view_layer.objects.active = details
-    details.select_set(True)
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.uv.smart_project(angle_limit=0.85, island_margin=0.014)
-    bpy.ops.object.mode_set(mode="OBJECT")
-    for polygon in details.data.polygons:
-        polygon.use_smooth = polygon.material_index in (0, 1, 2, 3)
-    details.select_set(False)
-    details["realm_asset_id"] = asset_id
-    details["realm_item_id"] = "hazmatSuit"
-    details["realm_item_name_ru"] = "Костюм химзащиты"
-    details["realm_art_direction"] = "character_geometry_b_materials_c"
-    details["realm_review_only"] = True
-    details["realm_runtime_integration_allowed"] = False
-    fit["detailVertices"] = len(mesh.vertices)
-    fit["detailPolygons"] = len(mesh.polygons)
+    details = finalize_detail_builder(builder, armature, asset_id, "sealed_details")
+    hood = finalize_detail_builder(
+        hood_builder,
+        armature,
+        asset_id,
+        "helmet_optional_hood",
+        hide_when_helmet_equipped=True,
+    )
+    fit["detailVertices"] = len(details.data.vertices)
+    fit["detailPolygons"] = len(details.data.polygons)
+    fit["hoodVertices"] = len(hood.data.vertices)
+    fit["hoodPolygons"] = len(hood.data.polygons)
     fit["visorCenter"] = [round(value, 5) for value in visor_center]
     fit["headRadii"] = [round(value, 5) for value in head_radii]
-    return details
+    fit["helmetCompatibilityMode"] = "hide_hood_assembly_when_helmet_equipped"
+    return details, hood
 
 
 def pose_review(armature: bpy.types.Object) -> list[bpy.types.Object]:
@@ -886,9 +1269,8 @@ def main() -> None:
     }
     material_order = tuple(materials[name] for name in ("suit", "rubber", "metal", "visor", "repair", "warning"))
     shell, fit = build_shell(body, armature, args.asset_id)
-    liner = build_inner_liner(body, armature, args.asset_id, float(fit["headBounds"]["minimum"][2]) - 0.025)
-    details = build_details(body, armature, args.asset_id, fit)
-    for obj in (liner, shell, details):
+    details, hood = build_details(body, armature, args.asset_id, fit)
+    for obj in (shell, details, hood):
         for material in material_order:
             obj.data.materials.append(material)
 
@@ -907,11 +1289,11 @@ def main() -> None:
 
     reset_pose(armature, helpers)
     for obj in list(reference_objects):
-        if obj != armature and obj not in (liner, shell, details) and obj.name in bpy.data.objects:
+        if obj != armature and obj not in (shell, details, hood) and obj.name in bpy.data.objects:
             bpy.data.objects.remove(obj, do_unlink=True)
-    for obj in [obj for obj in list(bpy.context.scene.objects) if obj not in (armature, liner, shell, details)]:
+    for obj in [obj for obj in list(bpy.context.scene.objects) if obj not in (armature, shell, details, hood)]:
         bpy.data.objects.remove(obj, do_unlink=True)
-    export_candidate(args.output, armature, [liner, shell, details])
+    export_candidate(args.output, armature, [shell, details, hood])
     actual = parse_exported_glb(args.output)
     report = {
         "assetId": args.asset_id,
@@ -926,7 +1308,7 @@ def main() -> None:
         "provenance": {
             "license": "Realm of Ashes project asset",
             "donor": None,
-            "rebuild": "original body-fitted B geometry with authored B+C hazmat details on the exact current 65-bone player rig",
+            "rebuild": "Blender-authored loose coverall silhouette with a sealed helmet-optional hood assembly and B+C hazmat details on the exact current 65-bone player rig",
             "directRuntimeUse": False,
         },
         "reviewOnly": True,

@@ -1,5 +1,5 @@
   // ===== B+C WEAPON GLB RUNTIME =====
-  const WEAPON_MODEL_ASSET_VERSION = '7.76.6-physical-grips-reloads-v2';
+  const WEAPON_MODEL_ASSET_VERSION = '7.82.0-muzzle-sockets-v1';
   const WEAPON_MODEL_CATALOG = Object.freeze({
     pistol: { file: '/assets/models/weapons/weapon_pistol.glb', family: 'sidearm' },
     rifle: { file: '/assets/models/weapons/weapon_rifle.glb', family: 'long_gun' },

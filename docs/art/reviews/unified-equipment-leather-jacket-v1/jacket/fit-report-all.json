@@ -83,23 +83,23 @@
           "thigh_r",
           "pelvis",
           "root",
-          "equipment_leather_jacket_unified_v1_details",
-          "equipment_leather_jacket_unified_v1_shell",
+          "equipment_leather_jacket_unified_v1_female_slim_details",
+          "equipment_leather_jacket_unified_v1_female_slim_shell",
           "character_root"
         ],
-        "positionVertices": 6235,
+        "positionVertices": 6410,
         "skins": 1,
         "textures": 9,
-        "triangles": 5752
+        "triangles": 6116
       },
-      "assetId": "equipment_leather_jacket_unified_v1",
+      "assetId": "equipment_leather_jacket_unified_v1_female_slim",
       "bodyId": "female_slim",
       "file": "equipment_leather_jacket_unified_v1_female_slim.glb",
       "fit": {
         "frontOpeningThresholdY": -0.00756,
         "lowerHemZ": 1.071,
-        "shellPolygons": 4765,
-        "shellVertices": 2462,
+        "shellPolygons": 5150,
+        "shellVertices": 2624,
         "sleeveLimitX": 0.58716,
         "torsoBounds": {
           "maximum": [
@@ -113,17 +113,17 @@
             0.871
           ]
         },
-        "upperLimitZ": 1.44195
+        "upperLimitZ": 1.48195
       },
       "provenance": {
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C leather details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "F0FA3092ED19E03AE380F801444C660A56CABB8D597021B315EB447015179E8A"
+      "sha256": "E48097596AD6C35F72FEBF0BBD4FB68154F78E599698198AA499267B1AB68066"
     },
     {
       "actualGlb": {
@@ -195,23 +195,23 @@
           "thigh_r",
           "pelvis",
           "root",
-          "equipment_leather_jacket_unified_v1_details",
-          "equipment_leather_jacket_unified_v1_shell",
+          "equipment_leather_jacket_unified_v1_female_medium_details",
+          "equipment_leather_jacket_unified_v1_female_medium_shell",
           "character_root"
         ],
-        "positionVertices": 6724,
+        "positionVertices": 6740,
         "skins": 1,
         "textures": 9,
-        "triangles": 5848
+        "triangles": 6200
       },
-      "assetId": "equipment_leather_jacket_unified_v1",
+      "assetId": "equipment_leather_jacket_unified_v1_female_medium",
       "bodyId": "female_medium",
       "file": "equipment_leather_jacket_unified_v1_female_medium.glb",
       "fit": {
         "frontOpeningThresholdY": -0.01007,
         "lowerHemZ": 1.07088,
-        "shellPolygons": 4865,
-        "shellVertices": 2510,
+        "shellPolygons": 5230,
+        "shellVertices": 2664,
         "sleeveLimitX": 0.58622,
         "torsoBounds": {
           "maximum": [
@@ -225,17 +225,17 @@
             0.87088
           ]
         },
-        "upperLimitZ": 1.44275
+        "upperLimitZ": 1.48275
       },
       "provenance": {
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C leather details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "8DD5F066F226714A344874B135C71C3FCABB807C5A7D26AC8ECC483443B5BB34"
+      "sha256": "5FA5C6B3ED92141D37993C8C32258051F5E74306103826000B578FD88960A272"
     },
     {
       "actualGlb": {
@@ -307,23 +307,23 @@
           "thigh_r",
           "pelvis",
           "root",
-          "equipment_leather_jacket_unified_v1_details",
-          "equipment_leather_jacket_unified_v1_shell",
+          "equipment_leather_jacket_unified_v1_female_large_details",
+          "equipment_leather_jacket_unified_v1_female_large_shell",
           "character_root"
         ],
-        "positionVertices": 6568,
+        "positionVertices": 6321,
         "skins": 1,
         "textures": 9,
-        "triangles": 5972
+        "triangles": 6340
       },
-      "assetId": "equipment_leather_jacket_unified_v1",
+      "assetId": "equipment_leather_jacket_unified_v1_female_large",
       "bodyId": "female_large",
       "file": "equipment_leather_jacket_unified_v1_female_large.glb",
       "fit": {
         "frontOpeningThresholdY": -0.01593,
         "lowerHemZ": 1.07074,
-        "shellPolygons": 4986,
-        "shellVertices": 2572,
+        "shellPolygons": 5312,
+        "shellVertices": 2706,
         "sleeveLimitX": 0.58734,
         "torsoBounds": {
           "maximum": [
@@ -337,17 +337,17 @@
             0.87074
           ]
         },
-        "upperLimitZ": 1.44363
+        "upperLimitZ": 1.48363
       },
       "provenance": {
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C leather details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "01FDEA79ABF116B212E4A7BF36E7D49404FC6DAC6030C700AF640C6ACA6C3597"
+      "sha256": "E8B30C35BAE4839575BA94F78CE6102655BC14807911CCEA7AAE179DE6DCF270"
     },
     {
       "actualGlb": {
@@ -419,23 +419,23 @@
           "thigh_r",
           "pelvis",
           "root",
-          "equipment_leather_jacket_unified_v1_details",
-          "equipment_leather_jacket_unified_v1_shell",
+          "equipment_leather_jacket_unified_v1_male_slim_details",
+          "equipment_leather_jacket_unified_v1_male_slim_shell",
           "character_root"
         ],
-        "positionVertices": 6291,
+        "positionVertices": 6186,
         "skins": 1,
         "textures": 9,
-        "triangles": 5624
+        "triangles": 5964
       },
-      "assetId": "equipment_leather_jacket_unified_v1",
+      "assetId": "equipment_leather_jacket_unified_v1_male_slim",
       "bodyId": "male_slim",
       "file": "equipment_leather_jacket_unified_v1_male_slim.glb",
       "fit": {
         "frontOpeningThresholdY": -0.00022,
         "lowerHemZ": 1.09245,
-        "shellPolygons": 4624,
-        "shellVertices": 2392,
+        "shellPolygons": 4902,
+        "shellVertices": 2512,
         "sleeveLimitX": 0.65116,
         "torsoBounds": {
           "maximum": [
@@ -449,17 +449,17 @@
             0.89245
           ]
         },
-        "upperLimitZ": 1.48785
+        "upperLimitZ": 1.52785
       },
       "provenance": {
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C leather details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "DF874FCEF62119667DE374ED933A4B38C2F413A979856ECA7751EB383333E411"
+      "sha256": "776ABE4475047FFB72F7B983C046B3AB3DE0BEFD44740C1DA37C94820084E886"
     },
     {
       "actualGlb": {
@@ -531,23 +531,23 @@
           "thigh_r",
           "pelvis",
           "root",
-          "equipment_leather_jacket_unified_v1_details",
-          "equipment_leather_jacket_unified_v1_shell",
+          "equipment_leather_jacket_unified_v1_male_medium_details",
+          "equipment_leather_jacket_unified_v1_male_medium_shell",
           "character_root"
         ],
-        "positionVertices": 6324,
+        "positionVertices": 6824,
         "skins": 1,
         "textures": 9,
-        "triangles": 5608
+        "triangles": 5924
       },
-      "assetId": "equipment_leather_jacket_unified_v1",
+      "assetId": "equipment_leather_jacket_unified_v1_male_medium",
       "bodyId": "male_medium",
       "file": "equipment_leather_jacket_unified_v1_male_medium.glb",
       "fit": {
         "frontOpeningThresholdY": -0.00116,
         "lowerHemZ": 1.09362,
-        "shellPolygons": 4634,
-        "shellVertices": 2394,
+        "shellPolygons": 4890,
+        "shellVertices": 2504,
         "sleeveLimitX": 0.65114,
         "torsoBounds": {
           "maximum": [
@@ -561,17 +561,17 @@
             0.89362
           ]
         },
-        "upperLimitZ": 1.4883
+        "upperLimitZ": 1.5283
       },
       "provenance": {
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C leather details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "AC94A6255D1B1E5213015386CD1DF835303757DC4088A13603C777D9B853EDB9"
+      "sha256": "F5BFCD874A3DDF3E4414F05E75974E36885E9497B390A750282622D9E35AF363"
     },
     {
       "actualGlb": {
@@ -643,23 +643,23 @@
           "thigh_r",
           "pelvis",
           "root",
-          "equipment_leather_jacket_unified_v1_details",
-          "equipment_leather_jacket_unified_v1_shell",
+          "equipment_leather_jacket_unified_v1_male_large_details",
+          "equipment_leather_jacket_unified_v1_male_large_shell",
           "character_root"
         ],
-        "positionVertices": 6223,
+        "positionVertices": 7126,
         "skins": 1,
         "textures": 9,
-        "triangles": 5648
+        "triangles": 5940
       },
-      "assetId": "equipment_leather_jacket_unified_v1",
+      "assetId": "equipment_leather_jacket_unified_v1_male_large",
       "bodyId": "male_large",
       "file": "equipment_leather_jacket_unified_v1_male_large.glb",
       "fit": {
         "frontOpeningThresholdY": -0.00482,
         "lowerHemZ": 1.09324,
-        "shellPolygons": 4672,
-        "shellVertices": 2414,
+        "shellPolygons": 4910,
+        "shellVertices": 2512,
         "sleeveLimitX": 0.65113,
         "torsoBounds": {
           "maximum": [
@@ -673,17 +673,17 @@
             0.89324
           ]
         },
-        "upperLimitZ": 1.48935
+        "upperLimitZ": 1.52935
       },
       "provenance": {
         "directRuntimeUse": false,
         "donor": null,
         "license": "Realm of Ashes project asset",
-        "rebuild": "original body-fitted B geometry with authored B+C leather details on the exact current 65-bone player rig"
+        "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig"
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "8A55FD1853B681634F9DDCB5F59555EE416F8B3920850DA33DC8F3D364F5734D"
+      "sha256": "686CA53B0DF0FD5EC005040BF713D673C26B73BC1C659A4DB3C4BB0C95340C48"
     }
   ]
 }

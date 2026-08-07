@@ -26,7 +26,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_leather_jacket_unified_v1',
     runtimePrefix: 'equipment_leather_jacket',
     meshCount: 2,
-    fitReportSha256: '3186BCEBA191368F278CBA74675A998513494CB6597C6A1DEA95D4B6E5BA23C5'
+    fitReportSha256: 'BFF4F9D493A61D0B93B3996E3EC307477D9CB6224C23BA2B68DCAC5EDB117BCF'
   },
   {
     itemId: 'metalArmor',
@@ -125,7 +125,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_hazmat_suit_unified_v1',
     runtimePrefix: 'equipment_hazmat_suit',
     meshCount: 3,
-    fitReportSha256: '4634A2060001669056D50A084A4FC564158788D95BC679C9CF86A018270BCECC'
+    fitReportSha256: 'CE377C96F63DD4C9336315EA402C5ECE78E71C6BF70505E3AD966958A13049F4'
   },
   {
     itemId: 'energySuit',
@@ -133,8 +133,8 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-energy-suit-v1', 'suit'],
     sourcePrefix: 'equipment_energy_suit_unified_v1',
     runtimePrefix: 'equipment_energy_suit',
-    meshCount: 3,
-    fitReportSha256: '0334FB653658D0C40B6BE649BEB9EAC4AACEBE889AF1CF214F1134DB74AA2781'
+    meshCount: 2,
+    fitReportSha256: '066FACF879B9BBFBFE44CF1CB717BF6B3428BA30A381F19DB05CCB748F757A0A'
   }
 ]);
 

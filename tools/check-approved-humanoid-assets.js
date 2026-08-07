@@ -226,12 +226,12 @@ const runtimeSource = fs.readFileSync(
   'utf8'
 );
 [
-  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v13-weapon-interactions'",
+  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v14-hazmat-hood'",
   'const APPROVED_EQUIPMENT_ASSETS = Object.freeze({',
   'const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([',
   'function attachApprovedNpcAnimations(runtime)',
   'const sourceMeshes = []',
-  "mesh.name = `approved_equipment_${itemId}_${sourceMesh.material?.name || group.children.length}`",
+  "mesh.name = `approved_equipment_${itemId}_${sourceMesh.name || sourceMesh.material?.name || group.children.length}`",
   'new THREE.Skeleton(',
   'function applyApprovedEquipmentVisuals(actor, eq = {})',
   'const APPROVED_BACKPACK_ARMOR_OFFSETS = Object.freeze({',

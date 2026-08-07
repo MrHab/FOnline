@@ -1,7 +1,7 @@
 {
   "actualGlb": {
     "materials": 6,
-    "meshDefinitions": 3,
+    "meshDefinitions": 2,
     "nodes": [
       "head",
       "neck_01",
@@ -69,19 +69,19 @@
       "pelvis",
       "root",
       "equipment_energy_suit_unified_v1_male_slim_field_details",
-      "equipment_energy_suit_unified_v1_male_slim_inner_seal",
       "equipment_energy_suit_unified_v1_male_slim_sealed_shell",
       "character_root"
     ],
-    "positionVertices": 47900,
+    "positionVertices": 14577,
     "skins": 1,
     "textures": 6,
-    "triangles": 26873
+    "triangles": 11330
   },
   "assetId": "equipment_energy_suit_unified_v1_male_slim",
   "bodyId": "male_slim",
   "file": "equipment_energy_suit_unified_v1_male_slim.glb",
   "fit": {
+    "anatomyProjectionStrength": 0.84,
     "bodyBounds": {
       "maximum": [
         0.70616,
@@ -94,8 +94,8 @@
         -0.00951
       ]
     },
-    "detailPolygons": 281,
-    "detailVertices": 522,
+    "detailPolygons": 373,
+    "detailVertices": 682,
     "energyCore": [
       0.0,
       -0.18643,
@@ -113,9 +113,11 @@
         1.51691
       ]
     },
+    "innerSealRequired": false,
     "rubberMaterialPolygons": 3775,
-    "shellPolygons": 17629,
-    "shellVertices": 8884,
+    "shellPolygons": 10034,
+    "shellVertices": 5064,
+    "silhouetteProfile": "energy",
     "torsoBounds": {
       "maximum": [
         0.19315,
@@ -147,9 +149,9 @@
     "directRuntimeUse": false,
     "donor": null,
     "license": "Realm of Ashes project asset",
-    "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+    "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "7DD7208A7D26F68140F3D41C7BCCB60AE74E5CCEDA996C7822AA1172F774753A"
+  "sha256": "2EC44CF4F19B3F9A94A2D95570832E4FCB5ED627C1847D294360253C3385DCE4"
 }

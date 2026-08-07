@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v13-weapon-interactions';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v14-hazmat-hood';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([
@@ -369,7 +369,7 @@
       ));
       if (targetBones.some(bone => !bone)) return null;
       const mesh = new THREE.SkinnedMesh(sourceMesh.geometry, sourceMesh.material);
-      mesh.name = `approved_equipment_${itemId}_${sourceMesh.material?.name || group.children.length}`;
+      mesh.name = `approved_equipment_${itemId}_${sourceMesh.name || sourceMesh.material?.name || group.children.length}`;
       sourceMesh.matrixWorld.decompose(mesh.position, mesh.quaternion, mesh.scale);
       mesh.bindMode = sourceMesh.bindMode;
       mesh.bind(
@@ -383,7 +383,10 @@
       mesh.castShadow = true;
       mesh.receiveShadow = false;
       mesh.frustumCulled = false;
-      mesh.userData.approvedEquipmentSharedAsset = true;
+      mesh.userData = {
+        ...(sourceMesh.userData || {}),
+        approvedEquipmentSharedAsset: true
+      };
       mesh.userData.approvedEquipmentSourceName = sourceMesh.name;
       mesh.userData.approvedBackpackLayer = String(
         sourceMesh.userData?.realm_backpack_layer
@@ -414,6 +417,21 @@
     group.userData.approvedBackpackArmorOffset = offset;
   }
 
+  function syncApprovedHazmatHoodVisibility(actor, eq = null) {
+    if (!actor?.userData) return;
+    const activeEquipment = eq && typeof eq === 'object'
+      ? eq
+      : (actor.userData.enemyEquipment || actor.userData.equipment || {});
+    const armorId = String(equipmentVisualBaseId(activeEquipment?.armor || '') || '');
+    const helmetId = String(equipmentVisualBaseId(activeEquipment?.helmet || '') || '');
+    const armorRuntime = actor.userData.approvedEquipmentRuntimes?.armor?.mesh;
+    armorRuntime?.traverse?.(node => {
+      if (node?.isSkinnedMesh && node.userData?.realm_hide_when_helmet_equipped === true) {
+        node.visible = !(armorId === 'hazmatSuit' && helmetId);
+      }
+    });
+  }
+
   function applyApprovedEquipmentSlot(actor, eq = {}, slot = '') {
     if (!actor?.userData) return false;
     const parts = actor.userData.parts || actor.userData.actorParts || {};
@@ -425,12 +443,14 @@
     const current = actor.userData.approvedEquipmentRuntimes[slot];
     if (!wanted) {
       if (current) removeApprovedEquipmentRuntime(actor, slot);
+      syncApprovedHazmatHoodVisibility(actor, eq);
       return false;
     }
     const bodyKey = approvedEquipmentBodyKey(actor);
     if (current?.itemId === itemId && current?.bodyKey === bodyKey && current.mesh?.parent === characterRuntime.root) {
       placeApprovedEquipmentRuntime(current.mesh, slot, eq);
       approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
+      syncApprovedHazmatHoodVisibility(actor, eq);
       return true;
     }
     removeApprovedEquipmentRuntime(actor, slot);
@@ -459,6 +479,7 @@
       activeCharacter.root.add(mesh);
       runtime.mesh = mesh;
       approvedEquipmentFallbackMeshes(parts, slot).forEach(fallback => { fallback.visible = false; });
+      syncApprovedHazmatHoodVisibility(actor, activeEquipment);
     });
     return false;
   }

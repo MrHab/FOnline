@@ -1,0 +1,930 @@
+{
+  "artDirection": "geometry B, materials and wear C",
+  "assetId": "equipment_leather_jacket_unified_v2",
+  "bodyIds": [
+    "female_slim",
+    "female_medium",
+    "female_large",
+    "male_slim",
+    "male_medium",
+    "male_large"
+  ],
+  "reference": "docs/art/references/leather-jacket-bc-reference-v1.png",
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "variantCount": 6,
+  "variants": [
+    {
+      "actualGlb": {
+        "materials": 4,
+        "meshDefinitions": 2,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_leather_jacket_unified_v2_details",
+          "equipment_leather_jacket_unified_v2_game_shell",
+          "character_root"
+        ],
+        "positionVertices": 9873,
+        "skins": 1,
+        "textures": 12,
+        "triangles": 9374
+      },
+      "animationReview": {
+        "idle": {
+          "action": "idle",
+          "frame": 19,
+          "rendered": false
+        },
+        "raisedArmsAndElbowBend": {
+          "rendered": false
+        },
+        "run": {
+          "action": "run",
+          "frame": 6,
+          "rendered": false
+        },
+        "walk": {
+          "action": "walk",
+          "frame": 10,
+          "rendered": false
+        }
+      },
+      "assetId": "equipment_leather_jacket_unified_v2",
+      "bodyId": "female_slim",
+      "bytes": 1428196,
+      "file": "equipment_leather_jacket_unified_v2_female_slim.glb",
+      "fit": {
+        "backSurfaceY": 0.19222,
+        "frontOpeningThresholdY": -0.16859,
+        "frontSurfaceY": -0.17459,
+        "lowerHemZ": 1.071,
+        "shellPolygons": 2494,
+        "shellVertices": 2492,
+        "sleeveLimitX": 0.58716,
+        "topology": {
+          "shoulderPatchPolygons": 366,
+          "shoulderPatchSource": "approved_player_surface",
+          "sleeveRadialSegments": 28,
+          "sleeveRings": 20,
+          "torsoRings": 20,
+          "torsoSegments": 56
+        },
+        "torsoBounds": {
+          "maximum": [
+            0.1602,
+            0.15022,
+            1.48695
+          ],
+          "minimum": [
+            -0.1602,
+            -0.12659,
+            0.871
+          ]
+        },
+        "torsoRadiusX": 0.1902,
+        "torsoRadiusY": 0.18041,
+        "upperLimitZ": 1.48895
+      },
+      "highPolySource": {
+        "construction": "subdivision plus leather thickness, softened edges and applied microrelief displacement",
+        "objects": 2,
+        "polygons": 114445,
+        "vertices": 114443
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "Reference-led original v2 jacket with an authored open-front torso, measured sleeves, panel seams, lapels, stand collar, centered belt, zipper, cuffs and elbow reinforcements on the exact current 65-bone player rig",
+        "reference": "docs/art/references/leather-jacket-bc-reference-v1.png"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "4FDA9AF98DCF29A8E8941E3799ED1648B048B46A352D313ED309F3933DB038D0"
+    },
+    {
+      "actualGlb": {
+        "materials": 4,
+        "meshDefinitions": 2,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_leather_jacket_unified_v2_details",
+          "equipment_leather_jacket_unified_v2_game_shell",
+          "character_root"
+        ],
+        "positionVertices": 9896,
+        "skins": 1,
+        "textures": 12,
+        "triangles": 9410
+      },
+      "animationReview": {
+        "idle": {
+          "action": "idle",
+          "frame": 19,
+          "rendered": false
+        },
+        "raisedArmsAndElbowBend": {
+          "rendered": false
+        },
+        "run": {
+          "action": "run",
+          "frame": 6,
+          "rendered": false
+        },
+        "walk": {
+          "action": "walk",
+          "frame": 10,
+          "rendered": false
+        }
+      },
+      "assetId": "equipment_leather_jacket_unified_v2",
+      "bodyId": "female_medium",
+      "bytes": 1430112,
+      "file": "equipment_leather_jacket_unified_v2_female_medium.glb",
+      "fit": {
+        "backSurfaceY": 0.20447,
+        "frontOpeningThresholdY": -0.18223,
+        "frontSurfaceY": -0.18823,
+        "lowerHemZ": 1.07088,
+        "shellPolygons": 2530,
+        "shellVertices": 2508,
+        "sleeveLimitX": 0.58622,
+        "topology": {
+          "shoulderPatchPolygons": 402,
+          "shoulderPatchSource": "approved_player_surface",
+          "sleeveRadialSegments": 28,
+          "sleeveRings": 20,
+          "torsoRings": 20,
+          "torsoSegments": 56
+        },
+        "torsoBounds": {
+          "maximum": [
+            0.173,
+            0.16247,
+            1.48775
+          ],
+          "minimum": [
+            -0.173,
+            -0.14023,
+            0.87088
+          ]
+        },
+        "torsoRadiusX": 0.203,
+        "torsoRadiusY": 0.19335,
+        "upperLimitZ": 1.48975
+      },
+      "highPolySource": {
+        "construction": "subdivision plus leather thickness, softened edges and applied microrelief displacement",
+        "objects": 2,
+        "polygons": 115387,
+        "vertices": 115393
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "Reference-led original v2 jacket with an authored open-front torso, measured sleeves, panel seams, lapels, stand collar, centered belt, zipper, cuffs and elbow reinforcements on the exact current 65-bone player rig",
+        "reference": "docs/art/references/leather-jacket-bc-reference-v1.png"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "5631B14C14BB59DC20BA5EED626BB164444C48B020EA352D9D93CF5B7F2EEE68"
+    },
+    {
+      "actualGlb": {
+        "materials": 4,
+        "meshDefinitions": 2,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_leather_jacket_unified_v2_details",
+          "equipment_leather_jacket_unified_v2_game_shell",
+          "character_root"
+        ],
+        "positionVertices": 9928,
+        "skins": 1,
+        "textures": 12,
+        "triangles": 9452
+      },
+      "animationReview": {
+        "idle": {
+          "action": "idle",
+          "frame": 19,
+          "rendered": false
+        },
+        "raisedArmsAndElbowBend": {
+          "rendered": false
+        },
+        "run": {
+          "action": "run",
+          "frame": 6,
+          "rendered": false
+        },
+        "walk": {
+          "action": "walk",
+          "frame": 10,
+          "rendered": false
+        }
+      },
+      "assetId": "equipment_leather_jacket_unified_v2",
+      "bodyId": "female_large",
+      "bytes": 1432096,
+      "file": "equipment_leather_jacket_unified_v2_female_large.glb",
+      "fit": {
+        "backSurfaceY": 0.22987,
+        "frontOpeningThresholdY": -0.21167,
+        "frontSurfaceY": -0.21767,
+        "lowerHemZ": 1.07074,
+        "shellPolygons": 2572,
+        "shellVertices": 2538,
+        "sleeveLimitX": 0.58734,
+        "topology": {
+          "shoulderPatchPolygons": 444,
+          "shoulderPatchSource": "approved_player_surface",
+          "sleeveRadialSegments": 28,
+          "sleeveRings": 20,
+          "torsoRings": 20,
+          "torsoSegments": 56
+        },
+        "torsoBounds": {
+          "maximum": [
+            0.1955,
+            0.18787,
+            1.48863
+          ],
+          "minimum": [
+            -0.1955,
+            -0.16967,
+            0.87074
+          ]
+        },
+        "torsoRadiusX": 0.2255,
+        "torsoRadiusY": 0.22077,
+        "upperLimitZ": 1.49063
+      },
+      "highPolySource": {
+        "construction": "subdivision plus leather thickness, softened edges and applied microrelief displacement",
+        "objects": 2,
+        "polygons": 117158,
+        "vertices": 117162
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "Reference-led original v2 jacket with an authored open-front torso, measured sleeves, panel seams, lapels, stand collar, centered belt, zipper, cuffs and elbow reinforcements on the exact current 65-bone player rig",
+        "reference": "docs/art/references/leather-jacket-bc-reference-v1.png"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "99C48EBB10E169E52224F93C5A93343974B431B54357581504B7EC9A5538C16E"
+    },
+    {
+      "actualGlb": {
+        "materials": 4,
+        "meshDefinitions": 2,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_leather_jacket_unified_v2_details",
+          "equipment_leather_jacket_unified_v2_game_shell",
+          "character_root"
+        ],
+        "positionVertices": 9918,
+        "skins": 1,
+        "textures": 12,
+        "triangles": 9422
+      },
+      "animationReview": {
+        "idle": {
+          "action": "idle",
+          "frame": 19,
+          "rendered": false
+        },
+        "raisedArmsAndElbowBend": {
+          "rendered": false
+        },
+        "run": {
+          "action": "run",
+          "frame": 6,
+          "rendered": false
+        },
+        "walk": {
+          "action": "walk",
+          "frame": 10,
+          "rendered": false
+        }
+      },
+      "assetId": "equipment_leather_jacket_unified_v2",
+      "bodyId": "male_slim",
+      "bytes": 1430960,
+      "file": "equipment_leather_jacket_unified_v2_male_slim.glb",
+      "fit": {
+        "backSurfaceY": 0.19185,
+        "frontOpeningThresholdY": -0.15543,
+        "frontSurfaceY": -0.16143,
+        "lowerHemZ": 1.09245,
+        "shellPolygons": 2542,
+        "shellVertices": 2530,
+        "sleeveLimitX": 0.65116,
+        "topology": {
+          "shoulderPatchPolygons": 414,
+          "shoulderPatchSource": "approved_player_surface",
+          "sleeveRadialSegments": 28,
+          "sleeveRings": 20,
+          "torsoRings": 20,
+          "torsoSegments": 56
+        },
+        "torsoBounds": {
+          "maximum": [
+            0.19315,
+            0.14985,
+            1.53285
+          ],
+          "minimum": [
+            -0.19315,
+            -0.11343,
+            0.89245
+          ]
+        },
+        "torsoRadiusX": 0.22315,
+        "torsoRadiusY": 0.17364,
+        "upperLimitZ": 1.53485
+      },
+      "highPolySource": {
+        "construction": "subdivision plus leather thickness, softened edges and applied microrelief displacement",
+        "objects": 2,
+        "polygons": 116642,
+        "vertices": 116644
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "Reference-led original v2 jacket with an authored open-front torso, measured sleeves, panel seams, lapels, stand collar, centered belt, zipper, cuffs and elbow reinforcements on the exact current 65-bone player rig",
+        "reference": "docs/art/references/leather-jacket-bc-reference-v1.png"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "8BD51E21E35FA7044ED067B05580A5C3F4A11D0D7E8B89B714A68AF695F978DC"
+    },
+    {
+      "actualGlb": {
+        "materials": 4,
+        "meshDefinitions": 2,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_leather_jacket_unified_v2_details",
+          "equipment_leather_jacket_unified_v2_game_shell",
+          "character_root"
+        ],
+        "positionVertices": 9930,
+        "skins": 1,
+        "textures": 12,
+        "triangles": 9470
+      },
+      "animationReview": {
+        "idle": {
+          "action": "idle",
+          "frame": 19,
+          "rendered": true
+        },
+        "raisedArmsAndElbowBend": {
+          "rendered": true
+        },
+        "run": {
+          "action": "run",
+          "frame": 6,
+          "rendered": true
+        },
+        "walk": {
+          "action": "walk",
+          "frame": 10,
+          "rendered": true
+        }
+      },
+      "assetId": "equipment_leather_jacket_unified_v2",
+      "bodyId": "male_medium",
+      "bytes": 1431064,
+      "file": "equipment_leather_jacket_unified_v2_male_medium.glb",
+      "fit": {
+        "backSurfaceY": 0.20545,
+        "frontOpeningThresholdY": -0.16734,
+        "frontSurfaceY": -0.17334,
+        "lowerHemZ": 1.09362,
+        "shellPolygons": 2590,
+        "shellVertices": 2542,
+        "sleeveLimitX": 0.65114,
+        "topology": {
+          "shoulderPatchPolygons": 462,
+          "shoulderPatchSource": "approved_player_surface",
+          "sleeveRadialSegments": 28,
+          "sleeveRings": 20,
+          "torsoRings": 20,
+          "torsoSegments": 56
+        },
+        "torsoBounds": {
+          "maximum": [
+            0.206,
+            0.16345,
+            1.5333
+          ],
+          "minimum": [
+            -0.206,
+            -0.12534,
+            0.89362
+          ]
+        },
+        "torsoRadiusX": 0.236,
+        "torsoRadiusY": 0.18639,
+        "upperLimitZ": 1.5353
+      },
+      "highPolySource": {
+        "construction": "subdivision plus leather thickness, softened edges and applied microrelief displacement",
+        "objects": 2,
+        "polygons": 117857,
+        "vertices": 117860
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "Reference-led original v2 jacket with an authored open-front torso, measured sleeves, panel seams, lapels, stand collar, centered belt, zipper, cuffs and elbow reinforcements on the exact current 65-bone player rig",
+        "reference": "docs/art/references/leather-jacket-bc-reference-v1.png"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "2A9E8A0F3CF4AD501C86263CB459D0B0C209553FF2E085078DD1EE1794455A99"
+    },
+    {
+      "actualGlb": {
+        "materials": 4,
+        "meshDefinitions": 2,
+        "nodes": [
+          "head",
+          "neck_01",
+          "index_04_leaf_l",
+          "index_03_l",
+          "index_02_l",
+          "index_01_l",
+          "middle_04_leaf_l",
+          "middle_03_l",
+          "middle_02_l",
+          "middle_01_l",
+          "pinky_04_leaf_l",
+          "pinky_03_l",
+          "pinky_02_l",
+          "pinky_01_l",
+          "ring_04_leaf_l",
+          "ring_03_l",
+          "ring_02_l",
+          "ring_01_l",
+          "thumb_04_leaf_l",
+          "thumb_03_l",
+          "thumb_02_l",
+          "thumb_01_l",
+          "hand_l",
+          "lowerarm_l",
+          "upperarm_l",
+          "clavicle_l",
+          "index_04_leaf_r",
+          "index_03_r",
+          "index_02_r",
+          "index_01_r",
+          "middle_04_leaf_r",
+          "middle_03_r",
+          "middle_02_r",
+          "middle_01_r",
+          "pinky_04_leaf_r",
+          "pinky_03_r",
+          "pinky_02_r",
+          "pinky_01_r",
+          "ring_04_leaf_r",
+          "ring_03_r",
+          "ring_02_r",
+          "ring_01_r",
+          "thumb_04_leaf_r",
+          "thumb_03_r",
+          "thumb_02_r",
+          "thumb_01_r",
+          "hand_r",
+          "lowerarm_r",
+          "upperarm_r",
+          "clavicle_r",
+          "spine_03",
+          "spine_02",
+          "spine_01",
+          "ball_leaf_l",
+          "ball_l",
+          "foot_l",
+          "calf_l",
+          "thigh_l",
+          "ball_leaf_r",
+          "ball_r",
+          "foot_r",
+          "calf_r",
+          "thigh_r",
+          "pelvis",
+          "root",
+          "equipment_leather_jacket_unified_v2_details",
+          "equipment_leather_jacket_unified_v2_game_shell",
+          "character_root"
+        ],
+        "positionVertices": 9966,
+        "skins": 1,
+        "textures": 12,
+        "triangles": 9538
+      },
+      "animationReview": {
+        "idle": {
+          "action": "idle",
+          "frame": 19,
+          "rendered": false
+        },
+        "raisedArmsAndElbowBend": {
+          "rendered": false
+        },
+        "run": {
+          "action": "run",
+          "frame": 6,
+          "rendered": false
+        },
+        "walk": {
+          "action": "walk",
+          "frame": 10,
+          "rendered": false
+        }
+      },
+      "assetId": "equipment_leather_jacket_unified_v2",
+      "bodyId": "male_large",
+      "bytes": 1435372,
+      "file": "equipment_leather_jacket_unified_v2_male_large.glb",
+      "fit": {
+        "backSurfaceY": 0.23273,
+        "frontOpeningThresholdY": -0.19433,
+        "frontSurfaceY": -0.20033,
+        "lowerHemZ": 1.09324,
+        "shellPolygons": 2658,
+        "shellVertices": 2578,
+        "sleeveLimitX": 0.65113,
+        "topology": {
+          "shoulderPatchPolygons": 530,
+          "shoulderPatchSource": "approved_player_surface",
+          "sleeveRadialSegments": 28,
+          "sleeveRings": 20,
+          "torsoRings": 20,
+          "torsoSegments": 56
+        },
+        "torsoBounds": {
+          "maximum": [
+            0.23082,
+            0.19073,
+            1.53435
+          ],
+          "minimum": [
+            -0.23082,
+            -0.15233,
+            0.89324
+          ]
+        },
+        "torsoRadiusX": 0.26082,
+        "torsoRadiusY": 0.21353,
+        "upperLimitZ": 1.53635
+      },
+      "highPolySource": {
+        "construction": "subdivision plus leather thickness, softened edges and applied microrelief displacement",
+        "objects": 2,
+        "polygons": 120651,
+        "vertices": 120694
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "Reference-led original v2 jacket with an authored open-front torso, measured sleeves, panel seams, lapels, stand collar, centered belt, zipper, cuffs and elbow reinforcements on the exact current 65-bone player rig",
+        "reference": "docs/art/references/leather-jacket-bc-reference-v1.png"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "006A0044F079FE1E54C0A13B68E446379BB1261B3E70807FDD3CEE70EAAEE2B3"
+    }
+  ]
+}

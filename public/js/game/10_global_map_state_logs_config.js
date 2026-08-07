@@ -76,8 +76,8 @@
   const GLOBAL_MAP_POINT_KM = GLOBAL_MAP_CELL_KM / GLOBAL_MAP_GRID.cellPoints;
   const GLOBAL_MAP_TIME_COMPRESSION = 900;
   const GLOBAL_MAP_WORLD_DAY_REAL_MS = 60 * 60 * 1000;
-  const WASTELAND_SIM_ACTIVE_FETCH_MS = 1000;
-  const WASTELAND_SIM_IDLE_FETCH_MS = 5000;
+  const WASTELAND_SIM_ACTIVE_FETCH_MS = 5000;
+  const WASTELAND_SIM_IDLE_FETCH_MS = 15000;
   const WASTELAND_SIM_MAX_EXTRAPOLATION_MS = 7500;
   const GLOBAL_MAP_MIN_SPEED_KMH = 16;
   const GLOBAL_MAP_MAX_SPEED_KMH = 24;
@@ -412,11 +412,13 @@
     }).join('|');
     return [
       compactRows(state.sites, ['id', 'owner', 'status', 'x', 'y', 'riskLevel', 'resourceType']),
-      compactRows(state.parties, ['id', 'kind', 'faction', 'species', 'visual', 'encounterId', 'state', 'x', 'y', 'targetX', 'targetY', 'riskLevel', 'cargoFill']),
+      // Position changes are applied to existing party models every frame and
+      // must not invalidate all heavy global-map geometry.
+      compactRows(state.parties, ['id', 'kind', 'faction', 'species', 'visual', 'encounterId', 'state', 'destinationSiteId', 'targetPartyId', 'decisionKind', 'riskLevel', 'cargoFillPercent', 'threatPartyId']),
       compactRows([], ['id', 'type', 'status', 'x', 'y', 'displayX', 'displayY']),
       compactRows(state.events, ['id', 'type', 'status', 'siteId', 'level']),
       compactRows(state.worldTasks, ['id', 'type', 'status', 'siteId', 'partyId']),
-      compactRows(state.territories, ['owner', 'cx', 'cy', 'state', 'strength']),
+      compactRows(state.territories, ['owner', 'cx', 'cy', 'borders']),
       compactRows(state.threatZones, ['id', 'type', 'x', 'y', 'radius', 'level'])
     ].join('||');
   }
@@ -547,7 +549,6 @@
     const minInterval = globalMapState?.onWorldMap ? WASTELAND_SIM_ACTIVE_FETCH_MS : WASTELAND_SIM_IDLE_FETCH_MS;
     if (!force && now - wastelandSimLastFetchAt < minInterval) return;
     wastelandSimFetchPending = true;
-    wastelandSimLastFetchAt = now;
     try {
       const data = typeof serverApi === 'function'
         ? await serverApi('/api/wasteland', { method: 'GET' })
@@ -563,6 +564,9 @@
     } catch (err) {
       console.warn('[global-map] failed to load wasteland simulation', err);
     } finally {
+      // Start the next interval after completion. A slow response therefore
+      // cannot turn into an immediate back-to-back download loop.
+      wastelandSimLastFetchAt = performance.now();
       wastelandSimFetchPending = false;
     }
   }

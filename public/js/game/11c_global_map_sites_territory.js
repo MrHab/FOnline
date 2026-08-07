@@ -615,8 +615,7 @@
       row.cy,
       row.owner,
       row.color || '',
-      row.borders || '',
-      Math.round(Number(row.strength || 0) * 100)
+      row.borders || ''
     ].join(':')).join('|');
   }
 
@@ -984,4 +983,3 @@
       row.taskCount || 0
     ].join(':')).join('|');
   }
-

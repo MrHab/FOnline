@@ -98,6 +98,8 @@ const mobilePanels = read('public/js/game/08a_mobile_controls_panels.js');
 const mobileControls = read('public/js/game/08c_hud_edit_windows_touch.js');
 const updateLoop = read('public/js/game/09_update_fog_movement_ai.js');
 const globalMapState = read('public/js/game/10_global_map_state_logs_config.js');
+const globalMapTerritories = read('public/js/game/11c_global_map_sites_territory.js');
+const globalMapParties = read('public/js/game/11d_global_map_parties.js');
 const globalMapWorldStatus = read('public/js/game/12a_global_map_world_status.js');
 const globalMapPanel = read('public/js/game/12b_global_map_panel_window.js');
 const globalMapTravel = read('public/js/game/12c_global_map_travel_encounters.js');
@@ -1030,6 +1032,29 @@ function assertGlobalMapMotionIntegrity() {
   'authoritative player snapshots can still erase an active global travel session');
 }
 
+function assertGlobalMapSnapshotPerformance() {
+  assertContainsAll('wasteland snapshot pacing', globalMapState, [
+    'const WASTELAND_SIM_ACTIVE_FETCH_MS = 5000',
+    'const WASTELAND_SIM_IDLE_FETCH_MS = 15000',
+    'wastelandSimLastFetchAt = performance.now()'
+  ]);
+  const visualSignature = functionBody(globalMapState, 'wastelandSimVisualSignatureFromState');
+  const partyFieldsStart = visualSignature.indexOf('compactRows(state.parties');
+  const partyFieldsEnd = visualSignature.indexOf('),', partyFieldsStart);
+  const partyFields = visualSignature.slice(partyFieldsStart, partyFieldsEnd);
+  assert(partyFieldsStart >= 0 && !partyFields.includes("'x'") && !partyFields.includes("'y'")
+    && !partyFields.includes("'targetX'") && !partyFields.includes("'targetY'"),
+    'party movement still invalidates all heavy global-map geometry');
+
+  const partySignature = functionBody(globalMapParties, 'globalMapWorldParties3DSignature');
+  assert(!partySignature.includes('row?.x') && !partySignature.includes('row?.y'),
+    'party marker identity still includes continuously changing coordinates');
+
+  const territorySignature = functionBody(globalMapTerritories, 'globalMapFactionTerritory3DSignature');
+  assert(!territorySignature.includes('row.strength'),
+    'territory geometry is still rebuilt for opacity-only strength changes');
+}
+
 function assertBlockedGameplayGates() {
   const updateBody = functionBody(updateLoop, 'update');
   const blockedIndex = updateBody.indexOf('clientGameplayIsBlocked()');
@@ -1313,6 +1338,7 @@ async function main() {
   assertHarvestIntegrity();
   assertInputDeadman();
   assertGlobalMapMotionIntegrity();
+  assertGlobalMapSnapshotPerformance();
   assertBlockedGameplayGates();
   assertDeferredWorldRuntime();
   assertServerAuthoritativeWorldStateRequests();

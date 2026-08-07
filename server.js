@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
+const { monitorEventLoopDelay } = require('perf_hooks');
 const nodemailer = require('nodemailer');
 const { version: GAME_VERSION } = require('./package.json');
 const {
@@ -112,6 +113,7 @@ const DT = 1 / TICK_RATE;
 const GAME_DAY_REAL_MS = 60 * 60 * 1000;
 const WASTELAND_SIM_TICK_MS = Math.max(1000, Number(process.env.WASTELAND_SIM_TICK_MS || 5000));
 const WASTELAND_SIM_SAVE_INTERVAL_MS = Math.max(3000, Number(process.env.WASTELAND_SIM_SAVE_INTERVAL_MS || 15000));
+const WASTELAND_PUBLIC_CACHE_MS = Math.max(250, Number(process.env.WASTELAND_PUBLIC_CACHE_MS || 1000));
 const ACTIVE_ROOM_AI_TICK_MS = Math.max(50, Number(process.env.ACTIVE_ROOM_AI_TICK_MS || 200));
 const ACTIVE_ROOM_AI_MAX_DT = Math.max(0.05, Number(process.env.ACTIVE_ROOM_AI_MAX_DT || 0.25));
 const ACTIVE_ROOM_HOUSEKEEPING_MS = Math.max(250, Number(process.env.ACTIVE_ROOM_HOUSEKEEPING_MS || 1000));
@@ -126,6 +128,25 @@ const EPHEMERAL_ROOM_IDLE_TTL_MS = resolveEphemeralRoomIdleTtlMs({
   sessionLockMs: SESSION_LOCK_MS
 });
 const JSON_LIMIT = process.env.JSON_LIMIT || '12mb';
+const eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
+eventLoopDelay.enable();
+let eventLoopLagMs = { p50: 0, p95: 0, max: 0 };
+let wastelandTickMetrics = { lastMs: 0, maxMs: 0 };
+
+function eventLoopDelayMs(value) {
+  const ms = Number(value || 0) / 1e6;
+  return Number.isFinite(ms) ? Number(ms.toFixed(1)) : 0;
+}
+
+const eventLoopMetricsTimer = setInterval(() => {
+  eventLoopLagMs = {
+    p50: eventLoopDelayMs(eventLoopDelay.percentile(50)),
+    p95: eventLoopDelayMs(eventLoopDelay.percentile(95)),
+    max: eventLoopDelayMs(eventLoopDelay.max)
+  };
+  eventLoopDelay.reset();
+}, 5000);
+if (typeof eventLoopMetricsTimer.unref === 'function') eventLoopMetricsTimer.unref();
 const REST_CORS_ALLOWED_HEADERS = [
   'Content-Type',
   'Authorization',
@@ -1398,8 +1419,37 @@ app.get('/api/global-map', (_, res) => {
   res.json({ ok: true, map: GLOBAL_MAP });
 });
 
+let wastelandPublicCache = null;
+let wastelandPublicCacheHits = 0;
+let wastelandPublicCacheMisses = 0;
+
+function invalidateWastelandPublicCache() {
+  wastelandPublicCache = null;
+}
+
+function cachedWastelandPublicResponse(now = Date.now()) {
+  if (wastelandPublicCache && now < wastelandPublicCache.expiresAt) {
+    wastelandPublicCacheHits += 1;
+    return { ...wastelandPublicCache, hit: true };
+  }
+  const body = Buffer.from(JSON.stringify({ ok: true, sim: WASTELAND_SIM.publicState() }), 'utf8');
+  wastelandPublicCache = {
+    body,
+    bytes: body.length,
+    expiresAt: now + WASTELAND_PUBLIC_CACHE_MS
+  };
+  wastelandPublicCacheMisses += 1;
+  return { ...wastelandPublicCache, hit: false };
+}
+
 app.get('/api/wasteland', (_, res) => {
-  res.json({ ok: true, sim: WASTELAND_SIM.publicState() });
+  const snapshot = cachedWastelandPublicResponse();
+  res.status(200);
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Length', String(snapshot.bytes));
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Realm-Wasteland-Cache', snapshot.hit ? 'HIT' : 'MISS');
+  res.end(snapshot.body);
 });
 
 app.post('/api/wasteland/tasks/:id/deliver', requireAuth, (req, res) => {
@@ -1478,7 +1528,15 @@ app.get('/health', (_, res) => {
     locationRealities: rooms.size,
     playerLimitPerLocation: null,
     users: Object.keys(usersDb.users).length,
-    characters: Object.values(savesDb.characters).reduce((sum, row) => sum + Object.keys(row || {}).length, 0)
+    characters: Object.values(savesDb.characters).reduce((sum, row) => sum + Object.keys(row || {}).length, 0),
+    eventLoopLagMs,
+    wastelandTickMs: wastelandTickMetrics,
+    wastelandPublicCache: {
+      ttlMs: WASTELAND_PUBLIC_CACHE_MS,
+      bytes: Number(wastelandPublicCache?.bytes || 0),
+      hits: wastelandPublicCacheHits,
+      misses: wastelandPublicCacheMisses
+    }
   });
 });
 
@@ -19986,13 +20044,17 @@ io.on('connection', (socket) => {
 setInterval(() => {
   const startedAt = Date.now();
   try {
-    WASTELAND_SIM.tick(Date.now());
+    if (WASTELAND_SIM.tick(Date.now())) invalidateWastelandPublicCache();
     syncWorldSiteLocationDefinitions();
     pruneExpiredEphemeralRooms(Date.now());
   } catch (err) {
     console.error('Wasteland simulation tick failed:', err);
   } finally {
     const durationMs = Date.now() - startedAt;
+    wastelandTickMetrics = {
+      lastMs: durationMs,
+      maxMs: Math.max(Number(wastelandTickMetrics.maxMs || 0), durationMs)
+    };
     if (durationMs > Math.max(500, WASTELAND_SIM_TICK_MS * 0.5)) {
       console.warn(`Slow wasteland simulation tick: ${durationMs}ms`);
     }

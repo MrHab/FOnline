@@ -7,6 +7,7 @@
     raycaster.setFromCamera(mouse, camera);
     raycaster.ray.intersectPlane(groundPlane, pointerWorld);
     pointerHasWorld = true;
+    pointerHasAimWorld = !!raycaster.ray.intersectPlane(pointerAimPlane, pointerAimWorld);
   }
 
   function refreshPointerWorldFromLastScreen() {

@@ -750,18 +750,25 @@
     return solveApprovedArm(characterRoot, 'l', targetMatrix);
   }
 
-  // Замер на живом кадре: стоя нужно 9–11°, но во время бега анимация уводит
-  // руку так, что для попадания в прицел требуется до 48°. Прежний предел в
-  // 0.28 рад (16°) насыщался и оставлял ствол недокрученным именно в движении.
-  // Предел оставлен только как защита от вырожденных случаев.
-  const APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT = 1.05;
+  // Когда прицел брался с земли, а ствол жил на высоте груди, между ними
+  // набегало около 1.1 м, и доворот доходил до 48°: на таких углах оружие
+  // выкручивалось из кисти и выворачивало локоть. С прицелом на высоте ствола
+  // остаётся чистое смещение руки — единицы градусов, — поэтому предел снова
+  // узкий и служит защитой от вырожденных случаев, когда точка прицела
+  // оказывается вплотную к стволу или позади актёра.
+  const APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT = 0.35;
 
   function approvedWeaponAimPoint(actor) {
     if (typeof playerGroup === 'undefined' || actor !== playerGroup) return null;
-    if (typeof pointerHasWorld === 'undefined' || !pointerHasWorld) return null;
-    if (typeof pointerWorld === 'undefined' || !pointerWorld) return null;
-    const x = Number(pointerWorld.x);
-    const z = Number(pointerWorld.z);
+    // Наводимся на точку курсора, взятую на высоте ствола, а не на земле:
+    // иначе ствол доворачивает на проекцию, лежащую дальше по лучу камеры.
+    const elevated = typeof pointerHasAimWorld !== 'undefined' && pointerHasAimWorld
+      && typeof pointerAimWorld !== 'undefined' && pointerAimWorld;
+    const source = elevated ? pointerAimWorld : (typeof pointerWorld !== 'undefined' ? pointerWorld : null);
+    if (!elevated && (typeof pointerHasWorld === 'undefined' || !pointerHasWorld)) return null;
+    if (!source) return null;
+    const x = Number(source.x);
+    const z = Number(source.z);
     if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
     return { x, z };
   }

@@ -307,8 +307,14 @@
     // point the gameplay ray resolves to.
     const muzzleX = Number.isFinite(Number(start?.x)) ? Number(start.x) : originX;
     const muzzleZ = Number.isFinite(Number(start?.z)) ? Number(start.z) : originZ;
-    const aimEndX = originX + dirX * requestedEndDist;
-    const aimEndZ = originZ + dirZ * requestedEndDist;
+    // Трасса рисуется на высоте ствола, поэтому и целиться она должна в точку
+    // курсора, взятую на той же высоте. Иначе линия проходит над наземной
+    // точкой прицела и на экране читается выше него.
+    const elevatedAim = !options.remote
+      && typeof pointerHasAimWorld !== 'undefined' && pointerHasAimWorld
+      && typeof pointerAimWorld !== 'undefined' && pointerAimWorld;
+    const aimEndX = elevatedAim ? Number(pointerAimWorld.x) : originX + dirX * requestedEndDist;
+    const aimEndZ = elevatedAim ? Number(pointerAimWorld.z) : originZ + dirZ * requestedEndDist;
     let visualDirX = aimEndX - muzzleX;
     let visualDirZ = aimEndZ - muzzleZ;
     const visualLen = Math.hypot(visualDirX, visualDirZ);
@@ -320,8 +326,11 @@
     visualDirZ /= visualLen;
     const fxStartX = muzzleX;
     const fxStartZ = muzzleZ;
-    const baseEndX = aimEndX;
-    const baseEndZ = aimEndZ;
+    // Направление берём на курсор, а длину — до точки попадания: иначе трасса
+    // обрывалась бы на курсоре, хотя пуля летит дальше.
+    const visualReach = Math.max(0.16, requestedEndDist - Math.max(0, (muzzleX - originX) * dirX + (muzzleZ - originZ) * dirZ));
+    const baseEndX = muzzleX + visualDirX * visualReach;
+    const baseEndZ = muzzleZ + visualDirZ * visualReach;
     const rightX = -visualDirZ;
     const rightZ = visualDirX;
     const visualJitter = blockedFx ? 0 : (modeInfo.id === 'auto' ? 0.28 : 0.12);

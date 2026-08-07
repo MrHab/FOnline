@@ -26,7 +26,7 @@ include /etc/nginx/snippets/realm-of-ashes.locations.conf;
 ```bash
 nginx -t
 systemctl reload nginx
-curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.81.0-models-weapon-modification-v1-wasteland-network-v1
+curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.82.0-weapon-aim-convergence-v1
 curl -fsS https://rangir.ru/health
 curl -fsS -H 'Accept-Encoding: gzip' -D - -o /dev/null https://rangir.ru/api/wasteland
 ```

@@ -198,6 +198,35 @@ def add_interaction_socket(
     return socket
 
 
+MUZZLE_PART_KEYS = ("muzzle", "nozzle", "emitter", "launcher_tube", "barrel_shroud", "barrel")
+
+
+def weapon_muzzle_location(root: bpy.types.Object):
+    """Derive the flash socket from the real barrel tip.
+
+    Hand-tuned muzzle offsets drift the moment a weapon is reshaped, which is
+    how the shot effect ended up detached from the barrel. Measuring the
+    forward-most point of the barrel geometry keeps the socket correct for
+    every rebuild.
+    """
+    best = None
+    for child in root.children:
+        if child.type != "MESH":
+            continue
+        name = str(child.get("realm_weapon_part") or child.name).lower()
+        rank = next((index for index, key in enumerate(MUZZLE_PART_KEYS) if key in name), None)
+        if rank is None:
+            continue
+        corners = [child.matrix_local @ Vector(corner) for corner in child.bound_box]
+        tip = max(corner.y for corner in corners)
+        centre_x = sum(corner.x for corner in corners) / len(corners)
+        centre_z = sum(corner.z for corner in corners) / len(corners)
+        candidate = (rank, -tip)
+        if best is None or candidate < best[0]:
+            best = (candidate, (centre_x, tip, centre_z))
+    return best[1] if best else None
+
+
 def add_weapon_interaction_sockets(root: bpy.types.Object, weapon_id: str) -> dict[str, object]:
     profile = WEAPON_INTERACTION_PROFILES[weapon_id]
     names = []
@@ -209,10 +238,17 @@ def add_weapon_interaction_sockets(root: bpy.types.Object, weapon_id: str) -> di
     if profile["reload"] is not None:
         add_interaction_socket(root, "socket_reload", profile["reload"], "reload_service")
         names.append("socket_reload")
+    # Ranged weapons carry a muzzle socket so the client can spawn the flash and
+    # tracer at the barrel instead of a hardcoded per-weapon offset. Melee
+    # weapons never fire, so they stay without one.
+    muzzle = weapon_muzzle_location(root) if profile["reload"] is not None else None
+    if muzzle is not None:
+        add_interaction_socket(root, "socket_muzzle", muzzle, "muzzle_flash")
     return {
         "sockets": names,
         "reloadKind": profile["reload_kind"],
         "reloadPart": profile["reload_part"],
+        "muzzle": list(muzzle) if muzzle is not None else None,
     }
 
 

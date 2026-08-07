@@ -31,6 +31,7 @@ const partNames = [
   '04b_character_glb_runtime.js',
   '04c_weapon_glb_runtime.js',
   '04d_approved_humanoid_assets_runtime.js',
+  '04e_weapon_modification_workbench.js',
   '05_multiplayer_core_state.js',
   '05a_remote_actor_equipment.js',
   '05b_remote_player_locomotion.js',

@@ -159,16 +159,31 @@
             ensureSavedRuntimeItem(resolvedId, {
               baseId,
               loaded: Number(row.loaded || 0),
-              condition: Number(row.condition || 100)
+              condition: Number(row.condition || 100),
+              weaponMods: row.weaponMods && typeof row.weaponMods === 'object' ? { ...row.weaponMods } : {}
             });
           }
           if (!ITEMS[resolvedId]) return;
           if (Number.isFinite(Number(row.loaded))) ITEMS[resolvedId].loaded = Math.max(0, Math.round(Number(row.loaded)));
           if (Number.isFinite(Number(row.condition))) ITEMS[resolvedId].condition = Math.max(1, Math.min(100, Number(row.condition)));
+          if (row.weaponMods && typeof row.weaponMods === 'object') ITEMS[resolvedId].weaponMods = { ...row.weaponMods };
+          if (typeof applyWeaponModificationStats === 'function') applyWeaponModificationStats(ITEMS[resolvedId]);
           inventory.set(resolvedId, Math.max(0, Number(inventory.get(resolvedId) || 0)) + 1);
         });
       });
       if (typeof normalizeUniqueEquipmentState === 'function') normalizeUniqueEquipmentState();
+    }
+    if (Array.isArray(snapshot.weaponModifications)) {
+      snapshot.weaponModifications.slice(0, 80).forEach(row => {
+        const runtimeId = String(row?.id || '');
+        const baseId = String(row?.baseId || '');
+        if (!runtimeId || !baseId) return;
+        if (!ITEMS[runtimeId] && typeof ensureSavedRuntimeItem === 'function') ensureSavedRuntimeItem(runtimeId, { baseId });
+        const item = ITEMS[runtimeId];
+        if (!item) return;
+        item.weaponMods = row.weaponMods && typeof row.weaponMods === 'object' ? { ...row.weaponMods } : {};
+        if (typeof applyWeaponModificationStats === 'function') applyWeaponModificationStats(item);
+      });
     }
     if (Array.isArray(snapshot.storage) && typeof applyServerStorageSnapshot === 'function') {
       applyServerStorageSnapshot(snapshot.storage);
@@ -790,9 +805,12 @@
         applyServerInjuryPayload(data);
         player.invincible = Math.max(player.invincible || 0, 0.22);
         triggerCharacterHitReaction(playerGroup, Number(data.damage || 0) % 2 ? -1 : 1);
-        createFloatingText(player.x, player.z, data.secondChance ? '1 HP' : '-' + Math.max(0, Number(data.damage || 0)), data.secondChance ? '#ffe28a' : '#ff5b4a');
+        const critical = data.critical === true;
+        const damageText = critical ? `КРИТ! -${Math.max(0, Number(data.damage || 0))}` : '-' + Math.max(0, Number(data.damage || 0));
+        createFloatingText(player.x, player.z, data.secondChance ? '1 HP' : damageText, data.secondChance || critical ? '#ffe28a' : '#ff5b4a');
         const absorbedText = Number(data.absorbed || 0) > 0 ? `, броня поглотила ${Math.max(0, Number(data.absorbed || 0))}` : '';
-        addLog(`${data.attackerName || 'Игрок'} атакует (${damageTypeLabel(data.damageType || 'ballistic')}): -${Math.max(0, Number(data.damage || 0))} HP${absorbedText}.`, null, 'combat');
+        const criticalText = critical ? 'КРИТИЧЕСКИЙ ВЫСТРЕЛ! ' : '';
+        addLog(`${criticalText}${data.attackerName || 'Игрок'} атакует (${damageTypeLabel(data.damageType || 'ballistic')}): -${Math.max(0, Number(data.damage || 0))} HP${absorbedText}.`, null, 'combat');
         if (data.secondChance) addLog('⟲ Второй шанс: смертельный удар оставил вас на ногах.', null, 'level');
         renderUI();
         queueSave(true);
@@ -804,7 +822,8 @@
         triggerCharacterHitReaction(row.group, Number(data.damage || 0) % 2 ? -1 : 1);
         const x = row.group?.position?.x ?? Number(row.data.x || 0);
         const z = row.group?.position?.z ?? Number(row.data.z || 0);
-        createFloatingText(x, z, '-' + Math.max(0, Number(data.damage || 0)), '#ff5b4a');
+        const critical = data.critical === true;
+        createFloatingText(x, z, critical ? `КРИТ! -${Math.max(0, Number(data.damage || 0))}` : '-' + Math.max(0, Number(data.damage || 0)), critical ? '#ffd166' : '#ff5b4a');
       }
       if (Number(data.hp || 0) <= 0) {
         removeRemotePlayerFromNetworkEvent({ id: data.playerId, characterId: data.characterId });
@@ -1194,7 +1213,10 @@
       const start = row ? getRemoteMuzzlePoint(row, data) : getEnemyMuzzlePoint(enemyShooter, data);
       const shotWeaponId = data.weapon || row?.data?.weapon || enemyShooter?.equipment?.weapon || 'pistol';
       const fx = weaponFxProfile(shotWeaponId);
-      triggerWeaponVisualRecoil(row?.group?.userData?.parts?.weaponGroup || enemyShooter?.mesh?.userData?.enemyWeaponGroup, shotWeaponId);
+      const remoteWeaponGroup = row?.group && typeof activeActorWeaponGroup === 'function'
+        ? activeActorWeaponGroup(row.group)
+        : row?.group?.userData?.parts?.weaponGroup;
+      triggerWeaponVisualRecoil(remoteWeaponGroup || enemyShooter?.mesh?.userData?.enemyWeaponGroup, shotWeaponId);
       let ox = Number(data.originX);
       let oz = Number(data.originZ);
       if (!Number.isFinite(ox) || !Number.isFinite(oz)) { ox = sx; oz = sz; }

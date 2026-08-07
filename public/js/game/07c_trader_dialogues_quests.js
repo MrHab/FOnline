@@ -379,8 +379,16 @@
   }
 
   function ensureNpcDialogueWindow() {
+    const host = document.getElementById('ui-overlay')
+      || document.getElementById('game-container')
+      || document.body;
     let win = document.getElementById('npc-dialogue-window');
-    if (win) return win;
+    if (win) {
+      // Native fullscreen only renders descendants of #game-container. Move an
+      // older body-mounted dialogue back into the game UI before showing it.
+      if (win.parentElement !== host) host.appendChild(win);
+      return win;
+    }
     win = document.createElement('div');
     win.id = 'npc-dialogue-window';
     win.className = 'ui-panel modal-panel';
@@ -390,7 +398,7 @@
         <div id="npc-dialogue-line"></div>
         <div id="npc-dialogue-options"></div>
       </div>`;
-    document.body.appendChild(win);
+    host.appendChild(win);
     win.querySelector('#npc-dialogue-close')?.addEventListener('click', closeNpcDialogueWindow);
     return win;
   }

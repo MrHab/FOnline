@@ -14,6 +14,7 @@ const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
 const CLIENT_HTML = path.join(PROJECT_ROOT, 'public', 'index.html');
+const NGINX_LOCATIONS_FILE = path.join(PROJECT_ROOT, 'deploy', 'nginx', 'realm-of-ashes.locations.conf');
 const MAX_WAIT_MS = Number(process.env.SMOKE_WAIT_MS || 8000);
 const REQUESTED_PORT = Number(process.env.SMOKE_PORT || 0);
 const SMOKE_TMP_ROOT = process.env.SMOKE_TMPDIR
@@ -64,6 +65,7 @@ function assertRequiredFiles() {
   const required = [
     SERVER_FILE,
     CLIENT_HTML,
+    NGINX_LOCATIONS_FILE,
     path.join(PROJECT_ROOT, 'public', 'js', 'game.js'),
     path.join(PROJECT_ROOT, 'public', 'css', 'game.css')
   ];
@@ -71,6 +73,7 @@ function assertRequiredFiles() {
     if (!fs.existsSync(file)) fail(`required file is missing: ${path.relative(PROJECT_ROOT, file)}`);
   }
   const serverSource = fs.readFileSync(SERVER_FILE, 'utf8');
+  const nginxSource = fs.readFileSync(NGINX_LOCATIONS_FILE, 'utf8');
   const clientLoaderSource = fs.readFileSync(path.join(PROJECT_ROOT, 'public', 'js', 'game.js'), 'utf8');
   if (clientLoaderSource.includes("open('GET', url, false)")
     || clientLoaderSource.includes('open("GET", url, false)')) {
@@ -84,6 +87,10 @@ function assertRequiredFiles() {
   }
   if (!serverSource.includes('WASTELAND_SIM_SAVE_INTERVAL_MS')) {
     fail('wasteland simulation save interval is not configurable');
+  }
+  if (!nginxSource.includes('gzip on;')
+    || !nginxSource.includes('gzip_types application/json')) {
+    fail('production Nginx does not compress large JSON world snapshots');
   }
   if (!serverSource.includes('function shouldTickEmptyRoomAi(')
     || !serverSource.includes('room.emptyRoomAiUntil = Math.max(')
@@ -451,6 +458,9 @@ async function waitForHealth(proc, logs) {
           if (data.playerLimitPerLocation !== null || Object.prototype.hasOwnProperty.call(data, 'roomCapacity')) {
             fail('/health still reports a per-location player limit', res.body);
           }
+          if (!data.eventLoopLagMs || !data.wastelandTickMs || !data.wastelandPublicCache) {
+            fail('/health is missing runtime latency and wasteland cache metrics', res.body);
+          }
           return data;
         }
       } catch (_) {
@@ -657,9 +667,19 @@ async function assertEditorAndWorldDataApis() {
 
   const wasteland = await request('/api/wasteland');
   assertStatus(wasteland, 200, 'GET /api/wasteland');
+  if (wasteland.headers['cache-control'] !== 'no-store'
+    || !['HIT', 'MISS'].includes(String(wasteland.headers['x-realm-wasteland-cache'] || ''))) {
+    fail('wasteland API is missing its process-cache diagnostics or browser no-store policy', JSON.stringify(wasteland.headers));
+  }
   const wastelandData = parseJsonResponse(wasteland, 'GET /api/wasteland');
   if (!wastelandData.ok || !wastelandData.sim) {
     fail('wasteland API response is incomplete', wasteland.body);
+  }
+  const cachedWasteland = await request('/api/wasteland');
+  assertStatus(cachedWasteland, 200, 'cached GET /api/wasteland');
+  if (cachedWasteland.headers['x-realm-wasteland-cache'] !== 'HIT'
+    || cachedWasteland.body !== wasteland.body) {
+    fail('wasteland API did not reuse the serialized process cache', JSON.stringify(cachedWasteland.headers));
   }
   const worldSites = Array.isArray(wastelandData.sim.sites) ? wastelandData.sim.sites : [];
   const worldLocationIds = worldSites.map(site => String(site?.locationId || '')).filter(Boolean);

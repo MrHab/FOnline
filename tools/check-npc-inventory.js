@@ -311,6 +311,7 @@ const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'u
 const wastelandSimSource = fs.readFileSync(path.join(__dirname, '..', 'src', 'server', 'wasteland-sim.js'), 'utf8');
 const traderStateSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '07b_trader_market_state.js'), 'utf8');
 const dialogueSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '07c_trader_dialogues_quests.js'), 'utf8');
+const interactionSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '08b_interaction_quick_access.js'), 'utf8');
 const contextSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'game', '08d_world_context_targets.js'), 'utf8');
 const roomActorSnapshotSource = serverSource.match(/function worldZoneActorSnapshotsFromRoom\(room\) \{[\s\S]*?\n\}/)?.[0] || '';
 assert(serverSource.includes('function ensureServerFriendlyNpcSocialState'), 'Server must centralize friendly NPC dialogue and trade initialization');
@@ -360,6 +361,12 @@ assert(traderStateSource.includes('caps: trader.isTradeMachine ? baseCaps : phys
 assert(traderStateSource.includes("return !!(actor && !actor.dead && !actor._removed && actor.hostileToPlayer === false);"), 'Client must recognize every friendly sapient NPC as a barter partner');
 assert(dialogueSource.includes('function renderFriendlyNpcDialogue'), 'Client must provide a generic non-quest dialogue for friendly NPCs');
 assert(dialogueSource.includes('return renderFriendlyNpcDialogue(trader);'), 'Unknown friendly profiles must not fall through to Old Klim quests');
+assert(dialogueSource.includes("const host = document.getElementById('ui-overlay')"), 'NPC dialogue must mount inside the fullscreen game UI');
+assert(dialogueSource.includes('if (win.parentElement !== host) host.appendChild(win);'), 'Existing NPC dialogue windows must be remounted inside the fullscreen game UI');
+assert(interactionSource.includes("const nearbyNpc = typeof findNearbyTrader === 'function' ? findNearbyTrader(4.2) : null;"),
+  'Universal interaction must fall back to a nearby NPC when the cursor has no target');
+assert(interactionSource.includes("typeof talkToTraderQuest === 'function' && talkToTraderQuest(nearbyNpc)"),
+  'Universal interaction must open dialogue for a nearby friendly NPC');
 assert(contextSource.includes("if (neutral) {\n        const options = ["), 'Friendly NPC context menu must always contain social actions');
 
 cleanupTemp();

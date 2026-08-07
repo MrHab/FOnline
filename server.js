@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
+const { monitorEventLoopDelay } = require('perf_hooks');
 const nodemailer = require('nodemailer');
 const { version: GAME_VERSION } = require('./package.json');
 const {
@@ -97,6 +98,7 @@ const {
   actorFacingIntent: resolveActorFacingIntent,
   actorFacingYaw: resolveActorFacingYaw
 } = require('./public/js/game/00a_actor_facing');
+const { resolveCriticalShot } = require('./src/server/combat-critical');
 
 const GAME_NAME = 'Realm of Ashes';
 
@@ -108,6 +110,7 @@ const DT = 1 / TICK_RATE;
 const GAME_DAY_REAL_MS = 60 * 60 * 1000;
 const WASTELAND_SIM_TICK_MS = Math.max(1000, Number(process.env.WASTELAND_SIM_TICK_MS || 5000));
 const WASTELAND_SIM_SAVE_INTERVAL_MS = Math.max(3000, Number(process.env.WASTELAND_SIM_SAVE_INTERVAL_MS || 15000));
+const WASTELAND_PUBLIC_CACHE_MS = Math.max(250, Number(process.env.WASTELAND_PUBLIC_CACHE_MS || 1000));
 const ACTIVE_ROOM_AI_TICK_MS = Math.max(50, Number(process.env.ACTIVE_ROOM_AI_TICK_MS || 200));
 const ACTIVE_ROOM_AI_MAX_DT = Math.max(0.05, Number(process.env.ACTIVE_ROOM_AI_MAX_DT || 0.25));
 const ACTIVE_ROOM_HOUSEKEEPING_MS = Math.max(250, Number(process.env.ACTIVE_ROOM_HOUSEKEEPING_MS || 1000));
@@ -122,6 +125,25 @@ const EPHEMERAL_ROOM_IDLE_TTL_MS = resolveEphemeralRoomIdleTtlMs({
   sessionLockMs: SESSION_LOCK_MS
 });
 const JSON_LIMIT = process.env.JSON_LIMIT || '12mb';
+const eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
+eventLoopDelay.enable();
+let eventLoopLagMs = { p50: 0, p95: 0, max: 0 };
+let wastelandTickMetrics = { lastMs: 0, maxMs: 0 };
+
+function eventLoopDelayMs(value) {
+  const ms = Number(value || 0) / 1e6;
+  return Number.isFinite(ms) ? Number(ms.toFixed(1)) : 0;
+}
+
+const eventLoopMetricsTimer = setInterval(() => {
+  eventLoopLagMs = {
+    p50: eventLoopDelayMs(eventLoopDelay.percentile(50)),
+    p95: eventLoopDelayMs(eventLoopDelay.percentile(95)),
+    max: eventLoopDelayMs(eventLoopDelay.max)
+  };
+  eventLoopDelay.reset();
+}, 5000);
+if (typeof eventLoopMetricsTimer.unref === 'function') eventLoopMetricsTimer.unref();
 const REST_CORS_ALLOWED_HEADERS = [
   'Content-Type',
   'Authorization',
@@ -1394,8 +1416,37 @@ app.get('/api/global-map', (_, res) => {
   res.json({ ok: true, map: GLOBAL_MAP });
 });
 
+let wastelandPublicCache = null;
+let wastelandPublicCacheHits = 0;
+let wastelandPublicCacheMisses = 0;
+
+function invalidateWastelandPublicCache() {
+  wastelandPublicCache = null;
+}
+
+function cachedWastelandPublicResponse(now = Date.now()) {
+  if (wastelandPublicCache && now < wastelandPublicCache.expiresAt) {
+    wastelandPublicCacheHits += 1;
+    return { ...wastelandPublicCache, hit: true };
+  }
+  const body = Buffer.from(JSON.stringify({ ok: true, sim: WASTELAND_SIM.publicState() }), 'utf8');
+  wastelandPublicCache = {
+    body,
+    bytes: body.length,
+    expiresAt: now + WASTELAND_PUBLIC_CACHE_MS
+  };
+  wastelandPublicCacheMisses += 1;
+  return { ...wastelandPublicCache, hit: false };
+}
+
 app.get('/api/wasteland', (_, res) => {
-  res.json({ ok: true, sim: WASTELAND_SIM.publicState() });
+  const snapshot = cachedWastelandPublicResponse();
+  res.status(200);
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Length', String(snapshot.bytes));
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('X-Realm-Wasteland-Cache', snapshot.hit ? 'HIT' : 'MISS');
+  res.end(snapshot.body);
 });
 
 app.post('/api/wasteland/tasks/:id/deliver', requireAuth, (req, res) => {
@@ -1474,7 +1525,15 @@ app.get('/health', (_, res) => {
     locationRealities: rooms.size,
     playerLimitPerLocation: null,
     users: Object.keys(usersDb.users).length,
-    characters: Object.values(savesDb.characters).reduce((sum, row) => sum + Object.keys(row || {}).length, 0)
+    characters: Object.values(savesDb.characters).reduce((sum, row) => sum + Object.keys(row || {}).length, 0),
+    eventLoopLagMs,
+    wastelandTickMs: wastelandTickMetrics,
+    wastelandPublicCache: {
+      ttlMs: WASTELAND_PUBLIC_CACHE_MS,
+      bytes: Number(wastelandPublicCache?.bytes || 0),
+      hits: wastelandPublicCacheHits,
+      misses: wastelandPublicCacheMisses
+    }
   });
 });
 
@@ -3118,7 +3177,11 @@ function normalizeServerTraderStock(stock = []) {
       if (!SERVER_ITEM_IDS.has(id) || id === 'fists') return null;
       const qty = clamp(Math.floor(Number(row.qty ?? row.count ?? 1)), 1, serverItemStackLimit(id));
       const price = clamp(Math.round(Number(row.price ?? 1)), 1, 999999);
-      return { id, qty, price };
+      const shelfTarget = clamp(Math.floor(Number(row.shelfTarget ?? qty)), 1, serverItemStackLimit(id));
+      const shelfMin = clamp(Math.floor(Number(row.shelfMin ?? (shelfTarget <= 1 ? 0 : Math.max(1, Math.floor(shelfTarget * 0.3))))), 0, shelfTarget);
+      const shelfMax = clamp(Math.floor(Number(row.shelfMax ?? Math.ceil(shelfTarget * 1.35))), shelfTarget, serverItemStackLimit(id));
+      const priority = clamp(Math.round(Number(row.priority ?? 60)), 1, 100);
+      return { id, qty: shelfTarget, price, shelfMin, shelfTarget, shelfMax, priority };
     })
     .filter(Boolean);
 }
@@ -3159,7 +3222,8 @@ const WASTELAND_SIM = createWastelandSimulation({
   gameDayRealMs: GAME_DAY_REAL_MS,
   saveIntervalMs: WASTELAND_SIM_SAVE_INTERVAL_MS,
   getGlobalMap: () => GLOBAL_MAP,
-  itemIds: SERVER_ITEM_IDS
+  itemIds: SERVER_ITEM_IDS,
+  traderProfiles: SERVER_TRADER_PROFILES
 });
 
 function reconcileSavedWorldPartyMembers() {
@@ -4074,6 +4138,84 @@ const SERVER_WEAPONS = {
   fists: { id: 'fists', name: 'Кулаки', hands: 1, weaponSkill: 'unarmed', damageType: 'ballistic', requiredStrength: 1, dmg: [2, 4], range: 1.35, ammoType: null, magSize: 0, fireRate: 0.62, apCost: 2 }
 };
 
+const SERVER_WEAPON_MODIFICATION_SLOTS = new Set(['barrel', 'scope', 'magazine', 'forend']);
+const SERVER_WEAPON_MODIFICATION_CATALOG = Object.freeze({
+  barrel_precision: { id: 'barrel_precision', slot: 'barrel', weaponIds: ['pistol', 'rifle', 'assaultRifle', 'machineGun'], cost: { scrap: 3, weaponParts: 2 }, effects: { damageMul: 1.06, rangeMul: 1.12, fireRateMul: 1.05 } },
+  barrel_suppressor: { id: 'barrel_suppressor', slot: 'barrel', weaponIds: ['pistol', 'rifle', 'assaultRifle'], cost: { scrap: 2, weaponParts: 2 }, effects: { rangeMul: 0.96, accuracyBonus: 0.04, noiseMul: 0.42 } },
+  barrel_choke: { id: 'barrel_choke', slot: 'barrel', weaponIds: ['shotgun'], cost: { scrap: 2, weaponParts: 1 }, effects: { rangeMul: 1.18, accuracyBonus: 0.04 } },
+  barrel_nozzle: { id: 'barrel_nozzle', slot: 'barrel', weaponIds: ['flamethrower'], cost: { scrap: 3, weaponParts: 2 }, effects: { damageMul: 1.04, rangeMul: 1.20, fireRateMul: 1.06 } },
+  barrel_accelerator: { id: 'barrel_accelerator', slot: 'barrel', weaponIds: ['laserPistol', 'plasmaRifle'], cost: { electronics: 3, weaponParts: 2 }, effects: { damageMul: 1.08, rangeMul: 1.10, fireRateMul: 1.08 } },
+  barrel_rocket_stabilizer: { id: 'barrel_rocket_stabilizer', slot: 'barrel', weaponIds: ['rocketLauncher'], cost: { scrap: 4, weaponParts: 2 }, effects: { rangeMul: 1.12, accuracyBonus: 0.05 } },
+  scope_reflex: { id: 'scope_reflex', slot: 'scope', excludeWeaponIds: ['flamethrower'], cost: { electronics: 2, scrap: 1 }, effects: { accuracyBonus: 0.04 } },
+  scope_marksman: { id: 'scope_marksman', slot: 'scope', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher'], cost: { electronics: 3, weaponParts: 2 }, effects: { accuracyBonus: 0.08, rangeMul: 1.10 } },
+  scope_thermal: { id: 'scope_thermal', slot: 'scope', weaponIds: ['laserPistol', 'plasmaRifle', 'flamethrower', 'rocketLauncher'], cost: { electronics: 5, weaponParts: 2 }, effects: { accuracyBonus: 0.06, rangeMul: 1.06 } },
+  mag_extended: { id: 'mag_extended', slot: 'magazine', excludeWeaponIds: ['rocketLauncher'], cost: { scrap: 3, weaponParts: 2 }, effects: { magMul: 1.35, reloadApDelta: 1 } },
+  mag_quick: { id: 'mag_quick', slot: 'magazine', excludeWeaponIds: ['rocketLauncher'], cost: { scrap: 2, weaponParts: 2 }, effects: { magMul: 0.86, reloadApDelta: -1 } },
+  mag_overcharged: { id: 'mag_overcharged', slot: 'magazine', weaponIds: ['laserPistol', 'plasmaRifle'], cost: { electronics: 4, weaponParts: 2 }, effects: { damageMul: 1.12, magMul: 0.80 } },
+  mag_rocket_loader: { id: 'mag_rocket_loader', slot: 'magazine', weaponIds: ['rocketLauncher'], cost: { scrap: 4, weaponParts: 3 }, effects: { reloadApDelta: -2 } },
+  forend_grip: { id: 'forend_grip', slot: 'forend', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'shotgun'], cost: { wood: 2, scrap: 1 }, effects: { accuracyBonus: 0.03, autoPenaltyReduction: 0.04 } },
+  forend_bipod: { id: 'forend_bipod', slot: 'forend', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher'], cost: { scrap: 4, weaponParts: 1 }, effects: { accuracyBonus: 0.06 } },
+  forend_heatshield: { id: 'forend_heatshield', slot: 'forend', weaponIds: ['assaultRifle', 'machineGun', 'flamethrower', 'plasmaRifle'], cost: { scrap: 3, weaponParts: 2 }, effects: { fireRateMul: 0.88, accuracyBonus: 0.02 } }
+});
+
+function serverWeaponModificationCompatible(mod = {}, weapon = SERVER_WEAPONS.fists) {
+  if (!mod || !weapon?.ammoType || !SERVER_WEAPON_MODIFICATION_SLOTS.has(mod.slot)) return false;
+  if (mod.slot === 'forend' && Number(weapon.hands || 1) !== 2) return false;
+  if (Array.isArray(mod.weaponIds) && !mod.weaponIds.includes(weapon.id)) return false;
+  if (Array.isArray(mod.excludeWeaponIds) && mod.excludeWeaponIds.includes(weapon.id)) return false;
+  return true;
+}
+
+function sanitizeServerWeaponModifications(raw = {}, weaponOrId = SERVER_WEAPONS.fists) {
+  const weapon = typeof weaponOrId === 'string'
+    ? (SERVER_WEAPONS[serverBaseItemId(weaponOrId)] || SERVER_WEAPONS.fists)
+    : (weaponOrId || SERVER_WEAPONS.fists);
+  const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const out = {};
+  for (const slot of SERVER_WEAPON_MODIFICATION_SLOTS) {
+    const modId = String(source[slot] || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+    const mod = SERVER_WEAPON_MODIFICATION_CATALOG[modId];
+    if (mod && mod.slot === slot && serverWeaponModificationCompatible(mod, weapon)) out[slot] = modId;
+  }
+  return out;
+}
+
+function serverApplyWeaponModificationEffects(weapon = SERVER_WEAPONS.fists, rawMods = {}) {
+  if (!weapon?.ammoType) return weapon;
+  const mods = sanitizeServerWeaponModifications(rawMods, weapon);
+  let damageMul = 1;
+  let rangeMul = 1;
+  let magMul = 1;
+  let fireRateMul = 1;
+  let reloadApDelta = 0;
+  let accuracyBonus = 0;
+  let autoPenaltyReduction = 0;
+  let noiseMul = 1;
+  for (const modId of Object.values(mods)) {
+    const effects = SERVER_WEAPON_MODIFICATION_CATALOG[modId]?.effects || {};
+    damageMul *= Number(effects.damageMul || 1);
+    rangeMul *= Number(effects.rangeMul || 1);
+    magMul *= Number(effects.magMul || 1);
+    fireRateMul *= Number(effects.fireRateMul || 1);
+    reloadApDelta += Number(effects.reloadApDelta || 0);
+    accuracyBonus += Number(effects.accuracyBonus || 0);
+    autoPenaltyReduction += Number(effects.autoPenaltyReduction || 0);
+    noiseMul *= Number(effects.noiseMul || 1);
+  }
+  return {
+    ...weapon,
+    dmg: Array.isArray(weapon.dmg) ? weapon.dmg.map(value => Math.max(1, Math.round(Number(value || 1) * damageMul))) : weapon.dmg,
+    range: Math.max(0.4, Number((Number(weapon.range || 1) * rangeMul).toFixed(1))),
+    magSize: Math.max(1, Math.round(Number(weapon.magSize || 1) * magMul)),
+    fireRate: Math.max(0.045, Number((Number(weapon.fireRate || 0.5) * fireRateMul).toFixed(3))),
+    reloadApCost: Math.max(1, Math.round(Number(weapon.reloadApCost || weapon.apCost || 3) + reloadApDelta)),
+    modAccuracyBonus: Number(accuracyBonus.toFixed(4)),
+    modAutoPenaltyReduction: Number(autoPenaltyReduction.toFixed(4)),
+    modNoiseMul: Number(noiseMul.toFixed(4)),
+    weaponMods: mods
+  };
+}
+
 function serverActiveWeaponSlot(entity = {}) {
   const equipment = entity?.equipment && typeof entity.equipment === 'object' ? entity.equipment : entity;
   return equipmentActiveWeaponSlot({
@@ -4278,9 +4420,18 @@ function serverBaseItemId(id) {
   return m ? m[1] : raw;
 }
 
-function serverWeaponDef(id) {
+function serverWeaponDef(id, player = null, runtimeId = '') {
   const base = serverBaseItemId(id || 'fists');
-  return SERVER_WEAPONS[base] || SERVER_WEAPONS.fists;
+  const weapon = SERVER_WEAPONS[base] || SERVER_WEAPONS.fists;
+  if (!player || !weapon.ammoType) return weapon;
+  let rawRuntimeId = String(runtimeId || id || base).trim();
+  if (!runtimeId && serverActiveWeaponId(player) === base) {
+    const activeSlot = serverActiveWeaponSlot(player);
+    rawRuntimeId = String(player.equipmentRuntime?.[activeSlot] || player.equipment?.[activeSlot] || rawRuntimeId);
+  }
+  const itemKey = serverRuntimeItemKey(rawRuntimeId, base);
+  const mods = player.serverCombat?.weapons?.[itemKey]?.weaponMods || {};
+  return serverApplyWeaponModificationEffects(weapon, mods);
 }
 
 function serverNaturalCreatureText(type = {}, opts = {}) {
@@ -4909,10 +5060,16 @@ function sanitizePersistedRuntimeItems(runtime = {}, state = {}) {
     if (!id || !usedIds.has(id) || !row || typeof row !== 'object') continue;
     const baseId = serverBaseItemId(row.baseId || id);
     if (!baseId || baseId === 'fists' || !SERVER_ITEM_IDS.has(baseId)) continue;
+    const baseWeapon = SERVER_WEAPONS[baseId];
+    const weaponMods = sanitizeServerWeaponModifications(row.weaponMods || {}, baseWeapon || baseId);
+    const loadedLimit = baseWeapon?.ammoType
+      ? Math.max(0, Number(serverApplyWeaponModificationEffects(baseWeapon, weaponMods).magSize || 0))
+      : 0;
     out[id] = {
       baseId,
       condition: clamp(Math.round(Number(row.condition ?? 100)), 0, 100),
-      loaded: clamp(Math.round(Number(row.loaded ?? 0)), 0, serverItemStackLimit(baseId)),
+      loaded: clamp(Math.round(Number(row.loaded ?? 0)), 0, loadedLimit),
+      weaponMods,
       createdAt: Number.isFinite(Number(row.createdAt)) ? Number(row.createdAt) : Date.now()
     };
   }
@@ -5312,7 +5469,7 @@ function performServerUnloadWeapon(player = {}, data = {}) {
   const requestedRawId = String(data.itemRuntimeId || data.itemId || data.weapon || data.id || '').trim();
   const id = serverBaseItemId(requestedRawId);
   if (id !== serverActiveWeaponId(player)) return { ok: false, error: 'Это оружие не является активным.' };
-  const weapon = serverWeaponDef(id);
+  const weapon = serverWeaponDef(id, player);
   if (!weapon.ammoType) return { ok: false, error: 'Это оружие не использует боеприпасы.' };
   const equippedRuntimeId = serverCombatWeaponStateKey(player, weapon);
   if (data.itemRuntimeId && serverRuntimeItemKey(requestedRawId, id) !== equippedRuntimeId) {
@@ -5330,6 +5487,122 @@ function performServerUnloadWeapon(player = {}, data = {}) {
   row.updatedAt = Date.now();
   sanitizeCarrySnapshot(player);
   return { ok: true, action: 'unload', itemId: id, itemRuntimeId: equippedRuntimeId, loaded, inventory: player.inventory, combat: serverCombatAck(player, weapon), self: publicAuthoritativePlayerState(player) };
+}
+
+function performServerModifyWeapon(player = {}, data = {}) {
+  const requestedRawId = String(data.itemRuntimeId || data.itemId || data.weapon || data.id || '').trim();
+  const baseId = serverBaseItemId(data.itemId || requestedRawId);
+  const baseWeapon = SERVER_WEAPONS[baseId];
+  if (!baseWeapon?.ammoType) return { ok: false, error: 'Это оружие не поддерживает сменные узлы.' };
+  if (serverOwnedItemQty(player, baseId) <= 0) return { ok: false, error: 'Выбранного оружия больше нет у персонажа.' };
+  const slot = String(data.modSlot || data.slot || '').toLowerCase();
+  if (!SERVER_WEAPON_MODIFICATION_SLOTS.has(slot)) return { ok: false, error: 'Неизвестный узел модификации.' };
+  if (slot === 'forend' && Number(baseWeapon.hands || 1) !== 2) return { ok: false, error: 'Цевьё доступно только двуручному оружию.' };
+  const modificationId = String(data.modificationId || data.modId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+  const modification = modificationId ? SERVER_WEAPON_MODIFICATION_CATALOG[modificationId] : null;
+  if (modificationId && (!modification || modification.slot !== slot || !serverWeaponModificationCompatible(modification, baseWeapon))) {
+    return { ok: false, error: 'Эта деталь не подходит выбранному оружию.' };
+  }
+
+  const requestedKey = serverRuntimeItemKey(requestedRawId || baseId, baseId);
+  const equippedEntry = serverEquippedWeaponRuntimeEntries(player)
+    .find(entry => entry.baseId === baseId && entry.itemKey === requestedKey);
+  const itemKey = serverResolveWeaponRuntimeRequest(
+    player,
+    requestedRawId || baseId,
+    equippedEntry?.itemKey || '',
+    baseId,
+    { mutate: true, strict: true }
+  );
+  if (!itemKey || itemKey !== requestedKey) return { ok: false, error: 'Выбранный экземпляр оружия недоступен.' };
+  const ownedRuntime = serverCanonicalWeaponInventoryPresentation(player, {});
+  const equippedOwned = serverEquippedWeaponRuntimeEntries(player).some(entry => entry.itemKey === itemKey && entry.baseId === baseId);
+  if (!equippedOwned && Number(ownedRuntime[itemKey] || 0) <= 0) return { ok: false, error: 'Выбранный экземпляр оружия недоступен.' };
+
+  const combat = serverEnsureCombatState(player, Date.now());
+  if (!combat.weapons[itemKey]) {
+    combat.weapons[itemKey] = {
+      weaponId: baseId,
+      loaded: 0,
+      reserve: serverInventoryQty(player.inventory || [], baseWeapon.ammoType),
+      ammoType: baseWeapon.ammoType,
+      weaponMods: {},
+      updatedAt: Date.now()
+    };
+  }
+  const row = combat.weapons[itemKey];
+  const currentMods = sanitizeServerWeaponModifications(row.weaponMods || {}, baseWeapon);
+  if (String(currentMods[slot] || '') === modificationId) {
+    return {
+      ok: true,
+      action: 'modifyWeapon',
+      changed: false,
+      itemId: baseId,
+      itemRuntimeId: itemKey,
+      weaponMods: currentMods,
+      inventory: player.inventory,
+      self: publicAuthoritativePlayerState(player)
+    };
+  }
+
+  let nextInventory = sanitizeServerInventorySnapshot(player.inventory || [], { includeEquipped: true });
+  if (modification) {
+    for (const [materialId, rawQty] of Object.entries(modification.cost || {})) {
+      const qty = Math.max(0, Math.floor(Number(rawQty || 0)));
+      if (qty <= 0) continue;
+      if (serverInventoryQty(nextInventory, materialId) < qty) {
+        return { ok: false, error: `Не хватает материалов: ${materialId} (${serverInventoryQty(nextInventory, materialId)}/${qty}).` };
+      }
+    }
+    for (const [materialId, rawQty] of Object.entries(modification.cost || {})) {
+      const qty = Math.max(0, Math.floor(Number(rawQty || 0)));
+      if (qty > 0) nextInventory = serverInventorySetRows(nextInventory, materialId, serverInventoryQty(nextInventory, materialId) - qty);
+    }
+  }
+
+  const nextMods = { ...currentMods };
+  if (modificationId) nextMods[slot] = modificationId;
+  else delete nextMods[slot];
+  const sanitizedNextMods = sanitizeServerWeaponModifications(nextMods, baseWeapon);
+  const nextWeapon = serverApplyWeaponModificationEffects(baseWeapon, sanitizedNextMods);
+  const loadedBefore = Math.max(0, Math.floor(Number(row.loaded || 0)));
+  const loadedAfter = Math.min(loadedBefore, Math.max(0, Number(nextWeapon.magSize || 0)));
+  const returnedAmmo = Math.max(0, loadedBefore - loadedAfter);
+  if (returnedAmmo > 0) {
+    const ammoBefore = serverInventoryQty(nextInventory, baseWeapon.ammoType);
+    if (ammoBefore + returnedAmmo > serverItemStackLimit(baseWeapon.ammoType)) {
+      return { ok: false, error: 'Сначала освободите место для лишних боеприпасов из магазина.' };
+    }
+    nextInventory = serverInventoryMergeRows(nextInventory, [{ id: baseWeapon.ammoType, qty: returnedAmmo }]);
+  }
+  if (serverInventoryWeightWithEquipment(nextInventory, player.equipment || {}) > serverCarryCapacity(player) + 0.0001) {
+    return { ok: false, error: 'После выгрузки боеприпасов возникнет перегруз.' };
+  }
+
+  player.inventory = nextInventory;
+  player.inventoryUpdatedAt = Date.now();
+  row.weaponId = baseId;
+  row.weaponMods = sanitizedNextMods;
+  row.loaded = loadedAfter;
+  row.reserve = serverInventoryQty(player.inventory || [], baseWeapon.ammoType);
+  row.ammoType = baseWeapon.ammoType;
+  row.updatedAt = Date.now();
+  sanitizeCarrySnapshot(player);
+  const activeWeapon = serverWeaponDef(serverActiveWeaponId(player), player);
+  return {
+    ok: true,
+    action: 'modifyWeapon',
+    changed: true,
+    itemId: baseId,
+    itemRuntimeId: itemKey,
+    modSlot: slot,
+    modificationId,
+    weaponMods: sanitizedNextMods,
+    returnedAmmo,
+    inventory: player.inventory,
+    combat: serverCombatAck(player, activeWeapon),
+    self: publicAuthoritativePlayerState(player)
+  };
 }
 
 function serverNpcQuestActor(player = {}, enemyId = '', questId = '') {
@@ -5431,6 +5704,7 @@ function performServerNpcQuestAction(player = {}, actor = {}, data = {}) {
   player.inventory = nextInventory;
   player.inventoryUpdatedAt = Date.now();
   if (paidSilver > 0) serverNpcSetInventoryCaps(actor, serverNpcInventoryCaps(actor) - paidSilver);
+  if (paidSilver > 0) serverSyncFactionTraderMarket(actor);
   const xp = Math.max(0, Math.round(Number(quest.reward.xp || 0) * multiplier));
   serverGrantXp(player, xp);
   state[questId] = 'done';
@@ -6040,6 +6314,7 @@ function serverResolveWeaponRuntimeRequest(player = {}, requestedRawId = '', cur
         loaded: 0,
         reserve: weapon.ammoType ? serverInventoryQty(player.inventory || [], weapon.ammoType) : 0,
         ammoType: weapon.ammoType || '',
+        weaponMods: {},
         updatedAt: Date.now()
       };
     }
@@ -6067,10 +6342,11 @@ function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = [], 
     weapons[itemKey] = {
       weaponId: weapon.id,
       loaded: weapon.ammoType
-        ? clamp(Math.floor(Number(savedRow.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
+        ? clamp(Math.floor(Number(savedRow.loaded || 0)), 0, Math.max(0, Number(serverApplyWeaponModificationEffects(weapon, savedRow.weaponMods || {}).magSize || 0)))
         : 0,
       reserve: weapon.ammoType ? serverInventoryQty(inventory, weapon.ammoType) : 0,
       ammoType: weapon.ammoType || '',
+      weaponMods: sanitizeServerWeaponModifications(savedRow.weaponMods || {}, weapon),
       updatedAt: now
     };
   }
@@ -6083,6 +6359,7 @@ function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = [], 
       loaded: 0,
       reserve: weapon.ammoType ? serverInventoryQty(inventory, weapon.ammoType) : 0,
       ammoType: weapon.ammoType || '',
+      weaponMods: {},
       updatedAt: now
     };
   }
@@ -6095,6 +6372,7 @@ function serverCombatStateFromSaved(state = {}, equipment = {}, inventory = [], 
       loaded: 0,
       reserve: activeWeapon.ammoType ? serverInventoryQty(inventory, activeWeapon.ammoType) : 0,
       ammoType: activeWeapon.ammoType || '',
+      weaponMods: {},
       updatedAt: now
     };
   }
@@ -6115,7 +6393,7 @@ function serverCombatRuntimeForSave(runtime = {}, player = {}) {
     out[String(rawId || '')] = { ...savedRow };
   }
 
-  const equippedWeapon = serverWeaponDef(serverActiveWeaponId(player));
+  const equippedWeapon = serverWeaponDef(serverActiveWeaponId(player), player);
   serverWeaponState(player, equippedWeapon, {}, Date.now());
   const combat = serverEnsureCombatState(player, Date.now());
 
@@ -6124,10 +6402,12 @@ function serverCombatRuntimeForSave(runtime = {}, player = {}) {
   // rewritten from a server-known combat row, or starts with an empty magazine.
   for (const [rawId, savedRow] of Object.entries(out)) {
     const baseId = serverBaseItemId(savedRow?.baseId || rawId);
-    const weapon = SERVER_WEAPONS[baseId];
-    if (!weapon) continue;
+    const baseWeapon = SERVER_WEAPONS[baseId];
+    if (!baseWeapon) continue;
     const itemKey = serverRuntimeItemKey(rawId, baseId);
     const combatRow = combat.weapons?.[itemKey];
+    const weaponMods = sanitizeServerWeaponModifications(combatRow?.weaponMods || savedRow.weaponMods || {}, baseWeapon);
+    const weapon = serverApplyWeaponModificationEffects(baseWeapon, weaponMods);
     out[rawId] = {
       ...savedRow,
       baseId,
@@ -6135,16 +6415,19 @@ function serverCombatRuntimeForSave(runtime = {}, player = {}) {
       loaded: weapon.ammoType
         ? clamp(Math.round(Number(combatRow?.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
         : 0,
+      weaponMods,
       createdAt: Number.isFinite(Number(savedRow.createdAt)) ? Number(savedRow.createdAt) : Date.now()
     };
   }
 
   for (const [rawId, combatRow] of Object.entries(combat.weapons || {})) {
     const baseId = serverBaseItemId(combatRow?.weaponId || rawId);
-    const weapon = SERVER_WEAPONS[baseId];
-    if (!weapon) continue;
+    const baseWeapon = SERVER_WEAPONS[baseId];
+    if (!baseWeapon) continue;
     const itemKey = serverRuntimeItemKey(rawId, baseId);
     const savedRow = out[itemKey] && typeof out[itemKey] === 'object' ? out[itemKey] : {};
+    const weaponMods = sanitizeServerWeaponModifications(combatRow.weaponMods || savedRow.weaponMods || {}, baseWeapon);
+    const weapon = serverApplyWeaponModificationEffects(baseWeapon, weaponMods);
     out[itemKey] = {
       ...savedRow,
       baseId,
@@ -6152,6 +6435,7 @@ function serverCombatRuntimeForSave(runtime = {}, player = {}) {
       loaded: weapon.ammoType
         ? clamp(Math.round(Number(combatRow.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
         : 0,
+      weaponMods,
       createdAt: Number.isFinite(Number(savedRow.createdAt)) ? Number(savedRow.createdAt) : Date.now()
     };
   }
@@ -6392,8 +6676,9 @@ function serverWeaponInventoryRuntimeSnapshot(player = {}) {
     .filter(([rawId, qty]) => SERVER_WEAPONS[serverBaseItemId(rawId)] && serverBaseItemId(rawId) !== 'fists' && Number(qty || 0) > 0)
     .map(([rawId, qty]) => {
       const baseId = serverBaseItemId(rawId);
-      const weapon = SERVER_WEAPONS[baseId];
+      const baseWeapon = SERVER_WEAPONS[baseId];
       const combatRow = combat.weapons?.[serverRuntimeItemKey(rawId, baseId)];
+      const weapon = serverApplyWeaponModificationEffects(baseWeapon, combatRow?.weaponMods || {});
       return {
         id: rawId,
         baseId,
@@ -6401,9 +6686,29 @@ function serverWeaponInventoryRuntimeSnapshot(player = {}) {
         loaded: weapon.ammoType
           ? clamp(Math.round(Number(combatRow?.loaded || 0)), 0, Math.max(0, Number(weapon.magSize || 0)))
           : 0,
-        condition: Number(serverPlayerItemCondition(player, baseId) ?? 100)
+        condition: Number(serverPlayerItemCondition(player, baseId) ?? 100),
+        weaponMods: sanitizeServerWeaponModifications(combatRow?.weaponMods || {}, baseWeapon)
       };
     });
+}
+
+function serverWeaponModificationSnapshot(player = {}) {
+  const owned = serverCanonicalWeaponInventoryPresentation(player, {});
+  const combat = serverEnsureCombatState(player, Date.now());
+  return Object.entries(combat.weapons || {})
+    .map(([rawId, row]) => {
+      const baseId = serverBaseItemId(row?.weaponId || rawId);
+      const weapon = SERVER_WEAPONS[baseId];
+      const itemKey = serverRuntimeItemKey(rawId, baseId);
+      if (!weapon?.ammoType || !itemKey || Number(owned[itemKey] || 0) <= 0) return null;
+      return {
+        id: itemKey,
+        baseId,
+        weaponMods: sanitizeServerWeaponModifications(row.weaponMods || {}, weapon)
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 80);
 }
 
 function authoritativeInventoryPresentation(state = {}, previousState = {}, player = {}) {
@@ -7366,7 +7671,8 @@ function serverAutomaticAccuracyPenalty(p = {}, w = SERVER_WEAPONS.fists, client
   if (skillId === 'lightWeapons') perkReduction += serverTalentLevel(p, 'automaticMan') * 0.03;
   if (skillId === 'heavyWeapons') perkReduction += serverTalentLevel(p, 'machineGunner') * 0.04;
   if (skillId === 'energyWeapons') perkReduction += serverTalentLevel(p, 'energyTech') * 0.03;
-  return clamp(0.18 - skillReduction + strengthPenalty + movementPenalty + conditionPenalty - crouchBonus - perkReduction, 0.04, 0.32);
+  const modificationReduction = Math.max(0, Number(w?.modAutoPenaltyReduction || 0));
+  return clamp(0.18 - skillReduction + strengthPenalty + movementPenalty + conditionPenalty - crouchBonus - perkReduction - modificationReduction, 0.04, 0.32);
 }
 
 function serverExplosiveRadius(p = {}, w = SERVER_WEAPONS.fists) {
@@ -7508,7 +7814,7 @@ function serverHitChance(p = {}, enemy, dist, w = SERVER_WEAPONS.fists, modeInfo
   const traumaPenalty = (injuries.brokenArm ? 0.12 : 0) + (injuries.concussion ? 0.10 : 0) + (injuries.infection ? 0.03 : 0);
   let base;
   if (w.ammoType) {
-    base = Math.max(0.38, 0.82 - dist / (Number(w.range || 1) * 3.1)) + skillBonus + statAimBonus + luckBonus + modeBonus - conditionPenalty - strengthPenalty - movementPenalty - traumaPenalty;
+    base = Math.max(0.38, 0.82 - dist / (Number(w.range || 1) * 3.1)) + skillBonus + statAimBonus + luckBonus + modeBonus + Number(w.modAccuracyBonus || 0) - conditionPenalty - strengthPenalty - movementPenalty - traumaPenalty;
     if (modeInfo.id === 'auto') base -= serverAutomaticAccuracyPenalty(p, w, client);
     if (serverIsShotgunWeapon(w)) {
       const perp = Number(client.conePerp ?? client.shotgunPerp ?? 0);
@@ -7602,9 +7908,10 @@ function serverCombatWeaponStateKey(p = {}, weapon = SERVER_WEAPONS.fists) {
 function serverWeaponState(p = {}, weapon = SERVER_WEAPONS.fists, client = {}, now = Date.now()) {
   const combat = serverEnsureCombatState(p, now);
   const id = serverCombatWeaponStateKey(p, weapon);
-  if (!combat.weapons[id]) combat.weapons[id] = { weaponId: weapon.id || 'fists', loaded: 0, reserve: 0, ammoType: weapon.ammoType || '', updatedAt: now };
+  if (!combat.weapons[id]) combat.weapons[id] = { weaponId: weapon.id || 'fists', loaded: 0, reserve: 0, ammoType: weapon.ammoType || '', weaponMods: {}, updatedAt: now };
   const row = combat.weapons[id];
   row.weaponId = weapon.id || 'fists';
+  row.weaponMods = sanitizeServerWeaponModifications(row.weaponMods || weapon.weaponMods || {}, weapon);
   row.loaded = clamp(Number(row.loaded || 0), 0, Math.max(0, Number(weapon.magSize || 0)));
   row.reserve = weapon.ammoType ? serverInventoryQty(p.inventory || [], weapon.ammoType) : 0;
   row.ammoType = weapon.ammoType || '';
@@ -7618,6 +7925,7 @@ function serverWeaponCooldownMs(weapon = SERVER_WEAPONS.fists, modeInfo = {}) {
 }
 
 function serverCombatAck(p = {}, weapon = SERVER_WEAPONS.fists, now = Date.now()) {
+  weapon = serverWeaponDef(weapon?.id || serverActiveWeaponId(p), p);
   const combat = serverEnsureCombatState(p, now);
   const row = serverWeaponState(p, weapon, {}, now);
   return {
@@ -7630,6 +7938,7 @@ function serverCombatAck(p = {}, weapon = SERVER_WEAPONS.fists, now = Date.now()
     magSize: Math.round(Number(weapon.magSize || 0)),
     reserveAmmo: Math.round(Number(row.reserve || 0)),
     condition: serverCombatWeaponCondition(p, weapon),
+    weaponMods: sanitizeServerWeaponModifications(row.weaponMods || {}, weapon),
     cooldownRemainingMs: Math.max(0, Math.ceil(Number(combat.nextAttackAt || 0) - now))
   };
 }
@@ -7690,7 +7999,7 @@ function serverValidateAndSpendAttack(p = {}, data = {}, weapon = SERVER_WEAPONS
 
 function serverApplyReload(p = {}, data = {}, now = Date.now()) {
   const activeWeaponId = serverActiveWeaponId(p);
-  const weapon = serverWeaponDef(data.weapon || activeWeaponId);
+  const weapon = serverWeaponDef(data.weapon || activeWeaponId, p);
   if (weapon.id !== activeWeaponId) return { ok: false, error: 'Сервер: это оружие не является активным.' };
   if (!weapon.ammoType) return { ok: false, error: 'Это оружие не требует перезарядки.' };
   serverRegenPlayerAp(p, now);
@@ -10426,7 +10735,11 @@ function serverTradeMachineAuthoredStock(row = {}) {
   return source.slice(0, 80).map(entry => ({
     id: serverBaseItemId(entry?.id || ''),
     price: clamp(Math.round(Number(entry?.price || 1)), 1, 9999),
-    qty: clamp(Math.floor(Number(entry?.qty || 0)), 0, 9999)
+    qty: clamp(Math.floor(Number(entry?.shelfTarget ?? entry?.qty ?? 0)), 0, 9999),
+    shelfMin: clamp(Math.floor(Number(entry?.shelfMin ?? 0)), 0, 9999),
+    shelfTarget: clamp(Math.floor(Number(entry?.shelfTarget ?? entry?.qty ?? 0)), 0, 9999),
+    shelfMax: clamp(Math.floor(Number(entry?.shelfMax ?? entry?.qty ?? 0)), 0, 9999),
+    priority: clamp(Math.floor(Number(entry?.priority ?? 60)), 1, 100)
   })).filter(entry => entry.id && entry.id !== 'silver' && SERVER_ITEM_IDS.has(entry.id) && entry.qty > 0);
 }
 
@@ -10439,15 +10752,19 @@ function serverTradeMachineMarket(room = null, loc = {}, row = {}) {
   const buyInterests = (Array.isArray(interactive.buyInterests) ? interactive.buyInterests : (Array.isArray(entity.buyInterests) ? entity.buyInterests : []))
     .map(value => String(value || '').toLowerCase()).filter(Boolean).slice(0, 24);
   const caps = Math.max(0, Math.floor(Number(site.stockpile?.silver || 0)));
+  const restockHours = clamp(Math.floor(Number(interactive.restockHours ?? entity.restockHours ?? 24)), 1, 720);
+  const marketKey = `${site.id}:machine:${String(row.id || traderProfile).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)}`;
   const supplied = WASTELAND_SIM.applyTraderSupply(traderProfile, {
     stock: serverTradeMachineAuthoredStock(row),
     caps,
+    restockHours,
     buyInterests
   }, {
     siteId: site.id,
     locationId: String(loc?.id || room?.locationId || ''),
     role: 'tradeMachine',
-    traderProfile
+    traderProfile,
+    marketKey
   });
   const stock = (Array.isArray(supplied?.stock) ? supplied.stock : []).slice(0, 80).map(entry => ({
     id: serverBaseItemId(entry?.id || ''),
@@ -10462,7 +10779,10 @@ function serverTradeMachineMarket(room = null, loc = {}, row = {}) {
     traderProfile,
     buyInterests,
     stock,
-    caps,
+    caps: Math.max(0, Math.floor(Number(supplied?.caps ?? caps))),
+    baseCaps: Math.max(0, Math.floor(Number(supplied?.baseCaps ?? caps))),
+    restockHours: Number(supplied?.restockHours || restockHours),
+    marketKey: String(supplied?.marketKey || marketKey),
     market: supplied?.market || null,
     worldHour: Number(WASTELAND_SIM.state()?.worldHour || 0)
   };
@@ -10589,8 +10909,13 @@ function performServerTradeMachineExchange(room = null, loc = {}, row = {}, data
   const applied = WASTELAND_SIM.applyTradeMachineTransaction(market.siteId, {
     buys,
     sells,
+    resaleRows: sells.map(entry => ({
+      ...entry,
+      price: serverNpcTradeResalePrice(entry.id, market, player)
+    })),
     silverDelta: net,
-    playerId: player?.id || ''
+    playerId: player?.id || '',
+    marketKey: market.marketKey
   });
   if (!applied?.ok) {
     const updatedMarket = serverTradeMachineMarket(room, loc, row);
@@ -10681,6 +11006,25 @@ function ensureServerFriendlyNpcSocialState(actor = {}) {
 function serverNpcTradeMarket(actor = {}) {
   ensureServerFriendlyNpcSocialState(actor);
   serverRefreshPersonalNpcTradeStock(actor);
+  if (actor.personalTrade !== true
+    && Array.isArray(actor.traderBaseStock)
+    && actor.traderBaseStock.length
+    && typeof WASTELAND_SIM.applyTraderSupply === 'function') {
+    const profileId = actor.traderProfile || actor.tradeProfile || actor.traderId || '';
+    const supplied = WASTELAND_SIM.applyTraderSupply(profileId, {
+      stock: actor.traderBaseStock,
+      caps: actor.traderBaseCaps,
+      restockHours: actor.traderRestockHours,
+      buyInterests: actor.traderBuyInterests
+    }, serverNpcFactionTradeContext(actor));
+    if (supplied?.marketKey) {
+      actor.traderStock = supplied.stock;
+      actor.traderMarket = supplied.market || actor.traderMarket || null;
+      actor.traderMarketKey = supplied.marketKey;
+      actor.traderRestockHours = supplied.restockHours;
+      serverNpcSetInventoryCaps(actor, supplied.caps);
+    }
+  }
   const stock = (Array.isArray(actor.traderStock) ? actor.traderStock : []).slice(0, 80).map(entry => ({
     id: serverBaseItemId(entry?.id || ''),
     price: clamp(Math.round(Number(entry?.price || 1)), 1, 9999),
@@ -10689,8 +11033,31 @@ function serverNpcTradeMarket(actor = {}) {
   return {
     stock,
     caps: serverNpcInventoryCaps(actor),
-    buyInterests: Array.isArray(actor.traderBuyInterests) ? actor.traderBuyInterests.map(value => String(value || '').toLowerCase()).filter(Boolean).slice(0, 24) : []
+    buyInterests: Array.isArray(actor.traderBuyInterests) ? actor.traderBuyInterests.map(value => String(value || '').toLowerCase()).filter(Boolean).slice(0, 24) : [],
+    marketKey: String(actor.traderMarketKey || ''),
+    siteId: String(actor.traderMarket?.siteId || actor.wastelandSiteId || '')
   };
+}
+
+function serverNpcFactionTradeContext(actor = {}, room = null) {
+  return {
+    siteId: actor.traderMarket?.siteId || actor.wastelandSiteId || '',
+    locationId: room?.locationId || actor.authoredLocationId || actor.wastelandSiteWorkerLocationId || '',
+    role: actor.role || actor.encounterRole || 'trader',
+    traderProfile: actor.traderProfile || '',
+    tradeProfile: actor.tradeProfile || '',
+    marketKey: actor.traderMarketKey || ''
+  };
+}
+
+function serverSyncFactionTraderMarket(actor = {}, room = null) {
+  if (!actor || actor.personalTrade === true || !actor.traderMarketKey || typeof WASTELAND_SIM.syncTraderMarket !== 'function') return false;
+  const profileId = actor.traderProfile || actor.tradeProfile || actor.traderId || '';
+  const result = WASTELAND_SIM.syncTraderMarket(profileId, {
+    stock: actor.traderStock || [],
+    caps: serverNpcInventoryCaps(actor)
+  }, serverNpcFactionTradeContext(actor, room));
+  return result?.ok === true;
 }
 
 function serverNpcTradeResalePrice(itemId = '', market = {}, player = {}) {
@@ -10744,7 +11111,6 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   for (const row of buys) {
     const offer = nextStock.find(entry => entry.id === row.id);
     offer.qty = Math.max(0, Number(offer.qty || 0) - row.qty);
-    if (serverInventoryQty(actor.inventory || [], row.id) >= row.qty) actor.inventory = serverInventorySetRows(actor.inventory || [], row.id, serverInventoryQty(actor.inventory || [], row.id) - row.qty);
   }
   for (const row of sells) {
     let offer = nextStock.find(entry => entry.id === row.id);
@@ -10753,10 +11119,38 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
       nextStock.push(offer);
     }
     offer.qty = Math.min(9999, Number(offer.qty || 0) + row.qty);
-    actor.inventory = serverInventoryMergeRows(actor.inventory || [], [row]);
   }
-  actor.traderStock = nextStock.filter(row => Number(row.qty || 0) > 0);
-  serverNpcSetInventoryCaps(actor, market.caps + net);
+  const stockContext = serverNpcFactionTradeContext(actor, room);
+  const profileId = actor.traderProfile || actor.tradeProfile || actor.traderId || '';
+  let persistentTrade = null;
+  if (actor.personalTrade !== true && actor.traderMarketKey && typeof WASTELAND_SIM.applyNpcTraderTransaction === 'function') {
+    persistentTrade = WASTELAND_SIM.applyNpcTraderTransaction(profileId, {
+      buys,
+      sells,
+      resaleRows: nextStock.filter(entry => sells.some(row => row.id === entry.id)),
+      silverDelta: net,
+      playerId: player?.id || '',
+      baseStock: actor.traderBaseStock || [],
+      baseCaps: actor.traderBaseCaps,
+      restockHours: actor.traderRestockHours,
+      marketKey: actor.traderMarketKey
+    }, stockContext);
+    if (!persistentTrade?.ok) {
+      const updatedMarket = serverNpcTradeMarket(actor);
+      const error = persistentTrade?.error === 'insufficient_site_silver'
+        ? 'У торговца закончились крышки.'
+        : 'Запас торговца изменился. Повторите обмен.';
+      return { ok: false, error, market: updatedMarket };
+    }
+  }
+  if (actor.personalTrade === true) {
+    for (const row of buys) {
+      if (serverInventoryQty(actor.inventory || [], row.id) >= row.qty) actor.inventory = serverInventorySetRows(actor.inventory || [], row.id, serverInventoryQty(actor.inventory || [], row.id) - row.qty);
+    }
+    for (const row of sells) actor.inventory = serverInventoryMergeRows(actor.inventory || [], [row]);
+  }
+  actor.traderStock = persistentTrade?.stock || nextStock.filter(row => Number(row.qty || 0) > 0);
+  serverNpcSetInventoryCaps(actor, persistentTrade?.caps ?? (market.caps + net));
   actor.inventoryUpdatedAt = Date.now();
   player.inventory = nextInventory;
   player.inventoryUpdatedAt = Date.now();
@@ -10765,15 +11159,8 @@ function performServerNpcTradeExchange(room = null, actor = null, data = {}, pla
   }
   player.carry = { weight: Number(weight.toFixed(3)), capacity: Number(capacity.toFixed(3)), serverCapacity: Number(capacity.toFixed(3)), updatedAt: Date.now() };
 
-  const stockContext = {
-    siteId: actor.traderMarket?.siteId || actor.wastelandSiteId || '',
-    locationId: room.locationId || '',
-    traderProfile: actor.traderProfile || '',
-    tradeProfile: actor.tradeProfile || ''
-  };
-  const profileId = actor.traderProfile || actor.tradeProfile || actor.traderId || '';
-  if (!actor.personalTrade && buys.length && typeof WASTELAND_SIM.consumeTraderStock === 'function') WASTELAND_SIM.consumeTraderStock(profileId, buys, stockContext);
-  if (!actor.personalTrade && sells.length && typeof WASTELAND_SIM.receiveTraderStock === 'function') WASTELAND_SIM.receiveTraderStock(profileId, sells, stockContext);
+  if (actor.personalTrade !== true && !persistentTrade && buys.length && typeof WASTELAND_SIM.consumeTraderStock === 'function') WASTELAND_SIM.consumeTraderStock(profileId, buys, stockContext);
+  if (actor.personalTrade !== true && !persistentTrade && sells.length && typeof WASTELAND_SIM.receiveTraderStock === 'function') WASTELAND_SIM.receiveTraderStock(profileId, sells, stockContext);
   refreshRoomWorldState(room);
   return { ok: true, net, buyTotal, sellTotal, buys, sells, unloadedAmmo, inventory: player.inventory, carry: player.carry, market: serverNpcTradeMarket(actor), enemy: publicEnemy(actor), self: publicAuthoritativePlayerState(player) };
 }
@@ -11602,7 +11989,7 @@ function authoredNpcDefaultRole(row = {}) {
   return 'npc';
 }
 
-function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {}) {
+function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {}, marketKey = '') {
   const profile = serverTraderProfileById(
     entity.tradeProfile,
     entity.traderProfile,
@@ -11617,6 +12004,7 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
       stock: profile.stock.map(row => ({ ...row })),
       buyInterests: profile.buyInterests.slice(),
       caps: profile.caps,
+      restockHours: profile.restockHours,
       quests: profile.quests.slice(),
       dialogueProfile: profile.dialogueProfile
     };
@@ -11624,7 +12012,8 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
       locationId: String(loc?.id || ''),
       role,
       faction,
-      traderProfile: profile.id
+      traderProfile: profile.id,
+      marketKey
     });
   }
   if (role === 'guard') {
@@ -11633,7 +12022,8 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
       locationId: String(loc?.id || ''),
       role,
       faction,
-      traderProfile: String(entity.tradeProfile || entity.traderProfile || '').slice(0, 64)
+      traderProfile: String(entity.tradeProfile || entity.traderProfile || '').slice(0, 64),
+      marketKey
     });
   }
   const locStock = Array.isArray(loc?.trader?.stock) ? loc.trader.stock : null;
@@ -11642,6 +12032,7 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
       .filter(row => row && SERVER_ITEM_IDS.has(String(row.id || ''))),
     buyInterests: Array.isArray(loc?.trader?.buyInterests) ? loc.trader.buyInterests.slice() : ['materials', 'tools', 'weapons', 'armor', 'aid', 'ammo'],
     caps: Number.isFinite(Number(loc?.trader?.caps)) ? Math.max(0, Math.floor(Number(loc.trader.caps))) : 720,
+    restockHours: clamp(Math.floor(Number(loc?.trader?.restockHours ?? 24)), 1, 720),
     quests: Array.isArray(loc?.trader?.quests) ? loc.trader.quests.slice() : [],
     dialogueProfile: String(loc?.trader?.dialogueProfile || '').slice(0, 64)
   };
@@ -11649,7 +12040,8 @@ function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {})
     locationId: String(loc?.id || ''),
     role,
     faction,
-    traderProfile: String(loc?.trader?.id || loc?.trader?.traderProfile || loc?.trader?.tradeProfile || '').slice(0, 64)
+    traderProfile: String(loc?.trader?.id || loc?.trader?.traderProfile || loc?.trader?.tradeProfile || '').slice(0, 64),
+    marketKey
   });
 }
 
@@ -11679,7 +12071,7 @@ function spawnAuthoredLocationActors(room, loc) {
     const hostileToPlayer = authoredNpcDefaultHostility(row);
     const visual = authoredNpcVisual(row);
     const trade = (role === 'merchant' || role === 'guard' || locationDefinitionObjectIsTrader(row))
-      ? authoredNpcDefaultStock(role === 'npc' ? 'merchant' : role, faction, loc, entity)
+      ? authoredNpcDefaultStock(role === 'npc' ? 'merchant' : role, faction, loc, entity, `${loc.id}:${row.id || `npc_${index + 1}`}`)
       : { stock: [], buyInterests: [], caps: 0 };
     const actor = spawnServerEnemy(room, {
       force: true,
@@ -11708,8 +12100,12 @@ function spawnAuthoredLocationActors(room, loc) {
       stationary: entity.stationary === true || role === 'merchant',
       equipment: entity.equipment || {},
       traderStock: trade.stock,
+      traderBaseStock: trade.baseStock || trade.stock,
       traderBuyInterests: trade.buyInterests,
       traderMarket: trade.market || null,
+      traderMarketKey: trade.marketKey || trade.market?.marketKey || '',
+      traderRestockHours: trade.restockHours,
+      traderBaseCaps: trade.baseCaps ?? trade.caps,
       caps: Number.isFinite(Number(entity.caps)) ? Math.max(0, Math.floor(Number(entity.caps))) : trade.caps,
       loot: Array.isArray(entity.loot) ? entity.loot : undefined
     });
@@ -12341,6 +12737,7 @@ function wastelandSiteWorkerTrade(role = '', faction = '', loc = {}, site = {}) 
         stock: profile.stock.map(row => ({ ...row })),
         buyInterests: profile.buyInterests.slice(),
         caps: profile.caps,
+        restockHours: profile.restockHours,
         quests: profile.quests.slice(),
         dialogueProfile: profile.dialogueProfile
       }
@@ -12379,7 +12776,8 @@ function wastelandSiteWorkerTrade(role = '', faction = '', loc = {}, site = {}) 
     locationId: String(loc?.id || ''),
     role: normalizedRole,
     faction,
-    traderProfile: profile?.id || normalizedRole
+    traderProfile: profile?.id || normalizedRole,
+    marketKey: `${site.id || loc?.id || 'site'}:worker:${normalizedRole}:${profile?.id || normalizedRole}`
   });
 }
 
@@ -12452,8 +12850,12 @@ function spawnWastelandSiteWorkers(room, loc) {
           stationary: !laborWorker && role !== 'guard',
           equipment: workerEquipment,
           traderStock: trade.stock,
+          traderBaseStock: trade.baseStock || trade.stock,
           traderBuyInterests: trade.buyInterests,
           traderMarket: trade.market || null,
+          traderMarketKey: trade.marketKey || trade.market?.marketKey || '',
+          traderRestockHours: trade.restockHours,
+          traderBaseCaps: trade.baseCaps ?? trade.caps,
           caps: trade.caps,
           loot: []
         });
@@ -13529,6 +13931,18 @@ function spawnServerEnemy(room, opts = {}) {
       price: clamp(Math.round(Number(x.price || 1)), 1, 9999),
       qty: clamp(Math.round(Number(x.qty || 1)), 1, 9999)
     })).filter(x => x.id) : [],
+    traderBaseStock: Array.isArray(opts.traderBaseStock) ? opts.traderBaseStock.map(x => ({
+      id: String(x.id || '').slice(0, 64),
+      price: clamp(Math.round(Number(x.price || 1)), 1, 9999),
+      qty: clamp(Math.round(Number(x.shelfTarget ?? x.qty ?? 1)), 1, 9999),
+      shelfMin: clamp(Math.round(Number(x.shelfMin ?? 0)), 0, 9999),
+      shelfTarget: clamp(Math.round(Number(x.shelfTarget ?? x.qty ?? 1)), 1, 9999),
+      shelfMax: clamp(Math.round(Number(x.shelfMax ?? x.qty ?? 1)), 1, 9999),
+      priority: clamp(Math.round(Number(x.priority ?? 60)), 1, 100)
+    })).filter(x => x.id) : [],
+    traderMarketKey: String(opts.traderMarketKey || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120),
+    traderRestockHours: clamp(Math.floor(Number(opts.traderRestockHours ?? 24)), 1, 720),
+    traderBaseCaps: Math.max(0, Math.floor(Number(opts.traderBaseCaps ?? opts.caps ?? opts.traderCaps ?? 0))),
     traderBuyInterests: Array.isArray(opts.traderBuyInterests)
       ? opts.traderBuyInterests.map(x => String(x || '').slice(0, 32)).filter(Boolean)
       : [],
@@ -16031,6 +16445,7 @@ function publicAuthoritativePlayerState(p = {}) {
     equipmentRuntime: serverEquipmentRuntimePresentation(p),
     equipmentRevision: Math.max(0, Math.floor(Number(p.equipmentRevision || 0))),
     weaponInventoryRuntime: serverWeaponInventoryRuntimeSnapshot(p),
+    weaponModifications: serverWeaponModificationSnapshot(p),
     storage: sanitizeServerInventorySnapshot(storage, { includeEquipped: true }),
     storageFaction,
     itemConditions: sanitizeServerItemConditions(p.itemConditions || {}),
@@ -17718,6 +18133,13 @@ io.on('connection', (socket) => {
     let result = null;
     if (action === 'repair') result = performServerRepairItem(p, data);
     else if (action === 'salvage') result = performServerSalvageItem(p, data);
+    else if (action === 'modifyweapon') {
+      if (data.equipment && typeof data.equipment === 'object'
+        && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
+        return fail('Сервер: экипировка изменилась; повторите настройку после сверки.');
+      }
+      result = performServerModifyWeapon(p, data);
+    }
     else if (action === 'unload') {
       if (data.equipment && typeof data.equipment === 'object'
         && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
@@ -17893,7 +18315,7 @@ io.on('connection', (socket) => {
     if (!room) return fail('Локация не найдена.');
     const loc = roomLocation(room);
     const equippedWeaponId = serverActiveWeaponId(p);
-    const weapon = serverWeaponDef(equippedWeaponId);
+    const weapon = serverWeaponDef(equippedWeaponId, p);
     const currentCombat = () => ({
       combat: serverCombatAck(p, weapon, Date.now()),
       self: publicAuthoritativePlayerState(p)
@@ -17925,7 +18347,7 @@ io.on('connection', (socket) => {
         room,
         p.x,
         p.z,
-        serverPlayerNoiseRadius(p, noiseRadius),
+        serverPlayerNoiseRadius(p, noiseRadius * Number(weapon.modNoiseMul || 1)),
         socket.id,
         weapon.ammoType ? 'combat' : 'melee'
       );
@@ -17948,7 +18370,7 @@ io.on('connection', (socket) => {
     syncServerActionProgressionPlayer(p, data);
     const equippedWeaponId = serverActiveWeaponId(p);
     const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
-    const weapon = serverWeaponDef(equippedWeaponId);
+    const weapon = serverWeaponDef(equippedWeaponId, p);
     const currentCombat = () => ({ combat: serverCombatAck(p, weapon, Date.now()), self: publicAuthoritativePlayerState(p) });
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)) {
@@ -17990,7 +18412,7 @@ io.on('connection', (socket) => {
     const spend = serverValidateAndSpendAttack(p, { ...data, attackToken }, weapon, modeInfo, now);
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.', currentCombat());
     if (spend.reused) return fail('Сервер: этот взрыв уже обработан.', currentCombat());
-    addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, 'combat');
+    addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE * Number(weapon.modNoiseMul || 1)), socket.id, 'combat');
 
     const baseRaw = serverDamageRoll(p, weapon, modeInfo);
     const enemyHits = [];
@@ -18116,7 +18538,7 @@ io.on('connection', (socket) => {
     syncServerActionProgressionPlayer(p, data);
     const equippedWeaponId = serverActiveWeaponId(p);
     const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
-    const equippedWeapon = serverWeaponDef(equippedWeaponId);
+    const equippedWeapon = serverWeaponDef(equippedWeaponId, p);
     failureContext = () => ({
       enemy: publicEnemy(enemy),
       combat: serverCombatAck(p, equippedWeapon, Date.now()),
@@ -18127,7 +18549,7 @@ io.on('connection', (socket) => {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.');
     }
     if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не экипировано.');
-    const weapon = serverWeaponDef(weaponId);
+    const weapon = serverWeaponDef(weaponId, p);
     if (weapon.id === 'rocketLauncher' || data.explosive) return fail('Взрыв обрабатывается отдельным серверным действием.');
     const modeInfo = serverWeaponModeInfo(p, weapon, String(data.mode || 'single'));
     const origin = serverCombatOrigin(p, data);
@@ -18148,7 +18570,7 @@ io.on('connection', (socket) => {
       : null;
     if (multiTarget && !multiTarget.ok) return fail(multiTarget.error || 'Сервер: цель вне области атаки.');
 
-    addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, weapon.ammoType ? 'combat' : 'melee');
+    addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE * Number(weapon.modNoiseMul || 1)), socket.id, weapon.ammoType ? 'combat' : 'melee');
     if (enemy.hostileToPlayer === false) setEncounterFactionHostileToPlayer(room, enemy.faction, p, now);
 
     const clientCombat = data.combat && typeof data.combat === 'object' ? data.combat : data;
@@ -18191,6 +18613,8 @@ io.on('connection', (socket) => {
     if (shotgunSpread) {
       raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(weapon, dist, shotgunSpread.perp, shotgunSpread.width)));
     }
+    const criticalShot = resolveCriticalShot(raw, serverStatValue(p, 'luck'), weapon);
+    raw = criticalShot.rawDamage;
     const type = DAMAGE_TYPES.includes(weapon.damageType) ? weapon.damageType : 'ballistic';
     const dmgInfo = serverMitigateEnemyDamage(raw, enemy, type);
     const damage = dmgInfo.damage;
@@ -18210,6 +18634,9 @@ io.on('connection', (socket) => {
       rawDamage: raw,
       absorbed: dmgInfo.absorbed,
       damageType: dmgInfo.type,
+      critical: criticalShot.critical,
+      criticalChance: Math.round(criticalShot.chance * 100),
+      criticalMultiplier: criticalShot.multiplier,
       combat: spend.combat,
       self: publicAuthoritativePlayerState(p)
     });
@@ -18233,7 +18660,7 @@ io.on('connection', (socket) => {
     if (!target || target.id === attacker.id || target.roomId !== room.id || target.dead || Number(target.hp || 0) <= 0) return fail('Цель недоступна.');
 
     syncServerActionProgressionPlayer(attacker, data);
-    const currentWeapon = serverWeaponDef(serverActiveWeaponId(attacker));
+    const currentWeapon = serverWeaponDef(serverActiveWeaponId(attacker), attacker);
     if (data.equipment && typeof data.equipment === 'object'
       && !serverEquipmentSnapshotMatchesAuthority(attacker, data.equipment)) {
       return fail('Сервер: экипировка изменилась; повторите атаку после сверки.', {
@@ -18244,7 +18671,7 @@ io.on('connection', (socket) => {
     const equippedWeaponId = serverActiveWeaponId(attacker);
     const weaponId = serverBaseItemId(data.weapon || equippedWeaponId);
     if (weaponId !== equippedWeaponId) return fail('Сервер: это оружие не является активным.');
-    const weapon = serverWeaponDef(weaponId);
+    const weapon = serverWeaponDef(weaponId, attacker);
     const modeInfo = serverWeaponModeInfo(attacker, weapon, String(data.mode || 'single'));
     const origin = serverCombatOrigin(attacker, data);
     const targetProxy = {
@@ -18268,7 +18695,7 @@ io.on('connection', (socket) => {
     if (!spend.ok) return fail(spend.error || 'Сервер: атака отклонена.', spend.combat ? { combat: spend.combat } : {});
     if (spend.reused) return fail('Сервер: эта атака уже обработана.', spend.combat ? { combat: spend.combat } : {});
 
-    addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(attacker, ENEMY_HEARING_SHOT_RANGE), socket.id, weapon.ammoType ? 'combat' : 'melee');
+    addRoomNoise(room, origin.x, origin.z, serverPlayerNoiseRadius(attacker, ENEMY_HEARING_SHOT_RANGE * Number(weapon.modNoiseMul || 1)), socket.id, weapon.ammoType ? 'combat' : 'melee');
     const clientCombat = data.combat && typeof data.combat === 'object' ? data.combat : data;
     const shotgunSpread = serverIsShotgunWeapon(weapon)
       ? serverShotgunSpreadSample(weapon, origin, targetProxy, data)
@@ -18300,6 +18727,8 @@ io.on('connection', (socket) => {
 
     let raw = serverDamageRoll(attacker, weapon, modeInfo);
     if (shotgunSpread) raw = Math.max(1, Math.round(raw * serverShotgunDamageMultiplierAt(weapon, dist, shotgunSpread.perp, shotgunSpread.width)));
+    const criticalShot = resolveCriticalShot(raw, serverStatValue(attacker, 'luck'), weapon);
+    raw = criticalShot.rawDamage;
     const damageType = DAMAGE_TYPES.includes(weapon.damageType) ? weapon.damageType : 'ballistic';
     const dmgInfo = serverMitigateDamage(raw, target, damageType);
     const damage = dmgInfo.damage;
@@ -18331,6 +18760,9 @@ io.on('connection', (socket) => {
       rawDamage: raw,
       absorbed: dmgInfo.absorbed,
       damageType: dmgInfo.type,
+      critical: criticalShot.critical,
+      criticalChance: Math.round(criticalShot.chance * 100),
+      criticalMultiplier: criticalShot.multiplier,
       hit: true,
       killed,
       secondChance,
@@ -18355,6 +18787,9 @@ io.on('connection', (socket) => {
       rawDamage: raw,
       absorbed: dmgInfo.absorbed,
       damageType: dmgInfo.type,
+      critical: criticalShot.critical,
+      criticalChance: Math.round(criticalShot.chance * 100),
+      criticalMultiplier: criticalShot.multiplier,
       secondChance,
       fullDrop: locationHasFullInventoryDrop(loc),
       droppedItems,
@@ -19267,13 +19702,17 @@ io.on('connection', (socket) => {
 setInterval(() => {
   const startedAt = Date.now();
   try {
-    WASTELAND_SIM.tick(Date.now());
+    if (WASTELAND_SIM.tick(Date.now())) invalidateWastelandPublicCache();
     syncWorldSiteLocationDefinitions();
     pruneExpiredEphemeralRooms(Date.now());
   } catch (err) {
     console.error('Wasteland simulation tick failed:', err);
   } finally {
     const durationMs = Date.now() - startedAt;
+    wastelandTickMetrics = {
+      lastMs: durationMs,
+      maxMs: Math.max(Number(wastelandTickMetrics.maxMs || 0), durationMs)
+    };
     if (durationMs > Math.max(500, WASTELAND_SIM_TICK_MS * 0.5)) {
       console.warn(`Slow wasteland simulation tick: ${durationMs}ms`);
     }

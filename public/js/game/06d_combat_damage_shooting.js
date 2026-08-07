@@ -109,10 +109,12 @@
             const damage = Math.max(0, Number(ack.damage || 0));
             const absorbed = Math.max(0, Number(ack.absorbed || 0));
             const type = ack.damageType || w.damageType || 'ballistic';
+            const critical = ack.critical === true;
             enemy.flash = 0.14;
-            if (damage > 0) createFloatingText(enemy.x, enemy.z, '-' + damage, '#ff765d');
+            if (damage > 0) createFloatingText(enemy.x, enemy.z, critical ? `КРИТ! -${damage}` : '-' + damage, critical ? '#ffd166' : '#ff765d');
             const absorbedText = absorbed > 0 ? `, броня поглотила ${absorbed}` : '';
-            addLog(`${w.icon} ${w.name} (${modeInfo.label}, ${damageTypeLabel(type)}): ${enemy.name} получает ${damage} урона${absorbedText}.`, null, 'combat');
+            const criticalText = critical ? 'КРИТИЧЕСКИЙ ВЫСТРЕЛ! ' : '';
+            addLog(`${w.icon} ${criticalText}${w.name} (${modeInfo.label}, ${damageTypeLabel(type)}): ${enemy.name} получает ${damage} урона${absorbedText}.`, null, 'combat');
           }
           applyNetworkEnemies([serverEnemy], { allowPositionSync: true, fromServer: true, pruneMissing: false });
           if (ack.combat) applyServerCombatState(ack.combat);
@@ -140,12 +142,14 @@
     }
     const rawBase = (damageRoll(w) + (w.ammoType ? talentLevel('sharpshooter') * 2 : 0)) * fireDamageMultiplier(w);
     const raw = Math.max(1, Math.round(rawBase * (modeInfo.damageMul || 1) * ambushDamageMultiplier(enemy) * shotgunDamageMul));
-    const dmgInfo = mitigateEnemyDamage(raw, enemy, w.damageType || 'ballistic');
+    const criticalShot = rollCriticalShot(raw, w);
+    const dmgInfo = mitigateEnemyDamage(criticalShot.rawDamage, enemy, w.damageType || 'ballistic');
     const dmg = dmgInfo.damage;
     enemy.flash = 0.14;
-    createFloatingText(enemy.x, enemy.z, '-' + dmg, '#ff765d');
+    createFloatingText(enemy.x, enemy.z, criticalShot.critical ? `КРИТ! -${dmg}` : '-' + dmg, criticalShot.critical ? '#ffd166' : '#ff765d');
     const absorbedText = dmgInfo.absorbed > 0 ? `, броня поглотила ${dmgInfo.absorbed}` : '';
-    addLog(`${w.icon} ${w.name} (${modeInfo.label}, ${damageTypeLabel(dmgInfo.type)}): ${enemy.name} получает ${dmg} урона${absorbedText}.`, null, 'combat');
+    const criticalText = criticalShot.critical ? 'КРИТИЧЕСКИЙ ВЫСТРЕЛ! ' : '';
+    addLog(`${w.icon} ${criticalText}${w.name} (${modeInfo.label}, ${damageTypeLabel(dmgInfo.type)}): ${enemy.name} получает ${dmg} урона${absorbedText}.`, null, 'combat');
 
     enemy.hp -= dmg;
     if (enemy.hp <= 0) killEnemy(enemy);
@@ -158,7 +162,7 @@
     if (!w.ammoType) return;
     const fx = weaponFxProfile(w);
     const weaponId = weaponBaseId(w);
-    triggerWeaponVisualRecoil(playerParts.weaponGroup, weaponId);
+    triggerWeaponVisualRecoil(activeActorWeaponGroup(playerGroup) || playerParts.weaponGroup, weaponId);
 
     // Visual shots must follow the same gameplay ray axis. Do not draw tracer
     // from the laterally offset muzzle to the collision point: at close range
@@ -402,9 +406,11 @@
           const damage = Math.max(0, Number(ack.damage || 0));
           const absorbed = Math.max(0, Number(ack.absorbed || 0));
           const type = ack.damageType || w.damageType || 'ballistic';
-          if (damage > 0) createFloatingText(target.x, target.z, '-' + damage, '#ff765d');
+          const critical = ack.critical === true;
+          if (damage > 0) createFloatingText(target.x, target.z, critical ? `КРИТ! -${damage}` : '-' + damage, critical ? '#ffd166' : '#ff765d');
           const absorbedText = absorbed > 0 ? `, броня поглотила ${absorbed}` : '';
-          addLog(`${w.icon} ${w.name} (${modeInfo.label}, ${damageTypeLabel(type)}): ${target.name} получает ${damage} урона${absorbedText}.`, null, 'combat');
+          const criticalText = critical ? 'КРИТИЧЕСКИЙ ВЫСТРЕЛ! ' : '';
+          addLog(`${w.icon} ${criticalText}${w.name} (${modeInfo.label}, ${damageTypeLabel(type)}): ${target.name} получает ${damage} урона${absorbedText}.`, null, 'combat');
         }
         if (ack.target && target.row) {
           target.row.data = { ...target.row.data, ...ack.target };

@@ -275,8 +275,6 @@
       row?.visual || '',
       globalMapWorldPartyModelKey(row || {}),
       row?.name || '',
-      Math.round(Number(row?.x || 0) * 10) / 10,
-      Math.round(Number(row?.y || 0) * 10) / 10,
       row?.state || '',
       row?.destinationSiteId || '',
       row?.targetPartyId || '',
@@ -287,4 +285,3 @@
       row?.threatPartyId || ''
     ].join(':')).join('|');
   }
-

@@ -511,7 +511,8 @@
       const condition = typeof item.condition === 'number' ? ` · состояние ${Math.round(item.condition)}%` : '';
       const harvestLabels = { ore: 'руда', wood: 'древесина', liquid: 'вода/нефть' };
       const harvest = item.harvestTool ? ` · добыча: ${harvestLabels[item.harvestTool] || item.harvestTool}` : '';
-      return `Урон ${item.dmg[0]}-${item.dmg[1]} · тип ${damageTypeLabel(item.damageType || 'ballistic')}${grip} · дальность ${item.range}${ammo}${modes}${req}${skill}${energyRisk}${condition}${harvest} · Вес ${formatWeight(itemWeight(item.id))}`;
+      const mods = typeof weaponModificationCount === 'function' && item.ammoType ? ` · модификации ${weaponModificationCount(item)}/${typeof weaponModificationSlotsFor === 'function' ? weaponModificationSlotsFor(item).length : 3}` : '';
+      return `Урон ${item.dmg[0]}-${item.dmg[1]} · тип ${damageTypeLabel(item.damageType || 'ballistic')}${grip} · дальность ${item.range}${ammo}${modes}${req}${skill}${energyRisk}${condition}${mods}${harvest} · Вес ${formatWeight(itemWeight(item.id))}`;
     }
     if (item.armor || item.protection || item.thresholds) {
       const condition = typeof item.condition === 'number' ? ` · состояние ${Math.round(item.condition)}%` : '';
@@ -1327,12 +1328,14 @@
         (mobileQuickAssignItem === id ? ' selected-for-quickbar' : '');
       const equippedHint = 'Предмет сейчас на персонаже. Сначала снимите его, если хотите продать, разобрать или заменить.';
       const tag = equipped ? '<div class="inv-tag inv-equipped-badge">ЭКИПИРОВАНО</div>' : (quickable ? '<div class="inv-tag">быстр.</div>' : '');
+      const modCount = typeof weaponModificationCount === 'function' ? weaponModificationCount(item) : 0;
+      const modTag = modCount > 0 ? `<div class="inv-tag inv-modification-badge">МОДЫ ${modCount}</div>` : '';
       const price = traderWindowOpen && sellable ? `<div class="inv-price">${getSellPrice(id)} 🪙</div>` : '';
       const countClass = traderWindowOpen && sellable ? ' has-price' : '';
       const count = qty > 1 || ['ammo', 'money', 'material', 'loot'].includes(item.type) ? `<div class="inv-count${countClass}">${qty}</div>` : '';
       const weight = `<div class="inv-weight">${formatWeight(itemWeight(id) * qty)}</div>`;
       const quickPick = quickable ? '<button type="button" class="mobile-quick-pick" aria-label="Назначить в быстрый доступ">⚡</button>' : '';
-      card.innerHTML = `${tag}${weight}<div class="inv-emoji">${itemArtHtml(item)}</div><div class="inv-name">${item.name}</div>${quickPick}${price}${count}`;
+      card.innerHTML = `${tag}${modTag}${weight}<div class="inv-emoji">${itemArtHtml(item)}</div><div class="inv-name">${item.name}</div>${quickPick}${price}${count}`;
       card.setAttribute('draggable', isMobileControlsEnabled() ? 'false' : 'true');
       const hasDirectUse = itemHasInventoryUseAction(item);
       const itemHint = traderWindowOpen && sellable
@@ -1502,7 +1505,7 @@
       specialCha: 'Формула: Харизма +1 за ранг, максимум +3; продажа +4%, проверка речи +3.5 п.п., награда квестов +2% за каждую Харизму выше 5.',
       specialInt: 'Формула: Интеллект +1 за ранг, максимум +3; терминалы +3 п.п., лечение Доктором +2.5 п.п., шанс доп. ресурса +2.5 п.п. за каждый Интеллект выше 5; энергоурон +1 за каждые 2 Интеллекта выше 5.',
       specialAgi: 'Формула: Ловкость +1 за ранг, максимум +3; скорость +0.13, взлом замков +2.5 п.п., базовые ОД = 5 + floor(ЛВ/2), итоговые ОД = min(99, базовые ОД + уровень−1 + «Живчик»).',
-      specialLuck: 'Формула: Удача +1 за ранг, максимум +3; попадание +0.6 п.п., взлом +1.2 п.п., Второй шанс +2.5 п.п., добыча +1 п.п. и защита от травм за каждую Удачу выше 5.'
+      specialLuck: 'Формула: Удача +1 за ранг, максимум +3; критический выстрел +1 п.п., попадание +0.6 п.п., взлом +1.2 п.п., Второй шанс +2.5 п.п., добыча +1 п.п. и защита от травм за каждую Удачу выше 5.'
     };
     return formulas[id] || 'Формула: эффект применяется по текущему рангу перка.';
   }
@@ -1611,7 +1614,7 @@
     if (key === 'cha') return `Текущий уровень: ${v}. Формулы: продажа ${sign((v - 5) * 4)}% = (Харизма−5)×4; речь +(Харизма−5)×3.5 п.п.; награды квестов +(Харизма−5)×2%.`;
     if (key === 'int') return `Текущий уровень: ${v}. Формулы: терминалы +(Интеллект−5)×3 п.п.; лечение Доктором +(Интеллект−5)×2.5 п.п.; энергоурон +floor((Интеллект−5)/2).`;
     if (key === 'agi') return `Текущий уровень: ${v}. Итоговые ОД ${totalMaxAp}: база ${d.maxAp} = 5 + floor(Ловкость/2), «Живчик» +${talentLevel('actionBoy')}. Скорость ${d.speed.toFixed(2)} = 4.35 + Ловкость×0.13.`;
-    if (key === 'luck') return `Текущий уровень: ${v}. Формулы: меткость +${Math.max(0, (v - 5) * 0.6).toFixed(1)} п.п. = max(0, Удача−5)×0.6; проверки удачи +${d.luckChecks} п.п. = max(0, Удача−5)×2.5.`;
+    if (key === 'luck') return `Текущий уровень: ${v}. Формулы: критический выстрел ${v}% и ×2 сырого урона до брони; меткость +${Math.max(0, (v - 5) * 0.6).toFixed(1)} п.п. = max(0, Удача−5)×0.6; проверки удачи +${d.luckChecks} п.п. = max(0, Удача−5)×2.5.`;
     return `Текущий уровень: ${v}.`;
   }
 

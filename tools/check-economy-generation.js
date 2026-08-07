@@ -1,7 +1,10 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const vm = require('vm');
 const { normalizeWorldTask } = require('../src/server/wasteland-world-tasks');
+const { createWastelandSimulation } = require('../src/server/wasteland-sim');
+const { normalizeRecipeCatalog, normalizeTraderProfiles } = require('../src/server/faction-economy');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -619,6 +622,123 @@ for (const file of fs.readdirSync(locationDir).filter(name => name.endsWith('.js
     errors.push(`location ${loc.id || file}: not enough personal beds in ${relPath}: ${beds} beds for ${expectedSleepers} NPCs`);
   }
 }
+
+function checkPersistentFactionEconomy() {
+  const recipeData = readJson('data/economy-recipes.json');
+  const traderData = readJson('data/traders.json');
+  const recipes = normalizeRecipeCatalog(recipeData);
+  const traders = normalizeTraderProfiles(traderData);
+  const stationIds = new Set(Object.keys(craftingStationModels));
+  const rawResources = new Set(['water', 'oil', 'scrap', 'ore', 'wood', 'chemicals']);
+
+  if (recipeData.schema !== 'realm.economyRecipes.v1' || Object.keys(recipes).length < 20) {
+    errors.push('faction economy: authored recipe catalog is missing or unexpectedly small');
+  }
+  for (const recipe of Object.values(recipes)) {
+    if (!stationIds.has(recipe.station)) errors.push(`faction economy recipe ${recipe.id}: unknown station ${recipe.station}`);
+    for (const inputId of Object.keys(recipe.inputs || {})) {
+      if (!rawResources.has(inputId) && !recipes[inputId]) errors.push(`faction economy recipe ${recipe.id}: input ${inputId} cannot be produced or harvested`);
+    }
+  }
+  for (const profile of Object.values(traders)) {
+    for (const row of profile.stock) {
+      if (!rawResources.has(row.id) && !recipes[row.id]) errors.push(`faction trader ${profile.id}: ${row.id} has no production recipe`);
+      if (row.shelfMin > row.shelfTarget || row.shelfTarget > row.shelfMax) errors.push(`faction trader ${profile.id}: invalid shelf targets for ${row.id}`);
+    }
+  }
+
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-faction-economy-'));
+  try {
+    const stateFile = path.join(tempDir, 'wasteland-sim.json');
+    let sim = createWastelandSimulation({ stateFile, traderProfiles: traderData, saveIntervalMs: 3000 });
+    const context = { siteId: 'settlement', role: 'merchant', marketKey: 'settlement:economy_guard' };
+    sim.state().sites.settlement.stockpile.ammo9 = 12;
+    const initial = sim.applyTraderSupply('oldKlim', traderData.profiles.oldKlim, context);
+    const initialAmmo = initial.stock.find(row => row.id === 'ammo9');
+    if (!initialAmmo || !initial.marketKey) throw new Error('persistent market did not initialize authored stock');
+    const bought = sim.applyNpcTraderTransaction('oldKlim', {
+      buys: [{ id: 'ammo9', qty: 1 }],
+      silverDelta: initialAmmo.price,
+      marketKey: initial.marketKey
+    }, context);
+    if (!bought.ok || bought.stock.find(row => row.id === 'ammo9')?.qty !== initialAmmo.qty - 1) {
+      throw new Error('persistent market did not retain a purchase');
+    }
+
+    sim.save(true);
+    sim = createWastelandSimulation({ stateFile, traderProfiles: traderData, saveIntervalMs: 3000 });
+    const reloaded = sim.applyTraderSupply('oldKlim', traderData.profiles.oldKlim, context);
+    if (reloaded.stock.find(row => row.id === 'ammo9')?.qty !== initialAmmo.qty - 1) {
+      throw new Error('persistent market purchase disappeared after reload');
+    }
+    const remainingAmmo = reloaded.stock.find(row => row.id === 'ammo9')?.qty || 0;
+    const emptied = sim.applyNpcTraderTransaction('oldKlim', {
+      buys: [{ id: 'ammo9', qty: remainingAmmo }],
+      silverDelta: 0,
+      marketKey: reloaded.marketKey
+    }, context);
+    if (!emptied.ok) throw new Error('persistent market could not be emptied for restock test');
+    const settlement = sim.state().sites.settlement;
+    settlement.stockpile.ammo9 = 7;
+    settlement.retailMarkets[reloaded.marketKey].lastRestockHour = -999;
+    const restocked = sim.applyTraderSupply('oldKlim', traderData.profiles.oldKlim, context);
+    if ((restocked.stock.find(row => row.id === 'ammo9')?.qty || 0) !== 7 || Number(settlement.stockpile.ammo9 || 0) !== 0) {
+      throw new Error('retail restock did not move real stock from the faction warehouse');
+    }
+
+    const productionStateFile = path.join(tempDir, 'production-sim.json');
+    const productionTraders = {
+      oldKlim: { caps: 100, restockHours: 24, stock: [{ id: 'helmet', qty: 2, price: 20 }] }
+    };
+    const productionSim = createWastelandSimulation({ stateFile: productionStateFile, traderProfiles: productionTraders, saveIntervalMs: 3000 });
+    const helmetContext = { siteId: 'settlement', role: 'merchant', marketKey: 'settlement:helmet_guard' };
+    productionSim.applyTraderSupply('oldKlim', productionTraders.oldKlim, helmetContext);
+    if (Number(productionSim.state().sites.settlement.retailDemand?.helmet || 0) < 2) {
+      throw new Error('empty retail shelf did not create faction demand');
+    }
+    for (const site of Object.values(productionSim.state().sites)) {
+      if (String(site.owner || '') !== 'old_klim') continue;
+      site.stockpile.helmet = 0;
+      site.productionQueue = [];
+      site.productionDemand = {};
+    }
+    for (const party of Object.values(productionSim.state().parties)) {
+      if (String(party.faction || '') === 'old_klim' && party.cargo) party.cargo.helmet = 0;
+    }
+    productionSim.state().sites.settlement.stockpile.scrap = 20;
+    productionSim.state().sites.klimAmmoWorks.stockpile.helmet = 1;
+    productionSim.tick(Date.now() + 1000, { hours: 1, force: true });
+    const helmetQueue = Object.values(productionSim.state().sites)
+      .flatMap(site => site.productionQueue || [])
+      .find(row => row.itemId === 'helmet');
+    if (!helmetQueue) throw new Error('faction planner did not queue a missing trader item');
+    productionSim.tick(Date.now() + 2000, { hours: 3, force: true });
+    const logisticsParty = Object.values(productionSim.state().parties)
+      .find(party => party.productionExport && Number(party.cargo?.helmet || 0) > 0 && party.destinationSiteId === 'settlement');
+    if (!logisticsParty) throw new Error('faction logistics did not dispatch a demanded low-volume item');
+    productionSim.tick(Date.now() + 3000, { hours: 12, force: true });
+    const producedHelmet = Object.values(productionSim.state().sites)
+      .reduce((sum, site) => sum + Number(site.stockpile?.helmet || 0), 0)
+      + Object.values(productionSim.state().parties)
+        .reduce((sum, party) => sum + Number(party.cargo?.helmet || 0), 0)
+      + Object.values(productionSim.state().sites)
+        .flatMap(site => Object.values(site.retailMarkets || {}))
+        .flatMap(market => market.stock || [])
+        .filter(row => row.id === 'helmet')
+        .reduce((sum, row) => sum + Number(row.qty || 0), 0);
+    if (producedHelmet <= 1) throw new Error('faction production queue did not complete its craft');
+  } catch (error) {
+    errors.push(`faction economy runtime: ${error.message}`);
+  } finally {
+    const resolvedTemp = path.resolve(tempDir);
+    const resolvedRoot = path.resolve(os.tmpdir());
+    if (resolvedTemp.startsWith(`${resolvedRoot}${path.sep}`) && path.basename(resolvedTemp).startsWith('realm-faction-economy-')) {
+      fs.rmSync(resolvedTemp, { recursive: true, force: true });
+    }
+  }
+}
+
+checkPersistentFactionEconomy();
 
 if (errors.length) {
   console.error('Economy generation guard failed:');

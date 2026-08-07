@@ -9,6 +9,12 @@
     const cursorTarget = interactionTargetUnderCursor();
     if (tryUseHeldItemForInteraction(cursorTarget)) return;
     if (performCursorTargetInteraction(cursorTarget)) return;
+    const nearbyNpc = typeof findNearbyTrader === 'function' ? findNearbyTrader(4.2) : null;
+    if (nearbyNpc?.isTradeMachine) {
+      if (typeof openTraderWindow === 'function' && openTraderWindow(nearbyNpc)) return;
+    } else if (nearbyNpc && typeof talkToTraderQuest === 'function' && talkToTraderQuest(nearbyNpc)) {
+      return;
+    }
     if (useLocationExit()) return;
     setReadout('Наведи курсор на предмет, НПС, ресурс, ящик или игрока для взаимодействия.');
   }

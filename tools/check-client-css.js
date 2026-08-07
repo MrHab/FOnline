@@ -23,7 +23,8 @@ const parts = [
   '15_location_loading_screen.css',
   '16_mobile_ui_icons.css',
   '17_player_frame_hud.css',
-  '18_hud_readability.css'
+  '18_hud_readability.css',
+  '19_weapon_modification_workbench.css'
 ];
 
 const retiredParts = [

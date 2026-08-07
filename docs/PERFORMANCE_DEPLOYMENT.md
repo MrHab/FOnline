@@ -26,12 +26,15 @@ include /etc/nginx/snippets/realm-of-ashes.locations.conf;
 ```bash
 nginx -t
 systemctl reload nginx
-curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.76.6-approved-equipment-runtime-v2
+curl -fsSI https://rangir.ru/js/game/01_bootstrap_online_save.js?v=7.76.6-weapon-modification-v1-dialogue-window-fix-wasteland-network-v1
 curl -fsS https://rangir.ru/health
+curl -fsS -H 'Accept-Encoding: gzip' -D - -o /dev/null https://rangir.ru/api/wasteland
 ```
 
 У первого ответа должны появиться долгий `max-age` и `immutable`, а `/health`
-должен вернуть JSON с `"ok":true`.
+должен вернуть JSON с `"ok":true`. Последний запрос должен содержать
+`Content-Encoding: gzip`; большой снимок мира больше не должен передаваться как
+несжатый JSON.
 
 Snippet также возвращает `404` для `/api/dev/*`,
 `/dev-location-editor.html` и `/dev-global-map-editor.html`, включая варианты
@@ -47,7 +50,14 @@ Snippet также возвращает `404` для `/api/dev/*`,
 ```text
 WASTELAND_SIM_TICK_MS=5000
 WASTELAND_SIM_SAVE_INTERVAL_MS=15000
+WASTELAND_PUBLIC_CACHE_MS=1000
 ```
+
+Клиент получает полный публичный снимок не чаще одного раза за simulation tick
+и начинает следующий интервал только после завершения предыдущего запроса.
+Node.js повторно использует уже сериализованный снимок для одновременно
+пришедших клиентов; заголовок `X-Realm-Wasteland-Cache` показывает `HIT` или
+`MISS`.
 
 После изменения выполните:
 

@@ -54,7 +54,8 @@
     if (skillId === 'lightWeapons') perkReduction += talentLevel('automaticMan') * 0.03;
     if (skillId === 'heavyWeapons') perkReduction += talentLevel('machineGunner') * 0.04;
     if (skillId === 'energyWeapons') perkReduction += talentLevel('energyTech') * 0.03;
-    return Math.max(0.04, Math.min(0.32, 0.18 - skillReduction + strengthPenalty + movementPenalty + conditionPenalty - crouchBonus - perkReduction));
+    const modificationReduction = Math.max(0, Number(w?.modAutoPenaltyReduction || 0));
+    return Math.max(0.04, Math.min(0.32, 0.18 - skillReduction + strengthPenalty + movementPenalty + conditionPenalty - crouchBonus - perkReduction - modificationReduction));
   }
 
   function automaticAccuracyPenaltyPercent(w = currentWeapon()) {
@@ -361,6 +362,26 @@
     queueSave();
   }
 
+  const CRITICAL_SHOT_DAMAGE_MULTIPLIER = 2;
+
+  function criticalShotChance(w = currentWeapon()) {
+    if (!w?.ammoType) return 0;
+    const luck = Math.max(1, Math.min(15, Number(statValue('luck') || 5)));
+    return luck / 100;
+  }
+
+  function rollCriticalShot(rawDamage, w = currentWeapon(), rng = Math.random) {
+    const chance = criticalShotChance(w);
+    const critical = chance > 0 && rng() < chance;
+    const multiplier = critical ? CRITICAL_SHOT_DAMAGE_MULTIPLIER : 1;
+    return {
+      critical,
+      chance,
+      multiplier,
+      rawDamage: Math.max(0, Math.round((Number(rawDamage) || 0) * multiplier))
+    };
+  }
+
   function calculateHitChance(enemy, dist, w = currentWeapon(), modeInfo = getWeaponModeInfo(w), options = {}) {
     if (!enemy || enemy.dead || dist > w.range) return 0;
     const conditionPenalty = w.ammoType && typeof w.condition === 'number' ? Math.max(0, 70 - w.condition) * 0.0025 : 0;
@@ -381,7 +402,7 @@
     const traumaPenalty = injuryHitPenalty();
     let base;
     if (w.ammoType) {
-      base = Math.max(0.38, 0.82 - dist / (w.range * 3.1)) + skillBonus + statAimBonus + luckBonus + modeBonus - conditionPenalty - strengthPenalty - movementPenalty - traumaPenalty;
+      base = Math.max(0.38, 0.82 - dist / (w.range * 3.1)) + skillBonus + statAimBonus + luckBonus + modeBonus + Number(w.modAccuracyBonus || 0) - conditionPenalty - strengthPenalty - movementPenalty - traumaPenalty;
       if (modeInfo?.id === 'auto') base -= automaticAccuracyPenalty(w);
       if (isShotgunWeapon(w)) base *= shotgunHitMultiplierAt(w, dist, options.conePerp || 0, options.coneWidth);
     } else {
@@ -442,7 +463,8 @@
     const est = estimatedWeaponDamageRange(enemy, w, info?.modeInfo || getWeaponModeInfo(w));
     if (!est) return 'нет данных';
     const range = est.min === est.max ? `${est.min}` : `${est.min}–${est.max}`;
-    const expected = Math.max(0, Math.round(est.avg * Math.max(0, Number(info?.chance || 0)) / 100));
+    const criticalExpectedMultiplier = 1 + criticalShotChance(w) * (CRITICAL_SHOT_DAMAGE_MULTIPLIER - 1);
+    const expected = Math.max(0, Math.round(est.avg * criticalExpectedMultiplier * Math.max(0, Number(info?.chance || 0)) / 100));
     return `${range} ${damageTypeLabel(est.type)} · средний ${est.avg} · с шансом ≈${expected}`;
   }
 
@@ -458,6 +480,7 @@
     const inRange = dist <= w.range;
     const chance = (!blocked && inRange) ? Math.round(calculateHitChance(enemy, dist, w, modeInfo) * 100) : 0;
     let note = `${modeInfo.label} · ${modeInfo.apCost} AP · ${Math.round(dist)} м`;
+    if (w.ammoType) note += ` · крит ${Math.round(criticalShotChance(w) * 100)}% (×${CRITICAL_SHOT_DAMAGE_MULTIPLIER})`;
     if (isEnergyWeapon(w)) note += ` · риск сбоя ${Math.round(energyFailureChance(w, modeInfo) * 100)}%`;
     if (!inRange) note = `Вне дальности · ${Math.round(dist)}/${w.range} м`;
     else if (blocked) note = 'Линия огня перекрыта';
@@ -528,6 +551,10 @@
     }
     if (w && runtimeMatches && combat.weapon && weaponBaseId(w) === String(combat.weapon) && Number.isFinite(Number(combat.condition))) {
       w.condition = Math.max(1, Math.min(100, Number(combat.condition)));
+    }
+    if (w && runtimeMatches && combat.weapon && weaponBaseId(w) === String(combat.weapon) && combat.weaponMods && typeof combat.weaponMods === 'object') {
+      w.weaponMods = { ...combat.weaponMods };
+      if (typeof applyWeaponModificationStats === 'function') applyWeaponModificationStats(w);
     }
     renderQuickbar();
     renderWeaponReadout();

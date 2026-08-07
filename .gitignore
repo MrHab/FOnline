@@ -10,6 +10,11 @@ data/*.corrupt-*
 wasteland-sim.json
 backups/
 
+# Agent scratch space. Nested worktrees and audit dumps of runtime simulation
+# state must never enter the repository.
+.agents/
+.codex-npc-caps-inventory/
+
 # Local environment and logs.
 .env
 .env.*

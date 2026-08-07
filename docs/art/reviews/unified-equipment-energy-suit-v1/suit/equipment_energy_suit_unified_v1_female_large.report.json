@@ -1,7 +1,7 @@
 {
   "actualGlb": {
     "materials": 6,
-    "meshDefinitions": 3,
+    "meshDefinitions": 2,
     "nodes": [
       "head",
       "neck_01",
@@ -69,19 +69,19 @@
       "pelvis",
       "root",
       "equipment_energy_suit_unified_v1_female_large_field_details",
-      "equipment_energy_suit_unified_v1_female_large_inner_seal",
       "equipment_energy_suit_unified_v1_female_large_sealed_shell",
       "character_root"
     ],
-    "positionVertices": 48923,
+    "positionVertices": 15619,
     "skins": 1,
     "textures": 6,
-    "triangles": 27159
+    "triangles": 11438
   },
   "assetId": "equipment_energy_suit_unified_v1_female_large",
   "bodyId": "female_large",
   "file": "equipment_energy_suit_unified_v1_female_large.glb",
   "fit": {
+    "anatomyProjectionStrength": 0.84,
     "bodyBounds": {
       "maximum": [
         0.64233,
@@ -94,8 +94,8 @@
         -0.00841
       ]
     },
-    "detailPolygons": 281,
-    "detailVertices": 522,
+    "detailPolygons": 373,
+    "detailVertices": 682,
     "energyCore": [
       0.0,
       -0.24267,
@@ -113,9 +113,11 @@
         1.48035
       ]
     },
+    "innerSealRequired": false,
     "rubberMaterialPolygons": 3507,
-    "shellPolygons": 17805,
-    "shellVertices": 8990,
+    "shellPolygons": 10138,
+    "shellVertices": 5140,
+    "silhouetteProfile": "energy",
     "torsoBounds": {
       "maximum": [
         0.1955,
@@ -147,9 +149,9 @@
     "directRuntimeUse": false,
     "donor": null,
     "license": "Realm of Ashes project asset",
-    "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+    "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "2473FBE1614C5A9E9F0C2B682846DB3E69CB7816AFE56F755475D336E23B47EA"
+  "sha256": "727E2943F708CCEFA37E18C831F6EA40E07F0FB5077BBA1EC7CD76386260332C"
 }

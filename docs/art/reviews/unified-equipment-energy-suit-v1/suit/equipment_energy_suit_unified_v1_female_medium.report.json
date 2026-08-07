@@ -1,7 +1,7 @@
 {
   "actualGlb": {
     "materials": 6,
-    "meshDefinitions": 3,
+    "meshDefinitions": 2,
     "nodes": [
       "head",
       "neck_01",
@@ -69,19 +69,19 @@
       "pelvis",
       "root",
       "equipment_energy_suit_unified_v1_female_medium_field_details",
-      "equipment_energy_suit_unified_v1_female_medium_inner_seal",
       "equipment_energy_suit_unified_v1_female_medium_sealed_shell",
       "character_root"
     ],
-    "positionVertices": 49109,
+    "positionVertices": 15497,
     "skins": 1,
     "textures": 6,
-    "triangles": 27054
+    "triangles": 11314
   },
   "assetId": "equipment_energy_suit_unified_v1_female_medium",
   "bodyId": "female_medium",
   "file": "equipment_energy_suit_unified_v1_female_medium.glb",
   "fit": {
+    "anatomyProjectionStrength": 0.84,
     "bodyBounds": {
       "maximum": [
         0.64122,
@@ -94,8 +94,8 @@
         -0.00841
       ]
     },
-    "detailPolygons": 281,
-    "detailVertices": 522,
+    "detailPolygons": 373,
+    "detailVertices": 682,
     "energyCore": [
       0.0,
       -0.21323,
@@ -113,9 +113,11 @@
         1.4846
       ]
     },
+    "innerSealRequired": false,
     "rubberMaterialPolygons": 3544,
-    "shellPolygons": 17703,
-    "shellVertices": 8930,
+    "shellPolygons": 10063,
+    "shellVertices": 5094,
+    "silhouetteProfile": "energy",
     "torsoBounds": {
       "maximum": [
         0.173,
@@ -147,9 +149,9 @@
     "directRuntimeUse": false,
     "donor": null,
     "license": "Realm of Ashes project asset",
-    "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+    "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "CE8EF929FB2828CA54947F67DE1B4A6ECE66B3E39B193772D2AF8CE9555222FF"
+  "sha256": "1528E192329B56B8442CF6C301FB4120B8F34532AB3912063F5B3677B61F3EEE"
 }

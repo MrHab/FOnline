@@ -26,7 +26,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_leather_jacket_unified_v1',
     runtimePrefix: 'equipment_leather_jacket',
     meshCount: 2,
-    fitReportSha256: 'A5D518224794202F4EF4656B038BD24C28E76E621FC9FD36D1CD3238C1BBFF2C'
+    fitReportSha256: 'BFF4F9D493A61D0B93B3996E3EC307477D9CB6224C23BA2B68DCAC5EDB117BCF'
   },
   {
     itemId: 'reinforcedBoots',
@@ -71,7 +71,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_hazmat_suit_unified_v1',
     runtimePrefix: 'equipment_hazmat_suit',
     meshCount: 3,
-    fitReportSha256: '4634A2060001669056D50A084A4FC564158788D95BC679C9CF86A018270BCECC'
+    fitReportSha256: 'CE377C96F63DD4C9336315EA402C5ECE78E71C6BF70505E3AD966958A13049F4'
   },
   {
     itemId: 'energySuit',
@@ -79,8 +79,8 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-energy-suit-v1', 'suit'],
     sourcePrefix: 'equipment_energy_suit_unified_v1',
     runtimePrefix: 'equipment_energy_suit',
-    meshCount: 3,
-    fitReportSha256: '0334FB653658D0C40B6BE649BEB9EAC4AACEBE889AF1CF214F1134DB74AA2781'
+    meshCount: 2,
+    fitReportSha256: '066FACF879B9BBFBFE44CF1CB717BF6B3428BA30A381F19DB05CCB748F757A0A'
   }
 ]);
 
@@ -203,9 +203,10 @@ function makeRuntimeGlb(source, destination, metadata = {}) {
   return { sourceSha256: sha256(source), runtimeSha256: sha256(destination) };
 }
 
-function verifyEquipmentReviews() {
+function verifyEquipmentReviews(onlyItemIds = null) {
   const variants = [];
   for (const definition of APPROVED_EQUIPMENT_REVIEWS) {
+    if (onlyItemIds && !onlyItemIds.has(definition.itemId)) continue;
     const directory = fromRoot(...definition.reviewDirectory);
     const fitReportFile = path.join(directory, 'fit-report-all.json');
     assertFile(`${definition.itemId} fit report`, fitReportFile);
@@ -330,6 +331,52 @@ function verifyRifleReview() {
 }
 
 function main() {
+  if (process.argv.includes('--equipment-only')) {
+    const changedItemIds = new Set(['leather', 'hazmatSuit', 'energySuit']);
+    const equipment = verifyEquipmentReviews(changedItemIds);
+    const manifestFile = fromRoot('public', 'assets', 'models', 'approved-humanoid-assets.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+    const replacements = new Map();
+    for (const asset of equipment) {
+      const output = fromRoot(
+        'public', 'assets', 'models', 'equipment', asset.slot,
+        `${asset.runtimePrefix}_${asset.bodyId}.glb`
+      );
+      const runtimeAssetId = `${asset.itemId}_${asset.bodyId}`;
+      const row = {
+        id: runtimeAssetId,
+        itemId: asset.itemId,
+        slot: asset.slot,
+        bodyId: asset.bodyId,
+        file: `/assets/models/equipment/${asset.slot}/${asset.runtimePrefix}_${asset.bodyId}.glb`,
+        ...makeRuntimeGlb(asset.glb, output, {
+          approvedReviewSha256: asset.approvedReviewSha256,
+          runtimeAssetId,
+          sourceRootName: asset.sourcePrefix,
+          equipmentItemId: asset.itemId,
+          equipmentSlot: asset.slot,
+          bodyId: asset.bodyId
+        })
+      };
+      replacements.set(runtimeAssetId, {
+        ...row,
+        bytes: fs.statSync(output).size
+      });
+    }
+    manifest.files = manifest.files.map(row => replacements.get(row.id) || row);
+    const missing = [...replacements.keys()].filter(id => !manifest.files.some(row => row.id === id));
+    for (const id of missing) manifest.files.push(replacements.get(id));
+    manifest.approval.equipmentFitReports ||= {};
+    for (const definition of APPROVED_EQUIPMENT_REVIEWS) {
+      if (changedItemIds.has(definition.itemId)) {
+        manifest.approval.equipmentFitReports[definition.itemId] = definition.fitReportSha256;
+      }
+    }
+    fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
+    console.log(`Approved equipment assets built: ${replacements.size} files`);
+    return manifest;
+  }
+
   const npcSource = verifyNpcReview();
   const boots = verifyBootReviews();
   const equipment = verifyEquipmentReviews();

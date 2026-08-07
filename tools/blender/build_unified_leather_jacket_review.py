@@ -1,9 +1,9 @@
 """Build the B+C leather-jacket review asset for the current player rig.
 
-The jacket shell is derived from each shipped body surface in rest pose, then
-expanded along its normals.  This keeps the six body variants fitted to the
-same 65-bone skeleton while the authored lapels, belt, hardware, cuffs and
-repairs provide the readable wasteland silhouette.
+The jacket starts from each shipped body so it keeps the exact 65-bone skin,
+then its torso is reshaped into a deliberately tailored outer layer.  The
+authored lapels, belt, armhole seams, hardware, cuffs and repairs provide the
+readable wasteland silhouette without tracing the character's anatomy.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from math import cos, pi, sin
+from math import atan2, cos, pi, sin
 from pathlib import Path
 import random
 import struct
@@ -204,6 +204,58 @@ def torso_weights(z: float) -> dict[str, float]:
     return {"spine_03": 1.0}
 
 
+def tailored_torso_position(
+    position: Vector,
+    torso_minimum: Vector,
+    torso_maximum: Vector,
+) -> Vector:
+    """Move the torso surface toward a smooth garment ellipse.
+
+    The source mesh provides reliable topology and skin weights, but using its
+    coordinates verbatim makes leather look painted onto pectorals and breasts.
+    A partial ellipse projection preserves body size while introducing a clear
+    air gap, a quieter front plane and a straighter waist.
+    """
+    center_y = (torso_minimum.y + torso_maximum.y) * 0.5
+    source_radius_x = max(abs(torso_minimum.x), abs(torso_maximum.x))
+    source_radius_y = max(
+        abs(torso_minimum.y - center_y),
+        abs(torso_maximum.y - center_y),
+    )
+    height = max(0.001, torso_maximum.z - torso_minimum.z)
+    progression = max(0.0, min(1.0, (position.z - torso_minimum.z) / height))
+    # A restrained waist taper reads as tailoring; the chest and hem stay
+    # almost straight so the garment never becomes a second skin.
+    waist_taper = 0.925 + 0.075 * min(1.0, abs(progression - 0.36) / 0.34)
+    target_radius_x = (source_radius_x + 0.022) * waist_taper
+    target_radius_y = (source_radius_y + 0.024) * (0.95 + 0.05 * progression)
+    angle = atan2(
+        (position.y - center_y) / max(0.001, source_radius_y),
+        position.x / max(0.001, source_radius_x),
+    )
+    target_x = cos(angle) * target_radius_x
+    target_y = center_y + sin(angle) * target_radius_y
+    if position.z > 1.17 and position.y < center_y:
+        centrality = max(0.0, 1.0 - abs(position.x) / max(0.001, target_radius_x * 0.88))
+        front_plane_y = center_y - target_radius_y
+        plane_strength = centrality * 0.90
+        target_y = target_y * (1.0 - plane_strength) + front_plane_y * plane_strength
+    strength = 0.82
+    result = Vector((
+        position.x * (1.0 - strength) + target_x * strength,
+        position.y * (1.0 - strength) + target_y * strength,
+        position.z,
+    ))
+    # Never pull the garment through a locally broader shoulder or back plane.
+    source_radius = Vector((position.x, position.y - center_y)).length
+    result_radius = Vector((result.x, result.y - center_y)).length
+    if result_radius < source_radius and result_radius > 0.0001:
+        scale = source_radius / result_radius
+        result.x *= scale
+        result.y = center_y + (result.y - center_y) * scale
+    return result
+
+
 def build_shell(
     body: bpy.types.Object,
     armature: bpy.types.Object,
@@ -221,7 +273,8 @@ def build_shell(
 
     front_threshold = torso_minimum.y + (torso_maximum.y - torso_minimum.y) * 0.43
     lower_hem = max(0.94, torso_minimum.z + 0.20)
-    upper_limit = min(1.555, torso_maximum.z - 0.045)
+    upper_limit = min(1.555, torso_maximum.z - 0.005)
+    torso_half_width = max(abs(torso_minimum.x), abs(torso_maximum.x))
     lowerarm_points = group_points(body, armature, {"lowerarm_l", "lowerarm_r"})
     sleeve_limit_x = max(abs(point.x) for point in lowerarm_points) - 0.055
 
@@ -236,7 +289,11 @@ def build_shell(
             and group.startswith(("hand_", "index_", "middle_", "pinky_", "ring_", "thumb_"))
             for group in dominant
         )
-        is_torso = torso_votes >= max(1, len(dominant) // 2) and lower_hem <= center.z <= upper_limit
+        is_torso = (
+            lower_hem <= center.z <= upper_limit
+            and abs(center.x) <= torso_half_width + 0.075
+            and torso_votes + clavicle_votes >= 1
+        )
         # Use a continuous spatial sleeve cut.  Dominant bone labels change
         # abruptly around the deltoid and elbow, which otherwise punches holes
         # into a sleeve as soon as the arm leaves the rest T-pose.
@@ -248,12 +305,6 @@ def build_shell(
         is_clavicle = clavicle_votes > 0 and 1.335 <= center.z <= 1.545
         if not (is_torso or is_arm or is_clavicle):
             continue
-        if (is_torso or is_clavicle) and center.y < front_threshold and center.z > 1.245:
-            progress = min(1.0, (center.z - 1.245) / max(0.001, upper_limit - 1.245))
-            opening = 0.012 + progress * 0.088
-            if abs(center.x) < opening:
-                continue
-
         face: list[int] = []
         for source_index in polygon.vertices:
             if source_index not in old_to_new:
@@ -261,8 +312,10 @@ def build_shell(
                 base_position = world_to_armature @ body.matrix_world @ source_vertex.co
                 normal = (normal_transform @ source_vertex.normal).normalized()
                 group = dominant_group(body, source_index)
-                allowance = 0.019 if group in TORSO_GROUPS else 0.014
+                allowance = 0.019 if group in TORSO_GROUPS else 0.009
                 position = base_position + normal * allowance
+                if group in TORSO_GROUPS or (group and group.startswith("clavicle_")):
+                    position = tailored_torso_position(position, torso_minimum, torso_maximum)
                 # Imported GLBs intentionally split vertices along UV and
                 # normal seams.  Reuse coincident points here; otherwise the
                 # smoothing and thickness modifiers treat every triangle as a
@@ -312,8 +365,8 @@ def build_shell(
     bpy.context.view_layer.objects.active = shell
     shell.select_set(True)
     smooth = shell.modifiers.new("softened_tailoring_volume", "LAPLACIANSMOOTH")
-    smooth.iterations = 5
-    smooth.lambda_factor = 0.10
+    smooth.iterations = 3
+    smooth.lambda_factor = 0.055
     smooth.use_volume_preserve = True
     bpy.ops.object.modifier_apply(modifier=smooth.name)
     solidify = shell.modifiers.new("leather_thickness", "SOLIDIFY")
@@ -496,24 +549,38 @@ def build_details(
     chest_half_width = max(abs(torso_minimum.x), abs(torso_maximum.x)) + 0.010
     chest_radius_y = (torso_maximum.y - torso_minimum.y) * 0.5 + 0.017
     center_y = (torso_minimum.y + torso_maximum.y) * 0.5
-    front_y = torso_minimum.y - 0.018
+    front_y = center_y - (chest_radius_y + 0.055)
     back_y = torso_maximum.y + 0.014
     lower_hem = float(fit["lowerHemZ"])
     upper_limit = float(fit["upperLimitZ"])
     builder = DetailBuilder()
 
     # Broad lapels make the jacket readable at the game's isometric camera.
-    lapel_outer = min(chest_half_width * 0.56, 0.122)
-    lapel_inner = max(0.036, chest_half_width * 0.18)
-    lapel_point = max(lower_hem + 0.25, 1.245)
+    lapel_outer = min(chest_half_width * 0.70, 0.148)
+    lapel_inner = max(0.044, chest_half_width * 0.20)
+    lapel_point = max(lower_hem + 0.145, 1.235)
     for direction in (-1.0, 1.0):
         points = [
-            (direction * lapel_outer, upper_limit - 0.025),
+            (direction * (lapel_outer * 0.78), upper_limit - 0.025),
             (direction * (lapel_inner + 0.010), upper_limit - 0.065),
             (direction * max(0.028, lapel_inner * 0.72), lapel_point + 0.030),
             (direction * (lapel_outer * 0.52), lapel_point + 0.078),
         ]
         builder.prism_xz(points, front_y - 0.004, 0.010, 0, {"spine_03": 1.0})
+
+    # One curved front pattern piece bridges the anatomical chest surface.  It
+    # follows the jacket ellipse rather than becoming a flat armour plate.
+    builder.ellipse_arc_band_z(
+        (0.0, center_y),
+        (chest_half_width + 0.018, chest_radius_y + 0.048),
+        lower_hem + 0.022,
+        upper_limit - 0.048,
+        pi + 0.08,
+        2.0 * pi - 0.08,
+        0,
+        {"spine_02": 0.46, "spine_03": 0.54},
+        22,
+    )
 
     # Raised rear collar protects the neck while keeping the V-front open.
     builder.ellipse_arc_band_z(
@@ -612,6 +679,35 @@ def build_details(
                 reinforcement_radii,
                 1,
                 {f"upperarm_{side}": 0.72, f"lowerarm_{side}": 0.28},
+            )
+
+        # A narrow armhole welt separates the sleeve from the torso.  Besides
+        # giving the jacket a real construction seam, it hides the topology
+        # transition when the clavicle rotates in weapon poses.
+        shoulder_center_x = direction * (inner_distance + 0.045)
+        shoulder_points = [
+            point
+            for point in group_points(body, armature, {f"clavicle_{side}", f"upperarm_{side}"})
+            if abs(point.x - shoulder_center_x) <= 0.035
+        ]
+        if shoulder_points:
+            shoulder_minimum, shoulder_maximum = bounds(shoulder_points)
+            shoulder_center = (
+                (shoulder_minimum.y + shoulder_maximum.y) * 0.5,
+                (shoulder_minimum.z + shoulder_maximum.z) * 0.5,
+            )
+            shoulder_radii = (
+                (shoulder_maximum.y - shoulder_minimum.y) * 0.5 + 0.011,
+                (shoulder_maximum.z - shoulder_minimum.z) * 0.5 + 0.011,
+            )
+            x0, x1 = sorted((shoulder_center_x - 0.010, shoulder_center_x + 0.010))
+            builder.ellipse_band_x(
+                x0,
+                x1,
+                shoulder_center,
+                shoulder_radii,
+                0,
+                {f"upperarm_{side}": 1.0},
             )
 
     # Small rivets add scale cues without armour-like floating shoulder blocks.
@@ -871,7 +967,7 @@ def main() -> None:
         "provenance": {
             "license": "Realm of Ashes project asset",
             "donor": None,
-            "rebuild": "original body-fitted B geometry with authored B+C leather details on the exact current 65-bone player rig",
+            "rebuild": "Blender-authored tailored outer-layer silhouette with straight lapels, armhole welts and B+C leather details on the exact current 65-bone player rig",
             "directRuntimeUse": False,
         },
         "reviewOnly": True,

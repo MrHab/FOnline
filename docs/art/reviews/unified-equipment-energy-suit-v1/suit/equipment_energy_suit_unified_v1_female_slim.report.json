@@ -1,7 +1,7 @@
 {
   "actualGlb": {
     "materials": 6,
-    "meshDefinitions": 3,
+    "meshDefinitions": 2,
     "nodes": [
       "head",
       "neck_01",
@@ -69,19 +69,19 @@
       "pelvis",
       "root",
       "equipment_energy_suit_unified_v1_female_slim_field_details",
-      "equipment_energy_suit_unified_v1_female_slim_inner_seal",
       "equipment_energy_suit_unified_v1_female_slim_sealed_shell",
       "character_root"
     ],
-    "positionVertices": 49373,
+    "positionVertices": 15215,
     "skins": 1,
     "textures": 6,
-    "triangles": 26952
+    "triangles": 11218
   },
   "assetId": "equipment_energy_suit_unified_v1_female_slim",
   "bodyId": "female_slim",
   "file": "equipment_energy_suit_unified_v1_female_slim.glb",
   "fit": {
+    "anatomyProjectionStrength": 0.84,
     "bodyBounds": {
       "maximum": [
         0.64216,
@@ -94,8 +94,8 @@
         -0.00841
       ]
     },
-    "detailPolygons": 281,
-    "detailVertices": 522,
+    "detailPolygons": 373,
+    "detailVertices": 682,
     "energyCore": [
       0.0,
       -0.19959,
@@ -113,9 +113,11 @@
         1.48329
       ]
     },
+    "innerSealRequired": false,
     "rubberMaterialPolygons": 3574,
-    "shellPolygons": 17611,
-    "shellVertices": 8880,
+    "shellPolygons": 9995,
+    "shellVertices": 5054,
+    "silhouetteProfile": "energy",
     "torsoBounds": {
       "maximum": [
         0.1602,
@@ -147,9 +149,9 @@
     "directRuntimeUse": false,
     "donor": null,
     "license": "Realm of Ashes project asset",
-    "rebuild": "original body-fitted B geometry with authored B+C field-protection details on the exact current 65-bone player rig"
+    "rebuild": "Blender-authored structured field-coverall silhouette with segmented armour, enlarged regulator and integrated capacitor on the exact current 65-bone player rig"
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "2E5F00D4FBA17CAD237F1BE09D5A06FB52858656C88F356F6BA8666E5BF78D05"
+  "sha256": "1DA48E9FD6F82E7EA29FAF5F50349FCDD267800D1441C1CE6234E4F45E5D4352"
 }

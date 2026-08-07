@@ -5,13 +5,13 @@
     "humanoidNpc": "EAC5248C381FD457E93A04094DAC51FA22C60EDE138C88E00EEFBB3EB4E6091E",
     "bootsFitReport": "D02C6E45C7D88BAE2D02056E770D6DE611351EED01452D6D2B0E3D5D594F2CA1",
     "equipmentFitReports": {
-      "leather": "A5D518224794202F4EF4656B038BD24C28E76E621FC9FD36D1CD3238C1BBFF2C",
+      "leather": "BFF4F9D493A61D0B93B3996E3EC307477D9CB6224C23BA2B68DCAC5EDB117BCF",
       "reinforcedBoots": "C5389AB78639F29DC60C083244221F441CF108CD4AF73642A19B3533B35D6BA7",
       "helmet": "4B77FD82FA6D19C0D29F8D612AF156F5E612688F96677F79E73D2C7680BB447E",
       "tacticalHelmet": "2C8548BC1E8222528070B14C0D96585264ED36E5C509645084AD6253ABD59895",
       "assaultHelmet": "0C07FFDDA768B952B9D844D2561F0BA8A96D7860C20834BB083F44C0B4E895A5",
-      "hazmatSuit": "4634A2060001669056D50A084A4FC564158788D95BC679C9CF86A018270BCECC",
-      "energySuit": "0334FB653658D0C40B6BE649BEB9EAC4AACEBE889AF1CF214F1134DB74AA2781"
+      "hazmatSuit": "CE377C96F63DD4C9336315EA402C5ECE78E71C6BF70505E3AD966958A13049F4",
+      "energySuit": "066FACF879B9BBFBFE44CF1CB717BF6B3428BA30A381F19DB05CCB748F757A0A"
     },
     "assaultRifle": "81CE3D1AAC6FAF252CF523217154BFFCFF219DC91FFCB98135F128E603480B28",
     "assaultRifleGrip": "7B96493E5D26DCF12D10B03526036DCD529A74C26FD031BFE8DCBBA986FD4FE8"
@@ -78,9 +78,9 @@
       "slot": "armor",
       "bodyId": "female_slim",
       "file": "/assets/models/equipment/armor/equipment_leather_jacket_female_slim.glb",
-      "sourceSha256": "F0FA3092ED19E03AE380F801444C660A56CABB8D597021B315EB447015179E8A",
-      "runtimeSha256": "EAE20DC41CA428772C8AD77D7C5C47264356B78C84BC9702374C0405C01B379A",
-      "bytes": 631588
+      "sourceSha256": "E48097596AD6C35F72FEBF0BBD4FB68154F78E599698198AA499267B1AB68066",
+      "runtimeSha256": "0256B195055B824ACA55DFB4862539BBDFAC5E55C854BC88FABFC2EEDC0D477A",
+      "bytes": 642948
     },
     {
       "id": "leather_female_medium",
@@ -88,9 +88,9 @@
       "slot": "armor",
       "bodyId": "female_medium",
       "file": "/assets/models/equipment/armor/equipment_leather_jacket_female_medium.glb",
-      "sourceSha256": "8DD5F066F226714A344874B135C71C3FCABB807C5A7D26AC8ECC483443B5BB34",
-      "runtimeSha256": "BD96D52197B7A5C62849DE372F1D5D50AD7219F47CBF2F222347D2C25B199F5F",
-      "bytes": 656848
+      "sourceSha256": "5FA5C6B3ED92141D37993C8C32258051F5E74306103826000B578FD88960A272",
+      "runtimeSha256": "21266314EA437664DF08B06BB86CF00D0EA22D33DC20D35DD2AE1CB4159640FC",
+      "bytes": 659884
     },
     {
       "id": "leather_female_large",
@@ -98,9 +98,9 @@
       "slot": "armor",
       "bodyId": "female_large",
       "file": "/assets/models/equipment/armor/equipment_leather_jacket_female_large.glb",
-      "sourceSha256": "01FDEA79ABF116B212E4A7BF36E7D49404FC6DAC6030C700AF640C6ACA6C3597",
-      "runtimeSha256": "CAC3937AA6A0FC94F9C3CF7215B0813E8C778B081A1413F7BC15982FB6C59FD6",
-      "bytes": 649596
+      "sourceSha256": "E8B30C35BAE4839575BA94F78CE6102655BC14807911CCEA7AAE179DE6DCF270",
+      "runtimeSha256": "118C2E66293DEBC435DE0EAD4038B40DDDE43229F8A5310D0BDF585787FB3D9E",
+      "bytes": 639052
     },
     {
       "id": "leather_male_slim",
@@ -108,9 +108,9 @@
       "slot": "armor",
       "bodyId": "male_slim",
       "file": "/assets/models/equipment/armor/equipment_leather_jacket_male_slim.glb",
-      "sourceSha256": "DF874FCEF62119667DE374ED933A4B38C2F413A979856ECA7751EB383333E411",
-      "runtimeSha256": "967F0BB50C82C3A348FB3CA910830B66156C00FF50E537C2BDBDE8B4F202CA62",
-      "bytes": 633828
+      "sourceSha256": "776ABE4475047FFB72F7B983C046B3AB3DE0BEFD44740C1DA37C94820084E886",
+      "runtimeSha256": "72F98263913518B41BF9C33E8853E97CC3502C62590D376D429B5AC2C0AB617F",
+      "bytes": 630480
     },
     {
       "id": "leather_male_medium",
@@ -118,9 +118,9 @@
       "slot": "armor",
       "bodyId": "male_medium",
       "file": "/assets/models/equipment/armor/equipment_leather_jacket_male_medium.glb",
-      "sourceSha256": "AC94A6255D1B1E5213015386CD1DF835303757DC4088A13603C777D9B853EDB9",
-      "runtimeSha256": "F3DF0C53FF8FAB3093A5888B07653B8471247E630E19AE3C93116BD18DC99729",
-      "bytes": 634132
+      "sourceSha256": "F5BFCD874A3DDF3E4414F05E75974E36885E9497B390A750282622D9E35AF363",
+      "runtimeSha256": "992455CD526B37F3365A3B777EA011D59B12A4CA632B3D236646BEA250EDD94B",
+      "bytes": 662116
     },
     {
       "id": "leather_male_large",
@@ -128,9 +128,9 @@
       "slot": "armor",
       "bodyId": "male_large",
       "file": "/assets/models/equipment/armor/equipment_leather_jacket_male_large.glb",
-      "sourceSha256": "8A55FD1853B681634F9DDCB5F59555EE416F8B3920850DA33DC8F3D364F5734D",
-      "runtimeSha256": "6F1D40999C06FEDE513C2E008E6EEBA49516BA7DD367772E9B995F8A3204E175",
-      "bytes": 630276
+      "sourceSha256": "686CA53B0DF0FD5EC005040BF713D673C26B73BC1C659A4DB3C4BB0C95340C48",
+      "runtimeSha256": "0A32F74211FB44F38FA0A0FD3D30BD3A13AA3A54D66C28F237C71B15938C7E0B",
+      "bytes": 679064
     },
     {
       "id": "reinforcedBoots_female_slim",
@@ -378,9 +378,9 @@
       "slot": "armor",
       "bodyId": "female_slim",
       "file": "/assets/models/equipment/armor/equipment_hazmat_suit_female_slim.glb",
-      "sourceSha256": "E200587375D71C565CFCFCFE8704675760D47617EB088D33F5B4261CB5171605",
-      "runtimeSha256": "D25C58321E7C56004A7365D5DAB047853FC07295E603F128E98CFE37030D81DB",
-      "bytes": 3134556
+      "sourceSha256": "E7EC872E9F95E0F39B4EDBFE5811B3EBF7642E5276FC8029ECC869BE3C708FF4",
+      "runtimeSha256": "F98835B36F067E73D72E9845802DF2794DD2FE2B211675B33D07C76D20655E56",
+      "bytes": 1258520
     },
     {
       "id": "hazmatSuit_female_medium",
@@ -388,9 +388,9 @@
       "slot": "armor",
       "bodyId": "female_medium",
       "file": "/assets/models/equipment/armor/equipment_hazmat_suit_female_medium.glb",
-      "sourceSha256": "B9DD1D79A79707187F3E237DF4A9C1BA9A0CCE5FD2F733BB76084CCD754EB1CC",
-      "runtimeSha256": "EDCD96F55F0BF8ED5789B2851B09229E899F07906614D4396940F10697CEDA4D",
-      "bytes": 3119392
+      "sourceSha256": "24955156808603E23E86D3F752BE18B079836B52934B020928F5C0E61481A07D",
+      "runtimeSha256": "DD57B638C100DCA2213EDD85989DB891DC60D7FFE64F9858A13D8A56DAA7B902",
+      "bytes": 1240044
     },
     {
       "id": "hazmatSuit_female_large",
@@ -398,9 +398,9 @@
       "slot": "armor",
       "bodyId": "female_large",
       "file": "/assets/models/equipment/armor/equipment_hazmat_suit_female_large.glb",
-      "sourceSha256": "F9ACB5E818CF24E2C6A484363473FE4DF83DA36A236EC1106578FC50FD85D19A",
-      "runtimeSha256": "1975241558E459483088C2BC836AFE1876D107348C0ACCB3FD0A54BE680A0863",
-      "bytes": 3110932
+      "sourceSha256": "0CEA75C9954896847785FD7C228E96CDC6FBF5CD79697C3354A3D7141A0BFFBC",
+      "runtimeSha256": "BE25189241E115D9C3A953D83546518E544C0B0F5C27157CA213153B0B2D9B9C",
+      "bytes": 1312880
     },
     {
       "id": "hazmatSuit_male_slim",
@@ -408,9 +408,9 @@
       "slot": "armor",
       "bodyId": "male_slim",
       "file": "/assets/models/equipment/armor/equipment_hazmat_suit_male_slim.glb",
-      "sourceSha256": "4782DA2F7E98C4DFBE61B6E0F30E670BDA99AAEDB5D69C2BB1777CE955BB8B3B",
-      "runtimeSha256": "55956C21A078E77AC5A91D1AF88F92752AABFC3CC61106F098514DF8B0A0DBD0",
-      "bytes": 3054036
+      "sourceSha256": "2C18B2D6A69AAB580E2CC04B4911479A1959AAA7D77D7E0922BFF26C287A3670",
+      "runtimeSha256": "BA9262EF95D1C90B5485EBE6522FD4E700DCF00A9CA9EE0FCCB8C55B029E8DA4",
+      "bytes": 1292692
     },
     {
       "id": "hazmatSuit_male_medium",
@@ -418,9 +418,9 @@
       "slot": "armor",
       "bodyId": "male_medium",
       "file": "/assets/models/equipment/armor/equipment_hazmat_suit_male_medium.glb",
-      "sourceSha256": "A179A5B757048F7D62907F650AAA324FB0F26EBF20E19BB39943B05A0F6A5592",
-      "runtimeSha256": "624116DDF5B31396D2FA64D3202BD843FA5CC1096DD864BA2BF99A131F646A69",
-      "bytes": 3079500
+      "sourceSha256": "7EB2767DE4D56932AF6116F62DBAB792C907272C3EF4D5A5F8B96CDB3318E16A",
+      "runtimeSha256": "A2741F598845689AFB3AE01C5BB5708B0022BC0B5CD6C2E9350ED675876A1ADF",
+      "bytes": 1245424
     },
     {
       "id": "hazmatSuit_male_large",
@@ -428,9 +428,9 @@
       "slot": "armor",
       "bodyId": "male_large",
       "file": "/assets/models/equipment/armor/equipment_hazmat_suit_male_large.glb",
-      "sourceSha256": "089A0A7F4808E8ECD40D64CDBE3BE28F9E4FFE41D2F89A1721825D09578F9B8D",
-      "runtimeSha256": "53758E63ED385CB1E346F54A97580F7252F75DBA140D3EE59B053DB4E3A17E60",
-      "bytes": 3099628
+      "sourceSha256": "0E614CF38DF107004D048EACA995765F27FF5075BE9A1D2813FD384798EF54C2",
+      "runtimeSha256": "A14AFDEE5E86787E02BD0216C2E34233F67532287575075389B36504B66F67DE",
+      "bytes": 1271584
     },
     {
       "id": "energySuit_female_slim",
@@ -438,9 +438,9 @@
       "slot": "armor",
       "bodyId": "female_slim",
       "file": "/assets/models/equipment/armor/equipment_energy_suit_female_slim.glb",
-      "sourceSha256": "2E5F00D4FBA17CAD237F1BE09D5A06FB52858656C88F356F6BA8666E5BF78D05",
-      "runtimeSha256": "E0A813595B73526C239C20107909403094A027306CEAE18725FB8F2EF16D7A30",
-      "bytes": 3055184
+      "sourceSha256": "1DA48E9FD6F82E7EA29FAF5F50349FCDD267800D1441C1CE6234E4F45E5D4352",
+      "runtimeSha256": "57B4943A8091041DF56E7571E2C8D628E6564CD896A4C9B9EF8A1FCE9198659D",
+      "bytes": 1181652
     },
     {
       "id": "energySuit_female_medium",
@@ -448,9 +448,9 @@
       "slot": "armor",
       "bodyId": "female_medium",
       "file": "/assets/models/equipment/armor/equipment_energy_suit_female_medium.glb",
-      "sourceSha256": "CE8EF929FB2828CA54947F67DE1B4A6ECE66B3E39B193772D2AF8CE9555222FF",
-      "runtimeSha256": "8FF046EA803B16CD4D9C272DEC0C2738A1A98EF858D67F99BDE692A17890C81F",
-      "bytes": 3043468
+      "sourceSha256": "1528E192329B56B8442CF6C301FB4120B8F34532AB3912063F5B3677B61F3EEE",
+      "runtimeSha256": "B89BE2F895BD0B679E2D1087C02895EB3D2040FC2D1AC75E488FE966E40BD8BB",
+      "bytes": 1198280
     },
     {
       "id": "energySuit_female_large",
@@ -458,9 +458,9 @@
       "slot": "armor",
       "bodyId": "female_large",
       "file": "/assets/models/equipment/armor/equipment_energy_suit_female_large.glb",
-      "sourceSha256": "2473FBE1614C5A9E9F0C2B682846DB3E69CB7816AFE56F755475D336E23B47EA",
-      "runtimeSha256": "52CDCAB372BBB902E4F432FECB6839EDD36DB687B9F0A09B9DE9B4CF9D2B0105",
-      "bytes": 3033528
+      "sourceSha256": "727E2943F708CCEFA37E18C831F6EA40E07F0FB5077BBA1EC7CD76386260332C",
+      "runtimeSha256": "DB1482212F5182403147FAE6130BBD90D372B859CA2159F9F5B8E311DF8F3FAD",
+      "bytes": 1204468
     },
     {
       "id": "energySuit_male_slim",
@@ -468,9 +468,9 @@
       "slot": "armor",
       "bodyId": "male_slim",
       "file": "/assets/models/equipment/armor/equipment_energy_suit_male_slim.glb",
-      "sourceSha256": "7DD7208A7D26F68140F3D41C7BCCB60AE74E5CCEDA996C7822AA1172F774753A",
-      "runtimeSha256": "F27ACC872B29184D912DC5419E8585D6BFDE09FA81FC6915F9C7A5E8EE303BFA",
-      "bytes": 2979104
+      "sourceSha256": "2EC44CF4F19B3F9A94A2D95570832E4FCB5ED627C1847D294360253C3385DCE4",
+      "runtimeSha256": "FCA27317C480A4FB127B9CE9FB209EC181D4A6426982A4216AF342E86FE17712",
+      "bytes": 1150144
     },
     {
       "id": "energySuit_male_medium",
@@ -478,9 +478,9 @@
       "slot": "armor",
       "bodyId": "male_medium",
       "file": "/assets/models/equipment/armor/equipment_energy_suit_male_medium.glb",
-      "sourceSha256": "6216091460B26710EEF3396B116CF1C2590D0F920E0B746102258F5C19CB0BAD",
-      "runtimeSha256": "42C9D0A00602A8EDD4C1F66BCFE196D3449BFF8CB9A31796412EDA0A7CDE5CEE",
-      "bytes": 3001188
+      "sourceSha256": "95CA16D1CC31FFE2DC7167B1011BCC5B107C13781C18D67BF5152C9BA71DA5F7",
+      "runtimeSha256": "8C26A2DBF601AEBB0A25BA9F905CB3780513A7AEF2B20EE44736A8B504EB68D6",
+      "bytes": 1168184
     },
     {
       "id": "energySuit_male_large",
@@ -488,9 +488,9 @@
       "slot": "armor",
       "bodyId": "male_large",
       "file": "/assets/models/equipment/armor/equipment_energy_suit_male_large.glb",
-      "sourceSha256": "C891317899E4A76B40FBC9A8A7E36614EC7BF9E8B9C621711BB93063AE5FC66B",
-      "runtimeSha256": "51B7F4B8FFB91A9602B0B721FB3DD076AAF1712CCA74DFCD81CB35CEA22E1C06",
-      "bytes": 3021876
+      "sourceSha256": "928507C20DD9C97F0F5B8C1183A1FE4F554ACACD165B8ADA081D1B21AA52621A",
+      "runtimeSha256": "378D4DEB4B019151C30D7817E01566A17A7A61A18746654D19183E231B912EF2",
+      "bytes": 1139836
     },
     {
       "id": "assaultRifle",

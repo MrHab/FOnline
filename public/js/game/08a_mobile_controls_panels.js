@@ -1,6 +1,14 @@
   // ===== INPUT =====
   const keys = {};
   let pointerWorld = new THREE.Vector3();
+  // Курсор попадает в землю (y=0), а ствол и трасса живут на высоте груди.
+  // При виде сверху линия на высоте проецируется на экран со сдвигом, поэтому
+  // выстрел «уходит выше прицела» при стрельбе вбок. Для наведения нужна точка
+  // на той же высоте, что и трасса.
+  const AIM_PLANE_HEIGHT = 1.12;
+  const pointerAimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -AIM_PLANE_HEIGHT);
+  let pointerAimWorld = new THREE.Vector3();
+  let pointerHasAimWorld = false;
   const moveNdc = new THREE.Vector2();
   const moveGroundPoint = new THREE.Vector3();
   const playerScreenPoint = new THREE.Vector3();

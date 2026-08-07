@@ -949,6 +949,43 @@
     return { x, z, angle };
   }
 
+  // The weapon rides an offset hand, so inheriting body yaw alone leaves the
+  // barrel parallel to the aim line instead of pointing down it. Converge the
+  // model on the aim point, clamped so point-blank aiming cannot swing the
+  // weapon across the body.
+  const WEAPON_AIM_CONVERGENCE_LIMIT = 0.28;
+
+  function weaponVisualAimPoint(pose, owner = null) {
+    if (!pose) return null;
+    const isLocalPlayer = typeof player !== 'undefined'
+      && (owner === player || (typeof playerGroup !== 'undefined' && owner === playerGroup));
+    if (isLocalPlayer
+      && typeof pointerHasWorld !== 'undefined' && pointerHasWorld
+      && typeof pointerWorld !== 'undefined' && pointerWorld
+      && Number.isFinite(Number(pointerWorld.x)) && Number.isFinite(Number(pointerWorld.z))) {
+      return { x: Number(pointerWorld.x), z: Number(pointerWorld.z) };
+    }
+    const declared = Number(owner?.aimDistance);
+    const reach = Number.isFinite(declared) && declared > 0.5 ? declared : 14;
+    return { x: pose.x + Math.sin(pose.angle) * reach, z: pose.z + Math.cos(pose.angle) * reach };
+  }
+
+  function weaponVisualConvergenceYaw(weaponGroup, pose, owner = null) {
+    if (!weaponGroup || !pose) return 0;
+    const aim = weaponVisualAimPoint(pose, owner);
+    if (!aim) return 0;
+    const muzzle = weaponGroup.userData.aimWorldPosition || new THREE.Vector3();
+    weaponGroup.userData.aimWorldPosition = muzzle;
+    weaponGroup.getWorldPosition(muzzle);
+    const dx = aim.x - muzzle.x;
+    const dz = aim.z - muzzle.z;
+    if (Math.hypot(dx, dz) < 0.35) return 0;
+    let delta = Math.atan2(dx, dz) - pose.angle;
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    return Math.max(-WEAPON_AIM_CONVERGENCE_LIMIT, Math.min(WEAPON_AIM_CONVERGENCE_LIMIT, delta));
+  }
+
   function updateWeaponVisualAnimation(weaponGroup, dt, owner = null) {
     if (!weaponGroup) return;
     initWeaponVisualState(weaponGroup);
@@ -980,7 +1017,7 @@
     );
     weaponGroup.rotation.set(
       baseRot.x + Number(characterPose.rx || 0) - eased * 0.48,
-      baseRot.y + Number(characterPose.ry || 0),
+      baseRot.y + Number(characterPose.ry || 0) + weaponVisualConvergenceYaw(weaponGroup, pose, owner),
       baseRot.z + Number(characterPose.rz || 0) + eased * 0.1
     );
   }

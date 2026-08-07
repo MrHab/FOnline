@@ -778,8 +778,44 @@
   // beside the cursor. Pivot the weapon about its own grip until the barrel
   // axis runs through the aim point. The grip pose itself is untouched, so the
   // hand keeps holding the weapon exactly where the animation put it.
+  // Доворот корпуса добирает то, что не влезло в предел оружия. Поворот
+  // раскладывается по трём позвонкам, поэтому корпус разворачивается плавной
+  // дугой, а не одним шарниром. Кости позы переустанавливаются каждый кадр, так
+  // что смещение не накапливается.
+  const APPROVED_TORSO_AIM_BONES = Object.freeze(['spine_01', 'spine_02', 'spine_03']);
+  const APPROVED_TORSO_AIM_LIMIT = 1.2;
+
+  function rotateApprovedTorsoTowardAim(characterRoot, angle) {
+    if (!characterRoot || !Number.isFinite(angle)) return false;
+    const total = Math.max(-APPROVED_TORSO_AIM_LIMIT, Math.min(APPROVED_TORSO_AIM_LIMIT, angle));
+    const share = total / APPROVED_TORSO_AIM_BONES.length;
+    if (Math.abs(share) < 0.0005) return false;
+    const up = new THREE.Vector3(0, 1, 0);
+    const yaw = new THREE.Quaternion().setFromAxisAngle(up, share);
+    const parentWorld = new THREE.Quaternion();
+    let applied = false;
+    for (const name of APPROVED_TORSO_AIM_BONES) {
+      const bone = characterRoot.getObjectByName?.(name);
+      if (!bone?.isBone) continue;
+      if (bone.parent) {
+        bone.parent.updateWorldMatrix(true, false);
+        bone.parent.getWorldQuaternion(parentWorld);
+      } else {
+        parentWorld.identity();
+      }
+      bone.quaternion.premultiply(
+        parentWorld.clone().invert().multiply(yaw).multiply(parentWorld)
+      );
+      applied = true;
+    }
+    return applied;
+  }
+
   function applyApprovedWeaponAimConvergence(actor, weaponGroup, primarySocket, runtimeRoot) {
-    if (weaponGroup) weaponGroup.userData.approvedAimConverged = false;
+    if (weaponGroup) {
+      weaponGroup.userData.approvedAimConverged = false;
+      weaponGroup.userData.aimConvergenceResidual = 0;
+    }
     const aim = approvedWeaponAimPoint(actor);
     if (!aim || !weaponGroup || !primarySocket || !runtimeRoot) return;
     const muzzle = approvedWeaponSocket(weaponGroup, ['socket_muzzle']);
@@ -797,10 +833,14 @@
     let delta = Math.atan2(aimX, aimZ) - Math.atan2(barrelX, barrelZ);
     while (delta > Math.PI) delta -= Math.PI * 2;
     while (delta < -Math.PI) delta += Math.PI * 2;
+    const requested = delta;
     delta = Math.max(
       -APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT,
       Math.min(APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT, delta)
     );
+    // Остаток, который оружию не отдали, забирает корпус: ствол обязан прийти
+    // в курсор, а выкручивать его в кисти дальше предела нельзя.
+    weaponGroup.userData.aimConvergenceResidual = requested - delta;
     if (Math.abs(delta) < 0.0005) return;
     const pivoted = new THREE.Matrix4()
       .makeTranslation(pivot.x, pivot.y, pivot.z)
@@ -1193,7 +1233,15 @@
       else if (transform.quaternion?.length === 4) bone.quaternion.fromArray(transform.quaternion).normalize();
     });
     characterRoot.updateMatrixWorld(true);
-    const mounted = mountApprovedWeapon(actor, pose, id);
+    let mounted = mountApprovedWeapon(actor, pose, id);
+    // Если оружию не хватило собственного предела, добираем корпусом и ставим
+    // оружие заново: рука уехала вместе с корпусом, и остаточный доворот уже
+    // укладывается в предел.
+    const residual = Number(mounted?.weaponGroup?.userData?.aimConvergenceResidual || 0);
+    if (Math.abs(residual) > 0.002 && rotateApprovedTorsoTowardAim(characterRoot, residual)) {
+      characterRoot.updateMatrixWorld(true);
+      mounted = mountApprovedWeapon(actor, pose, id) || mounted;
+    }
     if (!mounted) {
       restoreApprovedWeaponGrip(actor);
       return false;

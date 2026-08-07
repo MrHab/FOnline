@@ -207,7 +207,7 @@ for (const [id, config] of expected) {
   'function makeWeaponModelMesh(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
-  "const WEAPON_MODEL_ASSET_VERSION = '7.76.6-physical-grips-reloads-v2';",
+  "const WEAPON_MODEL_ASSET_VERSION = '7.82.0-muzzle-sockets-v1';",
   "function triggerWeaponModelAction(weaponGroup, actionName = 'attack', options = {})",
   'Number(clip.duration) / requestedDuration',
   "action.setLoop(THREE.LoopOnce, 1)"

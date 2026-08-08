@@ -155,6 +155,19 @@ function main() {
     `Weapon runtime models built: ${manifest.files.length} GLB, `
     + `${manifest.files.reduce((sum, row) => sum + row.bytes, 0)} bytes`
   );
+  // Модели отдаются с immutable-кэшем, а URL версионируется строкой
+  // WEAPON_MODEL_ASSET_VERSION. Печатаем требуемый отпечаток, чтобы после
+  // пересборки не пришлось искать его вручную: check:weapons всё равно
+  // потребует, чтобы версия им оканчивалась.
+  const digest = crypto.createHash('sha256');
+  for (const file of fs.readdirSync(DEFAULT_OUTPUT).filter(name => /^weapon_.*\.glb$/.test(name)).sort()) {
+    digest.update(file);
+    digest.update(fs.readFileSync(path.join(DEFAULT_OUTPUT, file)));
+  }
+  console.log(
+    `Отпечаток моделей: ${digest.digest('hex').slice(0, 8)} — `
+    + 'версия WEAPON_MODEL_ASSET_VERSION должна оканчиваться им.'
+  );
 }
 
 if (require.main === module) {

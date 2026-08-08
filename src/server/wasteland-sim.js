@@ -155,6 +155,8 @@ const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 0;
 const PRODUCTION_INPUT_BUFFER_BATCHES = 3;
 // Через сколько часов ограбленная точка снаряжает следующий обоз.
 const REPLACEMENT_CONVOY_DELAY_HOURS = 6;
+// Как часто столица обновляет заказ на закупку у вольных людей.
+const FACTION_PROCUREMENT_INTERVAL_HOURS = 18;
 const SURPLUS_TRADE_THRESHOLD = 95;
 const SURPLUS_TRADE_COOLDOWN_HOURS = 24;
 const RESOURCE_EXPORT_THRESHOLD = 42;
@@ -4637,6 +4639,23 @@ function createWastelandSimulation(options = {}) {
       });
     }
 
+    // Закупка фракции оплачивается из её казны, а не появляется из воздуха:
+    // столица покупает у вольных людей на свои крышки. Платят за то, что
+    // просили, и соразмерно принесённому — иначе за одну случайную железку
+    // выдавали бы полную цену заказа.
+    if (task.details?.procurement) {
+      const wanted = task.details.demand && typeof task.details.demand === 'object' ? task.details.demand : {};
+      const asked = stockpileTotal(wanted);
+      const matched = Object.entries(wanted).reduce((sum, [id, qty]) => (
+        sum + Math.min(Math.max(0, Number(delivered[id] || 0)), Math.max(0, Number(qty || 0)))
+      ), 0);
+      const share = asked > 0 ? clamp(matched / asked, 0, 1) : 0;
+      task.reward = {
+        ...(task.reward && typeof task.reward === 'object' ? task.reward : {}),
+        caps: Math.round(Math.max(0, Number(task.reward?.caps || 0)) * share)
+      };
+      fundWorldTaskCapsRewardFromSite(task, site, 1);
+    }
     const finished = finishWorldTask(task, 'completed', 'player_delivery', {
       playerId,
       delivered,
@@ -7752,6 +7771,63 @@ function createWastelandSimulation(options = {}) {
     return party;
   }
 
+  // Заказ фракции на закупку. Собственной добычи двум фракциям из трёх не
+  // хватает, и это их характер, а не поломка: недостающее должны приносить
+  // игроки. Столица вывешивает на доску, чего ей не хватает на производство и
+  // на прилавок, и платит за принесённое из своей казны.
+  function factionProcurementDemand(capital = {}) {
+    const stock = capital.stockpile && typeof capital.stockpile === 'object' ? capital.stockpile : {};
+    const shortfall = source => Object.entries(source || {})
+      .map(([id, qty]) => ({
+        id: safeId(id, ''),
+        need: Math.ceil(Math.max(0, Number(qty || 0)) - Math.max(0, Number(stock[safeId(id, '')] || 0)))
+      }))
+      .filter(row => row.id && row.need > 0)
+      .sort((a, b) => b.need - a.need);
+    // Заказ должен читаться с одного взгляда, поэтому берём немного: сырьё,
+    // которого фракции не хватает на производство, и пару позиций, пустующих
+    // на прилавке. Полный список нужд — это два десятка строк, простыня.
+    const rows = [
+      ...shortfall(productionInputDemand(capital)).slice(0, 3),
+      ...shortfall(capital.retailDemand).slice(0, 2)
+    ];
+    const wanted = {};
+    for (const row of rows) wanted[row.id] = Math.max(Number(wanted[row.id] || 0), Math.min(row.need, 30));
+    return compactStockpile(wanted);
+  }
+
+  function maybeCreateFactionProcurementTask(capital = {}) {
+    if (!capital || !isSettlementServiceSite(capital)) return null;
+    const now = Number(state.worldHour || 0);
+    if (now - Number(capital.lastProcurementTaskHour || -999) < FACTION_PROCUREMENT_INTERVAL_HOURS) return null;
+    const demand = factionProcurementDemand(capital);
+    if (stockpileTotal(demand) < 4) return null;
+    capital.lastProcurementTaskHour = now;
+    // Платим по объёму заказа, но не больше того, что есть в казне столицы:
+    // фракция закупает на свои, а не печатает крышки.
+    const units = stockpileTotal(demand);
+    const treasury = Math.max(0, Number((capital.stockpile || {}).silver || 0));
+    const caps = Math.max(30, Math.min(Math.round(units * 4), Math.floor(treasury / 4), 320));
+    return createWorldTask('deliver_supplies', {
+      key: `faction_procurement:${capital.id}`,
+      title: `Закупка ${factionLabel(capital.owner)}: ${capital.name || capital.id}`,
+      text: `${capital.name || capital.id} скупает у вольных людей ${stockpileSummary(demand)}. Принесите на склад и получите крышки — фракция платит за то, чего не добывает сама.`,
+      siteId: capital.id,
+      issuerSiteId: capital.id,
+      objective: 'faction_procurement',
+      durationHours: 36,
+      priority: 3,
+      reward: { xp: 60 + Math.round(units * 2), caps, reputation: 1 },
+      details: { demand, procurement: true }
+    });
+  }
+
+  function createFactionProcurementTasks() {
+    for (const site of Object.values(state.sites || {})) {
+      if (site && isFactionCapitalSite(site)) maybeCreateFactionProcurementTask(site);
+    }
+  }
+
   function createSurplusTradeCaravans(hours) {
     for (const site of Object.values(state.sites || {})) {
       if (!site || !isSettlementServiceSite(site)) continue;
@@ -8982,6 +9058,7 @@ function createWastelandSimulation(options = {}) {
     createProductionExportCaravans(hours);
     consumeSettlementSupplies(hours);
     createSurplusTradeCaravans(hours);
+    createFactionProcurementTasks();
     expireWorldTasks();
   }
 

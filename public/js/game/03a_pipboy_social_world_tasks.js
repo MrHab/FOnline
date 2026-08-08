@@ -491,8 +491,88 @@
     });
   }
 
+  // Окно ожидания каравана. Игрок записывается у доски в столице и встаёт в
+  // очередь; группа собирается сама, а обоз уходит по таймеру с теми, кто успел.
+  // Без отдельного окна это ожидание выглядит как молча зависшая строчка в
+  // пип-бое, и минуту до выхода не видно.
+  function acceptedStagingCaravanTask() {
+    const sim = pipboyWorldStateSnapshot() || {};
+    const tasks = Array.isArray(sim.worldTasks) ? sim.worldTasks : [];
+    return tasks.find(task => {
+      if (!task || String(task.type || '').toLowerCase() !== 'escort_caravan') return false;
+      if (String(task.status || 'active') !== 'active') return false;
+      if (!worldTaskAccepted.has(String(task.id || ''))) return false;
+      const details = task.details && typeof task.details === 'object' ? task.details : {};
+      return !!details.staging && !details.joinClosed;
+    }) || null;
+  }
+
+  function caravanStagingSiteName(siteId = '') {
+    const id = String(siteId || '');
+    if (!id) return '';
+    // В публичном состоянии точки приходят массивом, а не картой по идентификатору.
+    const sim = pipboyWorldStateSnapshot() || {};
+    const rows = Array.isArray(sim.sites)
+      ? sim.sites
+      : (sim.sites && typeof sim.sites === 'object' ? Object.values(sim.sites) : []);
+    const site = rows.find(row => String(row?.id || '') === id);
+    return String(site?.name || id);
+  }
+
+  let caravanStagingLeaveBound = false;
+
+  function refreshCaravanStagingWindow() {
+    const root = document.getElementById('caravan-staging-window');
+    if (!root) return;
+    const task = acceptedStagingCaravanTask();
+    if (!task) {
+      root.hidden = true;
+      root.dataset.taskId = '';
+      return;
+    }
+    const details = task.details && typeof task.details === 'object' ? task.details : {};
+    const secondsLeft = worldTaskCaravanDepartureSecondsLeft(task);
+    const timer = document.getElementById('caravan-staging-timer');
+    const site = document.getElementById('caravan-staging-site');
+    const name = document.getElementById('caravan-staging-name');
+    const route = document.getElementById('caravan-staging-route');
+    const roster = document.getElementById('caravan-staging-roster');
+    root.hidden = false;
+    root.dataset.taskId = String(task.id || '');
+    if (site) site.textContent = caravanStagingSiteName(task.siteId);
+    if (name) name.textContent = String(task.title || 'Караван ждет сопровождение');
+    if (route) {
+      const to = caravanStagingSiteName(details.destinationSiteId);
+      const from = caravanStagingSiteName(details.stagingSiteId);
+      route.textContent = from || to
+        ? `Погрузка: ${from || 'в пути'}${to ? ` → ${to}` : ''}`
+        : '';
+    }
+    if (timer) {
+      timer.textContent = secondsLeft === null || secondsLeft <= 0
+        ? 'выходит'
+        : formatWorldTaskCountdown(secondsLeft);
+      timer.classList.toggle('is-urgent', secondsLeft !== null && secondsLeft <= 10);
+    }
+    if (roster) {
+      const joined = Math.max(0, Math.round(Number(details.playerCount || 0)));
+      const limit = Math.max(0, Math.round(Number(details.playerLimit || 0)));
+      roster.textContent = limit > 0
+        ? `В очереди: ${joined} из ${limit}. Караван выйдет с теми, кто успел записаться.`
+        : `В очереди: ${joined}. Караван выйдет с теми, кто успел записаться.`;
+    }
+    if (!caravanStagingLeaveBound) {
+      caravanStagingLeaveBound = true;
+      document.getElementById('caravan-staging-leave')?.addEventListener('click', () => {
+        const id = String(root.dataset.taskId || '');
+        if (id) cancelWorldTask(id);
+      });
+    }
+  }
+
   setInterval(() => {
     refreshWorldTaskCountdownLabels(document);
+    refreshCaravanStagingWindow();
   }, 1000);
 
   function pipboyWorldOwnerLabel(owner = '') {

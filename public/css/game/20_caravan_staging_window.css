@@ -1,0 +1,95 @@
+/* Окно ожидания каравана.
+   Игрок записывается на сопровождение у доски в столице и ждёт выхода обоза.
+   Окно показывает, кого набрали и сколько осталось до отправления, чтобы это
+   ожидание было понятным, а не глухой паузой. */
+
+#caravan-staging-window {
+  position: absolute;
+  /* Вверху по центру уже стоит полоса состояния (#hud-top), поэтому окно
+     опускается под неё, а не накрывает здоровье и очки действий. */
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(320px, calc(100vw - 24px));
+  padding: 12px 14px;
+  pointer-events: auto;
+  z-index: 12;
+  font-size: 12px;
+  color: #d8d2c0;
+}
+
+#caravan-staging-window[hidden] { display: none; }
+
+.caravan-staging-name {
+  font-size: 13px;
+  color: #efd078;
+  margin-bottom: 2px;
+  line-height: 1.25;
+}
+
+.caravan-staging-route {
+  font-size: 11px;
+  color: #9aa88a;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.caravan-staging-timer-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid rgba(174, 139, 72, 0.35);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.caravan-staging-timer-label {
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #7d8b68;
+}
+
+.caravan-staging-timer {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  color: #efd078;
+  line-height: 1;
+}
+
+/* Последние секунды перед выходом: обоз вот-вот тронется. */
+.caravan-staging-timer.is-urgent { color: #ff9a54; }
+
+.caravan-staging-roster {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #b9c0a8;
+  line-height: 1.4;
+}
+
+.caravan-staging-leave {
+  margin-top: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  color: #d8d2c0;
+  background: rgba(40, 22, 18, 0.7);
+  border: 1px solid rgba(174, 96, 72, 0.5);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.caravan-staging-leave:hover { background: rgba(60, 30, 24, 0.82); }
+
+@media (max-width: 720px) {
+  #caravan-staging-window {
+    top: auto;
+    bottom: 96px;
+    font-size: 11px;
+  }
+  .caravan-staging-timer { font-size: 17px; }
+}

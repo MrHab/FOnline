@@ -246,9 +246,9 @@ requireText('world npc production deposit', functionBody(wastelandSim, 'produceA
 requireText('world npc ammo production cycles', functionBody(wastelandSim, 'produceAtSettlements'), 'const ammoCycles = Math.min(cycles');
 requireText('world npc medicine production cycles', functionBody(wastelandSim, 'produceAtSettlements'), 'const medicineCycles = Math.min(cycles');
 requireText('world npc weapon part production cycles', functionBody(wastelandSim, 'produceAtSettlements'), 'const weaponPartCycles = Math.min(cycles');
-requireText('world caravan staging wait', wastelandSim, 'const CARAVAN_STAGING_REAL_MINUTES = 10;');
-requireText('world caravan regular escort size', wastelandSim, 'const CARAVAN_ESCORT_MIN_PLAYERS = 5;');
-requireText('world caravan heavy escort size', wastelandSim, 'const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 10;');
+requireText('world caravan staging wait', wastelandSim, 'const CARAVAN_STAGING_REAL_MINUTES = 1;');
+requireText('world caravan regular escort size', wastelandSim, 'const CARAVAN_ESCORT_MIN_PLAYERS = 0;');
+requireText('world caravan heavy escort size', wastelandSim, 'const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 0;');
 requireText('world caravan post battle wait', wastelandSim, 'const CARAVAN_POST_BATTLE_REAL_MINUTES = 2;');
 requireText('world caravan closes joins on departure', wastelandSim, 'party.stagingJoinClosed = true;');
 requireText('world caravan join guard', functionBody(wastelandSim, 'joinWorldParty'), 'caravanStagingIsOpen(party)');

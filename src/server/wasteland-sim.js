@@ -141,10 +141,15 @@ const PARTY_REFORM_HOURS = {
   monster: 20
 };
 const PARTY_REFORM_VISIBLE_MAX_HOURS = 6;
-const CARAVAN_STAGING_REAL_MINUTES = 10;
+// Сколько реальных минут караван стоит в столице и набирает сопровождение.
+// Долгое ожидание игрок не высиживает, поэтому окно короткое.
+const CARAVAN_STAGING_REAL_MINUTES = 1;
 const CARAVAN_POST_BATTLE_REAL_MINUTES = 2;
-const CARAVAN_ESCORT_MIN_PLAYERS = 5;
-const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 10;
+// Порога больше нет: караван уходит по таймеру с теми, кто успел записаться.
+// Прежние пять и десять человек читались игроком как «эту работу не взять» и
+// на деле лишь решали, уйдёт обоз с пометкой «группа готова» или «время вышло».
+const CARAVAN_ESCORT_MIN_PLAYERS = 0;
+const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 0;
 // На сколько партий станция просит входов про запас. Заказ ровно в один рецепт
 // держал производство впроголодь: собрал одну вещь и снова жди караван.
 const PRODUCTION_INPUT_BUFFER_BATCHES = 3;
@@ -5513,8 +5518,9 @@ function createWastelandSimulation(options = {}) {
       row.id === party.stagingTaskId || row.key === `escort_caravan:${party.id}`
     ));
     if (!task) return null;
-    task.siteId = site.id || task.siteId || party.homeSiteId || '';
-    task.issuerSiteId = task.issuerSiteId || site.id || party.homeSiteId || '';
+    const issuer = escortIssuerSiteFor(party, site);
+    task.siteId = issuer?.id || task.siteId || party.homeSiteId || '';
+    task.issuerSiteId = issuer?.id || task.issuerSiteId || party.homeSiteId || '';
     task.partyId = party.id || task.partyId || '';
     const playerLimit = worldPartyPlayerLimit(party, task);
     const taskMembers = Array.isArray(party.playerMembers)
@@ -5539,13 +5545,24 @@ function createWastelandSimulation(options = {}) {
     return task;
   }
 
+  // Доска с наймом в сопровождение висит только в столице фракции: караваны
+  // встают на погрузку у ресурсных точек по всей карте, и объявление у каждой из
+  // них означало, что найти его невозможно. Столица — одно узнаваемое место,
+  // куда приходят за работой, а сам караван стоит там, где стоит.
+  function escortIssuerSiteFor(party = {}, fallbackSite = {}) {
+    const capitalId = capitalSiteIdForFaction(party.faction || '');
+    return state.sites[capitalId] || fallbackSite || state.sites.settlement || null;
+  }
+
   function createCaravanStagingTask(party = {}, site = {}, destination = null) {
     const minPlayers = caravanStagingMinPlayers(party);
+    const issuer = escortIssuerSiteFor(party, site);
     const task = createWorldTask('escort_caravan', {
       key: `escort_caravan:${party.id}`,
       title: `${String(party.supplyRole || '').toLowerCase() === 'heavy' ? 'Тяжелый караван' : 'Караван'} ждет сопровождение: ${party.name}`,
-      text: `${party.name} стоит у ${site.name || site.id} и ждет сопровождение перед выходом ${destination ? `к ${destination.name}` : 'по маршруту'}. Набор закрывается после выхода каравана.`,
-      siteId: site.id || party.homeSiteId || 'settlement',
+      text: `${party.name} стоит у ${site.name || site.id} и ждет сопровождение перед выходом ${destination ? `к ${destination.name}` : 'по маршруту'}. Запишитесь в столице: группа собирается сама, караван выходит по таймеру.`,
+      siteId: issuer?.id || site.id || party.homeSiteId || 'settlement',
+      issuerSiteId: issuer?.id || site.id || party.homeSiteId || 'settlement',
       partyId: party.id,
       targetFaction: '',
       objective: String(party.supplyRole || '').toLowerCase() === 'heavy' ? 'escort_heavy_caravan' : 'escort_regular_caravan',
@@ -6540,7 +6557,7 @@ function createWastelandSimulation(options = {}) {
             key: `escort_caravan:${party.id}`,
             title: `Сопроводить караван: ${party.name}`,
             text: `${party.name} готовит переход ${destination ? `к ${destination.name}` : 'по маршруту'} с грузом ${stockpileSummary(party.cargo || {}) || 'припасов'}. Присоединитесь к каравану и идите вместе с группой, пока она не доберется до безопасной точки.`,
-            siteId: home?.id || party.homeSiteId || 'settlement',
+            siteId: escortIssuerSiteFor(party, home)?.id || party.homeSiteId || 'settlement',
             partyId: party.id,
             targetFaction: threat.threatFaction || '',
             objective: 'escort_regular_caravan',
@@ -6579,7 +6596,7 @@ function createWastelandSimulation(options = {}) {
         key: `escort_caravan:${party.id}`,
         title: `Прикрыть караван: ${party.name}`,
         text: `${party.name} обнаружил рядом ${threat.threatName || 'опасный отряд'} и меняет маршрут; риск ${threat.riskLevel}%. Бой начнется только при физическом столкновении групп.`,
-        siteId: home?.id || party.homeSiteId || 'settlement',
+        siteId: escortIssuerSiteFor(party, home)?.id || party.homeSiteId || 'settlement',
         partyId: party.id,
         targetFaction: threat.threatFaction || '',
         objective: 'escort_threatened_caravan',
@@ -6611,7 +6628,7 @@ function createWastelandSimulation(options = {}) {
             key: `join_patrol:${party.id}`,
             title: `Выйти с патрулем: ${party.name}`,
             text: `${party.name} выходит на плановый маршрут возле ${home?.name || 'поселения'}. Присоединитесь к группе и патрулируйте дорогу вместе с отрядом.`,
-            siteId: home?.id || party.homeSiteId || 'settlement',
+            siteId: escortIssuerSiteFor(party, home)?.id || party.homeSiteId || 'settlement',
             partyId: party.id,
             targetFaction: threat.threatFaction || '',
             objective: 'join_regular_patrol',
@@ -6646,7 +6663,7 @@ function createWastelandSimulation(options = {}) {
         key: `join_patrol:${party.id}`,
         title: `Выйти с патрулем: ${party.name}`,
         text: `${party.name} ведёт маршрут возле ${home?.name || 'поселения'}. Рядом ${threat.threatName || 'опасный отряд'}; риск ${threat.riskLevel}%. Присоединитесь к патрулю и помогите удержать дорогу.`,
-        siteId: home?.id || party.homeSiteId || 'settlement',
+        siteId: escortIssuerSiteFor(party, home)?.id || party.homeSiteId || 'settlement',
         partyId: party.id,
         targetFaction: threat.threatFaction || '',
         objective: 'join_active_patrol',

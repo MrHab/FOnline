@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Realm of Ashes v7.76.6</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/css/game.css?v=7.76.6-weapon-modification-v1">
+<link rel="stylesheet" href="/css/game.css?v=7.86.0-caravan-staging-v1">
 
 </head>
 <body>
@@ -39,6 +39,17 @@
     </div>
 
     <div id="online-status" class="ui-panel">Профиль: подготовка...</div>
+    <div id="caravan-staging-window" class="ui-panel caravan-staging-window" hidden aria-live="polite">
+      <div class="panel-title">Сбор каравана <small id="caravan-staging-site"></small></div>
+      <div id="caravan-staging-name" class="caravan-staging-name"></div>
+      <div id="caravan-staging-route" class="caravan-staging-route"></div>
+      <div class="caravan-staging-timer-row">
+        <span class="caravan-staging-timer-label">До выхода</span>
+        <span id="caravan-staging-timer" class="caravan-staging-timer">--:--</span>
+      </div>
+      <div id="caravan-staging-roster" class="caravan-staging-roster"></div>
+      <button id="caravan-staging-leave" type="button" class="caravan-staging-leave">Выйти из очереди</button>
+    </div>
     <div id="device-status" class="ui-panel">Устройство: определение...</div>
 
     <div id="inventory-window" class="ui-panel window-panel pipboy-window" data-pipboy-screen="items">
@@ -666,7 +677,7 @@
 <script src="/vendor/three.min.js"></script>
 <script src="/vendor/GLTFLoader.js"></script>
 <script src="/vendor/socket.io.min.js"></script>
-<script src="/js/game.js?v=7.85.0-physical-depletion-v1"></script>
+<script src="/js/game.js?v=7.86.0-caravan-staging-v1"></script>
 
 </body>
 </html>

@@ -596,7 +596,6 @@ function districtInterestSites(globalMap = {}, worldHour = 0, reservedSites = {}
         security: clamp(variant.security ?? (42 - dangerBase * 7), 4, 58),
         prosperity: 0,
         resourceRichness: clamp(variant.resourceRichness ?? (variant.output ? 46 + rng() * 24 : 18 + rng() * 22), 0, 100),
-        resourceDepletion: clamp(variant.resourceDepletion ?? (12 + rng() * 30), 0, 100),
         workforce: clamp(variant.workforce ?? (variant.output ? 8 + rng() * 18 : 0), 0, 40),
         districtInterest: true,
         activityKind: variant.key || 'interest',

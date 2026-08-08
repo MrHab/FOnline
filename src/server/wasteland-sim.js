@@ -9219,11 +9219,26 @@ function createWastelandSimulation(options = {}) {
   function refreshSiteRetailDemand(site = {}) {
     if (!site) return {};
     const demand = {};
+    const covered = new Set();
     for (const market of Object.values(site.retailMarkets || {})) {
       const stock = normalizeMarketStockRows(market?.stock || []);
+      if (market?.profileId) covered.add(market.profileId);
       for (const planRow of normalizeTraderPlanRows(market?.plan || [])) {
         const current = Number(stock.find(row => row.id === planRow.id)?.qty || 0);
         addEconomyAmount(demand, planRow.id, Math.max(0, planRow.shelfTarget - current));
+      }
+    }
+    // Рынок торговца заводится лишь при обращении игрока, а его ключ включает
+    // роль конкретного НПС и заранее неизвестен. Но спрос знать заранее можно:
+    // берём его прямо из авторского профиля лавки. Иначе фракция не знала, что
+    // везти, пока к торговцу кто-нибудь не подойдёт, и полки стояли пустыми.
+    for (const profileId of Array.isArray(site.traderProfiles) ? site.traderProfiles : []) {
+      if (covered.has(profileId)) continue;
+      const profile = traderProfiles[profileId];
+      if (!profile) continue;
+      for (const planRow of normalizeTraderPlanRows(profile.stock || [])) {
+        const inStore = Number(site.stockpile?.[planRow.id] || 0);
+        addEconomyAmount(demand, planRow.id, Math.max(0, planRow.shelfTarget - inStore));
       }
     }
     site.retailDemand = compactStockpile(demand);
@@ -9251,7 +9266,14 @@ function createWastelandSimulation(options = {}) {
         row = { id: planRow.id, qty: 0, price: adjusted.price };
         stock.push(row);
       }
-      row.price = adjusted.price;
+      // Цена реагирует на остаток именно этого товара у этого торговца:
+      // пустеющая полка дорожает, затоваренная дешевеет. Прежний расчёт смотрел
+      // только на склад сырья и не различал, есть ли товар в продаже.
+      const fill = target > 0 ? clamp(row.qty / target, 0, 2) : 1;
+      const shelfMul = fill >= 1
+        ? Math.max(0.82, 1 - (fill - 1) * 0.18)
+        : Math.min(1.45, 1 + (1 - fill) * 0.45);
+      row.price = Math.max(1, Math.round(Number(adjusted.price || 1) * shelfMul));
       if (row.qty > max) {
         const overflow = row.qty - max;
         row.qty = max;

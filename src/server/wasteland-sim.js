@@ -7858,6 +7858,16 @@ function createWastelandSimulation(options = {}) {
     const ownerGroup = factionGroup(source.owner || 'neutral');
     const faction = isJoinableWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
     const fakeParty = { faction, cargo };
+    // Добыча фракции стекается в её столицу. Раньше назначение выбиралось по
+    // весам среди всех точек, и нефтяная качалка Ретранслятора все десять рейсов
+    // из десяти отвозила лом и дерево в город соседей, пока своя станция стояла
+    // пустой. Столицы всех трёх фракций — это мастерские со станком инструментов,
+    // так что сырьё попадает туда, где его умеют пустить в дело, а уже столица
+    // решает, что раздать своим и чем поделиться с соседями.
+    if (isJoinableWorldFaction(ownerGroup)) {
+      const capital = state.sites[capitalSiteIdForFaction(ownerGroup)];
+      if (capital && capital.id !== source.id && isSettlementServiceSite(capital)) return capital;
+    }
     const globalMap = getGlobalMap();
     const candidates = Object.values(state.sites || {})
       .filter(site => site

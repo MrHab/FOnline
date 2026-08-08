@@ -1202,26 +1202,25 @@
       .slice(0, 4);
     if (!resources.length) return '';
     const activity = Math.round(Number(site.resourceActivity || 0));
-    const depletion = Math.round(Number(site.resourceDepletion || 0));
     const richness = Math.round(Number(site.resourceRichness || 0));
     const crew = Math.round(Number(site.workforce || 0));
     const protection = Math.round(Number(site.protectionLevel || 0));
     const protector = site.protectedBySiteId ? globalMapWorldSiteById(site.protectedBySiteId) : null;
     const raidActive = !!site.activeConflict;
-    const condition = depletion >= 80
-      ? 'истощена'
-      : depletion >= 55
-        ? 'выработана'
-        : depletion <= 18
-          ? 'богатая'
-          : 'стабильная';
+    // Истощение стало физическим: выработанные узлы исчезают на самой карте и
+    // возвращаются по таймеру, поэтому состояние точки описывает её богатство.
+    const condition = richness >= 70
+      ? 'богатая'
+      : richness >= 40
+        ? 'стабильная'
+        : 'скудная';
     const guardText = protection > 0
       ? `Охрана: ${protection}%${protector ? ` (${protector.name || protector.id})` : ''}.`
       : 'Охрана: нет.';
     const stockText = globalMapResourceSummary(site.stockpile || {}, 3);
     const needText = String(site.productionNeedSummary || '').trim();
     const raidText = raidActive ? ` На точке идет налет: ${globalMapFactionLabel(site.lastRaidFaction)}.` : '';
-    return `Добыча: ${resources.join(', ')}. Состояние: ${condition}, активность ${activity}%, истощение ${depletion}%, богатство ${richness}%, рабочие ${crew}%. Запасы: ${stockText || 'пусто'}. ${needText ? `Нужно: ${needText}. ` : ''}${guardText}${raidText}`;
+    return `Добыча: ${resources.join(', ')}. Состояние: ${condition}, активность ${activity}%, богатство ${richness}%, рабочие ${crew}%. Запасы: ${stockText || 'пусто'}. ${needText ? `Нужно: ${needText}. ` : ''}${guardText}${raidText}`;
   }
 
   function globalMapSelectedPoint() {

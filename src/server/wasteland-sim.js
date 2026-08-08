@@ -295,14 +295,14 @@ function resourceActivityPercent(site = {}, worldHour = 0) {
   if (!isHarvestSite(site)) return 0;
   const security = clamp(site.security ?? siteDefaultSecurityFallback(site), 0, 100);
   const richness = clamp(site.resourceRichness ?? defaultResourceRichness(site), 0, 100);
-  const depletion = clamp(site.resourceDepletion ?? 0, 0, 100);
   const workforce = clamp(site.workforce ?? (type === 'resource' ? 50 : 18), 0, 100);
   const disruptedMul = Number(site.supplyDisruptedUntil || 0) > Number(worldHour || 0) ? 0.7 : 1;
   const safetyMul = clamp((security + 25) / 100, 0.2, 1.25);
   const richnessMul = clamp(0.45 + richness / 100, 0.25, 1.45);
-  const depletionMul = clamp(1 - depletion / 115, 0.12, 1);
   const workforceMul = clamp(workforce / 50, 0.08, 1.8);
-  return clamp(Math.round(100 * resourceOwnerMultiplier(site.owner) * safetyMul * richnessMul * depletionMul * workforceMul * disruptedMul), 3, 180);
+  // Истощение теперь физическое: узел на карте выработан и восстанавливается по
+  // таймеру. Абстрактного счётчика, который вечно копился и душил добычу, нет.
+  return clamp(Math.round(100 * resourceOwnerMultiplier(site.owner) * safetyMul * richnessMul * workforceMul * disruptedMul), 3, 180);
 }
 
 function siteDefaultSecurityFallback(site = {}) {
@@ -449,7 +449,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 70, scrap: 30, ammoParts: 8, water: 16, food: 12 },
       danger: 2,
       resourceRichness: 78,
-      resourceDepletion: 12,
       workforce: 46
     },
     dryWaterPump: {
@@ -466,7 +465,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 80, water: 30, chemicals: 5 },
       danger: 1,
       resourceRichness: 66,
-      resourceDepletion: 18,
       workforce: 56
     },
     oldKlimFarm: {
@@ -483,7 +481,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 70, food: 26, water: 18, medicine: 6, wood: 14 },
       danger: 1,
       resourceRichness: 66,
-      resourceDepletion: 12,
       workforce: 48,
       workers: [
         { role: 'worker', label: 'фермеры', count: 6 },
@@ -503,7 +500,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 90, ore: 36, scrap: 7 },
       danger: 3,
       resourceRichness: 88,
-      resourceDepletion: 24,
       workforce: 34
     },
     oilPump: {
@@ -520,7 +516,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 95, oil: 24, scrap: 18, wood: 10 },
       danger: 3.5,
       resourceRichness: 72,
-      resourceDepletion: 30,
       workforce: 30
     },
     chemSpring: {
@@ -536,7 +531,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 85, chemicals: 26, water: 20, food: 12 },
       danger: 2,
       resourceRichness: 70,
-      resourceDepletion: 16,
       workforce: 34
     },
     klimQuarry: {
@@ -552,7 +546,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 75, ore: 24, scrap: 20 },
       danger: 2,
       resourceRichness: 68,
-      resourceDepletion: 18,
       workforce: 42
     },
     siliconRidge: {
@@ -569,7 +562,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 90, electronics: 18, chemicals: 7 },
       danger: 2.5,
       resourceRichness: 74,
-      resourceDepletion: 20,
       workforce: 32
     },
     tireDepot: {
@@ -585,7 +577,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 80, scrap: 22, oil: 8, wood: 12 },
       danger: 2,
       resourceRichness: 64,
-      resourceDepletion: 22,
       workforce: 36
     },
     mutantCrater: {
@@ -600,7 +591,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 45, ammoParts: 8, scrap: 12 },
       danger: 5,
       resourceRichness: 20,
-      resourceDepletion: 50,
       workforce: 0
     },
     radscorpionNestSite: {
@@ -615,7 +605,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 30, chemicals: 5 },
       danger: 4,
       resourceRichness: 18,
-      resourceDepletion: 55,
       workforce: 0
     },
     geckoCanyon: {
@@ -630,7 +619,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 25, chemicals: 4 },
       danger: 3.5,
       resourceRichness: 16,
-      resourceDepletion: 50,
       workforce: 0
     },
     antHive: {
@@ -645,7 +633,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 28, chemicals: 3 },
       danger: 4,
       resourceRichness: 18,
-      resourceDepletion: 52,
       workforce: 0
     },
     roadOutpost: {
@@ -810,7 +797,6 @@ function defaultSites(globalMap = {}) {
       stockpile: { ...emptyStockpile(), silver: 110, ammoParts: 28, electronics: 8, medicine: 3 },
       danger: 4,
       resourceRichness: 38,
-      resourceDepletion: 54,
       workforce: 10,
       workers: [
         { role: 'boss', label: 'главарь', count: 1 },
@@ -1885,7 +1871,6 @@ function normalizeState(input, globalMap = {}) {
     site.y = point.y;
     site.stockpile = { ...emptyStockpile(), ...(site.stockpile || {}) };
     site.resourceRichness = clamp(site.resourceRichness ?? defaults.resourceRichness ?? defaultResourceRichness(site), 0, 100);
-    site.resourceDepletion = clamp(site.resourceDepletion ?? defaults.resourceDepletion ?? 0, 0, 100);
     site.workforce = clamp(site.workforce ?? defaults.workforce ?? (isHarvestSite(site) ? 45 : isProductionSite(site) ? 35 : 0), 0, 100);
     const computedActivity = resourceActivityPercent(site, Number(state.worldHour || 0));
     site.resourceActivity = clamp(
@@ -2602,7 +2587,6 @@ function createWastelandSimulation(options = {}) {
     site.prosperity = clamp(input.prosperity ?? prev.prosperity ?? 0, 0, 100);
     site.controlPressure = clamp(prev.activeConflict ? (prev.controlPressure ?? 0) : 0, -30, 30);
     site.resourceRichness = clamp(input.resourceRichness ?? prev.resourceRichness ?? defaultResourceRichness(site), 0, 100);
-    site.resourceDepletion = clamp(input.resourceDepletion ?? prev.resourceDepletion ?? 0, 0, 100);
     site.workforce = clamp(input.workforce ?? prev.workforce ?? (isHarvestSite(site) ? 12 : 0), 0, 100);
     site.resourceActivity = resourceActivityPercent(site, state.worldHour);
     site.workers = (Array.isArray(input.workers) && input.workers.length
@@ -4593,7 +4577,6 @@ function createWastelandSimulation(options = {}) {
       const relief = task.details.relief && typeof task.details.relief === 'object' ? task.details.relief : {};
       site.workforce = clamp(Number(site.workforce || 0) + Number(relief.workforce || 8), 0, 100);
       site.security = clamp(Number(site.security || siteDefaultSecurity(site)) + Number(relief.security || 6), 0, 100);
-      site.resourceDepletion = clamp(Number(site.resourceDepletion || 0) - Number(relief.depletion || 4), 0, 100);
       site.threatSuppressedUntil = Math.max(Number(site.threatSuppressedUntil || 0), Number(state.worldHour || 0) + Number(relief.activityHours || 18));
       site.raidUntil = Math.max(0, Math.min(Number(site.raidUntil || 0), Number(state.worldHour || 0) + 2));
       site.resourceActivity = resourceActivityPercent(site, state.worldHour);
@@ -4648,7 +4631,6 @@ function createWastelandSimulation(options = {}) {
 
       if (details.resourceSupport && isSupportDemandSite(site)) {
         site.workforce = clamp(Number(site.workforce || 0) - (4 + priority), 0, 100);
-        site.resourceDepletion = clamp(Number(site.resourceDepletion || 0) + 2 + priority, 0, 100);
         site.raidUntil = Math.max(Number(site.raidUntil || 0), now + (details.supportReason === 'raid' ? 12 : 4 + priority));
         site.supportBoostUntil = 0;
         refreshResourceActivity(site);
@@ -4743,7 +4725,6 @@ function createWastelandSimulation(options = {}) {
       site.supplyDisruptedUntil = Math.max(Number(site.supplyDisruptedUntil || 0), now + 14 + priority * 2);
       if (isSupportDemandSite(site)) {
         site.workforce = clamp(Number(site.workforce || 0) - (3 + priority), 0, 100);
-        site.resourceDepletion = clamp(Number(site.resourceDepletion || 0) + 2 + Math.floor(priority / 2), 0, 100);
         refreshResourceActivity(site);
       }
       addEvent('retake_site_failed', `${site.name}: попытка вернуть контроль сорвалась, ${factionLabel(ownerGroup)} укрепились.`, {
@@ -5846,7 +5827,6 @@ function createWastelandSimulation(options = {}) {
       party.lastLoadedHour = state.worldHour;
       party.lastLoadedSiteId = site.id;
       site.lastHarvestHour = state.worldHour;
-      site.resourceDepletion = clamp(Number(site.resourceDepletion || 0) + stockpileTotal(cargo) * 0.08, 0, 100);
       addEvent('resource_loaded', `${party.name} загрузился в ${site.name}: ${stockpileSummary(cargo)}.`, {
         partyId: party.id,
         siteId: site.id,
@@ -7259,7 +7239,6 @@ function createWastelandSimulation(options = {}) {
         worldHour: Number(now.toFixed(2))
       };
       site.lastHarvestHour = now;
-      site.resourceDepletion = clamp(Number(site.resourceDepletion || 0) + stockpileTotal(produced) * 0.035, 0, 100);
       site.resourceActivity = resourceActivityPercent(site, now);
       site.lastVisibleWorkHour = now;
       site.lastVisibleWork = { kind: 'harvest', produced: clone(produced), worldHour: Number(now.toFixed(2)) };
@@ -7356,7 +7335,6 @@ function createWastelandSimulation(options = {}) {
     const activity = resourceActivityPercent(site, state.worldHour);
     const security = clamp(site.security ?? siteDefaultSecurity(site), 0, 100);
     const workforce = clamp(site.workforce ?? 0, 0, 100);
-    const depletion = clamp(site.resourceDepletion ?? 0, 0, 100);
     const demand = {};
     const add = (id, amount) => {
       const qty = Math.max(0, Math.ceil(Number(amount || 0)));
@@ -7395,10 +7373,6 @@ function createWastelandSimulation(options = {}) {
       add('ammoParts', 3 + Math.ceil(Math.max(0, 45 - security) / 12));
       add('medicine', 2);
     }
-    if (depletion > 68 || reason === 'depleted') {
-      add('scrap', output.ore || output.scrap ? 5 : 3);
-      add(output.oil ? 'chemicals' : 'electronics', output.oil || output.electronics ? 2 : 1);
-    }
     if (!Object.keys(demand).length && stockpileTotal(site.stockpile || {}) < 18) {
       add('water', 2);
       add('scrap', 2);
@@ -7412,7 +7386,6 @@ function createWastelandSimulation(options = {}) {
     const activity = resourceActivityPercent(site, state.worldHour);
     const security = clamp(site.security ?? siteDefaultSecurity(site), 0, 100);
     const workforce = clamp(site.workforce ?? 0, 0, 100);
-    const depletion = clamp(site.resourceDepletion ?? 0, 0, 100);
     if (isProductionSite(site)) {
       const stock = site.stockpile || {};
       if (Number(site.raidUntil || 0) > Number(state.worldHour || 0)) return 'raid';
@@ -7422,7 +7395,6 @@ function createWastelandSimulation(options = {}) {
       return '';
     }
     if (Number(site.raidUntil || 0) > Number(state.worldHour || 0)) return 'raid';
-    if (depletion > 82) return 'depleted';
     if (activity < 25 || workforce < 26) return 'stalled';
     if (security < 34 || Math.abs(Number(site.controlPressure || 0)) > 8) return 'security';
     if (stockpileTotal(site.stockpile || {}) < 12) return 'low_stock';
@@ -7437,17 +7409,15 @@ function createWastelandSimulation(options = {}) {
     const now = Number(state.worldHour || 0);
     if (now - Number(site.lastSupportTaskHour || -999) < 10 && supportReason !== 'raid') return null;
     site.lastSupportTaskHour = now;
-    const priority = supportReason === 'raid' ? 5 : supportReason === 'depleted' ? 4 : supportReason === 'stalled' ? 3 : 2;
+    const priority = supportReason === 'raid' ? 5 : supportReason === 'stalled' ? 3 : 2;
     const productionSite = isProductionSite(site);
     const reasonText = supportReason === 'raid'
       ? 'точка под налетом'
-      : supportReason === 'depleted'
-        ? 'месторождение истощается'
-        : supportReason === 'stalled'
-          ? (productionSite ? 'производство почти стоит' : 'добыча почти стоит')
-          : supportReason === 'security'
-            ? 'охрана просела'
-            : 'запасы на точке низкие';
+      : supportReason === 'stalled'
+        ? (productionSite ? 'производство почти стоит' : 'добыча почти стоит')
+        : supportReason === 'security'
+          ? 'охрана просела'
+          : 'запасы на точке низкие';
     const supportLabel = productionSite ? 'производства' : 'добычи';
     const activityLabel = productionSite ? 'производства' : 'добычи';
     addEvent('resource_support_needed', `${site.name}: нужна поддержка ${supportLabel} (${stockpileSummary(demand)}).`, {
@@ -7470,7 +7440,6 @@ function createWastelandSimulation(options = {}) {
         relief: {
           workforce: supportReason === 'stalled' ? 12 : 8,
           security: supportReason === 'security' || supportReason === 'raid' ? 12 : 6,
-          depletion: supportReason === 'depleted' ? 10 : 4,
           activityHours: supportReason === 'raid' ? 18 : 24
         }
       }
@@ -7504,9 +7473,6 @@ function createWastelandSimulation(options = {}) {
           worldHour: Number(Number(state.worldHour || 0).toFixed(2))
         };
       }
-      const activeDrain = cycles * 0.3 * clamp(activity / 100, 0, 1.5);
-      const naturalRecovery = cycles * (Number(state.worldHour || 0) - Number(site.lastHarvestHour || 0) > 18 ? 0.42 : 0.16);
-      site.resourceDepletion = clamp(Number(site.resourceDepletion || 0) + activeDrain - naturalRecovery, 0, 100);
       if (activity < 25 && Number(state.worldHour || 0) - Number(site.lastStalledEventHour || -999) >= 24) {
         site.lastStalledEventHour = state.worldHour;
         addEvent('resource_stalled', `${site.name}: добыча почти остановилась. Нужны безопасность и рабочие.`, {
@@ -7515,14 +7481,6 @@ function createWastelandSimulation(options = {}) {
           activity
         });
         maybeCreateResourceSupportTask(site, 'stalled');
-      }
-      if (Number(site.resourceDepletion || 0) > 82 && Number(state.worldHour || 0) - Number(site.lastDepletedEventHour || -999) >= 24) {
-        site.lastDepletedEventHour = state.worldHour;
-        addEvent('resource_depleted', `${site.name}: месторождение сильно истощено. Добыча замедляется.`, {
-          siteId: site.id,
-          depletion: site.resourceDepletion
-        });
-        maybeCreateResourceSupportTask(site, 'depleted');
       }
       const supportReason = resourceSiteSupportReason(site);
       if (supportReason && Number(state.worldHour || 0) - Number(site.lastSupportCheckHour || -999) >= 12) {
@@ -7535,7 +7493,6 @@ function createWastelandSimulation(options = {}) {
           siteId: site.id,
           owner: site.owner,
           activity,
-          depletion: site.resourceDepletion,
           stockpile: clone(site.stockpile)
         });
       }
@@ -8356,7 +8313,6 @@ function createWastelandSimulation(options = {}) {
           ? -10
           : -16;
       site.workforce = clamp(Number(site.workforce || 0) + workforceDelta, 0, 100);
-      if (isHarvestSite(site)) site.resourceDepletion = clamp(Number(site.resourceDepletion || 0) + (workforceDelta < 0 ? 3 : -2), 0, 100);
       site.resourceActivity = resourceActivityPercent(site, state.worldHour);
     }
     addEvent('site_control_changed', `${site.name} захвачена: ${factionLabel(newOwner)}.`, {
@@ -8462,7 +8418,6 @@ function createWastelandSimulation(options = {}) {
       site.workforce = newOwner === 'neutral'
         ? clamp(Math.max(16, Number(site.workforce || 0) * 0.52), 0, 100)
         : clamp(Math.max(32, Number(site.workforce || 0)), 0, 100);
-      if (isHarvestSite(site)) site.resourceDepletion = clamp(Number(site.resourceDepletion || 0) + 2, 0, 100);
       site.resourceActivity = resourceActivityPercent(site, now);
     }
     if (isJoinableWorldFaction(newOwner)) {
@@ -10505,7 +10460,6 @@ function createWastelandSimulation(options = {}) {
           security: site.security,
           prosperity: site.prosperity,
           resourceRichness: site.resourceRichness || 0,
-          resourceDepletion: site.resourceDepletion || 0,
           resourceActivity: site.resourceActivity || 0,
           workforce: site.workforce || 0,
           workers: Array.isArray(site.workers) ? site.workers.slice(0, 12) : [],
@@ -10715,7 +10669,6 @@ function createWastelandSimulation(options = {}) {
         : (Array.isArray(prev.traderProfiles) ? prev.traderProfiles : [])
     };
     site.resourceRichness = clamp(input.resourceRichness ?? prev.resourceRichness ?? defaultResourceRichness(site), 0, 100);
-    site.resourceDepletion = clamp(input.resourceDepletion ?? prev.resourceDepletion ?? 0, 0, 100);
     site.workforce = clamp(input.workforce ?? prev.workforce ?? (isHarvestSite(site) ? 45 : isProductionSite(site) ? 35 : 0), 0, 100);
     site.protectionLevel = clamp(input.protectionLevel ?? prev.protectionLevel ?? 0, 0, 100);
     site.protectedBySiteId = safeId(input.protectedBySiteId || prev.protectedBySiteId || '', '');

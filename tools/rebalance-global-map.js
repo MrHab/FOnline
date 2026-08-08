@@ -118,7 +118,6 @@ function site(row) {
     prosperity: row.prosperity ?? 25,
     danger: row.danger ?? 1,
     resourceRichness: row.resourceRichness ?? 0,
-    resourceDepletion: row.resourceDepletion ?? 0,
     workforce: row.workforce ?? 0,
     resourceActivity: row.resourceActivity ?? 0,
     protectionLevel: row.protectionLevel ?? 0,

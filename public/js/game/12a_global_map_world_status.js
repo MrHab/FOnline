@@ -124,7 +124,6 @@
   function globalMapProductionNeedLabel(reason = '') {
     const key = String(reason || '').toLowerCase();
     if (key === 'raid') return 'восстановление после налета';
-    if (key === 'depleted') return 'истощение месторождения';
     if (key === 'stalled') return 'добыча стоит';
     if (key === 'security') return 'нужна охрана';
     if (key === 'low_stock') return 'низкие запасы';
@@ -148,7 +147,6 @@
     if (site.marketState === 'shortage') add(68, 'Дефицит', '#ffcf5f', 'warning');
     if (String(site.productionNeedSummary || '').trim()) add(62, 'Нужна поддержка', '#ffcf5f', 'warning');
     if (tasks.length) add(54, 'Работа', '#9fd7ff', 'task');
-    if (Number(site.resourceDepletion || 0) >= 80) add(42, 'Истощение', '#d7a95e', 'warning');
     if (Number(site.resourceActivity || 100) < 25 && (site.output && Object.keys(site.output).length)) add(38, 'Добыча стоит', '#d7a95e', 'warning');
     if (Number(site.supportBoostUntil || 0) > worldHour || Number(site.marketSupplyBoostUntil || 0) > worldHour) add(24, 'Снабжено', '#83d889', 'good');
     if (!rows.length) return null;
@@ -437,7 +435,6 @@
     if (Number(row.threatSuppressedUntil || 0) > worldHour) return 'угроза подавлена';
     if (row.controlStateLabel && row.controlState !== 'stable') return row.controlStateLabel;
     const hasOutput = row.output && typeof row.output === 'object' && Object.values(row.output).some(value => Number(value || 0) > 0);
-    if (hasOutput && Number(row.resourceDepletion || 0) >= 80) return 'месторождение истощено';
     if (hasOutput && Number(row.resourceActivity || 0) < 25) return 'добыча почти стоит';
     if (hasOutput && Number(row.resourceActivity || 0) >= 120) return 'активная добыча';
     if (hasOutput && Number(row.protectionLevel || 0) >= 45) return 'под охраной аванпоста';
@@ -565,7 +562,6 @@
         Math.abs(Number(row.controlPressure || 0)) > 4 ||
         String(row.productionNeedSummary || '').trim() ||
         Number(row.security || 100) < 35 ||
-        Number(row.resourceDepletion || 0) >= 80 ||
         Number(row.resourceActivity || 100) < 25 ||
         Number(row.protectionLevel || 0) >= 55
       )

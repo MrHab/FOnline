@@ -14,6 +14,9 @@ const SERVER_FILE = path.join(PROJECT_ROOT, 'server.js');
 const MAX_WAIT_MS = Math.max(3000, Number(process.env.COMBAT_RUNTIME_WAIT_MS || 10000));
 const REQUESTED_PORT = Number(process.env.COMBAT_RUNTIME_PORT || 0);
 const TMP_ROOT = path.resolve(process.env.COMBAT_RUNTIME_TMPDIR || os.tmpdir());
+// Истощение в мире физическое: выработанный узел исчезает и возвращается по
+// таймеру. Боевой таймер — четверть часа, поэтому проверка просит короткий.
+const RESOURCE_RESPAWN_MS = 1000;
 const TMP_PREFIX = 'realm-of-ashes-combat-runtime-';
 
 fs.mkdirSync(TMP_ROOT, { recursive: true });
@@ -149,7 +152,8 @@ async function startServer() {
       PORT: String(REQUESTED_PORT),
       DATA_DIR,
       SESSION_LOCK_MS: '500',
-      WASTELAND_SIM_SAVE_INTERVAL_MS: '3000'
+      WASTELAND_SIM_SAVE_INTERVAL_MS: '3000',
+      RESOURCE_RESPAWN_MS: String(RESOURCE_RESPAWN_MS)
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -481,7 +485,11 @@ function seedCombatFixtures(accounts) {
     carriedItems: [{ id: 'rifle', qty: 1 }]
   }, usersDb, savesDb);
   seedCharacterState(accounts.harvest, {
-    special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 10, luck: 5 },
+    // Фикстура добычи стоит у лома в опасной локации всё время проверки
+    // возрождения, поэтому ей нужен запас здоровья, чтобы не погибнуть и не
+    // уехать на возрождение в поселение посреди наблюдения.
+    level: 6,
+    special: { str: 5, per: 5, end: 10, cha: 5, int: 5, agi: 10, luck: 5 },
     weapon: 'pistol',
     weaponRuntimeId: 'ui_pistol_harvest_1',
     ammoType: 'ammo9',
@@ -1497,6 +1505,27 @@ async function assertStrictServerAp(accounts) {
   });
 }
 
+function waitForResourceRespawn(socket, resourceId, timeoutMs = RESOURCE_RESPAWN_MS + 5000) {
+  return new Promise((resolve, reject) => {
+    const onWorldState = payload => {
+      const rows = Array.isArray(payload?.state?.resources) ? payload.state.resources : [];
+      const row = rows.find(entry => entry?.id === resourceId);
+      if (!row || Number(row.hp || 0) <= 0) return;
+      clearTimeout(timer);
+      socket.off('worldState', onWorldState);
+      resolve(row);
+    };
+    const timer = setTimeout(() => {
+      socket.off('worldState', onWorldState);
+      reject(new Error(
+        `Depleted node ${resourceId} never came back within ${timeoutMs} ms, `
+        + 'so physical depletion is permanent'
+      ));
+    }, timeoutMs);
+    socket.on('worldState', onWorldState);
+  });
+}
+
 async function assertHarvestRequiresEquippedTool(accounts) {
   const account = accounts.harvest;
   await connectAndJoin(account);
@@ -1628,6 +1657,37 @@ async function assertHarvestRequiresEquippedTool(accounts) {
       && resourceUpdates[0]?.resource?.id === resource.id
       && Number(resourceUpdates[0]?.resource?.hp) === Number(resource.hp) - 1,
     'Successful harvest did not emit exactly one matching resource update', resourceUpdates);
+
+    // Истощение в мире физическое: выработанный узел исчезает с карты и
+    // возвращается по таймеру. Это должно работать и вне точек мировой карты,
+    // иначе срубленное дерево пропадало бы навсегда. Сливаем запас лома
+    // подряд — очков действий хватает, а задерживаться в опасной локации нельзя.
+    let drained = harvested;
+    for (let attempt = 0; attempt < 10 && drained.depleted !== true; attempt += 1) {
+      await delay(360);
+      drained = await socketAck(account.socket, 'harvestResource', {
+        id: resource.id,
+        toolId: 'pickaxe',
+        baseToolId: 'pickaxe',
+        skillRanks: {},
+        talentRanks: {}
+      });
+      invariant(drained.ok === true,
+        'Server rejected a follow-up harvest while draining the authored node', drained);
+    }
+    invariant(drained.depleted === true && Number(drained.resource?.hp) === 0,
+      'Repeated harvesting never exhausted the authored node', drained);
+    invariant(Number(drained.resource?.respawnAt || 0) > Date.now(),
+      'A depleted node outside a world-map site scheduled no respawn, '
+      + 'so physical depletion would be permanent', drained.resource);
+
+    // Возрождение сервер рассылает всей комнате обновлением мира.
+    const revived = await waitForResourceRespawn(account.socket, resource.id);
+    invariant(Number(revived.hp) === Number(resource.maxHp),
+      'A respawned node did not come back at full capacity', {
+        before: resource,
+        after: revived
+      });
   } finally {
     account.socket.off('resourceUpdated', onResourceUpdated);
     closeSocket(account);
@@ -1974,6 +2034,7 @@ async function main() {
       + 'loaded/reserve stayed conserved, targeted and untargeted replay/cadence were enforced, '
       + 'paired pistols spent both runtime magazines atomically, fell back to one loaded hand, and reloaded both magazines, '
       + 'harvest required the matching equipped tool and applied one authoritative wear, '
+      + 'a node drained outside a world-map site scheduled a respawn and came back at full capacity, '
       + 'loaded bag weapons auto-unloaded into inventory when sold, '
       + 'equipment changes were revisioned/idempotent, hand slots persisted, and one-/two-handed conflicts were atomic, '
       + 'progression allocations could not be refunded or reassigned through profile/action/save payloads, '

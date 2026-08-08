@@ -8632,7 +8632,14 @@ const EMPTY_ROOM_AI_SETTLE_MS = Math.max(
   Number(process.env.EMPTY_ROOM_AI_SETTLE_MS || 15000)
 );
 const EMPTY_ROOM_AI_MAX_DT = 0.5;
-const SITE_RESOURCE_RESPAWN_MS = Math.max(60000, Number(process.env.SITE_RESOURCE_RESPAWN_MS || 15 * 60 * 1000));
+// Истощение в мире физическое: выработанный узел исчезает с карты и возвращается
+// по этому таймеру. Правило одно для всех узлов — и для точек мировой карты, и для
+// авторских деревьев с рудой в обычных локациях.
+// Нижняя граница держится секундой, чтобы проверки могли просить быстрое
+// возрождение; боевое значение по умолчанию остаётся четвертью часа.
+const RESOURCE_RESPAWN_MS = Math.max(1000, Number(
+  process.env.RESOURCE_RESPAWN_MS || process.env.SITE_RESOURCE_RESPAWN_MS || 15 * 60 * 1000
+));
 
 function enemyTypeDef(enemy) {
   return SERVER_ENEMY_TYPES[Math.max(0, Number(enemy?.typeIndex || 0))] || SERVER_ENEMY_TYPES[0] || {};
@@ -12056,7 +12063,7 @@ function ensureWastelandSiteResourceNodes(room, loc = roomLocation(room)) {
       resource.siteOutputResource = true;
       if (Number(resource.hp || 0) <= 0 && !Number(resource.respawnAt || 0)) {
         resource.depletedAt = now;
-        resource.respawnAt = now + SITE_RESOURCE_RESPAWN_MS;
+        resource.respawnAt = now + RESOURCE_RESPAWN_MS;
       }
     }
   }
@@ -12073,7 +12080,7 @@ function ensureWastelandSiteResourceNodes(room, loc = roomLocation(room)) {
     resource.type = canonicalType;
     if (Number(resource.hp || 0) <= 0 && !Number(resource.respawnAt || 0)) {
       resource.depletedAt = now;
-      resource.respawnAt = now + SITE_RESOURCE_RESPAWN_MS;
+      resource.respawnAt = now + RESOURCE_RESPAWN_MS;
     }
   }
 
@@ -12119,7 +12126,7 @@ function updateRoomResourceRespawns(room, now = Date.now()) {
   if (!room || !(room.resources instanceof Map)) return false;
   let changed = false;
   for (const resource of room.resources.values()) {
-    if (!resource || (!resource.siteResourceNode && !resource.siteOutputResource)) continue;
+    if (!resource || !(Number(resource.maxHp || 0) > 0)) continue;
     if (Number(resource.hp || 0) > 0) {
       resource.depletedAt = 0;
       resource.respawnAt = 0;
@@ -12127,7 +12134,7 @@ function updateRoomResourceRespawns(room, now = Date.now()) {
     }
     if (!Number(resource.respawnAt || 0)) {
       resource.depletedAt = now;
-      resource.respawnAt = now + SITE_RESOURCE_RESPAWN_MS;
+      resource.respawnAt = now + RESOURCE_RESPAWN_MS;
       continue;
     }
     if (now < Number(resource.respawnAt || 0)) continue;
@@ -19209,9 +19216,10 @@ io.on('connection', (socket) => {
     if (qty <= 0) return fail('Нет места для ресурса.', { carry: carryCheck.carry });
 
     resource.hp = Math.max(0, Number(resource.hp || 0) - 1);
-    if (Number(resource.hp || 0) <= 0 && (resource.siteResourceNode || resource.siteOutputResource)) {
+    if (Number(resource.hp || 0) <= 0) {
+      // Узел выработан: он исчезает с карты и вернётся по таймеру.
       resource.depletedAt = now;
-      resource.respawnAt = now + SITE_RESOURCE_RESPAWN_MS;
+      resource.respawnAt = now + RESOURCE_RESPAWN_MS;
     }
     updateResourceTile(room, resource);
     addRoomNoise(room, p.x, p.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_HARVEST_RANGE), socket.id, 'harvest');

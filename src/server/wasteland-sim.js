@@ -2614,10 +2614,33 @@ function createWastelandSimulation(options = {}) {
     return site;
   }
 
+  // Районные точки обновляются раз в DISTRICT_INTEREST_REFRESH_HOURS (72 часа), а
+  // генерировались заново на каждом шаге симуляции: профиль показал 19 мс на
+  // вызов и треть всего времени тика. Держим готовый набор до ближайшей смены
+  // цикла и пересобираем, только когда он действительно мог измениться — по
+  // времени или по составу неподвижных точек, от которых зависит выбор мест.
+  const districtInterestCache = { applied: false, nextRefreshHour: -Infinity, siteCount: -1 };
+
+  function invalidateDistrictInterestCache() {
+    districtInterestCache.applied = false;
+  }
+
   function maintainDistrictInterestSites(hours = 0) {
     void hours;
+    const worldHour = Number(state.worldHour || 0);
+    const siteCount = Object.keys(state.sites || {}).length;
+    // Дешёвая проверка вместо всей работы: пока цикл не сменился и состав точек
+    // не изменился, пересобирать нечего. Проверка положений не нужна — их меняет
+    // только syncGlobalMap, а он сбрасывает кэш сам.
+    if (districtInterestCache.applied
+      && worldHour < districtInterestCache.nextRefreshHour
+      && siteCount === districtInterestCache.siteCount) return;
     const reservedSites = Object.fromEntries(Object.entries(state.sites || {}).filter(([, site]) => site && !site.districtInterest));
-    const expected = districtInterestSites(getGlobalMap(), state.worldHour, reservedSites);
+    const expected = districtInterestSites(getGlobalMap(), worldHour, reservedSites);
+    districtInterestCache.nextRefreshHour = Object.values(expected).reduce(
+      (soonest, row) => Math.min(soonest, Number(row?.interestExpiresHour ?? Infinity)),
+      Infinity
+    );
     const expectedIds = new Set(Object.keys(expected));
     for (const [id, next] of Object.entries(expected)) {
       const prev = state.sites[id] || {};
@@ -2645,6 +2668,8 @@ function createWastelandSimulation(options = {}) {
       dirty = true;
     }
     if (ensureUniqueWorldSiteLocationIds(state.sites)) dirty = true;
+    districtInterestCache.applied = true;
+    districtInterestCache.siteCount = Object.keys(state.sites || {}).length;
   }
 
   function normalizeSharedRealityWorldZoneRooms() {
@@ -8871,6 +8896,7 @@ function createWastelandSimulation(options = {}) {
       if (node.kind) site.type = node.kind === 'settlement' ? 'settlement' : site.type;
       if (node.note) site.note = String(node.note || '').slice(0, 240);
     });
+    invalidateDistrictInterestCache();
     maintainDistrictInterestSites(0);
     dirty = true;
     save(false);

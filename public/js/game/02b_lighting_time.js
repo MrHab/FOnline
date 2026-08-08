@@ -416,7 +416,7 @@
     return source;
   }
 
-  function refreshSceneEnvironment(skyColor, groundColor, daylight) {
+  function refreshSceneEnvironment(skyColor, groundColor, skyIntensity, daylight) {
     if (!renderer || !scene || !THREE.PMREMGenerator || !skyColor || !groundColor) return;
     // Пересборка идёт через GPU-проход, поэтому обновляемся шагами по светлоте,
     // а не каждый кадр: за сутки выходит несколько десятков перестроений.
@@ -424,8 +424,12 @@
     if (step === sceneEnvironmentState.daylightStep && scene.environment) return;
     sceneEnvironmentState.daylightStep = step;
     const source = ensureEnvironmentSourceScene();
-    sceneEnvironmentState.skyMaterial.color.copy(skyColor);
-    sceneEnvironmentState.groundMaterial.color.copy(groundColor);
+    // Берём яркость полусферического источника, а не scene.background: фон — это
+    // цвет тумана, днём он почти чёрный (0x3b2a1a), и металл честно отражал
+    // черноту. Освещение сцены задаёт hemi, его и отражаем.
+    const radiance = Math.max(0.2, Number(skyIntensity || 1));
+    sceneEnvironmentState.skyMaterial.color.copy(skyColor).multiplyScalar(radiance);
+    sceneEnvironmentState.groundMaterial.color.copy(groundColor).multiplyScalar(radiance * 0.7);
     if (!sceneEnvironmentState.pmrem) {
       sceneEnvironmentState.pmrem = new THREE.PMREMGenerator(renderer);
       sceneEnvironmentState.pmrem.compileEquirectangularShader?.();
@@ -506,7 +510,7 @@
     // v7.74.40: mobile night needs readability, not a black filter. Exposure is
     // raised at night and the CSS overlay is reduced separately in the stylesheet.
     renderer.toneMappingExposure = lerpNumber(IS_MOBILE_DEVICE ? 1.28 : 1.18, IS_MOBILE_DEVICE ? 1.10 : 1.16, daylight) + twilightClamped * 0.015;
-    refreshSceneEnvironment(scene.background, hemi.groundColor, daylight);
+    refreshSceneEnvironment(hemi.color, hemi.groundColor, hemi.intensity, daylight);
     applyTerrainNightTint(night, twilightClamped);
     updateTraderInteriorLightLevels(force);
 

@@ -148,6 +148,8 @@ const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 10;
 // На сколько партий станция просит входов про запас. Заказ ровно в один рецепт
 // держал производство впроголодь: собрал одну вещь и снова жди караван.
 const PRODUCTION_INPUT_BUFFER_BATCHES = 3;
+// Через сколько часов ограбленная точка снаряжает следующий обоз.
+const REPLACEMENT_CONVOY_DELAY_HOURS = 6;
 const SURPLUS_TRADE_THRESHOLD = 95;
 const SURPLUS_TRADE_COOLDOWN_HOURS = 24;
 const RESOURCE_EXPORT_THRESHOLD = 42;
@@ -2189,6 +2191,12 @@ function createWastelandSimulation(options = {}) {
   const gameDayRealMs = Math.max(60000, Number(options.gameDayRealMs || DEFAULT_GAME_DAY_REAL_MS));
   const saveIntervalMs = Math.max(3000, Number(options.saveIntervalMs || 15000));
   const getGlobalMap = typeof options.getGlobalMap === 'function' ? options.getGlobalMap : () => ({});
+  // Караван — это не только снабжение, но и содержание для игроков: его ищут,
+  // охраняют и грабят. Поэтому число караванов должно расти с числом людей в
+  // сети, иначе на многолюдном сервере активность есть только на бумаге.
+  const getOnlinePlayerCount = typeof options.getOnlinePlayerCount === 'function'
+    ? options.getOnlinePlayerCount
+    : () => 0;
   const itemIds = options.itemIds instanceof Set ? options.itemIds : new Set(options.itemIds || []);
   const economyRecipes = normalizeRecipeCatalog(options.economyRecipes);
   const traderProfiles = normalizeTraderProfiles(options.traderProfiles);
@@ -4188,6 +4196,30 @@ function createWastelandSimulation(options = {}) {
     delete party.engagedZoneId;
     delete party.engagedUntilHour;
     clearPartyOnsiteState(party);
+    // Караван возят, охраняют и грабят — это содержание, и оно должно стоить
+    // фракции груза и времени, но не оставлять дыру навсегда. Иначе на
+    // многолюдном сервере горстка налётчиков обнуляет полки для всех
+    // остальных. Ограбленная точка снаряжает следующий обоз через несколько
+    // часов вместо того, чтобы досиживать полный откат.
+    if (party.resourceExport || party.interFactionTrade) {
+      const origin = state.sites[safeId(party.homeSiteId || '', '')];
+      if (origin) {
+        const now = Number(state.worldHour || 0);
+        const readyAt = cooldown => Math.min(
+          Number(origin.lastResourceExportHour || 0),
+          now - cooldown + REPLACEMENT_CONVOY_DELAY_HOURS
+        );
+        if (party.resourceExport) {
+          origin.lastResourceExportHour = readyAt(RESOURCE_EXPORT_COOLDOWN_HOURS);
+        }
+        if (party.interFactionTrade) {
+          origin.lastSurplusTradeHour = Math.min(
+            Number(origin.lastSurplusTradeHour || 0),
+            now - SURPLUS_TRADE_COOLDOWN_HOURS + REPLACEMENT_CONVOY_DELAY_HOURS
+          );
+        }
+      }
+    }
     return true;
   }
 
@@ -7641,7 +7673,7 @@ function createWastelandSimulation(options = {}) {
   function createSurplusTradeCaravan(source = {}) {
     if (!source || !isSettlementServiceSite(source)) return null;
     const now = Number(state.worldHour || 0);
-    if (now - Number(source.lastSurplusTradeHour || -999) < SURPLUS_TRADE_COOLDOWN_HOURS) return null;
+    if (now - Number(source.lastSurplusTradeHour || -999) < SURPLUS_TRADE_COOLDOWN_HOURS * caravanCadenceMultiplier()) return null;
     const active = Object.values(state.parties || {}).some(party => party
       && party.interFactionTrade
       && !party.destroyed
@@ -7851,16 +7883,28 @@ function createWastelandSimulation(options = {}) {
     return candidates[0]?.site || null;
   }
 
+  // Откат между отправками сокращается по мере того, как в сети прибывает
+  // народу: на пустом сервере темп остаётся авторским, на многолюдном караванов
+  // становится втрое больше — но не более, чтобы дороги не захлебнулись.
+  function caravanCadenceMultiplier() {
+    const online = Math.max(0, Number(getOnlinePlayerCount() || 0));
+    return clamp(1 / (1 + online / 40), 0.34, 1);
+  }
+
   function createResourceExportCaravan(source = {}) {
     if (!source || !isHarvestSite(source)) return null;
     const now = Number(state.worldHour || 0);
-    if (now - Number(source.lastResourceExportHour || -999) < RESOURCE_EXPORT_COOLDOWN_HOURS) return null;
-    const active = Object.values(state.parties || {}).some(party => party
+    if (now - Number(source.lastResourceExportHour || -999) < RESOURCE_EXPORT_COOLDOWN_HOURS * caravanCadenceMultiplier()) return null;
+    // Точка держала в пути ровно один караван, и на этом рост упирался в
+    // потолок независимо от онлайна. Позволяем ей вести несколько сразу, по
+    // мере того как в мире прибавляется людей.
+    const allowedInFlight = Math.max(1, Math.round(1 / caravanCadenceMultiplier()));
+    const inFlight = Object.values(state.parties || {}).filter(party => party
       && party.resourceExport
       && !party.destroyed
       && party.state !== 'destroyed'
-      && party.homeSiteId === source.id);
-    if (active) return null;
+      && party.homeSiteId === source.id).length;
+    if (inFlight >= allowedInFlight) return null;
     const cargoPlan = resourceExportCargoForSite(source);
     if (!Object.keys(cargoPlan).length) return null;
     const destination = chooseResourceExportDestination(source, cargoPlan);

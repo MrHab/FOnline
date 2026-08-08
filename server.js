@@ -3225,6 +3225,7 @@ const WASTELAND_SIM = createWastelandSimulation({
   gameDayRealMs: GAME_DAY_REAL_MS,
   saveIntervalMs: WASTELAND_SIM_SAVE_INTERVAL_MS,
   getGlobalMap: () => GLOBAL_MAP,
+  getOnlinePlayerCount: () => players.size,
   itemIds: SERVER_ITEM_IDS,
   traderProfiles: SERVER_TRADER_PROFILES
 });

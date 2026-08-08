@@ -207,7 +207,7 @@ for (const [id, config] of expected) {
   'function makeWeaponModelMesh(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
-  "const WEAPON_MODEL_ASSET_VERSION = '7.82.0-muzzle-sockets-v1';",
+  "const WEAPON_MODEL_ASSET_VERSION = '7.82.0-muzzle-sockets-v1-6f5403fd';",
   "function triggerWeaponModelAction(weaponGroup, actionName = 'attack', options = {})",
   'Number(clip.duration) / requestedDuration',
   "action.setLoop(THREE.LoopOnce, 1)"
@@ -227,6 +227,28 @@ const loader = fs.readFileSync(loaderPath, 'utf8');
 assert(loader.includes("'/js/game/04c_weapon_glb_runtime.js'"));
 const loading = fs.readFileSync(loadingPath, 'utf8');
 assert(loading.includes('await preloadWeaponModelLibrary();'));
+
+// Nginx отдаёт модели с max-age 30 дней и immutable, а URL версионируется
+// только строкой WEAPON_MODEL_ASSET_VERSION. Пересборка GLB без её подъёма
+// оставляет игрокам старые модели: так после добавления socket_muzzle доворот
+// оружия месяц работал бы только на автомате, чей файл не изменился. Поэтому
+// строка обязана содержать отпечаток самих моделей — забыть его нельзя.
+const weaponModelDigest = (() => {
+  const hash = crypto.createHash('sha256');
+  for (const file of fs.readdirSync(modelDirectory).filter(name => /^weapon_.*\.glb$/.test(name)).sort()) {
+    hash.update(file);
+    hash.update(fs.readFileSync(path.join(modelDirectory, file)));
+  }
+  return hash.digest('hex').slice(0, 8);
+})();
+const declaredAssetVersion = runtime.match(/WEAPON_MODEL_ASSET_VERSION\s*=\s*'([^']+)'/)?.[1] || '';
+assert(
+  declaredAssetVersion.endsWith(`-${weaponModelDigest}`),
+  `WEAPON_MODEL_ASSET_VERSION должна оканчиваться отпечатком моделей -${weaponModelDigest}, `
+  + `сейчас '${declaredAssetVersion}'. Модели пересобраны — поднимите версию в `
+  + `public/js/game/04c_weapon_glb_runtime.js и в этой проверке, иначе браузеры `
+  + `продолжат брать старые GLB из immutable-кэша.`
+);
 
 console.log(
   `Weapon models OK: ${expected.size} GLB, ${totalMeshes} meshes, `

@@ -7789,6 +7789,22 @@ function createWastelandSimulation(options = {}) {
     return demandDriven > 0 || stockpileTotal(cargo) >= RESOURCE_EXPORT_THRESHOLD ? compactStockpile(cargo) : {};
   }
 
+  // Умеет ли точка превратить этот груз в то, чего у неё просят на прилавке.
+  // Надбавки при выборе назначения раздавались по типу точки — производственной
+  // и аванпосту, но не поселению, — а мастерские фракций как раз поселения.
+  // Из-за этого сырьё оседало на ближнем складе, а станция стояла пустой.
+  function siteCanCraftWithInput(site = {}, itemId = '') {
+    const caps = Array.isArray(site.productionCapabilities) ? site.productionCapabilities : [];
+    if (!caps.length || !itemId) return false;
+    const retail = site.retailDemand && typeof site.retailDemand === 'object' ? site.retailDemand : {};
+    for (const [id, recipe] of Object.entries(economyRecipes || {})) {
+      if (!recipe || !caps.includes(recipe.station)) continue;
+      if (!(Number(recipe.inputs?.[itemId] || 0) > 0)) continue;
+      if (Number(retail[id] || 0) > 0) return true;
+    }
+    return false;
+  }
+
   function chooseResourceExportDestination(source = {}, cargo = {}) {
     const ownerGroup = factionGroup(source.owner || 'neutral');
     const faction = isJoinableWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
@@ -7824,10 +7840,11 @@ function createWastelandSimulation(options = {}) {
           if (need <= 0) return sum;
           return sum + clamp((need - Number(siteStock[id] || 0)) / need, 0, 1);
         }, 0);
+        const craftBonus = Object.keys(cargo).some(id => siteCanCraftWithInput(site, id)) ? -20 : 0;
         return {
           site,
           score: distance - matchingInputs * 3 - matchingSupport * 1.7 - starvation * 14
-            + productionBonus + capitalBonus
+            + productionBonus + capitalBonus + craftBonus
         };
       })
       .sort((a, b) => a.score - b.score);

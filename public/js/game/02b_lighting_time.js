@@ -386,6 +386,57 @@
     return Math.floor(Number(nowMs || Date.now()) / GAME_DAY_REAL_MS);
   }
 
+  // Материалы окружения намеренно металлические: у ржавого металла, обшивки и
+  // гнутого железа metalness 0.58–0.76. В PBR металл почти не имеет диффузной
+  // составляющей и берёт цвет из отражения окружения. Карты окружения в сцене
+  // не было, отражать было нечего, и весь металл рисовался почти чёрным — при
+  // том что земля и кожа освещались нормально. Собираем окружение из тех же
+  // цветов неба и земли, которыми уже управляет цикл дня и ночи, поэтому металл
+  // меняется вместе со временем суток.
+  const sceneEnvironmentState = {
+    pmrem: null,
+    scene: null,
+    skyMaterial: null,
+    groundMaterial: null,
+    target: null,
+    daylightStep: null
+  };
+
+  function ensureEnvironmentSourceScene() {
+    if (sceneEnvironmentState.scene) return sceneEnvironmentState.scene;
+    const source = new THREE.Scene();
+    sceneEnvironmentState.skyMaterial = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
+    sceneEnvironmentState.groundMaterial = new THREE.MeshBasicMaterial({ side: THREE.BackSide });
+    source.add(new THREE.Mesh(new THREE.SphereGeometry(10, 12, 8), sceneEnvironmentState.skyMaterial));
+    source.add(new THREE.Mesh(
+      new THREE.SphereGeometry(9.6, 12, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+      sceneEnvironmentState.groundMaterial
+    ));
+    sceneEnvironmentState.scene = source;
+    return source;
+  }
+
+  function refreshSceneEnvironment(skyColor, groundColor, daylight) {
+    if (!renderer || !scene || !THREE.PMREMGenerator || !skyColor || !groundColor) return;
+    // Пересборка идёт через GPU-проход, поэтому обновляемся шагами по светлоте,
+    // а не каждый кадр: за сутки выходит несколько десятков перестроений.
+    const step = Math.round(clampLighting01(daylight) * 40);
+    if (step === sceneEnvironmentState.daylightStep && scene.environment) return;
+    sceneEnvironmentState.daylightStep = step;
+    const source = ensureEnvironmentSourceScene();
+    sceneEnvironmentState.skyMaterial.color.copy(skyColor);
+    sceneEnvironmentState.groundMaterial.color.copy(groundColor);
+    if (!sceneEnvironmentState.pmrem) {
+      sceneEnvironmentState.pmrem = new THREE.PMREMGenerator(renderer);
+      sceneEnvironmentState.pmrem.compileEquirectangularShader?.();
+    }
+    const next = sceneEnvironmentState.pmrem.fromScene(source, 0.04);
+    if (!next?.texture) return;
+    if (sceneEnvironmentState.target) sceneEnvironmentState.target.dispose();
+    sceneEnvironmentState.target = next;
+    scene.environment = next.texture;
+  }
+
   function applyDayNightLighting(force = false) {
     const nowMs = Date.now();
     const lightingSecond = Math.floor(nowMs / 1000);
@@ -455,6 +506,7 @@
     // v7.74.40: mobile night needs readability, not a black filter. Exposure is
     // raised at night and the CSS overlay is reduced separately in the stylesheet.
     renderer.toneMappingExposure = lerpNumber(IS_MOBILE_DEVICE ? 1.28 : 1.18, IS_MOBILE_DEVICE ? 1.10 : 1.16, daylight) + twilightClamped * 0.015;
+    refreshSceneEnvironment(scene.background, hemi.groundColor, daylight);
     applyTerrainNightTint(night, twilightClamped);
     updateTraderInteriorLightLevels(force);
 

@@ -145,6 +145,9 @@ const CARAVAN_STAGING_REAL_MINUTES = 10;
 const CARAVAN_POST_BATTLE_REAL_MINUTES = 2;
 const CARAVAN_ESCORT_MIN_PLAYERS = 5;
 const HEAVY_CARAVAN_ESCORT_MIN_PLAYERS = 10;
+// На сколько партий станция просит входов про запас. Заказ ровно в один рецепт
+// держал производство впроголодь: собрал одну вещь и снова жди караван.
+const PRODUCTION_INPUT_BUFFER_BATCHES = 3;
 const SURPLUS_TRADE_THRESHOLD = 95;
 const SURPLUS_TRADE_COOLDOWN_HOURS = 24;
 const RESOURCE_EXPORT_THRESHOLD = 42;
@@ -512,7 +515,11 @@ function defaultSites(globalMap = {}) {
       locationId: 'resourceOilPump',
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
       note: 'Старая нефтяная качалка среди ржавых цистерн. Здесь можно добывать нефть, резать цистерны на лом и снимать брус со старых креплений вышки.',
-      output: { oil: 14, scrap: 8, wood: 4 },
+      // Единственный источник лома и дерева у Ретранслятора. При восьми и
+      // четырёх за цикл фракция не собирала ни инструментов, ни ремкомплектов:
+      // весь лом съедали патроны. Свалочный союз с тридцатью за цикл первенства
+      // при этом не теряет.
+      output: { oil: 14, scrap: 14, wood: 7 },
       stockpile: { ...emptyStockpile(), silver: 95, oil: 24, scrap: 18, wood: 10 },
       danger: 3.5,
       resourceRichness: 72,
@@ -542,7 +549,9 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvp',
       locationId: 'resourceKlimQuarry',
       note: 'Южная каменоломня Старого Клима. Камень, руда и вытащенный из породы металл идут на ремонт аванпостов и дорог.',
-      output: { ore: 12, scrap: 9 },
+      // Единственный источник лома у Старого Клима: девяти за цикл не хватало
+      // даже патронному заводу, и до станции инструментов не доходило ничего.
+      output: { ore: 12, scrap: 15 },
       stockpile: { ...emptyStockpile(), silver: 75, ore: 24, scrap: 20 },
       danger: 2,
       resourceRichness: 68,
@@ -5696,7 +5705,18 @@ function createWastelandSimulation(options = {}) {
       });
       const isTradeOutbound = party.interFactionTrade && site.id !== party.homeSiteId;
       if (isTradeOutbound && party.homeSiteId && state.sites[party.homeSiteId]) {
-        const returnCaps = Math.max(20, Math.floor(stockpileTotal(delivered) * 1.35));
+        const askingPrice = Math.max(20, Math.floor(stockpileTotal(delivered) * 1.35));
+        // За чужой товар фракция платит из своего склада, а не печатает крышки.
+        // Если крышек не хватает, караван увозит столько, сколько покупатель
+        // смог дать: сделка идёт, но по средствам.
+        const buyer = factionGroup(site.owner || 'neutral');
+        const seller = factionGroup(party.faction || '');
+        const returnCaps = buyer && buyer !== 'neutral' && buyer !== seller
+          ? Math.floor(Number(takeStockpile(
+            site.stockpile || (site.stockpile = emptyStockpile()),
+            { silver: askingPrice }
+          ).silver || 0))
+          : askingPrice;
         party.cargo = { silver: returnCaps };
         party.destinationSiteId = party.homeSiteId;
         party.route = [party.homeSiteId];
@@ -7064,7 +7084,12 @@ function createWastelandSimulation(options = {}) {
     if (Object.keys(inputState.missing).length) {
       site.productionDemand = site.productionDemand || {};
       for (const [id, qty] of Object.entries(inputState.missing)) {
-        site.productionDemand[id] = Math.max(Number(site.productionDemand[id] || 0), qty);
+        // Просим запас на несколько партий, а не ровно на одну. Заказ в один
+        // рецепт означал вечную жизнь впроголодь: станция получала три дерева,
+        // собирала топор и снова оставалась ни с чем, а караван приходил не
+        // раньше чем через семь часов.
+        const wanted = qty * PRODUCTION_INPUT_BUFFER_BATCHES;
+        site.productionDemand[id] = Math.max(Number(site.productionDemand[id] || 0), wanted);
       }
       return { ok: false, missing: inputState.missing };
     }
@@ -7560,7 +7585,14 @@ function createWastelandSimulation(options = {}) {
     // прилавки стояли пустыми. Если другая точка фракции этот товар прямо
     // запрашивает, резерв опускается — так же, как это уже сделано для вывоза с
     // ресурсных точек.
-    const reserveFor = id => (remoteFactionDemand(site, id) > 0 ? Math.min(4, reserve) : reserve);
+    // Но входы собственного производства товаром не считаются: иначе станция
+    // отдаёт дерево и лом ровно перед тем, как собрать из них инструмент, и
+    // рецепт вечно стоит в шаге от готовности. Своё держим при себе.
+    const ownNeed = productionInputDemand(site);
+    const reserveFor = id => Math.max(
+      remoteFactionDemand(site, id) > 0 ? Math.min(4, reserve) : reserve,
+      Math.ceil(Number(ownNeed[id] || 0))
+    );
     Object.entries(stock)
       .filter(([id, amount]) => preferred.has(id) && Number(amount || 0) > reserveFor(id))
       .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
@@ -7586,8 +7618,17 @@ function createWastelandSimulation(options = {}) {
         && isSettlementServiceSite(site)
         && caravanCanDeliverToSite(fakeParty, site))
       .map(site => {
+        // Совпадение считалось только по нехватке припасов. Из-за этого груз
+        // лома не видел станцию, которой он нужен на инструменты, и уезжал
+        // туда, где просто пустовал склад. Нужды производства теперь тоже
+        // притягивают караван.
         const demand = resourceSiteSupportDemand(site, 'low_stock');
-        const matchingNeed = Object.keys(cargo).reduce((sum, id) => sum + Math.min(Number(cargo[id] || 0), Number(demand[id] || 0)), 0);
+        const inputs = productionInputDemand(site);
+        const matchingNeed = Object.keys(cargo).reduce((sum, id) => {
+          const carried = Number(cargo[id] || 0);
+          const wanted = Math.max(Number(demand[id] || 0), Number(inputs[id] || 0));
+          return sum + Math.min(carried, wanted);
+        }, 0);
         const tradeBonus = factionGroup(site.owner || '') !== sourceFaction ? -18 : 0;
         const capitalBonus = isFactionCapitalSite(site) ? -8 : 0;
         const distance = pointDistanceKm(source, site, globalMap);
@@ -7690,11 +7731,21 @@ function createWastelandSimulation(options = {}) {
     return compactStockpile(demand);
   }
 
+  // Спрос считался только по своим точкам, поэтому излишки одной фракции не
+  // видели нужды соседей: лом копился сотнями у одних, а у других станции стояли
+  // пустыми при полных сундуках крышек. Дружественная фракция теперь тоже
+  // создаёт спрос, но вполсилы — своих снабжаем первыми.
   function remoteFactionDemand(source = {}, itemId = '') {
     const owner = factionGroup(source.owner || 'neutral');
+    const fakeParty = { faction: owner, cargo: { [itemId]: 1 } };
     return Object.values(state.sites || {}).reduce((sum, site) => {
-      if (!site || site.id === source.id || factionGroup(site.owner || 'neutral') !== owner || !isSettlementServiceSite(site)) return sum;
-      return sum + Math.max(0, Number(productionInputDemand(site)[itemId] || 0));
+      if (!site || site.id === source.id || !isSettlementServiceSite(site)) return sum;
+      const siteOwner = factionGroup(site.owner || 'neutral');
+      const need = Math.max(0, Number(productionInputDemand(site)[itemId] || 0));
+      if (need <= 0) return sum;
+      if (siteOwner === owner) return sum + need;
+      if (!caravanCanDeliverToSite(fakeParty, site)) return sum;
+      return sum + need * 0.5;
     }, 0);
   }
 
@@ -7724,7 +7775,11 @@ function createWastelandSimulation(options = {}) {
         const requested = Math.max(0, Math.ceil(remoteFactionDemand(source, id)));
         const reserve = requested > 0 ? Math.min(6, normalReserve) : normalReserve;
         const available = Math.max(0, have - reserve);
-        const take = Math.min(available, requested > 0 ? requested : 60, 90 - total);
+        // Раньше груз обрезался размером заказа, а заказ станции — это один
+        // рецепт. Ферма даёт шесть дерева за цикл против заказа в три, и
+        // остаток копился на месте: сто тридцать семь у источника против двух
+        // у станции. Везём всё, что точка переросла сверх резерва.
+        const take = Math.min(available, 60, 90 - total);
         if (take > 0) {
           cargo[id] = take;
           total += take;
@@ -7750,9 +7805,30 @@ function createWastelandSimulation(options = {}) {
         const matchingSupport = Object.keys(cargo).reduce((sum, id) => sum + Math.min(Number(cargo[id] || 0), Number(supportDemand[id] || 0)), 0);
         const matchingInputs = Object.keys(cargo).reduce((sum, id) => sum + Math.min(Number(cargo[id] || 0), Number(inputDemand[id] || 0)), 0);
         const distance = pointDistanceKm(source, site, globalMap);
-        const productionBonus = isProductionSite(site) ? -16 : site.type === 'outpost' ? -7 : 0;
+        // Надбавка за производственную площадку раньше давалась безусловно и
+        // перевешивала настоящий спрос: дерево уезжало на патронный завод, где
+        // станки его не берут, мимо поселения, собиравшего из него инструменты.
+        // Площадка считается удобной только если правда просит везомое.
+        const productionBonus = matchingInputs > 0 || matchingSupport > 0
+          ? (isProductionSite(site) ? -16 : site.type === 'outpost' ? -7 : 0)
+          : 0;
         const capitalBonus = isFactionCapitalSite(site) ? -5 : 0;
-        return { site, score: distance - matchingInputs * 3 - matchingSupport * 1.7 + productionBonus + capitalBonus };
+        // Одного лишь совпадения по спросу мало: патронный завод и станция
+        // инструментов просят лом поровну, но завод как производственная
+        // площадка забирал его весь, и станция годами стояла на нуле. Считаем,
+        // насколько точка пуста относительно своей нужды, и везём тому, кто
+        // голоднее.
+        const siteStock = site.stockpile && typeof site.stockpile === 'object' ? site.stockpile : {};
+        const starvation = Object.keys(cargo).reduce((sum, id) => {
+          const need = Number(inputDemand[id] || 0);
+          if (need <= 0) return sum;
+          return sum + clamp((need - Number(siteStock[id] || 0)) / need, 0, 1);
+        }, 0);
+        return {
+          site,
+          score: distance - matchingInputs * 3 - matchingSupport * 1.7 - starvation * 14
+            + productionBonus + capitalBonus
+        };
       })
       .sort((a, b) => a.score - b.score);
     return candidates[0]?.site || null;

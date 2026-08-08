@@ -31,3 +31,7 @@ Desktop.ini
 .idea/
 __pycache__/
 *.py[cod]
+
+# Личные настройки и локальное состояние Claude Code; конфигурация запуска общая.
+.claude/settings.local.json
+.claude/worktrees/

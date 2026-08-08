@@ -144,7 +144,10 @@
         { "id": "antibiotics", "price": 26, "qty": 4 },
         { "id": "medkit", "price": 21, "qty": 4 },
         { "id": "rocketAmmo", "price": 22, "qty": 4 },
-        { "id": "water", "price": 6, "qty": 4 }
+        { "id": "water", "price": 6, "qty": 4 },
+        { "id": "pickaxe", "price": 20, "qty": 2 },
+        { "id": "axe", "price": 18, "qty": 2 },
+        { "id": "handPump", "price": 26, "qty": 1 }
       ]
     }
   }

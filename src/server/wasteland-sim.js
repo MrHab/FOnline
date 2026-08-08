@@ -478,9 +478,9 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvp',
       locationId: 'resourceOldKlimFarm',
       nearCapitalLayoutVersion: NEAR_CAPITAL_SITE_LAYOUT_VERSION,
-      note: 'Ресурсная точка Старого Клима у столицы. Добыча: еда, вода, медикаменты. Внутри есть огород, травы и бак с водой.',
-      output: { food: 10, water: 6, medicine: 2 },
-      stockpile: { ...emptyStockpile(), silver: 70, food: 26, water: 18, medicine: 6 },
+      note: 'Ресурсная точка Старого Клима у столицы. Добыча: еда, вода, медикаменты и древесина с изгородей и сада. Внутри есть огород, травы и бак с водой.',
+      output: { food: 10, water: 6, medicine: 2, wood: 6 },
+      stockpile: { ...emptyStockpile(), silver: 70, food: 26, water: 18, medicine: 6, wood: 14 },
       danger: 1,
       resourceRichness: 66,
       resourceDepletion: 12,
@@ -515,9 +515,9 @@ function defaultSites(globalMap = {}) {
       pvpMode: 'pvpFullDrop',
       locationId: 'resourceOilPump',
       roadLayoutVersion: ROAD_SITE_LAYOUT_VERSION,
-      note: 'Старая нефтяная качалка среди ржавых цистерн. Здесь можно добывать нефть и немного лома.',
-      output: { oil: 14, scrap: 2 },
-      stockpile: { ...emptyStockpile(), silver: 95, oil: 24, scrap: 5 },
+      note: 'Старая нефтяная качалка среди ржавых цистерн. Здесь можно добывать нефть, резать цистерны на лом и снимать брус со старых креплений вышки.',
+      output: { oil: 14, scrap: 8, wood: 4 },
+      stockpile: { ...emptyStockpile(), silver: 95, oil: 24, scrap: 18, wood: 10 },
       danger: 3.5,
       resourceRichness: 72,
       resourceDepletion: 30,
@@ -547,9 +547,9 @@ function defaultSites(globalMap = {}) {
       owner: 'old_klim',
       pvpMode: 'pvp',
       locationId: 'resourceKlimQuarry',
-      note: 'Южная каменоломня Старого Клима. Камень и руда идут на ремонт аванпостов и дорог.',
-      output: { ore: 12, scrap: 3 },
-      stockpile: { ...emptyStockpile(), silver: 75, ore: 24, scrap: 6 },
+      note: 'Южная каменоломня Старого Клима. Камень, руда и вытащенный из породы металл идут на ремонт аванпостов и дорог.',
+      output: { ore: 12, scrap: 9 },
+      stockpile: { ...emptyStockpile(), silver: 75, ore: 24, scrap: 20 },
       danger: 2,
       resourceRichness: 68,
       resourceDepletion: 18,
@@ -580,9 +580,9 @@ function defaultSites(globalMap = {}) {
       owner: 'scrap_union',
       pvpMode: 'pvp',
       locationId: 'resourceTireDepot',
-      note: 'Южный склад старых покрышек и дорожного хлама. Свалочный союз собирает здесь резину, лом и топливо.',
-      output: { scrap: 10, oil: 5 },
-      stockpile: { ...emptyStockpile(), silver: 80, scrap: 22, oil: 8 },
+      note: 'Южный склад старых покрышек и дорожного хлама. Свалочный союз собирает здесь резину, лом, топливо и доски от поддонов.',
+      output: { scrap: 10, oil: 5, wood: 5 },
+      stockpile: { ...emptyStockpile(), silver: 80, scrap: 22, oil: 8, wood: 12 },
       danger: 2,
       resourceRichness: 64,
       resourceDepletion: 22,
@@ -7573,12 +7573,18 @@ function createWastelandSimulation(options = {}) {
     ]);
     const cargo = {};
     let total = 0;
+    // Готовые изделия делаются малыми партиями: пары кирок никогда не наберётся
+    // больше общего резерва, и они оставались на производстве навсегда, пока
+    // прилавки стояли пустыми. Если другая точка фракции этот товар прямо
+    // запрашивает, резерв опускается — так же, как это уже сделано для вывоза с
+    // ресурсных точек.
+    const reserveFor = id => (remoteFactionDemand(site, id) > 0 ? Math.min(4, reserve) : reserve);
     Object.entries(stock)
-      .filter(([id, amount]) => preferred.has(id) && Number(amount || 0) > reserve)
+      .filter(([id, amount]) => preferred.has(id) && Number(amount || 0) > reserveFor(id))
       .sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))
       .forEach(([id, amount]) => {
         if (total >= 140) return;
-        const excess = Math.floor(Number(amount || 0) - reserve);
+        const excess = Math.floor(Number(amount || 0) - reserveFor(id));
         const take = Math.min(excess, 70, 140 - total);
         if (take > 0) {
           cargo[id] = take;
@@ -9213,11 +9219,26 @@ function createWastelandSimulation(options = {}) {
   function refreshSiteRetailDemand(site = {}) {
     if (!site) return {};
     const demand = {};
+    const covered = new Set();
     for (const market of Object.values(site.retailMarkets || {})) {
       const stock = normalizeMarketStockRows(market?.stock || []);
+      if (market?.profileId) covered.add(market.profileId);
       for (const planRow of normalizeTraderPlanRows(market?.plan || [])) {
         const current = Number(stock.find(row => row.id === planRow.id)?.qty || 0);
         addEconomyAmount(demand, planRow.id, Math.max(0, planRow.shelfTarget - current));
+      }
+    }
+    // Рынок торговца заводится лишь при обращении игрока, а его ключ включает
+    // роль конкретного НПС и заранее неизвестен. Но спрос знать заранее можно:
+    // берём его прямо из авторского профиля лавки. Иначе фракция не знала, что
+    // везти, пока к торговцу кто-нибудь не подойдёт, и полки стояли пустыми.
+    for (const profileId of Array.isArray(site.traderProfiles) ? site.traderProfiles : []) {
+      if (covered.has(profileId)) continue;
+      const profile = traderProfiles[profileId];
+      if (!profile) continue;
+      for (const planRow of normalizeTraderPlanRows(profile.stock || [])) {
+        const inStore = Number(site.stockpile?.[planRow.id] || 0);
+        addEconomyAmount(demand, planRow.id, Math.max(0, planRow.shelfTarget - inStore));
       }
     }
     site.retailDemand = compactStockpile(demand);
@@ -9245,7 +9266,14 @@ function createWastelandSimulation(options = {}) {
         row = { id: planRow.id, qty: 0, price: adjusted.price };
         stock.push(row);
       }
-      row.price = adjusted.price;
+      // Цена реагирует на остаток именно этого товара у этого торговца:
+      // пустеющая полка дорожает, затоваренная дешевеет. Прежний расчёт смотрел
+      // только на склад сырья и не различал, есть ли товар в продаже.
+      const fill = target > 0 ? clamp(row.qty / target, 0, 2) : 1;
+      const shelfMul = fill >= 1
+        ? Math.max(0.82, 1 - (fill - 1) * 0.18)
+        : Math.min(1.45, 1 + (1 - fill) * 0.45);
+      row.price = Math.max(1, Math.round(Number(adjusted.price || 1) * shelfMul));
       if (row.qty > max) {
         const overflow = row.qty - max;
         row.qty = max;

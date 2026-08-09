@@ -1,5 +1,5 @@
   // ===== B+C WEAPON GLB RUNTIME =====
-  const WEAPON_MODEL_ASSET_VERSION = '7.82.0-muzzle-sockets-v1-6f5403fd';
+  const WEAPON_MODEL_ASSET_VERSION = '7.87.0-tiered-arsenal-v1-0919fb06';
   const WEAPON_MODEL_CATALOG = Object.freeze({
     pistol: { file: '/assets/models/weapons/weapon_pistol.glb', family: 'sidearm' },
     rifle: { file: '/assets/models/weapons/weapon_rifle.glb', family: 'long_gun' },
@@ -10,6 +10,9 @@
     plasmaRifle: { file: '/assets/models/weapons/weapon_plasmaRifle.glb', family: 'energy_long_gun' },
     shotgun: { file: '/assets/models/weapons/weapon_shotgun.glb', family: 'long_gun' },
     rocketLauncher: { file: '/assets/models/weapons/weapon_rocketLauncher.glb', family: 'launcher' },
+    revolver: { file: '/assets/models/weapons/weapon_revolver.glb', family: 'sidearm' },
+    sawedOffShotgun: { file: '/assets/models/weapons/weapon_sawedOffShotgun.glb', family: 'sidearm' },
+    smg: { file: '/assets/models/weapons/weapon_smg.glb', family: 'long_gun' },
     knife: { file: '/assets/models/weapons/weapon_knife.glb', family: 'melee_light' },
     pickaxe: { file: '/assets/models/weapons/weapon_pickaxe.glb', family: 'melee_heavy' },
     axe: { file: '/assets/models/weapons/weapon_axe.glb', family: 'melee_heavy' },

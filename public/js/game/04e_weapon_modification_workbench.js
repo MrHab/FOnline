@@ -9,21 +9,21 @@
   const WEAPON_MODIFICATION_CATALOG = Object.freeze({
     barrel_precision: {
       id: 'barrel_precision', slot: 'barrel', name: 'Прецизионный ствол', icon: '◎',
-      weaponIds: ['pistol', 'rifle', 'assaultRifle', 'machineGun'],
+      weaponIds: ['pistol', 'rifle', 'assaultRifle', 'machineGun', 'revolver', 'smg'],
       cost: { scrap: 3, weaponParts: 2 },
       effects: { damageMul: 1.06, rangeMul: 1.12, fireRateMul: 1.05 },
       desc: 'Повышает урон и дальность, но немного замедляет следующий выстрел.'
     },
     barrel_suppressor: {
       id: 'barrel_suppressor', slot: 'barrel', name: 'Самодельный глушитель', icon: '▰',
-      weaponIds: ['pistol', 'rifle', 'assaultRifle'],
+      weaponIds: ['pistol', 'rifle', 'assaultRifle', 'revolver', 'smg'],
       cost: { scrap: 2, weaponParts: 2 },
       effects: { rangeMul: 0.96, accuracyBonus: 0.04, noiseMul: 0.42 },
       desc: 'Резко снижает шум выстрела и слегка повышает точность ценой дальности.'
     },
     barrel_choke: {
       id: 'barrel_choke', slot: 'barrel', name: 'Усиленный чок', icon: '◉',
-      weaponIds: ['shotgun'],
+      weaponIds: ['shotgun', 'sawedOffShotgun'],
       cost: { scrap: 2, weaponParts: 1 },
       effects: { rangeMul: 1.18, accuracyBonus: 0.04 },
       desc: 'Сужает разлёт дроби и делает дробовик увереннее на средней дистанции.'
@@ -58,7 +58,7 @@
     },
     scope_marksman: {
       id: 'scope_marksman', slot: 'scope', name: 'Оптика разведчика', icon: '⌖',
-      weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher'],
+      weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher', 'smg'],
       cost: { electronics: 3, weaponParts: 2 },
       effects: { accuracyBonus: 0.08, rangeMul: 1.10 },
       desc: 'Увеличивает рабочую дальность и вероятность попадания.'
@@ -72,14 +72,14 @@
     },
     mag_extended: {
       id: 'mag_extended', slot: 'magazine', name: 'Расширенный магазин', icon: '▥',
-      excludeWeaponIds: ['rocketLauncher'],
+      excludeWeaponIds: ['rocketLauncher', 'pistol'],
       cost: { scrap: 3, weaponParts: 2 },
       effects: { magMul: 1.35, reloadApDelta: 1 },
       desc: 'Вмещает больше боеприпасов, но перезарядка требует на 1 ОД больше.'
     },
     mag_quick: {
       id: 'mag_quick', slot: 'magazine', name: 'Быстросъёмный магазин', icon: '⇊',
-      excludeWeaponIds: ['rocketLauncher'],
+      excludeWeaponIds: ['rocketLauncher', 'pistol'],
       cost: { scrap: 2, weaponParts: 2 },
       effects: { magMul: 0.86, reloadApDelta: -1 },
       desc: 'Уменьшает ёмкость, зато ускоряет перезарядку на 1 ОД.'
@@ -98,16 +98,37 @@
       effects: { reloadApDelta: -2 },
       desc: 'Направляющая кассета заметно сокращает время установки новой ракеты.'
     },
+    mag_drum_pistol: {
+      id: 'mag_drum_pistol', slot: 'magazine', name: 'Самодельный барабан', icon: '◉',
+      weaponIds: ['pistol'],
+      cost: { scrap: 3, weaponParts: 1 },
+      effects: { magMul: 5, reloadApDelta: 1 },
+      desc: 'Кустарный барабан на пять патронов для однозарядного самопала. Перезарядка дольше.'
+    },
+    barrel_pipe_long: {
+      id: 'barrel_pipe_long', slot: 'barrel', name: 'Удлинённая труба', icon: '▬',
+      weaponIds: ['pistol', 'sawedOffShotgun'],
+      cost: { scrap: 2, wood: 1 },
+      effects: { rangeMul: 1.3, damageMul: 1.03 },
+      desc: 'Кусок трубы подлиннее: бьёт дальше и чуть больнее.'
+    },
+    forend_wire_wrap: {
+      id: 'forend_wire_wrap', slot: 'forend', name: 'Тугая обмотка', icon: '∿',
+      weaponIds: ['pistol', 'revolver', 'sawedOffShotgun', 'smg'],
+      cost: { scrap: 1 },
+      effects: { accuracyBonus: 0.03 },
+      desc: 'Проволока и изолента: оружие не гуляет в руке.'
+    },
     forend_grip: {
       id: 'forend_grip', slot: 'forend', name: 'Эргономичная рукоять', icon: '┷',
-      weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'shotgun'],
+      weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'shotgun', 'smg'],
       cost: { wood: 2, scrap: 1 },
       effects: { accuracyBonus: 0.03, autoPenaltyReduction: 0.04 },
       desc: 'Улучшает удержание и заметно снижает штраф автоматического огня.'
     },
     forend_bipod: {
       id: 'forend_bipod', slot: 'forend', name: 'Складные сошки', icon: '⋀',
-      weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher'],
+      weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher', 'smg'],
       cost: { scrap: 4, weaponParts: 1 },
       effects: { accuracyBonus: 0.06 },
       desc: 'Тяжёлая, но стабильная опора для уверенного дальнего огня.'

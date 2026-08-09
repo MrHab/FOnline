@@ -28,6 +28,9 @@ WEAPONS = (
     ("plasmaRifle", "energy_long_gun", "plasma rifle"),
     ("shotgun", "long_gun", "pump shotgun"),
     ("rocketLauncher", "launcher", "rocket launcher"),
+    ("revolver", "sidearm", "rusty revolver"),
+    ("sawedOffShotgun", "sidearm", "sawed-off shotgun"),
+    ("smg", "long_gun", "makeshift smg"),
     ("knife", "melee_light", "combat knife"),
     ("pickaxe", "melee_heavy", "pickaxe"),
     ("axe", "melee_heavy", "axe"),
@@ -36,6 +39,9 @@ WEAPONS = (
 
 WEAPON_RUNTIME_SCALES = {
     "pistol": 0.34,
+    "revolver": 0.36,
+    "sawedOffShotgun": 0.42,
+    "smg": 0.48,
     "rifle": 0.52,
     "assaultRifle": 0.52,
     "machineGun": 0.56,
@@ -51,7 +57,12 @@ WEAPON_RUNTIME_SCALES = {
 }
 
 WEAPON_INTERACTION_PROFILES = {
-    "pistol": {"grip_r": (0, -0.04, -0.17), "grip_l": (-0.10, -0.015, -0.13), "reload": (0, -0.04, -0.28), "reload_kind": "magazine", "reload_part": "magazine"},
+    # Пистолет — однозарядный самопал: перезарядка открывает казённую крышку
+    # сзади, никакого магазина у него нет.
+    "pistol": {"grip_r": (0, -0.04, -0.17), "grip_l": (-0.10, -0.015, -0.13), "reload": (0, -0.18, 0.19), "reload_kind": "shells", "reload_part": "breech_cap"},
+    "revolver": {"grip_r": (0, -0.04, -0.17), "grip_l": (-0.10, -0.015, -0.13), "reload": (0, 0.075, 0.115), "reload_kind": "shells", "reload_part": "cylinder"},
+    "sawedOffShotgun": {"grip_r": (0, -0.16, -0.09), "grip_l": (-0.10, -0.08, -0.08), "reload": (0.05, -0.02, 0.235), "reload_kind": "shells", "reload_part": "reload_shell"},
+    "smg": {"grip_r": (0, -0.155, -0.10), "grip_l": (0, 0.145, -0.09), "reload": (0, 0.12, -0.18), "reload_kind": "magazine", "reload_part": "magazine"},
     "rifle": {"grip_r": (0, 0.04, -0.13), "grip_l": (-0.01, 0.58, 0.08), "reload": (0.13, 0.25, 0.16), "reload_kind": "bolt_clip", "reload_part": "cartridge_clip"},
     "assaultRifle": {"grip_r": (0.03, -0.025, -0.02), "grip_l": (-0.01, 0.33, 0.105), "reload": (0, 0.08, -0.22), "reload_kind": "magazine", "reload_part": "magazine"},
     "machineGun": {"grip_r": (0, -0.04, -0.19), "grip_l": (-0.02, 0.57, 0.12), "reload": (0.20, 0.20, -0.14), "reload_kind": "ammo_box", "reload_part": "ammo_box"},
@@ -74,6 +85,9 @@ PALETTE = {
     "wood": ((0.22, 0.105, 0.052, 1.0), (0.48, 0.27, 0.13, 1.0), 0.86, 0.02),
     "leather": ((0.12, 0.07, 0.045, 1.0), (0.31, 0.18, 0.095, 1.0), 0.9, 0.01),
     "rubber": ((0.035, 0.04, 0.038, 1.0), (0.12, 0.13, 0.12, 1.0), 0.92, 0.0),
+    # Синяя изолента: чуть глянцевая, заметно светлее к блику — фирменная
+    # деталь самодельного оружия.
+    "tape_blue": ((0.045, 0.10, 0.34, 1.0), (0.13, 0.24, 0.58, 1.0), 0.55, 0.0),
     "brass": ((0.34, 0.22, 0.075, 1.0), (0.68, 0.49, 0.19, 1.0), 0.48, 0.68),
     "rust": ((0.25, 0.07, 0.025, 1.0), (0.55, 0.19, 0.055, 1.0), 0.9, 0.06),
     "bone": ((0.45, 0.40, 0.31, 1.0), (0.71, 0.66, 0.52, 1.0), 0.88, 0.0),
@@ -286,7 +300,8 @@ def add_cylinder(
     depth: float,
     material: str,
     direction="Y",
-    vertices=10,
+    vertices=16,
+    bevel=0.0,
 ):
     rotation = (math.pi / 2, 0.0, 0.0) if direction == "Y" else (0.0, math.pi / 2, 0.0) if direction == "X" else (0.0, 0.0, 0.0)
     bpy.ops.mesh.primitive_cylinder_add(
@@ -299,6 +314,11 @@ def add_cylinder(
     )
     obj = bpy.context.object
     obj.name = name
+    # Фаска по умолчанию выключена, поэтому простые вызовы не меняются. Она
+    # нужна детализированной геометрии: без неё кромки выглядят рублеными.
+    if bevel > 0:
+        bevel_mesh(obj, min(bevel, radius * 0.24), segments=2)
+    smooth_by_angle(obj)
     return attach(obj, root, materials[material])
 
 
@@ -311,7 +331,7 @@ def add_cone(
     depth: float,
     material: str,
     direction="Y",
-    vertices=10,
+    vertices=16,
 ):
     rotation = (math.pi / 2, 0.0, 0.0) if direction == "Y" else (0.0, math.pi / 2, 0.0) if direction == "X" else (0.0, 0.0, 0.0)
     bpy.ops.mesh.primitive_cone_add(
@@ -324,6 +344,7 @@ def add_cone(
     )
     obj = bpy.context.object
     obj.name = name
+    smooth_by_angle(obj)
     return attach(obj, root, materials[material])
 
 
@@ -347,6 +368,7 @@ def add_torus(
     )
     obj = bpy.context.object
     obj.name = name
+    smooth_by_angle(obj)
     return attach(obj, root, materials[material])
 
 
@@ -401,159 +423,716 @@ def add_wear(root, materials, prefix: str, positions):
         )
 
 
-def build_pistol(root, m):
-    add_box(root, m, "receiver", (0, 0.22, 0.08), (0.22, 0.48, 0.18), "dark_metal", bevel=0.025)
-    add_box(root, m, "slide", (0, 0.25, 0.19), (0.19, 0.53, 0.12), "metal", bevel=0.018)
-    add_cylinder(root, m, "muzzle", (0, 0.55, 0.18), 0.055, 0.18, "dark_metal")
-    add_box(root, m, "grip", (0, -0.04, -0.17), (0.18, 0.30, 0.39), "leather", rotation=(0.20, 0, 0), bevel=0.025)
-    add_box(root, m, "magazine", (0, -0.055, -0.245), (0.105, 0.19, 0.24), "dark_metal", rotation=(0.20, 0, 0), bevel=0.012)
-    add_torus(root, m, "trigger_guard", (0, 0.12, -0.06), 0.09, 0.018, "brass")
-    add_box(root, m, "front_sight", (0, 0.46, 0.28), (0.035, 0.055, 0.065), "brass", bevel=0.005)
-    add_screws(root, m, "pistol", [(-0.112, 0.05, 0.10), (0.112, 0.34, 0.10)])
+def smooth_curved_mesh(obj: bpy.types.Object):
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = True
 
+
+def smooth_by_angle(obj: bpy.types.Object, degrees: float = 40.0):
+    # Гладкая заливка с порогом по углу: бока цилиндра сливаются в круглую
+    # поверхность, а торцы и фаски остаются резкими. Без этого стволы и трубы
+    # читаются как многогранники.
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.shade_auto_smooth(angle=math.radians(degrees))
+
+
+
+# --- Геометрические помощники, перенесённые из ветки детализированных моделей.
+# Они дают лофты, сферы, гнутые трубки, насечку хвата, спусковую группу,
+# кольца ствола и вентиляционные прорези — из них и складывается детализация.
+
+def bevel_mesh(obj: bpy.types.Object, width: float, segments=3):
+    if width <= 0:
+        return
+    modifier = obj.modifiers.new("edge_wear_bevel", "BEVEL")
+    modifier.width = width
+    modifier.segments = segments
+    modifier.affect = "EDGES"
+    modifier.harden_normals = True
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=modifier.name)
+
+
+def smart_uv(obj: bpy.types.Object):
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(angle_limit=math.radians(66), island_margin=0.02)
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+
+
+def add_loft(
+    root,
+    materials,
+    name: str,
+    sections,
+    material: str,
+    bevel=0.018,
+):
+    vertices = []
+    for y, half_width, bottom, top in sections:
+        vertices.extend((
+            (-half_width, y, bottom),
+            (half_width, y, bottom),
+            (half_width, y, top),
+            (-half_width, y, top),
+        ))
+    faces = [(0, 3, 2, 1)]
+    for index in range(len(sections) - 1):
+        current = index * 4
+        nxt = (index + 1) * 4
+        faces.extend((
+            (current, current + 1, nxt + 1, nxt),
+            (current + 1, current + 2, nxt + 2, nxt + 1),
+            (current + 2, current + 3, nxt + 3, nxt + 2),
+            (current + 3, current, nxt, nxt + 3),
+        ))
+    last = (len(sections) - 1) * 4
+    faces.append((last, last + 1, last + 2, last + 3))
+    mesh = bpy.data.meshes.new(f"{name}_mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    if bevel > 0:
+        bevel_mesh(obj, bevel, segments=3)
+    smart_uv(obj)
+    return attach(obj, root, materials[material])
+
+
+def add_sphere(
+    root,
+    materials,
+    name: str,
+    location,
+    radius: float,
+    material: str,
+    scale=(1.0, 1.0, 1.0),
+):
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=24,
+        ring_count=12,
+        radius=radius,
+        location=location,
+    )
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = scale
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    smooth_curved_mesh(obj)
+    smooth_by_angle(obj)
+    return attach(obj, root, materials[material])
+
+
+def add_curve_tube(
+    root,
+    materials,
+    name: str,
+    points,
+    radius: float,
+    material: str,
+    cyclic=False,
+):
+    curve = bpy.data.curves.new(f"{name}_curve", "CURVE")
+    curve.dimensions = "3D"
+    curve.resolution_u = 2
+    curve.bevel_depth = radius
+    curve.bevel_resolution = 3
+    spline = curve.splines.new("BEZIER")
+    spline.bezier_points.add(len(points) - 1)
+    for point, coordinate in zip(spline.bezier_points, points):
+        point.co = coordinate
+        point.handle_left_type = "AUTO"
+        point.handle_right_type = "AUTO"
+    spline.use_cyclic_u = cyclic
+    obj = bpy.data.objects.new(name, curve)
+    bpy.context.collection.objects.link(obj)
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    smooth_curved_mesh(obj)
+    return attach(obj, root, materials[material])
+
+
+def add_grip_ribs(
+    root,
+    materials,
+    prefix: str,
+    center,
+    dimensions,
+    material="rubber",
+    count=6,
+    axis="Y",
+):
+    width, length, height = dimensions
+    for index in range(count):
+        amount = (index + 0.5) / count - 0.5
+        location = list(center)
+        rib_dimensions = [width * 1.06, max(0.018, length / count * 0.32), height * 1.04]
+        if axis == "Z":
+            location[2] += amount * height
+            rib_dimensions = [width * 1.06, length * 1.04, max(0.018, height / count * 0.32)]
+        else:
+            location[1] += amount * length
+        add_box(
+            root,
+            materials,
+            f"{prefix}_rib_{index + 1:02d}",
+            tuple(location),
+            tuple(rib_dimensions),
+            material,
+            bevel=0.006,
+        )
+
+
+def add_trigger_group(root, materials, center, scale=1.0):
+    x, y, z = center
+    add_curve_tube(
+        root,
+        materials,
+        "trigger_guard",
+        [
+            (-0.09 * scale + x, y, z + 0.025 * scale),
+            (-0.075 * scale + x, y, z - 0.07 * scale),
+            (x, y, z - 0.105 * scale),
+            (0.075 * scale + x, y, z - 0.07 * scale),
+            (0.09 * scale + x, y, z + 0.025 * scale),
+        ],
+        0.014 * scale,
+        "dark_metal",
+    )
+    add_curve_tube(
+        root,
+        materials,
+        "trigger",
+        [
+            (x, y + 0.01 * scale, z + 0.01 * scale),
+            (x, y - 0.015 * scale, z - 0.035 * scale),
+            (x, y - 0.035 * scale, z - 0.065 * scale),
+        ],
+        0.012 * scale,
+        "brass",
+    )
+
+
+def add_barrel_rings(root, materials, prefix, y_values, radius, z, material="dark_metal"):
+    for index, y in enumerate(y_values, start=1):
+        add_torus(
+            root,
+            materials,
+            f"{prefix}_ring_{index:02d}",
+            (0, y, z),
+            radius,
+            max(0.008, radius * 0.14),
+            material,
+        )
+
+
+def add_heat_vents(root, materials, prefix, y_values, z, width, material="dark_metal"):
+    for index, y in enumerate(y_values, start=1):
+        add_box(
+            root,
+            materials,
+            f"{prefix}_vent_{index:02d}",
+            (0, y, z),
+            (width, 0.025, 0.028),
+            material,
+            bevel=0.004,
+        )
+
+
+def build_pistol(root, m):
+    # Однозарядный самопал — оружие новичка, собрано с нуля по референсу
+    # «handmade pistols». Две трубы: ствол вставлен в ствольную коробку
+    # большего диаметра, сзади шестигранная казённая крышка с ударником-кнопкой.
+    # Рама — гнутые полосы, рукоять — строганая доска на шурупах, запасной
+    # патрон примотан к рукояти изолентой. Крышка (breech_cap) — часть
+    # перезарядки: анимация оттягивает её назад, стрелок вкладывает патрон.
+    # Ствол в коробке: тонкая труба в толстой, стык стянут хомутом.
+    add_cylinder(root, m, "receiver_tube", (0, -0.03, 0.19), 0.052, 0.26, "rust", vertices=20, bevel=0.005)
+    add_cylinder(root, m, "barrel", (0, 0.315, 0.19), 0.036, 0.53, "metal", vertices=20, bevel=0.003)
+    add_cylinder(root, m, "muzzle", (0, 0.60, 0.19), 0.042, 0.05, "dark_metal", vertices=20, bevel=0.004)
+    add_torus(root, m, "muzzle_burr", (0.009, 0.625, 0.19), 0.041, 0.005, "rust")
+    add_torus(root, m, "joint_clamp", (0, 0.085, 0.19), 0.055, 0.010, "brass")
+    add_cylinder(root, m, "joint_tape", (0, 0.13, 0.19), 0.047, 0.05, "tape_blue", vertices=20, bevel=0.003)
+    add_box(root, m, "joint_clamp_screw", (0.064, 0.085, 0.235), (0.018, 0.028, 0.042), "brass", bevel=0.003)
+    # Казённая крышка: шестигранник, за ним кнопка ударника на штоке с пружиной.
+    add_cylinder(root, m, "breech_cap", (0, -0.185, 0.19), 0.058, 0.05, "dark_metal", vertices=6, bevel=0.005)
+    add_cylinder(root, m, "striker_rod", (0, -0.225, 0.19), 0.008, 0.05, "metal", vertices=10)
+    add_sphere(root, m, "striker_knob", (0, -0.258, 0.19), 0.021, "brass")
+    spring = []
+    for i in range(8):
+        a = i * math.pi / 1.7
+        spring.append((0.014 * math.cos(a), -0.204 - i * 0.005, 0.19 + 0.014 * math.sin(a)))
+    add_curve_tube(root, m, "striker_spring", spring, 0.004, "metal")
+    # Рама из двух гнутых полос: передняя к спуску, задняя в рукоять.
+    add_curve_tube(root, m, "frame_strap_front", [
+        (0, 0.075, 0.24), (0, 0.105, 0.05), (0, 0.065, -0.045),
+    ], 0.011, "dark_metal")
+    add_curve_tube(root, m, "frame_strap_rear", [
+        (0, -0.135, 0.235), (0, -0.17, 0.06), (0, -0.11, -0.03),
+    ], 0.010, "dark_metal")
+    # Тяга от спуска к ударнику — снаружи, по правому боку.
+    add_curve_tube(root, m, "trigger_linkage", [
+        (0.046, 0.055, -0.015), (0.052, -0.06, 0.115), (0.046, -0.16, 0.155),
+    ], 0.006, "metal")
+    # Проволочная вязка на стыке коробки и рукояти, хвост скруткой.
+    add_curve_tube(root, m, "lashing", [
+        (0.0, -0.065, 0.248), (0.058, -0.065, 0.19), (0.062, -0.065, 0.05),
+        (0.045, -0.065, -0.012), (-0.045, -0.065, -0.012), (-0.062, -0.065, 0.05),
+        (-0.058, -0.065, 0.19),
+    ], 0.005, "metal", cyclic=True)
+    add_curve_tube(root, m, "lashing_tail", [
+        (0.05, -0.05, 0.235), (0.082, -0.038, 0.262), (0.068, -0.02, 0.285),
+    ], 0.0045, "metal")
+    # Рукоять: строганая доска, пятка, два шурупа, стальная стяжка сверху.
+    add_box(root, m, "grip", (0, -0.045, -0.17), (0.17, 0.28, 0.40), "wood", rotation=(0.20, 0, 0.02), bevel=0.03)
+    add_box(root, m, "grip_tape_top", (0, -0.018, -0.035), (0.186, 0.29, 0.06), "tape_blue", rotation=(0.20, 0, 0.02), bevel=0.006)
+    add_box(root, m, "grip_tape_mid", (0, -0.062, -0.255), (0.182, 0.295, 0.07), "tape_blue", rotation=(0.20, 0.08, 0.02), bevel=0.006)
+    add_box(root, m, "grip_tape_tail", (0.085, -0.012, -0.005), (0.018, 0.09, 0.045), "tape_blue", rotation=(0.35, 0.2, 0.1), bevel=0.003)
+    add_box(root, m, "grip_butt", (0, -0.105, -0.365), (0.19, 0.30, 0.05), "wood", rotation=(0.20, 0, 0.02), bevel=0.012)
+    add_screws(root, m, "grip", [(-0.09, -0.035, -0.12), (0.09, -0.08, -0.245)])
+    # Запасной патрон, примотанный изолентой к левой щеке рукояти.
+    add_cylinder(root, m, "spare_round", (-0.098, -0.055, -0.155), 0.012, 0.06, "brass", direction="Z", vertices=10)
+    add_box(root, m, "spare_round_tape", (-0.096, -0.055, -0.155), (0.018, 0.05, 0.028), "tape_blue", rotation=(0.20, 0, 0), bevel=0.003)
+    add_trigger_group(root, m, (0, 0.095, -0.04), 0.92)
+    # Прицельные: гвоздь-мушка со шляпкой и гнутый язычок целика на коробке.
+    add_cylinder(root, m, "front_sight", (0.003, 0.545, 0.235), 0.008, 0.065, "metal", direction="Z", vertices=8)
+    add_sphere(root, m, "front_sight_head", (0.003, 0.545, 0.272), 0.012, "rust")
+    add_box(root, m, "rear_sight", (0, -0.115, 0.252), (0.048, 0.026, 0.034), "rust", rotation=(0, 0, 0.05), bevel=0.004)
+    # Подпалины: коробка у казны и доска у стяжки.
+    add_wear(root, m, "pistol", [
+        ((0.049, -0.06, 0.205), (0.01, 0.11, 0.045)),
+        ((-0.086, -0.03, -0.06), (0.011, 0.09, 0.05)),
+    ])
 
 def build_rifle(root, m):
-    add_prism(root, m, "stock", [(-0.15, -0.52), (-0.19, -0.16), (-0.10, 0.08), (0.10, 0.08), (0.15, -0.52)], 0.20, "wood")
-    add_box(root, m, "receiver", (0, 0.20, 0.10), (0.20, 0.48, 0.20), "dark_metal", bevel=0.022)
-    add_cylinder(root, m, "barrel", (0, 0.92, 0.12), 0.045, 1.05, "metal", vertices=10)
-    add_cylinder(root, m, "muzzle", (0, 1.49, 0.12), 0.065, 0.14, "dark_metal")
-    add_box(root, m, "grip", (0, 0.04, -0.13), (0.15, 0.24, 0.32), "wood", rotation=(0.18, 0, 0), bevel=0.018)
-    add_cylinder(root, m, "scope", (0, 0.48, 0.30), 0.055, 0.46, "dark_metal")
-    add_cylinder(root, m, "scope_lens", (0, 0.73, 0.30), 0.061, 0.025, "energy_blue")
-    add_box(root, m, "bolt", (0.14, 0.25, 0.16), (0.18, 0.055, 0.055), "brass", bevel=0.009)
+    add_loft(root, m, "stock", [
+        (-0.54, 0.16, -0.16, 0.11),
+        (-0.33, 0.19, -0.15, 0.14),
+        (-0.12, 0.15, -0.11, 0.13),
+        (0.09, 0.10, -0.07, 0.11),
+    ], "wood", bevel=0.022)
+    add_box(root, m, "butt_plate", (0, -0.535, 0.0), (0.23, 0.045, 0.34), "dark_metal", bevel=0.012)
+    add_box(root, m, "cheek_rest", (0, -0.24, 0.13), (0.20, 0.34, 0.09), "leather", rotation=(-0.05, 0, 0), bevel=0.02)
+    add_box(root, m, "receiver", (0, 0.20, 0.10), (0.22, 0.49, 0.22), "dark_metal", bevel=0.026)
+    add_box(root, m, "ejection_port", (0.116, 0.25, 0.14), (0.014, 0.18, 0.095), "rubber", bevel=0.003)
+    add_box(root, m, "forearm", (0, 0.58, 0.05), (0.20, 0.46, 0.19), "wood", bevel=0.032)
+    add_grip_ribs(root, m, "rifle_forearm", (0, 0.60, 0.05), (0.21, 0.38, 0.20), material="leather", count=6)
+    add_cylinder(root, m, "barrel", (0, 1.01, 0.12), 0.047, 0.95, "metal", vertices=24, bevel=0.004)
+    add_cylinder(root, m, "muzzle", (0, 1.49, 0.12), 0.066, 0.14, "dark_metal", vertices=24, bevel=0.006)
+    add_cylinder(root, m, "barrel_crown", (0, 1.565, 0.12), 0.038, 0.012, "rubber", vertices=24)
+    add_barrel_rings(root, m, "rifle_barrel", (0.78, 1.24), 0.061, 0.12)
+    add_box(root, m, "grip", (0, 0.035, -0.14), (0.155, 0.25, 0.33), "wood", rotation=(0.18, 0, 0), bevel=0.022)
+    add_trigger_group(root, m, (0, 0.12, -0.02), 0.95)
+    add_box(root, m, "bolt", (0.14, 0.25, 0.16), (0.19, 0.055, 0.055), "brass", bevel=0.01)
+    add_sphere(root, m, "bolt_knob", (0.245, 0.25, 0.16), 0.052, "dark_metal")
     add_box(root, m, "cartridge_clip", (0, 0.18, 0.235), (0.11, 0.09, 0.12), "brass", bevel=0.008)
-    add_wear(root, m, "rifle", [((0, 0.32, 0.211), (0.10, 0.16, 0.012))])
+    # Оптику модель не несёт: прицел ставится через мастерскую модификаций.
+    # Вместо неё штатные механические прицельные и планка, на которую
+    # модификация и садится.
+    add_box(root, m, "scope_rail", (0, 0.44, 0.222), (0.075, 0.30, 0.022), "dark_metal", bevel=0.004)
+    add_box(root, m, "rear_sight", (0, 0.315, 0.245), (0.070, 0.030, 0.038), "dark_metal", bevel=0.005)
+    add_box(root, m, "front_sight", (0, 1.30, 0.22), (0.035, 0.055, 0.13), "dark_metal", bevel=0.005)
+    add_screws(root, m, "rifle", [(-0.116, 0.10, 0.12), (0.116, 0.34, 0.12)])
+    add_wear(root, m, "rifle", [((0, 0.32, 0.216), (0.10, 0.16, 0.012))])
 
 
 def build_assault_rifle(root, m):
-    add_prism(root, m, "stock", [(-0.13, -0.48), (-0.17, -0.05), (-0.08, 0.04), (0.08, 0.04), (0.13, -0.48)], 0.17, "wood")
-    add_box(root, m, "receiver", (0, 0.22, 0.09), (0.24, 0.62, 0.24), "dark_metal", bevel=0.026)
-    add_box(root, m, "dust_cover", (0, 0.24, 0.225), (0.20, 0.52, 0.07), "paint_olive", bevel=0.012)
-    add_cylinder(root, m, "barrel", (0, 0.86, 0.10), 0.046, 0.74, "metal")
-    add_cylinder(root, m, "muzzle", (0, 1.27, 0.10), 0.074, 0.15, "dark_metal")
-    add_box(root, m, "handguard", (0, 0.69, 0.07), (0.22, 0.38, 0.21), "wood", bevel=0.025)
-    add_box(root, m, "grip", (0, -0.02, -0.16), (0.15, 0.24, 0.34), "leather", rotation=(0.18, 0, 0), bevel=0.02)
+    add_loft(root, m, "stock", [
+        (-0.49, 0.14, -0.14, 0.10),
+        (-0.29, 0.18, -0.13, 0.12),
+        (-0.08, 0.13, -0.09, 0.11),
+        (0.05, 0.08, -0.06, 0.09),
+    ], "wood", bevel=0.020)
+    add_box(root, m, "stock_butt", (0, -0.485, 0.0), (0.20, 0.045, 0.31), "dark_metal", bevel=0.012)
+    add_box(root, m, "receiver", (0, 0.22, 0.09), (0.25, 0.62, 0.25), "dark_metal", bevel=0.028)
+    add_box(root, m, "dust_cover", (0, 0.22, 0.225), (0.215, 0.51, 0.075), "paint_olive", bevel=0.016)
+    add_box(root, m, "ejection_port", (0.132, 0.29, 0.15), (0.014, 0.20, 0.10), "rubber", bevel=0.003)
+    add_cylinder(root, m, "gas_tube", (0, 0.75, 0.20), 0.048, 0.63, "dark_metal", vertices=24)
+    add_cylinder(root, m, "barrel", (0, 0.91, 0.10), 0.047, 0.68, "metal", vertices=24)
+    add_cylinder(root, m, "muzzle", (0, 1.28, 0.10), 0.075, 0.16, "dark_metal", vertices=24, bevel=0.007)
+    for index, z in enumerate((0.06, 0.10, 0.14), start=1):
+        add_box(root, m, f"muzzle_slot_{index:02d}", (0, 1.36, z), (0.16, 0.035, 0.018), "rubber", bevel=0.002)
+    add_box(root, m, "handguard", (0, 0.68, 0.07), (0.235, 0.39, 0.22), "wood", bevel=0.030)
+    add_grip_ribs(root, m, "assault_handguard", (0, 0.69, 0.07), (0.24, 0.34, 0.22), material="dark_metal", count=6)
+    add_box(root, m, "grip", (0, -0.02, -0.16), (0.16, 0.25, 0.35), "leather", rotation=(0.18, 0, 0), bevel=0.024)
+    add_grip_ribs(root, m, "assault_grip", (0, -0.02, -0.16), (0.165, 0.22, 0.30), count=6, axis="Z")
+    add_trigger_group(root, m, (0, 0.10, -0.035), 0.94)
     magazine = add_prism(root, m, "magazine", [(-0.09, 0.04), (-0.105, 0.34), (-0.05, 0.48), (0.08, 0.43), (0.095, 0.08)], 0.18, "dark_metal")
     magazine.rotation_euler.x = math.pi / 2
     magazine.location = (0, 0.08, -0.15)
+    for index in range(4):
+        add_box(root, m, f"magazine_rib_{index + 1:02d}", (0, 0.025 + index * 0.045, -0.29 - index * 0.015), (0.19, 0.018, 0.22), "metal", rotation=(0.10, 0, 0), bevel=0.004)
+    add_box(root, m, "charging_handle", (0.16, 0.12, 0.23), (0.16, 0.045, 0.045), "brass", bevel=0.008)
+    add_sphere(root, m, "charging_handle_knob", (0.25, 0.12, 0.23), 0.038, "dark_metal")
+    add_box(root, m, "rear_sight", (0, 0.03, 0.34), (0.12, 0.11, 0.09), "dark_metal", bevel=0.012)
+    add_box(root, m, "front_sight", (0, 1.05, 0.27), (0.12, 0.07, 0.23), "dark_metal", bevel=0.012)
+    add_sphere(root, m, "front_sight_post", (0, 1.05, 0.32), 0.018, "brass", scale=(0.65, 0.65, 1.8))
+    add_barrel_rings(root, m, "assault_barrel", (0.92, 1.16), 0.061, 0.10)
     add_screws(root, m, "assault", [(-0.125, 0.04, 0.12), (0.125, 0.35, 0.12)])
     add_wear(root, m, "assault", [((0, 0.16, 0.255), (0.13, 0.18, 0.015)), ((0, 0.72, 0.181), (0.12, 0.16, 0.012))])
 
 
 def build_machine_gun(root, m):
-    add_prism(root, m, "stock", [(-0.16, -0.56), (-0.20, -0.12), (-0.11, 0.02), (0.11, 0.02), (0.16, -0.56)], 0.22, "wood")
-    add_box(root, m, "receiver", (0, 0.25, 0.11), (0.30, 0.76, 0.31), "dark_metal", bevel=0.032)
-    add_box(root, m, "receiver_cover", (0, 0.22, 0.29), (0.27, 0.57, 0.08), "paint_olive", bevel=0.015)
-    add_cylinder(root, m, "barrel_shroud", (0, 0.96, 0.13), 0.085, 0.82, "metal", vertices=12)
-    add_cylinder(root, m, "muzzle", (0, 1.42, 0.13), 0.10, 0.17, "dark_metal")
-    add_box(root, m, "ammo_box", (0.20, 0.20, -0.14), (0.28, 0.34, 0.37), "paint_olive", bevel=0.025)
-    add_box(root, m, "grip", (0, -0.04, -0.19), (0.17, 0.25, 0.38), "leather", rotation=(0.18, 0, 0), bevel=0.02)
-    add_box(root, m, "carry_handle", (0, 0.43, 0.42), (0.055, 0.38, 0.055), "brass", rotation=(0, 0.08, 0), bevel=0.01)
-    add_box(root, m, "bipod_left", (-0.12, 0.82, -0.16), (0.035, 0.44, 0.035), "metal", rotation=(0.20, 0.05, 0.12), bevel=0.006)
-    add_box(root, m, "bipod_right", (0.12, 0.82, -0.16), (0.035, 0.44, 0.035), "metal", rotation=(0.20, -0.05, -0.12), bevel=0.006)
+    # Сошки в модель не входят: это модификация слота цевья («Складные сошки»),
+    # её навешивает мастерская, а не базовая геометрия.
+    add_loft(root, m, "stock", [
+        (-0.57, 0.17, -0.18, 0.12),
+        (-0.34, 0.21, -0.17, 0.15),
+        (-0.11, 0.17, -0.12, 0.14),
+        (0.03, 0.11, -0.08, 0.11),
+    ], "wood", bevel=0.023)
+    add_box(root, m, "stock_butt", (0, -0.565, 0.0), (0.24, 0.05, 0.36), "dark_metal", bevel=0.014)
+    add_box(root, m, "receiver", (0, 0.25, 0.11), (0.31, 0.76, 0.32), "dark_metal", bevel=0.035)
+    add_box(root, m, "receiver_cover", (0, 0.21, 0.30), (0.285, 0.59, 0.095), "paint_olive", bevel=0.018)
+    add_box(root, m, "feed_tray", (0.17, 0.20, 0.22), (0.065, 0.36, 0.13), "metal", bevel=0.012)
+    add_cylinder(root, m, "barrel_shroud", (0, 0.96, 0.13), 0.09, 0.82, "metal", vertices=28, bevel=0.006)
+    add_cylinder(root, m, "barrel_core", (0, 1.04, 0.13), 0.042, 0.96, "dark_metal", vertices=24)
+    add_cylinder(root, m, "muzzle", (0, 1.43, 0.13), 0.105, 0.18, "dark_metal", vertices=24, bevel=0.008)
+    add_barrel_rings(root, m, "machine_barrel", (0.66, 0.82, 1.02, 1.22), 0.108, 0.13)
+    for side in (-1, 1):
+        for index, y in enumerate((0.73, 0.87, 1.01, 1.15), start=1):
+            add_cylinder(
+                root,
+                m,
+                f"shroud_vent_{'l' if side < 0 else 'r'}_{index:02d}",
+                (side * 0.085, y, 0.13),
+                0.018,
+                0.02,
+                "rubber",
+                direction="X",
+                vertices=16,
+            )
+    add_box(root, m, "ammo_box", (0.21, 0.18, -0.14), (0.30, 0.36, 0.39), "paint_olive", bevel=0.03)
+    add_box(root, m, "ammo_box_lid", (0.21, 0.18, 0.07), (0.31, 0.37, 0.045), "dark_metal", bevel=0.008)
+    add_box(root, m, "ammo_box_latch", (0.365, 0.18, -0.02), (0.025, 0.09, 0.12), "brass", bevel=0.005)
+    for index, y in enumerate((0.09, 0.15, 0.21, 0.27, 0.33), start=1):
+        add_cylinder(root, m, f"ammo_belt_{index:02d}", (0.16, y, 0.10), 0.018, 0.11, "brass", direction="X", vertices=16)
+    add_box(root, m, "grip", (0, -0.04, -0.19), (0.18, 0.26, 0.39), "leather", rotation=(0.18, 0, 0), bevel=0.024)
+    add_grip_ribs(root, m, "machine_grip", (0, -0.04, -0.19), (0.19, 0.23, 0.34), count=6, axis="Z")
+    add_trigger_group(root, m, (0, 0.07, -0.05), 1.0)
+    add_curve_tube(
+        root,
+        m,
+        "carry_handle",
+        [(-0.13, 0.28, 0.36), (-0.15, 0.43, 0.52), (0.15, 0.43, 0.52), (0.13, 0.58, 0.36)],
+        0.026,
+        "brass",
+    )
+    add_box(root, m, "rear_sight", (0, 0.03, 0.41), (0.13, 0.12, 0.10), "dark_metal", bevel=0.012)
+    add_box(root, m, "front_sight", (0, 1.18, 0.27), (0.12, 0.07, 0.21), "dark_metal", bevel=0.012)
+    add_screws(root, m, "machinegun", [(-0.16, 0.04, 0.13), (-0.16, 0.40, 0.13)])
     add_wear(root, m, "machinegun", [((0, 0.25, 0.338), (0.17, 0.24, 0.012))])
 
 
 def build_laser_pistol(root, m):
-    add_box(root, m, "frame", (0, 0.23, 0.10), (0.28, 0.58, 0.27), "paint_teal", bevel=0.045)
-    add_cone(root, m, "emitter", (0, 0.61, 0.10), (0.13, 0.085), 0.22, "dark_metal")
-    add_cylinder(root, m, "muzzle", (0, 0.75, 0.10), 0.075, 0.09, "energy_red")
-    add_box(root, m, "grip", (0, -0.03, -0.18), (0.19, 0.27, 0.40), "rubber", rotation=(0.20, 0, 0), bevel=0.03)
-    core = add_cylinder(root, m, "energy_core", (0, 0.18, 0.28), 0.075, 0.30, "energy_blue")
+    add_box(root, m, "frame", (0, 0.23, 0.10), (0.30, 0.58, 0.28), "paint_teal", bevel=0.05)
+    add_box(root, m, "frame_spine", (0, 0.20, 0.27), (0.21, 0.44, 0.10), "dark_metal", bevel=0.024)
+    add_cone(root, m, "emitter", (0, 0.61, 0.10), (0.135, 0.085), 0.22, "dark_metal", vertices=28)
+    add_torus(root, m, "emitter_ring", (0, 0.70, 0.10), 0.105, 0.024, "brass")
+    add_cylinder(root, m, "muzzle", (0, 0.75, 0.10), 0.077, 0.09, "energy_red", vertices=24)
+    add_cylinder(root, m, "muzzle_aperture", (0, 0.798, 0.10), 0.045, 0.012, "rubber", vertices=24)
+    add_box(root, m, "grip", (0, -0.03, -0.18), (0.20, 0.28, 0.41), "rubber", rotation=(0.20, 0, 0), bevel=0.034)
+    add_box(root, m, "grip_insert_left", (-0.105, -0.03, -0.18), (0.018, 0.22, 0.31), "leather", rotation=(0.20, 0, 0), bevel=0.007)
+    add_box(root, m, "grip_insert_right", (0.105, -0.03, -0.18), (0.018, 0.22, 0.31), "leather", rotation=(0.20, 0, 0), bevel=0.007)
+    add_grip_ribs(root, m, "laser_grip", (0, -0.03, -0.18), (0.205, 0.23, 0.34), count=7, axis="Z")
+    add_trigger_group(root, m, (0, 0.075, -0.055), 0.95)
+    core = add_cylinder(root, m, "energy_core", (0, 0.18, 0.29), 0.078, 0.31, "energy_blue", vertices=28)
     core.scale.x = 1.25
+    add_barrel_rings(root, m, "core_collar", (0.04, 0.18, 0.32), 0.102, 0.29, material="brass")
     for offset in (-0.17, 0.17):
-        add_box(root, m, f"emitter_fin_{'l' if offset < 0 else 'r'}", (offset, 0.50, 0.11), (0.055, 0.28, 0.24), "metal", rotation=(0, 0, -offset * 0.35), bevel=0.01)
+        add_box(root, m, f"emitter_fin_{'l' if offset < 0 else 'r'}", (offset, 0.50, 0.11), (0.06, 0.29, 0.25), "metal", rotation=(0, 0, -offset * 0.35), bevel=0.014)
+        for index, y in enumerate((0.42, 0.50, 0.58), start=1):
+            add_box(root, m, f"fin_vent_{'l' if offset < 0 else 'r'}_{index:02d}", (offset * 1.02, y, 0.12), (0.067, 0.028, 0.12), "rubber", bevel=0.004)
+    add_curve_tube(root, m, "core_wire_left", [(-0.10, 0.08, 0.22), (-0.17, 0.18, 0.18), (-0.17, 0.34, 0.12)], 0.014, "brass")
+    add_curve_tube(root, m, "core_wire_right", [(0.10, 0.08, 0.22), (0.17, 0.18, 0.18), (0.17, 0.34, 0.12)], 0.014, "brass")
+    add_box(root, m, "power_cell_base", (0, -0.08, -0.39), (0.22, 0.14, 0.045), "brass", rotation=(0.20, 0, 0), bevel=0.010)
+    add_box(root, m, "rear_sight", (0, 0.0, 0.37), (0.12, 0.07, 0.055), "dark_metal", bevel=0.007)
     add_screws(root, m, "laser", [(-0.147, 0.12, 0.14), (0.147, 0.36, 0.14)])
 
 
 def build_flamethrower(root, m):
-    add_box(root, m, "frame", (0, 0.26, 0.08), (0.26, 0.72, 0.24), "dark_metal", bevel=0.028)
-    add_cylinder(root, m, "fuel_tank", (0, -0.18, 0.12), 0.15, 0.62, "paint_olive")
-    add_cylinder(root, m, "pressure_tank", (0.20, 0.12, 0.09), 0.08, 0.48, "brass")
-    add_cylinder(root, m, "nozzle", (0, 0.88, 0.10), 0.055, 0.78, "metal")
-    add_cone(root, m, "muzzle", (0, 1.31, 0.10), (0.11, 0.06), 0.15, "dark_metal")
-    add_cylinder(root, m, "pilot", (0, 1.40, 0.10), 0.035, 0.07, "flame")
-    add_box(root, m, "grip", (0, 0.01, -0.18), (0.16, 0.27, 0.38), "leather", rotation=(0.18, 0, 0), bevel=0.02)
-    add_torus(root, m, "hose", (0.14, 0.28, 0.02), 0.17, 0.022, "rubber", rotation=(0, math.pi / 2, 0))
+    add_box(root, m, "frame", (0, 0.26, 0.08), (0.28, 0.72, 0.25), "dark_metal", bevel=0.032)
+    add_box(root, m, "frame_rail_left", (-0.16, 0.28, 0.08), (0.045, 0.66, 0.18), "metal", bevel=0.010)
+    add_box(root, m, "frame_rail_right", (0.16, 0.28, 0.08), (0.045, 0.66, 0.18), "metal", bevel=0.010)
+    add_cylinder(root, m, "fuel_tank", (0, -0.18, 0.12), 0.155, 0.62, "paint_olive", vertices=28, bevel=0.007)
+    add_cone(root, m, "fuel_tank_cap_front", (0, 0.145, 0.12), (0.125, 0.155), 0.06, "dark_metal", vertices=28)
+    add_cone(root, m, "fuel_tank_cap_rear", (0, -0.505, 0.12), (0.155, 0.125), 0.06, "dark_metal", vertices=28)
+    add_barrel_rings(root, m, "fuel_strap", (-0.34, -0.02), 0.172, 0.12, material="brass")
+    add_cylinder(root, m, "pressure_tank", (0.205, 0.10, 0.09), 0.082, 0.48, "brass", vertices=24, bevel=0.006)
+    add_cylinder(root, m, "nozzle", (0, 0.88, 0.10), 0.058, 0.78, "metal", vertices=24, bevel=0.004)
+    add_cylinder(root, m, "nozzle_jacket", (0, 0.88, 0.10), 0.082, 0.42, "dark_metal", vertices=24)
+    add_heat_vents(root, m, "flame_nozzle", (0.72, 0.82, 0.92, 1.02), 0.185, 0.12, material="metal")
+    add_cone(root, m, "muzzle", (0, 1.31, 0.10), (0.115, 0.062), 0.15, "dark_metal", vertices=24)
+    add_cylinder(root, m, "pilot", (0, 1.40, 0.10), 0.036, 0.07, "flame", vertices=20)
+    add_box(root, m, "pilot_guard_left", (-0.055, 1.39, 0.10), (0.018, 0.12, 0.12), "brass", bevel=0.004)
+    add_box(root, m, "pilot_guard_right", (0.055, 1.39, 0.10), (0.018, 0.12, 0.12), "brass", bevel=0.004)
+    add_box(root, m, "grip", (0, 0.01, -0.18), (0.17, 0.28, 0.39), "leather", rotation=(0.18, 0, 0), bevel=0.024)
+    add_grip_ribs(root, m, "flame_grip", (0, 0.01, -0.18), (0.18, 0.24, 0.34), count=6, axis="Z")
+    add_trigger_group(root, m, (0, 0.12, -0.04), 0.95)
+    add_curve_tube(root, m, "hose", [(0.14, -0.20, 0.02), (0.28, -0.02, -0.02), (0.23, 0.30, 0.00), (0.12, 0.52, 0.06)], 0.026, "rubber")
+    add_sphere(root, m, "pressure_gauge", (-0.19, 0.12, 0.25), 0.075, "dark_metal", scale=(0.32, 1.0, 1.0))
+    add_cylinder(root, m, "gauge_face", (-0.215, 0.12, 0.25), 0.055, 0.015, "bone", direction="X", vertices=24)
+    add_box(root, m, "gauge_needle", (-0.226, 0.12, 0.25), (0.008, 0.065, 0.012), "energy_red", rotation=(0.45, 0, 0), bevel=0.002)
+    add_sphere(root, m, "fuel_valve", (0.19, -0.18, 0.25), 0.055, "brass", scale=(1.0, 0.45, 1.0))
     add_wear(root, m, "flame", [((0, 0.27, 0.207), (0.13, 0.23, 0.012))])
 
 
 def build_plasma_rifle(root, m):
-    add_prism(root, m, "stock", [(-0.14, -0.48), (-0.19, -0.09), (-0.10, 0.02), (0.10, 0.02), (0.14, -0.48)], 0.20, "rubber")
-    add_box(root, m, "receiver", (0, 0.28, 0.12), (0.34, 0.79, 0.36), "paint_teal", bevel=0.055)
-    add_cylinder(root, m, "energy_core", (0, 0.25, 0.17), 0.13, 0.40, "energy_green", vertices=12)
+    add_loft(root, m, "stock", [
+        (-0.49, 0.15, -0.17, 0.12),
+        (-0.29, 0.20, -0.16, 0.15),
+        (-0.08, 0.18, -0.11, 0.13),
+        (0.03, 0.10, -0.07, 0.11),
+    ], "rubber", bevel=0.024)
+    add_box(root, m, "stock_frame", (0, -0.24, 0.02), (0.28, 0.45, 0.25), "dark_metal", bevel=0.03)
+    add_box(root, m, "stock_butt", (0, -0.485, 0.02), (0.24, 0.055, 0.34), "rubber", bevel=0.016)
+    add_box(root, m, "receiver", (0, 0.28, 0.12), (0.35, 0.79, 0.37), "paint_teal", bevel=0.06)
+    add_box(root, m, "receiver_spine", (0, 0.23, 0.34), (0.26, 0.56, 0.10), "dark_metal", bevel=0.025)
+    add_cylinder(root, m, "energy_core", (0, 0.25, 0.17), 0.132, 0.40, "energy_green", vertices=28)
+    add_barrel_rings(root, m, "plasma_core", (0.04, 0.25, 0.45), 0.154, 0.17, material="brass")
     for offset in (-0.12, 0, 0.12):
-        add_cylinder(root, m, f"barrel_{offset:+.2f}", (offset, 0.96, 0.12), 0.045, 0.74, "metal")
-    add_cone(root, m, "muzzle", (0, 1.37, 0.12), (0.15, 0.10), 0.16, "dark_metal")
-    add_box(root, m, "grip", (0, -0.02, -0.19), (0.17, 0.25, 0.40), "rubber", rotation=(0.18, 0, 0), bevel=0.025)
+        add_cylinder(root, m, f"barrel_{offset:+.2f}", (offset, 0.96, 0.12), 0.046, 0.74, "metal", vertices=24)
+        add_torus(root, m, f"barrel_coil_{offset:+.2f}_rear", (offset, 0.72, 0.12), 0.059, 0.012, "brass")
+        add_torus(root, m, f"barrel_coil_{offset:+.2f}_front", (offset, 1.15, 0.12), 0.059, 0.012, "brass")
+    add_cone(root, m, "muzzle", (0, 1.37, 0.12), (0.16, 0.10), 0.16, "dark_metal", vertices=28)
+    add_cylinder(root, m, "muzzle_aperture", (0, 1.455, 0.12), 0.078, 0.018, "energy_green", vertices=24)
+    add_box(root, m, "grip", (0, -0.02, -0.19), (0.18, 0.26, 0.41), "rubber", rotation=(0.18, 0, 0), bevel=0.028)
+    add_grip_ribs(root, m, "plasma_grip", (0, -0.02, -0.19), (0.19, 0.23, 0.35), count=7, axis="Z")
+    add_trigger_group(root, m, (0, 0.10, -0.05), 1.0)
     for offset in (-0.20, 0.20):
-        add_box(root, m, f"coil_guard_{'l' if offset < 0 else 'r'}", (offset, 0.27, 0.17), (0.055, 0.49, 0.29), "brass", bevel=0.012)
+        add_box(root, m, f"coil_guard_{'l' if offset < 0 else 'r'}", (offset, 0.27, 0.17), (0.06, 0.50, 0.30), "brass", bevel=0.016)
+        for index, y in enumerate((0.11, 0.22, 0.33, 0.44), start=1):
+            add_box(root, m, f"guard_insulator_{'l' if offset < 0 else 'r'}_{index:02d}", (offset, y, 0.17), (0.07, 0.032, 0.20), "rubber", bevel=0.005)
+    add_curve_tube(root, m, "plasma_wire_left", [(-0.16, 0.03, 0.26), (-0.24, 0.28, 0.33), (-0.18, 0.58, 0.22)], 0.016, "energy_green")
+    add_curve_tube(root, m, "plasma_wire_right", [(0.16, 0.03, 0.26), (0.24, 0.28, 0.33), (0.18, 0.58, 0.22)], 0.016, "energy_green")
+    add_box(root, m, "rear_sight", (0, -0.02, 0.42), (0.16, 0.10, 0.08), "dark_metal", bevel=0.012)
+    add_box(root, m, "front_sight", (0, 1.18, 0.29), (0.14, 0.07, 0.18), "dark_metal", bevel=0.012)
+    add_box(root, m, "power_cell", (0, 0.05, -0.30), (0.22, 0.24, 0.20), "brass", rotation=(0.12, 0, 0), bevel=0.026)
+    add_box(root, m, "power_cell_window", (0, 0.04, -0.405), (0.12, 0.13, 0.018), "energy_green", rotation=(0.12, 0, 0), bevel=0.005)
+    add_screws(root, m, "plasma", [(-0.18, 0.04, 0.16), (0.18, 0.48, 0.16)])
     add_wear(root, m, "plasma", [((0, 0.16, 0.306), (0.18, 0.21, 0.012))])
 
 
 def build_shotgun(root, m):
-    add_prism(root, m, "stock", [(-0.15, -0.54), (-0.19, -0.12), (-0.10, 0.06), (0.10, 0.06), (0.15, -0.54)], 0.21, "wood")
-    add_box(root, m, "receiver", (0, 0.22, 0.10), (0.23, 0.50, 0.23), "dark_metal", bevel=0.025)
-    add_cylinder(root, m, "barrel", (0, 0.91, 0.16), 0.052, 1.03, "metal")
-    add_cylinder(root, m, "magazine_tube", (0, 0.88, 0.035), 0.045, 0.86, "dark_metal")
-    add_cylinder(root, m, "muzzle", (0, 1.47, 0.16), 0.068, 0.09, "dark_metal")
-    add_box(root, m, "pump", (0, 0.70, 0.06), (0.25, 0.36, 0.21), "wood", bevel=0.028)
-    add_box(root, m, "grip", (0, 0.01, -0.15), (0.16, 0.24, 0.34), "leather", rotation=(0.18, 0, 0), bevel=0.02)
-    add_cylinder(root, m, "reload_shell", (-0.13, 0.24, -0.02), 0.035, 0.15, "brass", direction="Y", vertices=10)
+    add_loft(root, m, "stock", [
+        (-0.55, 0.16, -0.17, 0.11),
+        (-0.34, 0.20, -0.16, 0.14),
+        (-0.12, 0.17, -0.11, 0.13),
+        (0.07, 0.10, -0.07, 0.11),
+    ], "wood", bevel=0.022)
+    add_box(root, m, "butt_plate", (0, -0.545, 0.0), (0.23, 0.045, 0.35), "rubber", bevel=0.014)
+    add_box(root, m, "cheek_rest", (0, -0.25, 0.13), (0.20, 0.34, 0.085), "leather", bevel=0.018)
+    add_box(root, m, "receiver", (0, 0.22, 0.10), (0.24, 0.51, 0.24), "dark_metal", bevel=0.029)
+    add_box(root, m, "ejection_port", (0.126, 0.28, 0.15), (0.014, 0.18, 0.105), "rubber", bevel=0.003)
+    add_box(root, m, "loading_gate", (0, 0.17, -0.027), (0.13, 0.19, 0.014), "metal", bevel=0.004)
+    add_cylinder(root, m, "barrel", (0, 0.91, 0.16), 0.054, 1.03, "metal", vertices=28, bevel=0.004)
+    add_cylinder(root, m, "magazine_tube", (0, 0.88, 0.035), 0.047, 0.86, "dark_metal", vertices=24, bevel=0.004)
+    add_cylinder(root, m, "muzzle", (0, 1.47, 0.16), 0.070, 0.09, "dark_metal", vertices=28, bevel=0.006)
+    add_cylinder(root, m, "muzzle_bore", (0, 1.518, 0.16), 0.040, 0.012, "rubber", vertices=28)
+    add_box(root, m, "pump", (0, 0.70, 0.06), (0.26, 0.37, 0.22), "wood", bevel=0.032)
+    add_grip_ribs(root, m, "shotgun_pump", (0, 0.70, 0.06), (0.27, 0.34, 0.22), material="rubber", count=8)
+    add_box(root, m, "grip", (0, 0.01, -0.15), (0.17, 0.25, 0.35), "leather", rotation=(0.18, 0, 0), bevel=0.024)
+    add_grip_ribs(root, m, "shotgun_grip", (0, 0.01, -0.15), (0.18, 0.22, 0.30), count=6, axis="Z")
+    add_trigger_group(root, m, (0, 0.10, -0.03), 0.96)
+    add_barrel_rings(root, m, "shotgun_band", (0.57, 1.19), 0.074, 0.095)
+    add_box(root, m, "front_sight", (0, 1.34, 0.235), (0.025, 0.045, 0.055), "brass", bevel=0.004)
+    add_box(root, m, "safety", (0.13, 0.09, 0.15), (0.035, 0.06, 0.035), "brass", bevel=0.007)
     add_screws(root, m, "shotgun", [(-0.125, 0.08, 0.13), (0.125, 0.33, 0.13)])
+    add_cylinder(root, m, "reload_shell", (-0.13, 0.24, -0.02), 0.035, 0.15, "brass", direction="Y", vertices=10)
 
 
 def build_rocket_launcher(root, m):
-    add_cylinder(root, m, "launcher_tube", (0, 0.48, 0.16), 0.15, 1.52, "paint_olive", vertices=14)
-    add_cone(root, m, "muzzle", (0, 1.30, 0.16), (0.23, 0.15), 0.20, "metal", vertices=14)
-    add_cone(root, m, "rear_vent", (0, -0.35, 0.16), (0.19, 0.25), 0.18, "dark_metal", vertices=14)
-    add_box(root, m, "grip", (0, 0.14, -0.19), (0.18, 0.27, 0.41), "leather", rotation=(0.18, 0, 0), bevel=0.022)
-    add_box(root, m, "sight", (-0.17, 0.51, 0.35), (0.13, 0.38, 0.15), "dark_metal", bevel=0.018)
-    add_cylinder(root, m, "sight_lens", (-0.17, 0.73, 0.35), 0.048, 0.035, "energy_red")
-    add_box(root, m, "shoulder_pad", (0, -0.49, 0.16), (0.28, 0.08, 0.36), "rubber", bevel=0.022)
-    add_cylinder(root, m, "rocket_round", (0, -0.05, 0.16), 0.105, 0.96, "dark_metal", vertices=12)
+    add_cylinder(root, m, "launcher_tube", (0, 0.48, 0.16), 0.152, 1.52, "paint_olive", vertices=32, bevel=0.006)
+    add_cylinder(root, m, "inner_tube", (0, 0.48, 0.16), 0.122, 1.58, "dark_metal", vertices=28)
+    add_cone(root, m, "muzzle", (0, 1.30, 0.16), (0.235, 0.152), 0.20, "metal", vertices=32)
+    add_torus(root, m, "muzzle_ring", (0, 1.385, 0.16), 0.205, 0.030, "dark_metal")
+    add_cone(root, m, "rear_vent", (0, -0.35, 0.16), (0.19, 0.25), 0.18, "dark_metal", vertices=32)
+    add_torus(root, m, "rear_vent_ring", (0, -0.43, 0.16), 0.225, 0.027, "metal")
+    add_barrel_rings(root, m, "launcher_strap", (-0.10, 0.46, 0.90), 0.174, 0.16, material="brass")
+    add_box(root, m, "grip", (0, 0.14, -0.19), (0.19, 0.28, 0.42), "leather", rotation=(0.18, 0, 0), bevel=0.026)
+    add_grip_ribs(root, m, "launcher_grip", (0, 0.14, -0.19), (0.20, 0.24, 0.36), count=7, axis="Z")
+    add_trigger_group(root, m, (0, 0.25, -0.045), 1.0)
+    add_box(root, m, "sight", (-0.19, 0.51, 0.36), (0.14, 0.39, 0.16), "dark_metal", bevel=0.022)
+    add_box(root, m, "shoulder_pad", (0, -0.49, 0.16), (0.29, 0.09, 0.37), "rubber", bevel=0.026)
+    add_box(root, m, "warning_plate", (0, 0.62, 0.315), (0.12, 0.30, 0.012), "rust", bevel=0.004)
+    add_curve_tube(root, m, "launcher_wire", [(0.14, 0.18, 0.20), (0.22, 0.38, 0.25), (0.18, 0.70, 0.26)], 0.014, "rubber")
+    add_sphere(root, m, "arming_switch", (0.17, 0.18, 0.29), 0.045, "energy_red", scale=(0.45, 1.0, 1.0))
     add_wear(root, m, "launcher", [((0, 0.33, 0.312), (0.11, 0.30, 0.012)), ((0, 0.83, 0.312), (0.09, 0.19, 0.012))])
+    add_cylinder(root, m, "rocket_round", (0, -0.05, 0.16), 0.105, 0.96, "dark_metal", vertices=12)
+
+
+def build_revolver(root, m):
+    # Ржавый револьвер (Т2): трубчатая коробка, открытый барабан с каморами,
+    # рама из гнутых полос, курок со шпорой, деревянная рукоять на болтах.
+    # Барабан назван cylinder — его двигает анимация перезарядки.
+    add_cylinder(root, m, "receiver_tube", (0, 0.05, 0.20), 0.055, 0.38, "dark_metal", vertices=20, bevel=0.005)
+    add_cylinder(root, m, "receiver_collar", (0, 0.225, 0.20), 0.061, 0.05, "rust", vertices=20, bevel=0.005)
+    add_cylinder(root, m, "barrel", (0, 0.42, 0.20), 0.040, 0.40, "metal", vertices=20, bevel=0.003)
+    add_cylinder(root, m, "muzzle", (0, 0.645, 0.20), 0.047, 0.055, "dark_metal", vertices=20, bevel=0.004)
+    add_torus(root, m, "barrel_band", (0, 0.315, 0.20), 0.049, 0.010, "brass")
+    add_box(root, m, "barrel_band_screw", (0.058, 0.315, 0.245), (0.018, 0.03, 0.045), "brass", bevel=0.003)
+    add_cylinder(root, m, "cylinder", (0, 0.075, 0.115), 0.088, 0.15, "metal", vertices=12, bevel=0.006)
+    for index in range(5):
+        a = index * math.pi * 2 / 5
+        add_cylinder(root, m, f"chamber_{index + 1:02d}",
+                     (0.05 * math.cos(a), 0.155, 0.115 + 0.05 * math.sin(a)),
+                     0.017, 0.014, "dark_metal", vertices=10)
+    for index in range(6):
+        a = index * math.pi / 3
+        add_box(root, m, f"drum_rib_{index + 1:02d}",
+                (0.085 * math.cos(a), 0.075, 0.115 + 0.085 * math.sin(a)),
+                (0.014, 0.13, 0.02), "dark_metal", rotation=(a, 0, 0), bevel=0.003)
+    add_cylinder(root, m, "drum_axis", (0, 0.09, 0.115), 0.014, 0.20, "brass", vertices=10)
+    add_curve_tube(root, m, "frame_strap_front", [
+        (0, 0.185, 0.245), (0, 0.215, 0.10), (0, 0.185, -0.005), (0, 0.06, -0.05),
+    ], 0.012, "dark_metal")
+    add_curve_tube(root, m, "frame_strap_rear", [
+        (0, -0.125, 0.235), (0, -0.165, 0.10), (0, -0.115, -0.02),
+    ], 0.011, "dark_metal")
+    add_box(root, m, "hammer", (0, -0.20, 0.225), (0.04, 0.10, 0.042), "metal", rotation=(0.55, 0, 0), bevel=0.005)
+    add_box(root, m, "hammer_spur", (0, -0.245, 0.262), (0.055, 0.045, 0.018), "rust", rotation=(0.25, 0, 0), bevel=0.004)
+    add_box(root, m, "grip", (0, -0.045, -0.17), (0.17, 0.28, 0.40), "wood", rotation=(0.20, 0, 0.02), bevel=0.03)
+    add_box(root, m, "grip_panel_left", (-0.092, -0.05, -0.16), (0.016, 0.22, 0.28), "leather", rotation=(0.20, 0, 0.02), bevel=0.006)
+    add_box(root, m, "grip_panel_right", (0.092, -0.05, -0.16), (0.016, 0.22, 0.28), "leather", rotation=(0.20, 0, 0.02), bevel=0.006)
+    add_box(root, m, "grip_butt", (0, -0.105, -0.365), (0.19, 0.30, 0.05), "wood", rotation=(0.20, 0, 0.02), bevel=0.012)
+    add_screws(root, m, "grip", [(-0.102, -0.03, -0.10), (0.102, -0.075, -0.23)])
+    add_trigger_group(root, m, (0, 0.095, -0.04), 0.92)
+    add_box(root, m, "front_sight", (0, 0.60, 0.258), (0.026, 0.04, 0.05), "metal", bevel=0.003)
+    add_box(root, m, "rear_sight", (0, -0.095, 0.262), (0.05, 0.028, 0.034), "rust", rotation=(0, 0, 0.05), bevel=0.004)
+    add_wear(root, m, "revolver", [
+        ((0.052, -0.02, 0.215), (0.01, 0.12, 0.05)),
+        ((0.062, 0.075, 0.155), (0.012, 0.08, 0.05)),
+    ])
+
+
+def build_sawed_off_shotgun(root, m):
+    # Обрез двустволки (Т2): два ствола бок о бок, грубо спиленные, наружные
+    # курки, рукоять-пистолетка из приклада. Оружие ближнего разговора.
+    for side, name in ((-1, "barrel"), (1, "barrel_right")):
+        add_cylinder(root, m, name, (side * 0.046, 0.20, 0.16), 0.041, 0.50, "metal", vertices=18, bevel=0.003)
+    add_box(root, m, "muzzle", (0, 0.44, 0.16), (0.19, 0.045, 0.105), "dark_metal", bevel=0.006)
+    add_box(root, m, "barrel_rib", (0, 0.19, 0.208), (0.02, 0.46, 0.018), "dark_metal", bevel=0.003)
+    add_torus(root, m, "barrel_wrap", (0, 0.07, 0.16), 0.095, 0.009, "metal", rotation=(math.pi / 2, 0, 0))
+    add_box(root, m, "breech_block", (0, -0.05, 0.15), (0.20, 0.17, 0.17), "rust", bevel=0.012)
+    add_cylinder(root, m, "hinge_pin", (0, 0.035, 0.085), 0.022, 0.22, "brass", direction="X", vertices=10)
+    for side, name in ((-1, "hammer_left"), (1, "hammer_right")):
+        add_box(root, m, name, (side * 0.055, -0.145, 0.215), (0.032, 0.085, 0.038), "metal", rotation=(0.55, 0, 0), bevel=0.004)
+    add_box(root, m, "forend", (0, 0.14, 0.075), (0.16, 0.24, 0.09), "wood", bevel=0.02)
+    add_box(root, m, "grip", (0, -0.16, -0.075), (0.16, 0.24, 0.28), "wood", rotation=(0.42, 0, 0.02), bevel=0.028)
+    add_box(root, m, "grip_butt", (0, -0.235, -0.20), (0.18, 0.26, 0.05), "wood", rotation=(0.42, 0, 0.02), bevel=0.012)
+    add_grip_ribs(root, m, "sawed_grip", (0, -0.165, -0.09), (0.17, 0.20, 0.20), material="leather", count=4, axis="Z")
+    add_screws(root, m, "sawed", [(-0.095, -0.14, -0.05), (0.095, -0.19, -0.14)])
+    add_trigger_group(root, m, (0, -0.05, -0.045), 0.9)
+    add_sphere(root, m, "front_bead", (0, 0.455, 0.222), 0.013, "brass")
+    add_cylinder(root, m, "reload_shell", (0.05, -0.02, 0.235), 0.030, 0.075, "brass", direction="Y", vertices=12)
+    add_wear(root, m, "sawedOff", [
+        ((-0.085, 0.20, 0.185), (0.01, 0.16, 0.04)),
+        ((0.096, -0.05, 0.15), (0.012, 0.09, 0.06)),
+    ])
+
+
+def build_smg(root, m):
+    # Самодельный пистолет-пулемёт (Т3): коробка из гнутого листа, кожух с
+    # прорезями, рожок вниз, приклад из гнутого прутка. Трещотка пустоши.
+    add_box(root, m, "receiver", (0, 0.05, 0.14), (0.155, 0.55, 0.15), "dark_metal", bevel=0.012)
+    add_box(root, m, "ejection_port", (0.081, 0.10, 0.155), (0.012, 0.14, 0.07), "rubber", bevel=0.003)
+    add_cylinder(root, m, "barrel", (0, 0.44, 0.15), 0.032, 0.36, "metal", vertices=18, bevel=0.003)
+    add_cylinder(root, m, "shroud", (0, 0.40, 0.15), 0.050, 0.28, "rust", vertices=18, bevel=0.004)
+    add_heat_vents(root, m, "smg_shroud", (0.32, 0.40, 0.48), 0.203, 0.11, material="dark_metal")
+    add_cylinder(root, m, "muzzle", (0, 0.635, 0.15), 0.038, 0.045, "dark_metal", vertices=16, bevel=0.004)
+    add_box(root, m, "magazine", (0, 0.145, -0.06), (0.085, 0.15, 0.34), "dark_metal", rotation=(0.07, 0, 0), bevel=0.01)
+    add_box(root, m, "magazine_base", (0, 0.125, -0.235), (0.10, 0.17, 0.03), "rubber", rotation=(0.07, 0, 0), bevel=0.006)
+    add_box(root, m, "charging_handle", (0.095, -0.06, 0.16), (0.045, 0.04, 0.035), "brass", bevel=0.004)
+    add_box(root, m, "grip", (0, -0.16, -0.10), (0.15, 0.22, 0.30), "wood", rotation=(0.25, 0, 0.015), bevel=0.026)
+    add_grip_ribs(root, m, "smg_grip", (0, -0.155, -0.09), (0.16, 0.18, 0.18), material="leather", count=4, axis="Z")
+    add_trigger_group(root, m, (0, -0.015, -0.03), 0.9)
+    add_curve_tube(root, m, "wire_stock", [
+        (0.05, -0.30, 0.10), (0.05, -0.46, 0.075), (0.05, -0.485, -0.03),
+        (-0.05, -0.485, -0.03), (-0.05, -0.46, 0.075), (-0.05, -0.30, 0.10),
+    ], 0.012, "metal")
+    add_box(root, m, "stock_plate", (0, -0.49, 0.02), (0.115, 0.028, 0.13), "rust", bevel=0.005)
+    add_screws(root, m, "smg", [(-0.083, 0.02, 0.14), (0.083, 0.16, 0.10)])
+    add_box(root, m, "front_sight", (0, 0.58, 0.20), (0.024, 0.035, 0.05), "metal", bevel=0.003)
+    add_box(root, m, "rear_sight", (0, -0.17, 0.225), (0.05, 0.026, 0.036), "rust", bevel=0.004)
+    add_wear(root, m, "smg", [
+        ((0.079, 0.05, 0.145), (0.01, 0.13, 0.05)),
+        ((-0.045, 0.40, 0.202), (0.03, 0.10, 0.01)),
+    ])
 
 
 def build_knife(root, m):
-    add_prism(root, m, "blade", [(0, 0.02), (-0.11, 0.18), (-0.09, 0.72), (0, 0.92), (0.09, 0.72), (0.11, 0.18)], 0.045, "metal")
-    add_box(root, m, "guard", (0, -0.02, 0), (0.31, 0.08, 0.09), "brass", bevel=0.012)
-    add_box(root, m, "grip", (0, -0.23, 0), (0.17, 0.40, 0.15), "leather", bevel=0.025)
+    add_prism(root, m, "blade", [(0, 0.02), (-0.085, 0.18), (-0.074, 0.68), (-0.045, 0.81), (0, 0.92), (0.074, 0.70), (0.084, 0.18)], 0.048, "metal")
+    add_prism(root, m, "blade_fuller_left", [(-0.043, 0.18), (-0.040, 0.66), (-0.020, 0.76), (-0.015, 0.20)], 0.052, "dark_metal")
+    add_prism(root, m, "blade_fuller_right", [(0.043, 0.18), (0.040, 0.66), (0.020, 0.76), (0.015, 0.20)], 0.052, "dark_metal")
+    for index, y in enumerate((0.58, 0.64, 0.70, 0.76), start=1):
+        add_prism(root, m, f"spine_serration_{index:02d}", [(-0.075, y), (-0.105, y + 0.025), (-0.075, y + 0.05)], 0.05, "dark_metal")
+    add_box(root, m, "guard", (0, -0.02, 0), (0.32, 0.085, 0.10), "brass", bevel=0.014)
+    add_box(root, m, "guard_tip_left", (-0.17, -0.02, 0), (0.055, 0.07, 0.12), "dark_metal", rotation=(0, 0, -0.20), bevel=0.010)
+    add_box(root, m, "guard_tip_right", (0.17, -0.02, 0), (0.055, 0.07, 0.12), "dark_metal", rotation=(0, 0, 0.20), bevel=0.010)
+    add_box(root, m, "grip", (0, -0.23, 0), (0.18, 0.40, 0.16), "leather", bevel=0.028)
     for y in (-0.34, -0.26, -0.18, -0.10):
-        add_box(root, m, f"grip_wrap_{y:+.2f}", (0, y, 0), (0.19, 0.035, 0.17), "rubber", bevel=0.006)
-    add_cylinder(root, m, "pommel", (0, -0.46, 0), 0.09, 0.08, "dark_metal")
+        add_box(root, m, f"grip_wrap_{y:+.2f}", (0, y, 0), (0.195, 0.040, 0.175), "rubber", rotation=(0.05, 0, 0.06), bevel=0.007)
+    add_cylinder(root, m, "pommel", (0, -0.46, 0), 0.095, 0.085, "dark_metal", vertices=24, bevel=0.006)
+    add_torus(root, m, "lanyard_ring", (0, -0.51, 0), 0.060, 0.012, "brass", rotation=(0, math.pi / 2, 0))
 
 
 def build_pickaxe(root, m):
-    add_cylinder(root, m, "handle", (0, 0.30, 0), 0.055, 1.52, "wood", vertices=10)
-    add_cylinder(root, m, "grip", (0, -0.38, 0), 0.068, 0.39, "leather", vertices=10)
-    add_box(root, m, "head_socket", (0, 1.08, 0), (0.18, 0.18, 0.18), "dark_metal", bevel=0.025)
-    add_cone(root, m, "pick_left", (-0.38, 1.08, 0), (0.12, 0.015), 0.68, "metal", direction="X", vertices=8)
-    add_cone(root, m, "pick_right", (0.38, 1.08, 0), (0.12, 0.025), 0.68, "metal", direction="X", vertices=8)
-    add_box(root, m, "handle_wear", (0, 0.12, 0.056), (0.04, 0.24, 0.012), "bone", bevel=0.004)
+    add_cone(root, m, "handle", (0, 0.30, 0), (0.050, 0.063), 1.52, "wood", vertices=20)
+    add_cylinder(root, m, "grip", (0, -0.38, 0), 0.070, 0.40, "leather", vertices=20, bevel=0.005)
+    add_grip_ribs(root, m, "pickaxe_grip", (0, -0.38, 0), (0.145, 0.36, 0.145), count=7)
+    add_box(root, m, "head_socket", (0, 1.08, 0), (0.20, 0.19, 0.19), "dark_metal", bevel=0.028)
+    add_cone(root, m, "pick_left", (-0.38, 1.08, 0), (0.125, 0.012), 0.68, "metal", direction="X", vertices=16)
+    add_cone(root, m, "pick_right", (0.38, 1.08, 0), (0.125, 0.024), 0.68, "metal", direction="X", vertices=16)
+    add_box(root, m, "pick_wedge", (0, 1.18, 0), (0.15, 0.06, 0.21), "brass", bevel=0.010)
+    add_box(root, m, "head_collar_front", (0, 0.96, 0), (0.14, 0.12, 0.14), "metal", bevel=0.018)
+    add_curve_tube(root, m, "head_lashing", [(-0.075, 0.88, 0.07), (0.075, 0.96, 0.07), (-0.075, 1.04, 0.07), (0.075, 1.12, 0.07)], 0.014, "leather")
+    add_box(root, m, "handle_wear", (0, 0.12, 0.062), (0.045, 0.25, 0.014), "bone", bevel=0.004)
 
 
 def build_axe(root, m):
-    add_cylinder(root, m, "handle", (0, 0.26, 0), 0.058, 1.42, "wood", vertices=10)
-    add_cylinder(root, m, "grip", (0, -0.37, 0), 0.071, 0.42, "leather", vertices=10)
-    add_box(root, m, "head_socket", (0, 1.01, 0), (0.20, 0.21, 0.20), "dark_metal", bevel=0.025)
-    add_prism(root, m, "blade", [(0.0, 0.86), (0.42, 0.88), (0.52, 1.03), (0.43, 1.22), (0.0, 1.16)], 0.09, "metal")
-    add_box(root, m, "rear_hammer", (-0.25, 1.02, 0), (0.33, 0.17, 0.15), "dark_metal", bevel=0.018)
+    add_cone(root, m, "handle", (0, 0.26, 0), (0.052, 0.066), 1.42, "wood", vertices=20)
+    add_cylinder(root, m, "grip", (0, -0.37, 0), 0.073, 0.43, "leather", vertices=20, bevel=0.005)
+    add_grip_ribs(root, m, "axe_grip", (0, -0.37, 0), (0.15, 0.39, 0.15), count=7)
+    add_box(root, m, "head_socket", (0, 1.01, 0), (0.21, 0.22, 0.21), "dark_metal", bevel=0.03)
+    add_prism(root, m, "blade", [(0.0, 0.85), (0.36, 0.86), (0.49, 0.94), (0.54, 1.04), (0.48, 1.16), (0.38, 1.24), (0.0, 1.17)], 0.095, "metal")
+    add_prism(root, m, "blade_bevel", [(0.30, 0.89), (0.49, 0.96), (0.52, 1.04), (0.46, 1.14), (0.31, 1.20)], 0.102, "bone")
+    add_box(root, m, "rear_hammer", (-0.25, 1.02, 0), (0.34, 0.18, 0.16), "dark_metal", bevel=0.021)
+    add_box(root, m, "head_wedge", (0, 1.14, 0), (0.16, 0.07, 0.22), "brass", bevel=0.010)
+    add_curve_tube(root, m, "axe_lashing", [(-0.075, 0.82, 0.07), (0.075, 0.90, 0.07), (-0.075, 0.98, 0.07), (0.075, 1.06, 0.07)], 0.014, "leather")
     add_wear(root, m, "axe", [((0.29, 1.03, 0.052), (0.18, 0.12, 0.012))])
 
 
 def build_hand_pump(root, m):
-    add_cylinder(root, m, "pump_tube", (0, 0.29, 0.03), 0.072, 1.20, "metal", vertices=10)
-    add_cylinder(root, m, "nozzle", (0, 0.96, 0.03), 0.046, 0.22, "dark_metal", vertices=10)
-    add_box(root, m, "pump_handle", (0, -0.35, 0.03), (0.52, 0.13, 0.15), "wood", bevel=0.025)
-    add_box(root, m, "side_grip", (0.13, 0.12, -0.15), (0.14, 0.27, 0.40), "leather", rotation=(0.16, 0, 0), bevel=0.022)
-    add_cylinder(root, m, "pressure_ring", (0, 0.72, 0.03), 0.095, 0.08, "brass", vertices=10)
-    add_box(root, m, "foot_plate", (0, 0.89, -0.10), (0.42, 0.15, 0.08), "dark_metal", bevel=0.015)
+    add_cylinder(root, m, "pump_tube", (0, 0.29, 0.03), 0.074, 1.20, "metal", vertices=24, bevel=0.006)
+    add_cylinder(root, m, "inner_rod", (0, -0.18, 0.03), 0.035, 0.55, "dark_metal", vertices=20)
+    add_cylinder(root, m, "nozzle", (0, 0.96, 0.03), 0.047, 0.22, "dark_metal", vertices=24, bevel=0.005)
+    add_cone(root, m, "nozzle_tip", (0, 1.09, 0.03), (0.045, 0.025), 0.08, "brass", vertices=20)
+    add_box(root, m, "pump_handle", (0, -0.35, 0.03), (0.54, 0.14, 0.16), "wood", bevel=0.030)
+    add_cylinder(root, m, "handle_grip_left", (-0.20, -0.35, 0.03), 0.075, 0.22, "leather", direction="X", vertices=20, bevel=0.005)
+    add_cylinder(root, m, "handle_grip_right", (0.20, -0.35, 0.03), 0.075, 0.22, "leather", direction="X", vertices=20, bevel=0.005)
+    add_box(root, m, "side_grip", (0.14, 0.12, -0.15), (0.15, 0.28, 0.41), "leather", rotation=(0.16, 0, 0), bevel=0.026)
+    add_grip_ribs(root, m, "pump_side_grip", (0.14, 0.12, -0.15), (0.16, 0.24, 0.35), count=6, axis="Z")
+    add_cylinder(root, m, "pressure_ring", (0, 0.72, 0.03), 0.098, 0.085, "brass", vertices=24, bevel=0.005)
+    add_box(root, m, "foot_plate", (0, 0.89, -0.10), (0.44, 0.16, 0.085), "dark_metal", bevel=0.018)
+    add_box(root, m, "foot_pad", (0, 0.89, -0.15), (0.38, 0.14, 0.035), "rubber", bevel=0.009)
+    add_curve_tube(root, m, "pump_hose", [(0.07, 0.70, 0.05), (0.18, 0.78, 0.10), (0.22, 0.93, 0.03), (0.11, 1.03, 0.03)], 0.020, "rubber")
+    add_sphere(root, m, "pressure_gauge", (-0.12, 0.65, 0.13), 0.075, "dark_metal", scale=(0.35, 1.0, 1.0))
+    add_cylinder(root, m, "gauge_face", (-0.148, 0.65, 0.13), 0.055, 0.015, "bone", direction="X", vertices=24)
+    add_box(root, m, "gauge_needle", (-0.158, 0.65, 0.13), (0.008, 0.060, 0.012), "energy_red", rotation=(0.35, 0, 0), bevel=0.002)
     add_wear(root, m, "pump", [((0, 0.34, 0.105), (0.05, 0.22, 0.012))])
 
 
 BUILDERS = {
     "pistol": build_pistol,
+    "revolver": build_revolver,
+    "sawedOffShotgun": build_sawed_off_shotgun,
+    "smg": build_smg,
     "rifle": build_rifle,
     "assaultRifle": build_assault_rifle,
     "machineGun": build_machine_gun,
@@ -662,7 +1241,11 @@ def animate_weapon(root: bpy.types.Object, weapon_id: str, family: str):
     profile = WEAPON_INTERACTION_PROFILES[weapon_id]
     reload_part = bpy.data.objects.get(profile["reload_part"]) if profile["reload_part"] else None
     reload_motions = {
-        "pistol": (0.0, -0.03, -0.30),
+        # Однозарядка: казённая крышка отходит назад, стрелок вкладывает патрон.
+        "pistol": (0.0, -0.22, 0.0),
+        "revolver": (0.16, -0.03, -0.05),
+        "sawedOffShotgun": (-0.20, -0.06, -0.05),
+        "smg": (0.0, -0.04, -0.30),
         "rifle": (0.0, -0.02, 0.22),
         "assaultRifle": (0.0, -0.03, -0.30),
         "machineGun": (0.34, -0.03, -0.10),

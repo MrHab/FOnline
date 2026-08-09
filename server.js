@@ -3139,7 +3139,7 @@ const SERVER_ENEMY_VARIANTS = [
     ]
   }
 ];
-const SERVER_ITEM_IDS = new Set(['pistol','rifle','assaultRifle','machineGun','laserPistol','flamethrower','plasmaRifle','shotgun','rocketLauncher','knife','fists','leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','helmet','tacticalHelmet','assaultHelmet','boots','scoutBoots','reinforcedBoots','backpack','ammo9','ammo556','energyCell','napalm','shotgunShell','rocketAmmo','medkit','stim','doctorBag','antibiotics','ore','wood','scrap','oil','chemicals','medicine','electronics','ammoParts','food','weaponParts','silver','trophy','water','pickaxe','axe','handPump','repairKit']);
+const SERVER_ITEM_IDS = new Set(['pistol','rifle','assaultRifle','machineGun','laserPistol','flamethrower','plasmaRifle','shotgun','rocketLauncher','revolver','sawedOffShotgun','smg','knife','fists','leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','helmet','tacticalHelmet','assaultHelmet','boots','scoutBoots','reinforcedBoots','backpack','ammo9','ammo556','energyCell','napalm','shotgunShell','rocketAmmo','medkit','stim','doctorBag','antibiotics','ore','wood','scrap','oil','chemicals','medicine','electronics','ammoParts','food','weaponParts','silver','trophy','water','pickaxe','axe','handPump','repairKit']);
 const SERVER_ITEM_STACK_LIMITS = {
   silver: 200000,
   ammo9: 1200,
@@ -4126,7 +4126,10 @@ const SERVER_CONTAINER_LOOT_TABLES = SERVER_LOOT_TABLES.containers;
 const SERVER_ENEMY_LOOT_TABLES = SERVER_LOOT_TABLES.enemies;
 
 const SERVER_WEAPONS = {
-  pistol: { id: 'pistol', name: '9mm пистолет', hands: 1, dualWield: true, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 8, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
+  pistol: { id: 'pistol', name: '9mm пистолет', hands: 1, dualWield: true, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 2, dmg: [18, 26], range: 12, ammoType: 'ammo9', magSize: 1, fireRate: 0.48, apCost: 3, reloadApCost: 2 },
+  revolver: { id: 'revolver', name: 'Ржавый револьвер', hands: 1, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 3, dmg: [22, 32], range: 14, ammoType: 'ammo9', magSize: 6, fireRate: 0.55, apCost: 3, reloadApCost: 3 },
+  sawedOffShotgun: { id: 'sawedOffShotgun', name: 'Обрез', hands: 1, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [30, 44], range: 7, ammoType: 'shotgunShell', magSize: 2, fireRate: 0.6, apCost: 4, reloadApCost: 3 },
+  smg: { id: 'smg', name: 'Самодельный ПП', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [12, 17], range: 14, ammoType: 'ammo9', magSize: 24, fireRate: 0.26, apCost: 4, reloadApCost: 3, automatic: true },
   rifle: { id: 'rifle', name: 'Охотничья винтовка', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 4, dmg: [28, 40], range: 24, ammoType: 'ammo556', magSize: 5, fireRate: 0.9, apCost: 4, reloadApCost: 3 },
   assaultRifle: { id: 'assaultRifle', name: 'Ржавый автомат', hands: 2, weaponSkill: 'lightWeapons', damageType: 'ballistic', requiredStrength: 5, dmg: [13, 19], range: 18, ammoType: 'ammo556', magSize: 30, fireRate: 0.42, apCost: 4, reloadApCost: 4, automatic: true },
   machineGun: { id: 'machineGun', name: 'Самодельный пулемёт', hands: 2, weaponSkill: 'heavyWeapons', damageType: 'ballistic', requiredStrength: 7, dmg: [12, 18], range: 20, ammoType: 'ammo556', magSize: 45, fireRate: 0.58, apCost: 5, reloadApCost: 6, automatic: true },
@@ -4144,21 +4147,24 @@ const SERVER_WEAPONS = {
 
 const SERVER_WEAPON_MODIFICATION_SLOTS = new Set(['barrel', 'scope', 'magazine', 'forend']);
 const SERVER_WEAPON_MODIFICATION_CATALOG = Object.freeze({
-  barrel_precision: { id: 'barrel_precision', slot: 'barrel', weaponIds: ['pistol', 'rifle', 'assaultRifle', 'machineGun'], cost: { scrap: 3, weaponParts: 2 }, effects: { damageMul: 1.06, rangeMul: 1.12, fireRateMul: 1.05 } },
-  barrel_suppressor: { id: 'barrel_suppressor', slot: 'barrel', weaponIds: ['pistol', 'rifle', 'assaultRifle'], cost: { scrap: 2, weaponParts: 2 }, effects: { rangeMul: 0.96, accuracyBonus: 0.04, noiseMul: 0.42 } },
-  barrel_choke: { id: 'barrel_choke', slot: 'barrel', weaponIds: ['shotgun'], cost: { scrap: 2, weaponParts: 1 }, effects: { rangeMul: 1.18, accuracyBonus: 0.04 } },
+  barrel_precision: { id: 'barrel_precision', slot: 'barrel', weaponIds: ['pistol', 'rifle', 'assaultRifle', 'machineGun', 'revolver', 'smg'], cost: { scrap: 3, weaponParts: 2 }, effects: { damageMul: 1.06, rangeMul: 1.12, fireRateMul: 1.05 } },
+  barrel_suppressor: { id: 'barrel_suppressor', slot: 'barrel', weaponIds: ['pistol', 'rifle', 'assaultRifle', 'revolver', 'smg'], cost: { scrap: 2, weaponParts: 2 }, effects: { rangeMul: 0.96, accuracyBonus: 0.04, noiseMul: 0.42 } },
+  barrel_choke: { id: 'barrel_choke', slot: 'barrel', weaponIds: ['shotgun', 'sawedOffShotgun'], cost: { scrap: 2, weaponParts: 1 }, effects: { rangeMul: 1.18, accuracyBonus: 0.04 } },
   barrel_nozzle: { id: 'barrel_nozzle', slot: 'barrel', weaponIds: ['flamethrower'], cost: { scrap: 3, weaponParts: 2 }, effects: { damageMul: 1.04, rangeMul: 1.20, fireRateMul: 1.06 } },
   barrel_accelerator: { id: 'barrel_accelerator', slot: 'barrel', weaponIds: ['laserPistol', 'plasmaRifle'], cost: { electronics: 3, weaponParts: 2 }, effects: { damageMul: 1.08, rangeMul: 1.10, fireRateMul: 1.08 } },
   barrel_rocket_stabilizer: { id: 'barrel_rocket_stabilizer', slot: 'barrel', weaponIds: ['rocketLauncher'], cost: { scrap: 4, weaponParts: 2 }, effects: { rangeMul: 1.12, accuracyBonus: 0.05 } },
   scope_reflex: { id: 'scope_reflex', slot: 'scope', excludeWeaponIds: ['flamethrower'], cost: { electronics: 2, scrap: 1 }, effects: { accuracyBonus: 0.04 } },
-  scope_marksman: { id: 'scope_marksman', slot: 'scope', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher'], cost: { electronics: 3, weaponParts: 2 }, effects: { accuracyBonus: 0.08, rangeMul: 1.10 } },
+  scope_marksman: { id: 'scope_marksman', slot: 'scope', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher', 'smg'], cost: { electronics: 3, weaponParts: 2 }, effects: { accuracyBonus: 0.08, rangeMul: 1.10 } },
   scope_thermal: { id: 'scope_thermal', slot: 'scope', weaponIds: ['laserPistol', 'plasmaRifle', 'flamethrower', 'rocketLauncher'], cost: { electronics: 5, weaponParts: 2 }, effects: { accuracyBonus: 0.06, rangeMul: 1.06 } },
-  mag_extended: { id: 'mag_extended', slot: 'magazine', excludeWeaponIds: ['rocketLauncher'], cost: { scrap: 3, weaponParts: 2 }, effects: { magMul: 1.35, reloadApDelta: 1 } },
-  mag_quick: { id: 'mag_quick', slot: 'magazine', excludeWeaponIds: ['rocketLauncher'], cost: { scrap: 2, weaponParts: 2 }, effects: { magMul: 0.86, reloadApDelta: -1 } },
+  mag_extended: { id: 'mag_extended', slot: 'magazine', excludeWeaponIds: ['rocketLauncher', 'pistol'], cost: { scrap: 3, weaponParts: 2 }, effects: { magMul: 1.35, reloadApDelta: 1 } },
+  mag_quick: { id: 'mag_quick', slot: 'magazine', excludeWeaponIds: ['rocketLauncher', 'pistol'], cost: { scrap: 2, weaponParts: 2 }, effects: { magMul: 0.86, reloadApDelta: -1 } },
   mag_overcharged: { id: 'mag_overcharged', slot: 'magazine', weaponIds: ['laserPistol', 'plasmaRifle'], cost: { electronics: 4, weaponParts: 2 }, effects: { damageMul: 1.12, magMul: 0.80 } },
   mag_rocket_loader: { id: 'mag_rocket_loader', slot: 'magazine', weaponIds: ['rocketLauncher'], cost: { scrap: 4, weaponParts: 3 }, effects: { reloadApDelta: -2 } },
-  forend_grip: { id: 'forend_grip', slot: 'forend', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'shotgun'], cost: { wood: 2, scrap: 1 }, effects: { accuracyBonus: 0.03, autoPenaltyReduction: 0.04 } },
-  forend_bipod: { id: 'forend_bipod', slot: 'forend', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher'], cost: { scrap: 4, weaponParts: 1 }, effects: { accuracyBonus: 0.06 } },
+  forend_grip: { id: 'forend_grip', slot: 'forend', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'shotgun', 'smg'], cost: { wood: 2, scrap: 1 }, effects: { accuracyBonus: 0.03, autoPenaltyReduction: 0.04 } },
+  forend_bipod: { id: 'forend_bipod', slot: 'forend', weaponIds: ['rifle', 'assaultRifle', 'machineGun', 'plasmaRifle', 'rocketLauncher', 'smg'], cost: { scrap: 4, weaponParts: 1 }, effects: { accuracyBonus: 0.06 } },
+  mag_drum_pistol: { id: 'mag_drum_pistol', slot: 'magazine', weaponIds: ['pistol'], cost: { scrap: 3, weaponParts: 1 }, effects: { magMul: 5, reloadApDelta: 1 } },
+  barrel_pipe_long: { id: 'barrel_pipe_long', slot: 'barrel', weaponIds: ['pistol', 'sawedOffShotgun'], cost: { scrap: 2, wood: 1 }, effects: { rangeMul: 1.3, damageMul: 1.03 } },
+  forend_wire_wrap: { id: 'forend_wire_wrap', slot: 'forend', weaponIds: ['pistol', 'revolver', 'sawedOffShotgun', 'smg'], cost: { scrap: 1 }, effects: { accuracyBonus: 0.03 } },
   forend_heatshield: { id: 'forend_heatshield', slot: 'forend', weaponIds: ['assaultRifle', 'machineGun', 'flamethrower', 'plasmaRifle'], cost: { scrap: 3, weaponParts: 2 }, effects: { fireRateMul: 0.88, accuracyBonus: 0.02 } }
 });
 
@@ -14330,6 +14336,8 @@ const SERVER_CARAVAN_STOCK_POOL = [
   { id: 'helmet', price: 18, min: 1, max: 1, weight: 2 },
   { id: 'boots', price: 16, min: 1, max: 1, weight: 2 },
   { id: 'pistol', price: 54, min: 1, max: 1, weight: 3 },
+  { id: 'revolver', price: 62, min: 1, max: 1, weight: 2 },
+  { id: 'sawedOffShotgun', price: 95, min: 1, max: 1, weight: 1 },
   { id: 'rifle', price: 86, min: 1, max: 1, weight: 2 },
   { id: 'shotgun', price: 150, min: 1, max: 1, weight: 1 }
 ];

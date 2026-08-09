@@ -21,6 +21,7 @@
         { "id": "oil", "price": 9, "qty": 6 },
         { "id": "repairKit", "price": 20, "qty": 4 },
         { "id": "pickaxe", "price": 18, "qty": 2 },
+        { "id": "revolver", "price": 66, "qty": 1 },
         { "id": "axe", "price": 16, "qty": 2 },
         { "id": "handPump", "price": 24, "qty": 1 },
         { "id": "rifle", "price": 80, "qty": 2 },
@@ -105,6 +106,8 @@
       "stock": [
         { "id": "repairKit", "price": 18, "qty": 4 },
         { "id": "pickaxe", "price": 16, "qty": 2 },
+        { "id": "sawedOffShotgun", "price": 92, "qty": 1 },
+        { "id": "smg", "price": 148, "qty": 1 },
         { "id": "axe", "price": 15, "qty": 2 },
         { "id": "handPump", "price": 22, "qty": 2 },
         { "id": "scrap", "price": 3, "qty": 18 },

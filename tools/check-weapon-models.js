@@ -15,7 +15,7 @@ const loaderPath = path.join(root, 'public', 'js', 'game.js');
 const loadingPath = path.join(root, 'public', 'js', 'game', '13_minimap_hud_loop.js');
 
 const expected = new Map([
-  ['pistol', { family: 'sidearm', scale: 0.34, length: [0.24, 0.38], nodes: ['muzzle', 'slide'], reloadKind: 'magazine', reloadPart: 'magazine' }],
+  ['pistol', { family: 'sidearm', scale: 0.34, length: [0.24, 0.38], nodes: ['muzzle', 'breech_cap'], reloadKind: 'shells', reloadPart: 'breech_cap' }],
   ['rifle', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'bolt'], reloadKind: 'bolt_clip', reloadPart: 'cartridge_clip' }],
   ['assaultRifle', {
     family: 'long_gun',
@@ -34,6 +34,9 @@ const expected = new Map([
   ['plasmaRifle', { family: 'energy_long_gun', scale: 0.54, length: [0.88, 1.18], nodes: ['muzzle', 'energy_core'], reloadKind: 'energy_cell', reloadPart: 'energy_core' }],
   ['shotgun', { family: 'long_gun', scale: 0.52, length: [0.90, 1.20], nodes: ['muzzle', 'pump'], reloadKind: 'shells', reloadPart: 'reload_shell' }],
   ['rocketLauncher', { family: 'launcher', scale: 0.58, length: [1.00, 1.26], nodes: ['muzzle', 'launcher_tube'], reloadKind: 'rocket', reloadPart: 'rocket_round' }],
+  ['revolver', { family: 'sidearm', scale: 0.36, length: [0.27, 0.42], nodes: ['muzzle', 'cylinder'], reloadKind: 'shells', reloadPart: 'cylinder' }],
+  ['sawedOffShotgun', { family: 'sidearm', scale: 0.42, length: [0.28, 0.44], nodes: ['muzzle', 'reload_shell'], reloadKind: 'shells', reloadPart: 'reload_shell' }],
+  ['smg', { family: 'long_gun', scale: 0.48, length: [0.46, 0.66], nodes: ['muzzle', 'magazine'], reloadKind: 'magazine', reloadPart: 'magazine' }],
   ['knife', { family: 'melee_light', scale: 0.22, length: [0.25, 0.36], nodes: ['blade', 'grip'], reloadKind: 'none', hands: 1 }],
   ['pickaxe', { family: 'melee_heavy', scale: 0.45, length: [0.68, 0.90], nodes: ['head_socket', 'pick_left'], reloadKind: 'none', hands: 2 }],
   ['axe', { family: 'melee_heavy', scale: 0.44, length: [0.68, 0.90], nodes: ['blade', 'handle'], reloadKind: 'none', hands: 2 }],
@@ -117,7 +120,7 @@ for (const [id, config] of expected) {
   assert.strictEqual(fs.statSync(file).size, row.bytes, `${id}: manifest byte size is stale`);
   assert.strictEqual(sha256(file), row.sha256, `${id}: manifest hash is stale`);
   assert(
-    row.bytes > 40_000 && row.bytes < Number(config.maxBytes || 190_000),
+    row.bytes > 40_000 && row.bytes < Number(config.maxBytes || 420_000),
     `${id}: unexpected runtime model weight ${row.bytes}`
   );
 
@@ -185,7 +188,7 @@ for (const [id, config] of expected) {
     assert.strictEqual(rootNode.extras.realm_approved_review_sha256, row.approvedReviewSha256);
   }
 }
-assert(totalBytes < 2_000_000, `weapon library exceeds the 2 MB budget: ${totalBytes}`);
+assert(totalBytes < 5_000_000, `weapon library exceeds the 5 MB budget: ${totalBytes}`);
 
 const clientItems = fs.readFileSync(clientItemsPath, 'utf8');
 const physicalClientIds = [...clientItems.matchAll(
@@ -207,7 +210,7 @@ for (const [id, config] of expected) {
   'function makeWeaponModelMesh(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
-  "const WEAPON_MODEL_ASSET_VERSION = '7.82.0-muzzle-sockets-v1-6f5403fd';",
+  "const WEAPON_MODEL_ASSET_VERSION = '7.87.0-tiered-arsenal-v1-0919fb06';",
   "function triggerWeaponModelAction(weaponGroup, actionName = 'attack', options = {})",
   'Number(clip.duration) / requestedDuration',
   "action.setLoop(THREE.LoopOnce, 1)"

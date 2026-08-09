@@ -428,49 +428,49 @@ function seedCombatFixtures(accounts) {
   }, usersDb, savesDb);
   seedCharacterState(accounts.persistence, {
     special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 10, luck: 5 },
-    weapon: 'pistol',
-    weaponRuntimeId: 'ui_pistol_combatrt_1',
+    weapon: 'laserPistol',
+    weaponRuntimeId: 'ui_laserPistol_combatrt_1',
     additionalWeapons: [{
-      baseId: 'pistol',
-      runtimeId: 'ui_pistol_combatrt_2',
+      baseId: 'laserPistol',
+      runtimeId: 'ui_laserPistol_combatrt_2',
       loaded: 4
     }],
-    ammoType: 'ammo9',
+    ammoType: 'energyCell',
     loaded: 0,
     reserveAmmo: 16
   }, usersDb, savesDb);
   seedCharacterState(accounts.cadence, {
     special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 10, luck: 5 },
-    weapon: 'pistol',
-    ammoType: 'ammo9',
+    weapon: 'laserPistol',
+    ammoType: 'energyCell',
     loaded: 8,
     reserveAmmo: 8
   }, usersDb, savesDb);
   seedCharacterState(accounts.untargeted, {
     special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 10, luck: 5 },
-    weapon: 'pistol',
-    ammoType: 'ammo9',
+    weapon: 'laserPistol',
+    ammoType: 'energyCell',
     loaded: 3,
     reserveAmmo: 5
   }, usersDb, savesDb);
   seedCharacterState(accounts.dualPistols, {
     level: 50,
     special: { str: 5, per: 5, end: 10, cha: 5, int: 5, agi: 10, luck: 5 },
-    weapon: 'pistol',
-    weaponRuntimeId: 'ui_pistol_dualright_1',
+    weapon: 'laserPistol',
+    weaponRuntimeId: 'ui_laserPistol_dualright_1',
     additionalWeapons: [{
-      baseId: 'pistol',
-      runtimeId: 'ui_pistol_dualleft_1',
+      baseId: 'laserPistol',
+      runtimeId: 'ui_laserPistol_dualleft_1',
       loaded: 1
     }],
-    ammoType: 'ammo9',
+    ammoType: 'energyCell',
     loaded: 3,
     reserveAmmo: 6
   }, usersDb, savesDb);
   seedCharacterState(accounts.strictAp, {
     special: { str: 8, per: 8, end: 8, cha: 5, int: 4, agi: 2, luck: 5 },
-    weapon: 'pistol',
-    ammoType: 'ammo9',
+    weapon: 'laserPistol',
+    ammoType: 'energyCell',
     loaded: 0,
     reserveAmmo: 8
   }, usersDb, savesDb);
@@ -510,14 +510,14 @@ function seedCombatFixtures(accounts) {
     spawnX: -2,
     spawnZ: 1,
     special: { str: 5, per: 5, end: 5, cha: 7, int: 5, agi: 7, luck: 5 },
-    weapon: 'pistol',
-    weaponRuntimeId: 'ui_pistol_trade_1',
+    weapon: 'laserPistol',
+    weaponRuntimeId: 'ui_laserPistol_trade_1',
     additionalWeapons: [{
-      baseId: 'pistol',
-      runtimeId: 'ui_pistol_trade_2',
+      baseId: 'laserPistol',
+      runtimeId: 'ui_laserPistol_trade_2',
       loaded: 5
     }],
-    ammoType: 'ammo9',
+    ammoType: 'energyCell',
     loaded: 0,
     reserveAmmo: 3
   }, usersDb, savesDb);
@@ -666,12 +666,12 @@ function attackPayload(attackerJoin, targetSocket, mode = 'single', weaponRuntim
   const token = `combat_runtime_${Date.now().toString(36)}_${++attackSequence}`;
   const payload = {
     targetId: targetSocket.id,
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     mode,
     attackToken: token,
     combat: {
       token,
-      weapon: 'pistol',
+      weapon: 'laserPistol',
       mode,
       shots: 1
     },
@@ -774,10 +774,10 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   await connectAndJoin(accounts.persistence);
   assertSameCombatRoom(accounts.persistence, accounts.target, 'magazine setup');
   assertCombat(accounts.persistence.join.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolA,
     loaded: 0,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 16
   }, 'runtime-id join combat');
   assertRuntimeWeaponInventory(
@@ -792,17 +792,17 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   await sendEquipmentProfileState(accounts.persistence, pistolA);
 
   const reload = await socketAck(accounts.persistence.socket, 'reloadWeapon', {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     take: 8,
     skillRanks: {},
     talentRanks: {}
   });
   invariant(reload.ok, 'Initial reload was rejected', reload);
   assertCombat(reload.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolA,
     loaded: 8,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 8
   }, 'initial reload combat');
   assertRuntimeWeaponInventory(
@@ -812,7 +812,7 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     'post-reload carried runtime inventory'
   );
 
-  await sendEquipmentProfileState(accounts.persistence, 'pistol');
+  await sendEquipmentProfileState(accounts.persistence, 'laserPistol');
   const pistolAShotPayload = attackPayload(
     accounts.persistence.join,
     accounts.target.socket,
@@ -822,10 +822,10 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   const shot = await socketAck(accounts.persistence.socket, 'playerHit', pistolAShotPayload);
   invariant(shot.ok, 'Persistence shot was rejected', shot);
   assertCombat(shot.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolA,
     loaded: 7,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 8
   }, 'post-shot combat');
 
@@ -838,7 +838,7 @@ async function exerciseMagazineBeforeReconnect(accounts) {
 
   // Same-base runtime switches are explicit, AP-backed equipment actions.
   // The following combat request may only consume B after that action succeeds.
-  await delay(500);
+  await delay(2000);
   const switchToB = await sendEquipmentAction(accounts.persistence, pistolB);
   invariant(switchToB.ack.ok && switchToB.ack.changed && Number(switchToB.ack.apCost) === 1,
     'Authoritative same-base A -> B equipment action failed', switchToB.ack);
@@ -858,10 +858,10 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   );
   invariant(switchedShot.ok, 'Shot after authoritative same-base runtime switch was rejected', switchedShot);
   assertCombat(switchedShot.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 8
   }, 'same-base switched shot combat');
 
@@ -877,10 +877,10 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     && duplicateJoin.roomId === accounts.persistence.join.roomId,
   'Same-socket duplicate join was not an idempotent view of the live session', duplicateJoin);
   const duplicateJoinCombat = assertCombat(duplicateJoin.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 8
   }, 'idempotent duplicate-join combat');
   assertCombatApNotSpent(
@@ -904,10 +904,10 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     && conflictingJoin.self?.characterId === accounts.persistence.characterId,
   'Same socket was allowed to switch identity through a repeated join', conflictingJoin);
   const conflictingJoinCombat = assertCombat(conflictingJoin.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 8
   }, 'conflicting duplicate-join combat');
   assertCombatApNotSpent(
@@ -917,14 +917,14 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   );
 
   const loadedRuntimeDrop = await socketAck(accounts.persistence.socket, 'dropItem', {
-    itemId: 'pistol',
+    itemId: 'laserPistol',
     itemRuntimeId: pistolB,
     qty: 1
   });
   invariant(loadedRuntimeDrop.ok === false,
     'Server allowed a loaded runtime weapon instance to be dropped', loadedRuntimeDrop);
   const postDropCombat = assertCombat(loadedRuntimeDrop.self?.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
     reserveAmmo: 8
@@ -945,7 +945,7 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   invariant(postDuplicateCooldown.ok === false,
     'Duplicate join cleared the authoritative weapon cooldown', postDuplicateCooldown);
   const postDuplicateCombat = assertCombat(postDuplicateCooldown.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolB,
     loaded: 3,
     reserveAmmo: 8
@@ -959,12 +959,12 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   );
 
   const crossRuntimeReplay = await socketAck(accounts.persistence.socket, 'combatAttack', {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     mode: 'single',
     attackToken: pistolAShotPayload.attackToken,
     combat: {
       token: pistolAShotPayload.attackToken,
-      weapon: 'pistol',
+      weapon: 'laserPistol',
       mode: 'single',
       shots: 1
     },
@@ -999,8 +999,9 @@ async function exerciseMagazineBeforeReconnect(accounts) {
     'Stale HTTP save did not retain both carried runtime weapon identities',
     afterStaleSave.inventory);
 
+  await delay(2400);
   const liveTopUp = await socketAck(accounts.persistence.socket, 'reloadWeapon', {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     take: 1,
     skillRanks: {},
     talentRanks: {}
@@ -1008,10 +1009,10 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   invariant(liveTopUp.ok && Number(liveTopUp.take) === 1,
     'Live B top-up failed after stale A autosave', liveTopUp);
   assertCombat(liveTopUp.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolB,
     loaded: 4,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 7
   }, 'post-stale-save live combat');
 
@@ -1036,7 +1037,7 @@ async function exerciseMagazineBeforeReconnect(accounts) {
   invariant(Number(persisted.itemRuntime?.[pistolB]?.loaded) === 4,
     'Save did not persist B magazine independently',
     persisted.itemRuntime);
-  invariant(7 + 4 + Number(persisted.inventory?.ammo9 || 0) === 18,
+  invariant(7 + 4 + Number(persisted.inventory?.energyCell || 0) === 18,
     'Persisted A + B + reserve ammunition was not conserved after two shots',
     persisted.inventory);
 }
@@ -1049,10 +1050,10 @@ async function assertMagazineAfterReconnect(accounts) {
   assertSameCombatRoom(accounts.persistence, accounts.target, 'magazine reconnect');
 
   const joinedCombat = assertCombat(accounts.persistence.join.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolB,
     loaded: 4,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 7
   }, 'join combat');
   invariant(7 + Number(joinedCombat.loaded) + Number(joinedCombat.reserveAmmo) === 18,
@@ -1066,7 +1067,7 @@ async function assertMagazineAfterReconnect(accounts) {
   invariant(switchToA.ack.ok && switchToA.ack.changed && Number(switchToA.ack.apCost) === 1,
     'Explicit B -> A switch failed after reconnect', switchToA.ack);
   const topUpA = await socketAck(accounts.persistence.socket, 'reloadWeapon', {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     equipment: runtimeEquipmentSnapshot(pistolA),
     take: 1,
     skillRanks: {},
@@ -1075,10 +1076,10 @@ async function assertMagazineAfterReconnect(accounts) {
   invariant(topUpA.ok && Number(topUpA.take) === 1,
     'A top-up failed after reconnect', topUpA);
   const toppedACombat = assertCombat(topUpA.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolA,
     loaded: 8,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 6
   }, 'post-reconnect A reload combat');
 
@@ -1087,7 +1088,7 @@ async function assertMagazineAfterReconnect(accounts) {
   invariant(switchToB.ack.ok && switchToB.ack.changed && Number(switchToB.ack.apCost) === 1,
     'Explicit A -> B switch failed after reconnect', switchToB.ack);
   const topUpB = await socketAck(accounts.persistence.socket, 'reloadWeapon', {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     equipment: runtimeEquipmentSnapshot(pistolB),
     take: 1,
     skillRanks: {},
@@ -1096,10 +1097,10 @@ async function assertMagazineAfterReconnect(accounts) {
   invariant(topUpB.ok && Number(topUpB.take) === 1,
     'B top-up failed after reconnect', topUpB);
   const toppedBCombat = assertCombat(topUpB.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: pistolB,
     loaded: 5,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 5
   }, 'post-reconnect B reload combat');
   invariant(Number(toppedACombat.loaded) + Number(toppedBCombat.loaded) + Number(toppedBCombat.reserveAmmo) === 18,
@@ -1222,25 +1223,25 @@ async function assertUntargetedAttack(accounts) {
   await connectAndJoin(account);
   assertSameCombatRoom(account, accounts.target, 'untargeted attack');
   assertCombat(account.join.combat, {
-    weapon: 'pistol',
-    weaponRuntimeId: 'pistol',
+    weapon: 'laserPistol',
+    weaponRuntimeId: 'laserPistol',
     loaded: 3,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 5
   }, 'untargeted join combat');
 
   const token = `combat_runtime_air_${Date.now().toString(36)}_${++attackSequence}`;
   const payload = {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     mode: 'single',
     attackToken: token,
     combat: {
       token,
-      weapon: 'pistol',
+      weapon: 'laserPistol',
       mode: 'single',
       shots: 1
     },
-    equipment: runtimeEquipmentSnapshot('pistol'),
+    equipment: runtimeEquipmentSnapshot('laserPistol'),
     x: Number(account.join.x || 0),
     z: Number(account.join.z || 0),
     angle: 0,
@@ -1252,10 +1253,10 @@ async function assertUntargetedAttack(accounts) {
   invariant(airShot.ok && airShot.reused === false,
     'Untargeted authoritative shot was rejected', airShot);
   const airCombat = assertCombat(airShot.combat, {
-    weapon: 'pistol',
-    weaponRuntimeId: 'pistol',
+    weapon: 'laserPistol',
+    weaponRuntimeId: 'laserPistol',
     loaded: 2,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 5
   }, 'untargeted shot combat');
 
@@ -1263,8 +1264,8 @@ async function assertUntargetedAttack(accounts) {
   invariant(replay.ok && replay.reused === true,
     'Untargeted attack-token replay was not idempotent', replay);
   const replayCombat = assertCombat(replay.combat, {
-    weapon: 'pistol',
-    weaponRuntimeId: 'pistol',
+    weapon: 'laserPistol',
+    weaponRuntimeId: 'laserPistol',
     loaded: 2,
     reserveAmmo: 5
   }, 'untargeted replay combat');
@@ -1283,7 +1284,7 @@ async function assertUntargetedAttack(accounts) {
   invariant(tooFast.ok === false,
     'Untargeted shot bypassed authoritative weapon cooldown', tooFast);
   assertCombat(tooFast.combat, {
-    weaponRuntimeId: 'pistol',
+    weaponRuntimeId: 'laserPistol',
     loaded: 2,
     reserveAmmo: 5
   }, 'untargeted cooldown rejection combat');
@@ -1292,8 +1293,8 @@ async function assertUntargetedAttack(accounts) {
 
 async function assertDualPistolRuntime(accounts) {
   const account = accounts.dualPistols;
-  const rightRuntimeId = 'ui_pistol_dualright_1';
-  const leftRuntimeId = 'ui_pistol_dualleft_1';
+  const rightRuntimeId = 'ui_laserPistol_dualright_1';
+  const leftRuntimeId = 'ui_laserPistol_dualleft_1';
   await connectAndJoin(account);
 
   const equippedLeft = await sendEquipmentAction(account, leftRuntimeId, { slot: 'offhand' });
@@ -1304,20 +1305,20 @@ async function assertDualPistolRuntime(accounts) {
 
   const dualToken = `combat_runtime_dual_${Date.now().toString(36)}_${++attackSequence}`;
   const dualPayload = {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     weaponRuntimeId: rightRuntimeId,
     handSlot: 'weapon',
     mode: 'dual',
     attackToken: dualToken,
     combat: {
       token: dualToken,
-      weapon: 'pistol',
+      weapon: 'laserPistol',
       weaponRuntimeId: rightRuntimeId,
       handSlot: 'weapon',
       mode: 'dual',
       hands: [
-        { handSlot: 'weapon', weapon: 'pistol', weaponRuntimeId: rightRuntimeId },
-        { handSlot: 'offhand', weapon: 'pistol', weaponRuntimeId: leftRuntimeId }
+        { handSlot: 'weapon', weapon: 'laserPistol', weaponRuntimeId: rightRuntimeId },
+        { handSlot: 'offhand', weapon: 'laserPistol', weaponRuntimeId: leftRuntimeId }
       ]
     },
     skillRanks: {},
@@ -1329,19 +1330,19 @@ async function assertDualPistolRuntime(accounts) {
   invariant(dual.ok === true
     && dual.mode === 'dual'
     && dual.fallback === false
-    && Number(dual.apCost) === 5
+    && Number(dual.apCost) === 6
     && Number(dual.shots) === 2
     && Number(rightAfterDual?.loaded) === 2
     && Number(leftAfterDual?.loaded) === 0
     && Number(rightAfterDual?.condition) < 100
     && Number(leftAfterDual?.condition) < 100,
-  'Paired volley did not atomically spend 5 AP and one round/condition tick from each runtime pistol', dual);
+  'Paired volley did not atomically spend 6 AP and one round/condition tick from each runtime pistol', dual);
 
   const replay = await socketAck(account.socket, 'combatAttack', dualPayload);
   invariant(replay.ok === true && replay.reused === true,
     'Paired-volley token replay was not idempotent after one hand became empty', replay);
 
-  await delay(700);
+  await delay(1600);
   const fallbackToken = `combat_runtime_dual_${Date.now().toString(36)}_${++attackSequence}`;
   const fallbackPayload = {
     ...dualPayload,
@@ -1349,7 +1350,7 @@ async function assertDualPistolRuntime(accounts) {
     combat: {
       ...dualPayload.combat,
       token: fallbackToken,
-      hands: [{ handSlot: 'weapon', weapon: 'pistol', weaponRuntimeId: rightRuntimeId }]
+      hands: [{ handSlot: 'weapon', weapon: 'laserPistol', weaponRuntimeId: rightRuntimeId }]
     }
   };
   const fallback = await socketAck(account.socket, 'combatAttack', fallbackPayload);
@@ -1357,14 +1358,14 @@ async function assertDualPistolRuntime(accounts) {
   invariant(fallback.ok === true
     && fallback.fallback === true
     && fallback.mode === 'single'
-    && Number(fallback.apCost) === 3 + fallbackInjuryPenalty
+    && Number(fallback.apCost) === 4 + fallbackInjuryPenalty
     && Number(fallback.shots) === 1
     && Number(fallback.combat?.loaded) === 1,
   'Empty offhand did not downgrade a paired volley to one normal single shot', fallback);
 
-  await delay(3700);
+  await delay(5200);
   const reload = await socketAck(account.socket, 'reloadWeapon', {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     dualReload: true,
     skillRanks: {},
     talentRanks: {}
@@ -1374,7 +1375,7 @@ async function assertDualPistolRuntime(accounts) {
   const reloadInjuryPenalty = reload.self?.injuries?.brokenArm ? 2 : 0;
   invariant(reload.ok === true
     && reload.dualReload === true
-    && Number(reload.apCost) === 4 + reloadInjuryPenalty
+    && Number(reload.apCost) === 8 + reloadInjuryPenalty
     && Number(reload.take) === 6
     && Number(reloadedRight?.loaded || 0) + Number(reloadedLeft?.loaded || 0) === 7
     && Number(reloadedRight?.reserveAmmo) === 0
@@ -1388,9 +1389,9 @@ async function assertServerFireRate(accounts) {
   await connectAndJoin(accounts.cadence);
   assertSameCombatRoom(accounts.cadence, accounts.target, 'fire-rate');
   assertCombat(accounts.cadence.join.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     loaded: 8,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 8
   }, 'fire-rate join combat');
 
@@ -1409,14 +1410,14 @@ async function assertServerFireRate(accounts) {
     'Attack-token replay spent AP', { first: first.combat, replay: replayCombat });
 
   // The legacy guard was only 45ms. A 70ms gap must still be rejected for a
-  // pistol whose authoritative single-shot fireRate is 0.48 seconds.
+  // laser pistol whose authoritative single-shot fireRate is 0.62 seconds.
   await delay(70);
   const tooFast = await socketAck(
     accounts.cadence.socket,
     'playerHit',
     attackPayload(accounts.cadence.join, accounts.target.socket, 'single')
   );
-  invariant(tooFast.ok === false, 'Server accepted a pistol shot only 70ms after the previous shot', tooFast);
+  invariant(tooFast.ok === false, 'Server accepted a laser pistol shot only 70ms after the previous shot', tooFast);
   const rejectedCombat = assertCombat(tooFast.combat, {
     loaded: 7,
     reserveAmmo: 8
@@ -1424,13 +1425,13 @@ async function assertServerFireRate(accounts) {
   invariant(Number(rejectedCombat.ap) >= Number(first.combat.ap),
     'Fire-rate rejection spent AP', { first: first.combat, rejected: rejectedCombat });
 
-  await delay(440);
+  await delay(620);
   const afterCooldown = await socketAck(
     accounts.cadence.socket,
     'playerHit',
     attackPayload(accounts.cadence.join, accounts.target.socket, 'single')
   );
-  invariant(afterCooldown.ok, 'Pistol shot stayed blocked after its 0.48s cadence elapsed', afterCooldown);
+  invariant(afterCooldown.ok, 'Laser pistol shot stayed blocked after its 0.62s cadence elapsed', afterCooldown);
   assertCombat(afterCooldown.combat, { loaded: 6, reserveAmmo: 8 }, 'post-cooldown shot');
 }
 
@@ -1438,15 +1439,15 @@ async function assertStrictServerAp(accounts) {
   await connectAndJoin(accounts.strictAp);
   assertSameCombatRoom(accounts.strictAp, accounts.target, 'strict AP');
   assertCombat(accounts.strictAp.join.combat, {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     loaded: 0,
-    magSize: 8,
+    magSize: 12,
     reserveAmmo: 8,
     maxAp: 6
   }, 'strict-AP join combat');
 
   const reload = await socketAck(accounts.strictAp.socket, 'reloadWeapon', {
-    weapon: 'pistol',
+    weapon: 'laserPistol',
     take: 8,
     skillRanks: {},
     talentRanks: {}
@@ -1457,30 +1458,30 @@ async function assertStrictServerAp(accounts) {
     reserveAmmo: 0,
     maxAp: 6
   }, 'strict-AP reload combat');
-  invariant(Number(afterReload.ap) >= 3.95 && Number(afterReload.ap) <= 4.05,
-    'Strict-AP fixture did not spend exactly 2 AP on reload', afterReload);
+  invariant(Number(afterReload.ap) >= 1.95 && Number(afterReload.ap) <= 2.05,
+    'Strict-AP fixture did not spend exactly 4 AP on reload', afterReload);
 
-  // At 1.8 AP/sec this leaves about 4.88 AP: below aimed cost 5, but above the
-  // old exploitable threshold of 4.15 produced by the +0.85 tolerance.
-  await delay(490);
+  // At 1.8 AP/sec this leaves about 5.69 AP: below the laser aimed cost of 6,
+  // but well above the old exploitable tolerance threshold.
+  await delay(2050);
   const insufficient = await socketAck(
     accounts.strictAp.socket,
     'playerHit',
     attackPayload(accounts.strictAp.join, accounts.target.socket, 'aimed')
   );
   invariant(insufficient.ok === false,
-    'Server accepted an aimed shot below its uninjured 5-AP minimum', insufficient);
+    'Server accepted an aimed shot below its uninjured 6-AP minimum', insufficient);
   const rejectedCombat = assertCombat(insufficient.combat, {
     loaded: 8,
     reserveAmmo: 0,
     maxAp: 6
   }, 'strict-AP rejection combat');
-  invariant(Number(rejectedCombat.ap) < 5 && Number(rejectedCombat.ap) >= 4.65,
+  invariant(Number(rejectedCombat.ap) < 6 && Number(rejectedCombat.ap) >= 5.35,
     'Strict-AP rejection returned an unexpected AP value', rejectedCombat);
 
   // Fill to the acknowledged cap rather than guessing that another fixed
   // 120ms is enough. A nearby NPC can add a broken-arm AP penalty between the
-  // rejection and retry, increasing this aimed shot from 5 to 6 AP.
+  // rejection and retry, increasing this aimed shot from 6 to 7 AP.
   const refillWaitMs = Math.ceil(
     Math.max(0, Number(rejectedCombat.maxAp) - Number(rejectedCombat.ap)) / 1.8 * 1000
   ) + 150;
@@ -1497,7 +1498,7 @@ async function assertStrictServerAp(accounts) {
     'funded aimed shot'
   );
   const inferredFundedCost = Number(rejectedCombat.maxAp) - Number(fundedCombat.ap);
-  invariant(inferredFundedCost >= 4.95 && inferredFundedCost <= 6.05,
+  invariant(inferredFundedCost >= 5.95 && inferredFundedCost <= 7.05,
     'Funded aimed shot did not spend its expected AP cost from the full cap', {
     before: rejectedCombat,
     inferredCost: inferredFundedCost,
@@ -1886,7 +1887,7 @@ async function assertLoadedWeaponAutoUnloadsOnTrade(accounts) {
   invariant(account.join.locationId === 'scrapTown',
     'Trade fixture joined the wrong location', account.join);
   assertRuntimeWeaponInventory(account.join.self, soldRuntimeId, 5, 'pre-sale loaded pistol');
-  const ammoBefore = inventoryRowQty(account.join.self?.inventory, 'ammo9');
+  const ammoBefore = inventoryRowQty(account.join.self?.inventory, 'energyCell');
   const trader = (Array.isArray(account.join.worldState?.enemies) ? account.join.worldState.enemies : [])
     .find(enemy => enemy?.hostileToPlayer === false
       && enemy?.role === 'merchant'
@@ -1900,17 +1901,17 @@ async function assertLoadedWeaponAutoUnloadsOnTrade(accounts) {
   const sale = await socketAck(account.socket, 'npcTradeExchange', {
     enemyId: trader.id,
     buys: [],
-    sells: [{ id: 'pistol', itemRuntimeId: soldRuntimeId, qty: 1 }],
+    sells: [{ id: 'laserPistol', itemRuntimeId: soldRuntimeId, qty: 1 }],
     skillRanks: {},
     talentRanks: {}
   });
   invariant(sale.ok === true, 'Trader rejected a loaded bag weapon', sale);
   invariant(Array.isArray(sale.unloadedAmmo)
     && sale.unloadedAmmo.length === 1
-    && sale.unloadedAmmo[0]?.id === 'ammo9'
+    && sale.unloadedAmmo[0]?.id === 'energyCell'
     && Number(sale.unloadedAmmo[0]?.qty) === 5,
   'Sale did not acknowledge the five automatically unloaded rounds', sale);
-  invariant(inventoryRowQty(sale.self?.inventory, 'ammo9') === ammoBefore + 5,
+  invariant(inventoryRowQty(sale.self?.inventory, 'energyCell') === ammoBefore + 5,
     'Automatically unloaded rounds were not returned to player inventory', {
       before: ammoBefore,
       after: sale.self?.inventory,

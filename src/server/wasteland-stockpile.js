@@ -14,7 +14,37 @@ const RESOURCE_LABELS = {
   ammo556: 'патроны .223',
   energyCell: 'энергоячейки',
   napalm: 'напалм',
-  weaponParts: 'оружейные детали'
+  weaponParts: 'оружейные детали',
+  // Заказы фракций перечисляют не только сырьё, но и готовые вещи, и без
+  // названий в объявление лезли служебные имена: «28 shotgunShell» рядом с
+  // «30 патроны 9мм». Названия взяты из игрового каталога предметов.
+  wood: 'древесина',
+  antibiotics: 'антибиотики',
+  shotgunShell: 'патроны 12 калибра',
+  rocketAmmo: 'ракеты',
+  medkit: 'аптечки',
+  stim: 'стимуляторы',
+  repairKit: 'ремкомплекты',
+  doctorBag: 'наборы доктора',
+  pickaxe: 'кирки',
+  axe: 'топоры',
+  handPump: 'ручные насосы',
+  pistol: '9mm пистолеты',
+  rifle: 'охотничьи винтовки',
+  shotgun: 'дробовики',
+  laserPistol: 'лазерные пистолеты',
+  plasmaRifle: 'плазменные ружья',
+  flamethrower: 'огнеметы',
+  leather: 'кожаные куртки',
+  ballisticVest: 'бронежилеты',
+  metalArmor: 'металлическая броня',
+  helmet: 'стальные шлемы',
+  tacticalHelmet: 'тактические шлемы',
+  assaultHelmet: 'штурмовые шлемы',
+  hazmatSuit: 'костюмы химзащиты',
+  energySuit: 'энергозащитные костюмы',
+  scoutBoots: 'разведботинки',
+  backpack: 'рюкзаки'
 };
 
 function emptyStockpile() {

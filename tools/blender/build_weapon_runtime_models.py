@@ -14,6 +14,7 @@ from pathlib import Path
 import random
 import sys
 
+import bmesh
 import bpy
 from mathutils import Vector
 
@@ -512,19 +513,50 @@ def add_sphere(
     radius: float,
     material: str,
     scale=(1.0, 1.0, 1.0),
+    segments=24,
+    rings=12,
 ):
-    bpy.ops.mesh.primitive_uv_sphere_add(
-        segments=24,
-        ring_count=12,
-        radius=radius,
-        location=location,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    # Сфера строится вручную, а не оператором primitive_uv_sphere_add: тот
+    # выдавал недетерминированный порядок треугольников, и все семь стволов со
+    # сферами не сходились байт в байт между пересборками одинаковых исходников.
+    # Ручная решётка с фиксированным обходом детерминирована полностью; сфере
+    # не нужно сглаживание по углу — она гладкая целиком.
+    vertices = [(0.0, 0.0, radius)]
+    for ring in range(1, rings):
+        phi = math.pi * ring / rings
+        z = math.cos(phi) * radius
+        band = math.sin(phi) * radius
+        for column in range(segments):
+            theta = 2.0 * math.pi * column / segments
+            vertices.append((math.cos(theta) * band, math.sin(theta) * band, z))
+    vertices.append((0.0, 0.0, -radius))
+    last = len(vertices) - 1
+    faces = []
+    for column in range(segments):
+        faces.append((0, 1 + column, 1 + (column + 1) % segments))
+    for ring in range(rings - 2):
+        top = 1 + ring * segments
+        bottom = 1 + (ring + 1) * segments
+        for column in range(segments):
+            following = (column + 1) % segments
+            faces.append((top + column, bottom + column, bottom + following, top + following))
+    base = 1 + (rings - 2) * segments
+    for column in range(segments):
+        faces.append((last, base + (column + 1) % segments, base + column))
+    sx, sy, sz = scale
+    lx, ly, lz = location
+    vertices = [(x * sx + lx, y * sy + ly, z * sz + lz) for x, y, z in vertices]
+    mesh = bpy.data.meshes.new(f"{name}_mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(mesh)
+    bm.free()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
     smooth_curved_mesh(obj)
-    smooth_by_angle(obj)
     return attach(obj, root, materials[material])
 
 
@@ -1299,7 +1331,26 @@ def scene_bounds() -> tuple[list[float], list[float]]:
     return [round(value, 6) for value in minimum], [round(value, 6) for value in maximum]
 
 
+def quantize_uv_layers(step: float = 1.0 / 8192.0):
+    # Упаковка островов в smart_project многопоточна и оставляет в UV дрожь
+    # последнего бита float32 (~1.2e-7): одинаковые исходники давали разные
+    # байты GLB, и отпечаток библиотеки не сходился между пересборками.
+    # Квантование с шагом 1/8192 стирает дрожь; на текстурах 256px этот шаг
+    # невидим. После него сборка детерминирована байт в байт.
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH" or not obj.data.uv_layers:
+            continue
+        for layer in obj.data.uv_layers:
+            for item in layer.data:
+                # floor со смещённой границей вместо round: упаковщик любит
+                # класть координаты ровно на половину шага, и дрожь последнего
+                # бита перекидывала округление туда-сюда между прогонами.
+                item.uv.x = math.floor(item.uv.x / step + 0.5 + 1e-3) * step
+                item.uv.y = math.floor(item.uv.y / step + 0.5 + 1e-3) * step
+
+
 def export_weapon(output: Path):
+    quantize_uv_layers()
     output.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.object.select_all(action="SELECT")
     result = bpy.ops.export_scene.gltf(

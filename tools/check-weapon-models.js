@@ -210,7 +210,7 @@ for (const [id, config] of expected) {
   'function makeWeaponModelMesh(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
-  "const WEAPON_MODEL_ASSET_VERSION = '7.87.0-tiered-arsenal-v1-0919fb06';",
+  "const WEAPON_MODEL_ASSET_VERSION = '7.93.0-deterministic-weapons-v1-b13d09c0';",
   "function triggerWeaponModelAction(weaponGroup, actionName = 'attack', options = {})",
   'Number(clip.duration) / requestedDuration',
   "action.setLoop(THREE.LoopOnce, 1)"

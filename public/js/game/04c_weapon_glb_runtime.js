@@ -1,5 +1,5 @@
   // ===== B+C WEAPON GLB RUNTIME =====
-  const WEAPON_MODEL_ASSET_VERSION = '7.87.0-tiered-arsenal-v1-0919fb06';
+  const WEAPON_MODEL_ASSET_VERSION = '7.93.0-deterministic-weapons-v1-b13d09c0';
   const WEAPON_MODEL_CATALOG = Object.freeze({
     pistol: { file: '/assets/models/weapons/weapon_pistol.glb', family: 'sidearm' },
     rifle: { file: '/assets/models/weapons/weapon_rifle.glb', family: 'long_gun' },

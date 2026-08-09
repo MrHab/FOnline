@@ -130,7 +130,13 @@ const EPHEMERAL_ROOM_IDLE_TTL_MS = resolveEphemeralRoomIdleTtlMs({
 const JSON_LIMIT = process.env.JSON_LIMIT || '12mb';
 const eventLoopDelay = monitorEventLoopDelay({ resolution: 20 });
 eventLoopDelay.enable();
-let eventLoopLagMs = { p50: 0, p95: 0, max: 0 };
+// У measured-значений есть пол: опросник monitorEventLoopDelay квантуется
+// системным таймером ОС. На Windows квант ~15.6 мс, и при resolution 20 пол
+// p50 равен двум квантам — 31.2 мс на полностью пустом процессе (замерено:
+// resolution 10 -> 15.5, 20 -> 31.1, 50 -> 62.2). Поэтому рядом с сырыми
+// значениями держим floorMs — минимальный наблюдённый p50: это и есть пол
+// измерителя на данной машине, а реальная нагрузка — то, что выше него.
+let eventLoopLagMs = { p50: 0, p95: 0, max: 0, floorMs: 0 };
 let wastelandTickMetrics = { lastMs: 0, maxMs: 0 };
 
 function eventLoopDelayMs(value) {
@@ -138,11 +144,15 @@ function eventLoopDelayMs(value) {
   return Number.isFinite(ms) ? Number(ms.toFixed(1)) : 0;
 }
 
+let eventLoopLagFloorMs = Infinity;
 const eventLoopMetricsTimer = setInterval(() => {
+  const p50 = eventLoopDelayMs(eventLoopDelay.percentile(50));
+  if (p50 > 0 && p50 < eventLoopLagFloorMs) eventLoopLagFloorMs = p50;
   eventLoopLagMs = {
-    p50: eventLoopDelayMs(eventLoopDelay.percentile(50)),
+    p50,
     p95: eventLoopDelayMs(eventLoopDelay.percentile(95)),
-    max: eventLoopDelayMs(eventLoopDelay.max)
+    max: eventLoopDelayMs(eventLoopDelay.max),
+    floorMs: Number.isFinite(eventLoopLagFloorMs) ? eventLoopLagFloorMs : 0
   };
   eventLoopDelay.reset();
 }, 5000);

@@ -226,7 +226,7 @@ const runtimeSource = fs.readFileSync(
   'utf8'
 );
 [
-  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v16-welded-helmet'",
+  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v17-prewar-helmet'",
   'const APPROVED_EQUIPMENT_ASSETS = Object.freeze({',
   'const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([',
   'function attachApprovedNpcAnimations(runtime)',

@@ -13,6 +13,7 @@
       "backpack": "E70691AAE14BBC2CA5CD608567EFFA532EFED46AF3F4B2625DCBAAC281BF5F39",
       "reinforcedBoots": "464C7FB32BD4DB740CCB73A81EC2CB9BD14F1374F1593AE92CE409C84A66210E",
       "scoutBoots": "21E7C91E968CBB117392BFC0BED30A7DDD08AA5C588AF7CA60B0DE07D2E14BC4",
+      "preWarHelmet": "C7A1564C9D914338E654B7743AD9325C7B643EC3ED402AAF350C1150E6D055B7",
       "weldedHelmet": "FA57E7B38BC237B2D464EB305B237334734229FD105EB905F378A1D29562748A",
       "helmet": "26CC38A7A718E7FCB7DA7DDF45512C3DC43D21508BBB148FCA6C1F30DCBF8AE6",
       "tacticalHelmet": "2C8548BC1E8222528070B14C0D96585264ED36E5C509645084AD6253ABD59895",
@@ -558,6 +559,66 @@
       "sourceSha256": "409EE6948A23138DF05A2DC3BB6C8F2E4A7876A171C9E65C509FAD0974A1C7C1",
       "runtimeSha256": "49714574CB7CBFA5561AF982E11A0068226F677A63262B4BF1ACB24E9EC23917",
       "bytes": 921108
+    },
+    {
+      "id": "preWarHelmet_female_slim",
+      "itemId": "preWarHelmet",
+      "slot": "helmet",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/helmet/equipment_prewar_helmet_female_slim.glb",
+      "sourceSha256": "C19367C8AD0F00EC3E65163097622DF80897407BFE02BC32F328D0BDE3FF71BA",
+      "runtimeSha256": "48CCCD96FD7FEEE121F5E70646753F73080C0CCFFBC77948197ACB87476A7A8A",
+      "bytes": 393432
+    },
+    {
+      "id": "preWarHelmet_female_medium",
+      "itemId": "preWarHelmet",
+      "slot": "helmet",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/helmet/equipment_prewar_helmet_female_medium.glb",
+      "sourceSha256": "2D99D66D821E3BFC0CFA69D1206C7F75F53BC1362A2243C743442859242B139C",
+      "runtimeSha256": "F551075C1D3413DF3950E005EF7C31365DFE85141E4EE500BDF030BD1C6BE371",
+      "bytes": 394524
+    },
+    {
+      "id": "preWarHelmet_female_large",
+      "itemId": "preWarHelmet",
+      "slot": "helmet",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/helmet/equipment_prewar_helmet_female_large.glb",
+      "sourceSha256": "833F6DAE3A66825AD5C533A4D3BAE9C75823321C739CC8E20BC1021C4610C9AB",
+      "runtimeSha256": "95A3F1A193281F226A6D504671854D89E80FBF0C8D8E223B9963692FF7C9BE2B",
+      "bytes": 394532
+    },
+    {
+      "id": "preWarHelmet_male_slim",
+      "itemId": "preWarHelmet",
+      "slot": "helmet",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/helmet/equipment_prewar_helmet_male_slim.glb",
+      "sourceSha256": "D46925C9C60CA5CB900D0FD33CACF411ACC2CF4C1EF87453253737AC6331B401",
+      "runtimeSha256": "9044D96435666BFB93F3A874B2EC994D815A39BDA76AA9F64D1AABF48104E0C8",
+      "bytes": 392836
+    },
+    {
+      "id": "preWarHelmet_male_medium",
+      "itemId": "preWarHelmet",
+      "slot": "helmet",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/helmet/equipment_prewar_helmet_male_medium.glb",
+      "sourceSha256": "490438367A86023AB9C4C27AFB95F93B8DB81E3A76955229137579B6A3005B46",
+      "runtimeSha256": "1503BE8900ADB5B6AD1630A24693239D9357316C30395BAC5355740C4A252771",
+      "bytes": 393452
+    },
+    {
+      "id": "preWarHelmet_male_large",
+      "itemId": "preWarHelmet",
+      "slot": "helmet",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/helmet/equipment_prewar_helmet_male_large.glb",
+      "sourceSha256": "DCDF17E9EA83BF08DAA76760A24DCC68347623B51CF219FD30B111FD330DF408",
+      "runtimeSha256": "A6EAFB81141A5EDD14A469B4C6F385E2319B6D722A5E00944BC72978E8B8B5F8",
+      "bytes": 394772
     },
     {
       "id": "weldedHelmet_female_slim",

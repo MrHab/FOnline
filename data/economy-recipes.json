@@ -431,6 +431,15 @@
       "inputs": {
         "scrap": 4
       }
+    },
+    "preWarHelmet": {
+      "station": "energy_bench",
+      "workHours": 5,
+      "outputQty": 1,
+      "inputs": {
+        "scrap": 6,
+        "electronics": 3
+      }
     }
   }
 }

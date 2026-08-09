@@ -92,6 +92,15 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     fitReportSha256: '21E7C91E968CBB117392BFC0BED30A7DDD08AA5C588AF7CA60B0DE07D2E14BC4'
   },
   {
+    itemId: 'preWarHelmet',
+    slot: 'helmet',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-prewar-helmet-v1', 'helmet'],
+    sourcePrefix: 'equipment_prewar_helmet_unified_v1',
+    runtimePrefix: 'equipment_prewar_helmet',
+    meshCount: 2,
+    fitReportSha256: 'C7A1564C9D914338E654B7743AD9325C7B643EC3ED402AAF350C1150E6D055B7'
+  },
+  {
     itemId: 'weldedHelmet',
     slot: 'helmet',
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-welded-helmet-v1', 'helmet'],

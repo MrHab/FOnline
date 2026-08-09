@@ -40,6 +40,7 @@ const RESOURCE_LABELS = {
   metalArmor: 'металлическая броня',
   helmet: 'стальные шлемы',
   weldedHelmet: 'сварные шлемы',
+  preWarHelmet: 'довоенные шлемы',
   tacticalHelmet: 'тактические шлемы',
   assaultHelmet: 'штурмовые шлемы',
   hazmatSuit: 'костюмы химзащиты',

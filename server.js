@@ -2357,7 +2357,7 @@ const VALID_EQUIPMENT = {
   weapon: VALID_HAND_EQUIPMENT,
   offhand: new Set([...VALID_HAND_EQUIPMENT, '']),
   armor: new Set(['leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit', 'heavyArmor', 'energySuit', '']),
-  helmet: new Set(['weldedHelmet', 'helmet', 'tacticalHelmet', 'assaultHelmet', '']),
+  helmet: new Set(['weldedHelmet', 'helmet', 'tacticalHelmet', 'assaultHelmet', 'preWarHelmet', '']),
   boots: new Set(['boots', 'scoutBoots', 'reinforcedBoots', '']),
   backpack: new Set(['backpack', ''])
 };
@@ -3139,7 +3139,7 @@ const SERVER_ENEMY_VARIANTS = [
     ]
   }
 ];
-const SERVER_ITEM_IDS = new Set(['pistol','rifle','assaultRifle','machineGun','laserPistol','flamethrower','plasmaRifle','shotgun','rocketLauncher','revolver','sawedOffShotgun','smg','knife','fists','leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','boots','scoutBoots','reinforcedBoots','backpack','ammo9','ammo556','energyCell','napalm','shotgunShell','rocketAmmo','medkit','stim','doctorBag','antibiotics','ore','wood','scrap','oil','chemicals','medicine','electronics','ammoParts','food','weaponParts','silver','trophy','water','pickaxe','axe','handPump','repairKit']);
+const SERVER_ITEM_IDS = new Set(['pistol','rifle','assaultRifle','machineGun','laserPistol','flamethrower','plasmaRifle','shotgun','rocketLauncher','revolver','sawedOffShotgun','smg','knife','fists','leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet','boots','scoutBoots','reinforcedBoots','backpack','ammo9','ammo556','energyCell','napalm','shotgunShell','rocketAmmo','medkit','stim','doctorBag','antibiotics','ore','wood','scrap','oil','chemicals','medicine','electronics','ammoParts','food','weaponParts','silver','trophy','water','pickaxe','axe','handPump','repairKit']);
 // ===== СИЛА: тиры экипировки =====
 // Чистое железо: только предметы, их состояние и модификации. Очки тиров
 // растут нелинейно, чтобы скачок тира ощущался; состояние входит множителем —
@@ -3155,7 +3155,7 @@ const GEAR_ITEM_TIERS = Object.freeze({
   ballisticVest: 3,
   combatArmor: 4,
   heavyArmor: 5,
-  weldedHelmet: 1, helmet: 2, tacticalHelmet: 3, assaultHelmet: 4,
+  weldedHelmet: 1, helmet: 2, tacticalHelmet: 3, assaultHelmet: 4, preWarHelmet: 5,
   boots: 1, scoutBoots: 2, reinforcedBoots: 3,
   backpack: 2
 });
@@ -4108,7 +4108,7 @@ const SERVER_ITEM_WEIGHTS = {
   knife: 0.5, fists: 0,
   leather: 3.0, metalArmor: 7.5, ballisticVest: 5.5, combatArmor: 9.0,
   hazmatSuit: 4.2, heavyArmor: 14.0, energySuit: 6.8,
-  weldedHelmet: 2.4, helmet: 2.0, tacticalHelmet: 1.9, assaultHelmet: 2.8,
+  weldedHelmet: 2.4, helmet: 2.0, tacticalHelmet: 1.9, assaultHelmet: 2.8, preWarHelmet: 2.6,
   boots: 1.5, scoutBoots: 1.1, reinforcedBoots: 2.2, backpack: 1.2,
   ammo9: 0.025, ammo556: 0.04, energyCell: 0.03, napalm: 0.08, shotgunShell: 0.05, rocketAmmo: 0.85,
   medkit: 0.6, stim: 0.2, doctorBag: 0.9, antibiotics: 0.15,
@@ -4422,7 +4422,8 @@ const SERVER_ARMOR_ITEMS = {
   weldedHelmet: { protection: { ballistic: 0.03 }, thresholds: { ballistic: 1 } },
   helmet: { protection: { ballistic: 0.05 }, thresholds: { ballistic: 1 } },
   tacticalHelmet: { protection: { ballistic: 0.09, explosive: 0.03, fire: 0.02 }, thresholds: { ballistic: 1, explosive: 1 } },
-  assaultHelmet: { protection: { ballistic: 0.12, explosive: 0.05, energy: 0.03, fire: 0.05 }, thresholds: { ballistic: 2, explosive: 1 } }
+  assaultHelmet: { protection: { ballistic: 0.12, explosive: 0.05, energy: 0.03, fire: 0.05 }, thresholds: { ballistic: 2, explosive: 1 } },
+  preWarHelmet: { protection: { ballistic: 0.14, explosive: 0.06, energy: 0.06, fire: 0.06, radiation: 0.02 }, thresholds: { ballistic: 2, explosive: 1, energy: 1 } }
 };
 
 const SERVER_SPECIAL_KEYS = ['str','per','end','cha','int','agi','luck'];
@@ -5473,7 +5474,7 @@ function serverSalvageChance(player = {}, itemId = '') {
   if (!rule) return 0;
   const condition = Math.max(10, Math.min(100, Number(serverPlayerItemCondition(player, id) ?? 65)));
   const weaponOrTool = !!SERVER_WEAPONS[id];
-  const armorLike = ['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet'].includes(id);
+  const armorLike = ['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet'].includes(id);
   const chance = Number(rule.chance || 0.35)
     + (condition - 65) * 0.002
     + serverSkillNorm(player, 'repair') * 0.26
@@ -5493,7 +5494,7 @@ function performServerRepairItem(player = {}, data = {}) {
   const before = serverPlayerItemCondition(player, id);
   if (before >= 99.995) return { ok: false, error: 'Состояние предмета уже 100%.' };
   const weaponOrTool = !!SERVER_WEAPONS[id];
-  const armorLike = ['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet'].includes(id);
+  const armorLike = ['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet'].includes(id);
   let mode = '';
   let restored = 0;
   if (serverInventoryQty(player.inventory || [], 'repairKit') > 0) {
@@ -10934,7 +10935,7 @@ function recordWastelandCraftingStationFee(data = {}, player = null) {
   if (SERVER_REPAIRABLE_ITEM_IDS.has(serverBaseItemId(crafted.output?.id || ''))) {
     let condition = 82 + Math.round(serverSkillNorm(actor, 'repair') * 10);
     if (SERVER_WEAPONS[crafted.output.id]) condition += serverTalentLevel(actor, 'weaponSmith') * 7;
-    if (['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet'].includes(crafted.output.id)) condition += serverTalentLevel(actor, 'armorTraining') * 5;
+    if (['leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet'].includes(crafted.output.id)) condition += serverTalentLevel(actor, 'armorTraining') * 5;
     if (['pickaxe','axe','handPump'].includes(crafted.output.id)) condition += serverTalentLevel(actor, 'engineer') * 4;
     serverSetPlayerItemCondition(player, crafted.output.id, clamp(Math.round(condition), 55, 100));
   }

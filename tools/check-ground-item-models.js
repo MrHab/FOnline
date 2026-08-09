@@ -20,7 +20,8 @@ const EXPECTED_LIBRARY_IDS = [
 ];
 const WEAPON_IDS = [
   'pistol', 'rifle', 'assaultRifle', 'machineGun', 'laserPistol', 'flamethrower',
-  'plasmaRifle', 'shotgun', 'rocketLauncher', 'knife', 'pickaxe', 'axe', 'handPump'
+  'plasmaRifle', 'shotgun', 'rocketLauncher', 'knife', 'pickaxe', 'axe', 'handPump',
+  'revolver', 'sawedOffShotgun', 'smg'
 ];
 const EQUIPMENT_IDS = [
   'leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit',

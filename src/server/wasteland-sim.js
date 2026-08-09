@@ -4601,6 +4601,17 @@ function createWastelandSimulation(options = {}) {
     return removedAmbushes;
   }
 
+  // Кто расплачивается за доставку. Платит фракция, а не отдельная точка: у
+  // районной заявки в кассе бывает пять крышек, тогда как казна фракции лежит в
+  // столице, куда стекается вся добыча. За ничейную точку платит она сама —
+  // больше некому.
+  function worldTaskPayerSite(site = null) {
+    if (!site) return null;
+    const ownerGroup = factionGroup(site.owner || 'neutral');
+    if (!isJoinableWorldFaction(ownerGroup)) return site;
+    return state.sites[capitalSiteIdForFaction(ownerGroup)] || site;
+  }
+
   function completeWorldTaskDelivery(taskId = '', data = {}) {
     const id = String(taskId || '').trim();
     const task = state.worldTasks.find(row => row && String(row.id || '') === id);
@@ -4639,23 +4650,23 @@ function createWastelandSimulation(options = {}) {
       });
     }
 
-    // Закупка фракции оплачивается из её казны, а не появляется из воздуха:
-    // столица покупает у вольных людей на свои крышки. Платят за то, что
-    // просили, и соразмерно принесённому — иначе за одну случайную железку
-    // выдавали бы полную цену заказа.
-    if (task.details?.procurement) {
-      const wanted = task.details.demand && typeof task.details.demand === 'object' ? task.details.demand : {};
-      const asked = stockpileTotal(wanted);
+    // Доставку оплачивает тот, кому её привезли, из своего склада, а не из
+    // воздуха. И платят за то, что просили, соразмерно принесённому: иначе за
+    // одну случайную железку выдавали бы полную цену заказа. Правило общее для
+    // всех доставок — и для закупки столицы, и для поддержки добывающих точек.
+    const wanted = task.details?.demand && typeof task.details.demand === 'object' ? task.details.demand : {};
+    const asked = stockpileTotal(wanted);
+    if (asked > 0) {
       const matched = Object.entries(wanted).reduce((sum, [id, qty]) => (
         sum + Math.min(Math.max(0, Number(delivered[id] || 0)), Math.max(0, Number(qty || 0)))
       ), 0);
-      const share = asked > 0 ? clamp(matched / asked, 0, 1) : 0;
+      const share = clamp(matched / asked, 0, 1);
       task.reward = {
         ...(task.reward && typeof task.reward === 'object' ? task.reward : {}),
         caps: Math.round(Math.max(0, Number(task.reward?.caps || 0)) * share)
       };
-      fundWorldTaskCapsRewardFromSite(task, site, 1);
     }
+    fundWorldTaskCapsRewardFromSite(task, worldTaskPayerSite(site), 1);
     const finished = finishWorldTask(task, 'completed', 'player_delivery', {
       playerId,
       delivered,
@@ -7518,6 +7529,12 @@ function createWastelandSimulation(options = {}) {
       reason: supportReason,
       demand
     });
+    // Обещаем ровно то, что заказчик способен заплатить. За фракционную точку
+    // платит казна её столицы, за ничейную — она сама, и там бывает пять крышек:
+    // объявление о сорока девяти было бы обманом, а не наградой.
+    const payer = worldTaskPayerSite(site);
+    const purse = Math.max(0, Number((payer?.stockpile || {}).silver || 0));
+    const offered = rewardForWorldTask('deliver_supplies', site, priority);
     return createWorldTask('deliver_supplies', {
       key: `resource_support:${site.id}:${supportReason}`,
       title: `Поддержать ${supportLabel}: ${site.name}`,
@@ -7526,6 +7543,7 @@ function createWastelandSimulation(options = {}) {
       objective: 'support_resource_site',
       durationHours: supportReason === 'raid' ? 24 : 42,
       priority,
+      reward: { ...offered, caps: Math.min(Number(offered.caps || 0), Math.floor(purse / 3)) },
       details: {
         demand,
         resourceSupport: true,
@@ -7810,7 +7828,10 @@ function createWastelandSimulation(options = {}) {
     const caps = Math.max(30, Math.min(Math.round(units * 4), Math.floor(treasury / 4), 320));
     return createWorldTask('deliver_supplies', {
       key: `faction_procurement:${capital.id}`,
-      title: `Закупка ${factionLabel(capital.owner)}: ${capital.name || capital.id}`,
+      // Метка фракции приходит в разных падежах («техники Ретранслятора»,
+      // «Свалочный союз»), и подстановка её в заголовок читалась криво. Хватает
+      // названия самой столицы — оно и так говорит, чей это заказ.
+      title: `Закупка: ${capital.name || capital.id}`,
       text: `${capital.name || capital.id} скупает у вольных людей ${stockpileSummary(demand)}. Принесите на склад и получите крышки — фракция платит за то, чего не добывает сама.`,
       siteId: capital.id,
       issuerSiteId: capital.id,

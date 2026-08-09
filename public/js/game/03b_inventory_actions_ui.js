@@ -634,7 +634,8 @@
       const item = equipmentItemForSlot(slot);
       const twoHandedOccupancy = equipmentSlotIsTwoHandedOccupancy(slot);
       const div = document.createElement('div');
-      div.className = 'equip-slot' + (item ? '' : ' empty') + (twoHandedOccupancy ? ' two-handed-occupied' : '');
+      const slotTier = item && typeof gearTierOf === 'function' ? gearTierOf(item.id) : 0;
+      div.className = 'equip-slot' + (item ? '' : ' empty') + (twoHandedOccupancy ? ' two-handed-occupied' : '') + (slotTier ? ` gear-tier-${slotTier}` : '');
       div.dataset.slot = slot;
       div.innerHTML = `<div class="equip-icon">${item ? itemArtHtml(item) : '<span class="item-art-empty">—</span>'}</div><div><div class="equip-name">${item ? item.name : 'Пусто'}</div><div class="equip-type">${SLOT_LABELS[slot]}</div></div>${item ? '<button type="button" class="equip-clear" aria-label="Снять">×</button>' : ''}`;
 
@@ -697,6 +698,7 @@
       <div class="stat-line">Дальность: <b>${w.range}</b></div>
       <div class="stat-line">Патроны: <b>${ammoText}</b></div>
       <div class="stat-line">Броня: <b>${armorValue()}</b></div>
+      <div class="stat-line">СИЛА: <b>${typeof gearPowerTotal === 'function' ? gearPowerTotal() : 0}</b></div>
       <div class="stat-line">Скорость: <b>${(player.speed + speedBonus()).toFixed(1)}</b></div>
       <div class="stat-line">Вес: <b>${formatWeight(inventoryWeight())}/${formatWeight(carryCapacity())}</b></div>
       <div class="stat-line">Обзор: <b>${playerVisionRadius()} кл.</b></div>
@@ -1337,7 +1339,11 @@
       const quickPick = quickable ? '<button type="button" class="mobile-quick-pick" aria-label="Назначить в быстрый доступ">⚡</button>' : '';
       const modificationCount = typeof weaponModificationCount === 'function' ? weaponModificationCount(item) : 0;
       const modificationBadge = modificationCount > 0 ? `<div class="inv-tag inv-modification-badge">МОД ${modificationCount}</div>` : '';
-      card.innerHTML = `${tag}${modificationBadge}${weight}<div class="inv-emoji">${itemArtHtml(item)}</div><div class="inv-name">${item.name}</div>${quickPick}${price}${count}`;
+      // Ярлык тира: игрок видит класс предмета раньше цифр.
+      const tierInfo = typeof gearTierInfo === 'function' ? gearTierInfo(id) : null;
+      const tierBadge = tierInfo ? `<div class="inv-tier gear-tier-${gearTierOf(id)}">${tierInfo.short}</div>` : '';
+      if (tierInfo) card.classList.add(`gear-tier-${gearTierOf(id)}`);
+      card.innerHTML = `${tag}${modificationBadge}${tierBadge}${weight}<div class="inv-emoji">${itemArtHtml(item)}</div><div class="inv-name">${item.name}</div>${quickPick}${price}${count}`;
       card.setAttribute('draggable', isMobileControlsEnabled() ? 'false' : 'true');
       const hasDirectUse = itemHasInventoryUseAction(item);
       const itemHint = traderWindowOpen && sellable

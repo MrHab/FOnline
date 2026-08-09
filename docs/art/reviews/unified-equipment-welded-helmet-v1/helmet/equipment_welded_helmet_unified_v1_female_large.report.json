@@ -1,0 +1,194 @@
+{
+  "actualGlb": {
+    "bones": 65,
+    "materials": 4,
+    "meshDefinitions": 1,
+    "positionVertices": 1789,
+    "skins": 1,
+    "textures": 12,
+    "triangles": 1190
+  },
+  "assetId": "equipment_welded_helmet_unified_v1_female_large",
+  "bodyId": "female_large",
+  "design": {
+    "features": [
+      "штампованный купол",
+      "усиленный обод",
+      "затылочная пластина",
+      "ремень",
+      "заклёпки",
+      "вмятина",
+      "локальная ржавчина"
+    ],
+    "geometry": "B",
+    "materialsAndWear": "C"
+  },
+  "file": "equipment_welded_helmet_unified_v1_female_large.glb",
+  "fit": {
+    "baseClearance": {
+      "back": 0.025,
+      "crown": 0.021,
+      "front": 0.022,
+      "side": 0.025
+    },
+    "bodyId": "female_large",
+    "faceProfiles": {
+      "female_01": {
+        "headScale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "label": "угловатое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.025,
+          "crown": 0.021,
+          "front": 0.022,
+          "side": 0.025
+        }
+      },
+      "female_02": {
+        "headScale": [
+          0.88,
+          1.018,
+          1.05
+        ],
+        "label": "узкое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02545,
+          "crown": 0.02205,
+          "front": 0.0224,
+          "side": 0.022
+        }
+      },
+      "female_03": {
+        "headScale": [
+          1.13,
+          0.985,
+          0.96
+        ],
+        "label": "широкое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02463,
+          "crown": 0.02016,
+          "front": 0.02167,
+          "side": 0.02825
+        }
+      },
+      "female_04": {
+        "headScale": [
+          0.98,
+          0.982,
+          1.09
+        ],
+        "label": "округлое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02455,
+          "crown": 0.02289,
+          "front": 0.0216,
+          "side": 0.0245
+        }
+      },
+      "male_01": {
+        "headScale": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "label": "угловатое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.025,
+          "crown": 0.021,
+          "front": 0.022,
+          "side": 0.025
+        }
+      },
+      "male_02": {
+        "headScale": [
+          0.88,
+          1.018,
+          1.05
+        ],
+        "label": "узкое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02545,
+          "crown": 0.02205,
+          "front": 0.0224,
+          "side": 0.022
+        }
+      },
+      "male_03": {
+        "headScale": [
+          1.13,
+          0.985,
+          0.96
+        ],
+        "label": "широкое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02463,
+          "crown": 0.02016,
+          "front": 0.02167,
+          "side": 0.02825
+        }
+      },
+      "male_04": {
+        "headScale": [
+          0.98,
+          0.982,
+          1.09
+        ],
+        "label": "округлое",
+        "relativeFitPreservedByHeadBone": true,
+        "scaledClearance": {
+          "back": 0.02455,
+          "crown": 0.02289,
+          "front": 0.0216,
+          "side": 0.0245
+        }
+      }
+    },
+    "hairPolicy": "runtime_hides_hair_when_any_helmet_is_equipped",
+    "headBounds": {
+      "maximum": [
+        0.088878,
+        0.112899,
+        1.766644
+      ],
+      "minimum": [
+        -0.088878,
+        -0.111906,
+        1.53809
+      ]
+    },
+    "headVertexCount": 5957,
+    "helmetDimensions": {
+      "backRadius": 0.137403,
+      "centerX": 0.0,
+      "centerY": 0.000497,
+      "frontRadius": 0.134403,
+      "radiusX": 0.113878,
+      "rimZ": 1.638644,
+      "shellThickness": 0.0045,
+      "topZ": 1.787644
+    },
+    "result": "pass"
+  },
+  "itemId": "weldedHelmet",
+  "itemNameRu": "Стальной шлем",
+  "provenance": {
+    "directRuntimeUse": false,
+    "donor": null,
+    "license": "Realm of Ashes project asset",
+    "rebuild": "original fitted B geometry and authored C materials on the exact current 65-bone player rig"
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "3C08AA04669B90905F6485E171E20D88F7359D2BFC0821F41567AFC8710978DE"
+}

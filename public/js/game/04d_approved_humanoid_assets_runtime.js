@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v15-armor-trousers';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v16-welded-helmet';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([
@@ -145,6 +145,11 @@
       itemId: 'energySuit',
       slot: 'armor',
       urls: approvedEquipmentBodyUrls('armor', 'equipment_energy_suit')
+    }),
+    weldedHelmet: Object.freeze({
+      itemId: 'weldedHelmet',
+      slot: 'helmet',
+      urls: approvedEquipmentBodyUrls('helmet', 'equipment_welded_helmet')
     }),
     helmet: Object.freeze({
       itemId: 'helmet',

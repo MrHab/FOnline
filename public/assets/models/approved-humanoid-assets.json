@@ -13,6 +13,7 @@
       "backpack": "E70691AAE14BBC2CA5CD608567EFFA532EFED46AF3F4B2625DCBAAC281BF5F39",
       "reinforcedBoots": "464C7FB32BD4DB740CCB73A81EC2CB9BD14F1374F1593AE92CE409C84A66210E",
       "scoutBoots": "21E7C91E968CBB117392BFC0BED30A7DDD08AA5C588AF7CA60B0DE07D2E14BC4",
+      "weldedHelmet": "FA57E7B38BC237B2D464EB305B237334734229FD105EB905F378A1D29562748A",
       "helmet": "26CC38A7A718E7FCB7DA7DDF45512C3DC43D21508BBB148FCA6C1F30DCBF8AE6",
       "tacticalHelmet": "2C8548BC1E8222528070B14C0D96585264ED36E5C509645084AD6253ABD59895",
       "assaultHelmet": "0C07FFDDA768B952B9D844D2561F0BA8A96D7860C20834BB083F44C0B4E895A5",
@@ -557,6 +558,66 @@
       "sourceSha256": "409EE6948A23138DF05A2DC3BB6C8F2E4A7876A171C9E65C509FAD0974A1C7C1",
       "runtimeSha256": "49714574CB7CBFA5561AF982E11A0068226F677A63262B4BF1ACB24E9EC23917",
       "bytes": 921108
+    },
+    {
+      "id": "weldedHelmet_female_slim",
+      "itemId": "weldedHelmet",
+      "slot": "helmet",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/helmet/equipment_welded_helmet_female_slim.glb",
+      "sourceSha256": "D67B5AB812FFDB873DEDE2FFE406E742B8F8DAAF4F6AE49AF3E50E85B5370C83",
+      "runtimeSha256": "ADCA74A87F2E3075993AC6DECC31FC4FF054425953B547EA08CC889BDC7DC142",
+      "bytes": 275052
+    },
+    {
+      "id": "weldedHelmet_female_medium",
+      "itemId": "weldedHelmet",
+      "slot": "helmet",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/helmet/equipment_welded_helmet_female_medium.glb",
+      "sourceSha256": "EE630FB02836BEBBCC5685EC0FFC9F45687B7FEE02BCFACDE0B2AA80D1BA4DD0",
+      "runtimeSha256": "E6E1B678FE8978233923EBA5EBF131B3591649C5251E8CE0EA6C345D6328E399",
+      "bytes": 275388
+    },
+    {
+      "id": "weldedHelmet_female_large",
+      "itemId": "weldedHelmet",
+      "slot": "helmet",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/helmet/equipment_welded_helmet_female_large.glb",
+      "sourceSha256": "3C08AA04669B90905F6485E171E20D88F7359D2BFC0821F41567AFC8710978DE",
+      "runtimeSha256": "C34ED3ECA598E43B3137221A5B4B9C53ACDF4F80984D0B5891918EBE096B5478",
+      "bytes": 275060
+    },
+    {
+      "id": "weldedHelmet_male_slim",
+      "itemId": "weldedHelmet",
+      "slot": "helmet",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/helmet/equipment_welded_helmet_male_slim.glb",
+      "sourceSha256": "99B4CA734A530F9B0EF2C8CE1D99647ED0276C84786F940AE64DA1623BE2F087",
+      "runtimeSha256": "4B719751573D05DE67B744AF043EEE2A1565E6AE832DD3C34235AE1F788655CB",
+      "bytes": 273824
+    },
+    {
+      "id": "weldedHelmet_male_medium",
+      "itemId": "weldedHelmet",
+      "slot": "helmet",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/helmet/equipment_welded_helmet_male_medium.glb",
+      "sourceSha256": "2DD545499EEEBD6EC1F2BA5FE444C183A0A88E79CDB7386E2099F6199ACB53A0",
+      "runtimeSha256": "2B9EFACE6632DB85896AB88537EB20CE2584C2B88ED95F86786D669F9E2DE92A",
+      "bytes": 274336
+    },
+    {
+      "id": "weldedHelmet_male_large",
+      "itemId": "weldedHelmet",
+      "slot": "helmet",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/helmet/equipment_welded_helmet_male_large.glb",
+      "sourceSha256": "7333C230F7767EAAD522DF8A21D2AD53135D719580510FE72A317872C86BFC23",
+      "runtimeSha256": "BBBD6DC446963FACD6499C58DABCF194BB2E0B9BE460FC5DC4CFBADC210EADEF",
+      "bytes": 274316
     },
     {
       "id": "helmet_female_slim",

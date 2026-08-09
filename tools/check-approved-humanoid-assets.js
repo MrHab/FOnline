@@ -226,7 +226,7 @@ const runtimeSource = fs.readFileSync(
   'utf8'
 );
 [
-  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v17-prewar-helmet'",
+  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v18-assault-boots'",
   'const APPROVED_EQUIPMENT_ASSETS = Object.freeze({',
   'const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([',
   'function attachApprovedNpcAnimations(runtime)',
@@ -513,7 +513,9 @@ async function verifyThreeRuntime() {
           ? group.children.find(mesh => String(mesh.material?.name || '') === (
             definition.itemId === 'scoutBoots'
               ? 'scout_boots_flexible_black_rubber'
-              : 'boots_rubberized_sole'
+              : definition.itemId === 'assaultBoots'
+                ? 'assault_boots_black_sole'
+                : 'boots_rubberized_sole'
           ))
           : null;
         const equipmentSoleVertices = equipmentSole

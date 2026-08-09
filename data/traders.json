@@ -108,6 +108,7 @@
         { "id": "repairKit", "price": 18, "qty": 4 },
         { "id": "pickaxe", "price": 16, "qty": 2 },
         { "id": "sawedOffShotgun", "price": 92, "qty": 1 },
+        { "id": "assaultBoots", "price": 62, "qty": 1 },
         { "id": "smg", "price": 148, "qty": 1 },
         { "id": "axe", "price": 15, "qty": 2 },
         { "id": "handPump", "price": 22, "qty": 2 },

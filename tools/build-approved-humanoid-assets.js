@@ -74,6 +74,15 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     fitReportSha256: 'E70691AAE14BBC2CA5CD608567EFFA532EFED46AF3F4B2625DCBAAC281BF5F39'
   },
   {
+    itemId: 'assaultBoots',
+    slot: 'boots',
+    reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-assault-boots-v1', 'boots'],
+    sourcePrefix: 'equipment_assault_boots_unified_v1',
+    runtimePrefix: 'equipment_assault_boots',
+    meshCount: 1,
+    fitReportSha256: '46409E0071FE16553B5B921C67495D92561378A53816C391EEB481377BE6B912'
+  },
+  {
     itemId: 'reinforcedBoots',
     slot: 'boots',
     reviewDirectory: ['docs', 'art', 'reviews', 'unified-equipment-reinforced-boots-v1', 'boots'],

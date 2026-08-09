@@ -1,0 +1,141 @@
+{
+  "actualGlb": {
+    "bones": 65,
+    "materials": 6,
+    "meshDefinitions": 1,
+    "positionVertices": 4352,
+    "skins": 1,
+    "textures": 18,
+    "triangles": 2304
+  },
+  "animationStress": {
+    "rigCompatibility": true,
+    "run": {
+      "frame": 6,
+      "rendered": false
+    },
+    "walk": {
+      "frame": 10,
+      "rendered": false
+    }
+  },
+  "assetId": "equipment_assault_boots_unified_v1_male_large",
+  "bodyId": "male_large",
+  "design": {
+    "features": [
+      "стальной подносок",
+      "щиток голени",
+      "защита пятки",
+      "наружная защита лодыжки",
+      "усиленная подошва",
+      "ремни и пряжки"
+    ],
+    "geometry": "B",
+    "materialsAndWear": "C"
+  },
+  "dimensionsMetres": {
+    "depth": 0.3436,
+    "height": 0.2773,
+    "width": 0.4153
+  },
+  "file": "equipment_assault_boots_unified_v1_male_large.glb",
+  "fit": {
+    "l": {
+      "footBounds": {
+        "maximum": [
+          0.18629,
+          0.14331,
+          0.10352
+        ],
+        "minimum": [
+          0.07624,
+          -0.12804,
+          -0.00951
+        ]
+      },
+      "sole": {
+        "bottomZ": -0.01951,
+        "halfWidth": 0.06502,
+        "heelY": 0.16131,
+        "toeY": -0.16804,
+        "topZ": 0.01049
+      }
+    },
+    "r": {
+      "footBounds": {
+        "maximum": [
+          -0.07624,
+          0.14331,
+          0.10352
+        ],
+        "minimum": [
+          -0.18629,
+          -0.12804,
+          -0.00951
+        ]
+      },
+      "sole": {
+        "bottomZ": -0.01951,
+        "halfWidth": 0.06502,
+        "heelY": 0.16131,
+        "toeY": -0.16804,
+        "topZ": 0.01049
+      }
+    }
+  },
+  "itemId": "assaultBoots",
+  "itemNameRu": "Усиленные ботинки",
+  "provenance": {
+    "base": "approved original equipment boots v21 fit",
+    "directRuntimeUse": false,
+    "license": "Realm of Ashes project asset",
+    "rebuild": "original reinforced protection geometry and B+C materials on the exact current 65-bone player rig"
+  },
+  "reinforcement": {
+    "l": {
+      "heelPlate": {
+        "rearY": 0.17131,
+        "topZ": 0.132
+      },
+      "lugBottomZ": -0.03251,
+      "shinPlate": {
+        "bottomZ": 0.098,
+        "frontY": 0.001,
+        "topZ": 0.238
+      },
+      "steelToe": {
+        "frontY": -0.16004,
+        "rearY": -0.05004
+      },
+      "weights": [
+        "foot_l",
+        "ball_l",
+        "calf_l"
+      ]
+    },
+    "r": {
+      "heelPlate": {
+        "rearY": 0.17131,
+        "topZ": 0.132
+      },
+      "lugBottomZ": -0.03251,
+      "shinPlate": {
+        "bottomZ": 0.098,
+        "frontY": 0.001,
+        "topZ": 0.238
+      },
+      "steelToe": {
+        "frontY": -0.16004,
+        "rearY": -0.05004
+      },
+      "weights": [
+        "foot_r",
+        "ball_r",
+        "calf_r"
+      ]
+    }
+  },
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "sha256": "BCB80C5E109FCDCC834427D9975FD9DA976E2D2B0D13C6BB6467718DDFD4FDE2"
+}

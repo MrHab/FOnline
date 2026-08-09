@@ -440,6 +440,15 @@
         "scrap": 6,
         "electronics": 3
       }
+    },
+    "assaultBoots": {
+      "station": "tool_bench",
+      "workHours": 4,
+      "outputQty": 1,
+      "inputs": {
+        "scrap": 5,
+        "wood": 1
+      }
     }
   }
 }

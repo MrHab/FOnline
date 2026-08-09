@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v17-prewar-helmet';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v18-assault-boots';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([
@@ -100,6 +100,11 @@
       itemId: 'reinforcedBoots',
       slot: 'boots',
       urls: approvedEquipmentBodyUrls('boots', 'equipment_reinforced_boots')
+    }),
+    assaultBoots: Object.freeze({
+      itemId: 'assaultBoots',
+      slot: 'boots',
+      urls: approvedEquipmentBodyUrls('boots', 'equipment_assault_boots')
     }),
     scoutBoots: Object.freeze({
       itemId: 'scoutBoots',

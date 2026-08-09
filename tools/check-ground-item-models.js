@@ -26,7 +26,7 @@ const WEAPON_IDS = [
 const EQUIPMENT_IDS = [
   'leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit',
   'heavyArmor', 'energySuit', 'weldedHelmet', 'helmet', 'tacticalHelmet', 'assaultHelmet', 'preWarHelmet',
-  'boots', 'scoutBoots', 'reinforcedBoots', 'backpack'
+  'boots', 'scoutBoots', 'reinforcedBoots', 'assaultBoots', 'backpack'
 ];
 
 function sha256(data) {

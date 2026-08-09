@@ -22,6 +22,7 @@
         { "id": "repairKit", "price": 20, "qty": 4 },
         { "id": "pickaxe", "price": 18, "qty": 2 },
         { "id": "revolver", "price": 66, "qty": 1 },
+        { "id": "weldedHelmet", "price": 14, "qty": 2 },
         { "id": "axe", "price": 16, "qty": 2 },
         { "id": "handPump", "price": 24, "qty": 1 },
         { "id": "rifle", "price": 80, "qty": 2 },

@@ -25,7 +25,7 @@ const WEAPON_IDS = [
 ];
 const EQUIPMENT_IDS = [
   'leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit',
-  'heavyArmor', 'energySuit', 'helmet', 'tacticalHelmet', 'assaultHelmet',
+  'heavyArmor', 'energySuit', 'weldedHelmet', 'helmet', 'tacticalHelmet', 'assaultHelmet',
   'boots', 'scoutBoots', 'reinforcedBoots', 'backpack'
 ];
 

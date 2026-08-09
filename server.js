@@ -14982,6 +14982,11 @@ function maybeReportEncounterOutcome(room, reason = 'update', actor = null, play
       reason,
       playerInvolved: !!player,
       playerId: player?.characterId || player?.id || '',
+      robberKeys: [...players.values()]
+        .filter(p => p.roomId === room.id && !p.dead && Number(p.hp || 0) > 0 && socketIsLive(p.id))
+        .map(p => worldPartyServerMemberKey(p))
+        .filter(Boolean)
+        .slice(0, 12),
       killedFaction,
       killedFactionGroup,
       killedRole,
@@ -15981,6 +15986,18 @@ function worldTransferId(value = '') {
 
 function worldPartyServerMemberKey(player = {}) {
   return worldPartyMemberIdentityKey(player.userId || '', player.characterId || '', worldTransferId);
+}
+
+// Сколько часов фракция торговца ещё держит обиду на игрока за грабёж каравана.
+function serverCaravanGrievanceHours(actor = {}, player = {}) {
+  try {
+    if (!WASTELAND_SIM || typeof WASTELAND_SIM.caravanGrievanceHours !== 'function') return 0;
+    const key = worldPartyServerMemberKey(player);
+    if (!key) return 0;
+    return Math.ceil(Number(WASTELAND_SIM.caravanGrievanceHours(actor.faction || '', key) || 0));
+  } catch {
+    return 0;
+  }
 }
 
 function worldTransferRecordId(value = '') {
@@ -19312,6 +19329,8 @@ io.on('connection', (socket) => {
     const dist = Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0));
     if (dist > 5.2) return fail('NPC слишком далеко.');
     if (actor.hostileToPlayer !== false || serverNpcIsNaturalCreature(actor, actor)) return fail('С этим NPC нельзя торговать.');
+    const grudgeHours = serverCaravanGrievanceHours(actor, p);
+    if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
 
     const enemy = publicEnemy(actor);
     if (typeof ack === 'function') ack({ ok: true, enemy, market: serverNpcTradeMarket(actor), readOnly: true });
@@ -19328,6 +19347,8 @@ io.on('connection', (socket) => {
     const actor = room.enemies.get(enemyId);
     if (!actor || actor.dead) return fail('NPC недоступен.');
     if (actor.hostileToPlayer !== false || serverNpcIsNaturalCreature(actor, actor)) return fail('С этим NPC нельзя торговать.');
+    const grudgeHours = serverCaravanGrievanceHours(actor, p);
+    if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
     if (Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0)) > 5.2) return fail('NPC слишком далеко.');
     const result = performServerNpcTradeExchange(room, actor, data, p);
     if (!result?.ok) return fail(result?.error || 'Сервер отклонил обмен.', { market: serverNpcTradeMarket(actor), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });

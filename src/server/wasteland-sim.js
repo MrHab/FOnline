@@ -3074,6 +3074,7 @@ function createWastelandSimulation(options = {}) {
   }
 
   function partyIsHostileEncounterParty(party = {}) {
+    if (party.punitive) return true;
     const kind = String(party.kind || '').toLowerCase();
     const group = factionGroup(party.faction || '');
     return ['raider', 'monster', 'hostile'].includes(kind) || ['raiders', 'mutants', 'wild'].includes(group);
@@ -4605,6 +4606,103 @@ function createWastelandSimulation(options = {}) {
   // районной заявки в кассе бывает пять крышек, тогда как казна фракции лежит в
   // столице, куда стекается вся добыча. За ничейную точку платит она сама —
   // больше некому.
+  // ===== Обиды фракций на грабителей караванов =====
+  // Ограбил караван фракции — её торговцы перестают с тобой работать, пока
+  // обида не остынет, а по следу выходит карательный отряд. Обида записывается
+  // на устойчивый ключ персонажа и переживает перезапуск сервера.
+  const CARAVAN_GRIEVANCE_HOURS = 36;
+  const PUNITIVE_PARTY_LIFETIME_HOURS = 30;
+
+  function factionGrievances(faction) {
+    const row = state.factions[factionGroup(faction)] ;
+    if (!row) return null;
+    if (!row.grievances || typeof row.grievances !== 'object') row.grievances = {};
+    return row.grievances;
+  }
+
+  function caravanGrievanceHours(faction, playerKey) {
+    const key = String(playerKey || '').slice(0, 180);
+    if (!key) return 0;
+    const grievances = factionGrievances(faction);
+    const entry = grievances && grievances[key];
+    if (!entry) return 0;
+    const left = Number(entry.until || 0) - Number(state.worldHour || 0);
+    if (left <= 0) { delete grievances[key]; return 0; }
+    return left;
+  }
+
+  function spawnPunitiveParty(faction, siteId, robberNames) {
+    const group = factionGroup(faction);
+    const capital = state.sites[capitalSiteIdForFaction(group)];
+    if (!capital) return null;
+    const now = Number(state.worldHour || 0);
+    const target = state.sites[siteId] || capital;
+    const partyId = safeId(`punitive_${group}_${Math.floor(now * 10)}`, `punitive_${group}_${Date.now()}`);
+    const party = {
+      id: partyId,
+      name: `Каратели: ${factionLabel(group)}`,
+      kind: 'patrol',
+      punitive: true,
+      faction: group,
+      state: 'moving',
+      homeSiteId: capital.id,
+      destinationSiteId: target.id,
+      route: [target.id, capital.id],
+      routeIndex: 0,
+      x: Number(capital.x || 0),
+      y: Number(capital.y || 0),
+      baseSpeedKmh: 21,
+      speedKmh: boostedWorldPartySpeedKmh(21, { kind: 'patrol', faction: group }),
+      speedProfileVersion: WORLD_PARTY_SPEED_PROFILE_VERSION,
+      strength: 78,
+      members: 6,
+      cargo: {},
+      dynamic: true,
+      respawnDisabled: true,
+      expiresHour: now + PUNITIVE_PARTY_LIFETIME_HOURS,
+      createdHour: now
+    };
+    state.parties[partyId] = party;
+    dirty = true;
+    return party;
+  }
+
+  function registerCaravanRobbery(party = {}, context = {}) {
+    const group = factionGroup(party.faction || '');
+    if (!isJoinableWorldFaction(group)) return;
+    const keys = [...new Set([
+      ...(Array.isArray(context.robberKeys) ? context.robberKeys : []),
+      context.playerId ? String(context.playerId) : ''
+    ].filter(Boolean))].slice(0, 12);
+    if (!keys.length) return;
+    const grievances = factionGrievances(group);
+    if (!grievances) return;
+    const until = Number(state.worldHour || 0) + CARAVAN_GRIEVANCE_HOURS;
+    for (const key of keys) {
+      grievances[String(key).slice(0, 180)] = {
+        until: Math.max(Number(grievances[key]?.until || 0), until),
+        partyId: String(party.id || '').slice(0, 64)
+      };
+    }
+    spawnPunitiveParty(group, context.siteId || party.homeSiteId || '', keys);
+    addEvent('caravan_grievance', `${factionLabel(group)}: караван ограблен. Торговцы фракции закрыли прилавки для налётчиков, по следу вышли каратели.`, {
+      faction: group,
+      partyId: party.id,
+      robberCount: keys.length
+    });
+    dirty = true;
+  }
+
+  function expirePunitiveParties() {
+    const now = Number(state.worldHour || 0);
+    for (const [id, party] of Object.entries(state.parties || {})) {
+      if (!party?.punitive) continue;
+      if (Number(party.expiresHour || 0) > now && !party.destroyed && party.state !== 'destroyed') continue;
+      delete state.parties[id];
+      dirty = true;
+    }
+  }
+
   function worldTaskPayerSite(site = null) {
     if (!site) return null;
     const ownerGroup = factionGroup(site.owner || 'neutral');
@@ -9080,6 +9178,7 @@ function createWastelandSimulation(options = {}) {
     consumeSettlementSupplies(hours);
     createSurplusTradeCaravans(hours);
     createFactionProcurementTasks();
+    expirePunitiveParties();
     expireWorldTasks();
   }
 
@@ -9870,6 +9969,7 @@ function createWastelandSimulation(options = {}) {
           ? 'caravan_leader_killed'
           : (playerInvolved ? 'player_encounter_cleared' : 'encounter_cleared');
         destroyWorldParty(explicitParty, destroyReason);
+        if (partyKind === 'caravan' && playerInvolved) registerCaravanRobbery(explicitParty, context);
         if (partyKind === 'caravan') {
           state.stats.caravansLost = Number(state.stats.caravansLost || 0) + 1;
           explicitCaravanLossCounted = true;
@@ -10668,7 +10768,10 @@ function createWastelandSimulation(options = {}) {
       updatedAt: state.updatedAt,
       sampledAt: Math.min(serverNow, Math.max(0, Number(state.lastTickAt || serverNow))),
       serverNow,
-      factions: state.factions,
+      factions: Object.fromEntries(Object.entries(state.factions || {}).map(([id, row]) => {
+        const { grievances, ...visible } = row || {};
+        return [id, visible];
+      })),
       sites: Object.values(state.sites).filter(siteVisibleOnPublicGlobalMap).map(site => {
         const productionNeedReason = resourceSiteSupportReason(site);
         const productionNeed = productionNeedReason ? resourceSiteSupportDemand(site, productionNeedReason) : {};
@@ -10999,6 +11102,7 @@ function createWastelandSimulation(options = {}) {
     beginPartyEncounterZone,
     finishPartyEncounterZone,
     partyEncounterSnapshot,
+    caravanGrievanceHours,
     worldZoneById,
     activeBattleZoneForRoom,
     claimClearedSite,

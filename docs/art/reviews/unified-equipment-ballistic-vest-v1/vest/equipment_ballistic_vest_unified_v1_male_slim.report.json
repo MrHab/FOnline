@@ -72,10 +72,10 @@
       "equipment_ballistic_vest_unified_v1_male_slim_soft_carrier",
       "character_root"
     ],
-    "positionVertices": 8273,
+    "positionVertices": 10145,
     "skins": 1,
     "textures": 15,
-    "triangles": 5204
+    "triangles": 6140
   },
   "assetId": "equipment_ballistic_vest_unified_v1_male_slim",
   "bodyId": "male_slim",
@@ -118,6 +118,6 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "3B83315F90D6AB9FCC9CDB528D9099509B4D034A3A8693BEAD751B2A627C0781",
+  "sha256": "616D6C916C889E88D688E467BE1D3427671A68C0CC2F7B50A62E01150265C3A3",
   "slot": "armor"
 }

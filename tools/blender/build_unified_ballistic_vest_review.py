@@ -163,6 +163,7 @@ def panel_xyz(
 
 
 def build_vest_details(
+    body: bpy.types.Object,
     armature: bpy.types.Object,
     asset_id: str,
     fit: dict[str, object],
@@ -264,6 +265,8 @@ def build_vest_details(
     ]
     builder.prism_xz(repair, front_y - 0.018, 0.008, 4, {"spine_03": 0.62, "spine_02": 0.38})
 
+    BASE.build_trousers(builder, body, armature, 0, 1, 2, style="vest")
+
     mesh = bpy.data.meshes.new(f"{asset_id}_details_mesh")
     mesh.from_pydata(builder.vertices, [], builder.faces)
     mesh.update()
@@ -343,7 +346,7 @@ def main() -> None:
         BASE.pbr_material("ballistic_vest_faded_repair_cloth", (0.235, 0.095, 0.045), 0.93, 0.0, f"{args.body_id}:repair", 0.11),
     )
     carrier, fit = build_carrier_shell(body, armature, args.asset_id)
-    details, detail_report = build_vest_details(armature, args.asset_id, fit)
+    details, detail_report = build_vest_details(body, armature, args.asset_id, fit)
     for obj in (carrier, details):
         for material in materials:
             obj.data.materials.append(material)

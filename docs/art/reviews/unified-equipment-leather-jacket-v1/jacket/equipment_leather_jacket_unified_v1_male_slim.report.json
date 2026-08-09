@@ -72,10 +72,10 @@
       "equipment_leather_jacket_unified_v1_male_slim_shell",
       "character_root"
     ],
-    "positionVertices": 6186,
+    "positionVertices": 7410,
     "skins": 1,
     "textures": 9,
-    "triangles": 5964
+    "triangles": 6552
   },
   "assetId": "equipment_leather_jacket_unified_v1_male_slim",
   "bodyId": "male_slim",
@@ -108,5 +108,5 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "776ABE4475047FFB72F7B983C046B3AB3DE0BEFD44740C1DA37C94820084E886"
+  "sha256": "E715FBAEF734D224473344874C894FC9345D190E9238068FB5A39D38B6BB65E2"
 }

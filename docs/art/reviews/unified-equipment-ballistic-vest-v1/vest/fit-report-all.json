@@ -90,10 +90,10 @@
           "equipment_ballistic_vest_unified_v1_female_slim_soft_carrier",
           "character_root"
         ],
-        "positionVertices": 8409,
+        "positionVertices": 10281,
         "skins": 1,
         "textures": 15,
-        "triangles": 5476
+        "triangles": 6412
       },
       "assetId": "equipment_ballistic_vest_unified_v1_female_slim",
       "bodyId": "female_slim",
@@ -136,7 +136,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "04C31D2ED6BF64FE895A37C2072C5AE3BB2E0312DC3F8E434DD1B14268C413D1",
+      "sha256": "EBD20A125A156ED4CD3A8C6E36AB9C96AE44376E8D51295261D58A0F0F64B67B",
       "slot": "armor"
     },
     {
@@ -213,10 +213,10 @@
           "equipment_ballistic_vest_unified_v1_female_medium_soft_carrier",
           "character_root"
         ],
-        "positionVertices": 8549,
+        "positionVertices": 10421,
         "skins": 1,
         "textures": 15,
-        "triangles": 5504
+        "triangles": 6440
       },
       "assetId": "equipment_ballistic_vest_unified_v1_female_medium",
       "bodyId": "female_medium",
@@ -259,7 +259,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "B1F96A83EBD99E056C0ECA05FA5271524A861AF7F4B5B137F75DB301E55C51D0",
+      "sha256": "8B9BDDE8E09E62FCF9437B55333457D9CA4482C3F32CC47CC1673AE6A2D7CB20",
       "slot": "armor"
     },
     {
@@ -336,10 +336,10 @@
           "equipment_ballistic_vest_unified_v1_female_large_soft_carrier",
           "character_root"
         ],
-        "positionVertices": 8593,
+        "positionVertices": 10465,
         "skins": 1,
         "textures": 15,
-        "triangles": 5552
+        "triangles": 6488
       },
       "assetId": "equipment_ballistic_vest_unified_v1_female_large",
       "bodyId": "female_large",
@@ -382,7 +382,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "4C1F1D5969B109E42941816F706417E7C643B47BCD999A4936140594870F5B1F",
+      "sha256": "18E6AF94336DF52EA45B1A730D0ED99CB9718DB871BAC9E96E2D180FD6F4A9BF",
       "slot": "armor"
     },
     {
@@ -459,10 +459,10 @@
           "equipment_ballistic_vest_unified_v1_male_slim_soft_carrier",
           "character_root"
         ],
-        "positionVertices": 8273,
+        "positionVertices": 10145,
         "skins": 1,
         "textures": 15,
-        "triangles": 5204
+        "triangles": 6140
       },
       "assetId": "equipment_ballistic_vest_unified_v1_male_slim",
       "bodyId": "male_slim",
@@ -505,7 +505,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "3B83315F90D6AB9FCC9CDB528D9099509B4D034A3A8693BEAD751B2A627C0781",
+      "sha256": "616D6C916C889E88D688E467BE1D3427671A68C0CC2F7B50A62E01150265C3A3",
       "slot": "armor"
     },
     {
@@ -582,10 +582,10 @@
           "equipment_ballistic_vest_unified_v1_male_medium_soft_carrier",
           "character_root"
         ],
-        "positionVertices": 8112,
+        "positionVertices": 9984,
         "skins": 1,
         "textures": 15,
-        "triangles": 5204
+        "triangles": 6140
       },
       "assetId": "equipment_ballistic_vest_unified_v1_male_medium",
       "bodyId": "male_medium",
@@ -628,7 +628,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "B942268B12A5BCC751A1E5AD08C787D52910ACBE0CECC461F044AF825439DD50",
+      "sha256": "D3C60C86C409E2C5A3042E616801CEC6DFE5885F9C18168FD461AA306B6BBEE1",
       "slot": "armor"
     },
     {
@@ -705,10 +705,10 @@
           "equipment_ballistic_vest_unified_v1_male_large_soft_carrier",
           "character_root"
         ],
-        "positionVertices": 8232,
+        "positionVertices": 10104,
         "skins": 1,
         "textures": 15,
-        "triangles": 5220
+        "triangles": 6156
       },
       "assetId": "equipment_ballistic_vest_unified_v1_male_large",
       "bodyId": "male_large",
@@ -751,7 +751,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "4217139ADBA1D7F10EB814FE3BF4F7746736D909A9274922825095195D9108A5",
+      "sha256": "6363B447F32B763B317C6F1CC5EB7CC62C5232E040E1382B1668B983A260B73F",
       "slot": "armor"
     }
   ]

@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v14-hazmat-hood';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v15-armor-trousers';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([

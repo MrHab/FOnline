@@ -72,10 +72,10 @@
       "equipment_metal_armor_unified_v1_female_large_plates",
       "character_root"
     ],
-    "positionVertices": 10918,
+    "positionVertices": 11927,
     "skins": 1,
     "textures": 12,
-    "triangles": 8124
+    "triangles": 9112
   },
   "assetId": "equipment_metal_armor_unified_v1_female_large",
   "bodyId": "female_large",
@@ -94,8 +94,8 @@
   "fit": {
     "frontOpeningThresholdY": -0.01593,
     "lowerHemZ": 1.07074,
-    "shellPolygons": 4986,
-    "shellVertices": 2572,
+    "shellPolygons": 5312,
+    "shellVertices": 2706,
     "sleeveLimitX": 0.58734,
     "torsoBounds": {
       "maximum": [
@@ -109,7 +109,7 @@
         0.87074
       ]
     },
-    "upperLimitZ": 1.44363
+    "upperLimitZ": 1.48363
   },
   "itemId": "metalArmor",
   "provenance": {
@@ -120,6 +120,6 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "ED18A0EC9AA8FC662D92B420205BE433348F3B5ECA904726B4291FA110A12B84",
+  "sha256": "9E4255868650B31AA67BCEFC106355D68BE0E9B15DE208524CE9B519BA1984B1",
   "slot": "armor"
 }

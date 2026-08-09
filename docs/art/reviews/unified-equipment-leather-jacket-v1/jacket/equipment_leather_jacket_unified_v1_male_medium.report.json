@@ -72,10 +72,10 @@
       "equipment_leather_jacket_unified_v1_male_medium_shell",
       "character_root"
     ],
-    "positionVertices": 6824,
+    "positionVertices": 8048,
     "skins": 1,
     "textures": 9,
-    "triangles": 5924
+    "triangles": 6512
   },
   "assetId": "equipment_leather_jacket_unified_v1_male_medium",
   "bodyId": "male_medium",
@@ -108,5 +108,5 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "F5BFCD874A3DDF3E4414F05E75974E36885E9497B390A750282622D9E35AF363"
+  "sha256": "ECE54B6F22E5E1439B0AA17CEE71A9E373D9E3D922A3605866C02DD15F3EB506"
 }

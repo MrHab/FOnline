@@ -70,7 +70,7 @@ const reports = BODY_IDS.map(bodyId => {
   for (const token of ['soft_carrier', 'plates_webbin']) {
     assert(nodeNames.some(name => name.includes(token)), `${bodyId} is missing ${token}`);
   }
-  assert(report.actualGlb.triangles >= 5_000 && report.actualGlb.triangles <= 5_800,
+  assert(report.actualGlb.triangles >= 5_800 && report.actualGlb.triangles <= 6_900,
     `${bodyId} triangle count is outside the reviewed range`);
   assert(report.fit.shellPolygons >= 2_000, `${bodyId} carrier coverage is incomplete`);
   assert.strictEqual(report.details.pouchCount, 3, `${bodyId} magazine pouch row changed`);

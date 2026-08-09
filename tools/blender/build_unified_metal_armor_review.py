@@ -234,6 +234,8 @@ def build_armour_details(
     for x in (-half_width * 0.68, 0.0, half_width * 0.68):
         builder.octahedron((x, back_y + 0.027, chest_bottom + 0.055), 0.009, 2, {"spine_02": 0.75, "spine_03": 0.25})
 
+    BASE.build_trousers(builder, body, armature, 0, 1, 2, style="metal")
+
     mesh = bpy.data.meshes.new(f"{asset_id}_plates_mesh")
     mesh.from_pydata(builder.vertices, [], builder.faces)
     mesh.update()

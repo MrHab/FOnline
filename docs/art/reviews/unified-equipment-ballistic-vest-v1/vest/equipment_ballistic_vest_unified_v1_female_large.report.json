@@ -72,10 +72,10 @@
       "equipment_ballistic_vest_unified_v1_female_large_soft_carrier",
       "character_root"
     ],
-    "positionVertices": 8593,
+    "positionVertices": 10465,
     "skins": 1,
     "textures": 15,
-    "triangles": 5552
+    "triangles": 6488
   },
   "assetId": "equipment_ballistic_vest_unified_v1_female_large",
   "bodyId": "female_large",
@@ -118,6 +118,6 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "4C1F1D5969B109E42941816F706417E7C643B47BCD999A4936140594870F5B1F",
+  "sha256": "18E6AF94336DF52EA45B1A730D0ED99CB9718DB871BAC9E96E2D180FD6F4A9BF",
   "slot": "armor"
 }

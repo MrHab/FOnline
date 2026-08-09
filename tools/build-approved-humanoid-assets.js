@@ -26,7 +26,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_leather_jacket_unified_v1',
     runtimePrefix: 'equipment_leather_jacket',
     meshCount: 2,
-    fitReportSha256: 'BFF4F9D493A61D0B93B3996E3EC307477D9CB6224C23BA2B68DCAC5EDB117BCF'
+    fitReportSha256: '9E2C59B485B53A577BCC9FD960F45AE7741C2669756FFF4B9DAC5119FDD72CF1'
   },
   {
     itemId: 'metalArmor',
@@ -35,7 +35,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_metal_armor_unified_v1',
     runtimePrefix: 'equipment_metal_armor',
     meshCount: 2,
-    fitReportSha256: '6C759B4C873E54BA224B00A8C5D597AF6806881AE79152D510C5881BF8839E2A'
+    fitReportSha256: '94C90C9AAE2B7451CECB99A42AAB24299D49CC2B4DE274D222FD2B928C47583A'
   },
   {
     itemId: 'ballisticVest',
@@ -44,7 +44,7 @@ const APPROVED_EQUIPMENT_REVIEWS = Object.freeze([
     sourcePrefix: 'equipment_ballistic_vest_unified_v1',
     runtimePrefix: 'equipment_ballistic_vest',
     meshCount: 2,
-    fitReportSha256: 'B86FBEB87974F9AF7EF313A1E413401B9F7B7930DBAC0F67839F917213983ADC'
+    fitReportSha256: '5F49980FA0B260A8A75F6C4191131000D534E56BB9387C471565843C4A1F3FFE'
   },
   {
     itemId: 'combatArmor',

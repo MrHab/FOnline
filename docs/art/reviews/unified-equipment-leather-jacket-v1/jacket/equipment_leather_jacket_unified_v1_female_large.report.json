@@ -72,10 +72,10 @@
       "equipment_leather_jacket_unified_v1_female_large_shell",
       "character_root"
     ],
-    "positionVertices": 6321,
+    "positionVertices": 7545,
     "skins": 1,
     "textures": 9,
-    "triangles": 6340
+    "triangles": 6928
   },
   "assetId": "equipment_leather_jacket_unified_v1_female_large",
   "bodyId": "female_large",
@@ -108,5 +108,5 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "E8B30C35BAE4839575BA94F78CE6102655BC14807911CCEA7AAE179DE6DCF270"
+  "sha256": "5ACB7598148258B50A3B284B6ED9D223A9BD34C22642622A5A160E6691CEA9C1"
 }

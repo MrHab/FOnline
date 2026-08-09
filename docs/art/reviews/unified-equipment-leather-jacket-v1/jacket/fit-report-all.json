@@ -87,10 +87,10 @@
           "equipment_leather_jacket_unified_v1_female_slim_shell",
           "character_root"
         ],
-        "positionVertices": 6410,
+        "positionVertices": 7634,
         "skins": 1,
         "textures": 9,
-        "triangles": 6116
+        "triangles": 6704
       },
       "assetId": "equipment_leather_jacket_unified_v1_female_slim",
       "bodyId": "female_slim",
@@ -123,7 +123,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "E48097596AD6C35F72FEBF0BBD4FB68154F78E599698198AA499267B1AB68066"
+      "sha256": "D7DAF3221C1FD0F934A8C2CC309C09A140D719444825D06E3B681FAC3B346E73"
     },
     {
       "actualGlb": {
@@ -199,10 +199,10 @@
           "equipment_leather_jacket_unified_v1_female_medium_shell",
           "character_root"
         ],
-        "positionVertices": 6740,
+        "positionVertices": 7964,
         "skins": 1,
         "textures": 9,
-        "triangles": 6200
+        "triangles": 6788
       },
       "assetId": "equipment_leather_jacket_unified_v1_female_medium",
       "bodyId": "female_medium",
@@ -235,7 +235,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "5FA5C6B3ED92141D37993C8C32258051F5E74306103826000B578FD88960A272"
+      "sha256": "F43552AACDB8B25951A8BD8F3CBFA5C7C50D32F2E59F12F756E519169DCC98A1"
     },
     {
       "actualGlb": {
@@ -311,10 +311,10 @@
           "equipment_leather_jacket_unified_v1_female_large_shell",
           "character_root"
         ],
-        "positionVertices": 6321,
+        "positionVertices": 7545,
         "skins": 1,
         "textures": 9,
-        "triangles": 6340
+        "triangles": 6928
       },
       "assetId": "equipment_leather_jacket_unified_v1_female_large",
       "bodyId": "female_large",
@@ -347,7 +347,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "E8B30C35BAE4839575BA94F78CE6102655BC14807911CCEA7AAE179DE6DCF270"
+      "sha256": "5ACB7598148258B50A3B284B6ED9D223A9BD34C22642622A5A160E6691CEA9C1"
     },
     {
       "actualGlb": {
@@ -423,10 +423,10 @@
           "equipment_leather_jacket_unified_v1_male_slim_shell",
           "character_root"
         ],
-        "positionVertices": 6186,
+        "positionVertices": 7410,
         "skins": 1,
         "textures": 9,
-        "triangles": 5964
+        "triangles": 6552
       },
       "assetId": "equipment_leather_jacket_unified_v1_male_slim",
       "bodyId": "male_slim",
@@ -459,7 +459,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "776ABE4475047FFB72F7B983C046B3AB3DE0BEFD44740C1DA37C94820084E886"
+      "sha256": "E715FBAEF734D224473344874C894FC9345D190E9238068FB5A39D38B6BB65E2"
     },
     {
       "actualGlb": {
@@ -535,10 +535,10 @@
           "equipment_leather_jacket_unified_v1_male_medium_shell",
           "character_root"
         ],
-        "positionVertices": 6824,
+        "positionVertices": 8048,
         "skins": 1,
         "textures": 9,
-        "triangles": 5924
+        "triangles": 6512
       },
       "assetId": "equipment_leather_jacket_unified_v1_male_medium",
       "bodyId": "male_medium",
@@ -571,7 +571,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "F5BFCD874A3DDF3E4414F05E75974E36885E9497B390A750282622D9E35AF363"
+      "sha256": "ECE54B6F22E5E1439B0AA17CEE71A9E373D9E3D922A3605866C02DD15F3EB506"
     },
     {
       "actualGlb": {
@@ -647,10 +647,10 @@
           "equipment_leather_jacket_unified_v1_male_large_shell",
           "character_root"
         ],
-        "positionVertices": 7126,
+        "positionVertices": 8350,
         "skins": 1,
         "textures": 9,
-        "triangles": 5940
+        "triangles": 6528
       },
       "assetId": "equipment_leather_jacket_unified_v1_male_large",
       "bodyId": "male_large",
@@ -683,7 +683,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "686CA53B0DF0FD5EC005040BF713D673C26B73BC1C659A4DB3C4BB0C95340C48"
+      "sha256": "4390D7273CBE6A13E085FFC15E136023CECC5EF58B5DAFF8A861915A2C08410F"
     }
   ]
 }

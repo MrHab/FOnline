@@ -72,10 +72,10 @@
       "equipment_metal_armor_unified_v1_male_slim_plates",
       "character_root"
     ],
-    "positionVertices": 10575,
+    "positionVertices": 11790,
     "skins": 1,
     "textures": 12,
-    "triangles": 7744
+    "triangles": 8736
   },
   "assetId": "equipment_metal_armor_unified_v1_male_slim",
   "bodyId": "male_slim",
@@ -94,8 +94,8 @@
   "fit": {
     "frontOpeningThresholdY": -0.00022,
     "lowerHemZ": 1.09245,
-    "shellPolygons": 4624,
-    "shellVertices": 2392,
+    "shellPolygons": 4902,
+    "shellVertices": 2512,
     "sleeveLimitX": 0.65116,
     "torsoBounds": {
       "maximum": [
@@ -109,7 +109,7 @@
         0.89245
       ]
     },
-    "upperLimitZ": 1.48785
+    "upperLimitZ": 1.52785
   },
   "itemId": "metalArmor",
   "provenance": {
@@ -120,6 +120,6 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "DBA77CA4C64C1DE1235397E64E1DA8C35E09EA6D35ABD4773BCEF0BF2FC6D371",
+  "sha256": "1652F03683DFEB9750E0048CA98281F3B176B284057AB4146F010E15F60ABE31",
   "slot": "armor"
 }

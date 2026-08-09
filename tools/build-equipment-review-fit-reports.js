@@ -27,6 +27,16 @@ const FAMILIES = [
     prefix: 'equipment_hazmat_suit_unified_v1'
   },
   {
+    name: 'metalArmor',
+    directory: ['docs', 'art', 'reviews', 'unified-equipment-metal-armor-v1', 'armor'],
+    prefix: 'equipment_metal_armor_unified_v1'
+  },
+  {
+    name: 'ballisticVest',
+    directory: ['docs', 'art', 'reviews', 'unified-equipment-ballistic-vest-v1', 'vest'],
+    prefix: 'equipment_ballistic_vest_unified_v1'
+  },
+  {
     name: 'energySuit',
     directory: ['docs', 'art', 'reviews', 'unified-equipment-energy-suit-v1', 'suit'],
     prefix: 'equipment_energy_suit_unified_v1'

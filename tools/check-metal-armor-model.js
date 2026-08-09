@@ -69,7 +69,7 @@ const reports = BODY_IDS.map(bodyId => {
   for (const token of ['padded_liner', 'plates']) {
     assert(nodeNames.some(name => name.includes(token)), `${bodyId} is missing ${token}`);
   }
-  assert(report.actualGlb.triangles >= 7_500 && report.actualGlb.triangles <= 8_500,
+  assert(report.actualGlb.triangles >= 8_400 && report.actualGlb.triangles <= 9_600,
     `${bodyId} triangle count is outside the reviewed range`);
   assert(report.fit.shellPolygons >= 4_500, `${bodyId} padded liner coverage is incomplete`);
   assert.strictEqual(report.details.abdominalLames, 3, `${bodyId} abdominal articulation changed`);

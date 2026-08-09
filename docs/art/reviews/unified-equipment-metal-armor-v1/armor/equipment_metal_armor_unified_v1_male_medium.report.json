@@ -72,10 +72,10 @@
       "equipment_metal_armor_unified_v1_male_medium_plates",
       "character_root"
     ],
-    "positionVertices": 10676,
+    "positionVertices": 12496,
     "skins": 1,
     "textures": 12,
-    "triangles": 7760
+    "triangles": 8728
   },
   "assetId": "equipment_metal_armor_unified_v1_male_medium",
   "bodyId": "male_medium",
@@ -94,8 +94,8 @@
   "fit": {
     "frontOpeningThresholdY": -0.00116,
     "lowerHemZ": 1.09362,
-    "shellPolygons": 4634,
-    "shellVertices": 2394,
+    "shellPolygons": 4890,
+    "shellVertices": 2504,
     "sleeveLimitX": 0.65114,
     "torsoBounds": {
       "maximum": [
@@ -109,7 +109,7 @@
         0.89362
       ]
     },
-    "upperLimitZ": 1.4883
+    "upperLimitZ": 1.5283
   },
   "itemId": "metalArmor",
   "provenance": {
@@ -120,6 +120,6 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "8D1557B9C8A6D0CBE94FF045EA48C4DAEF94315817E2CDD3FAFF8778ACE36E55",
+  "sha256": "5BF8FAFDE829C92F0F0291A54DF6755F2BA08171D20A7BC9A8A19091279A7559",
   "slot": "armor"
 }

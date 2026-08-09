@@ -90,10 +90,10 @@
           "equipment_metal_armor_unified_v1_female_slim_plates",
           "character_root"
         ],
-        "positionVertices": 10491,
+        "positionVertices": 12162,
         "skins": 1,
         "textures": 12,
-        "triangles": 7856
+        "triangles": 8960
       },
       "assetId": "equipment_metal_armor_unified_v1_female_slim",
       "bodyId": "female_slim",
@@ -112,8 +112,8 @@
       "fit": {
         "frontOpeningThresholdY": -0.00756,
         "lowerHemZ": 1.071,
-        "shellPolygons": 4765,
-        "shellVertices": 2462,
+        "shellPolygons": 5150,
+        "shellVertices": 2624,
         "sleeveLimitX": 0.58716,
         "torsoBounds": {
           "maximum": [
@@ -127,7 +127,7 @@
             0.871
           ]
         },
-        "upperLimitZ": 1.44195
+        "upperLimitZ": 1.48195
       },
       "itemId": "metalArmor",
       "provenance": {
@@ -138,7 +138,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "9599A8BEC2C877432F43263FDC371A81BF1D5427C934DF374A89015470B870D2",
+      "sha256": "0B8D5A49DB4CB982A3B3721BA7030CA9CD7E40C09F54790320E92D1F9E4D592B",
       "slot": "armor"
     },
     {
@@ -215,10 +215,10 @@
           "equipment_metal_armor_unified_v1_female_medium_plates",
           "character_root"
         ],
-        "positionVertices": 11010,
+        "positionVertices": 12458,
         "skins": 1,
         "textures": 12,
-        "triangles": 7968
+        "triangles": 9028
       },
       "assetId": "equipment_metal_armor_unified_v1_female_medium",
       "bodyId": "female_medium",
@@ -237,8 +237,8 @@
       "fit": {
         "frontOpeningThresholdY": -0.01007,
         "lowerHemZ": 1.07088,
-        "shellPolygons": 4865,
-        "shellVertices": 2510,
+        "shellPolygons": 5230,
+        "shellVertices": 2664,
         "sleeveLimitX": 0.58622,
         "torsoBounds": {
           "maximum": [
@@ -252,7 +252,7 @@
             0.87088
           ]
         },
-        "upperLimitZ": 1.44275
+        "upperLimitZ": 1.48275
       },
       "itemId": "metalArmor",
       "provenance": {
@@ -263,7 +263,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "68CD83135FD5D15E896C22CBB22BC623A498B9BC23989408178C373764265A12",
+      "sha256": "F065526967915E474EB36118F9B9F6950EF487157CCA5DED067CDD9C2C7A0670",
       "slot": "armor"
     },
     {
@@ -340,10 +340,10 @@
           "equipment_metal_armor_unified_v1_female_large_plates",
           "character_root"
         ],
-        "positionVertices": 10918,
+        "positionVertices": 11927,
         "skins": 1,
         "textures": 12,
-        "triangles": 8124
+        "triangles": 9112
       },
       "assetId": "equipment_metal_armor_unified_v1_female_large",
       "bodyId": "female_large",
@@ -362,8 +362,8 @@
       "fit": {
         "frontOpeningThresholdY": -0.01593,
         "lowerHemZ": 1.07074,
-        "shellPolygons": 4986,
-        "shellVertices": 2572,
+        "shellPolygons": 5312,
+        "shellVertices": 2706,
         "sleeveLimitX": 0.58734,
         "torsoBounds": {
           "maximum": [
@@ -377,7 +377,7 @@
             0.87074
           ]
         },
-        "upperLimitZ": 1.44363
+        "upperLimitZ": 1.48363
       },
       "itemId": "metalArmor",
       "provenance": {
@@ -388,7 +388,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "ED18A0EC9AA8FC662D92B420205BE433348F3B5ECA904726B4291FA110A12B84",
+      "sha256": "9E4255868650B31AA67BCEFC106355D68BE0E9B15DE208524CE9B519BA1984B1",
       "slot": "armor"
     },
     {
@@ -465,10 +465,10 @@
           "equipment_metal_armor_unified_v1_male_slim_plates",
           "character_root"
         ],
-        "positionVertices": 10575,
+        "positionVertices": 11790,
         "skins": 1,
         "textures": 12,
-        "triangles": 7744
+        "triangles": 8736
       },
       "assetId": "equipment_metal_armor_unified_v1_male_slim",
       "bodyId": "male_slim",
@@ -487,8 +487,8 @@
       "fit": {
         "frontOpeningThresholdY": -0.00022,
         "lowerHemZ": 1.09245,
-        "shellPolygons": 4624,
-        "shellVertices": 2392,
+        "shellPolygons": 4902,
+        "shellVertices": 2512,
         "sleeveLimitX": 0.65116,
         "torsoBounds": {
           "maximum": [
@@ -502,7 +502,7 @@
             0.89245
           ]
         },
-        "upperLimitZ": 1.48785
+        "upperLimitZ": 1.52785
       },
       "itemId": "metalArmor",
       "provenance": {
@@ -513,7 +513,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "DBA77CA4C64C1DE1235397E64E1DA8C35E09EA6D35ABD4773BCEF0BF2FC6D371",
+      "sha256": "1652F03683DFEB9750E0048CA98281F3B176B284057AB4146F010E15F60ABE31",
       "slot": "armor"
     },
     {
@@ -590,10 +590,10 @@
           "equipment_metal_armor_unified_v1_male_medium_plates",
           "character_root"
         ],
-        "positionVertices": 10676,
+        "positionVertices": 12496,
         "skins": 1,
         "textures": 12,
-        "triangles": 7760
+        "triangles": 8728
       },
       "assetId": "equipment_metal_armor_unified_v1_male_medium",
       "bodyId": "male_medium",
@@ -612,8 +612,8 @@
       "fit": {
         "frontOpeningThresholdY": -0.00116,
         "lowerHemZ": 1.09362,
-        "shellPolygons": 4634,
-        "shellVertices": 2394,
+        "shellPolygons": 4890,
+        "shellVertices": 2504,
         "sleeveLimitX": 0.65114,
         "torsoBounds": {
           "maximum": [
@@ -627,7 +627,7 @@
             0.89362
           ]
         },
-        "upperLimitZ": 1.4883
+        "upperLimitZ": 1.5283
       },
       "itemId": "metalArmor",
       "provenance": {
@@ -638,7 +638,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "8D1557B9C8A6D0CBE94FF045EA48C4DAEF94315817E2CDD3FAFF8778ACE36E55",
+      "sha256": "5BF8FAFDE829C92F0F0291A54DF6755F2BA08171D20A7BC9A8A19091279A7559",
       "slot": "armor"
     },
     {
@@ -715,10 +715,10 @@
           "equipment_metal_armor_unified_v1_male_large_plates",
           "character_root"
         ],
-        "positionVertices": 10571,
+        "positionVertices": 12794,
         "skins": 1,
         "textures": 12,
-        "triangles": 7800
+        "triangles": 8744
       },
       "assetId": "equipment_metal_armor_unified_v1_male_large",
       "bodyId": "male_large",
@@ -737,8 +737,8 @@
       "fit": {
         "frontOpeningThresholdY": -0.00482,
         "lowerHemZ": 1.09324,
-        "shellPolygons": 4672,
-        "shellVertices": 2414,
+        "shellPolygons": 4910,
+        "shellVertices": 2512,
         "sleeveLimitX": 0.65113,
         "torsoBounds": {
           "maximum": [
@@ -752,7 +752,7 @@
             0.89324
           ]
         },
-        "upperLimitZ": 1.48935
+        "upperLimitZ": 1.52935
       },
       "itemId": "metalArmor",
       "provenance": {
@@ -763,7 +763,7 @@
       },
       "reviewOnly": true,
       "runtimeIntegrationAllowed": false,
-      "sha256": "B45D27C0CEBA0A161666A6B39443A016F3721B4F6506879B7A71D6E0EE16CDDE",
+      "sha256": "8B81924959DD2151BD3AB44D99449372C591130198880BBECD8B6BBD4CAC36D2",
       "slot": "armor"
     }
   ]

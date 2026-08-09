@@ -256,6 +256,119 @@ def tailored_torso_position(
     return result
 
 
+def build_trousers(
+    builder,
+    body: bpy.types.Object,
+    armature: bpy.types.Object,
+    cloth_material: int,
+    knee_material: int,
+    accent_material: int,
+    style: str = "leather",
+) -> dict[str, object]:
+    """Штаны, снятые с мерок тела: пояс, юбка таза и трубы бёдер и голеней.
+
+    Броня корпуса не должна оставлять ноги голыми, и у каждой брони штаны
+    свои: кожанка получает тёмные наколенники и заклёпки по внешнему шву,
+    металл — наваренный лист на колене, бронежилет — накладной карман на
+    бедре. Каждая полоса взвешена на кости бедра и голени, поэтому штанина
+    сгибается в колене вместе с телом на всех шести телосложениях.
+    """
+    pelvis_points = group_points(body, armature, {"pelvis", "thigh_l", "thigh_r"})
+    upper = [point for point in pelvis_points if 0.88 <= point.z <= 1.06]
+    pelvis_minimum, pelvis_maximum = bounds(upper or pelvis_points)
+    pelvis_center = (
+        (pelvis_minimum.x + pelvis_maximum.x) * 0.5,
+        (pelvis_minimum.y + pelvis_maximum.y) * 0.5,
+    )
+    pelvis_radii = (
+        (pelvis_maximum.x - pelvis_minimum.x) * 0.5 + 0.024,
+        (pelvis_maximum.y - pelvis_minimum.y) * 0.5 + 0.024,
+    )
+    # Пояс с ремнём и юбка таза до развилки ног.
+    builder.ellipse_band_z(pelvis_center, pelvis_radii, 0.985, 1.030, cloth_material, {"pelvis": 1.0}, 20)
+    builder.ellipse_band_z(
+        pelvis_center,
+        (pelvis_radii[0] + 0.007, pelvis_radii[1] + 0.007),
+        1.010, 1.032,
+        accent_material,
+        {"pelvis": 1.0},
+        20,
+    )
+    builder.ellipse_band_z(
+        pelvis_center, pelvis_radii, 0.900, 0.988, cloth_material,
+        {"pelvis": 0.72, "thigh_l": 0.14, "thigh_r": 0.14}, 20,
+    )
+
+    bands = 3
+    for side in ("l", "r"):
+        leg_points = group_points(body, armature, {f"thigh_{side}", f"calf_{side}"})
+
+        def slice_band(z0, z1, material, weights, clearance=0.020, segments=16):
+            points = [point for point in leg_points if z0 - 0.02 <= point.z <= z1 + 0.02]
+            if not points:
+                return None
+            slice_minimum, slice_maximum = bounds(points)
+            center = (
+                (slice_minimum.x + slice_maximum.x) * 0.5,
+                (slice_minimum.y + slice_maximum.y) * 0.5,
+            )
+            radii = (
+                (slice_maximum.x - slice_minimum.x) * 0.5 + clearance,
+                (slice_maximum.y - slice_minimum.y) * 0.5 + clearance,
+            )
+            builder.ellipse_band_z(center, radii, z0, z1, material, weights, segments)
+            return center, radii
+
+        # Бедро тремя сегментами, чтобы труба следовала сужению ноги.
+        for z0, z1 in ((0.800, 0.905), (0.680, 0.800), (0.565, 0.680)):
+            slice_band(z0, z1, cloth_material, {f"thigh_{side}": 1.0})
+        knee = slice_band(0.500, 0.565, cloth_material, {f"thigh_{side}": 0.55, f"calf_{side}": 0.45})
+        slice_band(0.360, 0.500, cloth_material, {f"thigh_{side}": 0.18, f"calf_{side}": 0.82})
+        slice_band(0.240, 0.360, cloth_material, {f"calf_{side}": 1.0}, clearance=0.018)
+
+        if knee is None:
+            continue
+        knee_center, knee_radii = knee
+        knee_weights = {f"thigh_{side}": 0.55, f"calf_{side}": 0.45}
+        if style == "metal":
+            # Наваренный лист на колене и заклёпка по центру.
+            builder.ellipse_arc_band_z(
+                (knee_center[0], knee_center[1] - 0.004),
+                (knee_radii[0] + 0.012, knee_radii[1] + 0.012),
+                0.505, 0.585, -2.35, -0.79,
+                knee_material, knee_weights, 10,
+            )
+            builder.octahedron(
+                (knee_center[0], knee_center[1] - knee_radii[1] - 0.016, 0.548),
+                0.0095, accent_material, knee_weights,
+            )
+        elif style == "vest":
+            # Накладной карман на бедре с клапаном из стропы.
+            builder.box(
+                (knee_center[0], knee_center[1] - knee_radii[1] - 0.014, 0.740),
+                (0.088, 0.022, 0.108), knee_material, {f"thigh_{side}": 1.0},
+            )
+            builder.box(
+                (knee_center[0], knee_center[1] - knee_radii[1] - 0.023, 0.778),
+                (0.092, 0.011, 0.028), accent_material, {f"thigh_{side}": 1.0},
+            )
+        else:
+            # Кожанка: тёмная накладка на колене и заклёпки по внешнему шву.
+            builder.ellipse_arc_band_z(
+                (knee_center[0], knee_center[1]),
+                (knee_radii[0] + 0.009, knee_radii[1] + 0.009),
+                0.510, 0.578, -2.30, -0.85,
+                knee_material, knee_weights, 9,
+            )
+            seam_x = knee_center[0] + (knee_radii[0] if side == "l" else -knee_radii[0])
+            for z in (0.620, 0.720, 0.820):
+                builder.octahedron(
+                    (seam_x, knee_center[1], z), 0.0078,
+                    accent_material, {f"thigh_{side}": 1.0},
+                )
+    return {"trouserBandsPerLeg": bands + 3, "trouserStyle": style}
+
+
 def build_shell(
     body: bpy.types.Object,
     armature: bpy.types.Object,
@@ -716,6 +829,8 @@ def build_details(
         builder.octahedron((tab_x, front_y - 0.006, min(upper_limit - 0.030, 1.505)), 0.007, 3, {f"clavicle_{side}": 0.72, f"upperarm_{side}": 0.28})
     for direction in (-1.0, 1.0):
         builder.octahedron((direction * lapel_outer * 0.78, front_y - 0.026, lapel_point + 0.105), 0.009, 3, {"spine_03": 1.0})
+
+    build_trousers(builder, body, armature, 0, 1, 3, style="leather")
 
     mesh = bpy.data.meshes.new(f"{asset_id}_details_mesh")
     mesh.from_pydata(builder.vertices, [], builder.faces)

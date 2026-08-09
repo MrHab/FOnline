@@ -72,10 +72,10 @@
       "equipment_leather_jacket_unified_v1_female_slim_shell",
       "character_root"
     ],
-    "positionVertices": 6410,
+    "positionVertices": 7634,
     "skins": 1,
     "textures": 9,
-    "triangles": 6116
+    "triangles": 6704
   },
   "assetId": "equipment_leather_jacket_unified_v1_female_slim",
   "bodyId": "female_slim",
@@ -108,5 +108,5 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "E48097596AD6C35F72FEBF0BBD4FB68154F78E599698198AA499267B1AB68066"
+  "sha256": "D7DAF3221C1FD0F934A8C2CC309C09A140D719444825D06E3B681FAC3B346E73"
 }

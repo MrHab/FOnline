@@ -72,10 +72,10 @@
       "equipment_ballistic_vest_unified_v1_male_large_soft_carrier",
       "character_root"
     ],
-    "positionVertices": 8232,
+    "positionVertices": 10104,
     "skins": 1,
     "textures": 15,
-    "triangles": 5220
+    "triangles": 6156
   },
   "assetId": "equipment_ballistic_vest_unified_v1_male_large",
   "bodyId": "male_large",
@@ -118,6 +118,6 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "4217139ADBA1D7F10EB814FE3BF4F7746736D909A9274922825095195D9108A5",
+  "sha256": "6363B447F32B763B317C6F1CC5EB7CC62C5232E040E1382B1668B983A260B73F",
   "slot": "armor"
 }

@@ -1,0 +1,1354 @@
+{
+  "schema": "realm.equipment-assault-helmet-review.v1",
+  "assetFamily": "equipment_assault_helmet_unified_v1",
+  "itemId": "preWarHelmet",
+  "itemNameRu": "Довоенный боевой шлем",
+  "artDirection": "геометрия B, материалы и износ C",
+  "bodyIds": [
+    "female_slim",
+    "female_medium",
+    "female_large",
+    "male_slim",
+    "male_medium",
+    "male_large"
+  ],
+  "variantCount": 6,
+  "reviewOnly": true,
+  "runtimeIntegrationAllowed": false,
+  "variants": [
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 6,
+        "meshDefinitions": 2,
+        "positionVertices": 2905,
+        "skins": 1,
+        "textures": 15,
+        "triangles": 1952
+      },
+      "assetId": "equipment_prewar_helmet_unified_v1_female_slim",
+      "bodyId": "female_slim",
+      "design": {
+        "features": [
+          "утолщённая композитная чаша",
+          "секционная надбровная плита",
+          "ламинированный янтарный визор",
+          "парные скуловые баллистические панели",
+          "негромоздкие ушные модули",
+          "затылочная противоосколочная секция",
+          "открытая центральная часть рта"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "file": "equipment_prewar_helmet_unified_v1_female_slim.glb",
+      "fit": {
+        "armoredVisorBottomAboveHeadMinimum": 0.083,
+        "baseClearance": {
+          "back": 0.035,
+          "crown": 0.029,
+          "front": 0.03,
+          "side": 0.033
+        },
+        "bodyId": "female_slim",
+        "faceProfiles": {
+          "female_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "female_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "female_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "female_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          },
+          "male_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "male_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "male_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "male_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          }
+        },
+        "hairPolicy": "runtime_hides_hair_when_any_helmet_is_equipped",
+        "headBounds": {
+          "maximum": [
+            0.088878,
+            0.112899,
+            1.766644
+          ],
+          "minimum": [
+            -0.088878,
+            -0.111906,
+            1.53809
+          ]
+        },
+        "headVertexCount": 6115,
+        "helmetDimensions": {
+          "backRadius": 0.147403,
+          "centerX": 0,
+          "centerY": 0.000497,
+          "frontRadius": 0.142403,
+          "radiusX": 0.121878,
+          "rimZ": 1.629644,
+          "shellThickness": 0.007,
+          "topZ": 1.795644
+        },
+        "highCutEarClearance": 0.038,
+        "result": "pass"
+      },
+      "itemId": "preWarHelmet",
+      "itemNameRu": "Штурмовой шлем",
+      "materials": [
+        "prewar_helmet_preserved_olive_enamel",
+        "prewar_helmet_ivory_marking",
+        "prewar_helmet_black_polymer",
+        "prewar_helmet_olive_webbing",
+        "prewar_helmet_bright_hardware",
+        "prewar_helmet_laminated_amber_visor"
+      ],
+      "metrics": {
+        "cheekPanelCount": 2,
+        "detailPolygons": 229,
+        "detailVertices": 316,
+        "earPodCount": 2,
+        "headBoneWeight": 1,
+        "mouthOpeningPreserved": true,
+        "polygonCount": 790,
+        "railPointCount": 6,
+        "vertexCount": 962,
+        "visorBottom": 1.62109,
+        "visorBounds": [
+          -0.102378,
+          0.102378,
+          1.62109,
+          1.671644
+        ]
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original fitted B geometry and authored C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "C19367C8AD0F00EC3E65163097622DF80897407BFE02BC32F328D0BDE3FF71BA"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 6,
+        "meshDefinitions": 2,
+        "positionVertices": 2905,
+        "skins": 1,
+        "textures": 15,
+        "triangles": 1952
+      },
+      "assetId": "equipment_prewar_helmet_unified_v1_female_medium",
+      "bodyId": "female_medium",
+      "design": {
+        "features": [
+          "утолщённая композитная чаша",
+          "секционная надбровная плита",
+          "ламинированный янтарный визор",
+          "парные скуловые баллистические панели",
+          "негромоздкие ушные модули",
+          "затылочная противоосколочная секция",
+          "открытая центральная часть рта"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "file": "equipment_prewar_helmet_unified_v1_female_medium.glb",
+      "fit": {
+        "armoredVisorBottomAboveHeadMinimum": 0.083,
+        "baseClearance": {
+          "back": 0.035,
+          "crown": 0.029,
+          "front": 0.03,
+          "side": 0.033
+        },
+        "bodyId": "female_medium",
+        "faceProfiles": {
+          "female_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "female_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "female_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "female_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          },
+          "male_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "male_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "male_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "male_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          }
+        },
+        "hairPolicy": "runtime_hides_hair_when_any_helmet_is_equipped",
+        "headBounds": {
+          "maximum": [
+            0.088878,
+            0.112899,
+            1.766644
+          ],
+          "minimum": [
+            -0.088878,
+            -0.111906,
+            1.53809
+          ]
+        },
+        "headVertexCount": 6047,
+        "helmetDimensions": {
+          "backRadius": 0.147403,
+          "centerX": 0,
+          "centerY": 0.000497,
+          "frontRadius": 0.142403,
+          "radiusX": 0.121878,
+          "rimZ": 1.629644,
+          "shellThickness": 0.007,
+          "topZ": 1.795644
+        },
+        "highCutEarClearance": 0.038,
+        "result": "pass"
+      },
+      "itemId": "preWarHelmet",
+      "itemNameRu": "Штурмовой шлем",
+      "materials": [
+        "prewar_helmet_preserved_olive_enamel",
+        "prewar_helmet_ivory_marking",
+        "prewar_helmet_black_polymer",
+        "prewar_helmet_olive_webbing",
+        "prewar_helmet_bright_hardware",
+        "prewar_helmet_laminated_amber_visor"
+      ],
+      "metrics": {
+        "cheekPanelCount": 2,
+        "detailPolygons": 229,
+        "detailVertices": 316,
+        "earPodCount": 2,
+        "headBoneWeight": 1,
+        "mouthOpeningPreserved": true,
+        "polygonCount": 790,
+        "railPointCount": 6,
+        "vertexCount": 962,
+        "visorBottom": 1.62109,
+        "visorBounds": [
+          -0.102378,
+          0.102378,
+          1.62109,
+          1.671644
+        ]
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original fitted B geometry and authored C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "2D99D66D821E3BFC0CFA69D1206C7F75F53BC1362A2243C743442859242B139C"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 6,
+        "meshDefinitions": 2,
+        "positionVertices": 2905,
+        "skins": 1,
+        "textures": 15,
+        "triangles": 1952
+      },
+      "assetId": "equipment_prewar_helmet_unified_v1_female_large",
+      "bodyId": "female_large",
+      "design": {
+        "features": [
+          "утолщённая композитная чаша",
+          "секционная надбровная плита",
+          "ламинированный янтарный визор",
+          "парные скуловые баллистические панели",
+          "негромоздкие ушные модули",
+          "затылочная противоосколочная секция",
+          "открытая центральная часть рта"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "file": "equipment_prewar_helmet_unified_v1_female_large.glb",
+      "fit": {
+        "armoredVisorBottomAboveHeadMinimum": 0.083,
+        "baseClearance": {
+          "back": 0.035,
+          "crown": 0.029,
+          "front": 0.03,
+          "side": 0.033
+        },
+        "bodyId": "female_large",
+        "faceProfiles": {
+          "female_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "female_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "female_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "female_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          },
+          "male_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "male_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "male_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "male_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          }
+        },
+        "hairPolicy": "runtime_hides_hair_when_any_helmet_is_equipped",
+        "headBounds": {
+          "maximum": [
+            0.088878,
+            0.112899,
+            1.766644
+          ],
+          "minimum": [
+            -0.088878,
+            -0.111906,
+            1.53809
+          ]
+        },
+        "headVertexCount": 5957,
+        "helmetDimensions": {
+          "backRadius": 0.147403,
+          "centerX": 0,
+          "centerY": 0.000497,
+          "frontRadius": 0.142403,
+          "radiusX": 0.121878,
+          "rimZ": 1.629644,
+          "shellThickness": 0.007,
+          "topZ": 1.795644
+        },
+        "highCutEarClearance": 0.038,
+        "result": "pass"
+      },
+      "itemId": "preWarHelmet",
+      "itemNameRu": "Штурмовой шлем",
+      "materials": [
+        "prewar_helmet_preserved_olive_enamel",
+        "prewar_helmet_ivory_marking",
+        "prewar_helmet_black_polymer",
+        "prewar_helmet_olive_webbing",
+        "prewar_helmet_bright_hardware",
+        "prewar_helmet_laminated_amber_visor"
+      ],
+      "metrics": {
+        "cheekPanelCount": 2,
+        "detailPolygons": 229,
+        "detailVertices": 316,
+        "earPodCount": 2,
+        "headBoneWeight": 1,
+        "mouthOpeningPreserved": true,
+        "polygonCount": 790,
+        "railPointCount": 6,
+        "vertexCount": 962,
+        "visorBottom": 1.62109,
+        "visorBounds": [
+          -0.102378,
+          0.102378,
+          1.62109,
+          1.671644
+        ]
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original fitted B geometry and authored C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "833F6DAE3A66825AD5C533A4D3BAE9C75823321C739CC8E20BC1021C4610C9AB"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 6,
+        "meshDefinitions": 2,
+        "positionVertices": 2896,
+        "skins": 1,
+        "textures": 15,
+        "triangles": 1952
+      },
+      "assetId": "equipment_prewar_helmet_unified_v1_male_slim",
+      "bodyId": "male_slim",
+      "design": {
+        "features": [
+          "утолщённая композитная чаша",
+          "секционная надбровная плита",
+          "ламинированный янтарный визор",
+          "парные скуловые баллистические панели",
+          "негромоздкие ушные модули",
+          "затылочная противоосколочная секция",
+          "открытая центральная часть рта"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "file": "equipment_prewar_helmet_unified_v1_male_slim.glb",
+      "fit": {
+        "armoredVisorBottomAboveHeadMinimum": 0.083,
+        "baseClearance": {
+          "back": 0.035,
+          "crown": 0.029,
+          "front": 0.03,
+          "side": 0.033
+        },
+        "bodyId": "male_slim",
+        "faceProfiles": {
+          "female_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "female_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "female_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "female_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          },
+          "male_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "male_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "male_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "male_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          }
+        },
+        "hairPolicy": "runtime_hides_hair_when_any_helmet_is_equipped",
+        "headBounds": {
+          "maximum": [
+            0.090635,
+            0.106143,
+            1.810077
+          ],
+          "minimum": [
+            -0.090635,
+            -0.115165,
+            1.576571
+          ]
+        },
+        "headVertexCount": 5443,
+        "helmetDimensions": {
+          "backRadius": 0.145654,
+          "centerX": 0,
+          "centerY": -0.004511,
+          "frontRadius": 0.140654,
+          "radiusX": 0.123635,
+          "rimZ": 1.673077,
+          "shellThickness": 0.007,
+          "topZ": 1.839077
+        },
+        "highCutEarClearance": 0.038,
+        "result": "pass"
+      },
+      "itemId": "preWarHelmet",
+      "itemNameRu": "Штурмовой шлем",
+      "materials": [
+        "prewar_helmet_preserved_olive_enamel",
+        "prewar_helmet_ivory_marking",
+        "prewar_helmet_black_polymer",
+        "prewar_helmet_olive_webbing",
+        "prewar_helmet_bright_hardware",
+        "prewar_helmet_laminated_amber_visor"
+      ],
+      "metrics": {
+        "cheekPanelCount": 2,
+        "detailPolygons": 229,
+        "detailVertices": 316,
+        "earPodCount": 2,
+        "headBoneWeight": 1,
+        "mouthOpeningPreserved": true,
+        "polygonCount": 790,
+        "railPointCount": 6,
+        "vertexCount": 962,
+        "visorBottom": 1.659571,
+        "visorBounds": [
+          -0.103854,
+          0.103854,
+          1.659571,
+          1.715077
+        ]
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original fitted B geometry and authored C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "D46925C9C60CA5CB900D0FD33CACF411ACC2CF4C1EF87453253737AC6331B401"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 6,
+        "meshDefinitions": 2,
+        "positionVertices": 2896,
+        "skins": 1,
+        "textures": 15,
+        "triangles": 1952
+      },
+      "assetId": "equipment_prewar_helmet_unified_v1_male_medium",
+      "bodyId": "male_medium",
+      "design": {
+        "features": [
+          "утолщённая композитная чаша",
+          "секционная надбровная плита",
+          "ламинированный янтарный визор",
+          "парные скуловые баллистические панели",
+          "негромоздкие ушные модули",
+          "затылочная противоосколочная секция",
+          "открытая центральная часть рта"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "file": "equipment_prewar_helmet_unified_v1_male_medium.glb",
+      "fit": {
+        "armoredVisorBottomAboveHeadMinimum": 0.083,
+        "baseClearance": {
+          "back": 0.035,
+          "crown": 0.029,
+          "front": 0.03,
+          "side": 0.033
+        },
+        "bodyId": "male_medium",
+        "faceProfiles": {
+          "female_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "female_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "female_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "female_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          },
+          "male_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "male_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "male_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "male_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          }
+        },
+        "hairPolicy": "runtime_hides_hair_when_any_helmet_is_equipped",
+        "headBounds": {
+          "maximum": [
+            0.090635,
+            0.106143,
+            1.810077
+          ],
+          "minimum": [
+            -0.090635,
+            -0.115165,
+            1.576571
+          ]
+        },
+        "headVertexCount": 5378,
+        "helmetDimensions": {
+          "backRadius": 0.145654,
+          "centerX": 0,
+          "centerY": -0.004511,
+          "frontRadius": 0.140654,
+          "radiusX": 0.123635,
+          "rimZ": 1.673077,
+          "shellThickness": 0.007,
+          "topZ": 1.839077
+        },
+        "highCutEarClearance": 0.038,
+        "result": "pass"
+      },
+      "itemId": "preWarHelmet",
+      "itemNameRu": "Штурмовой шлем",
+      "materials": [
+        "prewar_helmet_preserved_olive_enamel",
+        "prewar_helmet_ivory_marking",
+        "prewar_helmet_black_polymer",
+        "prewar_helmet_olive_webbing",
+        "prewar_helmet_bright_hardware",
+        "prewar_helmet_laminated_amber_visor"
+      ],
+      "metrics": {
+        "cheekPanelCount": 2,
+        "detailPolygons": 229,
+        "detailVertices": 316,
+        "earPodCount": 2,
+        "headBoneWeight": 1,
+        "mouthOpeningPreserved": true,
+        "polygonCount": 790,
+        "railPointCount": 6,
+        "vertexCount": 962,
+        "visorBottom": 1.659571,
+        "visorBounds": [
+          -0.103854,
+          0.103854,
+          1.659571,
+          1.715077
+        ]
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original fitted B geometry and authored C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "490438367A86023AB9C4C27AFB95F93B8DB81E3A76955229137579B6A3005B46"
+    },
+    {
+      "actualGlb": {
+        "bones": 65,
+        "materials": 6,
+        "meshDefinitions": 2,
+        "positionVertices": 2896,
+        "skins": 1,
+        "textures": 15,
+        "triangles": 1952
+      },
+      "assetId": "equipment_prewar_helmet_unified_v1_male_large",
+      "bodyId": "male_large",
+      "design": {
+        "features": [
+          "утолщённая композитная чаша",
+          "секционная надбровная плита",
+          "ламинированный янтарный визор",
+          "парные скуловые баллистические панели",
+          "негромоздкие ушные модули",
+          "затылочная противоосколочная секция",
+          "открытая центральная часть рта"
+        ],
+        "geometry": "B",
+        "materialsAndWear": "C"
+      },
+      "file": "equipment_prewar_helmet_unified_v1_male_large.glb",
+      "fit": {
+        "armoredVisorBottomAboveHeadMinimum": 0.083,
+        "baseClearance": {
+          "back": 0.035,
+          "crown": 0.029,
+          "front": 0.03,
+          "side": 0.033
+        },
+        "bodyId": "male_large",
+        "faceProfiles": {
+          "female_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "female_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "female_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "female_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          },
+          "male_01": {
+            "headScale": [
+              1,
+              1,
+              1
+            ],
+            "label": "угловатое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.035,
+              "crown": 0.029,
+              "front": 0.03,
+              "side": 0.033
+            }
+          },
+          "male_02": {
+            "headScale": [
+              0.88,
+              1.018,
+              1.05
+            ],
+            "label": "узкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03563,
+              "crown": 0.03045,
+              "front": 0.03054,
+              "side": 0.02904
+            }
+          },
+          "male_03": {
+            "headScale": [
+              1.13,
+              0.985,
+              0.96
+            ],
+            "label": "широкое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03448,
+              "crown": 0.02784,
+              "front": 0.02955,
+              "side": 0.03729
+            }
+          },
+          "male_04": {
+            "headScale": [
+              0.98,
+              0.982,
+              1.09
+            ],
+            "label": "округлое",
+            "relativeFitPreservedByHeadBone": true,
+            "scaledClearance": {
+              "back": 0.03437,
+              "crown": 0.03161,
+              "front": 0.02946,
+              "side": 0.03234
+            }
+          }
+        },
+        "hairPolicy": "runtime_hides_hair_when_any_helmet_is_equipped",
+        "headBounds": {
+          "maximum": [
+            0.090635,
+            0.106143,
+            1.810077
+          ],
+          "minimum": [
+            -0.090635,
+            -0.115165,
+            1.576571
+          ]
+        },
+        "headVertexCount": 5319,
+        "helmetDimensions": {
+          "backRadius": 0.145654,
+          "centerX": 0,
+          "centerY": -0.004511,
+          "frontRadius": 0.140654,
+          "radiusX": 0.123635,
+          "rimZ": 1.673077,
+          "shellThickness": 0.007,
+          "topZ": 1.839077
+        },
+        "highCutEarClearance": 0.038,
+        "result": "pass"
+      },
+      "itemId": "preWarHelmet",
+      "itemNameRu": "Штурмовой шлем",
+      "materials": [
+        "prewar_helmet_preserved_olive_enamel",
+        "prewar_helmet_ivory_marking",
+        "prewar_helmet_black_polymer",
+        "prewar_helmet_olive_webbing",
+        "prewar_helmet_bright_hardware",
+        "prewar_helmet_laminated_amber_visor"
+      ],
+      "metrics": {
+        "cheekPanelCount": 2,
+        "detailPolygons": 229,
+        "detailVertices": 316,
+        "earPodCount": 2,
+        "headBoneWeight": 1,
+        "mouthOpeningPreserved": true,
+        "polygonCount": 790,
+        "railPointCount": 6,
+        "vertexCount": 962,
+        "visorBottom": 1.659571,
+        "visorBounds": [
+          -0.103854,
+          0.103854,
+          1.659571,
+          1.715077
+        ]
+      },
+      "provenance": {
+        "directRuntimeUse": false,
+        "donor": null,
+        "license": "Realm of Ashes project asset",
+        "rebuild": "original fitted B geometry and authored C materials on the exact current 65-bone player rig"
+      },
+      "reviewOnly": true,
+      "runtimeIntegrationAllowed": false,
+      "sha256": "DCDF17E9EA83BF08DAA76760A24DCC68347623B51CF219FD30B111FD330DF408"
+    }
+  ],
+  "assetId": "equipment_prewar_helmet_unified_v1",
+  "summary": "Армейский шлем старого мира: сохранившаяся оливковая эмаль, белая маркировочная полоса через купол, антенна связи на правом наушнике, янтарный визор. Пятый тир: довоенное качество, износ минимальный."
+}

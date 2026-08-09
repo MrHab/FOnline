@@ -21,6 +21,7 @@
     hazmatSuit: { id: 'hazmatSuit', weight: 4.2, name: 'Костюм химзащиты', icon: '☣️', type: 'armor', slot: 'armor', desc: 'Костюм химзащиты. Защищает от токсичного и радиационного урона.', armor: 2, protection: { radiation: 0.32, toxic: 0.38, energy: 0.04, fire: 0.18 }, thresholds: { radiation: 2, toxic: 2, fire: 1 } },
     heavyArmor: { id: 'heavyArmor', weight: 14.0, name: 'Тяжёлая броня', icon: '🪖', type: 'armor', slot: 'armor', desc: 'Тяжёлая броня. Хорошо защищает от баллистического и взрывного урона, частично от энергетического.', armor: 12, protection: { ballistic: 0.34, explosive: 0.22, energy: 0.12, fire: 0.18 }, thresholds: { ballistic: 6, explosive: 3, energy: 1, fire: 2 } },
     energySuit: { id: 'energySuit', weight: 6.8, name: 'Энергозащитный костюм', icon: '🔷', type: 'armor', slot: 'armor', desc: 'Энергозащитный костюм. Защищает от энергетического и радиационного урона.', armor: 5, protection: { energy: 0.30, radiation: 0.16, fire: 0.10 }, thresholds: { energy: 3, radiation: 1, fire: 1 } },
+    preWarHelmet: { id: 'preWarHelmet', weight: 2.6, name: 'Довоенный боевой шлем', icon: '🪖', type: 'helmet', slot: 'helmet', armor: 5, desc: 'Армейский шлем старого мира: оливковая эмаль, визор, связь в наушнике. Такие больше не делают.', condition: 100 },
     weldedHelmet: { id: 'weldedHelmet', weight: 2.4, name: 'Сварной шлем', icon: '🪖', type: 'helmet', slot: 'helmet', armor: 1, desc: 'Купол из четырёх листов, сваренных крестом. Проволока вместо ремня, ржавчина вместо краски — но голову держит.', condition: 100 },
     helmet: { id: 'helmet', weight: 2.0, name: 'Стальной шлем', icon: '⛑️', type: 'helmet', slot: 'helmet', desc: 'Защита головы. Небольшая баллистическая защита.', armor: 2, protection: { ballistic: 0.05 }, thresholds: { ballistic: 1 } },
     tacticalHelmet: { id: 'tacticalHelmet', weight: 1.9, name: 'Тактический шлем', icon: '🪖', type: 'helmet', slot: 'helmet', desc: 'Современный шлем с закрытым визором. Лучше держит осколки и пули.', armor: 3, protection: { ballistic: 0.09, explosive: 0.03, fire: 0.02 }, thresholds: { ballistic: 1, explosive: 1 } },
@@ -519,7 +520,7 @@
   ballisticVest: 3,
   combatArmor: 4,
   heavyArmor: 5,
-  weldedHelmet: 1, helmet: 2, tacticalHelmet: 3, assaultHelmet: 4,
+  weldedHelmet: 1, helmet: 2, tacticalHelmet: 3, assaultHelmet: 4, preWarHelmet: 5,
   boots: 1, scoutBoots: 2, reinforcedBoots: 3,
   backpack: 2
 });

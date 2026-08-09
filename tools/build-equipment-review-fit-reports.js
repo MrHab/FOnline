@@ -27,6 +27,11 @@ const FAMILIES = [
     prefix: 'equipment_hazmat_suit_unified_v1'
   },
   {
+    name: 'preWarHelmet',
+    directory: ['docs', 'art', 'reviews', 'unified-equipment-prewar-helmet-v1', 'helmet'],
+    prefix: 'equipment_prewar_helmet_unified_v1'
+  },
+  {
     name: 'weldedHelmet',
     directory: ['docs', 'art', 'reviews', 'unified-equipment-welded-helmet-v1', 'helmet'],
     prefix: 'equipment_welded_helmet_unified_v1'

@@ -11,6 +11,7 @@
       "combatArmor": "2051BD18AEE6A3993BC9C03437AC4F2022E36995C597E1AAE12852BFAC8099E7",
       "heavyArmor": "ED76707B9481F843881898BC7BFBA25AF0452084792A1FB9006DC4651F0E3550",
       "backpack": "E70691AAE14BBC2CA5CD608567EFFA532EFED46AF3F4B2625DCBAAC281BF5F39",
+      "assaultBoots": "46409E0071FE16553B5B921C67495D92561378A53816C391EEB481377BE6B912",
       "reinforcedBoots": "464C7FB32BD4DB740CCB73A81EC2CB9BD14F1374F1593AE92CE409C84A66210E",
       "scoutBoots": "21E7C91E968CBB117392BFC0BED30A7DDD08AA5C588AF7CA60B0DE07D2E14BC4",
       "preWarHelmet": "C7A1564C9D914338E654B7743AD9325C7B643EC3ED402AAF350C1150E6D055B7",
@@ -439,6 +440,66 @@
       "sourceSha256": "936291A0C74DD5AA0E1084AD3B1052200154798166416E11E4478E88BC19EBAB",
       "runtimeSha256": "554C09CE5ADF928D78E09E5908759C52E70B8B85ECCD1ED455C82D1533428EC5",
       "bytes": 902540
+    },
+    {
+      "id": "assaultBoots_female_slim",
+      "itemId": "assaultBoots",
+      "slot": "boots",
+      "bodyId": "female_slim",
+      "file": "/assets/models/equipment/boots/equipment_assault_boots_female_slim.glb",
+      "sourceSha256": "7FABA5A02893E022952901997598CA46BA9AC90E415A737185EC50511345471B",
+      "runtimeSha256": "582B74599C962DE96E50850ED74E0593D221C368D03D52EA2613340862A49A54",
+      "bytes": 795340
+    },
+    {
+      "id": "assaultBoots_female_medium",
+      "itemId": "assaultBoots",
+      "slot": "boots",
+      "bodyId": "female_medium",
+      "file": "/assets/models/equipment/boots/equipment_assault_boots_female_medium.glb",
+      "sourceSha256": "7CCBB82D62C79D6B86CEC4A62CEA7F698BD38404DF545FBBF9F001F408ECF024",
+      "runtimeSha256": "B92AC23EBD16DB518777CF87F5AA0C56D6CD0032C4291E11245ED6EFCC3321F3",
+      "bytes": 795364
+    },
+    {
+      "id": "assaultBoots_female_large",
+      "itemId": "assaultBoots",
+      "slot": "boots",
+      "bodyId": "female_large",
+      "file": "/assets/models/equipment/boots/equipment_assault_boots_female_large.glb",
+      "sourceSha256": "CC43835A36A197DDF68EED7F75DEB5ACDD8906868DDF3BE5D8753C52C2631A95",
+      "runtimeSha256": "B7C88F1824DC7162194FAEAAEA31F6A52A74C612E8EF5BDE26E700BEB0113D1C",
+      "bytes": 795352
+    },
+    {
+      "id": "assaultBoots_male_slim",
+      "itemId": "assaultBoots",
+      "slot": "boots",
+      "bodyId": "male_slim",
+      "file": "/assets/models/equipment/boots/equipment_assault_boots_male_slim.glb",
+      "sourceSha256": "2FF52537904DFA209B79B3BA2B5ECA37ED4C65016FC3D13385A4DAC21CBABF34",
+      "runtimeSha256": "009B6B30D00A9E737E8F907FDAD027AA6938856A52B5E071DCE53CB453A4EC69",
+      "bytes": 795284
+    },
+    {
+      "id": "assaultBoots_male_medium",
+      "itemId": "assaultBoots",
+      "slot": "boots",
+      "bodyId": "male_medium",
+      "file": "/assets/models/equipment/boots/equipment_assault_boots_male_medium.glb",
+      "sourceSha256": "A97A082A2092BCDC5F9760CE78BB1D9A10BA0C52130D31874DDE24747432D16B",
+      "runtimeSha256": "C45B6126D332D36B167A8E9A726C2A2200859410DF328CBE0DFCBEC71ACDEB5C",
+      "bytes": 795308
+    },
+    {
+      "id": "assaultBoots_male_large",
+      "itemId": "assaultBoots",
+      "slot": "boots",
+      "bodyId": "male_large",
+      "file": "/assets/models/equipment/boots/equipment_assault_boots_male_large.glb",
+      "sourceSha256": "BCB80C5E109FCDCC834427D9975FD9DA976E2D2B0D13C6BB6467718DDFD4FDE2",
+      "runtimeSha256": "402BAC8339291964EED710D702A0A092D9DAF9F3C0666D3A403B7C4BA16A3141",
+      "bytes": 795292
     },
     {
       "id": "reinforcedBoots_female_slim",

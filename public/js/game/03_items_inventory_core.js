@@ -28,6 +28,7 @@
     assaultHelmet: { id: 'assaultHelmet', weight: 2.8, name: 'Штурмовой шлем', icon: '🤖', type: 'helmet', slot: 'helmet', desc: 'Тяжёлый шлем с усиленной лицевой частью.', armor: 4, protection: { ballistic: 0.12, explosive: 0.05, energy: 0.03, fire: 0.05 }, thresholds: { ballistic: 2, explosive: 1 } },
     boots: { id: 'boots', weight: 1.5, name: 'Армейские ботинки', icon: '🥾', type: 'boots', slot: 'boots', desc: 'Уверенный шаг по пустоши.', speed: 0.22 },
     scoutBoots: { id: 'scoutBoots', weight: 1.1, name: 'Разведботинки', icon: '👢', type: 'boots', slot: 'boots', desc: 'Лёгкая обувь для быстрого передвижения.', speed: 0.34 },
+    assaultBoots: { id: 'assaultBoots', weight: 2.6, name: 'Штурмовые ботинки', icon: '🥾', type: 'boots', slot: 'boots', desc: 'Армейская обувь с композитными накладками и полимерной защитой. Пара к штурмовому шлему.', speed: 0.12 },
     reinforcedBoots: { id: 'reinforcedBoots', weight: 2.2, name: 'Усиленные ботинки', icon: '🥾', type: 'boots', slot: 'boots', desc: 'Тяжёлая обувь с защитными накладками.', speed: 0.14 },
     backpack: { id: 'backpack', weight: 1.2, name: 'Рюкзак', icon: '🎒', type: 'backpack', slot: 'backpack', desc: 'Позволяет носить больше добычи.', carry: 20 },
     ammo9: { id: 'ammo9', weight: 0.025, name: 'Патроны 9mm', icon: '▪', type: 'ammo', desc: 'Боеприпасы для 9mm пистолета.' },
@@ -521,7 +522,7 @@
   combatArmor: 4,
   heavyArmor: 5,
   weldedHelmet: 1, helmet: 2, tacticalHelmet: 3, assaultHelmet: 4, preWarHelmet: 5,
-  boots: 1, scoutBoots: 2, reinforcedBoots: 3,
+  boots: 1, scoutBoots: 2, reinforcedBoots: 3, assaultBoots: 4,
   backpack: 2
 });
   const GEAR_TIER_POINTS = Object.freeze({ 1: 10, 2: 18, 3: 30, 4: 45, 5: 65 });

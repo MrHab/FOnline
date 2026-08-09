@@ -2358,7 +2358,7 @@ const VALID_EQUIPMENT = {
   offhand: new Set([...VALID_HAND_EQUIPMENT, '']),
   armor: new Set(['leather', 'metalArmor', 'ballisticVest', 'combatArmor', 'hazmatSuit', 'heavyArmor', 'energySuit', '']),
   helmet: new Set(['weldedHelmet', 'helmet', 'tacticalHelmet', 'assaultHelmet', 'preWarHelmet', '']),
-  boots: new Set(['boots', 'scoutBoots', 'reinforcedBoots', '']),
+  boots: new Set(['boots', 'scoutBoots', 'reinforcedBoots', 'assaultBoots', '']),
   backpack: new Set(['backpack', ''])
 };
 
@@ -3139,7 +3139,7 @@ const SERVER_ENEMY_VARIANTS = [
     ]
   }
 ];
-const SERVER_ITEM_IDS = new Set(['pistol','rifle','assaultRifle','machineGun','laserPistol','flamethrower','plasmaRifle','shotgun','rocketLauncher','revolver','sawedOffShotgun','smg','knife','fists','leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet','boots','scoutBoots','reinforcedBoots','backpack','ammo9','ammo556','energyCell','napalm','shotgunShell','rocketAmmo','medkit','stim','doctorBag','antibiotics','ore','wood','scrap','oil','chemicals','medicine','electronics','ammoParts','food','weaponParts','silver','trophy','water','pickaxe','axe','handPump','repairKit']);
+const SERVER_ITEM_IDS = new Set(['pistol','rifle','assaultRifle','machineGun','laserPistol','flamethrower','plasmaRifle','shotgun','rocketLauncher','revolver','sawedOffShotgun','smg','knife','fists','leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','weldedHelmet','helmet','tacticalHelmet','assaultHelmet','preWarHelmet','boots','scoutBoots','reinforcedBoots','assaultBoots','backpack','ammo9','ammo556','energyCell','napalm','shotgunShell','rocketAmmo','medkit','stim','doctorBag','antibiotics','ore','wood','scrap','oil','chemicals','medicine','electronics','ammoParts','food','weaponParts','silver','trophy','water','pickaxe','axe','handPump','repairKit']);
 // ===== СИЛА: тиры экипировки =====
 // Чистое железо: только предметы, их состояние и модификации. Очки тиров
 // растут нелинейно, чтобы скачок тира ощущался; состояние входит множителем —
@@ -3156,7 +3156,7 @@ const GEAR_ITEM_TIERS = Object.freeze({
   combatArmor: 4,
   heavyArmor: 5,
   weldedHelmet: 1, helmet: 2, tacticalHelmet: 3, assaultHelmet: 4, preWarHelmet: 5,
-  boots: 1, scoutBoots: 2, reinforcedBoots: 3,
+  boots: 1, scoutBoots: 2, reinforcedBoots: 3, assaultBoots: 4,
   backpack: 2
 });
 const GEAR_TIER_POINTS = Object.freeze({ 1: 10, 2: 18, 3: 30, 4: 45, 5: 65 });
@@ -4108,7 +4108,7 @@ const SERVER_ITEM_WEIGHTS = {
   knife: 0.5, fists: 0,
   leather: 3.0, metalArmor: 7.5, ballisticVest: 5.5, combatArmor: 9.0,
   hazmatSuit: 4.2, heavyArmor: 14.0, energySuit: 6.8,
-  weldedHelmet: 2.4, helmet: 2.0, tacticalHelmet: 1.9, assaultHelmet: 2.8, preWarHelmet: 2.6,
+  weldedHelmet: 2.4, helmet: 2.0, tacticalHelmet: 1.9, assaultHelmet: 2.8, preWarHelmet: 2.6, assaultBoots: 2.6,
   boots: 1.5, scoutBoots: 1.1, reinforcedBoots: 2.2, backpack: 1.2,
   ammo9: 0.025, ammo556: 0.04, energyCell: 0.03, napalm: 0.08, shotgunShell: 0.05, rocketAmmo: 0.85,
   medkit: 0.6, stim: 0.2, doctorBag: 0.9, antibiotics: 0.15,

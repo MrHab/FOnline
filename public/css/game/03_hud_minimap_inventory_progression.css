@@ -1479,3 +1479,29 @@
     body.device-mobile.landscape-mode .touch-buttons { transform: scale(0.92) !important; transform-origin: bottom right !important; right: calc(18px + var(--safe-right)) !important; }
     body.device-mobile.landscape-mode #quickbar { transform: translateX(-50%) scale(0.94) !important; transform-origin: bottom center !important; }
   }
+
+/* ===== СИЛА: тиры экипировки =====
+   Ярлык тира в углу карточки и цветная кромка: класс предмета виден раньше
+   цифр. Цвета — из палитры интерфейса. */
+.inv-tier {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+.gear-tier-1 .inv-tier, .inv-tier.gear-tier-1 { color: #8a939b; }
+.gear-tier-2 .inv-tier, .inv-tier.gear-tier-2 { color: #d8d2c0; }
+.gear-tier-3 .inv-tier, .inv-tier.gear-tier-3 { color: #efd078; }
+.gear-tier-4 .inv-tier, .inv-tier.gear-tier-4 { color: #9fd7ff; }
+.gear-tier-5 .inv-tier, .inv-tier.gear-tier-5 { color: #ff9a54; }
+.inv-card.gear-tier-2 { border-color: rgba(216, 210, 192, 0.42); }
+.inv-card.gear-tier-3 { border-color: rgba(239, 208, 120, 0.5); }
+.inv-card.gear-tier-4 { border-color: rgba(159, 215, 255, 0.5); }
+.inv-card.gear-tier-5 { border-color: rgba(255, 154, 84, 0.55); }
+.equip-slot.gear-tier-2 { border-left: 3px solid rgba(216, 210, 192, 0.5); }
+.equip-slot.gear-tier-3 { border-left: 3px solid rgba(239, 208, 120, 0.6); }
+.equip-slot.gear-tier-4 { border-left: 3px solid rgba(159, 215, 255, 0.6); }
+.equip-slot.gear-tier-5 { border-left: 3px solid rgba(255, 154, 84, 0.65); }

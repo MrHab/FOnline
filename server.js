@@ -3140,6 +3140,47 @@ const SERVER_ENEMY_VARIANTS = [
   }
 ];
 const SERVER_ITEM_IDS = new Set(['pistol','rifle','assaultRifle','machineGun','laserPistol','flamethrower','plasmaRifle','shotgun','rocketLauncher','revolver','sawedOffShotgun','smg','knife','fists','leather','metalArmor','ballisticVest','combatArmor','hazmatSuit','heavyArmor','energySuit','helmet','tacticalHelmet','assaultHelmet','boots','scoutBoots','reinforcedBoots','backpack','ammo9','ammo556','energyCell','napalm','shotgunShell','rocketAmmo','medkit','stim','doctorBag','antibiotics','ore','wood','scrap','oil','chemicals','medicine','electronics','ammoParts','food','weaponParts','silver','trophy','water','pickaxe','axe','handPump','repairKit']);
+// ===== СИЛА: тиры экипировки =====
+// Чистое железо: только предметы, их состояние и модификации. Очки тиров
+// растут нелинейно, чтобы скачок тира ощущался; состояние входит множителем —
+// сломанная броня роняет Силу на глазах.
+const GEAR_ITEM_TIERS = Object.freeze({
+  fists: 1, knife: 1, pickaxe: 1, axe: 1, handPump: 1, pistol: 1,
+  rifle: 2, revolver: 2, sawedOffShotgun: 2,
+  shotgun: 3, assaultRifle: 3, machineGun: 3, smg: 3,
+  laserPistol: 4, flamethrower: 4,
+  plasmaRifle: 5, rocketLauncher: 5,
+  leather: 1, hazmatSuit: 1,
+  metalArmor: 2, energySuit: 2,
+  ballisticVest: 3,
+  combatArmor: 4,
+  heavyArmor: 5,
+  helmet: 2, tacticalHelmet: 3, assaultHelmet: 4,
+  boots: 1, scoutBoots: 2, reinforcedBoots: 3,
+  backpack: 2
+});
+const GEAR_TIER_POINTS = Object.freeze({ 1: 10, 2: 18, 3: 30, 4: 45, 5: 65 });
+const GEAR_SLOT_WEIGHTS = Object.freeze({ weapon: 1.0, offhand: 0.5, armor: 0.8, helmet: 0.4, boots: 0.3, backpack: 0.2 });
+const GEAR_MOD_POINTS = 4;
+
+function serverGearPower(p = {}) {
+  let total = 0;
+  for (const [slot, weight] of Object.entries(GEAR_SLOT_WEIGHTS)) {
+    const equippedId = String(p.equipment?.[slot] || '');
+    if (!equippedId) continue;
+    const baseId = serverBaseItemId(equippedId);
+    const tier = Number(GEAR_ITEM_TIERS[baseId] || 0);
+    if (!tier) continue;
+    const condition = Math.max(1, Math.min(100, Number(serverPlayerItemCondition(p, baseId) ?? 100)));
+    total += GEAR_TIER_POINTS[tier] * weight * condition / 100;
+    if (slot === 'weapon' || slot === 'offhand') {
+      const mods = p.serverCombat?.weapons?.[equippedId]?.weaponMods || {};
+      total += Object.values(mods).filter(Boolean).length * GEAR_MOD_POINTS;
+    }
+  }
+  return Math.round(total);
+}
+
 const SERVER_ITEM_STACK_LIMITS = {
   silver: 200000,
   ammo9: 1200,
@@ -16720,6 +16761,7 @@ function publicAuthoritativePlayerState(p = {}) {
     equipmentRevision: Math.max(0, Math.floor(Number(p.equipmentRevision || 0))),
     weaponInventoryRuntime: serverWeaponInventoryRuntimeSnapshot(p),
     weaponModifications: serverWeaponModificationSnapshot(p),
+    gearPower: serverGearPower(p),
     storage: sanitizeServerInventorySnapshot(storage, { includeEquipped: true }),
     storageFaction,
     itemConditions: sanitizeServerItemConditions(p.itemConditions || {}),

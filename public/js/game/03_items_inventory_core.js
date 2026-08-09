@@ -506,6 +506,66 @@
     return true;
   }
 
+  // ===== СИЛА: тиры экипировки (зеркало серверных таблиц) =====
+  const GEAR_ITEM_TIERS = Object.freeze({
+  fists: 1, knife: 1, pickaxe: 1, axe: 1, handPump: 1, pistol: 1,
+  rifle: 2, revolver: 2, sawedOffShotgun: 2,
+  shotgun: 3, assaultRifle: 3, machineGun: 3, smg: 3,
+  laserPistol: 4, flamethrower: 4,
+  plasmaRifle: 5, rocketLauncher: 5,
+  leather: 1, hazmatSuit: 1,
+  metalArmor: 2, energySuit: 2,
+  ballisticVest: 3,
+  combatArmor: 4,
+  heavyArmor: 5,
+  helmet: 2, tacticalHelmet: 3, assaultHelmet: 4,
+  boots: 1, scoutBoots: 2, reinforcedBoots: 3,
+  backpack: 2
+});
+  const GEAR_TIER_POINTS = Object.freeze({ 1: 10, 2: 18, 3: 30, 4: 45, 5: 65 });
+  const GEAR_SLOT_WEIGHTS = Object.freeze({ weapon: 1.0, offhand: 0.5, armor: 0.8, helmet: 0.4, boots: 0.3, backpack: 0.2 });
+  const GEAR_MOD_POINTS = 4;
+  const GEAR_TIER_INFO = Object.freeze({
+    1: { short: 'Т1', label: 'Самодельное', color: '#8a939b' },
+    2: { short: 'Т2', label: 'Рабочее', color: '#d8d2c0' },
+    3: { short: 'Т3', label: 'Боевое', color: '#efd078' },
+    4: { short: 'Т4', label: 'Армейское', color: '#9fd7ff' },
+    5: { short: 'Т5', label: 'Довоенное', color: '#ff9a54' }
+  });
+
+  function gearTierOf(itemId) {
+    return Number(GEAR_ITEM_TIERS[baseItemId(itemId)] || 0);
+  }
+
+  function gearTierInfo(itemId) {
+    return GEAR_TIER_INFO[gearTierOf(itemId)] || null;
+  }
+
+  function gearPowerBreakdown() {
+    const rows = [];
+    let total = 0;
+    for (const [slot, weight] of Object.entries(GEAR_SLOT_WEIGHTS)) {
+      const equippedId = equipment?.[slot];
+      if (!equippedId) continue;
+      const tier = gearTierOf(equippedId);
+      if (!tier) continue;
+      const item = ITEMS[equippedId] || {};
+      const condition = Math.max(1, Math.min(100, Number(item.condition ?? 100)));
+      let points = GEAR_TIER_POINTS[tier] * weight * condition / 100;
+      if ((slot === 'weapon' || slot === 'offhand') && typeof weaponModificationCount === 'function') {
+        points += weaponModificationCount(item) * GEAR_MOD_POINTS;
+      }
+      points = Math.round(points);
+      total += points;
+      rows.push({ slot, id: equippedId, name: item.name || equippedId, tier, points });
+    }
+    return { total, rows };
+  }
+
+  function gearPowerTotal() {
+    return gearPowerBreakdown().total;
+  }
+
   function applyServerItemConditions(conditions = {}) {
     if (!conditions || typeof conditions !== 'object') return false;
     Object.entries(conditions).forEach(([rawId, rawCondition]) => {

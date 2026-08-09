@@ -3,7 +3,7 @@
    Loading these imports in order reconstructs the same stylesheet cascade without changing styles. */
 @import url("/css/game/01_base_layout_hud.css?v=7.76.6-character-models");
 @import url("/css/game/02_mobile_fullscreen_touch.css");
-@import url("/css/game/03_hud_minimap_inventory_progression.css");
+@import url("/css/game/03_hud_minimap_inventory_progression.css?v=7.88.0-gear-power-v1");
 @import url("/css/game/04_mobile_inventory_trade_quality.css");
 @import url("/css/game/05_loot_storage_trader_mobile.css");
 @import url("/css/game/06_graphics_settings_time.css");

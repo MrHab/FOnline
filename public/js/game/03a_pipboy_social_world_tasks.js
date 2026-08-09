@@ -1865,6 +1865,7 @@
     pipboyLocalText('pipboy-top-hp', `${Math.ceil(player.hp)}/${player.maxHp}`);
     pipboyLocalText('pipboy-top-ap', `${Math.floor(Math.max(0, Number(player.ap || 0)))}/${Math.max(1, Math.round(Number(player.maxAp || 0)))}`);
     pipboyLocalText('pipboy-top-armor', armorValue());
+    pipboyLocalText('pipboy-top-power', typeof gearPowerTotal === 'function' ? String(gearPowerTotal()) : '0');
     pipboyLocalText('pipboy-top-caps', inventory.get('silver') || 0);
     pipboyLocalText('pipboy-character-name', name);
     pipboyLocalText('pipboy-character-meta', `Уровень ${player.level} · ${weaponName}`);

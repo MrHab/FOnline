@@ -4,7 +4,7 @@
 (async () => {
   'use strict';
 
-  const GAME_CLIENT_VERSION = '7.95.0-pvp-zone-rules-v1';
+  const GAME_CLIENT_VERSION = '7.96.0-npc-full-loot-v1';
   const MODEL_COLLIDER_CATALOG_URL = '/assets/models/wasteland/model-colliders.json';
   const GAME_SCRIPT_PARTS = [
     '/js/game/00_save_generation_drain.js',

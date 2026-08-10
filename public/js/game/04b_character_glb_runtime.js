@@ -778,7 +778,7 @@
       direction = [vertical, horizontal].filter(Boolean).join('_') || 'forward';
     }
     const action = locomoting
-      ? (turning ? 'walk' : (backward ? 'walk' : (speed > 5.35 ? 'run' : 'walk')))
+      ? (turning ? 'walk' : (backward ? 'walk' : (speed > 4.2 ? 'run' : 'walk')))
       : 'idle';
     const playbackRate = turning
       ? (0.62 + Math.abs(turnAmount) * 0.22)
@@ -875,6 +875,203 @@
     addCharacterGlbDirectionalBoneOffset(runtime, bones.spine03, 0, counterYaw * 0.27, side * 0.012);
     addCharacterGlbDirectionalBoneOffset(runtime, bones.neck, 0, counterYaw * 0.11, side * 0.008);
     addCharacterGlbDirectionalBoneOffset(runtime, bones.head, 0, counterYaw * 0.08, 0);
+  }
+
+  // ===== IK стоп: фиксация опорной ноги =====
+  // Запечённые клипы ходьбы проигрываются с масштабом темпа, а актёр движется
+  // со скоростью сервера, поэтому стопы скользили по земле. Опорная стопа
+  // ловится в момент контакта (низко и почти неподвижна в мире) и пришивается
+  // к точке касания коротким FABRIK-решением бедро→голень→стопа, пока
+  // анимация не поднимет её снова.
+  const CHARACTER_FOOT_IK_BONES = Object.freeze({
+    l: Object.freeze(['thigh_l', 'calf_l', 'foot_l']),
+    r: Object.freeze(['thigh_r', 'calf_r', 'foot_r'])
+  });
+  // Естественная скорость шага клипов (замерена по опорной стопе при
+  // единичном темпе): клип, проигранный быстрее или медленнее этой скорости,
+  // скользит по земле. Темп клипа подтягивается к фактической скорости актёра.
+  const CHARACTER_CLIP_NATURAL_SPEEDS = Object.freeze({ walk: 1.5, run: 3.75 });
+  const CHARACTER_STRIDE_SYNC_MIN = 0.6;
+  const CHARACTER_STRIDE_SYNC_MAX = 2.9;
+
+  function characterStrideSyncTarget(runtime, locomotion) {
+    if (!locomotion?.moving || locomotion.turning) return 1;
+    const natural = CHARACTER_CLIP_NATURAL_SPEEDS[runtime?.currentAction || ''];
+    if (!natural) return 1;
+    const speed = Math.max(0, Number(locomotion.speed || 0));
+    if (speed < 0.1) return 1;
+    return Math.max(CHARACTER_STRIDE_SYNC_MIN, Math.min(CHARACTER_STRIDE_SYNC_MAX, speed / natural));
+  }
+  const CHARACTER_FOOT_IK_LIFT = 0.05;
+  const CHARACTER_FOOT_IK_MAX_DRIFT = 0.44;
+  const CHARACTER_FOOT_IK_BLEND_RATE = 24;
+  const CHARACTER_FOOT_IK_TELEPORT_RESET = 1.6;
+
+  function characterFootIkSideState() {
+    return {
+      locked: false,
+      blend: 0,
+      lockPos: new THREE.Vector3(),
+      prevAnim: new THREE.Vector3(),
+      hasPrev: false
+    };
+  }
+
+  function captureCharacterFootIkRest(actor, runtime) {
+    if (!actor || !runtime?.root) return;
+    runtime.root.updateMatrixWorld(true);
+    const actorWorld = actor.getWorldPosition(new THREE.Vector3());
+    const restHeights = {};
+    for (const [side, names] of Object.entries(CHARACTER_FOOT_IK_BONES)) {
+      const foot = runtime.root.getObjectByName(names[2]);
+      if (!foot?.isBone) continue;
+      const height = foot.getWorldPosition(new THREE.Vector3()).y - actorWorld.y;
+      if (Number.isFinite(height)) restHeights[side] = Math.max(0.015, height);
+    }
+    if (!Object.keys(restHeights).length) return;
+    runtime.footIk = {
+      restHeights,
+      lastActorPos: null,
+      feet: { l: characterFootIkSideState(), r: characterFootIkSideState() }
+    };
+  }
+
+  function setCharacterBoneWorldQuaternion(bone, worldQuaternion) {
+    if (!bone?.isBone || !bone.parent) return false;
+    const parentQuaternion = bone.parent.getWorldQuaternion(new THREE.Quaternion());
+    bone.quaternion.copy(parentQuaternion.invert().multiply(worldQuaternion)).normalize();
+    bone.updateWorldMatrix(false, true);
+    return true;
+  }
+
+  function solveCharacterLegChain(characterRoot, names, targetPosition) {
+    const chain = names.map(name => characterRoot?.getObjectByName?.(name) || null);
+    if (chain.some(bone => !bone?.isBone) || !targetPosition) return false;
+    chain[0].updateWorldMatrix(true, true);
+    const positions = chain.map(bone => bone.getWorldPosition(new THREE.Vector3()));
+    const base = positions[0].clone();
+    const lengths = positions.slice(0, -1).map((position, index) => (
+      position.distanceTo(positions[index + 1])
+    ));
+    if (lengths.some(length => !Number.isFinite(length) || length <= 0.0001)) return false;
+    const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+    if (base.distanceTo(targetPosition) >= totalLength) {
+      const direction = targetPosition.clone().sub(base).normalize();
+      for (let index = 1; index < positions.length; index += 1) {
+        positions[index] = positions[index - 1].clone().addScaledVector(direction, lengths[index - 1]);
+      }
+    } else {
+      for (let iteration = 0; iteration < 8; iteration += 1) {
+        positions[positions.length - 1] = targetPosition.clone();
+        for (let index = positions.length - 2; index >= 0; index -= 1) {
+          const direction = positions[index].clone().sub(positions[index + 1]).normalize();
+          positions[index] = positions[index + 1].clone().addScaledVector(direction, lengths[index]);
+        }
+        positions[0] = base.clone();
+        for (let index = 1; index < positions.length; index += 1) {
+          const direction = positions[index].clone().sub(positions[index - 1]).normalize();
+          positions[index] = positions[index - 1].clone().addScaledVector(direction, lengths[index - 1]);
+        }
+        if (positions[positions.length - 1].distanceTo(targetPosition) < 0.0008) break;
+      }
+    }
+    // Стопу не трогаем: её ориентацию задаёт анимация, IK двигает только
+    // бедро и голень, чтобы сустав стопы пришёл в целевую точку.
+    for (let index = 0; index < chain.length - 1; index += 1) {
+      chain[index].updateWorldMatrix(true, true);
+      const currentStart = chain[index].getWorldPosition(new THREE.Vector3());
+      const currentEnd = chain[index + 1].getWorldPosition(new THREE.Vector3());
+      const currentDirection = currentEnd.sub(currentStart).normalize();
+      const wantedDirection = positions[index + 1].clone().sub(positions[index]).normalize();
+      const delta = new THREE.Quaternion().setFromUnitVectors(currentDirection, wantedDirection);
+      const currentWorld = chain[index].getWorldQuaternion(new THREE.Quaternion());
+      if (!setCharacterBoneWorldQuaternion(chain[index], delta.multiply(currentWorld))) return false;
+    }
+    chain[0].updateWorldMatrix(true, true);
+    return true;
+  }
+
+  function applyCharacterFootIk(actor, runtime, dt = 0.016, state = {}) {
+    const ik = runtime?.footIk;
+    if (!ik?.feet || !runtime.root) return false;
+    const frameDt = Math.max(0.001, Math.min(0.08, Number(dt || 0.016)));
+    const disabled = !!state.dead || !!state.crouching;
+    runtime.root.updateMatrixWorld(true);
+    const actorWorld = actor.getWorldPosition(new THREE.Vector3());
+    if (ik.lastActorPos && actorWorld.distanceTo(ik.lastActorPos) > CHARACTER_FOOT_IK_TELEPORT_RESET) {
+      for (const side of Object.keys(ik.feet)) {
+        ik.feet[side].locked = false;
+        ik.feet[side].blend = 0;
+        ik.feet[side].hasPrev = false;
+      }
+    }
+    const prevActor = ik.lastActorPos ? ik.lastActorPos.clone() : null;
+    ik.lastActorPos = (ik.lastActorPos || new THREE.Vector3()).copy(actorWorld);
+    const actorVelX = prevActor ? (actorWorld.x - prevActor.x) / frameDt : 0;
+    const actorVelZ = prevActor ? (actorWorld.z - prevActor.z) / frameDt : 0;
+    const actorSpeed = Math.hypot(actorVelX, actorVelZ);
+    const groundY = actorWorld.y;
+    let applied = false;
+    for (const [side, names] of Object.entries(CHARACTER_FOOT_IK_BONES)) {
+      const rest = Number(ik.restHeights[side] || 0);
+      const foot = runtime.root.getObjectByName(names[2]);
+      const sideState = ik.feet[side];
+      if (!foot?.isBone || !sideState || rest <= 0) continue;
+      const animated = foot.getWorldPosition(new THREE.Vector3());
+      const height = animated.y - groundY - rest;
+      const footVelX = sideState.hasPrev ? (animated.x - sideState.prevAnim.x) / frameDt : 0;
+      const footVelZ = sideState.hasPrev ? (animated.z - sideState.prevAnim.z) / frameDt : 0;
+      const hadPrev = sideState.hasPrev;
+      sideState.prevAnim.copy(animated);
+      sideState.hasPrev = true;
+      // Опора против переноса — по знаку скорости стопы относительно актёра:
+      // опорная нога «уезжает назад» под корпусом, переносимая летит вперёд.
+      // Высота у этих клипов почти не меняется, поэтому она лишь страховка.
+      let stance = false;
+      let swing = false;
+      if (hadPrev && actorSpeed > 0.3) {
+        // Переносимая нога летит вперёд быстрее корпуса (~2x его скорости),
+        // опорная — нет. Порог замка мягкий, порог отпуска — явный перенос.
+        const along = ((footVelX - actorVelX) * actorVelX + (footVelZ - actorVelZ) * actorVelZ) / actorSpeed;
+        stance = along < actorSpeed * 0.15;
+        swing = along > actorSpeed * 0.7;
+      } else if (hadPrev) {
+        const footSpeed = Math.hypot(footVelX, footVelZ);
+        stance = footSpeed < 0.25;
+        swing = footSpeed > 0.8;
+      }
+      if (disabled || !hadPrev) {
+        sideState.locked = false;
+      } else if (!sideState.locked) {
+        if (stance && height < CHARACTER_FOOT_IK_LIFT * 1.2) {
+          sideState.locked = true;
+          sideState.lockPos.set(animated.x, groundY + rest, animated.z);
+        }
+      } else {
+        const drift = Math.hypot(animated.x - sideState.lockPos.x, animated.z - sideState.lockPos.z);
+        if (swing || height > CHARACTER_FOOT_IK_LIFT * 2.4 || drift > CHARACTER_FOOT_IK_MAX_DRIFT) {
+          sideState.locked = false;
+        }
+      }
+      // Замок хватает быстро, отпускает мягко: резкий возврат к анимации
+      // на полном дрейфе выглядел бы рывком стопы.
+      sideState.blend = characterLocomotionBlend(
+        sideState.blend,
+        sideState.locked ? 1 : 0,
+        sideState.locked ? CHARACTER_FOOT_IK_BLEND_RATE : 6,
+        frameDt
+      );
+      let target = null;
+      if (sideState.blend >= 0.02) {
+        target = animated.clone().lerp(sideState.lockPos, sideState.blend);
+      } else if (!disabled && height < -0.006) {
+        // Даже без фиксации стопа не должна тонуть в земле (наклоны корпуса,
+        // директивная поза): поднимаем сустав до уровня касания.
+        target = animated.clone().setY(groundY + rest);
+      }
+      if (target && solveCharacterLegChain(runtime.root, names, target)) applied = true;
+    }
+    return applied;
   }
 
   function setCharacterGlbAction(runtime, name = 'idle', fadeSeconds = 0.16, options = {}) {
@@ -1017,6 +1214,7 @@
         const previous = actor.userData.characterGlbRuntime;
         actor.add(root);
         actor.userData.characterGlbRuntime = runtime;
+        captureCharacterFootIkRest(actor, runtime);
         setCharacterGlbAction(runtime, 'idle', 0);
         refreshCharacterGlbEquipmentLayers(actor, options.equipment || {});
         if (options.npcAnimations && typeof attachApprovedNpcAnimations === 'function') {
@@ -1064,16 +1262,23 @@
       locomotion.playbackRate < 0 ? 7 : 9,
       frameDt
     );
+    runtime.strideSyncRate = characterLocomotionBlend(
+      runtime.strideSyncRate ?? 1,
+      characterStrideSyncTarget(runtime, locomotion),
+      8,
+      frameDt
+    );
     const action = runtime.actions?.[runtime.currentAction];
     if (action) {
       const baseRate = runtime.currentAction === 'walk' ? 1.05 : 1;
-      action.setEffectiveTimeScale(baseRate * runtime.directionalPlaybackRate);
+      action.setEffectiveTimeScale(baseRate * runtime.directionalPlaybackRate * runtime.strideSyncRate);
     }
     clearCharacterGlbDirectionalPose(runtime);
     runtime.root.position.y = state.crouching ? -0.13 : 0;
     runtime.mixer.update(frameDt);
     applyCharacterFaceShapeFrame(runtime.root);
     applyCharacterGlbDirectionalPose(runtime, locomotion, frameDt);
+    applyCharacterFootIk(actor, runtime, frameDt, state);
     const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
       ? performance.now()
       : Date.now();

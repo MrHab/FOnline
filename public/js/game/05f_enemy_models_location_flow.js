@@ -972,8 +972,18 @@
       });
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;
-      if (mesh.userData.enemyWeaponGroup) {
-        updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, animationDt, enemy);
+      const npcWeaponGroup = mesh.userData.enemyWeaponGroup;
+      if (npcWeaponGroup?.userData?.weaponMeshLegacy && typeof makeWeaponModelMesh === 'function') {
+        const upgraded = makeWeaponModelMesh(mesh.userData.weaponId || enemy.weapon || '');
+        if (upgraded) {
+          disposeGroupChildren(npcWeaponGroup);
+          initWeaponVisualState(npcWeaponGroup);
+          npcWeaponGroup.add(upgraded);
+          npcWeaponGroup.userData.weaponMeshLegacy = false;
+        }
+      }
+      if (npcWeaponGroup) {
+        updateWeaponVisualAnimation(npcWeaponGroup, animationDt, enemy);
       }
       const accent = mesh.userData.variantAccent;
       if (accent?.material) {

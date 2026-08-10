@@ -253,6 +253,7 @@
       enemy.traderProfile = '';
       enemy.dialogueProfile = '';
       enemy.traderQuests = [];
+      group.userData.weaponId = 'fists';
       group.userData.enemyEquipmentKey = 'natural-creature';
       group.userData.enemyEquipment = enemy.equipment;
       return;
@@ -264,6 +265,10 @@
     group.userData.enemyEquipment = eq;
     enemy.equipment = eq;
     enemy.weapon = eq.weapon;
+    // Хват оружия (04d) берёт ствол из userData.weaponId; без обновления там
+    // навсегда оставался спавновый 'fists', хват отказывал, и оружие висело
+    // на невидимом процедурном сокете рядом с НПС.
+    group.userData.weaponId = equipmentVisualBaseId(eq.weapon || 'fists');
 
     const parts = group.userData.actorParts || {};
     applyArmorVisualSet(parts, eq);
@@ -279,6 +284,9 @@
     const mesh = eq.weapon && eq.weapon !== 'fists' ? makeRemoteWeaponMesh(eq.weapon) : null;
     weaponGroup.visible = !!mesh;
     if (mesh) weaponGroup.add(mesh);
+    // GLB-шаблон ствола мог ещё не загрузиться — тогда встал старый меш без
+    // сокетов хвата. Помечаем, чтобы кадровый цикл заменил его на GLB.
+    weaponGroup.userData.weaponMeshLegacy = !!mesh && !mesh.userData?.weaponSharedAsset;
   }
 
   function enemyRenderKey(type = {}) {

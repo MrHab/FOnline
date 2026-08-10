@@ -15815,8 +15815,20 @@ function updateServerEnemies(room, dt, opts = {}) {
           if (ranged) serverNpcConsumeCombatAmmo(enemy, weapon, target, now);
           if (target.hp <= 0 && !target.dead) {
             target.dead = true;
+            target.diedAt = now;
             clearEnemyTarget(enemy);
-            serverRespawnPlayer(target, room, { enemyId: enemy.id, enemyName: enemy.name });
+            // В зонах полного лута смерть от твари стоит того же, что и от
+            // игрока: весь рюкзак остаётся на месте гибели.
+            const deathLoc = roomLocation(room);
+            const npcFullDrop = locationHasFullInventoryDrop(deathLoc);
+            const droppedItems = npcFullDrop ? serverDropPvpInventory(room, target, null, now) : [];
+            serverRespawnPlayer(target, room, {
+              enemyId: enemy.id,
+              enemyName: enemy.name,
+              pvpMode: locationPvpMode(deathLoc),
+              fullDrop: npcFullDrop,
+              droppedItems
+            });
           }
         }
       }

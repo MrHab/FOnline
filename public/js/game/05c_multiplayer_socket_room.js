@@ -950,7 +950,7 @@
       closeTraderWindow();
       closeStorageWindow();
       closeAllWindows();
-      if (data.cause && data.cause.pvp && data.cause.fullDrop && typeof applyPvpFullDropInventory === 'function') {
+      if (data.cause && data.cause.fullDrop && typeof applyPvpFullDropInventory === 'function') {
         applyPvpFullDropInventory(data.cause.droppedItems || []);
       } else if (data.cause && data.cause.pvp && data.cause.consumableDrop && typeof applyPvpConsumableDropInventory === 'function') {
         applyPvpConsumableDropInventory(data.cause.droppedItems || []);
@@ -997,6 +997,9 @@
           : (data.cause.consumableDrop
             ? 'Вы погибли в PvP-зоне. Часть расходников выпала, экипировка при вас.'
             : 'Вы погибли в PvP-зоне и очнулись в поселении.'));
+      } else if (data.cause && data.cause.fullDrop) {
+        addLog(`☠ ${data.cause.enemyName || 'Тварь'} одолел вас в зоне полного лута. Рюкзак остался на месте гибели.`, null, 'combat');
+        setReadout('Вы погибли в зоне полного лута. Рюкзак выпал на месте смерти.');
       } else {
         addLog('☠ Вы потеряли сознание и очнулись в поселении.', null, 'combat');
         setReadout('Вы очнулись в поселении.');

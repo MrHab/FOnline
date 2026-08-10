@@ -97,6 +97,41 @@
   // large correction/teleport may replace the anchor.
   const REMOTE_VISUAL_IDLE_FREEZE_HARD_UPDATE_DISTANCE = 1.25;
   const REMOTE_VISUAL_IDLE_FREEZE_ANGLE_UPDATE_MS = 180;
+  const REMOTE_ANIMATION_LOD_NEAR_DISTANCE = 10;
+  const REMOTE_ANIMATION_LOD_MID_DISTANCE = 18;
+  const REMOTE_ANIMATION_LOD_MID_INTERVAL = 0.05;
+  const REMOTE_ANIMATION_LOD_FAR_INTERVAL = 0.08;
+  const REMOTE_ANIMATION_LOD_MAX_DT = 0.08;
+
+  function remoteAnimationLodInterval(distance, visible = true, important = false) {
+    if (!visible) return Infinity;
+    if (important || Number(distance || 0) <= REMOTE_ANIMATION_LOD_NEAR_DISTANCE) return 0;
+    return Number(distance || 0) <= REMOTE_ANIMATION_LOD_MID_DISTANCE
+      ? REMOTE_ANIMATION_LOD_MID_INTERVAL
+      : REMOTE_ANIMATION_LOD_FAR_INTERVAL;
+  }
+
+  function consumeRemoteAnimationLodDt(row, dt, interval, stateKey) {
+    const numericDt = Number(dt);
+    const frameDt = Number.isFinite(numericDt) ? Math.max(0, Math.min(0.05, numericDt)) : 0.016;
+    const accumulatedDt = Math.min(
+      REMOTE_ANIMATION_LOD_MAX_DT,
+      Math.max(0, Number(row?.remoteAnimationLodDt || 0)) + frameDt
+    );
+    const nextStateKey = String(stateKey || '');
+    const stateChanged = String(row?.remoteAnimationLodStateKey || '') !== nextStateKey;
+    row.remoteAnimationLodStateKey = nextStateKey;
+    if (!Number.isFinite(interval)) {
+      row.remoteAnimationLodDt = accumulatedDt;
+      return 0;
+    }
+    if (!stateChanged && interval > 0 && accumulatedDt + 1e-6 < interval) {
+      row.remoteAnimationLodDt = accumulatedDt;
+      return 0;
+    }
+    row.remoteAnimationLodDt = 0;
+    return accumulatedDt;
+  }
 
   function moveRemotePositionToward(group, targetX, targetZ, dt, options = {}) {
     if (!group || !group.position) return;
@@ -1413,10 +1448,46 @@
       updateRemoteVisualLocomotion(row, dt, now);
       row.x = g.position.x;
       row.z = g.position.z;
-      applyCharacterCrouchVisual(g, !!g.userData.crouching, dt);
       const visualMoveX = Number(row.visualVelX || 0);
       const visualMoveZ = Number(row.visualVelZ || 0);
-      updateCharacterLocomotionAnimation(g, dt, {
+      const injuries = row.data?.injuries || {};
+      const meleeStartedAt = Number(g.userData?.meleeAnim?.startedAt || 0);
+      const attackToken = Number(g.userData?.attackAnimationToken || 0);
+      const attackActive = attackToken > 0 && Number(g.userData?.attackAnimationUntil || 0) > now;
+      const reloadStartedAt = Number(g.userData?.reloadAnim?.startedAt || 0);
+      const reloadDurationMs = Math.max(0, Number(g.userData?.reloadAnim?.duration || 0)) * 1000;
+      const reloadActive = reloadStartedAt > 0 && now < reloadStartedAt + reloadDurationMs;
+      const hitReactionStartedAt = Number(g.userData?.hitReactionAnim?.startedAt || 0);
+      const hitReactionDurationMs = Math.max(0, Number(g.userData?.hitReactionAnim?.duration || 0)) * 1000;
+      const hitReactionActive = hitReactionStartedAt > 0 && now < hitReactionStartedAt + hitReactionDurationMs;
+      const visible = g.visible !== false;
+      const distance = remotePlayerDistanceToLocal(row);
+      const important = attackActive || reloadActive || meleeStartedAt > 0 || hitReactionActive;
+      const stateKey = [
+        visible ? 1 : 0,
+        g.userData.remoteMoving ? 1 : 0,
+        g.userData.crouching ? 1 : 0,
+        attackToken,
+        attackActive ? 1 : 0,
+        reloadStartedAt,
+        reloadActive ? 1 : 0,
+        meleeStartedAt,
+        hitReactionStartedAt,
+        hitReactionActive ? 1 : 0,
+        injuries.brokenArm ? 1 : 0,
+        injuries.brokenLeg ? 1 : 0,
+        injuries.concussion ? 1 : 0,
+        injuries.infection ? 1 : 0
+      ].join('|');
+      const animationDt = consumeRemoteAnimationLodDt(
+        row,
+        dt,
+        remoteAnimationLodInterval(distance, visible, important),
+        stateKey
+      );
+      if (animationDt <= 0) return;
+      applyCharacterCrouchVisual(g, !!g.userData.crouching, animationDt);
+      updateCharacterLocomotionAnimation(g, animationDt, {
         moving: !!g.userData.remoteMoving,
         speed: Math.hypot(visualMoveX, visualMoveZ),
         crouching: !!g.userData.crouching,
@@ -1424,14 +1495,14 @@
         moveZ: visualMoveZ,
         facingAngle: Number(g.rotation.y || 0) - Math.PI
       });
-      applyCharacterInjuryVisual(g, row.data?.injuries || {}, dt);
+      applyCharacterInjuryVisual(g, injuries, animationDt);
       const remoteWeaponOwner = {
         x: row.x,
         z: row.z,
         angle: Number.isFinite(Number(row.netAngle)) ? Number(row.netAngle) : Number(g.userData.targetAngle || 0)
       };
-      updateWeaponVisualAnimation(g.userData.parts?.weaponGroup, dt, remoteWeaponOwner);
-      updateWeaponVisualAnimation(g.userData.parts?.offhandWeaponGroup, dt, remoteWeaponOwner);
-      updateCharacterMeleeAnimation(g, dt);
+      updateWeaponVisualAnimation(g.userData.parts?.weaponGroup, animationDt, remoteWeaponOwner);
+      updateWeaponVisualAnimation(g.userData.parts?.offhandWeaponGroup, animationDt, remoteWeaponOwner);
+      updateCharacterMeleeAnimation(g, animationDt);
     });
   }

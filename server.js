@@ -273,10 +273,21 @@ function readAuthoredDataJson(file, fallback) {
   return readJson(file, bundledValue);
 }
 
-function writeJsonAtomic(file, data) {
+function writeJsonAtomic(file, data, options = {}) {
   const tmp = `${file}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
-  fs.renameSync(tmp, file);
+  const json = options.pretty === true
+    ? JSON.stringify(data, null, 2)
+    : JSON.stringify(data);
+  try {
+    fs.writeFileSync(tmp, json, 'utf8');
+    fs.renameSync(tmp, file);
+  } finally {
+    // A failed rename must leave the previous durable file untouched and must
+    // not strand a partial temp file that could be mistaken for a recovery.
+    try {
+      if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
+    } catch (_) {}
+  }
 }
 
 function safeLocationFileId(id) {
@@ -1398,7 +1409,7 @@ app.post('/api/dev/locations/:id', (req, res) => {
   const location = normalizeLocationDefinition({ ...incoming, id }, null);
   retireLocationFileCaseVariants(location.id);
   const file = locationFilePath(location.id);
-  writeJsonAtomic(file, location);
+  writeJsonAtomic(file, location, { pretty: true });
   if (typeof LOCATIONS === 'object') LOCATIONS[location.id] = location;
   syncWorldSiteLocationDefinitions(true);
   const invalidatedRooms = invalidateRoomsForLocation(location.id, 'dev-location-save');
@@ -1498,7 +1509,7 @@ app.post('/api/dev/global-map', (req, res) => {
   GLOBAL_MAP = normalizeGlobalMapConfig(incoming);
   WASTELAND_SIM.syncGlobalMap(GLOBAL_MAP);
   syncWorldSiteLocationDefinitions();
-  writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP);
+  writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true });
   res.json({
     ok: true,
     file: path.relative(__dirname, GLOBAL_MAP_FILE).replace(/\\/g, '/'),
@@ -2820,7 +2831,7 @@ const FILE_GLOBAL_MAP_FALLBACK = {
 const LOCATIONS = loadAuthoredLocationDefinitions();
 let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredDataJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
 if (!fs.existsSync(GLOBAL_MAP_FILE)) {
-  try { writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP); } catch (err) { console.error('Failed to create global map file:', err); }
+  try { writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true }); } catch (err) { console.error('Failed to create global map file:', err); }
 }
 const SERVER_ENEMY_TYPES = [
   // v7.36: у каждого типа свои чувства. Значения в world units: TILE=2,
@@ -7147,6 +7158,15 @@ function serverApplyProgressionRequest(player = {}, data = {}) {
   serverUpdateFreeProgressionPoints(player);
   serverApplyDerivedVitals(player);
   return before !== JSON.stringify({ skills: player.skillRanks || {}, talents: player.talentRanks || {} });
+}
+
+function serverStateHasProgressionProfile(data = {}) {
+  if (!data || typeof data !== 'object') return false;
+  if (data.profileOnly === true) return true;
+  const reason = String(data.reason || '');
+  if (reason === 'profile' || reason === 'startProfile' || reason === 'idleProfile') return true;
+  return Object.prototype.hasOwnProperty.call(data, 'skillRanks')
+    || Object.prototype.hasOwnProperty.call(data, 'talentRanks');
 }
 
 function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
@@ -13690,6 +13710,16 @@ function publicEnemy(e, viewer = null) {
   };
 }
 
+function publicEnemySnapshotForViewer(enemy, viewer = null, sharedSnapshot = null) {
+  const snapshot = sharedSnapshot || publicEnemy(enemy);
+  return {
+    ...snapshot,
+    hostileToPlayer: viewer
+      ? serverActorHostileToPlayer(enemy, viewer)
+      : snapshot.hostileToPlayer
+  };
+}
+
 const CORPSE_LOOT_HOLD_MS = 45000;
 const CORPSE_EMPTY_CLEANUP_MS = 500;
 const CORPSE_FULL_CLEANUP_MS = 90000;
@@ -13908,7 +13938,6 @@ function emitResourceUpdate(room, resource, actorId = '', item = null) {
     item
   };
   io.to(room.id).emit('resourceUpdated', payload);
-  io.to(room.id).emit('worldState', { reason: 'resource', state: room.worldState || publicWorldState(room, true) });
 }
 function publicWorldContainer(c) {
   syncWastelandFactionWarehouseContainer(c);
@@ -15896,13 +15925,28 @@ function emitEnemySnapshot(room, force = false) {
   const minInterval = roomNeedsHotEnemySnapshots(room) ? 80 : 360;
   if (!force && now - Number(room.lastEnemySnapshotAt || 0) < minInterval) return;
   room.lastEnemySnapshotAt = now;
-  for (const socketId of room.sockets) {
+  const socketIds = [...room.sockets];
+  // A lone viewer needs no fan-out copy. With multiple viewers, publicEnemy()
+  // has already created detached nested values and the default Socket.IO adapter
+  // encodes each emit synchronously, so they can be shared read-only while each
+  // viewer still receives a separate top-level hostility overlay.
+  const sharedEnemies = socketIds.length > 1
+    ? [...room.enemies.values()].map(enemy => ({
+        enemy,
+        snapshot: publicEnemy(enemy)
+      }))
+    : null;
+  for (const socketId of socketIds) {
     const viewer = players.get(socketId) || null;
-    io.to(socketId).emit('enemySnapshot', {
+    const target = io.to(socketId);
+    const transport = force ? target : target.volatile;
+    transport.emit('enemySnapshot', {
       roomId: room.id,
       locationId: room.locationId,
       t: now,
-      enemies: [...room.enemies.values()].map(enemy => publicEnemy(enemy, viewer))
+      enemies: sharedEnemies
+        ? sharedEnemies.map(({ enemy, snapshot }) => publicEnemySnapshotForViewer(enemy, viewer, snapshot))
+        : [...room.enemies.values()].map(enemy => publicEnemy(enemy, viewer))
     });
   }
 }
@@ -17936,9 +17980,14 @@ io.on('connection', (socket) => {
         emitAuthoritativePlayerState(p, { reason: 'movementCorrection' });
       }
     }
-    const progressionChanged = serverApplyProgressionRequest(p, data);
-    p.deviceType = normalizeDeviceType(data.deviceType || p.deviceType || 'desktop');
-    p.controlType = normalizeControlType(data.controlType || p.controlType || '', p.deviceType);
+    const progressionChanged = serverStateHasProgressionProfile(data)
+      ? serverApplyProgressionRequest(p, data)
+      : false;
+    if (Object.prototype.hasOwnProperty.call(data, 'deviceType')
+      || Object.prototype.hasOwnProperty.call(data, 'controlType')) {
+      p.deviceType = normalizeDeviceType(data.deviceType || p.deviceType || 'desktop');
+      p.controlType = normalizeControlType(data.controlType || p.controlType || '', p.deviceType);
+    }
     const equipmentMismatch = data.equipment && typeof data.equipment === 'object'
       ? !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)
       : false;
@@ -19396,7 +19445,7 @@ io.on('connection', (socket) => {
     const xp = serverHarvestXp(qty);
     serverGrantXp(p, xp);
     const publicRes = publicResource(resource);
-    if (typeof ack === 'function') ack({ ok: true, item, xp, apCost: spend.apCost, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, depleted: Number(resource.hp || 0) <= 0, worldState: room.worldState || publicWorldState(room, true) });
+    if (typeof ack === 'function') ack({ ok: true, item, xp, apCost: spend.apCost, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, depleted: Number(resource.hp || 0) <= 0 });
     emitResourceUpdate(room, resource, socket.id, item);
     emitEnemySnapshot(room, true);
   });

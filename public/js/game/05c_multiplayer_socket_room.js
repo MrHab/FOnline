@@ -1529,12 +1529,7 @@
         angle: player.angle,
         moving: !!physicallyMoving,
         turning: !!(turnedSinceLastSend && physicallyMoving),
-        crouching: player.crouching,
-        hp: player.hp,
-        maxHp: player.maxHp,
-        name: characterProfile.name || serverSession.login || 'Игрок',
-        deviceType: getDeviceType(),
-        controlType: getDeviceControlType()
+        crouching: player.crouching
       };
       // v7.74.63: periodic full profile sync must not carry authoritative motion.
       // The one forward jerk appeared about one second after movement/vector change,
@@ -1544,7 +1539,7 @@
       movementSocket.emit('state', movementPayload);
       if (periodicProfileSync || transitionReliableMotion) {
         const profilePayload = {
-          profileOnly: periodicProfileSync && !transitionReliableMotion,
+          profileOnly: true,
           reason: periodicProfileSync && !transitionReliableMotion ? 'profile' : (justStopped ? 'idleProfile' : 'startProfile'),
           hp: player.hp,
           maxHp: player.maxHp,
@@ -1570,8 +1565,8 @@
           profilePayload.inventory = typeof multiplayerInventorySnapshot === 'function' ? multiplayerInventorySnapshot() : null;
           profilePayload.injuries = multiplayerInjurySnapshot();
         }
-        // For start/stop this is just a profile companion to the reliable movement
-        // packet already sent above. For periodic sync it is explicitly profile-only.
+        // Start/stop motion was already sent in the reliable packet above. Every
+        // companion stays profile-only so it cannot overwrite fresh velocity.
         multiplayer.socket.emit('state', profilePayload);
       }
     }

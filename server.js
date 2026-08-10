@@ -466,7 +466,7 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
 };
 const LOCATION_PVP_LABELS = {
   peaceful: 'Мирная',
-  pvp: 'PvP без полного дропа',
+  pvp: 'PvP: падают расходники',
   pvpFullDrop: 'PvP с полным дропом'
 };
 
@@ -524,7 +524,7 @@ function locationCapitalStorageObject(loc = {}) {
     }
   };
 }
-function locationAllowsPvp(loc = {}) { return !locationIsFactionCapital(loc); }
+function locationAllowsPvp(loc = {}) { return locationPvpMode(loc) !== 'peaceful'; }
 function locationAllowsNpcCombat(loc = {}) { return !locationIsFactionCapital(loc); }
 function roomAllowsNpcCombat(room = null) {
   if (!room) return false;
@@ -8390,6 +8390,68 @@ function serverDropPvpInventory(room, target, killer, now = Date.now()) {
     });
   }
   return created;
+}
+
+// Средний режим PvP: экипировка остаётся при владельце, падает половина
+// каждой стопки расходников. Расходник = всё стекуемое, кроме серебра.
+const SERVER_PVP_CONSUMABLE_DROP_IDS = new Set(Object.keys(SERVER_ITEM_STACK_LIMITS).filter(id => id !== 'silver'));
+
+function serverDropPvpConsumables(room, target, killer, now = Date.now()) {
+  if (!room || !target) return [];
+  const rows = Array.isArray(target.inventory) ? target.inventory : [];
+  const drops = [];
+  for (const row of rows) {
+    const baseId = serverBaseItemId(row?.id || '');
+    if (!SERVER_PVP_CONSUMABLE_DROP_IDS.has(baseId)) continue;
+    const have = Math.max(0, Math.floor(Number(row.qty || 0)));
+    const dropQty = Math.ceil(have / 2);
+    if (dropQty <= 0) continue;
+    row.qty = have - dropQty;
+    drops.push({ id: baseId, qty: dropQty });
+  }
+  if (!drops.length) return [];
+  target.inventory = rows.filter(row => Math.max(0, Math.floor(Number(row?.qty || 0))) > 0);
+  target.inventoryUpdatedAt = now;
+  const created = [];
+  let index = 0;
+  for (const entry of drops) {
+    if (!SERVER_ITEM_IDS.has(entry.id)) continue;
+    const angle = index * 2.399963229728653 + 0.35;
+    const radius = 0.35 + Math.min(1.2, index * 0.055);
+    let x = clamp(Number(target.x || 0) + Math.sin(angle) * radius, -MAP_SIZE, MAP_SIZE);
+    let z = clamp(Number(target.z || 0) + Math.cos(angle) * radius, -MAP_SIZE, MAP_SIZE);
+    if (!isRoomWalkableWorld(room, x, z, 0.25)) { x = Number(target.x || 0); z = Number(target.z || 0); }
+    const groundItem = {
+      id: makeServerEntityId('pvp_drop'),
+      itemId: entry.id,
+      qty: entry.qty,
+      x,
+      z,
+      droppedBy: target.id,
+      killerId: killer?.id || '',
+      pvpDrop: true,
+      createdAt: now
+    };
+    room.groundItems.set(groundItem.id, groundItem);
+    created.push(publicGroundItem(groundItem));
+    index++;
+  }
+  if (created.length) {
+    refreshRoomWorldState(room);
+    io.to(room.id).emit('groundItemsSnapshot', {
+      roomId: room.id,
+      locationId: room.locationId,
+      t: now,
+      items: [...room.groundItems.values()].map(publicGroundItem)
+    });
+  }
+  return created;
+}
+
+function serverDropPvpLootForMode(room, target, killer, loc, now = Date.now()) {
+  if (locationHasFullInventoryDrop(loc)) return serverDropPvpInventory(room, target, killer, now);
+  if (locationPvpMode(loc) === 'pvp') return serverDropPvpConsumables(room, target, killer, now);
+  return [];
 }
 
 function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now()) {
@@ -18827,7 +18889,7 @@ io.on('connection', (socket) => {
       if (killed) {
         target.dead = true;
         target.diedAt = now;
-        if (!isSelf && locationHasFullInventoryDrop(loc)) droppedItems = serverDropPvpInventory(room, target, p, now);
+        if (!isSelf) droppedItems = serverDropPvpLootForMode(room, target, p, loc, now);
       }
       const payload = {
         roomId: room.id,
@@ -18854,6 +18916,7 @@ io.on('connection', (socket) => {
         injuries: sanitizeInjuries(target.injuries || {}),
         newInjuries,
         fullDrop: !isSelf && locationHasFullInventoryDrop(loc),
+        consumableDrop: !isSelf && locationPvpMode(loc) === 'pvp',
         droppedItems,
         t: now
       };
@@ -18883,6 +18946,7 @@ io.on('connection', (socket) => {
         selfExplosion: row.isSelf,
         pvpMode: locationPvpMode(loc),
         fullDrop: !row.isSelf && locationHasFullInventoryDrop(loc),
+        consumableDrop: !row.isSelf && locationPvpMode(loc) === 'pvp',
         killerId: p.id,
         killerName: p.name || 'Игрок',
         droppedItems: row.droppedItems
@@ -19171,7 +19235,7 @@ io.on('connection', (socket) => {
     if (killed) {
       target.dead = true;
       target.diedAt = now;
-      droppedItems = locationHasFullInventoryDrop(loc) ? serverDropPvpInventory(room, target, attacker, now) : [];
+      droppedItems = serverDropPvpLootForMode(room, target, attacker, loc, now);
     }
 
     const payload = {
@@ -19200,6 +19264,7 @@ io.on('connection', (socket) => {
       injuries: sanitizeInjuries(target.injuries || {}),
       newInjuries,
       fullDrop: locationHasFullInventoryDrop(loc),
+      consumableDrop: locationPvpMode(loc) === 'pvp',
       droppedItems,
       t: now
     };
@@ -19226,6 +19291,7 @@ io.on('connection', (socket) => {
       criticalMultiplier: criticalHits > 0 ? 2 : 1,
       secondChance,
       fullDrop: locationHasFullInventoryDrop(loc),
+      consumableDrop: locationPvpMode(loc) === 'pvp',
       droppedItems,
       combat: spend.combat,
       combats: spend.combats
@@ -19236,6 +19302,7 @@ io.on('connection', (socket) => {
         pvp: true,
         pvpMode,
         fullDrop: locationHasFullInventoryDrop(loc),
+        consumableDrop: locationPvpMode(loc) === 'pvp',
         killerId: attacker.id,
         killerName: attacker.name || 'Игрок',
         droppedItems

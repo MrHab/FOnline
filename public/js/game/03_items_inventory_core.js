@@ -601,6 +601,28 @@
     return true;
   }
 
+  function applyPvpConsumableDropInventory(droppedItems = []) {
+    // Средний режим PvP: сервер уронил половину стопок расходников —
+    // вычитаем те же количества локально, экипировка не тронута.
+    let changed = false;
+    let count = 0;
+    (Array.isArray(droppedItems) ? droppedItems : []).forEach(item => {
+      const id = String(item?.itemId || item?.id || '');
+      const qty = Math.max(0, Math.floor(Number(item?.qty || 0)));
+      if (!id || qty <= 0 || !inventory.has(id)) return;
+      const left = Math.max(0, (inventory.get(id) || 0) - qty);
+      if (left > 0) inventory.set(id, left);
+      else inventory.delete(id);
+      count += qty;
+      changed = true;
+    });
+    if (!changed) return false;
+    refreshInventoryDependentUI();
+    addLog(`☠ PvP: часть расходников выпала на месте смерти (${count} шт.).`, null, 'loot');
+    queueSave(true);
+    return true;
+  }
+
   function maxCarryableQty(id) {
     const w = itemWeight(id);
     if (w <= 0) return Number.MAX_SAFE_INTEGER;

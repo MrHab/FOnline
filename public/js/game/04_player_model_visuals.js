@@ -865,6 +865,15 @@
     if (!weaponGroup) return;
     initWeaponVisualState(weaponGroup);
     if (typeof updateWeaponModelAnimation === 'function') updateWeaponModelAnimation(weaponGroup, dt);
+    // Оружие, посаженное утверждённым хватом, живёт в кисти: позу задаёт
+    // монтаж (04d) с его конвергенцией и «поднятым положением». Старые
+    // коррекции — отскок от стен, доворот и отдача в локальных осях —
+    // писались поверх и уводили модель из рук («оружие летает»).
+    if (weaponGroup.userData.approvedGripMounted) {
+      weaponGroup.userData.recoil = Math.max(0, Number(weaponGroup.userData.recoil || 0) - dt * 1.85);
+      weaponGroup.userData.wallPullback = 0;
+      return;
+    }
     const basePos = weaponGroup.userData.basePosition;
     const baseRot = weaponGroup.userData.baseRotation;
     let recoil = Number(weaponGroup.userData.recoil || 0);

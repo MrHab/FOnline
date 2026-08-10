@@ -4,7 +4,7 @@
 (async () => {
   'use strict';
 
-  const GAME_CLIENT_VERSION = '7.99.8-weapon-probe-dynamic-v1';
+  const GAME_CLIENT_VERSION = '7.99.9-mounted-weapon-authority-v1';
   const MODEL_COLLIDER_CATALOG_URL = '/assets/models/wasteland/model-colliders.json';
   const GAME_SCRIPT_PARTS = [
     '/js/game/00_save_generation_drain.js',

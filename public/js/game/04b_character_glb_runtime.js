@@ -904,6 +904,8 @@
   }
   const CHARACTER_FOOT_IK_LIFT = 0.05;
   const CHARACTER_FOOT_IK_MAX_DRIFT = 0.44;
+  const CHARACTER_FOOT_IK_TWIST_LIMIT = 0.55;
+  const CHARACTER_FOOT_IK_TURN_TWIST_LIMIT = 0.32;
   const CHARACTER_FOOT_IK_BLEND_RATE = 24;
   const CHARACTER_FOOT_IK_TELEPORT_RESET = 1.6;
 
@@ -912,6 +914,7 @@
       locked: false,
       blend: 0,
       lockPos: new THREE.Vector3(),
+      lockYaw: 0,
       prevAnim: new THREE.Vector3(),
       hasPrev: false
     };
@@ -991,7 +994,7 @@
     return true;
   }
 
-  function applyCharacterFootIk(actor, runtime, dt = 0.016, state = {}) {
+  function applyCharacterFootIk(actor, runtime, dt = 0.016, state = {}, locomotion = null) {
     const ik = runtime?.footIk;
     if (!ik?.feet || !runtime.root) return false;
     const frameDt = Math.max(0.001, Math.min(0.08, Number(dt || 0.016)));
@@ -1011,6 +1014,11 @@
     const actorVelZ = prevActor ? (actorWorld.z - prevActor.z) / frameDt : 0;
     const actorSpeed = Math.hypot(actorVelX, actorVelZ);
     const groundY = actorWorld.y;
+    const rootForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
+      runtime.root.getWorldQuaternion(new THREE.Quaternion())
+    );
+    const rootYaw = Math.atan2(rootForward.x, rootForward.z);
+    const turning = !!locomotion?.turning;
     let applied = false;
     for (const [side, names] of Object.entries(CHARACTER_FOOT_IK_BONES)) {
       const rest = Number(ik.restHeights[side] || 0);
@@ -1037,8 +1045,10 @@
         swing = along > actorSpeed * 0.7;
       } else if (hadPrev) {
         const footSpeed = Math.hypot(footVelX, footVelZ);
-        stance = footSpeed < 0.25;
-        swing = footSpeed > 0.8;
+        // В развороте клип ходьбы всё равно свипует стопы (~0.9 м/с) —
+        // замок должен пересиливать свип, иначе ноги «шагают вперёд» на месте.
+        stance = footSpeed < (turning ? 1.1 : 0.25);
+        swing = footSpeed > (turning ? 1.5 : 0.8);
       }
       if (disabled || !hadPrev) {
         sideState.locked = false;
@@ -1046,10 +1056,13 @@
         if (stance && height < CHARACTER_FOOT_IK_LIFT * 1.2) {
           sideState.locked = true;
           sideState.lockPos.set(animated.x, groundY + rest, animated.z);
+          sideState.lockYaw = rootYaw;
         }
       } else {
         const drift = Math.hypot(animated.x - sideState.lockPos.x, animated.z - sideState.lockPos.z);
-        if (swing || height > CHARACTER_FOOT_IK_LIFT * 2.4 || drift > CHARACTER_FOOT_IK_MAX_DRIFT) {
+        const twist = Math.abs(characterAngleDelta(sideState.lockYaw, rootYaw));
+        const twistLimit = turning ? CHARACTER_FOOT_IK_TURN_TWIST_LIMIT : CHARACTER_FOOT_IK_TWIST_LIMIT;
+        if (swing || height > CHARACTER_FOOT_IK_LIFT * 2.4 || drift > CHARACTER_FOOT_IK_MAX_DRIFT || twist > twistLimit) {
           sideState.locked = false;
         }
       }
@@ -1278,7 +1291,7 @@
     runtime.mixer.update(frameDt);
     applyCharacterFaceShapeFrame(runtime.root);
     applyCharacterGlbDirectionalPose(runtime, locomotion, frameDt);
-    applyCharacterFootIk(actor, runtime, frameDt, state);
+    applyCharacterFootIk(actor, runtime, frameDt, state, locomotion);
     const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
       ? performance.now()
       : Date.now();

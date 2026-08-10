@@ -422,11 +422,18 @@
       mesh.normalizeSkinWeights?.();
       mesh.castShadow = true;
       mesh.receiveShadow = false;
-      mesh.frustumCulled = false;
+      if (typeof enableConservativeCharacterFrustumCulling === 'function') {
+        enableConservativeCharacterFrustumCulling(mesh, 2.4);
+      } else {
+        mesh.frustumCulled = true;
+      }
       mesh.userData = {
         ...(sourceMesh.userData || {}),
         approvedEquipmentSharedAsset: true
       };
+      if (characterRoot.userData?.enemy) mesh.userData.enemy = characterRoot.userData.enemy;
+      if (characterRoot.userData?.traderNpc) mesh.userData.traderNpc = characterRoot.userData.traderNpc;
+      if (characterRoot.userData?.remotePlayerRow) mesh.userData.remotePlayerRow = characterRoot.userData.remotePlayerRow;
       mesh.userData.approvedEquipmentSourceName = sourceMesh.name;
       mesh.userData.approvedBackpackLayer = String(
         sourceMesh.userData?.realm_backpack_layer

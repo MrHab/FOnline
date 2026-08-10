@@ -26,7 +26,7 @@
     return { x: window.innerWidth * 0.5, y: window.innerHeight * 0.5 };
   }
 
-  const INTERACTION_TARGET_CACHE_MS = 120;
+  const INTERACTION_TARGET_CACHE_MS = 360;
   const INTERACTION_TARGET_SCREEN_EPS = 2.5;
   const INTERACTION_TARGET_WORLD_EPS = 0.18;
   let interactionTargetCache = {

@@ -152,9 +152,19 @@
     } else {
       minimapDrawTimer = 0;
     }
-    drawMinimap();
-    drawMobileHudMinimap();
-    drawDesktopHudMinimap();
+    const mobileCanvas = document.getElementById('mobile-minimap-canvas');
+    const desktopCanvas = document.getElementById('desktop-minimap-canvas');
+    if (minimapCanvasIsVisible(miniCanvas)) drawMinimap();
+    if (minimapCanvasIsVisible(mobileCanvas)) drawMobileHudMinimap();
+    if (minimapCanvasIsVisible(desktopCanvas)) drawDesktopHudMinimap();
+  }
+
+  function minimapCanvasIsVisible(canvas) {
+    if (!canvas?.isConnected || typeof canvas.getClientRects !== 'function') return false;
+    // getClientRects() is empty when this canvas or any parent HUD panel uses
+    // display:none. Only the active desktop/mobile/legacy surface needs actor
+    // markers; a newly opened surface is refreshed on the next budgeted tick.
+    return canvas.getClientRects().length > 0;
   }
 
   function drawMobileHudMinimap() {

@@ -187,13 +187,36 @@
     });
   }
 
+  function enableConservativeCharacterFrustumCulling(obj, minimumRadius = 2.4) {
+    if (!obj?.isMesh) return;
+    const geometry = obj.geometry;
+    if (geometry && !geometry.boundingSphere && typeof geometry.computeBoundingSphere === 'function') {
+      geometry.computeBoundingSphere();
+    }
+    if (geometry?.boundingSphere && Number.isFinite(Number(geometry.boundingSphere.radius))) {
+      // Skinned meshes keep bind-pose bounds in this Three.js version. Expand
+      // them enough for locomotion, recoil and equipment so culling cannot clip
+      // a visible limb while still skipping whole actors outside the camera.
+      geometry.userData = geometry.userData || {};
+      const baseRadius = Number.isFinite(Number(geometry.userData.realmCharacterCullBaseRadius))
+        ? Number(geometry.userData.realmCharacterCullBaseRadius)
+        : Number(geometry.boundingSphere.radius || 0);
+      geometry.userData.realmCharacterCullBaseRadius = baseRadius;
+      geometry.boundingSphere.radius = Math.max(
+        Number(minimumRadius || 2.4),
+        baseRadius * 1.35
+      );
+    }
+    obj.frustumCulled = true;
+  }
+
   function configureCharacterGlbScene(root, options = {}) {
     const castShadow = options.castShadow !== false;
     root.traverse(obj => {
       if (!obj?.isMesh) return;
       obj.castShadow = castShadow;
       obj.receiveShadow = false;
-      obj.frustumCulled = false;
+      enableConservativeCharacterFrustumCulling(obj);
       const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
       materials.filter(Boolean).forEach(material => {
         material.side = THREE.FrontSide;
@@ -631,7 +654,7 @@
         if (!obj?.isMesh) return;
         obj.castShadow = true;
         obj.receiveShadow = false;
-        obj.frustumCulled = false;
+        enableConservativeCharacterFrustumCulling(obj, 1.2);
       });
       attachCharacterVariantToHead(root, group, appearance);
       root.userData.characterAppearanceVariantGroup = group;
@@ -1148,6 +1171,25 @@
     return applied;
   }
 
+  function setCharacterFootIkEnabled(runtime, enabled = true) {
+    const next = enabled !== false;
+    if (!runtime || runtime.footIkEnabled === next) return;
+    runtime.footIkEnabled = next;
+    const ik = runtime.footIk;
+    if (!ik?.feet) return;
+    // A distant actor can travel while IK is suspended. Drop old world-space
+    // foot locks so returning to the near tier cannot pull a leg backwards.
+    ik.lastActorPos = null;
+    ik.lastAction = '';
+    Object.values(ik.feet).forEach(side => {
+      if (!side) return;
+      side.locked = false;
+      side.blend = 0;
+      side.relockCooldown = 0;
+      side.hasPrev = false;
+    });
+  }
+
   function setCharacterGlbAction(runtime, name = 'idle', fadeSeconds = 0.16, options = {}) {
     if (!runtime?.actions) return;
     const nextName = runtime.actions[name] ? name : (runtime.actions.idle ? 'idle' : Object.keys(runtime.actions)[0]);
@@ -1386,7 +1428,9 @@
       frameDt
     );
     if (runtime.crouchBlend > 0.01) applyCharacterGlbCrouchPose(runtime, runtime.crouchBlend);
-    applyCharacterFootIk(actor, runtime, frameDt, state, locomotion);
+    const footIkEnabled = state.footIk !== false;
+    setCharacterFootIkEnabled(runtime, footIkEnabled);
+    if (footIkEnabled) applyCharacterFootIk(actor, runtime, frameDt, state, locomotion);
     const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
       ? performance.now()
       : Date.now();

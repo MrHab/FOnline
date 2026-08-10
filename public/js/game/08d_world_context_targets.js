@@ -19,10 +19,21 @@
     updatePointerWorld(keepX, keepY);
   }
 
-  function findEnemyFromEvent(clientX, clientY) {
-    updatePointerWorld(clientX, clientY);
-    raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(enemyMeshes, true);
+  function findEnemyFromEvent(clientX, clientY, pointerAlreadyUpdated = false) {
+    if (!pointerAlreadyUpdated) updatePointerWorld(clientX, clientY);
+    const proxies = [];
+    const fallbackRoots = [];
+    enemyMeshes.forEach(root => {
+      if (!root || root.visible === false) return;
+      const proxy = root.userData?.interactionProxy;
+      if (proxy) proxies.push(proxy);
+      else fallbackRoots.push(root);
+    });
+    const hits = proxies.length ? raycaster.intersectObjects(proxies, false) : [];
+    if (fallbackRoots.length) {
+      hits.push(...raycaster.intersectObjects(fallbackRoots, true));
+      hits.sort((a, b) => Number(a.distance || 0) - Number(b.distance || 0));
+    }
     for (const h of hits) {
       let obj = h.object;
       while (obj) {
@@ -401,11 +412,22 @@
 
   function findRemotePlayerFromEvent(clientX, clientY) {
     updatePointerWorld(clientX, clientY);
-    const roots = [];
-    multiplayer.remotePlayers.forEach(row => { if (row?.group && row.group.visible !== false) roots.push(row.group); });
-    if (!roots.length) return null;
+    const proxies = [];
+    const fallbackRoots = [];
+    multiplayer.remotePlayers.forEach(row => {
+      const root = row?.group;
+      if (!root || root.visible === false) return;
+      const proxy = root.userData?.interactionProxy;
+      if (proxy) proxies.push(proxy);
+      else fallbackRoots.push(root);
+    });
+    if (!proxies.length && !fallbackRoots.length) return null;
     raycaster.setFromCamera(mouse, camera);
-    const hits = raycaster.intersectObjects(roots, true);
+    const hits = proxies.length ? raycaster.intersectObjects(proxies, false) : [];
+    if (fallbackRoots.length) {
+      hits.push(...raycaster.intersectObjects(fallbackRoots, true));
+      hits.sort((a, b) => Number(a.distance || 0) - Number(b.distance || 0));
+    }
     for (const h of hits) {
       let obj = h.object;
       while (obj) {

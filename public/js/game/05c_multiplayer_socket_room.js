@@ -288,6 +288,33 @@
     );
   }
 
+  function resetNetworkEnemyFrameSequence(data = {}) {
+    multiplayer.lastEnemyFrameRoomId = String(data.roomId || multiplayer.roomId || data.locationId || '');
+    multiplayer.lastEnemyFrameSeq = 0;
+    multiplayer.lastEnemyFrameSnapshotT = Math.max(0, Number(data.t || 0));
+  }
+
+  function networkEnemyFrameIsFresh(data = {}) {
+    if (!networkPayloadIsForCurrentRoom(data)) return false;
+    const seq = Number(data.seq);
+    if (!Number.isSafeInteger(seq) || seq <= 0) return false;
+    const roomKey = String(data.roomId || multiplayer.roomId || data.locationId || '');
+    if (roomKey !== String(multiplayer.lastEnemyFrameRoomId || '')) {
+      multiplayer.lastEnemyFrameRoomId = roomKey;
+      multiplayer.lastEnemyFrameSeq = 0;
+      multiplayer.lastEnemyFrameSnapshotT = 0;
+    }
+    const t = Math.max(0, Number(data.t || 0));
+    const fullSnapshotT = Math.max(0, Number(multiplayer.lastEnemyFrameSnapshotT || 0));
+    if (t && fullSnapshotT && t <= fullSnapshotT) return false;
+    if (seq <= Math.max(0, Number(multiplayer.lastEnemyFrameSeq || 0))) return false;
+    const previousT = Math.max(0, Number(multiplayer.lastEnemySnapshotT || 0));
+    if (t && previousT && t < previousT) return false;
+    multiplayer.lastEnemyFrameSeq = seq;
+    if (t) multiplayer.lastEnemySnapshotT = Math.max(previousT, t);
+    return true;
+  }
+
   function cancelMultiplayerJoinAttempt(reason = 'cancelled') {
     if (multiplayer.joinTimer) {
       clearTimeout(multiplayer.joinTimer);
@@ -350,6 +377,7 @@
       clientInstanceId: getClientInstanceId(),
       deviceType: getDeviceType(),
       controlType: getDeviceControlType(),
+      enemyFrameVersion: 1,
       characterId: selectedServerCharacterId,
       locationId: currentLocation?.id || 'settlement',
       roomId: (currentLocation?.encounterOnly || currentLocation?.randomTemplate || globalMapState?.pendingEncounterRoomId)
@@ -695,8 +723,14 @@
     multiplayer.socket.on('enemySnapshot', data => {
       markStartupNetworkEvent('enemySnapshot');
       if (!networkSnapshotIsFresh(data || {}, 'lastEnemySnapshotT')) return;
+      resetNetworkEnemyFrameSequence(data || {});
       multiplayer.serverAuthoritativeEnemies = true;
       applyNetworkEnemies(data.enemies || [], { allowPositionSync: true, fromServer: true, pruneMissing: true });
+    });
+    multiplayer.socket.on('enemyFrame', data => {
+      if (!networkEnemyFrameIsFresh(data || {})) return;
+      multiplayer.serverAuthoritativeEnemies = true;
+      applyNetworkEnemyFrame(data.enemies || []);
     });
     multiplayer.socket.on('groundItemsSnapshot', data => {
       markStartupNetworkEvent('groundItemsSnapshot');

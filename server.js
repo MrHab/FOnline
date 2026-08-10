@@ -7772,7 +7772,8 @@ function serverLineOfFireClearFrom(room, fromX, fromZ, enemy, opts = {}) {
   }
   return !roomStaticCollisionBlocksSegment(room, fromX, fromZ, enemyX, enemyZ, 0.045, {
     startPadding: 0.32,
-    endPadding: targetRadius * 0.72
+    endPadding: targetRadius * 0.72,
+    ignoreLowCover: !opts.shooterCrouching
   });
 }
 
@@ -12168,8 +12169,27 @@ function circleIntersectsRotatedBlocker(x, z, radius, blocker) {
   return circleRotatedBlockerPenalty(x, z, radius, blocker) > 0.0001;
 }
 
+// Низкие укрытия простреливаются стоя. Список зеркалит клиентский
+// LOW_BALLISTIC_COVER_MODELS (02a_materials_static_models.js), но по именам
+// GLB-файлов, потому что серверные блокеры знают только modelRef.
+const SERVER_LOW_BALLISTIC_COVER_MODEL_FILES = new Set([
+  'crate.glb', 'cargo_stack.glb', 'storage_chest.glb', 'workshop_bench.glb', 'water_tank.glb',
+  'roadblock_barricade.glb', 'low_ruined_wall.glb', 'scrap_heap.glb', 'armory_rack.glb',
+  'cot_bed.glb', 'campfire_rest.glb', 'fence_segment.glb', 'perimeter_debris.glb',
+  'garden_patch.glb', 'ore_outcrop.glb', 'dry_bush.glb', 'deadwood.glb',
+  'tire_stack.glb', 'rust_barrel_v1.glb', 'brahmin_pen.glb', 'barrel_cluster.glb',
+  'trader_window_block.glb'
+]);
+
+function serverBlockerIsLowBallisticCover(blocker = {}) {
+  const ref = String(blocker.modelRef || '').toLowerCase();
+  if (!ref) return false;
+  return SERVER_LOW_BALLISTIC_COVER_MODEL_FILES.has(ref.split('/').pop());
+}
+
 function roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, radius = 0.04, opts = {}) {
   for (const blocker of roomStaticCollisionObjects(room)) {
+    if (opts.ignoreLowCover && serverBlockerIsLowBallisticCover(blocker)) continue;
     if (segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius, opts)) return true;
   }
   return false;

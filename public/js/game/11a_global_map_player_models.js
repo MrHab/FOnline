@@ -42,7 +42,6 @@
     try {
       if (typeof buildModernWastelandHumanoid === 'function') {
         buildModernWastelandHumanoid(modelRoot, parts, { castShadow: false, isPlayer: true });
-        if (typeof buildModernCharacterArmorExtras === 'function') buildModernCharacterArmorExtras(modelRoot, parts, false);
         if (parts.weaponGroup && typeof initWeaponVisualState === 'function') initWeaponVisualState(parts.weaponGroup);
         if (parts.offhandWeaponGroup && typeof initWeaponVisualState === 'function') initWeaponVisualState(parts.offhandWeaponGroup);
       } else {

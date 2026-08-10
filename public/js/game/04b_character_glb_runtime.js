@@ -1139,13 +1139,9 @@
     const runtime = actor?.userData?.characterGlbRuntime;
     if (!runtime?.root) return;
     setCharacterProceduralBaseVisible(actor, false);
-    // Экипировка НПС нередко приходит раньше, чем догрузится GLB-персонаж:
-    // тогда успевает встать старый коробочный оверлей. Здесь берём живой
-    // снимок экипировки и сносим оверлей — модель одевается по-настоящему.
+    // Экипировка НПС нередко приходит раньше, чем догрузится GLB-персонаж —
+    // одеваем модель по живому снимку, а не по снапшоту на момент запроса.
     const activeEq = actor.userData.enemyEquipment || eq;
-    if (actor.userData.enemyStaticEquipmentOverlay && typeof disposeEnemyStaticEquipmentOverlay === 'function') {
-      disposeEnemyStaticEquipmentOverlay(actor);
-    }
     const helmetOn = !!activeEq?.helmet;
     applyCharacterGlbVisualVariants(runtime.root, runtime.appearance, { helmetOn });
     if (typeof applyApprovedEquipmentVisuals === 'function') applyApprovedEquipmentVisuals(actor, activeEq);

@@ -163,20 +163,6 @@
     })
   };
 
-  const modernCharacterArmorMats = {
-    vest: matStandard({ color: 0x2c343b, roughness: 0.82, metalness: 0.12, flatShading: true }),
-    combat: matStandard({ color: 0x536c60, roughness: 0.64, metalness: 0.22, flatShading: true }),
-    hazmat: matStandard({ color: 0xa3aa48, roughness: 0.86, metalness: 0.02, flatShading: true }),
-    hazmatDark: matStandard({ color: 0x505d2c, roughness: 0.82, metalness: 0.08, flatShading: true }),
-    energy: matStandard({ color: 0x315b68, roughness: 0.46, metalness: 0.42, flatShading: true }),
-    energyGlow: matStandard({ color: 0x78d6ff, emissive: 0x2ea7ff, emissiveIntensity: 0.92, roughness: 0.22, metalness: 0.24 }),
-    visor: matStandard({ color: 0x79d7b2, emissive: 0x1d6255, emissiveIntensity: 0.46, transparent: true, opacity: 0.84, depthWrite: false, roughness: 0.16, metalness: 0.12 }),
-    heavy: matStandard({ color: 0x626d6d, roughness: 0.4, metalness: 0.58, flatShading: true }),
-    plateDark: modernCharacterMats.armorDark,
-    leatherJacket: modernCharacterMats.coat,
-    leatherTrim: modernCharacterMats.leather
-  };
-
   const SERVICE_SCOUT_BOOT_MODEL_URL = '/assets/models/equipment/service_scout_boots.glb';
   const serviceScoutBootModelState = {
     promise: null,
@@ -508,6 +494,14 @@
     offhandWeaponGroup.userData.handSlot = 'offhand';
     parts.offhandWeaponGroup = offhandWeaponGroup;
 
+    // Значки ранений над головой жили в вырезанных extras экипировки;
+    // сама группа — не «старый вид», а служебный якорь для спрайтов.
+    const injuryGroup = new THREE.Group();
+    injuryGroup.position.set(0, 2.45, 0);
+    injuryGroup.visible = false;
+    root.add(injuryGroup);
+    parts.injuryGroup = injuryGroup;
+
     parts.cosmeticLodMeshes = cosmeticMeshes;
     parts.baseMaterials = {
       body: modernCharacterMats.coat,
@@ -518,94 +512,6 @@
     };
     root.userData.parts = parts;
     return parts;
-  }
-
-  function buildModernCharacterArmorExtras(root, parts, castShadow = true) {
-    const torsoRig = parts.torsoRig || parts.motionRoot || root;
-    const headRig = parts.head || torsoRig;
-    parts.styleMats = modernCharacterArmorMats;
-
-    const chestPlate = modernCharacterBox([0.68, 0.49, 0.16], modernCharacterArmorMats.plateDark, [0, 0.36, -0.14], [-0.035, 0, 0], castShadow);
-    chestPlate.visible = false;
-    torsoRig.add(chestPlate);
-
-    const shoulderL = modernCharacterBox([0.31, 0.2, 0.31], modernCharacterArmorMats.heavy, [0, -0.04, -0.005], [0.02, 0, 0], castShadow);
-    const shoulderR = shoulderL.clone();
-    shoulderL.visible = false;
-    shoulderR.visible = false;
-    parts.armL.add(shoulderL);
-    parts.armR.add(shoulderR);
-
-    const energyCore = modernCharacterBox([0.16, 0.2, 0.045], modernCharacterArmorMats.energyGlow, [0, 0.34, -0.245], [0, 0, 0], false);
-    energyCore.visible = false;
-    torsoRig.add(energyCore);
-
-    const visor = modernCharacterBox([0.3, 0.12, 0.065], modernCharacterArmorMats.visor, [0, 0.01, -0.245], [0, 0, 0], castShadow);
-    visor.visible = false;
-    headRig.add(visor);
-
-    const canister = modernCharacterTaper(0.08, 0.08, 0.38, 8, modernCharacterArmorMats.hazmatDark, [0.21, 0.34, 0.36], [0, 0, Math.PI / 2], castShadow);
-    canister.visible = false;
-    torsoRig.add(canister);
-
-    const helmetVisor = modernCharacterBox([0.34, 0.12, 0.09], modernCharacterArmorMats.visor, [0, 0.01, -0.26], [0, 0, 0], castShadow);
-    const helmetFront = modernCharacterBox([0.25, 0.18, 0.09], modernCharacterArmorMats.heavy, [0, -0.1, -0.22], [0.03, 0, 0], castShadow);
-    const helmetPodL = modernCharacterBox([0.09, 0.13, 0.1], modernCharacterArmorMats.heavy, [-0.24, -0.005, -0.015], [0, 0, 0], castShadow);
-    const helmetPodR = helmetPodL.clone();
-    helmetPodR.position.x = 0.24;
-    [helmetVisor, helmetFront, helmetPodL, helmetPodR].forEach(mesh => { mesh.visible = false; headRig.add(mesh); });
-
-    const bootL = modernCharacterBox([0.3, 0.19, 0.4], modernCharacterArmorMats.plateDark, [0, 0.08, -0.08], [0, 0, 0], castShadow);
-    const bootR = bootL.clone();
-    bootL.visible = false;
-    bootR.visible = false;
-    parts.ankleL.add(bootL);
-    parts.ankleR.add(bootR);
-
-    const injuryGroup = new THREE.Group();
-    injuryGroup.position.set(0, 2.45, 0);
-    injuryGroup.visible = false;
-    root.add(injuryGroup);
-
-    const leatherTorso = modernCharacterBox([0.73, 0.51, 0.18], modernCharacterArmorMats.leatherJacket, [0, 0.37, -0.1], [0.015, 0, 0], castShadow);
-    leatherTorso.visible = false;
-    torsoRig.add(leatherTorso);
-
-    const leatherSleeveL = modernCharacterTaper(0.12, 0.1, 0.4, 6, modernCharacterArmorMats.leatherJacket, [0, -0.19, 0], [0, 0, 0], castShadow);
-    const leatherSleeveR = leatherSleeveL.clone();
-    leatherSleeveL.visible = false;
-    leatherSleeveR.visible = false;
-    parts.armL.add(leatherSleeveL);
-    parts.armR.add(leatherSleeveR);
-
-    const leatherCollarL = modernCharacterBox([0.16, 0.11, 0.09], modernCharacterArmorMats.leatherTrim, [-0.13, 0.65, -0.19], [0.5, 0, 0.38], castShadow);
-    const leatherCollarR = leatherCollarL.clone();
-    leatherCollarR.position.x = 0.13;
-    leatherCollarR.rotation.z = -0.38;
-    leatherCollarL.visible = false;
-    leatherCollarR.visible = false;
-    torsoRig.add(leatherCollarL, leatherCollarR);
-
-    Object.assign(parts, {
-      chestPlate,
-      shoulderL,
-      shoulderR,
-      energyCore,
-      visor,
-      canister,
-      helmetVisor,
-      helmetFront,
-      helmetPodL,
-      helmetPodR,
-      bootL,
-      bootR,
-      injuryGroup,
-      leatherTorso,
-      leatherSleeveL,
-      leatherSleeveR,
-      leatherCollarL,
-      leatherCollarR
-    });
   }
 
   function modernAnimationBlend(current, target, rate, dt) {

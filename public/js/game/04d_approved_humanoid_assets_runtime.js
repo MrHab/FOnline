@@ -744,6 +744,7 @@
       weaponGroup.userData.basePosition = state.basePosition.clone();
       weaponGroup.userData.baseRotation = state.baseRotation.clone();
       weaponGroup.userData.characterPose = {};
+      weaponGroup.userData.approvedGripMounted = false;
     }
     delete actor.userData.approvedWeaponGripMount;
     delete actor.userData.approvedAssaultRifleGrip;
@@ -1062,6 +1063,7 @@
     weaponGroup.userData.basePosition = weaponGroup.position.clone();
     weaponGroup.userData.baseRotation = new THREE.Euler().setFromQuaternion(weaponGroup.quaternion);
     weaponGroup.userData.characterPose = {};
+    weaponGroup.userData.approvedGripMounted = true;
     weaponGroup.updateMatrixWorld(true);
     return { mountWorld, weaponGroup };
   }
@@ -1295,6 +1297,7 @@
     weaponGroup.userData.basePosition = weaponGroup.position.clone();
     weaponGroup.userData.baseRotation = new THREE.Euler().setFromQuaternion(weaponGroup.quaternion);
     weaponGroup.userData.characterPose = {};
+    weaponGroup.userData.approvedGripMounted = true;
     weaponGroup.updateMatrixWorld(true);
     return { weaponGroup, primarySocket, supportSocket };
   }

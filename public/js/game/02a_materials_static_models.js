@@ -780,17 +780,42 @@
       .filter(Boolean);
   }
 
+  // Низкие укрытия: стоя пуля проходит поверх, в приседе они держат выстрел.
+  // Высоту из каталога коллайдеров брать нельзя — walk-slab обрезает стены
+  // зданий до ~1 м, поэтому список задан явно по моделям.
+  const LOW_BALLISTIC_COVER_MODELS = new Set([
+    'crate', 'cargoStack', 'storageChest', 'workshopBench', 'waterTank',
+    'roadblockBarricade', 'lowRuinedWall', 'scrapHeap', 'armoryRack',
+    'cotBed', 'campfireRest', 'fenceSegment', 'perimeterDebris',
+    'gardenPatch', 'oreOutcrop', 'dryBush', 'deadwood', 'asphaltSlab',
+    'tireStack', 'rustBarrel', 'brahminPen', 'barrelCluster'
+  ]);
+
+  function staticModelIsLowBallisticCover(keyOrUrl = '') {
+    const key = String(keyOrUrl || '');
+    if (LOW_BALLISTIC_COVER_MODELS.has(key)) return true;
+    const file = staticModelFileName(STATIC_MODEL_URLS[key] || key);
+    const snake = String(file || '').replace(/.glb$/i, '');
+    const camel = snake.replace(/_([a-z0-9])/g, (m, c) => c.toUpperCase());
+    return LOW_BALLISTIC_COVER_MODELS.has(camel);
+  }
+
   function addStaticModelCollision(keyOrUrl, x = 0, z = 0, angle = 0, opts = {}, label = keyOrUrl) {
     const colliders = staticModelCollisionTransforms(keyOrUrl, x, z, angle, opts);
     if (!colliders.length) return null;
-    return colliders.map((collider, partIndex) => addStaticCollisionBox(
-      collider.x,
-      collider.z,
-      collider.halfX * 2,
-      collider.halfZ * 2,
-      `${label || keyOrUrl || 'static-model'}:${partIndex}`,
-      collider.rotationY
-    )).filter(Boolean);
+    const lowCover = staticModelIsLowBallisticCover(keyOrUrl);
+    return colliders.map((collider, partIndex) => {
+      const box = addStaticCollisionBox(
+        collider.x,
+        collider.z,
+        collider.halfX * 2,
+        collider.halfZ * 2,
+        `${label || keyOrUrl || 'static-model'}:${partIndex}`,
+        collider.rotationY
+      );
+      if (box && lowCover) box.lowBallisticCover = true;
+      return box;
+    }).filter(Boolean);
   }
 
   function staticModelColliderRadius(keyOrUrl, scale = 1) {

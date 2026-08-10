@@ -593,7 +593,10 @@
     const isRocket = isExplosionWeapon(w);
     const intendedDist = isRocket ? Math.min(maxRange, Math.max(0.15, len)) : maxRange;
     const staticBlockDist = typeof staticCollisionRayHitDistance === 'function'
-      ? staticCollisionRayHitDistance(player.x, player.z, dir.x, dir.z, intendedDist, 0.035, { startPad: 0.20 })
+      ? staticCollisionRayHitDistance(player.x, player.z, dir.x, dir.z, intendedDist, 0.035, {
+        startPad: 0.20,
+        ignoreLowCover: !player.crouching
+      })
       : null;
     const clearRange = blockingDistanceOnRay(dir, intendedDist);
     const shotBlockedByStatic = staticBlockDist !== null && staticBlockDist < intendedDist - 0.08;

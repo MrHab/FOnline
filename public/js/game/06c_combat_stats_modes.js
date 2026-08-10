@@ -172,7 +172,10 @@
       worldCoverBlock = traderBuildingLowCoverHitDistanceOnWorldSegment(player.x, player.z, player.x + dir.x * maxRange, player.z + dir.z * maxRange, player.crouching);
     }
     const staticBlock = typeof staticCollisionRayHitDistance === 'function'
-      ? staticCollisionRayHitDistance(player.x, player.z, dir.x, dir.z, maxRange, 0.035, { startPad: 0.20 })
+      ? staticCollisionRayHitDistance(player.x, player.z, dir.x, dir.z, maxRange, 0.035, {
+        startPad: 0.20,
+        ignoreLowCover: !player.crouching
+      })
       : null;
     if (staticBlock !== null) worldCoverBlock = worldCoverBlock === null ? staticBlock : Math.min(worldCoverBlock, staticBlock);
     for (let d = step; d <= maxRange; d += step) {

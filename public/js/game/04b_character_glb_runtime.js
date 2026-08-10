@@ -767,7 +767,11 @@
     if (turning) {
       lowerBodyYaw = turnAmount * 0.28;
     } else if (moving && !backward) {
-      lowerBodyYaw = Math.max(-0.8, Math.min(0.8, relativeAngle * 0.7));
+      // В движении ноги смотрят строго по движению: частичный разворот (0.7)
+      // оставлял свип клипа под углом до 44 градусов к фактическому пути —
+      // замки стоп рвались об дрейф, IK гнул колени поперёк («восьмёрка»).
+      // Излом к прицелу гасят корпус (52%) и голова — им это анатомично.
+      lowerBodyYaw = Math.max(-1.65, Math.min(1.65, relativeAngle));
     } else if (backward) {
       lowerBodyYaw = sideAmount * 0.38;
     }

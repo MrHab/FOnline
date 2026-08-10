@@ -52,6 +52,21 @@
       "pvpMode": "peaceful",
       "capital": true,
       "capitalFaction": "relay_order"
+    },
+    {
+      "id": "caravanCamp",
+      "x": 495,
+      "y": 495,
+      "kind": "settlement",
+      "locationId": "caravanCamp",
+      "locationCount": 1,
+      "model": "brahminPen",
+      "modelScale": 1,
+      "rotationY": 0,
+      "note": "Караван-сарай «Перекрёсток». Столица вольных караванов в сердце пустоши: стоянка обозов, торговля и наём охраны.",
+      "pvpMode": "peaceful",
+      "capital": true,
+      "capitalFaction": "caravans"
     }
   ],
   "infrastructure": [

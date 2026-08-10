@@ -171,7 +171,8 @@
     const aliases = {
       oldKlimYard: 'traderAwning',
       scrapTown: 'scrapWatchTower',
-      relayStation: 'relayAntenna'
+      relayStation: 'relayAntenna',
+      caravanCamp: 'brahminPen'
     };
     const raw = String(node.model || '').replace(/[^a-zA-Z0-9_-]/g, '');
     if (raw && typeof STATIC_MODEL_URLS !== 'undefined' && STATIC_MODEL_URLS[raw]) return raw;
@@ -179,6 +180,7 @@
     if (node.id === 'relayStation') return 'relayAntenna';
     if (node.id === 'scrapTown') return 'scrapWatchTower';
     if (node.id === 'settlement') return 'traderAwning';
+    if (node.id === 'caravanCamp') return 'brahminPen';
     return 'wastelandShack';
   }
 

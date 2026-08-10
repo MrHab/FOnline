@@ -546,7 +546,8 @@ for (const site of defaultSitesList) {
 const capitalStorageFactions = {
   settlement: 'old_klim',
   scrapTown: 'scrap_union',
-  relayStation: 'relay_order'
+  relayStation: 'relay_order',
+  caravanCamp: 'caravans'
 };
 
 const craftingStationModels = {

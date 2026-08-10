@@ -129,6 +129,35 @@
         buyInterests: ['tools', 'ammo', 'weapons', 'armor']
       }
     },
+    caravanCamp: {
+      id: 'caravanCamp',
+      name: 'Караван-сарай «Перекрёсток»',
+      seed: 20260847,
+      safe: true,
+      pvpMode: 'peaceful',
+      spawn: { tx: 19, tz: 25 },
+      entryFromWorld: { tx: 19, tz: 10 },
+      exit: { tx: 19, tz: 3, to: 'wasteland', label: 'Дороги пустоши' },
+      trader: {
+        tx: 15,
+        tz: 20,
+        name: 'Караванщица Сайла',
+        stock: [
+          { id: 'water', price: 6, qty: 12 },
+          { id: 'oil', price: 10, qty: 5 },
+          { id: 'stim', price: 13, qty: 6 },
+          { id: 'medkit', price: 24, qty: 3 },
+          { id: 'ammo9', price: 3, qty: 90 },
+          { id: 'ammo556', price: 5, qty: 60 },
+          { id: 'shotgunShell', price: 6, qty: 24 },
+          { id: 'repairKit', price: 22, qty: 2 },
+          { id: 'handPump', price: 26, qty: 1 },
+          { id: 'leather', price: 30, qty: 1 },
+          { id: 'backpack', price: 36, qty: 1 }
+        ],
+        buyInterests: ['ammo', 'aid', 'tools', 'materials', 'weapons']
+      }
+    },
     randomEncounter: {
       id: 'randomEncounter',
       name: 'Событие мира',
@@ -206,7 +235,8 @@
     const profiles = {
       settlement: { id: 'old_klim', dialogueProfile: 'klim', caps: 720, quests: ['klimSupplies', 'klimTerminal'] },
       scrapTown: { id: 'scrap_gratch', dialogueProfile: 'scrap', caps: 460, quests: ['scrapParts'] },
-      relayStation: { id: 'relay_rada', dialogueProfile: 'relay', caps: 640, quests: ['relayCalibration'] }
+      relayStation: { id: 'relay_rada', dialogueProfile: 'relay', caps: 640, quests: ['relayCalibration'] },
+      caravanCamp: { id: 'caravan_sayla', dialogueProfile: 'caravan', caps: 520, quests: [] }
     };
     Object.entries(profiles).forEach(([locationId, profile]) => {
       const loc = locations?.[locationId];

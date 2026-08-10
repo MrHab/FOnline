@@ -443,7 +443,7 @@
     return normalizeClientLocationPvpMode(mode, true);
   }
 
-  const CLIENT_FACTION_CAPITAL_LOCATION_IDS = new Set(['settlement', 'scrapTown', 'relayStation']);
+  const CLIENT_FACTION_CAPITAL_LOCATION_IDS = new Set(['settlement', 'scrapTown', 'relayStation', 'caravanCamp']);
 
   function currentLocationIsFactionCapital() {
     const id = String(currentLocation?.id || multiplayer?.locationId || '').trim();

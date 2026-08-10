@@ -226,7 +226,7 @@
     const value = normalizeGlobalMapPvpMode(mode);
     if (value === 'peaceful') return 'мирная зона';
     if (value === 'pvpFullDrop') return 'PvP: полный дроп';
-    return 'PvP: без полного дропа';
+    return 'PvP: падают расходники';
   }
 
   function normalizeGlobalMapWeightRows(rows = [], allowedIds = null) {

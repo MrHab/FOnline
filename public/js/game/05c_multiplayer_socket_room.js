@@ -952,6 +952,8 @@
       closeAllWindows();
       if (data.cause && data.cause.pvp && data.cause.fullDrop && typeof applyPvpFullDropInventory === 'function') {
         applyPvpFullDropInventory(data.cause.droppedItems || []);
+      } else if (data.cause && data.cause.pvp && data.cause.consumableDrop && typeof applyPvpConsumableDropInventory === 'function') {
+        applyPvpConsumableDropInventory(data.cause.droppedItems || []);
       }
       clearNetworkRoomEntities({ keepPlayer: true });
       resetNetworkSnapshotStamps();
@@ -990,7 +992,11 @@
       if (title) title.textContent = currentLocation.name;
       if (data.cause && data.cause.pvp) {
         addLog(`☠ Вас победил ${data.cause.killerName || 'игрок'}. Вы очнулись в поселении.`, null, 'combat');
-        setReadout(data.cause.fullDrop ? 'Вы погибли в PvP-зоне. Рюкзак выпал на месте смерти.' : 'Вы погибли в PvP-зоне и очнулись в поселении.');
+        setReadout(data.cause.fullDrop
+          ? 'Вы погибли в PvP-зоне. Рюкзак выпал на месте смерти.'
+          : (data.cause.consumableDrop
+            ? 'Вы погибли в PvP-зоне. Часть расходников выпала, экипировка при вас.'
+            : 'Вы погибли в PvP-зоне и очнулись в поселении.'));
       } else {
         addLog('☠ Вы потеряли сознание и очнулись в поселении.', null, 'combat');
         setReadout('Вы очнулись в поселении.');

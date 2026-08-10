@@ -446,7 +446,7 @@ const leftTurnLocomotion = fitApi.characterDirectionalLocomotionState({
 });
 assert.strictEqual(rightTurnLocomotion.direction, 'turn_right');
 assert.strictEqual(leftTurnLocomotion.direction, 'turn_left');
-assert.strictEqual(rightTurnLocomotion.action, 'walk');
+assert.strictEqual(rightTurnLocomotion.action, 'turn');
 assert(rightTurnLocomotion.locomoting && rightTurnLocomotion.strideScale > 0,
   'turn-in-place does not drive the legs');
 assert(rightTurnLocomotion.lowerBodyYaw > 0 && leftTurnLocomotion.lowerBodyYaw < 0,

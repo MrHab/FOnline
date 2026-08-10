@@ -20,7 +20,7 @@ from mathutils import Euler, Vector
 
 
 COMBAT_ACTIONS = ("attack", "hurt", "death")
-REQUIRED_ACTIONS = ("idle", "walk", "run", *COMBAT_ACTIONS)
+REQUIRED_ACTIONS = ("idle", "walk", "run", "turn", *COMBAT_ACTIONS)
 
 
 def parse_args() -> argparse.Namespace:
@@ -340,6 +340,72 @@ def capture_idle_baseline(
     return baseline
 
 
+def create_turn_action(
+    armature: bpy.types.Object,
+    baseline: dict[str, dict[str, object]],
+    neutral: dict[str, dict[str, tuple[float, float, float]]],
+) -> None:
+    """Переступание на месте для разворота корпуса.
+
+    Клип не крутит персонажа сам — вращение задаёт игра. Он поочерёдно
+    поднимает и опускает стопы (подъём щиколотки ~15 см, чтобы IK стоп
+    отпускал замок по высоте), переносит вес тазом и слегка подыгрывает
+    руками. Первый и последний кадры совпадают — цикл замкнут.
+    """
+    lift_l = {
+        **neutral,
+        "root": {"location": (0.018, 0.0, -0.012)},
+        "pelvis": {"rotation": (0.0, 0.0, -0.05)},
+        "spine_02": {"rotation": (0.02, 0.0, 0.045)},
+        "spine_03": {"rotation": (0.015, 0.0, 0.03)},
+        "thigh_l": {"rotation": (-0.62, 0.0, 0.04)},
+        "calf_l": {"rotation": (1.18, 0.0, 0.0)},
+        "foot_l": {"rotation": (-0.2, 0.0, 0.0)},
+        "upperarm_l": {"rotation": (-0.06, 0.0, -0.03)},
+        "upperarm_r": {"rotation": (0.06, 0.0, 0.03)},
+    }
+    lift_r = {
+        **neutral,
+        "root": {"location": (-0.018, 0.0, -0.012)},
+        "pelvis": {"rotation": (0.0, 0.0, 0.05)},
+        "spine_02": {"rotation": (0.02, 0.0, -0.045)},
+        "spine_03": {"rotation": (0.015, 0.0, -0.03)},
+        "thigh_r": {"rotation": (-0.62, 0.0, -0.04)},
+        "calf_r": {"rotation": (1.18, 0.0, 0.0)},
+        "foot_r": {"rotation": (-0.2, 0.0, 0.0)},
+        "upperarm_l": {"rotation": (0.06, 0.0, -0.03)},
+        "upperarm_r": {"rotation": (-0.06, 0.0, 0.03)},
+    }
+    settle_l = {
+        **neutral,
+        "root": {"location": (0.008, 0.0, -0.004)},
+        "thigh_l": {"rotation": (-0.08, 0.0, 0.01)},
+        "calf_l": {"rotation": (0.14, 0.0, 0.0)},
+    }
+    settle_r = {
+        **neutral,
+        "root": {"location": (-0.008, 0.0, -0.004)},
+        "thigh_r": {"rotation": (-0.08, 0.0, -0.01)},
+        "calf_r": {"rotation": (0.14, 0.0, 0.0)},
+    }
+    create_action(
+        armature,
+        "turn",
+        (
+            (1, neutral),
+            (5, lift_l),
+            (9, settle_l),
+            (12, neutral),
+            (15, neutral),
+            (19, lift_r),
+            (23, settle_r),
+            (26, neutral),
+            (28, neutral),
+        ),
+        baseline,
+    )
+
+
 def add_combat_actions(armature: bpy.types.Object) -> None:
     baseline = capture_idle_baseline(armature)
     neutral = {
@@ -357,6 +423,7 @@ def add_combat_actions(armature: bpy.types.Object) -> None:
         "thigh_r": {"rotation": (0.0, 0.0, 0.0)},
     }
     create_attack_action(armature, baseline, neutral)
+    create_turn_action(armature, baseline, neutral)
     create_action(
         armature,
         "hurt",

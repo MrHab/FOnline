@@ -4,7 +4,7 @@
 (async () => {
   'use strict';
 
-  const GAME_CLIENT_VERSION = '7.99.0-no-legacy-equipment-v1';
+  const GAME_CLIENT_VERSION = '7.99.1-torso-follow-v1';
   const MODEL_COLLIDER_CATALOG_URL = '/assets/models/wasteland/model-colliders.json';
   const GAME_SCRIPT_PARTS = [
     '/js/game/00_save_generation_drain.js',

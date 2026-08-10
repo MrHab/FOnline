@@ -908,6 +908,12 @@
   const CHARACTER_FOOT_IK_TURN_TWIST_LIMIT = 0.6;
   const CHARACTER_FOOT_IK_BLEND_RATE = 24;
   const CHARACTER_FOOT_IK_TELEPORT_RESET = 1.6;
+  // Сгиб коленей: таз опускается, IK дожимает стопы до земли — колени
+  // сгибаются физически, без правки клипов. Стоя — слегка (боевая стойка),
+  // в движении чуть больше, в приседе — глубоко.
+  const CHARACTER_KNEE_FLEX_IDLE = 0.04;
+  const CHARACTER_KNEE_FLEX_MOVE = 0.055;
+  const CHARACTER_KNEE_FLEX_CROUCH = 0.2;
 
   function characterFootIkSideState() {
     return {
@@ -995,11 +1001,24 @@
     return true;
   }
 
+  // Поза приседа: наклон корпуса вперёд, взгляд остаётся на цели. Сгиб ног
+  // делает IK стоп (таз опущен на kneeFlex), здесь — только верх тела.
+  function applyCharacterGlbCrouchPose(runtime, blend = 0) {
+    const bones = runtime.locomotionBones || {};
+    const b = Math.max(0, Math.min(1, blend));
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.pelvis, 0.06 * b, 0, 0);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine01, 0.14 * b, 0, 0);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine02, 0.12 * b, 0, 0);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine03, 0.08 * b, 0, 0);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.neck, -0.1 * b, 0, 0);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.head, -0.14 * b, 0, 0);
+  }
+
   function applyCharacterFootIk(actor, runtime, dt = 0.016, state = {}, locomotion = null) {
     const ik = runtime?.footIk;
     if (!ik?.feet || !runtime.root) return false;
     const frameDt = Math.max(0.001, Math.min(0.08, Number(dt || 0.016)));
-    const disabled = !!state.dead || !!state.crouching;
+    const disabled = !!state.dead;
     runtime.root.updateMatrixWorld(true);
     const actorWorld = actor.getWorldPosition(new THREE.Vector3());
     if (ik.lastActorPos && actorWorld.distanceTo(ik.lastActorPos) > CHARACTER_FOOT_IK_TELEPORT_RESET) {
@@ -1100,10 +1119,16 @@
       let target = null;
       if (sideState.blend >= 0.02) {
         target = animated.clone().lerp(sideState.lockPos, sideState.blend);
-      } else if (!disabled && height < -0.006) {
-        // Даже без фиксации стопа не должна тонуть в земле (наклоны корпуса,
-        // директивная поза): поднимаем сустав до уровня касания.
-        target = animated.clone().setY(groundY + rest);
+      } else if (!disabled) {
+        // Свободная стопа держит анимационную высоту над реальной землёй:
+        // таз опущен на kneeFlex, поэтому «земля клипа» ниже настоящей, и
+        // без поправки стопы тонут (или, без сгиба, проваливаются при
+        // наклонах корпуса).
+        const flex = Math.max(0, Number(runtime.kneeFlex || 0));
+        const wantedY = groundY + rest + Math.max(0, height + flex);
+        if (Math.abs(wantedY - animated.y) > 0.004) {
+          target = animated.clone().setY(wantedY);
+        }
       }
       if (target && solveCharacterLegChain(runtime.root, names, target)) applied = true;
     }
@@ -1331,10 +1356,23 @@
       action.setEffectiveTimeScale(baseRate * runtime.directionalPlaybackRate * runtime.strideSyncRate);
     }
     clearCharacterGlbDirectionalPose(runtime);
-    runtime.root.position.y = state.crouching ? -0.13 : 0;
+    const kneeFlexTarget = state.dead
+      ? 0
+      : (state.crouching
+        ? CHARACTER_KNEE_FLEX_CROUCH
+        : (locomotion.locomoting ? CHARACTER_KNEE_FLEX_MOVE : CHARACTER_KNEE_FLEX_IDLE));
+    runtime.kneeFlex = characterLocomotionBlend(runtime.kneeFlex ?? 0, kneeFlexTarget, 7, frameDt);
+    runtime.root.position.y = -runtime.kneeFlex;
     runtime.mixer.update(frameDt);
     applyCharacterFaceShapeFrame(runtime.root);
     applyCharacterGlbDirectionalPose(runtime, locomotion, frameDt);
+    runtime.crouchBlend = characterLocomotionBlend(
+      runtime.crouchBlend ?? 0,
+      state.crouching && !state.dead ? 1 : 0,
+      8,
+      frameDt
+    );
+    if (runtime.crouchBlend > 0.01) applyCharacterGlbCrouchPose(runtime, runtime.crouchBlend);
     applyCharacterFootIk(actor, runtime, frameDt, state, locomotion);
     const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
       ? performance.now()

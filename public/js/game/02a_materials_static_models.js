@@ -783,12 +783,17 @@
   // Низкие укрытия: стоя пуля проходит поверх, в приседе они держат выстрел.
   // Высоту из каталога коллайдеров брать нельзя — walk-slab обрезает стены
   // зданий до ~1 м, поэтому список задан явно по моделям.
+  // Аудит по визуальной высоте GLB (2026-08): 18 низких моделей до 1.2 м
+  // простреливаются, окно — тоже (зрение сквозь него уже проходит).
+  // Половинные стены зданий (1 м) — cutaway для камеры, геймплейно полные:
+  // в список не входят. asphaltSlab коллизии не имеет — запись убрана.
   const LOW_BALLISTIC_COVER_MODELS = new Set([
     'crate', 'cargoStack', 'storageChest', 'workshopBench', 'waterTank',
     'roadblockBarricade', 'lowRuinedWall', 'scrapHeap', 'armoryRack',
     'cotBed', 'campfireRest', 'fenceSegment', 'perimeterDebris',
-    'gardenPatch', 'oreOutcrop', 'dryBush', 'deadwood', 'asphaltSlab',
-    'tireStack', 'rustBarrel', 'brahminPen', 'barrelCluster'
+    'gardenPatch', 'oreOutcrop', 'dryBush', 'deadwood',
+    'tireStack', 'rustBarrel', 'brahminPen', 'barrelCluster',
+    'traderWindowBlock'
   ]);
 
   function staticModelIsLowBallisticCover(keyOrUrl = '') {

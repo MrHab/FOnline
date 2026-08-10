@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v18-assault-boots';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v19-turn-step';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([
@@ -212,9 +212,11 @@
     approvedNpcAnimationState.promise = new Promise(resolve => {
       loader.load(approvedAssetUrl(APPROVED_NPC_ANIMATION_URL), gltf => {
         const clips = (gltf?.animations || []).filter(clip => (
-          ['attack', 'hurt', 'death'].includes(String(clip?.name || '').toLowerCase())
+          ['attack', 'hurt', 'death', 'turn'].includes(String(clip?.name || '').toLowerCase())
         ));
-        if (clips.length !== 3) {
+        const names = new Set(clips.map(clip => String(clip?.name || '').toLowerCase()));
+        // turn необязателен: устаревший кэш без него не должен ломать боевые клипы.
+        if (!['attack', 'hurt', 'death'].every(name => names.has(name))) {
           approvedNpcAnimationState.failed = true;
           console.warn('Утверждённый набор анимаций НПС не содержит attack/hurt/death.');
           resolve([]);
@@ -243,12 +245,32 @@
       if (!name || runtime.actions?.[name]) return;
       const action = runtime.mixer.clipAction(clip, runtime.root);
       action.enabled = true;
-      action.setLoop(THREE.LoopOnce, 1);
-      action.clampWhenFinished = true;
+      if (name === 'turn') {
+        action.setLoop(THREE.LoopRepeat, Infinity);
+      } else {
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+      }
       runtime.actions[name] = action;
     });
     runtime.approvedNpcAnimationsInstalled = ['attack', 'hurt', 'death'].every(name => runtime.actions?.[name]);
     return runtime.approvedNpcAnimationsInstalled;
+  }
+
+  // Игроку и удалённым игрокам боевые клипы НПС не ставим (их бой рисует свой
+  // слой), но переступание на месте нужно всем гуманоидам одинаково.
+  function attachApprovedTurnAnimation(runtime) {
+    if (!runtime?.mixer) return Promise.resolve(false);
+    if (runtime.actions?.turn) return Promise.resolve(true);
+    return loadApprovedNpcAnimationClips().then(clips => {
+      const clip = clips.find(row => String(row?.name || '').toLowerCase() === 'turn');
+      if (!clip || runtime.actions?.turn) return !!runtime.actions?.turn;
+      const action = runtime.mixer.clipAction(clip, runtime.root);
+      action.enabled = true;
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      runtime.actions.turn = action;
+      return true;
+    });
   }
 
   function attachApprovedNpcAnimations(runtime) {

@@ -778,10 +778,10 @@
       direction = [vertical, horizontal].filter(Boolean).join('_') || 'forward';
     }
     const action = locomoting
-      ? (turning ? 'walk' : (backward ? 'walk' : (speed > 4.2 ? 'run' : 'walk')))
+      ? (turning ? 'turn' : (backward ? 'walk' : (speed > 4.2 ? 'run' : 'walk')))
       : 'idle';
     const playbackRate = turning
-      ? (0.62 + Math.abs(turnAmount) * 0.22)
+      ? (1.0 + Math.abs(turnAmount) * 0.5)
       : (!moving ? 1 : (backward ? -0.82 : (sideStrength > 0.62 ? 0.92 : 1)));
     const strideScale = turning
       ? (0.28 + Math.abs(turnAmount) * 0.18)
@@ -905,7 +905,7 @@
   const CHARACTER_FOOT_IK_LIFT = 0.05;
   const CHARACTER_FOOT_IK_MAX_DRIFT = 0.44;
   const CHARACTER_FOOT_IK_TWIST_LIMIT = 0.55;
-  const CHARACTER_FOOT_IK_TURN_TWIST_LIMIT = 0.32;
+  const CHARACTER_FOOT_IK_TURN_TWIST_LIMIT = 0.6;
   const CHARACTER_FOOT_IK_BLEND_RATE = 24;
   const CHARACTER_FOOT_IK_TELEPORT_RESET = 1.6;
 
@@ -915,6 +915,7 @@
       blend: 0,
       lockPos: new THREE.Vector3(),
       lockYaw: 0,
+      relockCooldown: 0,
       prevAnim: new THREE.Vector3(),
       hasPrev: false
     };
@@ -1050,10 +1051,11 @@
         stance = footSpeed < (turning ? 1.1 : 0.25);
         swing = footSpeed > (turning ? 1.5 : 0.8);
       }
+      sideState.relockCooldown = Math.max(0, Number(sideState.relockCooldown || 0) - frameDt);
       if (disabled || !hadPrev) {
         sideState.locked = false;
       } else if (!sideState.locked) {
-        if (stance && height < CHARACTER_FOOT_IK_LIFT * 1.2) {
+        if (stance && height < CHARACTER_FOOT_IK_LIFT * 1.2 && sideState.relockCooldown <= 0) {
           sideState.locked = true;
           sideState.lockPos.set(animated.x, groundY + rest, animated.z);
           sideState.lockYaw = rootYaw;
@@ -1062,8 +1064,14 @@
         const drift = Math.hypot(animated.x - sideState.lockPos.x, animated.z - sideState.lockPos.z);
         const twist = Math.abs(characterAngleDelta(sideState.lockYaw, rootYaw));
         const twistLimit = turning ? CHARACTER_FOOT_IK_TURN_TWIST_LIMIT : CHARACTER_FOOT_IK_TWIST_LIMIT;
-        if (swing || height > CHARACTER_FOOT_IK_LIFT * 2.4 || drift > CHARACTER_FOOT_IK_MAX_DRIFT || twist > twistLimit) {
+        // В развороте шаги диктует клип: нога отпускается, как только клип
+        // её поднял; скручивание — только страховка на медленных поворотах.
+        const liftRelease = CHARACTER_FOOT_IK_LIFT * (turning ? 1.5 : 2.4);
+        if (swing || height > liftRelease || drift > CHARACTER_FOOT_IK_MAX_DRIFT || twist > twistLimit) {
           sideState.locked = false;
+          // Пауза перед повторным замком: без неё нога, опускаясь, ловится и
+          // рвётся по нескольку раз за шаг, и фиксация размазывается.
+          sideState.relockCooldown = turning ? 0.18 : 0.08;
         }
       }
       // Замок хватает быстро, отпускает мягко: резкий возврат к анимации
@@ -1162,6 +1170,8 @@
       refreshCharacterGlbEquipmentLayers(actor, options.equipment || {});
       if (options.npcAnimations && typeof attachApprovedNpcAnimations === 'function') {
         void attachApprovedNpcAnimations(current);
+      } else if (!options.npcAnimations && typeof attachApprovedTurnAnimation === 'function') {
+        void attachApprovedTurnAnimation(current);
       }
       return Promise.resolve(true);
     }
@@ -1232,6 +1242,8 @@
         refreshCharacterGlbEquipmentLayers(actor, options.equipment || {});
         if (options.npcAnimations && typeof attachApprovedNpcAnimations === 'function') {
           void attachApprovedNpcAnimations(runtime);
+        } else if (!options.npcAnimations && typeof attachApprovedTurnAnimation === 'function') {
+          void attachApprovedTurnAnimation(runtime);
         }
         if (previous?.root && previous.root !== root) {
           previous.mixer?.stopAllAction?.();
@@ -1254,16 +1266,21 @@
     if (!runtime?.mixer) return false;
     const frameDt = Math.max(0, Math.min(0.08, Number(dt || 0.016)));
     const locomotion = characterDirectionalLocomotionState(state);
+    // Запечённое переступание есть не у всех сразу (клип грузится отдельно) —
+    // до его прихода разворот отыгрывает старый walk.
+    const locomotionAction = locomotion.action === 'turn' && !runtime.actions?.turn
+      ? 'walk'
+      : locomotion.action;
     const requestedAction = state.dead && runtime.actions?.death
       ? 'death'
       : (state.hurt && runtime.actions?.hurt
         ? 'hurt'
-        : (state.attacking && runtime.actions?.attack ? 'attack' : locomotion.action));
+        : (state.attacking && runtime.actions?.attack ? 'attack' : locomotionAction));
     const restartAttack = characterOneShotRestart(runtime, requestedAction, state.attackToken);
     setCharacterGlbAction(
       runtime,
       requestedAction,
-      requestedAction === locomotion.action ? 0.16 : 0.08,
+      requestedAction === locomotionAction ? 0.16 : 0.08,
       { restart: restartAttack }
     );
     if (locomotion.locomoting && !runtime.directionalWasMoving) {

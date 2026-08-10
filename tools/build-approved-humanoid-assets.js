@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
-const NPC_REVIEW_SHA256 = 'EAC5248C381FD457E93A04094DAC51FA22C60EDE138C88E00EEFBB3EB4E6091E';
+const NPC_REVIEW_SHA256 = '22C453C6679F825F605EC68124C5AFF1550CEC5EAD9EDFDAAD48C932ABFFAAEA';
 const RIFLE_REVIEW_SHA256 = '322D14E2D07059AB4458C65CB0E6B7019B8F030F3386B05016908E41E6591FC6';
 const BOOTS_FIT_REPORT_SHA256 = '6CA7122CB054A5F585CD190AFB1643F26B44C55DE4A4AF17303356DDA8CF9853';
 const GRIP_RUNTIME_SHA256 = '7B96493E5D26DCF12D10B03526036DCD529A74C26FD031BFE8DCBBA986FD4FE8';
@@ -335,10 +335,10 @@ function verifyEquipmentReviews() {
 }
 
 function verifyNpcReview() {
-  const directory = fromRoot('docs', 'art', 'reviews', 'unified-humanoid-npc-v5', 'base');
-  const glb = path.join(directory, 'npc_humanoid_base_unified_v5.glb');
-  const reportFile = path.join(directory, 'npc_humanoid_base_unified_v5-report.json');
-  const approvalFile = path.join(directory, 'CRITIC_APPROVAL_V5.md');
+  const directory = fromRoot('docs', 'art', 'reviews', 'unified-humanoid-npc-v6', 'base');
+  const glb = path.join(directory, 'npc_humanoid_base_unified_v6.glb');
+  const reportFile = path.join(directory, 'npc_humanoid_base_unified_v6-report.json');
+  const approvalFile = path.join(directory, 'CRITIC_APPROVAL_V6.md');
   [glb, reportFile, approvalFile].forEach(file => assertFile('humanoid NPC review asset', file));
   const report = JSON.parse(fs.readFileSync(reportFile, 'utf8'));
   const approval = fs.readFileSync(approvalFile, 'utf8');

@@ -84,6 +84,7 @@ function assertContainsAll(label, source, snippets) {
 const core = read('public/js/game/05_multiplayer_core_state.js');
 const remoteLocomotion = read('public/js/game/05b_remote_player_locomotion.js');
 const socketRoom = read('public/js/game/05c_multiplayer_socket_room.js');
+const enemyModels = read('public/js/game/05f_enemy_models_location_flow.js');
 const explosions = read('public/js/game/06b_explosions_speech.js');
 const combatModes = read('public/js/game/06c_combat_stats_modes.js');
 const combat = read('public/js/game/06d_combat_damage_shooting.js');
@@ -1205,6 +1206,282 @@ function assertServerAuthoritativeWorldStateRequests() {
     'an addressable world-state resync still broadcasts to the whole room');
 }
 
+function assertServerNetworkHotPath() {
+  const progressionProfileSource = functionSource(server, 'serverStateHasProgressionProfile');
+  const hasProgressionProfile = new Function(
+    `${progressionProfileSource}\nreturn serverStateHasProgressionProfile;`
+  )();
+  assert.strictEqual(hasProgressionProfile({
+    seq: 7,
+    x: 1,
+    z: 2,
+    vx: 0.5,
+    vz: 0,
+    angle: 0.25,
+    moving: true,
+    turning: false,
+    crouching: false
+  }), false, 'a compact movement packet still enters the progression hot path');
+  assert.strictEqual(hasProgressionProfile({ profileOnly: true }), true,
+    'an explicit profile-only packet no longer applies progression normalization');
+  assert.strictEqual(hasProgressionProfile({ reason: 'startProfile' }), true,
+    'a reliable movement-transition profile no longer applies progression normalization');
+  assert.strictEqual(hasProgressionProfile({ skillRanks: {} }), true,
+    'a skill profile no longer applies the authoritative progression budget');
+  assert.strictEqual(hasProgressionProfile({ talentRanks: {} }), true,
+    'a talent profile no longer applies the authoritative progression budget');
+
+  const stateHandler = socketEventSource(server, 'state');
+  assertContainsAll('state progression hot-path guard', stateHandler, [
+    'const progressionChanged = serverStateHasProgressionProfile(data)',
+    '? serverApplyProgressionRequest(p, data)',
+    ": false;"
+  ]);
+
+  const movementPayload = statementSource(socketRoom, 'const movementPayload =');
+  assertContainsAll('compact movement payload', movementPayload, [
+    'seq:', 'x:', 'z:', 'vx:', 'vz:', 'angle:', 'moving:', 'turning:', 'crouching:'
+  ]);
+  for (const field of ['hp:', 'maxHp:', 'name:', 'deviceType:', 'controlType:', 'skillRanks:', 'talentRanks:']) {
+    assert(!movementPayload.includes(field), `movement hot packet still carries ${field.slice(0, -1)}`);
+  }
+  const profilePayload = statementSource(socketRoom, 'const profilePayload =');
+  assertContainsAll('profile packet compatibility', profilePayload, [
+    'profileOnly: true',
+    "? 'profile'",
+    "? 'idleProfile' : 'startProfile'",
+    'hp:', 'maxHp:', 'name:', 'deviceType:', 'controlType:', 'skillRanks:', 'talentRanks:'
+  ]);
+  assert(!profilePayload.includes('profileOnly: periodicProfileSync'),
+    'a start/stop profile companion can still enter the movement branch');
+
+  const writerSource = functionSource(server, 'writeJsonAtomic');
+  const makeFs = failRename => {
+    const files = new Map([['runtime.json', 'durable']]);
+    return {
+      files,
+      api: {
+        writeFileSync(file, contents, encoding) {
+          assert.strictEqual(encoding, 'utf8');
+          files.set(file, contents);
+        },
+        renameSync(source, target) {
+          if (failRename) throw new Error('injected rename failure');
+          files.set(target, files.get(source));
+          files.delete(source);
+        },
+        existsSync: file => files.has(file),
+        unlinkSync: file => files.delete(file)
+      }
+    };
+  };
+  const compactFs = makeFs(false);
+  const compactWriter = new Function('fs', `${writerSource}\nreturn writeJsonAtomic;`)(compactFs.api);
+  const runtimeState = { version: 2, characters: { player: { x: 1, z: 2 } } };
+  compactWriter('runtime.json', runtimeState);
+  assert.strictEqual(compactFs.files.get('runtime.json'), JSON.stringify(runtimeState),
+    'runtime JSON persistence is not compact');
+  assert(!compactFs.files.has('runtime.json.tmp'),
+    'successful atomic persistence left its temp file behind');
+  compactWriter('authored.json', runtimeState, { pretty: true });
+  assert.strictEqual(compactFs.files.get('authored.json'), JSON.stringify(runtimeState, null, 2),
+    'the explicit authored-data formatting option was lost');
+  assertContainsAll('authored JSON write formatting', server, [
+    'writeJsonAtomic(file, location, { pretty: true })',
+    'writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true })'
+  ]);
+  assertContainsAll('compact runtime JSON write call sites', server, [
+    '() => writeJsonAtomic(USERS_FILE, usersDb)',
+    'function persistSaves() { writeJsonAtomic(SAVES_FILE, savesDb); }'
+  ]);
+
+  const failingFs = makeFs(true);
+  const failingWriter = new Function('fs', `${writerSource}\nreturn writeJsonAtomic;`)(failingFs.api);
+  assert.throws(() => failingWriter('runtime.json', runtimeState), /injected rename failure/,
+    'atomic persistence swallowed a rename failure');
+  assert.strictEqual(failingFs.files.get('runtime.json'), 'durable',
+    'a failed atomic persistence replaced the previous durable file');
+  assert(!failingFs.files.has('runtime.json.tmp'),
+    'failed atomic persistence left a partial temp file behind');
+
+  const resourceEmitter = functionSource(server, 'emitResourceUpdate');
+  assert(resourceEmitter.includes("emit('resourceUpdated', payload)"),
+    'resource mutations no longer broadcast their reliable delta');
+  assert(!resourceEmitter.includes("emit('worldState'"),
+    'resource delta still broadcasts a redundant full world snapshot');
+  const harvestHandler = socketEventSource(server, 'harvestResource');
+  assertContainsAll('harvest delta contract', harvestHandler, [
+    'resource: publicRes',
+    'emitResourceUpdate(room, resource, socket.id, item)'
+  ]);
+  assert(!harvestHandler.includes('worldState:'),
+    'harvest ACK still duplicates the full world snapshot');
+  const resourceListenerStart = socketRoom.indexOf("multiplayer.socket.on('resourceUpdated'");
+  const resourceListenerEnd = socketRoom.indexOf("multiplayer.socket.on('enemySnapshot'", resourceListenerStart);
+  assert(resourceListenerStart >= 0 && resourceListenerEnd > resourceListenerStart,
+    'missing client resourceUpdated listener');
+  const resourceListener = socketRoom.slice(resourceListenerStart, resourceListenerEnd);
+  assert(resourceListener.includes('applyNetworkResources([data.resource], null)'),
+    'client resource delta no longer updates the resource runtime');
+  assert(functionBody(worldSync, 'applyNetworkResources').includes('map[node.tz][node.tx] = TILE_TYPES.GRASS'),
+    'a depleted resource delta no longer removes its collision tile');
+  const applyResourceSnapshotSource = functionSource(resources, 'applyServerResourceSnapshot');
+  let appliedResourceArgs = null;
+  const applyResourceSnapshot = new Function(
+    'applyNetworkResources',
+    'findResourceNode',
+    `${applyResourceSnapshotSource}\nreturn applyServerResourceSnapshot;`
+  )(
+    (rows, stateMap) => { appliedResourceArgs = { rows, stateMap }; },
+    snapshot => ({ ...snapshot, resolved: true })
+  );
+  const resourceWithoutWorldState = { id: 'ore_delta', tx: 2, tz: 3, hp: 0, maxHp: 3 };
+  const resolvedResource = applyResourceSnapshot({ id: 'old' }, { resource: resourceWithoutWorldState });
+  assert.deepStrictEqual(appliedResourceArgs, { rows: [resourceWithoutWorldState], stateMap: null },
+    'harvest client still requires worldState.map alongside its resource ACK delta');
+  assert.strictEqual(resolvedResource.resolved, true,
+    'harvest client did not resolve a resource ACK that omitted worldState');
+  assert(server.includes("reason: 'resourceRespawn'"),
+    'resource respawn no longer keeps its full compatibility reconciliation');
+}
+
+function assertEnemySnapshotFanout() {
+  const publicEnemyBody = functionBody(server, 'publicEnemy');
+  const viewerHostilityField = /hostileToPlayer:\s*viewer[\s\S]*?actorHostilityKeys\(e, false\)\?\.size\),/;
+  assert(viewerHostilityField.test(publicEnemyBody),
+    'publicEnemy viewer-specific hostility field is missing');
+  assert(!/\bviewer\b/.test(publicEnemyBody.replace(viewerHostilityField, '')),
+    'publicEnemy gained a viewer-dependent field outside hostileToPlayer');
+
+  const playersBySocket = new Map([
+    ['viewer-a', { hostileEnemyIds: new Set(['enemy-a']) }],
+    ['viewer-b', { hostileEnemyIds: new Set(['enemy-b']) }]
+  ]);
+  const emissions = [];
+  const makeTarget = (socketId, volatile = false) => ({
+    get volatile() { return makeTarget(socketId, true); },
+    emit(event, payload) { emissions.push({ socketId, volatile, event, payload }); }
+  });
+  const fakeIo = { to: socketId => makeTarget(socketId, false) };
+  let publicEnemyCalls = 0;
+  let publicEnemyRows = [];
+  const publicEnemyKeys = ['id', 'name', 'hostileToPlayer', 'inventory', 'personality', 'aiState', 'dead'];
+  const makePublicEnemy = (enemy, viewer = null) => {
+    publicEnemyCalls += 1;
+    const row = {
+      id: enemy.id,
+      name: enemy.name,
+      hostileToPlayer: viewer ? viewer.hostileEnemyIds.has(enemy.id) : false,
+      inventory: [{ id: 'water', qty: enemy.qty }],
+      personality: { label: 'calm', traits: ['patient'] },
+      aiState: 'idle',
+      dead: false
+    };
+    publicEnemyRows.push(row);
+    return row;
+  };
+  const runtime = new Function(
+    'players',
+    'io',
+    'publicEnemy',
+    'serverActorHostileToPlayer',
+    'roomNeedsHotEnemySnapshots',
+    'Date',
+    [
+      functionSource(server, 'publicEnemySnapshotForViewer'),
+      functionSource(server, 'emitEnemySnapshot'),
+      'return { emitEnemySnapshot };'
+    ].join('\n')
+  )(
+    playersBySocket,
+    fakeIo,
+    makePublicEnemy,
+    (enemy, viewer) => viewer.hostileEnemyIds.has(enemy.id),
+    () => true,
+    { now: () => 1000 }
+  );
+  const room = {
+    id: 'room-a',
+    locationId: 'location-a',
+    sockets: new Set(['viewer-a', 'viewer-b']),
+    enemies: new Map([
+      ['enemy-a', { id: 'enemy-a', name: 'A', qty: 1 }],
+      ['enemy-b', { id: 'enemy-b', name: 'B', qty: 2 }]
+    ]),
+    lastEnemySnapshotAt: 0
+  };
+
+  runtime.emitEnemySnapshot(room, false);
+  assert.strictEqual(publicEnemyCalls, room.enemies.size,
+    'routine enemy fanout rebuilt publicEnemy for every viewer');
+  assert.strictEqual(emissions.length, room.sockets.size,
+    'routine enemy snapshot did not preserve one payload per viewer');
+  assert(emissions.every(row => row.event === 'enemySnapshot' && row.volatile === true),
+    'routine interchangeable enemy snapshots must use volatile transport');
+  const viewerA = emissions.find(row => row.socketId === 'viewer-a')?.payload;
+  const viewerB = emissions.find(row => row.socketId === 'viewer-b')?.payload;
+  assert.deepStrictEqual(Object.keys(viewerA || {}), ['roomId', 'locationId', 't', 'enemies'],
+    'enemy snapshot outer payload field order changed');
+  assert.deepStrictEqual(viewerA.enemies.map(row => row.id), ['enemy-a', 'enemy-b'],
+    'enemy snapshot order no longer follows the room enemy map');
+  assert.deepStrictEqual(viewerA.enemies.map(row => row.hostileToPlayer), [true, false],
+    'viewer A did not receive its own hostility overlay');
+  assert.deepStrictEqual(viewerB.enemies.map(row => row.hostileToPlayer), [false, true],
+    'viewer B did not receive its own hostility overlay');
+  for (let index = 0; index < viewerA.enemies.length; index += 1) {
+    const left = viewerA.enemies[index];
+    const right = viewerB.enemies[index];
+    assert.notStrictEqual(left, right,
+      'two viewers received the same mutable top-level enemy object');
+    assert.deepStrictEqual(Object.keys(left), publicEnemyKeys,
+      'viewer hostility overlay changed publicEnemy field order or shape');
+    assert.deepStrictEqual(
+      { ...left, hostileToPlayer: false },
+      { ...right, hostileToPlayer: false },
+      'viewer enemy snapshots differ outside hostileToPlayer'
+    );
+    assert.strictEqual(left.inventory, right.inventory,
+      'shared publicEnemy inventory was copied again for every viewer');
+    assert.strictEqual(left.personality, right.personality,
+      'shared publicEnemy personality was copied again for every viewer');
+    assert.strictEqual(left.personality.traits, right.personality.traits,
+      'shared publicEnemy traits were copied again for every viewer');
+  }
+  viewerA.enemies[0].name = 'viewer-only mutation';
+  assert.strictEqual(viewerB.enemies[0].name, 'A',
+    'one viewer top-level overlay mutation leaked into another viewer payload');
+
+  emissions.length = 0;
+  publicEnemyCalls = 0;
+  runtime.emitEnemySnapshot(room, false);
+  assert.strictEqual(publicEnemyCalls, 0,
+    'enemy snapshot interval gate no longer prevents redundant reconstruction');
+  assert.strictEqual(emissions.length, 0,
+    'enemy snapshot interval gate no longer preserves the existing frequency');
+
+  runtime.emitEnemySnapshot(room, true);
+  assert.strictEqual(publicEnemyCalls, room.enemies.size,
+    'forced enemy fanout rebuilt publicEnemy more than once per enemy');
+  assert.strictEqual(emissions.length, room.sockets.size,
+    'forced enemy snapshot did not preserve one payload per viewer');
+  assert(emissions.every(row => row.volatile === false),
+    'forced enemy snapshots must remain reliable');
+
+  room.sockets = new Set(['viewer-a']);
+  emissions.length = 0;
+  publicEnemyCalls = 0;
+  publicEnemyRows = [];
+  runtime.emitEnemySnapshot(room, true);
+  assert.strictEqual(publicEnemyCalls, room.enemies.size,
+    'a single-viewer enemy snapshot rebuilt an enemy more than once');
+  assert.strictEqual(emissions.length, 1,
+    'a single-viewer room did not receive exactly one enemy snapshot');
+  assert.strictEqual(emissions[0].payload.enemies[0], publicEnemyRows[0],
+    'a single-viewer room still pays for a fan-out copy or recursive freeze');
+  assert.deepStrictEqual(emissions[0].payload.enemies.map(row => row.hostileToPlayer), [true, false],
+    'the direct single-viewer path lost viewer-specific hostility');
+}
+
 function assertEventDrivenMobilePanelState() {
   const updateBody = functionBody(mobilePanels, 'updateMobilePanelState');
   assertContainsAll('mobile panel state deduplication', updateBody, [
@@ -1328,6 +1605,110 @@ function assertEventDrivenMobilePanelState() {
     'desktop panel state incorrectly enables the mobile-only body class');
 }
 
+function assertActorAnimationLod() {
+  const remoteRuntime = new Function([
+    statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_NEAR_DISTANCE'),
+    statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_MID_DISTANCE'),
+    statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_MID_INTERVAL'),
+    statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_FAR_INTERVAL'),
+    statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_MAX_DT'),
+    functionSource(remoteLocomotion, 'remoteAnimationLodInterval'),
+    functionSource(remoteLocomotion, 'consumeRemoteAnimationLodDt'),
+    'return { interval: remoteAnimationLodInterval, consume: consumeRemoteAnimationLodDt };'
+  ].join('\n'))();
+  assert.strictEqual(remoteRuntime.interval(2, false, true), Infinity,
+    'hidden remote players must not run heavy animation work');
+  assert.strictEqual(remoteRuntime.interval(40, true, true), 0,
+    'important remote-player animation must stay full-rate');
+  assert.strictEqual(remoteRuntime.interval(8, true, false), 0,
+    'near remote-player animation must stay full-rate');
+  assert.strictEqual(remoteRuntime.interval(14, true, false), 0.05,
+    'mid-distance remote-player animation must run near 20 Hz');
+  assert.strictEqual(remoteRuntime.interval(24, true, false), 0.08,
+    'far remote-player animation must run near 12.5 Hz');
+
+  const farRemote = {};
+  assert.strictEqual(remoteRuntime.consume(farRemote, 0.016, 0.08, 'idle'), 0.016,
+    'the first remote animation state must be applied immediately');
+  for (let frame = 0; frame < 3; frame += 1) {
+    assert.strictEqual(remoteRuntime.consume(farRemote, 0.02, 0.08, 'idle'), 0,
+      'far remote animation ran before its accumulated interval');
+  }
+  assert(Math.abs(remoteRuntime.consume(farRemote, 0.02, 0.08, 'idle') - 0.08) < 1e-8,
+    'far remote animation did not receive its accumulated frame time');
+
+  const changedRemote = {};
+  remoteRuntime.consume(changedRemote, 0.016, 0.05, 'idle');
+  remoteRuntime.consume(changedRemote, 0.016, 0.05, 'idle');
+  assert(Math.abs(remoteRuntime.consume(changedRemote, 0.016, 0.05, 'moving') - 0.032) < 1e-8,
+    'a remote locomotion state change waited for the LOD interval');
+  const hiddenRemote = {};
+  for (let frame = 0; frame < 5; frame += 1) {
+    assert.strictEqual(remoteRuntime.consume(hiddenRemote, 0.05, Infinity, 'hidden'), 0,
+      'hidden remote animation unexpectedly advanced');
+  }
+  assert(Math.abs(remoteRuntime.consume(hiddenRemote, 0.016, 0.08, 'visible') - 0.08) < 1e-8,
+    'remote animation catch-up exceeded or lost the bounded accumulated time');
+
+  const enemyRuntime = new Function([
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_NEAR_DISTANCE'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MID_DISTANCE'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MID_INTERVAL'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_FAR_INTERVAL'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MAX_DT'),
+    functionSource(enemyModels, 'enemyAnimationLodInterval'),
+    functionSource(enemyModels, 'consumeEnemyAnimationLodDt'),
+    'return { interval: enemyAnimationLodInterval, consume: consumeEnemyAnimationLodDt };'
+  ].join('\n'))();
+  assert.strictEqual(enemyRuntime.interval(2, false, true), Infinity,
+    'hidden enemies must not run heavy animation work');
+  assert.strictEqual(enemyRuntime.interval(40, true, true), 0,
+    'important enemy animation must stay full-rate');
+  assert.strictEqual(enemyRuntime.interval(8, true, false), 0,
+    'near enemy animation must stay full-rate');
+  assert.strictEqual(enemyRuntime.interval(14, true, false), 0.05,
+    'mid-distance enemy animation must run near 20 Hz');
+  assert.strictEqual(enemyRuntime.interval(24, true, false), 0.08,
+    'far enemy animation must run near 12.5 Hz');
+  const hiddenEnemy = {};
+  for (let frame = 0; frame < 5; frame += 1) {
+    assert.strictEqual(enemyRuntime.consume(hiddenEnemy, 0.05, Infinity, 'hidden'), 0,
+      'hidden enemy animation unexpectedly advanced');
+  }
+  assert(Math.abs(enemyRuntime.consume(hiddenEnemy, 0.016, 0.08, 'visible') - 0.08) < 1e-8,
+    'enemy animation catch-up exceeded or lost the bounded accumulated time');
+
+  const remoteUpdate = functionBody(remoteLocomotion, 'updateRemotePlayers');
+  const movementIndex = remoteUpdate.indexOf('updateRemoteVisualLocomotion(row, dt, now)');
+  const lodGateIndex = remoteUpdate.indexOf('if (animationDt <= 0) return');
+  const animationIndex = remoteUpdate.indexOf('updateCharacterLocomotionAnimation(g, animationDt');
+  assert(movementIndex >= 0 && movementIndex < lodGateIndex && lodGateIndex < animationIndex,
+    'remote root interpolation is no longer independent from heavy animation LOD');
+  assertContainsAll('remote animation LOD bundle', remoteUpdate, [
+    'applyCharacterCrouchVisual(g, !!g.userData.crouching, animationDt)',
+    'applyCharacterInjuryVisual(g, injuries, animationDt)',
+    'updateWeaponVisualAnimation(g.userData.parts?.weaponGroup, animationDt, remoteWeaponOwner)',
+    'updateCharacterMeleeAnimation(g, animationDt)'
+  ]);
+
+  const enemyUpdate = functionBody(enemyModels, 'animateEnemyVisual');
+  const enemyLodSetupIndex = enemyUpdate.indexOf('let animationDt = dt;');
+  const enemyLodGateIndex = enemyUpdate.indexOf('if (animationDt <= 0) return', enemyLodSetupIndex);
+  const enemyRestoreIndex = enemyUpdate.indexOf('enemyAnimRestoreActorParts(parts, animationRestoreK)');
+  assert(enemyLodSetupIndex >= 0 && enemyLodGateIndex > enemyLodSetupIndex && enemyLodGateIndex < enemyRestoreIndex,
+    'enemy procedural pose is restored on frames skipped by heavy animation LOD');
+  assertContainsAll('enemy heavy animation LOD bundle', enemyUpdate, [
+    'const heavyActor = !!(',
+    'enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant)',
+    'if (animationDt <= 0) return',
+    'updateCharacterLocomotionAnimation(mesh, animationDt',
+    'updateEnemyStaticGlbAnimation(enemy, animationDt',
+    'updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, animationDt, enemy)'
+  ]);
+  assert(/idleVisualAnimTimer[\s\S]{0,180}Number\(animationDt \|\| 0\.016\)/.test(enemyUpdate),
+    'enemy fallback idle timer ignores the time accumulated by heavy animation LOD');
+}
+
 async function main() {
   assertAuthorityModes();
   assertAuthorityTransitionCleanup();
@@ -1342,8 +1723,11 @@ async function main() {
   assertBlockedGameplayGates();
   assertDeferredWorldRuntime();
   assertServerAuthoritativeWorldStateRequests();
+  assertServerNetworkHotPath();
+  assertEnemySnapshotFanout();
   assertEventDrivenMobilePanelState();
-  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, movement accuracy, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
+  assertActorAnimationLod();
+  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, movement accuracy, compact network hot paths, per-viewer enemy fanout, actor animation LOD, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
 }
 
 main().catch(error => {

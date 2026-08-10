@@ -165,7 +165,7 @@ const animateEnemyBody = functionBody(clientWorld, 'animateEnemyVisual');
 ].forEach(needle => requireText('client NPC animations', clientWorld, needle));
 
 [
-  'enemyAnimRestoreActorParts(parts, restoreK)',
+  'enemyAnimRestoreActorParts(parts, animationRestoreK)',
   'enemyAnimWeaponVisible(mesh, true)'
 ].forEach(needle => requireText('client NPC animation cleanup', animateEnemyBody, needle));
 requireText('client NPC sleep weapon cleanup', clientWorld, 'enemyAnimWeaponVisible(mesh, false)');

@@ -174,7 +174,11 @@
 
   let adaptiveRenderScale = 1.0;
   let adaptiveRenderScaleTimer = 0;
+  let adaptiveRenderScaleRecoveryTimer = 0;
   let appliedRendererPixelRatio = 0;
+  const ADAPTIVE_RENDER_SCALE_DOWN_FPS = 57;
+  const ADAPTIVE_RENDER_SCALE_UP_FPS = 59;
+  const ADAPTIVE_RENDER_SCALE_RECOVERY_SECONDS = 3;
 
   function adaptiveRenderScaleFloor() {
     if (IS_MOBILE_DEVICE) return 0.88;
@@ -199,25 +203,45 @@
     renderer.setPixelRatio(next);
   }
 
+  function resetAdaptiveRenderScaleSampling() {
+    adaptiveRenderScaleTimer = 0;
+    adaptiveRenderScaleRecoveryTimer = 0;
+  }
+
   function resetAdaptiveRenderScale(reason = 'quality') {
     adaptiveRenderScale = 1.0;
-    adaptiveRenderScaleTimer = 0;
+    resetAdaptiveRenderScaleSampling();
     applyMainRendererPixelRatio(true);
   }
 
   function updateAdaptiveRenderScale(dt = 0) {
-    if (!gameStarted || !renderer || document.body.classList.contains('global-map-mode')) return;
+    if (!gameStarted || !renderer || document.hidden || document.body.classList.contains('global-map-mode')) {
+      // Do not carry FPS samples from a hidden tab or the separate global-map
+      // renderer into the local-scene recovery dwell.
+      resetAdaptiveRenderScaleSampling();
+      return;
+    }
     if (!Number.isFinite(fpsValue) || fpsValue <= 0) return;
     adaptiveRenderScaleTimer += Math.max(0, Number(dt || 0));
     if (adaptiveRenderScaleTimer < 1.0) return;
+    const sampleSeconds = adaptiveRenderScaleTimer;
     adaptiveRenderScaleTimer = 0;
 
     const floor = adaptiveRenderScaleFloor();
     let next = adaptiveRenderScale;
-    if (fpsValue > 0 && fpsValue < 57) {
+    if (fpsValue < ADAPTIVE_RENDER_SCALE_DOWN_FPS) {
+      adaptiveRenderScaleRecoveryTimer = 0;
       next = Math.max(floor, adaptiveRenderScale - (fpsValue < 48 ? 0.08 : 0.045));
-    } else if (fpsValue >= 66 && adaptiveRenderScale < 0.999) {
-      next = Math.min(1.0, adaptiveRenderScale + 0.025);
+    } else if (fpsValue >= ADAPTIVE_RENDER_SCALE_UP_FPS && adaptiveRenderScale < 0.999) {
+      // Rendering is capped at 60 FPS. Require a sustained near-cap reading so
+      // resolution can recover without bouncing at the downscale boundary.
+      adaptiveRenderScaleRecoveryTimer += sampleSeconds;
+      if (adaptiveRenderScaleRecoveryTimer >= ADAPTIVE_RENDER_SCALE_RECOVERY_SECONDS) {
+        adaptiveRenderScaleRecoveryTimer = 0;
+        next = Math.min(1.0, adaptiveRenderScale + 0.025);
+      }
+    } else {
+      adaptiveRenderScaleRecoveryTimer = 0;
     }
     if (Math.abs(next - adaptiveRenderScale) < 0.002) return;
     adaptiveRenderScale = next;

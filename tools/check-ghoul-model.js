@@ -171,8 +171,8 @@ const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
   'attackActive: attackAnimation.active',
   'attackToken: attackAnimation.token',
   "runtime.currentAction === 'walk' || runtime.currentAction === 'run'",
-  'updateEnemyStaticGlbAnimation(enemy, dt, {',
-  'updateEnemyStaticGlbAnimation(enemy, dt, { dead: true });'
+  'updateEnemyStaticGlbAnimation(enemy, animationDt, {',
+  'updateEnemyStaticGlbAnimation(enemy, animationDt, { dead: true });'
 ].forEach(marker => assert(enemyRuntime.includes(marker), `ghoul animation integration is missing: ${marker}`));
 
 async function verifyThreeRuntime() {

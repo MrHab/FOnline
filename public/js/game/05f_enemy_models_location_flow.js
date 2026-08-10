@@ -28,6 +28,41 @@
     ember: matStandard({ color: 0xe77d38, emissive: 0x7a250d, emissiveIntensity: 0.55, roughness: 0.62 }),
     toxic: matStandard({ color: 0x9fe36b, emissive: 0x4ba92c, emissiveIntensity: 0.55, roughness: 0.7 })
   };
+  const ENEMY_ANIMATION_LOD_NEAR_DISTANCE = 9;
+  const ENEMY_ANIMATION_LOD_MID_DISTANCE = 18;
+  const ENEMY_ANIMATION_LOD_MID_INTERVAL = 0.05;
+  const ENEMY_ANIMATION_LOD_FAR_INTERVAL = 0.08;
+  const ENEMY_ANIMATION_LOD_MAX_DT = 0.08;
+
+  function enemyAnimationLodInterval(distance, visible = true, important = false) {
+    if (!visible) return Infinity;
+    if (important || Number(distance || 0) <= ENEMY_ANIMATION_LOD_NEAR_DISTANCE) return 0;
+    return Number(distance || 0) <= ENEMY_ANIMATION_LOD_MID_DISTANCE
+      ? ENEMY_ANIMATION_LOD_MID_INTERVAL
+      : ENEMY_ANIMATION_LOD_FAR_INTERVAL;
+  }
+
+  function consumeEnemyAnimationLodDt(enemy, dt, interval, stateKey) {
+    const numericDt = Number(dt);
+    const frameDt = Number.isFinite(numericDt) ? Math.max(0, Math.min(0.05, numericDt)) : 0.016;
+    const accumulatedDt = Math.min(
+      ENEMY_ANIMATION_LOD_MAX_DT,
+      Math.max(0, Number(enemy?.heavyAnimationLodDt || 0)) + frameDt
+    );
+    const nextStateKey = String(stateKey || '');
+    const stateChanged = String(enemy?.heavyAnimationLodStateKey || '') !== nextStateKey;
+    enemy.heavyAnimationLodStateKey = nextStateKey;
+    if (!Number.isFinite(interval)) {
+      enemy.heavyAnimationLodDt = accumulatedDt;
+      return 0;
+    }
+    if (!stateChanged && interval > 0 && accumulatedDt + 1e-6 < interval) {
+      enemy.heavyAnimationLodDt = accumulatedDt;
+      return 0;
+    }
+    enemy.heavyAnimationLodDt = 0;
+    return accumulatedDt;
+  }
 
   function makeEnemyBox(w, h, d, material, x, y, z, sx = 1, rx = 0, ry = 0, rz = 0) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w * sx, h * sx, d * sx), material);
@@ -825,16 +860,32 @@
       updateEnemyEquipmentVisuals(enemy);
       mesh.userData.approvedEquipmentRefreshPending = false;
     }
+    const distanceToPlayer = player ? Math.hypot(player.x - (enemy.x || 0), player.z - (enemy.z || 0)) : 0;
+    const visible = mesh.visible !== false;
+    const heavyActor = !!(
+      parts.unifiedHumanoidNpc
+      || mesh.userData.characterGlbRuntime
+      || mesh.userData.npcCreatureGlbAnimation
+      || mesh.userData.approvedEquipmentCharacterRuntime
+    );
     if (enemy.dead) {
+      const animationDt = heavyActor
+        ? consumeEnemyAnimationLodDt(
+            enemy,
+            dt,
+            enemyAnimationLodInterval(distanceToPlayer, visible, false),
+            `${visible ? 1 : 0}|dead`
+          )
+        : dt;
+      if (animationDt <= 0) return;
       if (mesh.userData.characterGlbRuntime) {
-        updateCharacterGlbAnimation(mesh, dt, { dead: true, moving: false });
+        updateCharacterGlbAnimation(mesh, animationDt, { dead: true, moving: false });
       } else {
-        updateEnemyStaticGlbAnimation(enemy, dt, { dead: true });
+        updateEnemyStaticGlbAnimation(enemy, animationDt, { dead: true });
       }
       return;
     }
     const restoreK = Math.min(1, Math.max(0, Number(dt || 0.016)) * 10);
-    enemyAnimRestoreActorParts(parts, restoreK);
     const scheduleState = String(enemy.scheduleState || enemy.aiState || '').toLowerCase();
     const sleeping = scheduleState === 'sleep';
     const inDialogue = scheduleState === 'dialogue'
@@ -851,7 +902,6 @@
     enemy.prevAnimX = visualX;
     enemy.prevAnimZ = visualZ;
     const moving = moved > 0.002 || Number(enemy.enemyVisualSpeed || 0) > 0.035 || Number(enemy.speed || 0) > 0.035 && !!enemy.moving;
-    const distanceToPlayer = player ? Math.hypot(player.x - (enemy.x || 0), player.z - (enemy.z || 0)) : 0;
     const important = moving
       || sleeping
       || inDialogue
@@ -870,11 +920,46 @@
           active: String(enemy.aiState || '').toLowerCase() === 'attack',
           token: 0
         };
+    const heavyImportant = inDialogue
+      || attackAnimation.active
+      || String(enemy.aiState || '').toLowerCase() === 'chase'
+      || !!enemy.targetId
+      || !!enemy.factionTargetId
+      || !!mesh.userData?.meleeAnim
+      || Number(enemy.flash || 0) > 0.02
+      || (!!player && player.attackTarget === enemy)
+      || (typeof hoveredEnemy !== 'undefined' && hoveredEnemy === enemy);
+    let animationDt = dt;
+    if (heavyActor) {
+      const stateKey = [
+        visible ? 1 : 0,
+        moving ? 1 : 0,
+        sleeping ? 1 : 0,
+        inDialogue ? 1 : 0,
+        String(enemy.aiState || ''),
+        attackAnimation.active ? 1 : 0,
+        Number(attackAnimation.token || 0),
+        Number(mesh.userData?.meleeAnim?.startedAt || 0),
+        Number(enemy.flash || 0) > 0.02 ? 1 : 0
+      ].join('|');
+      animationDt = consumeEnemyAnimationLodDt(
+        enemy,
+        dt,
+        enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant),
+        stateKey
+      );
+      if (animationDt <= 0) return;
+    }
+    // Keep the last skeletal/procedural pose intact between LOD ticks. Restoring
+    // actor parts on skipped frames would pull them toward the base pose before
+    // the next mixer/IK update and make distant actors visibly pulse.
+    const animationRestoreK = Math.min(1, Math.max(0, Number(animationDt || 0.016)) * 10);
+    enemyAnimRestoreActorParts(parts, animationRestoreK);
     if (parts.unifiedHumanoidNpc) {
       const facingAngle = Number.isFinite(Number(enemy.angle))
         ? Number(enemy.angle)
         : Number(mesh.rotation.y || 0) - Math.PI;
-      updateCharacterLocomotionAnimation(mesh, dt, {
+      updateCharacterLocomotionAnimation(mesh, animationDt, {
         moving,
         speed: visualSpeed,
         moveX: visualX - Number(enemy.prevUnifiedAnimX ?? visualX),
@@ -888,7 +973,7 @@
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;
       if (mesh.userData.enemyWeaponGroup) {
-        updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, dt, enemy);
+        updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, animationDt, enemy);
       }
       const accent = mesh.userData.variantAccent;
       if (accent?.material) {
@@ -897,7 +982,7 @@
       }
       return;
     }
-    updateEnemyStaticGlbAnimation(enemy, dt, {
+    updateEnemyStaticGlbAnimation(enemy, animationDt, {
       moving,
       visualSpeed,
       sleeping,
@@ -912,18 +997,18 @@
       applyApprovedWeaponGrip(mesh, enemy.equipment?.weapon || enemy.weapon || 'fists');
     }
     if (!important) {
-      enemy.idleVisualAnimTimer = Math.max(0, Number(enemy.idleVisualAnimTimer || 0) - Math.max(0, Number(dt || 0.016)));
+      enemy.idleVisualAnimTimer = Math.max(0, Number(enemy.idleVisualAnimTimer || 0) - Math.max(0, Number(animationDt || 0.016)));
       if (enemy.idleVisualAnimTimer > 0) return;
       enemy.idleVisualAnimTimer = distanceToPlayer > 18 ? 0.36 : (distanceToPlayer > 7 ? 0.18 : 0.10);
     } else {
       enemy.idleVisualAnimTimer = 0;
     }
-    if (mesh.userData.enemyWeaponGroup) updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, dt, enemy);
+    if (mesh.userData.enemyWeaponGroup) updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, animationDt, enemy);
     const far = distanceToPlayer > 18;
     if (far && (graphicsSettings?.id === 'low' || graphicsSettings?.id === 'medium')) return;
     const t = performance.now() * 0.006;
-    if (sleeping && enemyAnimApplySleepPose(enemy, mesh, parts, dt, t)) {
-      if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, dt);
+    if (sleeping && enemyAnimApplySleepPose(enemy, mesh, parts, animationDt, t)) {
+      if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, animationDt);
       return;
     }
     const accent = mesh.userData.variantAccent;
@@ -960,8 +1045,8 @@
       }
       if (parts.head) parts.head.rotation.z = Math.sin(t * 0.75) * 0.035;
     }
-    if (inDialogue) enemyAnimApplyDialoguePose(enemy, mesh, parts, dt, t);
-    if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, dt);
+    if (inDialogue) enemyAnimApplyDialoguePose(enemy, mesh, parts, animationDt, t);
+    if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, animationDt);
   }
 
   function rollEnemyLoot() {

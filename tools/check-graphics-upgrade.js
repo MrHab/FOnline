@@ -10,13 +10,49 @@ const fail = message => {
 const requireText = (source, needle, label) => {
   if (!source.includes(needle)) fail(label);
 };
+const functionSource = (source, name) => {
+  const start = source.indexOf(`function ${name}`);
+  if (start < 0) return '';
+  const open = source.indexOf('{', start);
+  let depth = 0;
+  for (let index = open; index < source.length; index++) {
+    if (source[index] === '{') depth += 1;
+    else if (source[index] === '}' && --depth === 0) return source.slice(start, index + 1);
+  }
+  return '';
+};
 
 const renderer = read('public/js/game/02_renderer_world_map.js');
 const materials = read('public/js/game/02a_materials_static_models.js');
 const globalMap = read('public/js/game/11b_global_map_static_scene_camera.js');
+const hudLoop = read('public/js/game/13_minimap_hud_loop.js');
 const modelBuilder = read('tools/build-wasteland-models.js');
 
 requireText(renderer, 'const REAL_SHADOWS_TEMP_DISABLED = false;', 'desktop real shadows must not be emergency-disabled');
+const numericConst = (source, name) => {
+  const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*([0-9.]+)`));
+  if (!match) fail(`missing numeric constant ${name}`);
+  return Number(match[1]);
+};
+const maxRenderFps = numericConst(hudLoop, 'MAX_RENDER_FPS');
+const adaptiveDownFps = numericConst(renderer, 'ADAPTIVE_RENDER_SCALE_DOWN_FPS');
+const adaptiveUpFps = numericConst(renderer, 'ADAPTIVE_RENDER_SCALE_UP_FPS');
+const adaptiveRecoverySeconds = numericConst(renderer, 'ADAPTIVE_RENDER_SCALE_RECOVERY_SECONDS');
+if (adaptiveUpFps > maxRenderFps) fail('adaptive render scale cannot recover above the render-loop FPS cap');
+if (adaptiveDownFps >= adaptiveUpFps) fail('adaptive render scale must retain an FPS hysteresis band');
+if (adaptiveRecoverySeconds < 2) fail('adaptive render scale recovery must require a sustained healthy frame rate');
+requireText(renderer, 'adaptiveRenderScaleRecoveryTimer += sampleSeconds;', 'adaptive render scale recovery dwell is missing');
+requireText(renderer, '!gameStarted || !renderer || document.hidden', 'inactive/hidden adaptive sampling guard is missing');
+requireText(renderer, "document.body.classList.contains('global-map-mode')", 'global-map adaptive sampling guard is missing');
+const samplingResetSource = functionSource(renderer, 'resetAdaptiveRenderScaleSampling');
+const resetSamplingTimers = new Function(`${samplingResetSource}
+  let adaptiveRenderScaleTimer = 2.5;
+  let adaptiveRenderScaleRecoveryTimer = 2.5;
+  resetAdaptiveRenderScaleSampling();
+  return [adaptiveRenderScaleTimer, adaptiveRenderScaleRecoveryTimer];`);
+if (resetSamplingTimers().some(value => value !== 0)) {
+  fail('paused adaptive sampling carries stale local/global FPS dwell');
+}
 const highStart = renderer.indexOf("    high: {");
 const ultraStart = renderer.indexOf("    ultra: {");
 const presetsEnd = renderer.indexOf("\n  };", ultraStart);

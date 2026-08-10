@@ -279,7 +279,9 @@ function checkPersistenceAndRandom() {
   assert.strictEqual(fs.readdirSync(tempDir).filter(name => name.includes('.corrupt-')).length, 1);
 
   writeJsonAtomic(stateFile, { schema: 'saved' });
-  assert.deepStrictEqual(JSON.parse(fs.readFileSync(stateFile, 'utf8')), { schema: 'saved' });
+  const savedJson = fs.readFileSync(stateFile, 'utf8');
+  assert.strictEqual(savedJson, '{"schema":"saved"}');
+  assert.deepStrictEqual(JSON.parse(savedJson), { schema: 'saved' });
   for (const name of fs.readdirSync(tempDir)) fs.unlinkSync(path.join(tempDir, name));
   fs.rmdirSync(tempDir);
 }

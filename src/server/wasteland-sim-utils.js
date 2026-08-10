@@ -71,7 +71,10 @@ function writeJsonAtomic(file, data) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.tmp-${process.pid}-${Date.now()}`;
   try {
-    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf8');
+    // Runtime simulation snapshots are rewritten regularly. Pretty-printing the
+    // whole state makes every save substantially larger and keeps the event loop
+    // inside JSON.stringify/writeFileSync longer without adding durability.
+    fs.writeFileSync(tmp, JSON.stringify(data), 'utf8');
     fs.renameSync(tmp, file);
   } finally {
     try {

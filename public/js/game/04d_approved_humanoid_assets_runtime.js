@@ -881,6 +881,69 @@
     return applied;
   }
 
+  // «Поднятое положение» (high-ready): если перед стволом препятствие,
+  // оружие плавно поднимается к груди и не пересекает геометрию. Щуп идёт
+  // вдоль ствола прошлого кадра по статической коллизии локации.
+  function updateApprovedWeaponObstruction(actor, weaponGroup) {
+    if (!actor?.userData) return 0;
+    let target = 0;
+    if (
+      typeof isBlockedByStaticCollision === 'function'
+      && weaponGroup
+      && actor === (typeof playerGroup !== 'undefined' ? playerGroup : actor)
+    ) {
+      const grip = approvedWeaponSocket(weaponGroup, ['socket_grip_r']);
+      const muzzle = approvedWeaponSocket(weaponGroup, ['socket_muzzle']);
+      if (grip && muzzle) {
+        const g = grip.getWorldPosition(new THREE.Vector3());
+        const m = muzzle.getWorldPosition(new THREE.Vector3());
+        const dx = m.x - g.x;
+        const dz = m.z - g.z;
+        const len = Math.hypot(dx, dz);
+        if (len > 0.05) {
+          const nx = dx / len;
+          const nz = dz / len;
+          if (
+            isBlockedByStaticCollision(g.x + nx * 0.55, g.z + nz * 0.55, 0.18)
+            || isBlockedByStaticCollision(g.x + nx * 0.95, g.z + nz * 0.95, 0.18)
+          ) target = 1;
+        }
+      }
+    }
+    const previous = Math.max(0, Math.min(1, Number(actor.userData.weaponObstructedBlend || 0)));
+    const blend = previous + (target - previous) * 0.16;
+    actor.userData.weaponObstructedBlend = blend < 0.005 ? 0 : blend;
+    return actor.userData.weaponObstructedBlend;
+  }
+
+  // Подъём ствола вокруг рукояти: дуло уходит вверх, рукоять остаётся в
+  // кисти, левая рука на цевье (IK считается уже после подъёма).
+  function applyApprovedWeaponReadyRaise(weaponGroup, runtimeRoot, blend = 0) {
+    if (!weaponGroup || !runtimeRoot || blend <= 0.01) return;
+    const grip = approvedWeaponSocket(weaponGroup, ['socket_grip_r']);
+    const muzzle = approvedWeaponSocket(weaponGroup, ['socket_muzzle']);
+    if (!grip || !muzzle) return;
+    grip.updateWorldMatrix(true, false);
+    muzzle.updateWorldMatrix(true, false);
+    const pivot = grip.getWorldPosition(new THREE.Vector3());
+    const tip = muzzle.getWorldPosition(new THREE.Vector3());
+    const barrel = tip.sub(pivot);
+    barrel.y = 0;
+    if (barrel.lengthSq() < 0.002) return;
+    barrel.normalize();
+    const rightAxis = new THREE.Vector3().crossVectors(barrel, new THREE.Vector3(0, 1, 0)).normalize();
+    const pitch = new THREE.Matrix4().makeRotationAxis(rightAxis, blend * 1.05);
+    const pivoted = new THREE.Matrix4()
+      .makeTranslation(pivot.x, pivot.y, pivot.z)
+      .multiply(pitch)
+      .multiply(new THREE.Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z))
+      .multiply(weaponGroup.matrixWorld);
+    runtimeRoot.updateMatrixWorld(true);
+    runtimeRoot.matrixWorld.clone().invert().multiply(pivoted)
+      .decompose(weaponGroup.position, weaponGroup.quaternion, weaponGroup.scale);
+    weaponGroup.updateMatrixWorld(true);
+  }
+
   function applyApprovedWeaponAimConvergence(actor, weaponGroup, primarySocket, runtimeRoot) {
     if (weaponGroup) {
       weaponGroup.userData.approvedAimConverged = false;
@@ -908,6 +971,9 @@
       -APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT,
       Math.min(APPROVED_WEAPON_AIM_CONVERGENCE_LIMIT, delta)
     );
+    // У препятствия ствол поднят — доворот к курсору гасим, иначе оружие
+    // «летает» в попытке навестись сквозь упор.
+    delta *= 1 - Math.max(0, Math.min(1, Number(actor?.userData?.weaponObstructedBlend || 0)));
     // Остаток, который оружию не отдали, забирает корпус: ствол обязан прийти
     // в курсор, а выкручивать его в кисти дальше предела нельзя.
     weaponGroup.userData.aimConvergenceResidual = requested - delta;
@@ -1289,6 +1355,7 @@
       return applied;
     }
     delete actor.userData.approvedPhysicalMeleeGripActive;
+    updateApprovedWeaponObstruction(actor, approvedActorWeaponGroup(actor));
     pose.bones.forEach((transform, boneName) => {
       const bone = characterRoot.getObjectByName?.(boneName);
       if (!bone?.isBone) return;
@@ -1316,6 +1383,11 @@
       restoreApprovedWeaponGrip(actor);
       return false;
     }
+    applyApprovedWeaponReadyRaise(
+      mounted.weaponGroup,
+      characterRoot,
+      Number(actor.userData.weaponObstructedBlend || 0)
+    );
     const supportTarget = approvedWeaponSupportTarget(actor, mounted.weaponGroup, pose, firearmProfile);
     if (!supportTarget) return true;
     return solveApprovedSupportArm(characterRoot, supportTarget);

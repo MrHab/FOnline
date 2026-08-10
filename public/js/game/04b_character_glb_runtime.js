@@ -767,7 +767,7 @@
     if (turning) {
       lowerBodyYaw = turnAmount * 0.28;
     } else if (moving && !backward) {
-      lowerBodyYaw = Math.max(-1.05, Math.min(1.05, relativeAngle * 0.82));
+      lowerBodyYaw = Math.max(-0.8, Math.min(0.8, relativeAngle * 0.7));
     } else if (backward) {
       lowerBodyYaw = sideAmount * 0.38;
     }
@@ -870,11 +870,11 @@
     runtime.root.rotation.y = Number(runtime.baseRotationY ?? Math.PI) + lowerBodyYaw;
     const bones = runtime.locomotionBones || {};
     addCharacterGlbDirectionalBoneOffset(runtime, bones.pelvis, backwardLean * -0.025, turn * 0.06, side * -0.035);
-    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine01, forwardLean * 0.025 - backwardLean * 0.045, counterYaw * 0.25 - turn * 0.035, side * -0.018);
-    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine02, 0, counterYaw * 0.29, side * -0.012);
-    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine03, 0, counterYaw * 0.27, side * 0.012);
-    addCharacterGlbDirectionalBoneOffset(runtime, bones.neck, 0, counterYaw * 0.11, side * 0.008);
-    addCharacterGlbDirectionalBoneOffset(runtime, bones.head, 0, counterYaw * 0.08, 0);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine01, forwardLean * 0.025 - backwardLean * 0.045, counterYaw * 0.16 - turn * 0.035, side * -0.018);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine02, 0, counterYaw * 0.18, side * -0.012);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine03, 0, counterYaw * 0.18, side * 0.012);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.neck, 0, counterYaw * 0.22, side * 0.008);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.head, 0, counterYaw * 0.26, 0);
   }
 
   // ===== IK стоп: фиксация опорной ноги =====

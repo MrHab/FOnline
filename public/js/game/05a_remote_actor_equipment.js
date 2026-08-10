@@ -348,10 +348,13 @@
 
     const parts = group.userData.actorParts || {};
     applyArmorVisualSet(parts, eq);
-    if (
-      group.userData.approvedEquipmentCharacterRuntime?.root
-      && typeof applyApprovedEquipmentVisuals === 'function'
-    ) {
+    // У GLB-персонажей рантайм лежит в characterGlbRuntime — старая проверка
+    // одного лишь approvedEquipmentCharacterRuntime вечно гнала НПС по пути
+    // коробочного оверлея вместо утверждённых моделей экипировки.
+    const approvedRuntimeRoot = typeof approvedActorCharacterRuntime === 'function'
+      ? approvedActorCharacterRuntime(group)?.root
+      : group.userData.approvedEquipmentCharacterRuntime?.root;
+    if (approvedRuntimeRoot && typeof applyApprovedEquipmentVisuals === 'function') {
       disposeEnemyStaticEquipmentOverlay(group);
       applyApprovedEquipmentVisuals(group, eq);
     } else {

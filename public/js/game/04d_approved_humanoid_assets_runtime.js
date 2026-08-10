@@ -887,11 +887,7 @@
   function updateApprovedWeaponObstruction(actor, weaponGroup) {
     if (!actor?.userData) return 0;
     let target = 0;
-    if (
-      typeof isBlockedByStaticCollision === 'function'
-      && weaponGroup
-      && actor === (typeof playerGroup !== 'undefined' ? playerGroup : actor)
-    ) {
+    if (weaponGroup && actor === (typeof playerGroup !== 'undefined' ? playerGroup : actor)) {
       const grip = approvedWeaponSocket(weaponGroup, ['socket_grip_r']);
       const muzzle = approvedWeaponSocket(weaponGroup, ['socket_muzzle']);
       if (grip && muzzle) {
@@ -903,10 +899,16 @@
         if (len > 0.05) {
           const nx = dx / len;
           const nz = dz / len;
-          if (
-            isBlockedByStaticCollision(g.x + nx * 0.55, g.z + nz * 0.55, 0.18)
-            || isBlockedByStaticCollision(g.x + nx * 0.95, g.z + nz * 0.95, 0.18)
-          ) target = 1;
+          // Препятствием считаем и статическую коллизию (стены), и
+          // динамические объекты локации (верстаки, ящики, машины) —
+          // движение игрока блокируют обе системы, щуп обязан видеть обе.
+          const probeBlocked = (px, pz) => (
+            (typeof isBlockedByStaticCollision === 'function' && isBlockedByStaticCollision(px, pz, 0.18))
+            || (typeof playerDynamicObstaclePenaltyAt === 'function' && playerDynamicObstaclePenaltyAt(px, pz) > 0.0001)
+          );
+          if (probeBlocked(g.x + nx * 0.55, g.z + nz * 0.55) || probeBlocked(g.x + nx * 0.95, g.z + nz * 0.95)) {
+            target = 1;
+          }
         }
       }
     }

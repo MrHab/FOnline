@@ -1014,9 +1014,12 @@
     const dx = dirX / len;
     const dz = dirZ / len;
     const startPad = Math.max(0.02, Number(opts.startPad || 0.12));
+    const ignoreLowCover = opts.ignoreLowCover === true;
     let best = null;
     for (const b of staticCollisionBoxes) {
       if (!b) continue;
+      // Стоя пуля идёт поверх низких укрытий (ящики, барьеры, верстаки).
+      if (ignoreLowCover && b.lowBallisticCover === true) continue;
       const relX = x - Number(b.x || 0);
       const relZ = z - Number(b.z || 0);
       const cos = Math.cos(Number(b.rotationY || 0));

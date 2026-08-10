@@ -6,7 +6,8 @@ const JOINABLE_WORLD_FACTIONS = new Set(['old_klim', 'scrap_union', 'relay_order
 const FACTION_CAPITAL_SITES = {
   settlement: 'old_klim',
   scrapTown: 'scrap_union',
-  relayStation: 'relay_order'
+  relayStation: 'relay_order',
+  caravanCamp: 'caravans'
 };
 const FACTION_CAPITAL_SITE_IDS = new Set(Object.keys(FACTION_CAPITAL_SITES));
 

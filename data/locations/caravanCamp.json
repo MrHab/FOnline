@@ -1,0 +1,1162 @@
+{
+  "id": "caravanCamp",
+  "name": "Караван-сарай «Перекрёсток»",
+  "seed": 20260847,
+  "safe": true,
+  "pvpMode": "peaceful",
+  "kind": "settlement",
+  "city": true,
+  "settlement": true,
+  "respawnAllowed": true,
+  "schema": "realm.location.v1",
+  "version": 1,
+  "ground": {
+    "preset": "scrapDust",
+    "label": "Утоптанная караванная стоянка",
+    "texture": "reliefWasteland"
+  },
+  "units": "game-meters",
+  "grid": {
+    "snap": true,
+    "step": 2
+  },
+  "map": {
+    "width": 76,
+    "depth": 76,
+    "origin": "center"
+  },
+  "spawn": {
+    "tx": 19,
+    "tz": 25,
+    "x": 1,
+    "y": 0,
+    "z": 13,
+    "rotationY": 0
+  },
+  "respawn": {
+    "tx": 19,
+    "tz": 25,
+    "x": 1,
+    "y": 0,
+    "z": 13,
+    "rotationY": 0
+  },
+  "entry": {
+    "tx": 19,
+    "tz": 10,
+    "x": 1,
+    "y": 0,
+    "z": -17,
+    "rotationY": 0
+  },
+  "entryFromWorld": {
+    "tx": 19,
+    "tz": 10,
+    "x": 1,
+    "y": 0,
+    "z": -17,
+    "rotationY": 0
+  },
+  "entryFromWasteland": {
+    "tx": 19,
+    "tz": 5
+  },
+  "exit": {
+    "tx": 19,
+    "tz": 3,
+    "to": "wasteland",
+    "label": "Дороги пустоши"
+  },
+  "transitions": [],
+  "worldZones": [],
+  "containers": [
+    {
+      "id": "caravan_camp_supply_1",
+      "tx": 12,
+      "tz": 22,
+      "name": "Дорожный ящик",
+      "tier": "survival"
+    },
+    {
+      "id": "caravan_camp_tools_1",
+      "tx": 26,
+      "tz": 22,
+      "name": "Ящик каравана",
+      "tier": "tools",
+      "locked": true,
+      "lockDifficulty": "easy"
+    }
+  ],
+  "pvp": false,
+  "fullDrop": false,
+  "objects": [
+    {
+      "id": "caravan_sayla",
+      "model": "traderNpc",
+      "name": "Караванщица Сайла",
+      "url": "/assets/models/wasteland/trader_npc.glb",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 3
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "npc",
+        "living",
+        "friendly",
+        "merchant",
+        "trader",
+        "leader",
+        "unique",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "entity": {
+        "kind": "npc",
+        "role": "merchant",
+        "faction": "caravans",
+        "hostileToPlayer": false,
+        "canDialogue": true,
+        "stationary": true,
+        "leader": true,
+        "traderProfile": "caravan",
+        "dialogueProfile": "caravan",
+        "quests": [],
+        "profile": "caravanMerchant",
+        "statProfile": "merchantVeteran",
+        "equipmentProfile": "caravanMerchant",
+        "tradeProfile": "caravan",
+        "lootProfile": "merchant"
+      },
+      "vision": {
+        "mode": "none"
+      }
+    },
+    {
+      "id": "caravan_sayla_cot",
+      "model": "cotBed",
+      "name": "Койка Сайлы",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -9,
+        "y": 0,
+        "z": 7
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "caravan_camp_job_board_01",
+      "model": "jobBoard",
+      "name": "Доска заданий",
+      "url": "/assets/models/wasteland/job_board.glb",
+      "position": {
+        "x": 1,
+        "y": 0,
+        "z": 9
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.571,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "jobBoard",
+        "questBoard"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "jobBoard",
+        "role": "worldTaskBoard"
+      }
+    },
+    {
+      "id": "capital_storage_caravans",
+      "model": "storageChest",
+      "name": "Хранилище вольных караванов",
+      "url": "/assets/models/wasteland/storage_chest.glb",
+      "position": {
+        "x": -5,
+        "y": 0,
+        "z": 11
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "interactive",
+        "storage",
+        "container",
+        "personal-storage",
+        "capital-storage"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      },
+      "interactive": {
+        "kind": "container",
+        "role": "storage",
+        "containerType": "storage",
+        "storageFaction": "caravans"
+      }
+    },
+    {
+      "id": "capital_station_caravans_ammo_bench",
+      "model": "craftStationAmmo",
+      "name": "Патронный станок",
+      "url": "/assets/models/wasteland/craft_station_ammo.glb",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "ammo_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "ammo_bench"
+      ],
+      "stationSiteId": "caravanCamp",
+      "worksiteId": "caravanCamp",
+      "stationOwner": "caravans",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "ammo_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      }
+    },
+    {
+      "id": "capital_station_caravans_weapon_bench",
+      "model": "craftStationWeapon",
+      "name": "Оружейный верстак",
+      "url": "/assets/models/wasteland/craft_station_weapon.glb",
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "weapon_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "weapon_bench"
+      ],
+      "stationSiteId": "caravanCamp",
+      "worksiteId": "caravanCamp",
+      "stationOwner": "caravans",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "weapon_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      }
+    },
+    {
+      "id": "capital_station_caravans_tool_bench",
+      "model": "craftStationTools",
+      "name": "Инструментальный верстак",
+      "url": "/assets/models/wasteland/craft_station_tools.glb",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -8
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "tool_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "tool_bench"
+      ],
+      "stationSiteId": "caravanCamp",
+      "worksiteId": "caravanCamp",
+      "stationOwner": "caravans",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "tool_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      }
+    },
+    {
+      "id": "capital_station_caravans_repair_bench",
+      "model": "craftStationRepair",
+      "name": "Ремонтный верстак",
+      "url": "/assets/models/wasteland/craft_station_repair.glb",
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": -4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "repair_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "repair_bench"
+      ],
+      "stationSiteId": "caravanCamp",
+      "worksiteId": "caravanCamp",
+      "stationOwner": "caravans",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "repair_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      }
+    },
+    {
+      "id": "capital_station_caravans_energy_bench",
+      "model": "craftStationEnergy",
+      "name": "Энергетический стенд",
+      "url": "/assets/models/wasteland/craft_station_energy.glb",
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": -4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "energy_bench"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "energy_bench"
+      ],
+      "stationSiteId": "caravanCamp",
+      "worksiteId": "caravanCamp",
+      "stationOwner": "caravans",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "energy_bench"
+        ],
+        "stationSiteId": "caravanCamp"
+      }
+    },
+    {
+      "id": "capital_station_caravans_chem_station",
+      "model": "craftStationChem",
+      "name": "Химический стол",
+      "url": "/assets/models/wasteland/craft_station_chem.glb",
+      "position": {
+        "x": -6,
+        "y": 0,
+        "z": -4
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [
+        "cover",
+        "workshop",
+        "crafting-station",
+        "chem_station"
+      ],
+      "vision": {
+        "mode": "cover"
+      },
+      "craftingStations": [
+        "chem_station"
+      ],
+      "stationSiteId": "caravanCamp",
+      "worksiteId": "caravanCamp",
+      "stationOwner": "caravans",
+      "stationKind": "capital",
+      "interactive": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "chem_station"
+        ],
+        "stationSiteId": "caravanCamp"
+      },
+      "entity": {
+        "kind": "craftingStation",
+        "craftingStations": [
+          "chem_station"
+        ],
+        "stationSiteId": "caravanCamp"
+      }
+    },
+    {
+      "id": "caravan_camp_cargo_1",
+      "model": "cargoStack",
+      "name": "Караванный штабель",
+      "url": "/assets/models/wasteland/cargo_stack.glb",
+      "position": {
+        "x": 16,
+        "y": 0,
+        "z": 19
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [],
+      "footprint": {
+        "x": 4,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 2,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "caravan_camp_cargo_2",
+      "model": "cargoStack",
+      "name": "Тюки с товаром",
+      "url": "/assets/models/wasteland/cargo_stack.glb",
+      "position": {
+        "x": 11,
+        "y": 0,
+        "z": 15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0.785,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "solid",
+      "tags": [],
+      "footprint": {
+        "x": 4,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 2,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "caravan_camp_wreck_1",
+      "model": "carWreck",
+      "name": "Остов фургона",
+      "url": "/assets/models/wasteland/car_wreck.glb",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": 2
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [],
+      "footprint": {
+        "x": 6,
+        "z": 4
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 3,
+          "z": 2
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "caravan_camp_barrel_1",
+      "model": "rustBarrel",
+      "name": "Ржавая бочка",
+      "url": "/assets/models/wasteland/rust_barrel_v1.glb",
+      "position": {
+        "x": 9,
+        "y": 0,
+        "z": 15
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "cover",
+      "tags": [],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "mode": "cover"
+      }
+    },
+    {
+      "id": "caravan_camp_tires_1",
+      "model": "tireStack",
+      "name": "Покрышки",
+      "url": "/assets/models/wasteland/tire_stack.glb",
+      "position": {
+        "x": 13,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "tags": [],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "cover": true
+      }
+    },
+    {
+      "id": "caravan_camp_cot_1",
+      "model": "cotBed",
+      "name": "Койка обозника",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -15,
+        "y": 0,
+        "z": 13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "caravan_camp_cot_2",
+      "model": "cotBed",
+      "name": "Койка обозника",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": 13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "caravan_camp_cot_3",
+      "model": "cotBed",
+      "name": "Койка обозника",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "caravan_camp_cot_4",
+      "model": "cotBed",
+      "name": "Койка обозника",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -3,
+        "y": 0,
+        "z": 13
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "caravan_camp_cot_5",
+      "model": "cotBed",
+      "name": "Койка охранника",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -15,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "caravan_camp_cot_6",
+      "model": "cotBed",
+      "name": "Койка охранника",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -11,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "caravan_camp_cot_7",
+      "model": "cotBed",
+      "name": "Койка охранника",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -7,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    },
+    {
+      "id": "caravan_camp_cot_8",
+      "model": "cotBed",
+      "name": "Койка торговца",
+      "url": "/assets/models/wasteland/cot_bed.glb",
+      "position": {
+        "x": -3,
+        "y": 0,
+        "z": 17
+      },
+      "rotation": {
+        "x": 0,
+        "y": 1.5707963267948966,
+        "z": 0
+      },
+      "scale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "collision": "none",
+      "role": "bed",
+      "tags": [
+        "sleep",
+        "bed",
+        "cot",
+        "personal-bed",
+        "caravans"
+      ],
+      "footprint": {
+        "x": 2,
+        "z": 2
+      },
+      "placement": {
+        "anchor": "cell-center",
+        "gridStep": 2,
+        "cells": {
+          "x": 1,
+          "z": 1
+        }
+      },
+      "vision": {
+        "blocks": false
+      }
+    }
+  ],
+  "updatedAt": "2026-08-10T00:00:00.000Z"
+}

@@ -636,14 +636,15 @@ async function assertEditorAndWorldDataApis() {
   const capitalStorageFactions = {
     settlement: 'old_klim',
     scrapTown: 'scrap_union',
-    relayStation: 'relay_order'
+    relayStation: 'relay_order',
+    caravanCamp: 'caravans'
   };
   const locationsWithStorage = Object.values(publicLocationsData.locations || {})
     .filter(loc => !!loc?.storage)
     .map(loc => loc.id)
     .sort();
   if (locationsWithStorage.join(',') !== Object.keys(capitalStorageFactions).sort().join(',')) {
-    fail('personal storage exists outside the three faction capitals', JSON.stringify(locationsWithStorage));
+    fail('personal storage exists outside the four faction capitals', JSON.stringify(locationsWithStorage));
   }
   for (const [locationId, factionId] of Object.entries(capitalStorageFactions)) {
     const loc = publicLocationsData.locations[locationId];

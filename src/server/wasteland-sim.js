@@ -384,6 +384,7 @@ function defaultSites(globalMap = {}) {
   const settlement = mapNode(globalMap, 'settlement') || { x: 255, y: 615 };
   const scrapTown = mapNode(globalMap, 'scrapTown') || { x: 555, y: 645 };
   const relayStation = mapNode(globalMap, 'relayStation') || { x: 675, y: 315 };
+  const caravanCamp = mapNode(globalMap, 'caravanCamp') || { x: 495, y: 495 };
   const sites = {
     settlement: {
       id: 'settlement',
@@ -444,6 +445,28 @@ function defaultSites(globalMap = {}) {
         { role: 'trader', label: 'техник-торговец', count: 1 },
         { role: 'mechanic', label: 'ремонтники антенн', count: 5 },
         { role: 'guard', label: 'охранники станции', count: 3 }
+      ]
+    },
+    caravanCamp: {
+      id: 'caravanCamp',
+      type: 'settlement',
+      name: 'Караван-сарай «Перекрёсток»',
+      x: caravanCamp.x,
+      y: caravanCamp.y,
+      owner: 'caravans',
+      pvpMode: 'peaceful',
+      capital: true,
+      capitalFaction: 'caravans',
+      locationId: 'caravanCamp',
+      traderProfiles: ['caravan'],
+      productionCapabilities: ['ammo_bench', 'tool_bench', 'repair_bench'],
+      stockpile: { ...emptyStockpile(), silver: 480, water: 14, food: 16, scrap: 8, medicine: 4, ammoParts: 6 },
+      security: 44,
+      prosperity: 34,
+      workers: [
+        { role: 'trader', label: 'караванный торговец', count: 1 },
+        { role: 'worker', label: 'обозники', count: 4 },
+        { role: 'guard', label: 'наёмная охрана караванов', count: 3 }
       ]
     },
     scrapFields: {
@@ -1190,7 +1213,6 @@ function claimableWorldFaction(faction = '') {
 
 function capitalSiteIdForFaction(faction = '') {
   const group = factionGroup(faction || '');
-  if (group === 'caravans') return 'settlement';
   for (const [siteId, factionId] of Object.entries(FACTION_CAPITAL_SITES)) {
     if (factionId === group) return siteId;
   }
@@ -1201,7 +1223,8 @@ function siteSupportWorkerLabel(role = '', faction = '') {
   const group = factionGroup(faction || '');
   const key = String(role || '').toLowerCase();
   if (key === 'guard') {
-    if (group === 'old_klim' || group === 'caravans') return 'охрана Старого Клима';
+    if (group === 'caravans') return 'наёмная охрана караванов';
+    if (group === 'old_klim') return 'охрана Старого Клима';
     if (group === 'scrap_union') return 'ополчение Свалочного союза';
     if (group === 'relay_order') return 'охрана Ретранслятора';
     return 'охрана';
@@ -1221,7 +1244,8 @@ function siteSupportWorkerLabel(role = '', faction = '') {
     if (group === 'relay_order') return 'поисковая группа Ретранслятора';
     return 'разведчики Старого Клима';
   }
-  if (group === 'old_klim' || group === 'caravans') return 'поселенцы Старого Клима';
+  if (group === 'caravans') return 'обозники вольных караванов';
+  if (group === 'old_klim') return 'поселенцы Старого Клима';
   if (group === 'scrap_union') return 'рабочие Свалочного союза';
   if (group === 'relay_order') return 'техники Ретранслятора';
   return 'рабочие';

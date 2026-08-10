@@ -437,7 +437,8 @@ const LOCATION_PVP_MODES = new Set(['peaceful', 'pvp', 'pvpFullDrop']);
 const SERVER_FACTION_CAPITAL_LOCATIONS = {
   settlement: 'old_klim',
   scrapTown: 'scrap_union',
-  relayStation: 'relay_order'
+  relayStation: 'relay_order',
+  caravanCamp: 'caravans'
 };
 const SERVER_FACTION_CAPITAL_LOCATION_IDS = new Set(Object.keys(SERVER_FACTION_CAPITAL_LOCATIONS));
 const SERVER_FACTION_STORAGE_IDS = new Set(Object.values(SERVER_FACTION_CAPITAL_LOCATIONS));
@@ -456,6 +457,11 @@ const SERVER_FACTION_CAPITAL_STORAGE = {
     x: 5,
     z: 11,
     name: '\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435 \u041e\u0440\u0434\u0435\u043d\u0430 \u0420\u0435\u0442\u0440\u0430\u043d\u0441\u043b\u044f\u0442\u043e\u0440\u0430'
+  },
+  caravanCamp: {
+    x: -5,
+    z: 11,
+    name: '\u0425\u0440\u0430\u043d\u0438\u043b\u0438\u0449\u0435 \u0432\u043e\u043b\u044c\u043d\u044b\u0445 \u043a\u0430\u0440\u0430\u0432\u0430\u043d\u043e\u0432'
   }
 };
 const LOCATION_PVP_LABELS = {

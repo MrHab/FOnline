@@ -1020,6 +1020,18 @@
     );
     const rootYaw = Math.atan2(rootForward.x, rootForward.z);
     const turning = !!locomotion?.turning;
+    const idle = !locomotion?.locomoting;
+    // Смена клипа (шёл -> встал, развернулся -> замер) перепришивает стопы:
+    // иначе замки держат ноги там, где их застал прошлый клип, и в стойке
+    // ноги остаются раскиданными и скрученными.
+    const actionNow = String(runtime.currentAction || '');
+    if (ik.lastAction !== actionNow) {
+      ik.lastAction = actionNow;
+      for (const side of Object.keys(ik.feet)) {
+        ik.feet[side].locked = false;
+        ik.feet[side].relockCooldown = 0.12;
+      }
+    }
     let applied = false;
     for (const [side, names] of Object.entries(CHARACTER_FOOT_IK_BONES)) {
       const rest = Number(ik.restHeights[side] || 0);
@@ -1063,11 +1075,14 @@
       } else {
         const drift = Math.hypot(animated.x - sideState.lockPos.x, animated.z - sideState.lockPos.z);
         const twist = Math.abs(characterAngleDelta(sideState.lockYaw, rootYaw));
-        const twistLimit = turning ? CHARACTER_FOOT_IK_TURN_TWIST_LIMIT : CHARACTER_FOOT_IK_TWIST_LIMIT;
+        const twistLimit = turning
+          ? CHARACTER_FOOT_IK_TURN_TWIST_LIMIT
+          : (idle ? 0.28 : CHARACTER_FOOT_IK_TWIST_LIMIT);
+        const driftLimit = idle ? 0.2 : CHARACTER_FOOT_IK_MAX_DRIFT;
         // В развороте шаги диктует клип: нога отпускается, как только клип
         // её поднял; скручивание — только страховка на медленных поворотах.
         const liftRelease = CHARACTER_FOOT_IK_LIFT * (turning ? 1.5 : 2.4);
-        if (swing || height > liftRelease || drift > CHARACTER_FOOT_IK_MAX_DRIFT || twist > twistLimit) {
+        if (swing || height > liftRelease || drift > driftLimit || twist > twistLimit) {
           sideState.locked = false;
           // Пауза перед повторным замком: без неё нога, опускаясь, ловится и
           // рвётся по нескольку раз за шаг, и фиксация размазывается.

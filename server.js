@@ -95,6 +95,10 @@ const {
   temporaryRoomContextIsResumable
 } = require('./src/server/room-lifecycle');
 const {
+  buildRoomActorSpatialIndex,
+  queryRoomActorSpatialIndex
+} = require('./src/server/room-actor-spatial-index');
+const {
   actorFacingIntent: resolveActorFacingIntent,
   actorFacingYaw: resolveActorFacingYaw
 } = require('./public/js/game/00a_actor_facing');
@@ -9030,21 +9034,24 @@ function chooseImmediatePlayerThreat(room, enemy, roomPlayers = [], now = Date.n
   return { target: sensed.target, visible: true, remembered: false };
 }
 
-function findNearestFactionFoe(room, actor, actors = null) {
+function findNearestFactionFoe(room, actor, actors = null, actorSet = null, now = Date.now()) {
   if (!room || !actor || actor.dead) return { foe: null, distance: Infinity };
-  const rows = Array.isArray(actors) ? actors : [...(room.enemies?.values?.() || [])];
+  const detectionRange = Math.max(4.5, enemyVisionRange(actor) * 1.2);
+  const rows = roomEnemySpatialCandidates(room, actor.x, actor.z, detectionRange * 1.8);
+  const allowedActors = actorSet instanceof Set
+    ? actorSet
+    : (Array.isArray(actors) ? new Set(actors) : null);
   let best = null;
   let bestDist = Infinity;
   for (const other of rows) {
-    if (!other || other.dead || other.id === actor.id || !serverFactionsHostile(actor, other)) continue;
+    if (!other || other.dead || other.id === actor.id || (allowedActors && !allowedActors.has(other)) || !serverFactionsHostile(actor, other)) continue;
     const d = Math.hypot(Number(other.x || 0) - Number(actor.x || 0), Number(other.z || 0) - Number(actor.z || 0));
-    const detectionRange = Math.max(4.5, enemyVisionRange(actor) * 1.2);
     const visible = d <= detectionRange && roomHasHighLineOfSight(room, actor.x, actor.z, other.x, other.z);
     const remembered = String(actor.factionTargetId || '') === String(other.id || '')
-      && Date.now() - Number(actor.lastFactionSenseAt || 0) <= enemyMemoryMs(actor)
+      && now - Number(actor.lastFactionSenseAt || 0) <= enemyMemoryMs(actor)
       && d <= detectionRange * 1.8;
     if (!visible && !remembered) continue;
-    if (visible) actor.lastFactionSenseAt = Date.now();
+    if (visible) actor.lastFactionSenseAt = now;
     if (d < bestDist) { bestDist = d; best = other; }
   }
   return { foe: best, distance: bestDist };
@@ -9711,6 +9718,100 @@ function findEnemyGridPath(room, startTx, startTz, goalTx, goalTz) {
   }
   return null;
 }
+const ROOM_ENEMY_SPATIAL_CELL_SIZE = 8;
+// Hard safety cap for a speed-20 actor during the longest empty-room tick.
+// Active rooms use the much smaller measured per-tick padding below.
+const ROOM_ENEMY_SPATIAL_MOVEMENT_PADDING = 12;
+const ENEMY_BODY_RADIUS_CACHE = new WeakMap();
+const ENEMY_MOVEMENT_BLOCKERS_CACHE = new WeakMap();
+
+function roomEnemySpatialMovementPadding(room, dt = 0) {
+  const tickSeconds = Math.max(0, Math.min(EMPTY_ROOM_AI_MAX_DT, Number(dt || 0)));
+  let maxMovementSpeed = 1.35;
+  if (room?.enemies instanceof Map) {
+    for (const enemy of room.enemies.values()) {
+      if (!enemy || enemy.dead) continue;
+      // Retreat can move at 1.05x authored speed. 1.1 keeps a small safety
+      // margin without turning every dense-room query back into a full scan.
+      maxMovementSpeed = Math.max(maxMovementSpeed, Math.max(0, Number(enemy.speed || 0)) * 1.1);
+    }
+  }
+  const movement = maxMovementSpeed * tickSeconds;
+  return Math.min(ROOM_ENEMY_SPATIAL_MOVEMENT_PADDING, movement + 0.75);
+}
+
+function serverEnemyIsSpatiallyIndexable(enemy) {
+  // Living actors and corpses share one broad phase. Collision/target callers
+  // keep their exact dead checks, while corpse-looting can query the same grid.
+  return !!enemy && typeof enemy === 'object' && enemy._removed !== true;
+}
+
+function enemyCollisionReach(enemy) {
+  const centerX = Number(enemy?.x || 0);
+  const centerZ = Number(enemy?.z || 0);
+  let reach = enemyBodyRadius(enemy);
+  for (const blocker of enemyMovementCollisionBlockers(enemy)) {
+    const offset = Math.hypot(Number(blocker?.x || 0) - centerX, Number(blocker?.z || 0) - centerZ);
+    const corner = Math.hypot(Math.max(0, Number(blocker?.halfX || 0)), Math.max(0, Number(blocker?.halfZ || 0)));
+    reach = Math.max(reach, offset + corner);
+  }
+  return reach;
+}
+
+function rebuildRoomEnemySpatialIndex(room, movementPadding = 0) {
+  if (!room || !(room.enemies instanceof Map)) return null;
+  try {
+    const index = buildRoomActorSpatialIndex(room.enemies, {
+      cellSize: ROOM_ENEMY_SPATIAL_CELL_SIZE,
+      isLiving: serverEnemyIsSpatiallyIndexable
+    });
+    let maxBodyRadius = 0;
+    let maxCollisionReach = 0;
+    for (const record of index.records) {
+      maxBodyRadius = Math.max(maxBodyRadius, enemyBodyRadius(record.actor));
+      maxCollisionReach = Math.max(maxCollisionReach, enemyCollisionReach(record.actor));
+    }
+    room.enemySpatialIndex = index;
+    room.enemySpatialSourceSize = room.enemies.size;
+    room.enemySpatialMovementPadding = Math.max(0, Number(movementPadding || 0));
+    room.enemySpatialMaxBodyRadius = maxBodyRadius;
+    room.enemySpatialMaxCollisionReach = maxCollisionReach;
+    return index;
+  } catch (_) {
+    room.enemySpatialIndex = null;
+    room.enemySpatialSourceSize = room.enemies.size;
+    room.enemySpatialMovementPadding = 0;
+    room.enemySpatialMaxBodyRadius = 0;
+    room.enemySpatialMaxCollisionReach = 0;
+    return null;
+  }
+}
+
+function ensureRoomEnemySpatialIndex(room) {
+  if (!room || !(room.enemies instanceof Map)) return null;
+  if (!room.enemySpatialIndex || Number(room.enemySpatialSourceSize) !== room.enemies.size) {
+    return rebuildRoomEnemySpatialIndex(room, room.enemySpatialMovementPadding);
+  }
+  return room.enemySpatialIndex;
+}
+
+function roomEnemySpatialCandidates(room, x, z, radius = 0, options = {}) {
+  if (!room || !(room.enemies instanceof Map)) return [];
+  const index = ensureRoomEnemySpatialIndex(room);
+  if (!index) return [...room.enemies.values()];
+  try {
+    return queryRoomActorSpatialIndex(index, x, z, Math.max(0, Number(radius || 0)), {
+      padding: Math.max(0, Number(room.enemySpatialMovementPadding || 0)) + Math.max(0, Number(options.padding || 0)),
+      excludeActor: options.excludeActor,
+      excludeId: options.excludeId
+    });
+  } catch (_) {
+    // Broad phase is an optimization only. Exact legacy scans remain the safe
+    // fallback if an index cannot be queried.
+    return [...room.enemies.values()];
+  }
+}
+
 function enemySeparationVector(room, enemy, opts = {}) {
   if (!room || !room.enemies || !enemy) return { x: 0, z: 0 };
   const ignored = opts.ignoreSeparationIds instanceof Set
@@ -9721,7 +9822,8 @@ function enemySeparationVector(room, enemy, opts = {}) {
   let sx = 0;
   let sz = 0;
   let count = 0;
-  for (const other of room.enemies.values()) {
+  const candidates = roomEnemySpatialCandidates(room, enemy.x, enemy.z, radius, { excludeActor: enemy });
+  for (const other of candidates) {
     if (!other || other === enemy || other.dead) continue;
     if (other.id && ignored.has(other.id)) continue;
     const dx = Number(enemy.x || 0) - Number(other.x || 0);
@@ -9741,13 +9843,20 @@ function enemySeparationVector(room, enemy, opts = {}) {
 }
 function enemyBodyRadius(enemy) {
   const modelKey = String(enemy?.modelKey || serverEnemyModelKeyForVisual(enemy?.visual || '') || '');
+  const scale = Number(enemy?.scale || 1) || 1;
+  const cacheOwner = enemy && typeof enemy === 'object' ? enemy : null;
+  const cached = cacheOwner ? ENEMY_BODY_RADIUS_CACHE.get(cacheOwner) : null;
+  if (cached && cached.modelKey === modelKey && Object.is(cached.scale, scale)) return cached.radius;
   const modelRadius = modelColliderRadius(
     SERVER_MODEL_COLLIDERS,
     serverModelFileForRef(modelKey),
-    Number(enemy?.scale || 1) || 1
+    scale
   );
-  if (modelRadius > 0) return modelRadius;
-  return Math.max(0.36, Math.min(0.78, Number(enemy?.scale || 1) * 0.42));
+  const radius = modelRadius > 0
+    ? modelRadius
+    : Math.max(0.36, Math.min(0.78, scale * 0.42));
+  if (cacheOwner) ENEMY_BODY_RADIUS_CACHE.set(cacheOwner, { modelKey, scale, radius });
+  return radius;
 }
 
 function enemyMovementCollisionRotation(enemy = {}) {
@@ -9764,19 +9873,43 @@ function enemyMovementCollisionRotation(enemy = {}) {
 function enemyMovementCollisionBlockers(enemy = {}, x = enemy.x, z = enemy.z) {
   const modelKey = String(enemy.modelKey || serverEnemyModelKeyForVisual(enemy.visual || '') || '');
   if (!modelKey) return [];
-  return transformedModelBlockers(SERVER_MODEL_COLLIDERS, serverModelFileForRef(modelKey), {
-    x: Number(x || 0),
-    z: Number(z || 0),
-    rotationY: enemyMovementCollisionRotation(enemy),
-    scaleX: Number(enemy.scale || 1) || 1,
-    scaleZ: Number(enemy.scale || 1) || 1
+  const positionX = Number(x || 0);
+  const positionZ = Number(z || 0);
+  const yaw = enemyMovementCollisionRotation(enemy);
+  const scale = Number(enemy.scale || 1) || 1;
+  const cacheOwner = enemy && typeof enemy === 'object' ? enemy : null;
+  const cached = cacheOwner ? ENEMY_MOVEMENT_BLOCKERS_CACHE.get(cacheOwner) : null;
+  if (cached
+    && cached.modelKey === modelKey
+    && Object.is(cached.scale, scale)
+    && Object.is(cached.x, positionX)
+    && Object.is(cached.z, positionZ)
+    && Object.is(cached.yaw, yaw)) return cached.blockers;
+  const blockers = transformedModelBlockers(SERVER_MODEL_COLLIDERS, serverModelFileForRef(modelKey), {
+    x: positionX,
+    z: positionZ,
+    rotationY: yaw,
+    scaleX: scale,
+    scaleZ: scale
   });
+  if (cacheOwner) ENEMY_MOVEMENT_BLOCKERS_CACHE.set(cacheOwner, {
+    modelKey,
+    scale,
+    x: positionX,
+    z: positionZ,
+    yaw,
+    blockers
+  });
+  return blockers;
 }
 
 function roomEnemyCollisionPenalty(room, x, z, radius = PLAYER_COLLISION_RADIUS) {
   if (!room?.enemies) return 0;
   let penalty = 0;
-  for (const enemy of room.enemies.values()) {
+  ensureRoomEnemySpatialIndex(room);
+  const queryRadius = Math.max(0, Number(radius || 0)) + Math.max(0, Number(room.enemySpatialMaxCollisionReach || 0));
+  const candidates = roomEnemySpatialCandidates(room, x, z, queryRadius);
+  for (const enemy of candidates) {
     if (!enemy || enemy.dead || enemy._removed) continue;
     const modelBlockers = enemyMovementCollisionBlockers(enemy);
     if (modelBlockers.length) {
@@ -9805,7 +9938,10 @@ function isEnemyBodyBlockedAt(room, enemy, x, z) {
   const ownRadius = enemyBodyRadius(enemy);
   const currentX = Number(enemy.x || 0);
   const currentZ = Number(enemy.z || 0);
-  for (const other of room.enemies.values()) {
+  ensureRoomEnemySpatialIndex(room);
+  const queryRadius = ownRadius + Math.max(ownRadius, Number(room.enemySpatialMaxBodyRadius || 0));
+  const candidates = roomEnemySpatialCandidates(room, nx, nz, queryRadius, { excludeActor: enemy });
+  for (const other of candidates) {
     if (!other || other === enemy || other.dead) continue;
     const ox = Number(other.x || 0);
     const oz = Number(other.z || 0);
@@ -9838,15 +9974,24 @@ function enemyMeleeGoalNearTarget(room, enemy, target) {
   const tz = Number(target.z || 0);
   const targetId = String(target.id || '');
   const attackers = [];
+  const seenAttackers = new Set();
+  const addAttacker = other => {
+    if (!other || seenAttackers.has(other) || other.dead || other.hostileToPlayer === false) return;
+    if (other.id && room?.enemies instanceof Map && room.enemies.get(other.id) !== other) return;
+    const sameTarget = String(other.targetId || '') === targetId;
+    const nearTarget = Math.hypot(Number(other.x || 0) - tx, Number(other.z || 0) - tz) < 7.5;
+    if (!sameTarget && !((other.aiState === 'chase' || other.aiState === 'attack') && nearTarget)) return;
+    seenAttackers.add(other);
+    attackers.push(other);
+  };
   if (room && room.enemies && targetId) {
-    for (const other of room.enemies.values()) {
-      if (!other || other.dead || other.hostileToPlayer === false) continue;
-      const sameTarget = String(other.targetId || '') === targetId;
-      const nearTarget = Math.hypot(Number(other.x || 0) - tx, Number(other.z || 0) - tz) < 7.5;
-      if (sameTarget || ((other.aiState === 'chase' || other.aiState === 'attack') && nearTarget)) attackers.push(other);
-    }
+    const cached = room.enemyAttackersByTargetId instanceof Map
+      ? (room.enemyAttackersByTargetId.get(targetId) || [])
+      : [];
+    for (const other of cached) addAttacker(other);
+    for (const other of roomEnemySpatialCandidates(room, tx, tz, 7.5)) addAttacker(other);
   }
-  if (!attackers.includes(enemy)) attackers.push(enemy);
+  if (!seenAttackers.has(enemy)) attackers.push(enemy);
   attackers.sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
   const count = Math.max(1, attackers.length);
   const idx = Math.max(0, attackers.findIndex(e => e === enemy));
@@ -12469,7 +12614,7 @@ function authoredNpcMatchesWastelandOwner(row = {}, site = null, loc = {}) {
 function spawnAuthoredLocationActors(room, loc) {
   if (!room || !loc || !Array.isArray(loc.objects)) return 0;
   for (const [id, actor] of [...room.enemies.entries()]) {
-    if (actor?.authoredLocationId === loc.id) room.enemies.delete(id);
+    if (actor?.authoredLocationId === loc.id) roomEnemyDelete(room, id);
   }
   const controllingSites = wastelandSitesForLocation(loc, room);
   const controllingSite = controllingSites.length === 1 ? controllingSites[0] : null;
@@ -12931,9 +13076,33 @@ function updateWastelandSiteWorkerLabor(room, enemy, dt, loc) {
 
 function npcHasLiveFactionFoes(room, enemy) {
   if (!room || !enemy) return false;
+  if (room.enemyLiveFactionGroups instanceof Set) {
+    for (const faction of room.enemyLiveFactionGroups) {
+      if (serverFactionsHostile(enemy, faction)) return true;
+    }
+    return false;
+  }
   return [...(room.enemies || new Map()).values()].some(other =>
     other && !other.dead && other.id !== enemy.id && serverFactionsHostile(enemy, other)
   );
+}
+
+function rebuildRoomEnemyAiLookupCaches(room) {
+  const factionGroups = new Set();
+  const attackersByTargetId = new Map();
+  if (room?.enemies instanceof Map) {
+    for (const enemy of room.enemies.values()) {
+      if (!enemy || enemy.dead) continue;
+      const faction = serverCombatFactionGroup(enemy.faction || '');
+      if (faction) factionGroups.add(faction);
+      const targetId = String(enemy.targetId || '');
+      if (!targetId || enemy.hostileToPlayer === false) continue;
+      if (!attackersByTargetId.has(targetId)) attackersByTargetId.set(targetId, []);
+      attackersByTargetId.get(targetId).push(enemy);
+    }
+  }
+  room.enemyLiveFactionGroups = factionGroups;
+  room.enemyAttackersByTargetId = attackersByTargetId;
 }
 
 function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest') {
@@ -13094,7 +13263,7 @@ function wastelandHostileOwnerCount(site = {}, loc = {}) {
 function spawnWastelandHostileOccupants(room, loc) {
   if (!room || !loc) return 0;
   for (const [id, actor] of [...room.enemies.entries()]) {
-    if (actor?.wastelandHostileOwnerLocationId === loc.id) room.enemies.delete(id);
+    if (actor?.wastelandHostileOwnerLocationId === loc.id) roomEnemyDelete(room, id);
   }
   if (locationIsFactionCapital(loc)) return 0;
   const sites = wastelandSitesForLocation(loc, room).filter(site => wastelandHostileOwnerGroup(site?.owner));
@@ -13212,7 +13381,7 @@ function wastelandSiteWorkerSpawnPoint(loc = {}, siteIndex = 0, workerIndex = 0)
 function spawnWastelandSiteWorkers(room, loc) {
   if (!room || !loc) return 0;
   for (const [id, actor] of [...room.enemies.entries()]) {
-    if (actor?.wastelandSiteWorkerLocationId === loc.id) room.enemies.delete(id);
+    if (actor?.wastelandSiteWorkerLocationId === loc.id) roomEnemyDelete(room, id);
   }
   const sites = locationIsFactionCapital(loc)
     ? wastelandSitesForLocation(loc, room).filter(site => String(site?.id || '') === String(loc.id || '') || !!site?.capital)
@@ -13557,19 +13726,50 @@ function clearSpawnArea(room, p) {
     }
   }
 }
+
+function markRoomEnemyStructureDirty(room) {
+  if (!room || typeof room !== 'object') return;
+  room.enemyStructureRevision = Math.max(0, Math.floor(Number(room.enemyStructureRevision || 0))) + 1;
+  room.enemyStructureDirty = true;
+  room.enemySpatialIndex = null;
+  room.enemySpatialSourceSize = -1;
+}
+
+function roomEnemySet(room, id, enemy) {
+  if (!(room?.enemies instanceof Map)) return false;
+  const previous = room.enemies.get(id);
+  room.enemies.set(id, enemy);
+  if (previous !== enemy) markRoomEnemyStructureDirty(room);
+  return true;
+}
+
+function roomEnemyDelete(room, id) {
+  if (!(room?.enemies instanceof Map)) return false;
+  const removed = room.enemies.delete(id);
+  if (removed) markRoomEnemyStructureDirty(room);
+  return removed;
+}
+
+function clearRoomEnemies(room) {
+  if (!(room?.enemies instanceof Map) || room.enemies.size === 0) return false;
+  room.enemies.clear();
+  markRoomEnemyStructureDirty(room);
+  return true;
+}
+
 function ensureRoomWorld(room) {
-  if (!room) return;
+  if (!room) return false;
   const expectedLocation = roomLocation(room);
   const worldSiteDefinitionChanged = (expectedLocation.worldSiteInstance === true || expectedLocation.runtimeMode === 'worldSiteInstance')
     && String(room.worldSiteTemplateSignature || '') !== String(expectedLocation.worldSiteTemplateSignature || '');
   if (!room.worldReady || room.environmentVersion !== WORLD_ENVIRONMENT_VERSION || worldSiteDefinitionChanged) {
     const environmentRebuild = room.worldReady && room.environmentVersion !== WORLD_ENVIRONMENT_VERSION;
-    if ((environmentRebuild || worldSiteDefinitionChanged) && room.enemies instanceof Map) room.enemies.clear();
+    if (environmentRebuild || worldSiteDefinitionChanged) clearRoomEnemies(room);
     generateRoomWorld(room);
     const loc = roomLocation(room);
     if (!loc.safe && !loc.noRespawn) for (let i = 0; i < (loc.spawnCount || 8); i++) spawnServerEnemy(room);
     refreshRoomWorldState(room);
-    return;
+    return true;
   }
   const loc = roomLocation(room);
   if (locationUsesAuthoredRuntime(loc) || loc.worldSiteInstance === true || loc.runtimeMode === 'worldSiteInstance') {
@@ -13578,15 +13778,16 @@ function ensureRoomWorld(room) {
       room.lastOccupantKeyCheckAt = now;
       const expectedOccupantKey = wastelandLocationOccupantKey(loc, room);
       if (expectedOccupantKey && room.locationOccupantKey && expectedOccupantKey !== room.locationOccupantKey) {
-        if (room.enemies instanceof Map) room.enemies.clear();
+        clearRoomEnemies(room);
         generateRoomWorld(room);
         refreshRoomWorldState(room);
-        return;
+        return true;
       }
     }
   }
   ensureWastelandSiteResourceNodes(room, loc);
   restockRoomWorldContainersIfNeeded(room);
+  return false;
 }
 
 function publicEnemy(e, viewer = null) {
@@ -13720,6 +13921,75 @@ function publicEnemySnapshotForViewer(enemy, viewer = null, sharedSnapshot = nul
   };
 }
 
+// Compact absolute realtime state. Static identity, equipment, inventory,
+// trader and loot data stay in the reliable enemySnapshot contract.
+// flags: 1=moving, 2=dead, 4=looted, 8=hostile, 16=look, 32=speech.
+function publicEnemyFrame(e, viewer = null, now = Date.now()) {
+  const aiState = e.aiState || (e.dead ? 'dead' : 'idle');
+  const dirX = Number(e.vx || 0);
+  const dirZ = Number(e.vz || 0);
+  const dirLen = Math.hypot(dirX, dirZ);
+  const moving = !e.dead && aiState !== 'attack' && aiState !== 'dead' && dirLen > 0.01;
+  const stateFactor = aiState === 'idle' ? 0.28
+    : aiState === 'return' ? 0.62
+      : aiState === 'investigate' ? 0.72
+        : (aiState === 'harvest' || aiState === 'craft') ? 0.48
+          : (aiState === 'rest' || aiState === 'social' || aiState === 'sleep') ? 0.42
+            : 1;
+  const speed = moving ? Math.max(0, Number(e.speed || 0) * stateFactor) : 0;
+  const hostile = viewer
+    ? serverActorHostileToPlayer(e, viewer)
+    : (e.hostileToPlayer !== false || !!actorHostilityKeys(e, false)?.size);
+  const hasLook = e.lookX !== null && e.lookX !== undefined
+    && e.lookZ !== null && e.lookZ !== undefined
+    && Number.isFinite(Number(e.lookX)) && Number.isFinite(Number(e.lookZ));
+  const speechText = !e.dead && Number(e.npcSpeechUntil || 0) > now
+    ? String(e.npcSpeechText || '').trim().slice(0, 96)
+    : '';
+  const scheduleState = aiState === 'dialogue'
+    ? 'dialogue'
+    : String(e.npcScheduleState || '').slice(0, 24);
+  const flags = (moving ? 1 : 0)
+    | (e.dead ? 2 : 0)
+    | (e.looted ? 4 : 0)
+    | (hostile ? 8 : 0)
+    | (hasLook ? 16 : 0)
+    | (speechText ? 32 : 0);
+  const frame = {
+    id: e.id,
+    x: Number(Number(e.x || 0).toFixed(3)),
+    z: Number(Number(e.z || 0).toFixed(3)),
+    hp: Math.max(0, Math.round(Number(e.hp || 0))),
+    aiState,
+    flags
+  };
+  if (moving) {
+    frame.vx = Number((dirX / dirLen * speed).toFixed(3));
+    frame.vz = Number((dirZ / dirLen * speed).toFixed(3));
+  }
+  if (hasLook) {
+    frame.lookX = Number(Number(e.lookX).toFixed(3));
+    frame.lookZ = Number(Number(e.lookZ).toFixed(3));
+  }
+  if (scheduleState) frame.scheduleState = scheduleState;
+  if (speechText) {
+    frame.speechText = speechText;
+    frame.speechId = String(e.npcSpeechId || `${e.id || 'npc'}:${speechText}`).slice(0, 140);
+    frame.speechMs = Math.max(0, Math.round(Number(e.npcSpeechUntil || 0) - now));
+  }
+  return frame;
+}
+
+function publicEnemyFrameForViewer(enemy, viewer = null, sharedFrame = null, now = Date.now()) {
+  const frame = sharedFrame || publicEnemyFrame(enemy, viewer, now);
+  if (!viewer || !sharedFrame) return frame;
+  const hostile = serverActorHostileToPlayer(enemy, viewer);
+  return {
+    ...frame,
+    flags: hostile ? (frame.flags | 8) : (frame.flags & ~8)
+  };
+}
+
 const CORPSE_LOOT_HOLD_MS = 45000;
 const CORPSE_EMPTY_CLEANUP_MS = 500;
 const CORPSE_FULL_CLEANUP_MS = 90000;
@@ -13797,7 +14067,7 @@ function serverNpcCorpseLootTarget(room, enemy, now = Date.now()) {
   const radius = enemy.stationary ? NPC_STATIONARY_CORPSE_LOOT_RADIUS : NPC_CORPSE_LOOT_RADIUS;
   const ignoredId = now < Number(enemy.npcLootIgnoreUntil || 0) ? String(enemy.npcLootIgnoreCorpseId || '') : '';
   const candidates = [];
-  for (const corpse of room.enemies.values()) {
+  for (const corpse of roomEnemySpatialCandidates(room, enemy.x, enemy.z, radius, { excludeActor: enemy })) {
     if (!corpse || !corpse.dead || corpse.id === enemy.id || corpse.id === ignoredId) continue;
     if (!serverFactionsHostile(enemy, corpse)) continue;
     if (!Array.isArray(corpse.loot) || !corpse.loot.some(row => Number(row?.qty || 0) > 0)) continue;
@@ -14041,7 +14311,27 @@ function publicWorldState(room, includeMap = true) {
     serverAuthoritative: true
   };
 }
-function refreshRoomWorldState(room) { room.worldState = publicWorldState(room, true); }
+const ROOM_WORLD_STATE_REFRESH_MIN_MS = 200;
+function refreshRoomWorldState(room, options = {}) {
+  if (!room) return null;
+  const force = options === true || options?.force === true;
+  const now = Date.now();
+  if (!force
+    && room.worldState
+    && now - Number(room.lastWorldStateRefreshAt || 0) < ROOM_WORLD_STATE_REFRESH_MIN_MS) {
+    room.worldStateDirty = true;
+    return room.worldState;
+  }
+  room.worldState = publicWorldState(room, true);
+  room.lastWorldStateRefreshAt = now;
+  room.worldStateDirty = false;
+  return room.worldState;
+}
+function currentRoomWorldState(room) {
+  if (!room) return null;
+  if (!room.worldState || room.worldStateDirty) refreshRoomWorldState(room, { force: true });
+  return room.worldState;
+}
 function livePlayersInRoom(room) { return [...players.values()].filter(p => p.roomId === room.id && socketIsLive(p.id)); }
 function aliveEnemyCount(room) { let n = 0; for (const e of room.enemies.values()) if (!e.dead) n++; return n; }
 function playerWorldClaimFaction(p = {}) {
@@ -14080,7 +14370,7 @@ function maybeClaimClearedWastelandSite(room, killedEnemy, player) {
       const dynamicOccupant = actor.wastelandHostileOwnerLocationId === loc.id
         || actor.wastelandSiteWorkerLocationId === loc.id
         || actor.authoredLocationId === loc.id;
-      if (dynamicOccupant) room.enemies.delete(id);
+      if (dynamicOccupant) roomEnemyDelete(room, id);
     }
     if (wastelandLocationHasHostileOwner(loc, room)) {
       spawnWastelandHostileOccupants(room, loc);
@@ -14091,7 +14381,7 @@ function maybeClaimClearedWastelandSite(room, killedEnemy, player) {
     room.locationOccupantKey = wastelandLocationOccupantKey(loc, room);
     refreshRoomWorldState(room);
     emitEnemySnapshot(room, true);
-    io.to(room.id).emit('worldState', { reason: 'siteClaimed', state: room.worldState || publicWorldState(room, true) });
+    io.to(room.id).emit('worldState', { reason: 'siteClaimed', state: currentRoomWorldState(room) });
     return true;
   } catch (err) {
     console.error('Failed to claim cleared wasteland site:', err);
@@ -14399,7 +14689,7 @@ function spawnServerEnemy(room, opts = {}) {
   delete enemy.startingCaps;
   normalizeServerNaturalCreatureState(enemy);
   ensureServerFriendlyNpcSocialState(enemy);
-  room.enemies.set(enemy.id, enemy);
+  roomEnemySet(room, enemy.id, enemy);
   return enemy;
 }
 
@@ -14647,6 +14937,13 @@ function serverOnsitePartyRoute(room = null, zone = {}, actor = {}, index = 0) {
 
 function setupWorldZoneBattleRoom(room, explicitZone = null) {
   if (!room) return false;
+  let changed = false;
+  const setChangedField = (target, key, value) => {
+    if (Object.is(target[key], value)) return false;
+    target[key] = value;
+    changed = true;
+    return true;
+  };
   let zone = explicitZone;
   try {
     zone = zone || (room.worldZoneId && typeof WASTELAND_SIM.worldZoneById === 'function'
@@ -14665,10 +14962,17 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
   const isOnsiteParty = !!zone?.details?.onsiteParty;
   if ((!isBattle && !isPartyEncounter && !isOnsiteParty) || !actors.length) return false;
   if (!explicitZone || isBattle || isPartyEncounter) {
-    room.worldZoneId = zone.id || room.worldZoneId || '';
-    room.serverRealTimeBattle = isBattle;
-    room.serverRealTimeBattleZoneId = isBattle ? (zone.id || '') : '';
-    room.encounterWorldPoint = { x: Number(zone.x || 0), y: Number(zone.y || 0) };
+    setChangedField(room, 'worldZoneId', zone.id || room.worldZoneId || '');
+    setChangedField(room, 'serverRealTimeBattle', isBattle);
+    setChangedField(room, 'serverRealTimeBattleZoneId', isBattle ? (zone.id || '') : '');
+    const pointX = Number(zone.x || 0);
+    const pointY = Number(zone.y || 0);
+    if (!room.encounterWorldPoint
+      || !Object.is(Number(room.encounterWorldPoint.x || 0), pointX)
+      || !Object.is(Number(room.encounterWorldPoint.y || 0), pointY)) {
+      room.encounterWorldPoint = { x: pointX, y: pointY };
+      changed = true;
+    }
   }
   const zoneActorIds = new Set(actors.map(actor => String(actor?.id || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)).filter(Boolean));
   const existingByActorId = new Map();
@@ -14682,7 +14986,10 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
   if (isBattle && !sharedReality && room.enemies instanceof Map) {
     for (const [enemyId, enemy] of room.enemies.entries()) {
       const actorId = String(enemy?.worldBattleActorId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
-      if (!actorId || !zoneActorIds.has(actorId)) room.enemies.delete(enemyId);
+      if (!actorId || !zoneActorIds.has(actorId)) {
+        roomEnemyDelete(room, enemyId);
+        changed = true;
+      }
     }
   }
   actors.forEach((actor, index) => {
@@ -14693,24 +15000,24 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
     const onsiteRoute = onsitePartyMember ? serverOnsitePartyRoute(room, zone, actor, index) : null;
     const existing = actorId ? existingByActorId.get(actorId) : null;
     if (existing) {
-      existing.worldZoneId = zone.id || '';
-      existing.worldBattleActorId = actorId;
-      existing.worldBattleSide = String(actor.side || '').slice(0, 16);
-      existing.encounterRole = actor.role === 'merchant'
+      setChangedField(existing, 'worldZoneId', zone.id || '');
+      setChangedField(existing, 'worldBattleActorId', actorId);
+      setChangedField(existing, 'worldBattleSide', String(actor.side || '').slice(0, 16));
+      setChangedField(existing, 'encounterRole', actor.role === 'merchant'
         ? 'merchant'
-        : (actor.side === 'defender' ? 'defender' : 'attacker');
-      existing.faction = actor.faction || existing.faction;
-      existing.role = actor.role || existing.role;
-      existing.hostileToPlayer = serverActorDefaultHostileToPlayer(actor);
+        : (actor.side === 'defender' ? 'defender' : 'attacker'));
+      setChangedField(existing, 'faction', actor.faction || existing.faction);
+      setChangedField(existing, 'role', actor.role || existing.role);
+      setChangedField(existing, 'hostileToPlayer', serverActorDefaultHostileToPlayer(actor));
       if (onsiteRoute) {
-        existing.onsitePartyActor = true;
-        existing.onsitePartyId = worldTransferId(zone.partyId || zone.details?.partyId || '');
-        existing.onsiteZoneId = worldTransferId(zone.id || '');
-        existing.onsiteWorkX = onsiteRoute.work.x;
-        existing.onsiteWorkZ = onsiteRoute.work.z;
-        existing.onsiteExitX = onsiteRoute.exit.x;
-        existing.onsiteExitZ = onsiteRoute.exit.z;
-        existing.onsiteStationaryAtWork = actor.stationary === true;
+        setChangedField(existing, 'onsitePartyActor', true);
+        setChangedField(existing, 'onsitePartyId', worldTransferId(zone.partyId || zone.details?.partyId || ''));
+        setChangedField(existing, 'onsiteZoneId', worldTransferId(zone.id || ''));
+        setChangedField(existing, 'onsiteWorkX', onsiteRoute.work.x);
+        setChangedField(existing, 'onsiteWorkZ', onsiteRoute.work.z);
+        setChangedField(existing, 'onsiteExitX', onsiteRoute.exit.x);
+        setChangedField(existing, 'onsiteExitZ', onsiteRoute.exit.z);
+        setChangedField(existing, 'onsiteStationaryAtWork', actor.stationary === true);
       }
       return;
     }
@@ -14738,6 +15045,7 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
       loot: Array.isArray(actor.loot) ? actor.loot.map(row => ({ ...row })) : []
     });
     if (!enemy) return;
+    changed = true;
     enemy.worldZoneId = zone.id || '';
     enemy.worldBattleActorId = actorId;
     enemy.worldBattleSide = String(actor.side || '').slice(0, 16);
@@ -14770,9 +15078,11 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
       serverPrepareNpcCorpseLoot(enemy);
     }
   });
-  finalizeEncounterWorldTracking(room);
-  refreshRoomWorldState(room);
-  return true;
+  if (changed) {
+    finalizeEncounterWorldTracking(room);
+    refreshRoomWorldState(room);
+  }
+  return { ready: true, changed };
 }
 
 function attachActiveWorldZoneToSharedRoom(room) {
@@ -15108,10 +15418,7 @@ function maybeReportEncounterOutcome(room, reason = 'update', actor = null, play
 function setupRandomEncounterRoom(room, encounterId = '', options = {}) {
   if (!room) return;
   if (room.encounterSetupDone) {
-    if (setupWorldZoneBattleRoom(room)) {
-      finalizeEncounterWorldTracking(room);
-      refreshRoomWorldState(room);
-    }
+    setupWorldZoneBattleRoom(room);
     return;
   }
   const loc = roomLocation(room);
@@ -15135,7 +15442,7 @@ function setupRandomEncounterRoom(room, encounterId = '', options = {}) {
       name: typeof opts.name === 'function' ? opts.name(i) : opts.name
     }));
   };
-  if (setupWorldZoneBattleRoom(room)) return;
+  if (setupWorldZoneBattleRoom(room)?.ready) return;
   const boundWorldZoneId = worldTransferId(room.serverRealTimeBattleZoneId || room.worldZoneId || '');
   if (boundWorldZoneId) {
     // A transferred wasteland battle owns its room. If the simulation resolves or
@@ -15149,7 +15456,7 @@ function setupRandomEncounterRoom(room, encounterId = '', options = {}) {
     refreshRoomWorldState(room);
     return;
   }
-  if (!options.preserveExisting) room.enemies.clear();
+  if (!options.preserveExisting) clearRoomEnemies(room);
   if (setupWorldPartyEncounterRoom(room)) return;
   if (id === 'player_ambush') {
     finalizeEncounterWorldTracking(room);
@@ -15345,9 +15652,10 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = []) {
   if (!room.enemies || room.enemies.size < 2) return engaged;
   const now = Date.now();
   const actors = [...room.enemies.values()].filter(e => e && !e.dead && e.faction && !(e.hostileToPlayer === false && now < Number(e.dialogueFocusUntil || 0)));
+  const actorSet = new Set(actors);
   for (const actor of actors) {
     if (!actor || actor.dead) continue;
-    const factionTarget = findNearestFactionFoe(room, actor, actors);
+    const factionTarget = findNearestFactionFoe(room, actor, actors, actorSet, now);
     const foe = factionTarget.foe;
     const playerThreat = chooseFactionCombatPlayerThreat(room, actor, roomPlayers, now, !!foe);
     if (playerThreat?.target) {
@@ -15499,7 +15807,7 @@ function updateOnsitePartyActorLifecycle(room = null, enemy = null, dt = 0) {
   const zone = serverActiveWorldZoneById(zoneId);
   if (!zone || !zone.details?.onsiteParty) {
     rememberExitedOnsiteActor(room, enemy);
-    room.enemies.delete(enemy.id);
+    roomEnemyDelete(room, enemy.id);
     return true;
   }
   const departureRequested = zone.details?.departureRequested === true;
@@ -15515,7 +15823,7 @@ function updateOnsitePartyActorLifecycle(room = null, enemy = null, dt = 0) {
     const exitZ = Number(enemy.onsiteExitZ);
     if (!Number.isFinite(exitX) || !Number.isFinite(exitZ)) {
       rememberExitedOnsiteActor(room, enemy);
-      room.enemies.delete(enemy.id);
+      roomEnemyDelete(room, enemy.id);
       return true;
     }
     const distance = moveEnemyTowards(room, enemy, exitX, exitZ, Math.max(1.35, Number(enemy.speed || 1.8)), dt, {
@@ -15523,7 +15831,7 @@ function updateOnsitePartyActorLifecycle(room = null, enemy = null, dt = 0) {
     });
     if (distance <= 1.15) {
       rememberExitedOnsiteActor(room, enemy);
-      room.enemies.delete(enemy.id);
+      roomEnemyDelete(room, enemy.id);
     }
     return true;
   }
@@ -15594,12 +15902,18 @@ function completeDepartedOnsiteParties(room = null) {
 }
 
 function updateServerEnemies(room, dt, opts = {}) {
-  ensureRoomWorld(room);
+  let enemyStructureChanged = ensureRoomWorld(room) === true;
+  // Snapshot broad phase: every AI pass starts from current positions, keeps a
+  // safe movement margin while actors advance, and publishes exact end state
+  // for player collision queries between ticks.
+  rebuildRoomEnemySpatialIndex(room, roomEnemySpatialMovementPadding(room, dt));
+  try {
   const loc = roomLocation(room);
   const roomPlayers = Array.isArray(opts.players)
     ? opts.players.filter(p => p && Number(p.hp || 1) > 0 && !p.dead)
     : livePlayersInRoom(room).filter(p => Number(p.hp || 1) > 0 && !p.dead);
   const factionCombatActors = updateEncounterFactionCombat(room, dt, roomPlayers);
+  rebuildRoomEnemyAiLookupCaches(room);
   const isFactionCapital = locationIsFactionCapital(loc);
   const allowSpawn = opts.allowSpawn !== false && !isFactionCapital && !loc.safe && !loc.noRespawn && !room.locationWorldEvent;
   room.enemySpawnTimer = Math.max(0, Number(room.enemySpawnTimer || 0)) + dt;
@@ -15610,13 +15924,16 @@ function updateServerEnemies(room, dt, opts = {}) {
     for (let i = 0; i < count; i++) {
       const spawned = spawnServerEnemy(room, { minPlayerDistance: ENEMY_RESPAWN_MIN_PLAYER_DISTANCE });
       if (!spawned) break;
+      enemyStructureChanged = true;
     }
   }
   const rng = room.rng || Math.random;
   const now = Date.now();
   for (const enemy of [...room.enemies.values()]) {
     if (enemy.dead) {
-      if (serverShouldRemoveCorpse(enemy, now)) room.enemies.delete(enemy.id);
+      if (serverShouldRemoveCorpse(enemy, now)) {
+        if (roomEnemyDelete(room, enemy.id)) enemyStructureChanged = true;
+      }
       continue;
     }
     ensureEnemyHome(enemy);
@@ -15649,7 +15966,7 @@ function updateServerEnemies(room, dt, opts = {}) {
     if (updateNpcDailySchedule(room, enemy, dt, loc, now)) continue;
     if (updateWastelandSiteWorkerLabor(room, enemy, dt, loc)) continue;
     if (enemy.stationary && enemy.hostileToPlayer === false) {
-      const hasLiveFoes = [...room.enemies.values()].some(other => other && !other.dead && other.id !== enemy.id && serverFactionsHostile(enemy, other));
+      const hasLiveFoes = npcHasLiveFactionFoes(room, enemy);
       if (!hasLiveFoes) {
         enemy.aiState = 'idle';
         enemy.vx = 0;
@@ -15907,6 +16224,12 @@ function updateServerEnemies(room, dt, opts = {}) {
     if (!moved) enemy.wanderTimer = 0;
   }
   completeDepartedOnsiteParties(room);
+  } finally {
+    room.enemyLiveFactionGroups = null;
+    room.enemyAttackersByTargetId = null;
+    rebuildRoomEnemySpatialIndex(room, 0);
+  }
+  return enemyStructureChanged;
 }
 function roomNeedsHotEnemySnapshots(room) {
   if (!room || !room.enemies) return false;
@@ -15919,13 +16242,11 @@ function roomNeedsHotEnemySnapshots(room) {
   }
   return false;
 }
-function emitEnemySnapshot(room, force = false) {
-  if (!room || !room.sockets.size) return;
-  const now = Date.now();
-  const minInterval = roomNeedsHotEnemySnapshots(room) ? 80 : 360;
-  if (!force && now - Number(room.lastEnemySnapshotAt || 0) < minInterval) return;
-  room.lastEnemySnapshotAt = now;
-  const socketIds = [...room.sockets];
+
+const LEGACY_ENEMY_SNAPSHOT_INTERVAL_MS = 360;
+
+function emitFullEnemySnapshotToSockets(room, socketIds, now = Date.now()) {
+  if (!room || !Array.isArray(socketIds) || !socketIds.length) return;
   // A lone viewer needs no fan-out copy. With multiple viewers, publicEnemy()
   // has already created detached nested values and the default Socket.IO adapter
   // encodes each emit synchronously, so they can be shared read-only while each
@@ -15938,15 +16259,89 @@ function emitEnemySnapshot(room, force = false) {
     : null;
   for (const socketId of socketIds) {
     const viewer = players.get(socketId) || null;
-    const target = io.to(socketId);
-    const transport = force ? target : target.volatile;
-    transport.emit('enemySnapshot', {
+    io.to(socketId).emit('enemySnapshot', {
       roomId: room.id,
       locationId: room.locationId,
       t: now,
       enemies: sharedEnemies
         ? sharedEnemies.map(({ enemy, snapshot }) => publicEnemySnapshotForViewer(enemy, viewer, snapshot))
         : [...room.enemies.values()].map(enemy => publicEnemy(enemy, viewer))
+    });
+  }
+}
+
+function emitEnemySnapshot(room, force = false) {
+  if (!room || !room.sockets.size) return;
+  const now = Date.now();
+  const reliable = !!force || !!room.enemyStructureDirty;
+  const minInterval = roomNeedsHotEnemySnapshots(room) ? 80 : 360;
+  if (!reliable && now - Number(room.lastEnemySnapshotAt || 0) < minInterval) return;
+  room.lastEnemySnapshotAt = now;
+  const socketIds = [...room.sockets];
+  if (reliable) {
+    emitFullEnemySnapshotToSockets(room, socketIds, now);
+    room.enemyStructureDirty = false;
+    return;
+  }
+
+  const frameSocketIds = [];
+  const legacySocketIds = [];
+  for (const socketId of socketIds) {
+    const viewer = players.get(socketId) || null;
+    if (Number(viewer?.enemyFrameVersion || 0) >= 1) {
+      frameSocketIds.push(socketId);
+      continue;
+    }
+    if (!viewer || now - Number(viewer.lastLegacyEnemySnapshotAt || 0) >= LEGACY_ENEMY_SNAPSHOT_INTERVAL_MS) {
+      if (viewer) viewer.lastLegacyEnemySnapshotAt = now;
+      legacySocketIds.push(socketId);
+    }
+  }
+
+  if (frameSocketIds.length) {
+    room.enemyFrameSeq = Math.max(0, Math.floor(Number(room.enemyFrameSeq || 0))) + 1;
+    const seq = room.enemyFrameSeq;
+    const sharedFrames = frameSocketIds.length > 1
+      ? [...room.enemies.values()].map(enemy => ({
+          enemy,
+          frame: publicEnemyFrame(enemy, null, now)
+        }))
+      : null;
+    for (const socketId of frameSocketIds) {
+      const viewer = players.get(socketId) || null;
+      io.to(socketId).volatile.emit('enemyFrame', {
+        roomId: room.id,
+        locationId: room.locationId,
+        t: now,
+        seq,
+        enemies: sharedFrames
+          ? sharedFrames.map(({ enemy, frame }) => publicEnemyFrameForViewer(enemy, viewer, frame, now))
+          : [...room.enemies.values()].map(enemy => publicEnemyFrame(enemy, viewer, now))
+      });
+    }
+  }
+  emitFullEnemySnapshotToSockets(room, legacySocketIds, now);
+}
+
+function emitEnemyBaselineForSocket(room, socketId) {
+  if (!room || !socketId) return;
+  if (room.enemyStructureDirty) {
+    emitEnemySnapshot(room, true);
+    return;
+  }
+  emitFullEnemySnapshotToSockets(room, [socketId], Date.now());
+}
+
+function emitEnemyTradeUpdated(room, actor, now = Date.now()) {
+  if (!room || !actor || !(room.sockets instanceof Set)) return;
+  for (const socketId of room.sockets) {
+    const viewer = players.get(socketId) || null;
+    io.to(socketId).emit('enemyTradeUpdated', {
+      roomId: room.id,
+      locationId: room.locationId,
+      enemyId: actor.id,
+      enemy: publicEnemy(actor, viewer),
+      t: now
     });
   }
 }
@@ -16010,7 +16405,17 @@ function getOrCreateRoom(roomId = 'settlement', locationId = '') {
       worldReady: false,
       worldState: null,
       enemySpawnTimer: 0,
+      enemySpatialIndex: null,
+      enemySpatialSourceSize: -1,
+      enemySpatialMovementPadding: 0,
+      enemySpatialMaxBodyRadius: 0,
+      enemySpatialMaxCollisionReach: 0,
+      enemyStructureRevision: 0,
+      enemyStructureDirty: false,
       lastEnemySnapshotAt: 0,
+      enemyFrameSeq: 0,
+      lastWorldStateRefreshAt: 0,
+      worldStateDirty: false,
       lastPlayerSnapshotAt: 0,
       lastGroundSnapshotAt: 0,
       lastContainerSnapshotAt: 0,
@@ -16071,7 +16476,7 @@ function invalidateRoomsForLocation(locationId, reason = 'location-updated') {
   let count = 0;
   for (const room of rooms.values()) {
     if (!room || normalizeLocationId(room.locationId) !== loc) continue;
-    if (room.enemies instanceof Map) room.enemies.clear();
+    clearRoomEnemies(room);
     if (room.resources instanceof Map) room.resources.clear();
     if (room.containers instanceof Map) room.containers.clear();
     room.map = [];
@@ -16087,7 +16492,7 @@ function invalidateRoomsForLocation(locationId, reason = 'location-updated') {
       io.to(room.id).emit('worldState', {
         reason: 'locationFull',
         source: String(reason || 'location-updated').slice(0, 48),
-        state: room.worldState || publicWorldState(room, true)
+        state: currentRoomWorldState(room)
       });
       emitEnemySnapshot(room, true);
       emitGroundItemsSnapshot(room, true);
@@ -16568,7 +16973,7 @@ function transferPlayerToServerRoom(p, room, options = {}) {
       angle: Number(p.angle || 0),
       hp: Math.round(Number(p.hp || 0)),
       maxHp: Math.round(Number(p.maxHp || 100)),
-      worldState: room.worldState || publicWorldState(room, true),
+      worldState: currentRoomWorldState(room),
       players: others,
       serverAuthoritativeEnemies: true,
       encounterId: room.encounterId || '',
@@ -16588,7 +16993,7 @@ function transferPlayerToServerRoom(p, room, options = {}) {
   }
   try {
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
-    emitEnemySnapshot(room, true);
+    emitEnemyBaselineForSocket(room, socket.id);
     emitGroundItemsSnapshot(room, true);
     emitWorldContainersSnapshot(room, true);
   } catch (error) {
@@ -16736,8 +17141,8 @@ function syncWorldOnsitePartyTransfers(state = null) {
     ensureRoomWorld(room);
     if (!(room.onsiteWorldZoneIds instanceof Set)) room.onsiteWorldZoneIds = new Set();
     room.onsiteWorldZoneIds.add(zoneId);
-    const actorsReady = setupWorldZoneBattleRoom(room, zone);
-    if (actorsReady) {
+    const actorSetup = setupWorldZoneBattleRoom(room, zone);
+    if (actorSetup?.ready) {
       const needsInventoryMigration = (Array.isArray(zone.details?.actors) ? zone.details.actors : [])
         .some(actor => actor
           && !actor.dead
@@ -16751,8 +17156,7 @@ function syncWorldOnsitePartyTransfers(state = null) {
           actors: worldZoneActorSnapshotsFromRoom(room).filter(actor => actorIds.has(String(actor?.actorId || actor?.id || '')))
         });
       }
-      refreshRoomWorldState(room);
-      if (room.sockets?.size > 0) emitEnemySnapshot(room, true);
+      if (actorSetup.changed && room.sockets?.size > 0) emitEnemySnapshot(room, true);
     }
     const party = simState.parties && simState.parties[zone.partyId];
     const members = Array.isArray(party?.playerMembers) ? party.playerMembers : [];
@@ -16782,7 +17186,7 @@ function syncWorldOnsitePartyTransfers(state = null) {
       for (const [enemyId, enemy] of room.enemies.entries()) {
         if (!enemy?.onsitePartyActor || enemy.dead) continue;
         if (worldTransferId(enemy.onsiteZoneId || enemy.worldZoneId || '') !== safeZoneId) continue;
-        room.enemies.delete(enemyId);
+        roomEnemyDelete(room, enemyId);
         changed = true;
       }
     }
@@ -17518,10 +17922,6 @@ function publicPlayerMovement(p) {
   return {
     id: p.id,
     seq: Number(p.movementSeq || 0),
-    characterId: p.characterId || '',
-    name: p.name,
-    deviceType: normalizeDeviceType(p.deviceType || 'desktop'),
-    controlType: normalizeControlType(p.controlType || '', p.deviceType || 'desktop'),
     x: Number(p.x.toFixed(3)),
     z: Number(p.z.toFixed(3)),
     vx: Number(clampPlayerVelocity(p.vx || 0).toFixed(3)),
@@ -17529,12 +17929,7 @@ function publicPlayerMovement(p) {
     angle: Number(p.angle.toFixed(4)),
     crouching: !!p.crouching,
     moving: !!p.moving,
-    turning: !!p.turning,
-    hp: Math.round(Number(p.hp || 0)),
-    maxHp: Math.round(Number(p.maxHp || 100)),
-    dead: !!p.dead,
-    locationId: p.locationId || 'settlement',
-    roomId: p.roomId || ''
+    turning: !!p.turning
   };
 }
 
@@ -17601,7 +17996,7 @@ function currentJoinedSocketAck(p, options = {}) {
     combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()),
     self: publicAuthoritativePlayerState(p),
     players: others,
-    worldState: room ? (room.worldState || publicWorldState(room, true)) : null,
+    worldState: currentRoomWorldState(room),
     serverAuthoritativeEnemies: true
   };
 }
@@ -17641,6 +18036,7 @@ io.on('connection', (socket) => {
     const clientInstanceId = normalizeClientInstanceId(data.clientInstanceId || socket.handshake?.auth?.clientInstanceId || '');
     const deviceType = normalizeDeviceType(data.deviceType || socket.handshake?.auth?.deviceType || '');
     const controlType = normalizeControlType(data.controlType || socket.handshake?.auth?.controlType || '', deviceType);
+    const enemyFrameVersion = Number(data.enemyFrameVersion || 0) >= 1 ? 1 : 0;
     const auth = getUserByToken(token, deviceId);
     if (!auth) return rejectJoin(socket, ack, 'Не выполнен вход или сессия открыта на другом устройстве.');
     const joinedPlayer = players.get(socket.id);
@@ -17807,6 +18203,8 @@ io.on('connection', (socket) => {
       characterLeaseId,
       deviceType,
       controlType,
+      enemyFrameVersion,
+      lastLegacyEnemySnapshotAt: 0,
       accountLogin: auth.login,
       characterId,
       worldFactionId,
@@ -17946,9 +18344,9 @@ io.on('connection', (socket) => {
 
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     refreshRoomWorldState(room);
-    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: room.worldState || publicWorldState(room, true), serverAuthoritativeEnemies: true });
+    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
-    emitEnemySnapshot(room, true);
+    emitEnemyBaselineForSocket(room, socket.id);
     emitGroundItemsSnapshot(room, true);
     emitWorldContainersSnapshot(room, true);
   });
@@ -18010,9 +18408,14 @@ io.on('connection', (socket) => {
       const dzRelay = Number(p.z || 0) - Number(p.lastRelayedZ ?? p.z);
       const angleRelay = Math.abs(Number(p.angle || 0) - Number(p.lastRelayedAngle ?? p.angle));
       const dvRelay = Math.hypot(Number(p.vx || 0) - Number(p.lastRelayedVx || 0), Number(p.vz || 0) - Number(p.lastRelayedVz || 0));
-      const movedRelay = Math.hypot(dxRelay, dzRelay) > 0.004 || angleRelay > 0.006 || dvRelay > 0.035 || p.moving !== p.lastRelayedMoving;
-      const minRelayMs = p.deviceType === 'mobile' ? 30 : 28;
-      if (movedRelay && (nowStateRelay - Number(p.lastPlayerStateRelayAt || 0) >= minRelayMs || p.moving !== p.lastRelayedMoving)) {
+      const movementTransition = p.moving !== p.lastRelayedMoving;
+      const crouchingTransition = p.crouching !== p.lastRelayedCrouching;
+      const turningTransition = p.turning !== p.lastRelayedTurning;
+      const reliableStateTransition = movementTransition || crouchingTransition;
+      const stateTransition = reliableStateTransition || turningTransition;
+      const movedRelay = Math.hypot(dxRelay, dzRelay) > 0.004 || angleRelay > 0.006 || dvRelay > 0.035 || stateTransition;
+      const minRelayMs = 50;
+      if (movedRelay && (nowStateRelay - Number(p.lastPlayerStateRelayAt || 0) >= minRelayMs || stateTransition)) {
         p.lastPlayerStateRelayAt = nowStateRelay;
         p.lastRelayedX = p.x;
         p.lastRelayedZ = p.z;
@@ -18020,11 +18423,15 @@ io.on('connection', (socket) => {
         p.lastRelayedVx = p.vx;
         p.lastRelayedVz = p.vz;
         p.lastRelayedMoving = p.moving;
+        p.lastRelayedCrouching = p.crouching;
+        p.lastRelayedTurning = p.turning;
         // v7.74.58: движение — hot-path. Старые playerState не должны
         // копиться в очереди сокета и потом приходить рывками. Если клиент
         // не успел принять промежуточный пакет, следующий пакет + скорость
         // плавно продолжат движение.
-        (socket.to(p.roomId).volatile || socket.to(p.roomId)).emit('playerState', {
+        const roomRelay = socket.to(p.roomId);
+        const movementTransport = reliableStateTransition ? roomRelay : (roomRelay.volatile || roomRelay);
+        movementTransport.emit('playerState', {
           roomId: p.roomId,
           locationId: p.locationId || '',
           t: nowStateRelay,
@@ -18264,7 +18671,7 @@ io.on('connection', (socket) => {
         enemy.lookZ = null;
         if (enemy.aiState === 'dialogue') enemy.aiState = 'idle';
       }
-      emitEnemySnapshot(room, true);
+      emitEnemySnapshot(room);
       if (typeof ack === 'function') ack({ ok: true, enemy: publicEnemy(enemy) });
       return;
     }
@@ -18286,7 +18693,7 @@ io.on('connection', (socket) => {
     enemy.lookZ = Number(p.z || enemy.z || 0);
     clearEnemyTacticalGoal(enemy);
     invalidateEnemyPath(enemy);
-    emitEnemySnapshot(room, true);
+    emitEnemySnapshot(room);
     if (typeof ack === 'function') ack({ ok: true, enemy: publicEnemy(enemy) });
   });
 
@@ -18639,10 +19046,10 @@ io.on('connection', (socket) => {
     const result = performServerNpcQuestAction(p, actor, data);
     if (!result?.ok) return fail(result?.error || 'Сервер отклонил действие задания.');
     persistActivePlayerState(p);
-    if (typeof ack === 'function') ack(result);
+    const playerResult = result.enemy ? { ...result, enemy: publicEnemy(actor, p) } : result;
+    if (typeof ack === 'function') ack(playerResult);
     if (result.enemy) {
-      io.to(room.id).emit('enemyTradeUpdated', { locationId: room.locationId, enemyId: actor.id, enemy: result.enemy, t: Date.now() });
-      emitEnemySnapshot(room, true);
+      emitEnemyTradeUpdated(room, actor);
     }
   });
 
@@ -18987,7 +19394,6 @@ io.on('connection', (socket) => {
     }
 
     refreshRoomWorldState(room);
-    emitEnemySnapshot(room, true);
     if (typeof ack === 'function') ack({
       ok: true,
       hit: enemyHits.length > 0 || playerHits.length > 0,
@@ -19166,7 +19572,6 @@ io.on('connection', (socket) => {
       combats: spend.combats,
       self: publicAuthoritativePlayerState(p)
     });
-    emitEnemySnapshot(room, true);
   });
 
   socket.on('playerHit', (data = {}, ack) => {
@@ -19447,7 +19852,6 @@ io.on('connection', (socket) => {
     const publicRes = publicResource(resource);
     if (typeof ack === 'function') ack({ ok: true, item, xp, apCost: spend.apCost, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, depleted: Number(resource.hp || 0) <= 0 });
     emitResourceUpdate(room, resource, socket.id, item);
-    emitEnemySnapshot(room, true);
   });
 
   socket.on('syncNpcTradeState', (data = {}, ack) => {
@@ -19486,9 +19890,9 @@ io.on('connection', (socket) => {
     if (Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0)) > 5.2) return fail('NPC слишком далеко.');
     const result = performServerNpcTradeExchange(room, actor, data, p);
     if (!result?.ok) return fail(result?.error || 'Сервер отклонил обмен.', { market: serverNpcTradeMarket(actor), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
-    if (typeof ack === 'function') ack(result);
-    io.to(room.id).emit('enemyTradeUpdated', { locationId: room.locationId, enemyId: actor.id, enemy: result.enemy, t: Date.now() });
-    emitEnemySnapshot(room, true);
+    const playerResult = { ...result, enemy: publicEnemy(actor, p) };
+    if (typeof ack === 'function') ack(playerResult);
+    emitEnemyTradeUpdated(room, actor);
   });
 
   socket.on('robEncounterActor', (data = {}, ack) => {
@@ -19510,18 +19914,23 @@ io.on('connection', (socket) => {
     const changed = setEncounterFactionHostileToPlayer(room, actor.faction, p, Date.now());
     addRoomNoise(room, p.x, p.z, serverPlayerNoiseRadius(p, ENEMY_HEARING_SHOT_RANGE), socket.id, 'combat');
     refreshRoomWorldState(room);
-    const enemies = [...room.enemies.values()].filter(e => e && e.faction === actor.faction).map(publicEnemy);
+    const factionEnemies = [...room.enemies.values()].filter(e => e && e.faction === actor.faction);
+    const enemies = factionEnemies.map(enemy => publicEnemy(enemy, p));
     if (typeof ack === 'function') ack({ ok: true, targetName: actor.name, faction: actor.faction, changed, enemies });
-    socket.to(room.id).emit('encounterFactionHostile', {
-      roomId: room.id,
-      locationId: room.locationId,
-      faction: actor.faction,
-      targetId: socket.id,
-      targetName: p.name || 'Игрок',
-      enemies,
-      t: Date.now()
-    });
-    emitEnemySnapshot(room, true);
+    const hostilityTime = Date.now();
+    for (const viewerId of room.sockets) {
+      if (viewerId === socket.id) continue;
+      const viewer = players.get(viewerId) || null;
+      io.to(viewerId).emit('encounterFactionHostile', {
+        roomId: room.id,
+        locationId: room.locationId,
+        faction: actor.faction,
+        targetId: socket.id,
+        targetName: p.name || 'Игрок',
+        enemies: factionEnemies.map(enemy => publicEnemy(enemy, viewer)),
+        t: hostilityTime
+      });
+    }
   });
 
   socket.on('inspectCorpse', (data = {}, ack) => {
@@ -19562,9 +19971,11 @@ io.on('connection', (socket) => {
     const now = Date.now();
     serverReleaseCorpseLootHold(enemy, socket.id, now);
     const removed = serverShouldRemoveCorpse(enemy, now);
-    if (removed) room.enemies.delete(enemy.id);
-    refreshRoomWorldState(room);
-    emitEnemySnapshot(room, true);
+    if (removed) {
+      roomEnemyDelete(room, enemy.id);
+      refreshRoomWorldState(room);
+      emitEnemySnapshot(room, true);
+    }
     if (typeof ack === 'function') ack({ ok: true, removed });
   });
 
@@ -19627,7 +20038,7 @@ io.on('connection', (socket) => {
     const now = Date.now();
     const removed = serverShouldRemoveCorpse(enemy, now);
     if (typeof ack === 'function') ack({ ok: true, items: taken, enemy: publicLootEnemy, removed, partial: !!carryCheck.blocked, carry: carryCheck.carry, inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p) });
-    if (removed) room.enemies.delete(enemy.id);
+    if (removed) roomEnemyDelete(room, enemy.id);
     refreshRoomWorldState(room);
     emitEnemySnapshot(room, true);
   });
@@ -20112,7 +20523,7 @@ io.on('connection', (socket) => {
         z: Number(p.z.toFixed(3)),
         self: publicAuthoritativePlayerState(p),
         players: others,
-        worldState: currentRoom.worldState || publicWorldState(currentRoom, true),
+        worldState: currentRoomWorldState(currentRoom),
         serverAuthoritativeEnemies: true
       });
       return;
@@ -20227,9 +20638,9 @@ io.on('connection', (socket) => {
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     refreshRoomWorldState(room);
-    if (typeof ack === 'function') ack({ ok: true, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), self: publicAuthoritativePlayerState(p), players: others, worldState: room.worldState || publicWorldState(room, true), serverAuthoritativeEnemies: true });
+    if (typeof ack === 'function') ack({ ok: true, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
-    emitEnemySnapshot(room, true);
+    emitEnemyBaselineForSocket(room, socket.id);
     emitGroundItemsSnapshot(room, true);
     emitWorldContainersSnapshot(room, true);
   };
@@ -20253,7 +20664,7 @@ io.on('connection', (socket) => {
     ack({
       ok: true,
       reason: String(data?.reason || 'resync').slice(0, 32),
-      state: room.worldState || publicWorldState(room, true)
+      state: currentRoomWorldState(room)
     });
   });
 
@@ -20348,9 +20759,9 @@ setInterval(() => {
         activeRoomAiBudget -= 1;
         room.lastActiveEnemyAiTickAt = roomNow;
         const enemyDt = Math.min(ACTIVE_ROOM_AI_MAX_DT, Math.max(DT, activeAiElapsedMs / 1000));
-        updateServerEnemies(room, enemyDt);
+        const enemyStructureChanged = updateServerEnemies(room, enemyDt);
         syncWorldBattleRoomActors(room);
-        emitEnemySnapshot(room);
+        emitEnemySnapshot(room, enemyStructureChanged);
       }
       if (roomNow - Number(room.lastActiveHousekeepingAt || 0) >= ACTIVE_ROOM_HOUSEKEEPING_MS) {
         room.lastActiveHousekeepingAt = roomNow;
@@ -20362,7 +20773,7 @@ setInterval(() => {
           emitGroundItemsSnapshot(room, true);
         }
         if (updateRoomResourceRespawns(room, roomNow)) {
-          io.to(room.id).emit('worldState', { reason: 'resourceRespawn', state: room.worldState || publicWorldState(room, true) });
+          io.to(room.id).emit('worldState', { reason: 'resourceRespawn', state: currentRoomWorldState(room) });
         }
       }
     } else if (room.worldReady && roomNow - Number(room.lastEmptyAiTickAt || 0) >= EMPTY_ROOM_AI_TICK_MS) {
@@ -20392,19 +20803,20 @@ setInterval(() => {
     // между событием смерти и респавном. Иначе клиент может заново создать старую модель.
     if (p.dead || Number(p.hp || 0) <= 0) continue;
     if (!byRoom.has(p.roomId)) byRoom.set(p.roomId, []);
-    byRoom.get(p.roomId).push(publicPlayer(p));
+    byRoom.get(p.roomId).push(p);
   }
   const snapshotNow = Date.now();
-  for (const [roomId, list] of byRoom.entries()) {
+  for (const [roomId, roomPlayers] of byRoom.entries()) {
     const room = rooms.get(roomId);
     if (!room) continue;
     // v7.74.55: the full player snapshot is no longer the movement stream.
     // playerState carries motion immediately; snapshot only reconciles room
     // membership/status. Throttling it removes small CPU/GC spikes on mobile and
     // prevents a second stream from fighting remote-player smoothing.
-    if (snapshotNow - Number(room.lastPlayerSnapshotAt || 0) < 250) continue;
+    if (snapshotNow - Number(room.lastPlayerSnapshotAt || 0) < 1000) continue;
     room.lastPlayerSnapshotAt = snapshotNow;
-    io.to(roomId).emit('snapshot', { roomId, locationId: room?.locationId || '', t: snapshotNow, players: list });
+    const list = roomPlayers.map(publicPlayer);
+    io.to(roomId).volatile.emit('snapshot', { roomId, locationId: room?.locationId || '', t: snapshotNow, players: list });
   }
 }, 1000 / TICK_RATE);
 

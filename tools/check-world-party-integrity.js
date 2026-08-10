@@ -1151,8 +1151,8 @@ function assertServerWorldTransferFaultRecovery() {
         refreshCalls++;
       },
       publicPlayer: p => ({ id: p.id, roomId: p.roomId }),
-      publicWorldState: room => room.worldState,
-      emitEnemySnapshot() {},
+      currentRoomWorldState: room => room.worldState,
+      emitEnemyBaselineForSocket() {},
       emitGroundItemsSnapshot() {},
       emitWorldContainersSnapshot() {}
     }

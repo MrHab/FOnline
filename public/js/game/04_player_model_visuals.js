@@ -30,6 +30,31 @@
   player.x = startSpawn.x;
   player.z = startSpawn.z;
 
+  // Skinned character meshes are far too expensive to raycast recursively in
+  // a crowd. Every actor gets one shared low-poly collider used only by input;
+  // its material is never submitted to the renderer.
+  const actorInteractionProxyGeometry = new THREE.CylinderGeometry(1, 1, 1, 8, 1, false);
+  const actorInteractionProxyMaterial = new THREE.MeshBasicMaterial({ visible: false });
+
+  function attachActorInteractionProxy(actor, options = {}) {
+    if (!actor?.add) return null;
+    const existing = actor.userData?.interactionProxy;
+    if (existing) return existing;
+    const radius = Math.max(0.38, Number(options.radius || 0.68));
+    const height = Math.max(0.75, Number(options.height || 2.1));
+    const proxy = new THREE.Mesh(actorInteractionProxyGeometry, actorInteractionProxyMaterial);
+    proxy.name = 'actor-interaction-proxy';
+    proxy.position.y = height * 0.5;
+    proxy.scale.set(radius, height, radius);
+    proxy.castShadow = false;
+    proxy.receiveShadow = false;
+    proxy.userData.actorInteractionProxy = true;
+    proxy.userData.forceNoShadow = true;
+    actor.add(proxy);
+    actor.userData.interactionProxy = proxy;
+    return proxy;
+  }
+
 
   const TALENTS = [
     { id: 'gunslinger', icon: '🎯', name: 'Меткий стрелок', group: 'Боевые', max: 3, req: { level: 3, per: 6, skill: { lightWeapons: 40 } }, desc: '+7 п.п. к шансу попадания одиночным и прицельным выстрелом за каждый ранг.' },

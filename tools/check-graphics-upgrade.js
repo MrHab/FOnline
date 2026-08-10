@@ -23,7 +23,13 @@ const functionSource = (source, name) => {
 };
 
 const renderer = read('public/js/game/02_renderer_world_map.js');
+const lighting = read('public/js/game/02b_lighting_time.js');
 const materials = read('public/js/game/02a_materials_static_models.js');
+const characterRuntime = read('public/js/game/04b_character_glb_runtime.js');
+const remoteLocomotion = read('public/js/game/05b_remote_player_locomotion.js');
+const enemyFlow = read('public/js/game/05f_enemy_models_location_flow.js');
+const weaponRuntime = read('public/js/game/04c_weapon_glb_runtime.js');
+const approvedHumanoidRuntime = read('public/js/game/04d_approved_humanoid_assets_runtime.js');
 const globalMap = read('public/js/game/11b_global_map_static_scene_camera.js');
 const hudLoop = read('public/js/game/13_minimap_hud_loop.js');
 const modelBuilder = read('tools/build-wasteland-models.js');
@@ -63,6 +69,21 @@ if (!/shadows:\s*true/.test(ultraBlock)) fail('Ultra preset must enable real sha
 if (!/mobileShadows:\s*false/.test(highBlock) || !/mobileShadows:\s*false/.test(ultraBlock)) {
   fail('mobile presets must retain the scalable contact-shadow path');
 }
+requireText(lighting, 'function actorShadowCasterAllowlist', 'crowded actor shadow-caster budget is missing');
+requireText(lighting, 'actorRosterSize > actorShadowCasterLimit()', 'crowded shadow budget does not refresh as actors change');
+requireText(lighting, 'fpsValue < 30) fps *= 0.30', 'overloaded desktop shadow refresh is not capped');
+requireText(lighting, 'fpsValue < 30) limit = Math.min(limit, 1)', 'overloaded actor shadow-caster budget is not capped');
+requireText(lighting, 'remote?.id || remote?.data?.id', 'remote-player shadow ownership ignores the real row shape');
+requireText(characterRuntime, 'function enableConservativeCharacterFrustumCulling', 'conservative character frustum culling is missing');
+requireText(characterRuntime, 'geometry.userData.realmCharacterCullBaseRadius', 'shared character bounds can grow on every instance');
+requireText(characterRuntime, 'enableConservativeCharacterFrustumCulling(obj, 1.2)', 'hair and face variants bypass actor frustum culling');
+requireText(characterRuntime, 'state.footIk !== false', 'distant character foot IK cannot be suspended');
+requireText(characterRuntime, 'setCharacterFootIkEnabled(runtime, footIkEnabled)', 'foot IK suspension does not reset stale locks');
+requireText(enemyFlow, 'footIk: heavyImportant || distanceToPlayer <= 6', 'distant enemy foot IK is not budgeted');
+requireText(remoteLocomotion, 'footIk: important || distance <= 6', 'distant remote-player foot IK is not budgeted');
+requireText(weaponRuntime, 'enableConservativeCharacterFrustumCulling(part, 2.4)', 'runtime weapons bypass actor frustum culling');
+requireText(approvedHumanoidRuntime, 'enableConservativeCharacterFrustumCulling(mesh, 2.4)', 'approved equipment bypasses actor frustum culling');
+requireText(approvedHumanoidRuntime, 'mesh.userData.enemy = characterRoot.userData.enemy', 'approved equipment is missing enemy shadow ownership');
 
 requireText(materials, 'wasteland_ground_albedo_v777.webp', 'new wasteland albedo is not integrated');
 requireText(materials, "normalMap: useReliefPbrMaps", 'wasteland ground must retain a normal map');

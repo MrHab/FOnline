@@ -85,6 +85,10 @@
     lastFocusZ: Infinity,
     lastCasterBudgetX: Infinity,
     lastCasterBudgetZ: Infinity,
+    lastActorBudgetX: Infinity,
+    lastActorBudgetZ: Infinity,
+    lastActorRosterSize: -1,
+    actorRebudgetElapsed: 999,
     lastSunAzimuth: Infinity,
     lastSunHeight: Infinity,
     lastDynamicX: Infinity,
@@ -137,8 +141,11 @@
       else if (fpsValue > 0 && fpsValue < 42) fps *= 0.75;
       return Math.max(1.5, Math.min(8, fps));
     }
-    if (fpsValue > 0 && fpsValue < 26) fps *= 0.50;
-    else if (fpsValue > 0 && fpsValue < 38) fps *= 0.70;
+    // A 2048px directional shadow pass is one of the largest daytime GPU
+    // costs in a crowded room. Keep the feature, but spend fewer full-map
+    // updates while the renderer is already below the smooth-FPS band.
+    if (fpsValue > 0 && fpsValue < 30) fps *= 0.30;
+    else if (fpsValue > 0 && fpsValue < 42) fps *= 0.45;
     else if (fpsValue > 0 && fpsValue > 72 && preset.id !== 'low') fps *= 1.12;
     return Math.max(2.5, Math.min(30, fps));
   }
@@ -174,7 +181,102 @@
     requestAdaptiveShadowUpdate('focus');
   }
 
-  function shadowCasterAllowedByBudget(obj) {
+  function shadowActorKey(obj) {
+    let node = obj;
+    for (let depth = 0; node && depth < 12; depth += 1, node = node.parent) {
+      const enemy = node.userData?.enemy;
+      if (enemy?.id) return `enemy:${String(enemy.id)}`;
+      const remote = node.userData?.remotePlayerRow;
+      const remoteId = remote?.id || remote?.data?.id;
+      if (remoteId) return `remote:${String(remoteId)}`;
+    }
+    return '';
+  }
+
+  function shadowActorRoster() {
+    const rows = [];
+    try {
+      if (Array.isArray(enemies)) {
+        enemies.forEach(enemy => {
+          if (!enemy?.id || enemy.dead || !enemy.mesh) return;
+          rows.push({
+            key: `enemy:${String(enemy.id)}`,
+            id: String(enemy.id),
+            x: Number(enemy.x || enemy.mesh.position?.x || 0),
+            z: Number(enemy.z || enemy.mesh.position?.z || 0),
+            selected: (!!player && player.attackTarget === enemy)
+              || (typeof hoveredEnemy !== 'undefined' && hoveredEnemy === enemy)
+          });
+        });
+      }
+    } catch (_) {}
+    try {
+      const remoteRows = multiplayer?.remotePlayers;
+      if (remoteRows && typeof remoteRows.forEach === 'function') {
+        remoteRows.forEach((row, mapId) => {
+          const remoteId = row?.id || row?.data?.id || mapId;
+          if (!remoteId || !row?.group) return;
+          rows.push({
+            key: `remote:${String(remoteId)}`,
+            id: String(remoteId),
+            x: Number(row.x || row.group.position?.x || 0),
+            z: Number(row.z || row.group.position?.z || 0),
+            selected: false
+          });
+        });
+      }
+    } catch (_) {}
+    return rows;
+  }
+
+  function shadowActorRosterSize() {
+    let count = 0;
+    try {
+      if (Array.isArray(enemies)) {
+        for (const enemy of enemies) if (enemy?.id && !enemy.dead && enemy.mesh) count += 1;
+      }
+    } catch (_) {}
+    try {
+      const remoteRows = multiplayer?.remotePlayers;
+      if (remoteRows && typeof remoteRows.forEach === 'function') {
+        remoteRows.forEach((row, mapId) => {
+          if ((row?.id || row?.data?.id || mapId) && row?.group) count += 1;
+        });
+      }
+    } catch (_) {}
+    return count;
+  }
+
+  function actorShadowCasterLimit() {
+    const preset = graphicsSettings || GRAPHICS_PRESETS.medium;
+    let limit = preset.id === 'ultra' ? 8 : (preset.id === 'high' ? 4 : (preset.id === 'medium' ? 2 : 1));
+    if (IS_MOBILE_DEVICE) limit = Math.min(limit, 2);
+    // The local player keeps its own caster path and selected actors are added
+    // separately, so this only sheds distant actor casters under real pressure.
+    if (fpsValue > 0 && fpsValue < 30) limit = Math.min(limit, 1);
+    else if (fpsValue > 0 && fpsValue < 42) limit = Math.min(limit, 2);
+    return Math.max(1, limit);
+  }
+
+  function actorShadowCasterAllowlist(rows = shadowActorRoster()) {
+    const allow = new Set();
+    if (!rows.length) return allow;
+    const p = getAdaptiveShadowPlayerRef();
+    const px = Number(p?.x || 0);
+    const pz = Number(p?.z || 0);
+    rows.forEach(row => {
+      const dx = Number(row.x || 0) - px;
+      const dz = Number(row.z || 0) - pz;
+      row.distance2 = dx * dx + dz * dz;
+      if (row.selected) allow.add(row.key);
+    });
+    rows.sort((a, b) => (a.distance2 - b.distance2) || a.id.localeCompare(b.id));
+    const limit = actorShadowCasterLimit();
+    for (let i = 0; i < Math.min(limit, rows.length); i++) allow.add(rows[i].key);
+    return allow;
+  }
+
+  function shadowCasterAllowedByBudget(obj, actorAllowlist = null) {
     const preset = graphicsSettings || GRAPHICS_PRESETS.medium;
     const mode = String(preset.shadowCasterMode || 'high');
     if (!obj || !obj.isMesh) return false;
@@ -183,6 +285,9 @@
     if (kind.includes('fog') || kind.includes('visibility') || kind.includes('ground-layer') || kind.includes('floor-detail')) return false;
     if (kind.includes('glow') || kind.includes('light') || kind.includes('lamp-bulb') || kind.includes('point-light')) return false;
     if (kind.includes('muzzle') || kind.includes('projectile') || kind.includes('bullet') || kind.includes('tracer') || kind.includes('label')) return false;
+
+    const actorKey = shadowActorKey(obj);
+    if (actorKey && actorAllowlist instanceof Set && !actorAllowlist.has(actorKey)) return false;
 
     const focus = shadowFocusWorldPoint();
     const radius = Math.max(10, Number(preset.shadowCasterRadius || preset.shadowCameraSpan || 40));
@@ -208,6 +313,8 @@
     const preset = graphicsSettings || GRAPHICS_PRESETS.medium;
     const mobileShadowAllowed = !IS_MOBILE_DEVICE || preset.mobileShadows !== false;
     const enabled = !REAL_SHADOWS_TEMP_DISABLED && !!preset.shadows && sunShadowsAllowedByTime && mobileShadowAllowed;
+    const actorRows = shadowActorRoster();
+    const actorAllowlist = actorShadowCasterAllowlist(actorRows);
     scene.traverse(obj => {
       if (!obj || !obj.isMesh) return;
       if (obj.userData && obj.userData.forceNoShadow) {
@@ -215,8 +322,9 @@
         return;
       }
       if (obj.userData && obj.userData.baseCastShadow === undefined) obj.userData.baseCastShadow = !!obj.castShadow;
-      obj.castShadow = enabled && obj.userData.baseCastShadow && shadowCasterAllowedByBudget(obj);
+      obj.castShadow = enabled && obj.userData.baseCastShadow && shadowCasterAllowedByBudget(obj, actorAllowlist);
     });
+    adaptiveShadowBudget.lastActorRosterSize = actorRows.length;
   }
 
   function updateAdaptiveShadowBudget(dt = 0, force = false) {
@@ -239,14 +347,26 @@
     sun.castShadow = true;
 
     adaptiveShadowBudget.elapsed += Math.max(0, Number(dt || 0));
+    adaptiveShadowBudget.actorRebudgetElapsed += Math.max(0, Number(dt || 0));
     focusSunShadowCamera(force);
 
     const focus = shadowFocusWorldPoint();
     const rebudgetDistance = Math.max(1.5, Number(preset.shadowCasterRebudgetDistance || 3.5));
-    if (force || Math.hypot(focus.x - adaptiveShadowBudget.lastCasterBudgetX, focus.z - adaptiveShadowBudget.lastCasterBudgetZ) > rebudgetDistance) {
+    const actorOrigin = getAdaptiveShadowPlayerRef();
+    const actorX = Number(actorOrigin?.x || 0);
+    const actorZ = Number(actorOrigin?.z || 0);
+    const actorRosterSize = shadowActorRosterSize();
+    const staticBudgetMoved = Math.hypot(focus.x - adaptiveShadowBudget.lastCasterBudgetX, focus.z - adaptiveShadowBudget.lastCasterBudgetZ) > rebudgetDistance;
+    const actorBudgetMoved = Math.hypot(actorX - adaptiveShadowBudget.lastActorBudgetX, actorZ - adaptiveShadowBudget.lastActorBudgetZ) > rebudgetDistance;
+    const actorRosterChanged = actorRosterSize !== adaptiveShadowBudget.lastActorRosterSize;
+    const crowdedActorRefresh = actorRosterSize > actorShadowCasterLimit() && adaptiveShadowBudget.actorRebudgetElapsed >= 1.25;
+    if (force || staticBudgetMoved || actorBudgetMoved || actorRosterChanged || crowdedActorRefresh) {
       applyShadowCasterBudget();
       adaptiveShadowBudget.lastCasterBudgetX = focus.x;
       adaptiveShadowBudget.lastCasterBudgetZ = focus.z;
+      adaptiveShadowBudget.lastActorBudgetX = actorX;
+      adaptiveShadowBudget.lastActorBudgetZ = actorZ;
+      adaptiveShadowBudget.actorRebudgetElapsed = 0;
       requestAdaptiveShadowUpdate('caster-budget');
     }
 
@@ -548,4 +668,3 @@
   }
 
   applyDayNightLighting(true);
-

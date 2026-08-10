@@ -379,6 +379,7 @@
   // ===== ENEMIES =====
   const enemies = [];
   const enemyMeshes = [];
+  const networkEnemyById = new Map();
   const ENEMY_TYPES = [
     { name: 'Рейдер', hp: 55, atk: 9, speed: 2.45, xp: 25, scale: 1.0, visual: 'raider' },
     { name: 'Гуль', hp: 42, atk: 7, speed: 2.85, xp: 18, scale: 0.92, visual: 'ghoul' },
@@ -667,7 +668,10 @@
     const packetSpeed = Math.hypot(packetVx, packetVz);
     let vx = packetVx;
     let vz = packetVz;
-    if (!saved.moving && packetSpeed <= 0.02) {
+    const movingFlag = Object.prototype.hasOwnProperty.call(saved, 'moving')
+      ? !!saved.moving
+      : !!(Math.floor(Number(saved.flags || 0)) & 1);
+    if (!movingFlag && packetSpeed <= 0.02) {
       vx = 0;
       vz = 0;
     } else if (packetSpeed <= 0.02) {
@@ -675,7 +679,7 @@
       vz = (sz - previousTargetZ) / elapsed;
     }
     const clamped = clampEnemyVisualVelocity(vx, vz, maxSpeed);
-    const moving = !!saved.moving && clamped.speed > 0.04;
+    const moving = movingFlag && clamped.speed > 0.04;
     enemy.netVx = moving ? clamped.vx : 0;
     enemy.netVz = moving ? clamped.vz : 0;
     enemy.enemyVisualSpeed = moving ? clamped.speed : 0;
@@ -782,6 +786,7 @@
     mesh.traverse(child => { if (child.isMesh) child.userData.enemy = enemy; });
     updateEnemyEquipmentVisuals(enemy);
     enemies.push(enemy);
+    networkEnemyById.set(String(enemy.id || ''), enemy);
     enemyMeshes.push(mesh);
     if (enemy.dead) makeCorpse(enemy);
     applyNetworkFogVisibilityNow(mesh, enemy.x, enemy.z);
@@ -794,10 +799,87 @@
     if (hoveredEnemy === enemy) { hoveredEnemy = null; hideTargetHint(); }
     const idx = enemies.indexOf(enemy);
     if (idx >= 0) enemies.splice(idx, 1);
+    if (enemy.id && networkEnemyById.get(String(enemy.id)) === enemy) networkEnemyById.delete(String(enemy.id));
     const midx = enemyMeshes.indexOf(enemy.mesh);
     if (midx >= 0) enemyMeshes.splice(midx, 1);
     forgetNetworkRevealObject(enemy.mesh);
     if (enemy.mesh) scene.remove(enemy.mesh);
+  }
+
+  function rebuildNetworkEnemyIndex() {
+    networkEnemyById.clear();
+    for (const enemy of enemies) {
+      if (!enemy?.id) continue;
+      networkEnemyById.set(String(enemy.id), enemy);
+    }
+    return networkEnemyById;
+  }
+
+  function networkEnemyScheduleLabel(state = '') {
+    const labels = {
+      work: 'работает',
+      rest: 'отдыхает',
+      social: 'общается',
+      sleep: 'спит',
+      combat: 'тревога',
+      dialogue: 'разговор'
+    };
+    return labels[String(state || '').toLowerCase()] || '';
+  }
+
+  // Merge only absolute realtime fields from enemyFrame. Unknown ids are
+  // intentionally ignored: reliable enemySnapshot owns structural creation and
+  // removal as well as equipment, inventory, trader, loot and fog reconciliation.
+  function applyNetworkEnemyFrame(enemyFrames) {
+    if (!Array.isArray(enemyFrames)) return 0;
+    const enemyIndex = rebuildNetworkEnemyIndex();
+    let applied = 0;
+    for (const saved of enemyFrames) {
+      if (!saved?.id) continue;
+      const enemy = enemyIndex.get(String(saved.id));
+      if (!enemy) continue;
+      const flags = Math.max(0, Math.floor(Number(saved.flags || 0)));
+      const wasDead = !!enemy.dead;
+      const incomingDead = !!(flags & 2);
+
+      enemy.hp = Math.max(0, Number(saved.hp ?? enemy.hp ?? 0));
+      enemy.aiState = String(saved.aiState || (incomingDead ? 'dead' : 'idle'));
+      enemy.hostileToPlayer = !!(flags & 8);
+      enemy._looted = !!(flags & 4);
+      enemy.lookX = (flags & 16) && Number.isFinite(Number(saved.lookX)) ? Number(saved.lookX) : null;
+      enemy.lookZ = (flags & 16) && Number.isFinite(Number(saved.lookZ)) ? Number(saved.lookZ) : null;
+      if (Object.prototype.hasOwnProperty.call(saved, 'scheduleState')) {
+        enemy.scheduleState = String(saved.scheduleState || '');
+        enemy.scheduleLabel = networkEnemyScheduleLabel(enemy.scheduleState);
+      }
+      if (flags & 32) applyEnemySpeechSnapshot(enemy, saved, false);
+      else if (enemy.speechText || enemy.speechId || enemy.speechUntil) applyEnemySpeechSnapshot(enemy, {}, false);
+
+      if (incomingDead) {
+        lockEnemyCorpsePosition(enemy, saved, { keepExisting: wasDead });
+      } else {
+        const sx = Number(saved.x ?? enemy.serverTargetX ?? enemy.x ?? 0);
+        const sz = Number(saved.z ?? enemy.serverTargetZ ?? enemy.z ?? 0);
+        const dx = sx - Number(enemy.visualX ?? enemy.x ?? 0);
+        const dz = sz - Number(enemy.visualZ ?? enemy.z ?? 0);
+        const snap = !enemy.mesh || Math.hypot(dx, dz) > 6.5 || wasDead !== incomingDead;
+        if (snap) resetEnemyVisualController(enemy, sx, sz, { dead: false });
+        else updateEnemyNetworkMotion(enemy, saved);
+      }
+      if (incomingDead && !enemy.dead) makeCorpse(enemy);
+      else if (!incomingDead && enemy.dead) {
+        enemy.dead = false;
+        enemy.corpseX = null;
+        enemy.corpseZ = null;
+        if (enemy.mesh) {
+          enemy.mesh.rotation.z = 0;
+          enemy.mesh.position.y = 0;
+          if (enemy.mesh.userData.hpBar) enemy.mesh.userData.hpBar.visible = true;
+        }
+      }
+      applied += 1;
+    }
+    return applied;
   }
 
   function applyNetworkEnemies(enemySnapshots, options = {}) {
@@ -806,11 +888,12 @@
     const pruneMissing = options.pruneMissing !== false;
     const preservedAutoTargetId = (typeof mobileAutoTargetId === 'function') ? mobileAutoTargetId(player.attackTarget) : '';
     const incomingIds = new Set();
+    const enemyIndex = rebuildNetworkEnemyIndex();
     enemySnapshots.forEach(saved => {
       if (!saved) return;
       const id = saved.id || '';
       incomingIds.add(id);
-      let enemy = id ? enemies.find(e => e.id === id) : null;
+      let enemy = id ? enemyIndex.get(String(id)) : null;
       if (!enemy) {
         createEnemyFromNetworkSnapshot(saved);
         return;
@@ -980,6 +1063,7 @@
     const preservedAutoTargetId = (typeof mobileAutoTargetId === 'function') ? mobileAutoTargetId(player.attackTarget) : '';
     const stamp = Number(state.updatedAt || 0);
     const fullRebuild = reason === 'serverInit' || reason === 'full' || reason === 'locationFull';
+    const authoritativeEnemyStream = multiplayer.serverAuthoritativeEnemies === true;
     if (!fullRebuild && stamp && stamp < multiplayer.lastWorldStateApplied) return;
     if (stamp) multiplayer.lastWorldStateApplied = stamp;
     syncWastelandSiteControlFromWorldState(state);
@@ -997,15 +1081,17 @@
         for (let z = 0; z < MAP_H; z++) if (Array.isArray(state.map[z])) map[z] = state.map[z].slice(0, MAP_W);
       }
       if (fullRebuild) {
-        clearEnemies();
-        if (Array.isArray(state.enemies)) state.enemies.forEach(createEnemyFromNetworkSnapshot);
+        if (!authoritativeEnemyStream) {
+          clearEnemies();
+          if (Array.isArray(state.enemies)) state.enemies.forEach(createEnemyFromNetworkSnapshot);
+        }
         applyNetworkGroundItems(state.groundItems || []);
         applyNetworkWorldContainers(state.containers || []);
         rebuildLocationAfterNetworkResources();
         refreshNetworkFogVisibilityNow();
       } else {
         applyNetworkResources(state.resources, state.map);
-        applyNetworkEnemies(state.enemies, { allowPositionSync: fullRebuild });
+        if (!authoritativeEnemyStream) applyNetworkEnemies(state.enemies, { allowPositionSync: fullRebuild });
         applyNetworkGroundItems(state.groundItems || []);
         applyNetworkWorldContainers(state.containers || []);
         refreshNetworkFogVisibilityNow();

@@ -68,7 +68,9 @@
         }
         if (ack.combat) applyServerCombatState(ack.combat);
         if (ack.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
-        if (Array.isArray(ack.enemies)) applyNetworkEnemies(ack.enemies, { allowPositionSync: true, fromServer: true });
+        if (Array.isArray(ack.enemies)) {
+          applyNetworkEnemies(ack.enemies, { allowPositionSync: true, fromServer: true, pruneMissing: false });
+        }
         (ack.enemyHits || []).forEach(hit => {
           const enemy = enemies.find(row => row && row.id === hit.enemyId);
           const x = enemy?.x ?? centerX;
@@ -136,7 +138,7 @@
               if (serverDamage > 0) createFloatingText(enemy.x, enemy.z, '-' + serverDamage, '#ff9b5a');
               addLog(`${w.icon} ${w.name}: ${enemy.name} получает ${serverDamage} взрывного урона${serverAbsorbedText}.`, null, 'combat');
             }
-            applyNetworkEnemies([ack.enemy], { allowPositionSync: true, fromServer: true });
+            applyNetworkEnemies([ack.enemy], { allowPositionSync: true, fromServer: true, pruneMissing: false });
             if (ack.combat) applyServerCombatState(ack.combat);
           }
           else if (ack && ack.error) {

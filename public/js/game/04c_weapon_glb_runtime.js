@@ -142,8 +142,14 @@
     root.userData.weaponAnimationRuntime = weaponAnimationRuntimeFor(root, template);
     root.traverse(part => {
       part.userData.weaponSharedAsset = true;
-      part.frustumCulled = false;
-      if (part.isMesh) part.castShadow = true;
+      if (part.isMesh) {
+        part.castShadow = true;
+        if (typeof enableConservativeCharacterFrustumCulling === 'function') {
+          enableConservativeCharacterFrustumCulling(part, 2.4);
+        } else {
+          part.frustumCulled = true;
+        }
+      }
     });
     return root;
   }

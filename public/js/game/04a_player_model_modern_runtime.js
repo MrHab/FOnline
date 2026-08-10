@@ -526,6 +526,50 @@
     return String(actor.userData?.weaponId || weaponGroup.userData?.weaponId || 'ranged');
   }
 
+  function updateModernApprovedWeaponGrip(actor, weaponId = '') {
+    if (typeof applyApprovedWeaponGrip === 'function') {
+      return !!applyApprovedWeaponGrip(actor, weaponId);
+    }
+    if (typeof applyApprovedAssaultRifleGrip === 'function') {
+      return !!applyApprovedAssaultRifleGrip(actor, weaponId);
+    }
+    return false;
+  }
+
+  function modernAnimationHasVisibleMesh(root) {
+    if (!root || root.visible === false) return false;
+    if (root.isMesh) return true;
+    const children = root.children || [];
+    for (let index = 0; index < children.length; index += 1) {
+      if (modernAnimationHasVisibleMesh(children[index])) return true;
+    }
+    return false;
+  }
+
+  function modernProceduralRigNeedsAnimation(parts = {}, characterRoot = null) {
+    const baseMeshes = Array.isArray(parts.proceduralCharacterBaseMeshes)
+      ? parts.proceduralCharacterBaseMeshes
+      : [];
+    if (!baseMeshes.length) return true;
+    for (let index = 0; index < baseMeshes.length; index += 1) {
+      if (baseMeshes[index] && baseMeshes[index].visible !== false) return true;
+    }
+
+    if (modernAnimationHasVisibleMesh(parts.helmet)
+      || modernAnimationHasVisibleMesh(parts.backpack)
+      || modernAnimationHasVisibleMesh(parts.backpackTop)
+      || modernAnimationHasVisibleMesh(parts.bedroll)) return true;
+    const packAccessories = Array.isArray(parts.packAccessories) ? parts.packAccessories : [];
+    for (let index = 0; index < packAccessories.length; index += 1) {
+      if (modernAnimationHasVisibleMesh(packAccessories[index])) return true;
+    }
+
+    const weaponGroup = parts.weaponGroup;
+    if (weaponGroup?.parent !== characterRoot && modernAnimationHasVisibleMesh(weaponGroup)) return true;
+    const offhandWeaponGroup = parts.offhandWeaponGroup;
+    return offhandWeaponGroup?.parent !== characterRoot && modernAnimationHasVisibleMesh(offhandWeaponGroup);
+  }
+
   function triggerCharacterReloadVisual(actor, weaponId = 'pistol', duration = 0.82) {
     if (!actor?.userData) return;
     const reloadDuration = Math.max(0.5, Number(duration || 0.82));
@@ -552,6 +596,7 @@
   }
 
   function updateCharacterLocomotionAnimation(actor, dt = 0.016, state = {}) {
+    if (!actor) return;
     const moving = !!state.moving;
     const turnInPlace = typeof characterTurnInPlaceState === 'function'
       ? characterTurnInPlaceState(actor, state.facingAngle, moving, dt)
@@ -561,14 +606,21 @@
       turning: turnInPlace.turning,
       turnAmount: turnInPlace.amount
     };
-    if (typeof updateCharacterGlbAnimation === 'function') {
-      updateCharacterGlbAnimation(actor, dt, animationState);
-    }
+    const glbUpdated = typeof updateCharacterGlbAnimation === 'function'
+      && updateCharacterGlbAnimation(actor, dt, animationState) === true;
     const parts = actorAnimationParts(actor);
-    if (!actor || !parts.modernRig || !parts.motionRoot || !parts.torsoRig) return;
+    let weaponId = '';
+    let approvedGripUpdated = false;
+    if (glbUpdated && actor.userData?.characterGlbRuntime?.root) {
+      weaponId = modernAnimationWeaponId(actor);
+      updateModernApprovedWeaponGrip(actor, weaponId);
+      approvedGripUpdated = true;
+      if (!modernProceduralRigNeedsAnimation(parts, actor.userData.characterGlbRuntime.root)) return;
+    }
+    if (!parts.modernRig || !parts.motionRoot || !parts.torsoRig) return;
     const crouching = state.crouching !== undefined ? !!state.crouching : !!actor.userData.crouching;
     const speed = Math.max(0, Number(state.speed || 0));
-    const weaponId = modernAnimationWeaponId(actor);
+    if (!weaponId) weaponId = modernAnimationWeaponId(actor);
     const usesRangedStance = !['fists', 'knife', 'pickaxe', 'axe', 'handPump'].includes(weaponId);
     const now = performance.now();
     const directional = typeof characterDirectionalLocomotionState === 'function'
@@ -722,9 +774,5 @@
         };
       }
     }
-    if (typeof applyApprovedWeaponGrip === 'function') {
-      applyApprovedWeaponGrip(actor, weaponId);
-    } else if (typeof applyApprovedAssaultRifleGrip === 'function') {
-      applyApprovedAssaultRifleGrip(actor, weaponId);
-    }
+    if (!approvedGripUpdated) updateModernApprovedWeaponGrip(actor, weaponId);
   }

@@ -8,8 +8,14 @@
     return showWorldContextMenu(e.clientX, e.clientY, target.title, buildWorldContextOptions(target), target);
   }
 
-  canvas.addEventListener('pointermove', e => {
-    if (!gameStarted || paused) return;
+  let pointerHoverFrame = 0;
+  let pendingPointerHover = null;
+
+  function updatePointerHoverFromScreen() {
+    pointerHoverFrame = 0;
+    const e = pendingPointerHover;
+    pendingPointerHover = null;
+    if (!e || !gameStarted || paused) return;
     if (isProgressionWindowOpen() || anyWindowOpen()) {
       hideTargetHint();
       if (typeof hideWorldContainerTooltip === 'function') hideWorldContainerTooltip();
@@ -21,7 +27,7 @@
       return;
     }
     updatePointerWorld(e.clientX, e.clientY);
-    const enemy = findEnemyFromEvent(e.clientX, e.clientY);
+    const enemy = findEnemyFromEvent(e.clientX, e.clientY, true);
     hoveredEnemy = enemy;
     if (enemy) {
       if (typeof hideWorldContainerTooltip === 'function') hideWorldContainerTooltip();
@@ -32,6 +38,16 @@
     const worldContainer = findWorldContainerFromEvent(e.clientX, e.clientY);
     if (worldContainer && typeof showWorldContainerTooltip === 'function') showWorldContainerTooltip(e, worldContainer);
     else if (typeof hideWorldContainerTooltip === 'function') hideWorldContainerTooltip();
+  }
+
+  canvas.addEventListener('pointermove', e => {
+    if (!gameStarted || paused) return;
+    pendingPointerHover = {
+      clientX: Number(e.clientX || 0),
+      clientY: Number(e.clientY || 0),
+      pointerType: String(e.pointerType || '')
+    };
+    if (!pointerHoverFrame) pointerHoverFrame = requestAnimationFrame(updatePointerHoverFromScreen);
   });
 
   function isAutoFireModeActive() {
@@ -77,7 +93,7 @@
       return;
     }
     updatePointerWorld(e.clientX, e.clientY);
-    const enemy = findEnemyFromEvent(e.clientX, e.clientY);
+    const enemy = findEnemyFromEvent(e.clientX, e.clientY, true);
     if (enemy && enemy.dead) {
       stopAutoFire();
       openLootWindow(enemy);
@@ -294,7 +310,7 @@
 
   function updateProximityHints() {
     const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    if (now - proximityHintLastUpdateAt < 120) return;
+    if (now - proximityHintLastUpdateAt < 180) return;
     proximityHintLastUpdateAt = now;
     if (!(paused || hoveredEnemy || anyWindowOpen() || activeLootEnemy || activeWorldContainer || traderWindowOpen)) {
     const cursorTarget = interactionTargetUnderCursor();

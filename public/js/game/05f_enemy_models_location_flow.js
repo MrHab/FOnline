@@ -28,16 +28,20 @@
     ember: matStandard({ color: 0xe77d38, emissive: 0x7a250d, emissiveIntensity: 0.55, roughness: 0.62 }),
     toxic: matStandard({ color: 0x9fe36b, emissive: 0x4ba92c, emissiveIntensity: 0.55, roughness: 0.7 })
   };
-  const ENEMY_ANIMATION_LOD_NEAR_DISTANCE = 9;
+  const ENEMY_ANIMATION_LOD_NEAR_DISTANCE = 5;
+  const ENEMY_ANIMATION_LOD_CLOSE_DISTANCE = 10;
   const ENEMY_ANIMATION_LOD_MID_DISTANCE = 18;
+  const ENEMY_ANIMATION_LOD_CLOSE_INTERVAL = 1 / 30;
   const ENEMY_ANIMATION_LOD_MID_INTERVAL = 0.05;
   const ENEMY_ANIMATION_LOD_FAR_INTERVAL = 0.08;
   const ENEMY_ANIMATION_LOD_MAX_DT = 0.08;
 
   function enemyAnimationLodInterval(distance, visible = true, important = false) {
     if (!visible) return Infinity;
-    if (important || Number(distance || 0) <= ENEMY_ANIMATION_LOD_NEAR_DISTANCE) return 0;
-    return Number(distance || 0) <= ENEMY_ANIMATION_LOD_MID_DISTANCE
+    const numericDistance = Number(distance || 0);
+    if (important || numericDistance <= ENEMY_ANIMATION_LOD_NEAR_DISTANCE) return 0;
+    if (numericDistance <= ENEMY_ANIMATION_LOD_CLOSE_DISTANCE) return ENEMY_ANIMATION_LOD_CLOSE_INTERVAL;
+    return numericDistance <= ENEMY_ANIMATION_LOD_MID_DISTANCE
       ? ENEMY_ANIMATION_LOD_MID_INTERVAL
       : ENEMY_ANIMATION_LOD_FAR_INTERVAL;
   }
@@ -705,6 +709,13 @@
     }
     const ringRadius = visual === 'brahmin' ? 1.12 : (visual === 'radscorpion' ? 0.92 : (visual === 'mutantAnt' ? 0.76 : (visual === 'gecko' || visual === 'fireGecko' || visual === 'wolf' ? 0.78 : 0.82)));
     addEnemyTargetRing(group, type.scale || 1, ringRadius);
+    if (typeof attachActorInteractionProxy === 'function') {
+      const interactionHeight = visual === 'brahmin' ? 2.0 : (visual === 'radscorpion' || visual === 'mutantAnt' ? 1.15 : (visual === 'gecko' || visual === 'fireGecko' || visual === 'wolf' ? 1.25 : 2.15));
+      attachActorInteractionProxy(group, {
+        radius: Math.max(0.48, ringRadius * Number(type.scale || 1)),
+        height: interactionHeight * Number(type.scale || 1)
+      });
+    }
     addEnemyVariantAccent(group, type, visual);
     group.userData.enemyVisual = visual;
     group.traverse(m => {
@@ -879,18 +890,19 @@
         : dt;
       if (animationDt <= 0) return;
       if (mesh.userData.characterGlbRuntime) {
-        updateCharacterGlbAnimation(mesh, animationDt, { dead: true, moving: false });
+        updateCharacterGlbAnimation(mesh, animationDt, { dead: true, moving: false, footIk: false });
       } else {
         updateEnemyStaticGlbAnimation(enemy, animationDt, { dead: true });
       }
       return;
     }
     const restoreK = Math.min(1, Math.max(0, Number(dt || 0.016)) * 10);
+    const nowMs = performance.now();
     const scheduleState = String(enemy.scheduleState || enemy.aiState || '').toLowerCase();
     const sleeping = scheduleState === 'sleep';
     const inDialogue = scheduleState === 'dialogue'
       || String(enemy.aiState || '').toLowerCase() === 'dialogue'
-      || (!!String(enemy.speechText || '').trim() && Number(enemy.speechUntil || 0) > performance.now());
+      || (!!String(enemy.speechText || '').trim() && Number(enemy.speechUntil || 0) > nowMs);
     if (!sleeping) {
       mesh.rotation.z = enemyAnimLerp(Number(mesh.rotation.z || 0), 0, restoreK);
       mesh.position.y = enemyAnimLerp(Number(mesh.position.y || 0), 0, restoreK);
@@ -920,12 +932,13 @@
           active: String(enemy.aiState || '').toLowerCase() === 'attack',
           token: 0
         };
-    const heavyImportant = inDialogue
-      || attackAnimation.active
-      || String(enemy.aiState || '').toLowerCase() === 'chase'
-      || !!enemy.targetId
-      || !!enemy.factionTargetId
-      || !!mesh.userData?.meleeAnim
+    const attackWindowActive = Number(attackAnimation.token || 0) > 0
+      && Number(mesh.userData?.attackAnimationUntil || 0) > nowMs;
+    const meleeAnim = mesh.userData?.meleeAnim;
+    const meleeWindowActive = Number(meleeAnim?.startedAt || 0) > 0
+      && nowMs < Number(meleeAnim.startedAt || 0) + Math.max(0.18, Number(meleeAnim.duration || 0.32)) * 1000;
+    const heavyImportant = attackWindowActive
+      || meleeWindowActive
       || Number(enemy.flash || 0) > 0.02
       || (!!player && player.attackTarget === enemy)
       || (typeof hoveredEnemy !== 'undefined' && hoveredEnemy === enemy);
@@ -968,7 +981,8 @@
         attacking: attackAnimation.active,
         attackToken: attackAnimation.token,
         hurt: Number(enemy.flash || 0) > 0.02,
-        talking: inDialogue
+        talking: inDialogue,
+        footIk: heavyImportant || distanceToPlayer <= 6
       });
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;
@@ -984,6 +998,9 @@
       }
       if (npcWeaponGroup) {
         updateWeaponVisualAnimation(npcWeaponGroup, animationDt, enemy);
+      }
+      if (typeof updateCharacterMeleeAnimation === 'function') {
+        updateCharacterMeleeAnimation(mesh, animationDt);
       }
       const accent = mesh.userData.variantAccent;
       if (accent?.material) {

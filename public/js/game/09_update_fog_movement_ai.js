@@ -1395,11 +1395,16 @@
 
   function updateEnemies(dt) {
     if (traderNpc?.mesh?.userData?.actorParts?.unifiedHumanoidNpc) {
+      const traderTalking = !!String(traderNpc.speechText || '').trim();
+      const traderDistance = player
+        ? Math.hypot(Number(player.x || 0) - Number(traderNpc.x || 0), Number(player.z || 0) - Number(traderNpc.z || 0))
+        : Infinity;
       updateCharacterLocomotionAnimation(traderNpc.mesh, dt, {
         moving: false,
         speed: 0,
         facingAngle: Number(traderNpc.mesh.rotation.y || 0) - Math.PI,
-        talking: !!String(traderNpc.speechText || '').trim()
+        talking: traderTalking,
+        footIk: traderTalking || traderDistance <= 6
       });
       if (traderNpc.mesh.userData.enemyWeaponGroup) {
         updateWeaponVisualAnimation(traderNpc.mesh.userData.enemyWeaponGroup, dt, traderNpc);
@@ -1409,9 +1414,22 @@
       enemies.forEach(e => {
         if (!e || !e.mesh) return;
         if (!e.dead) {
-          const stepDt = Math.max(0.001, Math.min(0.05, Number(dt || 0.016)));
           const tx = Number.isFinite(Number(e.serverTargetX)) ? Number(e.serverTargetX) : Number(e.x || 0);
           const tz = Number.isFinite(Number(e.serverTargetZ)) ? Number(e.serverTargetZ) : Number(e.z || 0);
+          if (e.mesh.visible === false) {
+            // Fog-hidden actors do not need interpolation, rotation or skeletal
+            // work. Keep the authoritative anchor current so reveal has no pop.
+            e.visualX = tx;
+            e.visualZ = tz;
+            e.x = tx;
+            e.z = tz;
+            e.prevVisualX = tx;
+            e.prevVisualZ = tz;
+            e.mesh.position.set(tx, 0, tz);
+            applyEnemyFlashVisual(e, dt);
+            return;
+          }
+          const stepDt = Math.max(0.001, Math.min(0.05, Number(dt || 0.016)));
           let vx = Number(e.netVx || 0);
           let vz = Number(e.netVz || 0);
           const baseSpeed = Math.max(0.15, Number(e.enemyVisualSpeed || Math.hypot(vx, vz) || e.speed || 2.4));

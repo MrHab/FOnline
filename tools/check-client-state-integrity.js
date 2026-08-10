@@ -82,6 +82,8 @@ function assertContainsAll(label, source, snippets) {
 }
 
 const core = read('public/js/game/05_multiplayer_core_state.js');
+const actorVisuals = read('public/js/game/04_player_model_visuals.js');
+const modernActorRuntime = read('public/js/game/04a_player_model_modern_runtime.js');
 const remoteLocomotion = read('public/js/game/05b_remote_player_locomotion.js');
 const socketRoom = read('public/js/game/05c_multiplayer_socket_room.js');
 const enemyModels = read('public/js/game/05f_enemy_models_location_flow.js');
@@ -95,6 +97,7 @@ const quests = read('public/js/game/07c_trader_dialogues_quests.js');
 const loot = read('public/js/game/07e_loot_interaction.js');
 const input = read('public/js/game/08f_input_events_proximity.js');
 const interaction = read('public/js/game/08b_interaction_quick_access.js');
+const worldContextTargets = read('public/js/game/08d_world_context_targets.js');
 const mobilePanels = read('public/js/game/08a_mobile_controls_panels.js');
 const mobileControls = read('public/js/game/08c_hud_edit_windows_touch.js');
 const updateLoop = read('public/js/game/09_update_fog_movement_ai.js');
@@ -1195,8 +1198,7 @@ function assertServerAuthoritativeWorldStateRequests() {
   assertContainsAll('server world-state request contract', serverRequest, [
     "if (typeof ack !== 'function') return",
     'ensureRoomWorld(room)',
-    'refreshRoomWorldState(room)',
-    'state: room.worldState || publicWorldState(room, true)'
+    'state: currentRoomWorldState(room)'
   ]);
   assert(!serverRequest.includes('data.state'),
     'requestWorldState still ingests a client-provided world snapshot');
@@ -1354,8 +1356,8 @@ function assertEnemySnapshotFanout() {
     'publicEnemy gained a viewer-dependent field outside hostileToPlayer');
 
   const playersBySocket = new Map([
-    ['viewer-a', { hostileEnemyIds: new Set(['enemy-a']) }],
-    ['viewer-b', { hostileEnemyIds: new Set(['enemy-b']) }]
+    ['viewer-a', { hostileEnemyIds: new Set(['enemy-a']), enemyFrameVersion: 1 }],
+    ['viewer-b', { hostileEnemyIds: new Set(['enemy-b']), enemyFrameVersion: 1 }]
   ]);
   const emissions = [];
   const makeTarget = (socketId, volatile = false) => ({
@@ -1365,7 +1367,7 @@ function assertEnemySnapshotFanout() {
   const fakeIo = { to: socketId => makeTarget(socketId, false) };
   let publicEnemyCalls = 0;
   let publicEnemyRows = [];
-  const publicEnemyKeys = ['id', 'name', 'hostileToPlayer', 'inventory', 'personality', 'aiState', 'dead'];
+  let publicEnemyFrameCalls = 0;
   const makePublicEnemy = (enemy, viewer = null) => {
     publicEnemyCalls += 1;
     const row = {
@@ -1380,15 +1382,30 @@ function assertEnemySnapshotFanout() {
     publicEnemyRows.push(row);
     return row;
   };
+  const makePublicEnemyFrame = (enemy, viewer = null) => {
+    publicEnemyFrameCalls += 1;
+    return {
+      id: enemy.id,
+      x: Number(enemy.x || 0),
+      z: Number(enemy.z || 0),
+      hp: Number(enemy.hp || 1),
+      aiState: 'idle',
+      flags: viewer && viewer.hostileEnemyIds.has(enemy.id) ? 8 : 0
+    };
+  };
   const runtime = new Function(
     'players',
     'io',
     'publicEnemy',
+    'publicEnemyFrame',
     'serverActorHostileToPlayer',
     'roomNeedsHotEnemySnapshots',
+    'LEGACY_ENEMY_SNAPSHOT_INTERVAL_MS',
     'Date',
     [
       functionSource(server, 'publicEnemySnapshotForViewer'),
+      functionSource(server, 'publicEnemyFrameForViewer'),
+      functionSource(server, 'emitFullEnemySnapshotToSockets'),
       functionSource(server, 'emitEnemySnapshot'),
       'return { emitEnemySnapshot };'
     ].join('\n')
@@ -1396,8 +1413,10 @@ function assertEnemySnapshotFanout() {
     playersBySocket,
     fakeIo,
     makePublicEnemy,
+    makePublicEnemyFrame,
     (enemy, viewer) => viewer.hostileEnemyIds.has(enemy.id),
     () => true,
+    360,
     { now: () => 1000 }
   );
   const room = {
@@ -1408,54 +1427,53 @@ function assertEnemySnapshotFanout() {
       ['enemy-a', { id: 'enemy-a', name: 'A', qty: 1 }],
       ['enemy-b', { id: 'enemy-b', name: 'B', qty: 2 }]
     ]),
-    lastEnemySnapshotAt: 0
+    lastEnemySnapshotAt: 0,
+    enemyFrameSeq: 0
   };
 
   runtime.emitEnemySnapshot(room, false);
-  assert.strictEqual(publicEnemyCalls, room.enemies.size,
-    'routine enemy fanout rebuilt publicEnemy for every viewer');
+  assert.strictEqual(publicEnemyCalls, 0,
+    'routine enemy fanout still builds the heavyweight publicEnemy schema');
+  assert.strictEqual(publicEnemyFrameCalls, room.enemies.size,
+    'routine enemy fanout rebuilt its shared frame for every viewer');
   assert.strictEqual(emissions.length, room.sockets.size,
-    'routine enemy snapshot did not preserve one payload per viewer');
-  assert(emissions.every(row => row.event === 'enemySnapshot' && row.volatile === true),
-    'routine interchangeable enemy snapshots must use volatile transport');
+    'routine enemy frame did not preserve one payload per viewer');
+  assert(emissions.every(row => row.event === 'enemyFrame' && row.volatile === true),
+    'routine enemy frames must use volatile transport');
   const viewerA = emissions.find(row => row.socketId === 'viewer-a')?.payload;
   const viewerB = emissions.find(row => row.socketId === 'viewer-b')?.payload;
-  assert.deepStrictEqual(Object.keys(viewerA || {}), ['roomId', 'locationId', 't', 'enemies'],
-    'enemy snapshot outer payload field order changed');
+  assert.deepStrictEqual(Object.keys(viewerA || {}), ['roomId', 'locationId', 't', 'seq', 'enemies'],
+    'enemy frame outer payload shape changed');
+  assert.strictEqual(viewerA.seq, 1, 'first enemy frame sequence is not monotonic from one');
   assert.deepStrictEqual(viewerA.enemies.map(row => row.id), ['enemy-a', 'enemy-b'],
-    'enemy snapshot order no longer follows the room enemy map');
-  assert.deepStrictEqual(viewerA.enemies.map(row => row.hostileToPlayer), [true, false],
+    'enemy frame order no longer follows the room enemy map');
+  assert.deepStrictEqual(viewerA.enemies.map(row => !!(row.flags & 8)), [true, false],
     'viewer A did not receive its own hostility overlay');
-  assert.deepStrictEqual(viewerB.enemies.map(row => row.hostileToPlayer), [false, true],
+  assert.deepStrictEqual(viewerB.enemies.map(row => !!(row.flags & 8)), [false, true],
     'viewer B did not receive its own hostility overlay');
   for (let index = 0; index < viewerA.enemies.length; index += 1) {
     const left = viewerA.enemies[index];
     const right = viewerB.enemies[index];
     assert.notStrictEqual(left, right,
-      'two viewers received the same mutable top-level enemy object');
-    assert.deepStrictEqual(Object.keys(left), publicEnemyKeys,
-      'viewer hostility overlay changed publicEnemy field order or shape');
+      'two viewers received the same mutable top-level enemy frame');
     assert.deepStrictEqual(
-      { ...left, hostileToPlayer: false },
-      { ...right, hostileToPlayer: false },
-      'viewer enemy snapshots differ outside hostileToPlayer'
+      { ...left, flags: left.flags & ~8 },
+      { ...right, flags: right.flags & ~8 },
+      'viewer enemy frames differ outside the hostility flag'
     );
-    assert.strictEqual(left.inventory, right.inventory,
-      'shared publicEnemy inventory was copied again for every viewer');
-    assert.strictEqual(left.personality, right.personality,
-      'shared publicEnemy personality was copied again for every viewer');
-    assert.strictEqual(left.personality.traits, right.personality.traits,
-      'shared publicEnemy traits were copied again for every viewer');
   }
-  viewerA.enemies[0].name = 'viewer-only mutation';
-  assert.strictEqual(viewerB.enemies[0].name, 'A',
-    'one viewer top-level overlay mutation leaked into another viewer payload');
+  viewerA.enemies[0].hp = 0;
+  assert.strictEqual(viewerB.enemies[0].hp, 1,
+    'one viewer frame mutation leaked into another viewer payload');
 
   emissions.length = 0;
   publicEnemyCalls = 0;
+  publicEnemyFrameCalls = 0;
   runtime.emitEnemySnapshot(room, false);
   assert.strictEqual(publicEnemyCalls, 0,
     'enemy snapshot interval gate no longer prevents redundant reconstruction');
+  assert.strictEqual(publicEnemyFrameCalls, 0,
+    'enemy frame interval gate no longer prevents redundant reconstruction');
   assert.strictEqual(emissions.length, 0,
     'enemy snapshot interval gate no longer preserves the existing frequency');
 
@@ -1464,8 +1482,10 @@ function assertEnemySnapshotFanout() {
     'forced enemy fanout rebuilt publicEnemy more than once per enemy');
   assert.strictEqual(emissions.length, room.sockets.size,
     'forced enemy snapshot did not preserve one payload per viewer');
-  assert(emissions.every(row => row.volatile === false),
+  assert(emissions.every(row => row.event === 'enemySnapshot' && row.volatile === false),
     'forced enemy snapshots must remain reliable');
+  assert.deepStrictEqual(Object.keys(emissions[0].payload), ['roomId', 'locationId', 't', 'enemies'],
+    'forced enemySnapshot schema gained frame-only fields');
 
   room.sockets = new Set(['viewer-a']);
   emissions.length = 0;
@@ -1480,6 +1500,366 @@ function assertEnemySnapshotFanout() {
     'a single-viewer room still pays for a fan-out copy or recursive freeze');
   assert.deepStrictEqual(emissions[0].payload.enemies.map(row => row.hostileToPlayer), [true, false],
     'the direct single-viewer path lost viewer-specific hostility');
+
+  playersBySocket.get('viewer-a').enemyFrameVersion = 0;
+  room.lastEnemySnapshotAt = 0;
+  emissions.length = 0;
+  publicEnemyCalls = 0;
+  runtime.emitEnemySnapshot(room, false);
+  assert.strictEqual(publicEnemyCalls, room.enemies.size,
+    'legacy enemy fallback did not build one shared full row per enemy');
+  assert.strictEqual(emissions.length, 1,
+    'legacy enemy fallback did not target the incompatible viewer exactly once');
+  assert.strictEqual(emissions[0].event, 'enemySnapshot');
+  assert.strictEqual(emissions[0].volatile, false,
+    'legacy enemy fallback must stay reliable for an already-open old tab');
+}
+
+function assertEnemyFrameBudgetAndSparseMerge() {
+  const worldStateApply = functionBody(worldSync, 'applyNetworkWorldState');
+  assertContainsAll('authoritative enemy stream isolation from worldState', worldStateApply, [
+    'const authoritativeEnemyStream = multiplayer.serverAuthoritativeEnemies === true',
+    'if (!authoritativeEnemyStream)',
+    'if (!authoritativeEnemyStream) applyNetworkEnemies(state.enemies'
+  ]);
+  const frameRuntime = new Function(
+    'serverActorHostileToPlayer',
+    'actorHostilityKeys',
+    'Date',
+    [
+      functionSource(server, 'publicEnemyFrame'),
+      'return { publicEnemyFrame };'
+    ].join('\n')
+  )(
+    () => true,
+    () => new Set(),
+    { now: () => 5000 }
+  );
+  const frameRows = Array.from({ length: 100 }, (_, index) => frameRuntime.publicEnemyFrame({
+    id: `onsite_guard_${String(index).padStart(3, '0')}`,
+    x: 12.345 + index * 0.01,
+    z: -23.456 - index * 0.01,
+    vx: 1,
+    vz: -0.5,
+    speed: 2.45,
+    hp: 100,
+    aiState: 'investigate',
+    hostileToPlayer: true,
+    lookX: null,
+    lookZ: null,
+    npcScheduleState: 'work',
+    npcSpeechUntil: 0
+  }, null, 5000));
+  const encodedBytes = Buffer.byteLength(JSON.stringify({
+    roomId: 'settlement#crowded-scene',
+    locationId: 'settlement',
+    t: 5000,
+    seq: 77,
+    enemies: frameRows
+  }), 'utf8');
+  assert(encodedBytes <= 15 * 1024,
+    `100-NPC enemyFrame exceeded 15 KiB: ${encodedBytes} bytes`);
+  const allowedFrameFields = new Set([
+    'id', 'x', 'z', 'hp', 'aiState', 'flags', 'vx', 'vz',
+    'lookX', 'lookZ', 'scheduleState', 'speechText', 'speechId', 'speechMs'
+  ]);
+  for (const row of frameRows) {
+    assertContainsAll('enemyFrame absolute row', JSON.stringify(row), ['"id"', '"x"', '"z"', '"hp"', '"aiState"', '"flags"']);
+    const unexpected = Object.keys(row).filter(key => !allowedFrameFields.has(key));
+    assert.deepStrictEqual(unexpected, [], `enemyFrame leaked static fields: ${unexpected.join(', ')}`);
+  }
+
+  const sparseBody = functionBody(worldSync, 'applyNetworkEnemyFrame');
+  assertContainsAll('sparse enemy frame merger', sparseBody, [
+    'rebuildNetworkEnemyIndex()',
+    'enemyIndex.get(String(saved.id))',
+    'enemy.hostileToPlayer = !!(flags & 8)',
+    'updateEnemyNetworkMotion(enemy, saved)'
+  ]);
+  const forbiddenSparseWork = [
+    'enemies.find(',
+    'createEnemyFromNetworkSnapshot',
+    'enemyEquipmentFromData',
+    'updateEnemyEquipmentVisuals',
+    'normalizeNpcInventoryWithLegacyCaps',
+    'traderStock',
+    'traderMarket',
+    'applyNetworkFogVisibilityNow',
+    'refreshNetworkFogVisibilityNow'
+  ];
+  const leakedSparseWork = forbiddenSparseWork.filter(snippet => sparseBody.includes(snippet));
+  assert.deepStrictEqual(leakedSparseWork, [],
+    `sparse enemy merger regained heavyweight work: ${leakedSparseWork.join(', ')}`);
+
+  const equipment = { weapon: 'rifle' };
+  const inventory = [{ id: 'water', qty: 2 }];
+  const traderMarket = { state: 'scarce' };
+  const mesh = {
+    rotation: { z: 0 },
+    position: { y: 0 },
+    userData: { hpBar: { visible: true } }
+  };
+  const enemy = {
+    id: 'enemy-a',
+    x: 0,
+    z: 0,
+    visualX: 0,
+    visualZ: 0,
+    serverTargetX: 0,
+    serverTargetZ: 0,
+    hp: 50,
+    dead: false,
+    speed: 2.4,
+    hostileToPlayer: false,
+    equipment,
+    inventory,
+    traderMarket,
+    speechText: '',
+    speechId: '',
+    speechUntil: 0,
+    mesh
+  };
+  const untouched = { id: 'enemy-b', hp: 99, dead: false };
+  const runtimeEnemies = [enemy, untouched];
+  let motionCalls = 0;
+  let corpseLocks = 0;
+  let corpseCalls = 0;
+  let resetCalls = 0;
+  const sparseRuntime = new Function(
+    'enemies',
+    'applyEnemySpeechSnapshot',
+    'lockEnemyCorpsePosition',
+    'resetEnemyVisualController',
+    'updateEnemyNetworkMotion',
+    'makeCorpse',
+    [
+      'const networkEnemyById = new Map();',
+      functionSource(worldSync, 'rebuildNetworkEnemyIndex'),
+      functionSource(worldSync, 'networkEnemyScheduleLabel'),
+      functionSource(worldSync, 'applyNetworkEnemyFrame'),
+      'return { applyNetworkEnemyFrame };'
+    ].join('\n')
+  )(
+    runtimeEnemies,
+    (target, saved) => {
+      target.speechText = String(saved.speechText || '');
+      target.speechId = String(saved.speechId || '');
+      target.speechUntil = Number(saved.speechMs || 0);
+    },
+    (target, saved) => {
+      corpseLocks += 1;
+      target.x = Number(saved.x || 0);
+      target.z = Number(saved.z || 0);
+    },
+    (target, x, z) => {
+      resetCalls += 1;
+      target.x = x;
+      target.z = z;
+      target.visualX = x;
+      target.visualZ = z;
+    },
+    (target, saved) => {
+      motionCalls += 1;
+      target.serverTargetX = Number(saved.x || 0);
+      target.serverTargetZ = Number(saved.z || 0);
+    },
+    target => {
+      corpseCalls += 1;
+      target.dead = true;
+      target.hp = 0;
+    }
+  );
+  const applied = sparseRuntime.applyNetworkEnemyFrame([
+    { id: 'enemy-a', x: 1.25, z: -0.75, vx: 1, vz: 0, hp: 37, aiState: 'investigate', lookX: 3, lookZ: 4, scheduleState: 'work', flags: 1 | 8 | 16 },
+    { id: 'unknown-structural-id', x: 9, z: 9, hp: 10, aiState: 'idle', flags: 0 }
+  ]);
+  assert.strictEqual(applied, 1, 'sparse enemy frame created or counted an unknown structural id');
+  assert.strictEqual(runtimeEnemies.length, 2, 'sparse enemy frame changed enemy membership');
+  assert.strictEqual(motionCalls, 1, 'sparse enemy frame did not use the motion controller exactly once');
+  assert.strictEqual(enemy.hp, 37, 'sparse enemy frame did not apply absolute HP');
+  assert.strictEqual(enemy.hostileToPlayer, true, 'sparse enemy frame lost viewer hostility');
+  assert.deepStrictEqual([enemy.lookX, enemy.lookZ], [3, 4], 'sparse enemy frame did not apply look coordinates');
+  assert.deepStrictEqual([enemy.scheduleState, enemy.scheduleLabel], ['work', 'работает'],
+    'sparse enemy frame did not preserve NPC schedule state');
+  assert.strictEqual(untouched.hp, 99, 'sparse enemy frame mutated an omitted enemy');
+  assert.strictEqual(enemy.equipment, equipment, 'sparse enemy frame rebuilt equipment');
+  assert.strictEqual(enemy.inventory, inventory, 'sparse enemy frame rebuilt inventory');
+  assert.strictEqual(enemy.traderMarket, traderMarket, 'sparse enemy frame rebuilt trader state');
+
+  sparseRuntime.applyNetworkEnemyFrame([
+    { id: 'enemy-a', x: 1.25, z: -0.75, hp: 0, aiState: 'dead', flags: 2 | 4 | 8 }
+  ]);
+  assert.strictEqual(corpseLocks, 1, 'sparse death frame did not lock the authoritative corpse position');
+  assert.strictEqual(corpseCalls, 1, 'sparse death frame did not perform the one-time corpse transition');
+  sparseRuntime.applyNetworkEnemyFrame([
+    { id: 'enemy-a', x: 1.5, z: -0.5, hp: 20, aiState: 'idle', flags: 0 }
+  ]);
+  assert.strictEqual(resetCalls, 1, 'sparse revive frame did not reset the visual controller');
+  assert.strictEqual(enemy.dead, false, 'sparse revive frame left the enemy dead');
+  assert.strictEqual(enemy.equipment, equipment, 'death/revive sparse frames rebuilt equipment');
+}
+
+function assertEnemyFrameSequenceGuard() {
+  const multiplayerState = {
+    roomId: 'room-a',
+    lastEnemySnapshotT: 100,
+    lastEnemyFrameRoomId: '',
+    lastEnemyFrameSeq: 0,
+    lastEnemyFrameSnapshotT: 0
+  };
+  const runtime = new Function(
+    'multiplayer',
+    'networkPayloadIsForCurrentRoom',
+    [
+      functionSource(socketRoom, 'resetNetworkEnemyFrameSequence'),
+      functionSource(socketRoom, 'networkEnemyFrameIsFresh'),
+      'return { resetNetworkEnemyFrameSequence, networkEnemyFrameIsFresh };'
+    ].join('\n')
+  )(
+    multiplayerState,
+    data => data?.roomId === multiplayerState.roomId
+  );
+  runtime.resetNetworkEnemyFrameSequence({ roomId: 'room-a', t: 100 });
+  assert.strictEqual(runtime.networkEnemyFrameIsFresh({ roomId: 'room-a', t: 100, seq: 1 }), false,
+    'frame at the reliable full-snapshot baseline was accepted');
+  assert.strictEqual(runtime.networkEnemyFrameIsFresh({ roomId: 'room-a', t: 101, seq: 1 }), true,
+    'first post-snapshot enemy frame was rejected');
+  assert.strictEqual(runtime.networkEnemyFrameIsFresh({ roomId: 'room-a', t: 102, seq: 1 }), false,
+    'duplicate enemy frame sequence was accepted');
+  assert.strictEqual(runtime.networkEnemyFrameIsFresh({ roomId: 'room-a', t: 103, seq: 0 }), false,
+    'invalid zero enemy frame sequence was accepted');
+  assert.strictEqual(runtime.networkEnemyFrameIsFresh({ roomId: 'room-a', t: 102, seq: 2 }), true,
+    'newer enemy frame sequence was rejected');
+  assert.strictEqual(runtime.networkEnemyFrameIsFresh({ roomId: 'room-b', t: 104, seq: 3 }), false,
+    'enemy frame from another room was accepted');
+  multiplayerState.lastEnemySnapshotT = 200;
+  runtime.resetNetworkEnemyFrameSequence({ roomId: 'room-a', t: 200 });
+  assert.strictEqual(runtime.networkEnemyFrameIsFresh({ roomId: 'room-a', t: 201, seq: 1 }), true,
+    'reliable full snapshot did not reset the frame sequence baseline');
+
+  const fullListenerStart = socketRoom.indexOf("multiplayer.socket.on('enemySnapshot'");
+  const frameListenerStart = socketRoom.indexOf("multiplayer.socket.on('enemyFrame'", fullListenerStart);
+  const nextListenerStart = socketRoom.indexOf("multiplayer.socket.on('groundItemsSnapshot'", frameListenerStart);
+  assert(fullListenerStart >= 0 && frameListenerStart > fullListenerStart && nextListenerStart > frameListenerStart,
+    'enemySnapshot/enemyFrame listener ordering is missing');
+  assert(socketRoom.slice(fullListenerStart, frameListenerStart).includes('resetNetworkEnemyFrameSequence(data || {})'),
+    'reliable enemySnapshot no longer resets the frame baseline');
+  assertContainsAll('enemyFrame client listener', socketRoom.slice(frameListenerStart, nextListenerStart), [
+    'networkEnemyFrameIsFresh(data || {})',
+    'applyNetworkEnemyFrame(data.enemies || [])'
+  ]);
+}
+
+function assertEnemyHotPathAvoidsForcedFullSnapshots() {
+  const eventContracts = [
+    ['npcQuestAction', 'emitEnemyTradeUpdated(room, actor)'],
+    ['explosionAttack', 'enemies: enemyTargets.map(publicEnemy)'],
+    ['enemyHit', 'enemy: publicEnemy(enemy)'],
+    ['harvestResource', 'emitResourceUpdate(room, resource, socket.id, item)'],
+    ['npcTradeExchange', 'emitEnemyTradeUpdated(room, actor)'],
+    ['robEncounterActor', 'encounterFactionHostile']
+  ];
+  for (const [eventName, authoritySignal] of eventContracts) {
+    const handler = socketEventSource(server, eventName);
+    assert(!handler.includes('emitEnemySnapshot(room, true)'),
+      `${eventName} still forces a heavyweight full enemySnapshot`);
+    assert(handler.includes(authoritySignal), `${eventName} lost its authoritative ACK/event replacement`);
+  }
+  assert(socketEventSource(server, 'join').includes('emitEnemyBaselineForSocket(room, socket.id)'),
+    'join no longer sends a targeted enemy baseline with structural fallback');
+  for (const structuralEvent of ['releaseCorpseLoot', 'lootEnemy']) {
+    assert(socketEventSource(server, structuralEvent).includes('emitEnemySnapshot(room, true)'),
+      `${structuralEvent} no longer preserves reliable structural enemySnapshot reconciliation`);
+  }
+  const explosionClient = functionBody(explosions, 'applyExplosionDamage');
+  assertContainsAll('partial explosion ACK reconciliation', explosionClient, [
+    'applyNetworkEnemies(ack.enemies, { allowPositionSync: true, fromServer: true, pruneMissing: false })',
+    'applyNetworkEnemies([ack.enemy], { allowPositionSync: true, fromServer: true, pruneMissing: false })'
+  ]);
+}
+
+function assertOnsiteWorldZoneSnapshotChangeDetection() {
+  const setupBody = functionBody(server, 'setupWorldZoneBattleRoom');
+  assertContainsAll('world-zone battle change result', setupBody, [
+    'let changed = false',
+    'if (changed) {',
+    'return { ready: true, changed }'
+  ]);
+  const onsiteBody = functionBody(server, 'syncWorldOnsitePartyTransfers');
+  assert(onsiteBody.includes('if (actorSetup.changed && room.sockets?.size > 0) emitEnemySnapshot(room, true)'),
+    'onsite world sync no longer gates forced full snapshots on a real setup change');
+
+  const room = {
+    id: 'onsite-room',
+    locationId: 'settlement',
+    sockets: new Set(['viewer-a']),
+    enemies: new Map(),
+    onsiteWorldZoneIds: new Set()
+  };
+  const roomsRuntime = new Map([[room.id, room]]);
+  let setupChanged = false;
+  let forcedSnapshots = 0;
+  const runtime = new Function(
+    'WASTELAND_SIM',
+    'worldTransferId',
+    'normalizeLocationId',
+    'sanitizeEncounterRoomId',
+    'getOrCreateRoom',
+    'ensureRoomWorld',
+    'setupWorldZoneBattleRoom',
+    'serverNpcIsNaturalCreature',
+    'NPC_INVENTORY_VERSION',
+    'worldZoneActorSnapshotsFromRoom',
+    'onlinePlayerForWorldPartyMember',
+    'runServerWorldTransferOnce',
+    'WORLD_ONSITE_TRANSFERS',
+    'transferPlayerToServerRoom',
+    'rooms',
+    'refreshRoomWorldState',
+    'emitEnemySnapshot',
+    [
+      functionSource(server, 'syncWorldOnsitePartyTransfers'),
+      'return { syncWorldOnsitePartyTransfers };'
+    ].join('\n')
+  )(
+    {},
+    value => String(value || ''),
+    value => String(value || 'settlement'),
+    value => String(value || ''),
+    () => room,
+    () => {},
+    () => ({ ready: true, changed: setupChanged }),
+    () => false,
+    1,
+    () => [],
+    () => null,
+    () => false,
+    new Set(),
+    () => false,
+    roomsRuntime,
+    () => {},
+    (targetRoom, force) => {
+      if (targetRoom === room && force === true) forcedSnapshots += 1;
+    }
+  );
+  const simState = {
+    worldZones: [{
+      id: 'zone-a',
+      status: 'active',
+      locationId: 'settlement',
+      roomId: room.id,
+      partyId: 'party-a',
+      details: { onsiteParty: true, actors: [{ id: 'actor-a', inventoryVersion: 1 }] }
+    }],
+    parties: {}
+  };
+  runtime.syncWorldOnsitePartyTransfers(simState);
+  assert.strictEqual(forcedSnapshots, 0,
+    'unchanged onsite world transfer still forced a full enemySnapshot');
+  setupChanged = true;
+  runtime.syncWorldOnsitePartyTransfers(simState);
+  assert.strictEqual(forcedSnapshots, 1,
+    'real onsite actor setup change did not force structural reconciliation');
 }
 
 function assertEventDrivenMobilePanelState() {
@@ -1652,7 +2032,9 @@ function assertActorAnimationLod() {
 
   const enemyRuntime = new Function([
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_NEAR_DISTANCE'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_CLOSE_DISTANCE'),
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MID_DISTANCE'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_CLOSE_INTERVAL'),
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MID_INTERVAL'),
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_FAR_INTERVAL'),
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MAX_DT'),
@@ -1664,8 +2046,10 @@ function assertActorAnimationLod() {
     'hidden enemies must not run heavy animation work');
   assert.strictEqual(enemyRuntime.interval(40, true, true), 0,
     'important enemy animation must stay full-rate');
-  assert.strictEqual(enemyRuntime.interval(8, true, false), 0,
+  assert.strictEqual(enemyRuntime.interval(4, true, false), 0,
     'near enemy animation must stay full-rate');
+  assert.strictEqual(enemyRuntime.interval(8, true, false), 1 / 30,
+    'close enemy animation must run near 30 Hz');
   assert.strictEqual(enemyRuntime.interval(14, true, false), 0.05,
     'mid-distance enemy animation must run near 20 Hz');
   assert.strictEqual(enemyRuntime.interval(24, true, false), 0.08,
@@ -1679,6 +2063,12 @@ function assertActorAnimationLod() {
     'enemy animation catch-up exceeded or lost the bounded accumulated time');
 
   const remoteUpdate = functionBody(remoteLocomotion, 'updateRemotePlayers');
+  assertContainsAll('fog-hidden remote fast path', remoteUpdate, [
+    'if (g.visible === false)',
+    'g.position.set(netX, 0, netZ)',
+    'row.visualVelX = 0',
+    'row.visualVelZ = 0'
+  ]);
   const movementIndex = remoteUpdate.indexOf('updateRemoteVisualLocomotion(row, dt, now)');
   const lodGateIndex = remoteUpdate.indexOf('if (animationDt <= 0) return');
   const animationIndex = remoteUpdate.indexOf('updateCharacterLocomotionAnimation(g, animationDt');
@@ -1692,6 +2082,20 @@ function assertActorAnimationLod() {
   ]);
 
   const enemyUpdate = functionBody(enemyModels, 'animateEnemyVisual');
+  const heavyImportanceStart = enemyUpdate.indexOf('const heavyImportant =');
+  const heavyImportanceEnd = enemyUpdate.indexOf('let animationDt = dt;', heavyImportanceStart);
+  const heavyImportance = enemyUpdate.slice(heavyImportanceStart, heavyImportanceEnd);
+  assertContainsAll('enemy full-rate animation importance', heavyImportance, [
+    'attackWindowActive',
+    'meleeWindowActive',
+    'Number(enemy.flash || 0) > 0.02',
+    'player.attackTarget === enemy',
+    'hoveredEnemy === enemy'
+  ]);
+  assert(!heavyImportance.includes("=== 'chase'")
+    && !heavyImportance.includes('enemy.targetId')
+    && !heavyImportance.includes('enemy.factionTargetId'),
+  'ordinary chase/target state still forces full-rate enemy animation');
   const enemyLodSetupIndex = enemyUpdate.indexOf('let animationDt = dt;');
   const enemyLodGateIndex = enemyUpdate.indexOf('if (animationDt <= 0) return', enemyLodSetupIndex);
   const enemyRestoreIndex = enemyUpdate.indexOf('enemyAnimRestoreActorParts(parts, animationRestoreK)');
@@ -1703,10 +2107,124 @@ function assertActorAnimationLod() {
     'if (animationDt <= 0) return',
     'updateCharacterLocomotionAnimation(mesh, animationDt',
     'updateEnemyStaticGlbAnimation(enemy, animationDt',
-    'updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, animationDt, enemy)'
+    'updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, animationDt, enemy)',
+    'updateCharacterMeleeAnimation(mesh, animationDt)'
   ]);
   assert(/idleVisualAnimTimer[\s\S]{0,180}Number\(animationDt \|\| 0\.016\)/.test(enemyUpdate),
     'enemy fallback idle timer ignores the time accumulated by heavy animation LOD');
+
+  const updateEnemies = functionBody(updateLoop, 'updateEnemies');
+  assertContainsAll('fog-hidden enemy fast path', updateEnemies, [
+    'if (e.mesh.visible === false)',
+    'e.mesh.position.set(tx, 0, tz)',
+    'applyEnemyFlashVisual(e, dt)'
+  ]);
+
+  const proceduralRuntime = new Function([
+    functionSource(modernActorRuntime, 'modernAnimationHasVisibleMesh'),
+    functionSource(modernActorRuntime, 'modernProceduralRigNeedsAnimation'),
+    'return modernProceduralRigNeedsAnimation;'
+  ].join('\n'))();
+  const characterRoot = {};
+  const hiddenBase = { isMesh: true, visible: false };
+  assert.strictEqual(proceduralRuntime({}, characterRoot), true,
+    'actors without a captured procedural fallback were incorrectly fast-pathed');
+  assert.strictEqual(proceduralRuntime({ proceduralCharacterBaseMeshes: [hiddenBase] }, characterRoot), false,
+    'fully hidden procedural fallback still runs its locomotion rig');
+  assert.strictEqual(proceduralRuntime({
+    proceduralCharacterBaseMeshes: [hiddenBase],
+    backpack: { isMesh: true, visible: true }
+  }, characterRoot), true, 'visible fallback equipment no longer animates with the procedural rig');
+  assert.strictEqual(proceduralRuntime({
+    proceduralCharacterBaseMeshes: [hiddenBase],
+    weaponGroup: { visible: true, parent: {}, children: [{ isMesh: true, visible: true }] }
+  }, characterRoot), true, 'an unmounted visible weapon no longer keeps its procedural anchor animated');
+  assert.strictEqual(proceduralRuntime({
+    proceduralCharacterBaseMeshes: [hiddenBase],
+    weaponGroup: { visible: true, parent: characterRoot, children: [{ isMesh: true, visible: true }] }
+  }, characterRoot), false, 'a GLB-mounted approved weapon incorrectly keeps the hidden procedural rig active');
+
+  const modernUpdate = functionBody(modernActorRuntime, 'updateCharacterLocomotionAnimation');
+  const glbUpdateIndex = modernUpdate.indexOf('updateCharacterGlbAnimation(actor, dt, animationState) === true');
+  const approvedGripIndex = modernUpdate.indexOf('updateModernApprovedWeaponGrip(actor, weaponId)');
+  const hiddenRigGateIndex = modernUpdate.indexOf('if (!modernProceduralRigNeedsAnimation(parts, actor.userData.characterGlbRuntime.root)) return');
+  const proceduralAnimationIndex = modernUpdate.indexOf('const crouching =');
+  assert(glbUpdateIndex >= 0
+    && approvedGripIndex > glbUpdateIndex
+    && hiddenRigGateIndex > approvedGripIndex
+    && proceduralAnimationIndex > hiddenRigGateIndex,
+  'the successful GLB fast path no longer preserves approved grip before skipping the hidden procedural rig');
+}
+
+function assertCrowdedActorInteractionBudget() {
+  assertContainsAll('shared actor interaction proxy', actorVisuals, [
+    'const actorInteractionProxyGeometry = new THREE.CylinderGeometry(1, 1, 1, 8, 1, false)',
+    'const actorInteractionProxyMaterial = new THREE.MeshBasicMaterial({ visible: false })',
+    'function attachActorInteractionProxy(actor, options = {})'
+  ]);
+  assertContainsAll('enemy interaction proxy attachment', enemyModels, [
+    "attachActorInteractionProxy(group, {",
+    'radius: Math.max(0.48, ringRadius * Number(type.scale || 1))'
+  ]);
+  assertContainsAll('remote-player interaction proxy attachment', remoteLocomotion, [
+    "attachActorInteractionProxy(g, { radius: 0.68, height: 2.1 })"
+  ]);
+  const enemyRaycast = functionBody(worldContextTargets, 'findEnemyFromEvent');
+  assert(enemyRaycast.includes('raycaster.intersectObjects(proxies, false)'),
+    'enemy pointer targeting does not use low-poly actor proxies');
+  assert(!enemyRaycast.includes('raycaster.intersectObjects(enemyMeshes, true)'),
+    'enemy pointer targeting still recursively raycasts every skinned mesh');
+  const remoteRaycast = functionBody(worldContextTargets, 'findRemotePlayerFromEvent');
+  assert(remoteRaycast.includes('raycaster.intersectObjects(proxies, false)'),
+    'remote-player pointer targeting does not use low-poly actor proxies');
+  assert(!remoteRaycast.includes('raycaster.intersectObjects(roots, true)'),
+    'remote-player pointer targeting still recursively raycasts every skinned mesh');
+  assert(interaction.includes('const INTERACTION_TARGET_CACHE_MS = 360;'),
+    'stationary cursor target cache is too short for crowded rooms');
+  assertContainsAll('pointer hover frame budget', input, [
+    'let pointerHoverFrame = 0;',
+    'function updatePointerHoverFromScreen()',
+    'pointerHoverFrame = requestAnimationFrame(updatePointerHoverFromScreen)'
+  ]);
+  const hudLoop = read('public/js/game/13_minimap_hud_loop.js');
+  const minimapBudget = functionBody(hudLoop, 'maybeDrawHudMinimaps');
+  assertContainsAll('visible minimap draw budget', minimapBudget, [
+    'minimapCanvasIsVisible(miniCanvas)',
+    'minimapCanvasIsVisible(mobileCanvas)',
+    'minimapCanvasIsVisible(desktopCanvas)'
+  ]);
+}
+
+function assertRemotePlayerStateFastPath() {
+  const freshnessRuntime = new Function([
+    functionSource(remoteLocomotion, 'remotePlayerStateIsStale'),
+    'return remotePlayerStateIsStale;'
+  ].join('\n'))();
+  const marker = { lastPlayerStateSeq: 7, lastPlayerStateServerT: 1000 };
+  assert.strictEqual(freshnessRuntime(marker, { seq: 7 }, 1001), true,
+    'duplicate compact player state is accepted');
+  assert.strictEqual(freshnessRuntime(marker, { seq: 8 }, 999), true,
+    'older compact player timestamp is accepted');
+  assert.strictEqual(freshnessRuntime(marker, { seq: 8 }, 1000), false,
+    'higher sequence with the same server timestamp is rejected');
+  const upsertBody = functionBody(remoteLocomotion, 'upsertRemotePlayer');
+  const freshnessIndex = upsertBody.indexOf('if (remotePlayerStateIsStale(row, data, serverT)) return');
+  const motionMutationIndex = upsertBody.indexOf('row.data.id = data.id');
+  const profileMergeIndex = upsertBody.indexOf('row.data = { ...row.data, ...data }');
+  assert(freshnessIndex >= 0 && freshnessIndex < motionMutationIndex,
+    'compact player freshness is checked after mutating the remote row');
+  assert(profileMergeIndex > motionMutationIndex,
+    'compact movement packet still uses the full profile object spread');
+  const stateBranchEnd = upsertBody.indexOf('} else {\n      row.data = { ...row.data, ...data }', motionMutationIndex);
+  const stateBranch = upsertBody.slice(motionMutationIndex, stateBranchEnd);
+  for (const staticField of ['name', 'appearance', 'equipment', 'weapon', 'injuries', 'hp', 'level']) {
+    assert(!stateBranch.includes(`row.data.${staticField}`),
+      `compact movement packet mutates static field ${staticField}`);
+  }
+  assertContainsAll('cached remote visibility path', upsertBody, [
+    "typeof updateEntityRtsFogVisibility === 'function'",
+    'updateEntityRtsFogVisibility(row.group, row.group.userData.targetX, row.group.userData.targetZ, fogOptions)'
+  ]);
 }
 
 async function main() {
@@ -1725,9 +2243,15 @@ async function main() {
   assertServerAuthoritativeWorldStateRequests();
   assertServerNetworkHotPath();
   assertEnemySnapshotFanout();
+  assertEnemyFrameBudgetAndSparseMerge();
+  assertEnemyFrameSequenceGuard();
+  assertEnemyHotPathAvoidsForcedFullSnapshots();
+  assertOnsiteWorldZoneSnapshotChangeDetection();
   assertEventDrivenMobilePanelState();
   assertActorAnimationLod();
-  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, movement accuracy, compact network hot paths, per-viewer enemy fanout, actor animation LOD, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
+  assertCrowdedActorInteractionBudget();
+  assertRemotePlayerStateFastPath();
+  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, movement accuracy, compact network hot paths, sparse sequenced enemy frames, onsite-zone change detection, actor animation LOD, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
 }
 
 main().catch(error => {

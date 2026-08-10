@@ -563,6 +563,9 @@
     const remoteCastShadow = !IS_MOBILE_DEVICE;
     const parts = {};
     buildModernWastelandHumanoid(g, parts, { castShadow: remoteCastShadow, isPlayer: false });
+    if (typeof attachActorInteractionProxy === 'function') {
+      attachActorInteractionProxy(g, { radius: 0.68, height: 2.1 });
+    }
     if (typeof captureCharacterProceduralBaseMeshes === 'function') {
       captureCharacterProceduralBaseMeshes(g, parts);
     }
@@ -619,9 +622,21 @@
       : '';
   }
 
+  function remotePlayerStateIsStale(row = {}, data = {}, serverT = 0) {
+    const seq = Number(data.seq || 0);
+    const lastSeq = Number(row.lastPlayerStateSeq || 0);
+    const packetT = Number(serverT || 0);
+    const lastServerT = Number(row.lastPlayerStateServerT || 0);
+    return (Number.isFinite(seq) && seq > 0 && lastSeq > 0 && seq <= lastSeq)
+      || (Number.isFinite(packetT) && packetT > 0 && lastServerT > 0 && packetT < lastServerT);
+  }
+
   function upsertRemotePlayer(data, options = {}) {
     if (!data || !data.id) return;
     if (multiplayer.socket && data.id === multiplayer.socket.id) return;
+    const source = String(options.source || 'snapshot');
+    const nowMs = Number.isFinite(Number(options.receivedAt)) ? Number(options.receivedAt) : performance.now();
+    const serverT = Number(options.serverT ?? options.snapshotT ?? data.t ?? 0);
     if (data.dead || Number(data.hp ?? 1) <= 0) {
       removeRemotePlayerFromNetworkEvent(data);
       return;
@@ -636,7 +651,10 @@
         group: makeRemotePlayerModel(data),
         equipmentKey: '',
         nameKey: '',
-        appearanceKey: remoteAppearanceKey(data),
+        // A compact movement packet may create the placeholder before the
+        // reliable join/profile packet. Keep the key empty so that profile is
+        // guaranteed to apply the real face/hair once it arrives.
+        appearanceKey: source === 'state' ? '' : remoteAppearanceKey(data),
         remoteContextBound: false
       };
       row.netX = Number(data.x || 0);
@@ -654,49 +672,44 @@
     } else {
       bindRemotePlayerContextOnce(row);
     }
-    row.data = { ...row.data, ...data };
-    const source = String(options.source || 'snapshot');
-    const hasVisualProfile = source !== 'state' || !!data.equipment || !!data.weapon || !!data.injuries || !!data.level;
-    if (hasVisualProfile) {
+
+    if (source === 'state') {
+      const seq = Number(data.seq || 0);
+      if (remotePlayerStateIsStale(row, data, serverT)) return;
+      // Commit the freshness pair atomically only after both checks passed.
+      if (Number.isFinite(seq) && seq > 0) row.lastPlayerStateSeq = seq;
+      if (Number.isFinite(serverT) && serverT > 0) row.lastPlayerStateServerT = serverT;
+      row.data.id = data.id;
+      if (data.seq !== undefined) row.data.seq = data.seq;
+      if (data.x !== undefined) row.data.x = data.x;
+      if (data.z !== undefined) row.data.z = data.z;
+      if (data.vx !== undefined) row.data.vx = data.vx;
+      if (data.vz !== undefined) row.data.vz = data.vz;
+      if (data.angle !== undefined) row.data.angle = data.angle;
+      if (data.crouching !== undefined) row.data.crouching = data.crouching;
+      if (data.moving !== undefined) row.data.moving = data.moving;
+      if (data.turning !== undefined) row.data.turning = data.turning;
+    } else {
+      row.data = { ...row.data, ...data };
       const eqKey = remoteEquipmentKey(row.data);
       if (eqKey !== row.equipmentKey) {
         row.equipmentKey = eqKey;
         updateRemoteEquipmentVisuals(row.group, row.data);
       }
-    }
-    const nameKey = remoteNameKey(row.data);
-    if (nameKey !== row.nameKey) {
-      row.nameKey = nameKey;
-      updateRemoteNameSprite(row.group.userData.nameSprite, row.data.name || 'Игрок', row.data.deviceType || 'desktop');
-    }
-    const appearanceKey = remoteAppearanceKey(row.data);
-    if (appearanceKey && appearanceKey !== row.appearanceKey) {
-      row.appearanceKey = appearanceKey;
-      if (typeof applyCharacterGlbAppearance === 'function') {
-        applyCharacterGlbAppearance(row.group, row.data.appearance || {}, {
-          castShadow: !IS_MOBILE_DEVICE,
-          equipment: row.data.equipment || {}
-        });
+      const nameKey = remoteNameKey(row.data);
+      if (nameKey !== row.nameKey) {
+        row.nameKey = nameKey;
+        updateRemoteNameSprite(row.group.userData.nameSprite, row.data.name || 'Игрок', row.data.deviceType || 'desktop');
       }
-    }
-    const nowMs = Number.isFinite(Number(options.receivedAt)) ? Number(options.receivedAt) : performance.now();
-    const serverT = Number(options.serverT ?? options.snapshotT ?? data.t ?? 0);
-    if (source === 'state') {
-      const seq = Number(data.seq || 0);
-      if (Number.isFinite(seq) && seq > 0) {
-        const lastSeq = Number(row.lastPlayerStateSeq || 0);
-        if (lastSeq && seq <= lastSeq) return;
-        row.lastPlayerStateSeq = seq;
-      }
-      if (Number.isFinite(serverT) && serverT > 0) {
-        const lastServerT = Number(row.lastPlayerStateServerT || 0);
-        if (lastServerT && serverT < lastServerT) {
-          // Старый playerState мог прийти после нового при сетевом джиттере.
-          // Не добавляем такую точку в буфер, иначе при длинном движении модель
-          // начинает откатываться назад/вперёд.
-          return;
+      const appearanceKey = remoteAppearanceKey(row.data);
+      if (appearanceKey && appearanceKey !== row.appearanceKey) {
+        row.appearanceKey = appearanceKey;
+        if (typeof applyCharacterGlbAppearance === 'function') {
+          applyCharacterGlbAppearance(row.group, row.data.appearance || {}, {
+            castShadow: !IS_MOBILE_DEVICE,
+            equipment: row.data.equipment || {}
+          });
         }
-        row.lastPlayerStateServerT = serverT;
       }
     }
     const recentRealtimeMotion = source === 'snapshot' && row.lastMotionSource === 'state' && nowMs - Number(row.lastMotionAt || 0) < 240;
@@ -720,7 +733,12 @@
     if (!sameLocation) {
       setNetworkRevealVisibility(row.group, false);
     } else {
-      applyNetworkFogVisibilityNow(row.group, row.group.userData.targetX, row.group.userData.targetZ, { crouching: !!row.data?.crouching || !!row.group.userData.crouching });
+      const fogOptions = { crouching: !!row.data?.crouching || !!row.group.userData.crouching };
+      if (typeof updateEntityRtsFogVisibility === 'function') {
+        updateEntityRtsFogVisibility(row.group, row.group.userData.targetX, row.group.userData.targetZ, fogOptions);
+      } else {
+        applyNetworkFogVisibilityNow(row.group, row.group.userData.targetX, row.group.userData.targetZ, fogOptions);
+      }
     }
   }
 
@@ -1257,9 +1275,11 @@
     const netZ = Number.isFinite(Number(row.netZ)) ? Number(row.netZ) : Number(g.userData.targetZ || z0);
     const netAngle = Number.isFinite(Number(row.netAngle)) ? Number(row.netAngle) : Number(g.userData.targetAngle || 0);
     const moving = !!row.netMoving && Number(row.intentSpeed || 0) > REMOTE_VISUAL_MIN_SPEED;
-    const packetAgeMs = Math.max(0, Math.min(REMOTE_VISUAL_MAX_PACKET_AGE_MS, now - Number(row.netReceivedAt || now)));
+    const rawPacketAgeMs = Math.max(0, now - Number(row.netReceivedAt || now));
+    const packetAgeMs = Math.min(REMOTE_VISUAL_MAX_PACKET_AGE_MS, rawPacketAgeMs);
     const turnAgeMs = now - Number(row.lastTurnAt || 0);
-    const turning = !!row.remoteTurning || (Number.isFinite(turnAgeMs) && turnAgeMs >= 0 && turnAgeMs < 180);
+    const turning = (!!row.remoteTurning && rawPacketAgeMs <= REMOTE_VISUAL_MAX_PACKET_AGE_MS)
+      || (Number.isFinite(turnAgeMs) && turnAgeMs >= 0 && turnAgeMs < 180);
     const sharpTurn = !!row.remoteSharpTurn && Number.isFinite(turnAgeMs) && turnAgeMs >= 0 && turnAgeMs < 150;
 
     if (!moving) {
@@ -1445,6 +1465,22 @@
     multiplayer.remotePlayers.forEach(row => {
       const g = row.group;
       if (!g) return;
+      if (g.visible === false) {
+        const netX = Number.isFinite(Number(row.netX)) ? Number(row.netX) : Number(g.userData.targetX || 0);
+        const netZ = Number.isFinite(Number(row.netZ)) ? Number(row.netZ) : Number(g.userData.targetZ || 0);
+        const netAngle = Number.isFinite(Number(row.netAngle)) ? Number(row.netAngle) : Number(g.userData.targetAngle || 0);
+        g.position.set(netX, 0, netZ);
+        g.rotation.y = netAngle + Math.PI;
+        g.userData.crouching = !!row.netCrouching;
+        g.userData.remoteMoving = false;
+        row.visualX = netX;
+        row.visualZ = netZ;
+        row.visualVelX = 0;
+        row.visualVelZ = 0;
+        row.x = netX;
+        row.z = netZ;
+        return;
+      }
       updateRemoteVisualLocomotion(row, dt, now);
       row.x = g.position.x;
       row.z = g.position.z;
@@ -1493,7 +1529,8 @@
         crouching: !!g.userData.crouching,
         moveX: visualMoveX,
         moveZ: visualMoveZ,
-        facingAngle: Number(g.rotation.y || 0) - Math.PI
+        facingAngle: Number(g.rotation.y || 0) - Math.PI,
+        footIk: important || distance <= 6
       });
       applyCharacterInjuryVisual(g, injuries, animationDt);
       const remoteWeaponOwner = {

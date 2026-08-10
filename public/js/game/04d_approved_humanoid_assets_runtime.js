@@ -483,6 +483,12 @@
     const current = actor.userData.approvedEquipmentRuntimes[slot];
     if (!wanted) {
       if (current) removeApprovedEquipmentRuntime(actor, slot);
+      // У предмета есть утверждённая модель, но GLB-персонаж ещё грузится:
+      // старые процедурные части всё равно прячем, чтобы они не мелькали —
+      // утверждённая модель встанет сразу после загрузки персонажа.
+      if (definition?.slot === slot) {
+        approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
+      }
       syncApprovedHazmatHoodVisibility(actor, eq);
       return false;
     }
@@ -498,13 +504,23 @@
     const requestId = Number(actor.userData.approvedEquipmentRequestIds[slot] || 0) + 1;
     actor.userData.approvedEquipmentRequestIds[slot] = requestId;
     actor.userData.approvedEquipmentRuntimes[slot] = { itemId, bodyKey, requestId, mesh: null };
+    // Утверждённая модель уже выбрана — старый процедурный вариант не должен
+    // мелькать, пока GLB грузится. Если загрузка сорвётся, вернём его.
+    approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
+    const restoreFallback = () => {
+      if (actor.userData.approvedEquipmentRuntimes?.[slot]?.requestId !== requestId) return;
+      approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = true; });
+    };
     loadApprovedEquipmentTemplate(itemId, bodyKey).then(template => {
       const runtime = actor.userData.approvedEquipmentRuntimes?.[slot];
       const activeCharacter = approvedActorCharacterRuntime(actor);
       const activeEquipment = actor.userData.enemyEquipment || actor.userData.equipment || eq;
+      if (!template) {
+        restoreFallback();
+        return;
+      }
       if (
-        !template
-        || runtime?.requestId !== requestId
+        runtime?.requestId !== requestId
         || runtime?.itemId !== itemId
         || runtime?.bodyKey !== bodyKey
         || activeCharacter !== characterRuntime
@@ -513,6 +529,7 @@
       const mesh = makeApprovedEquipmentInstance(template, activeCharacter.root, itemId);
       if (!mesh) {
         console.warn(`Не удалось привязать утверждённую экипировку ${itemId} (${bodyKey}) к персонажу.`);
+        restoreFallback();
         return;
       }
       placeApprovedEquipmentRuntime(mesh, slot, activeEquipment);
@@ -522,6 +539,19 @@
       syncApprovedHazmatHoodVisibility(actor, activeEquipment);
     });
     return false;
+  }
+
+  // Раннее скрытие: вызывается в момент старта загрузки GLB-персонажа,
+  // когда слот-запросы ещё не начались. Всё, у чего есть утверждённая
+  // модель, не должно мелькать старым процедурным вариантом.
+  function hideApprovedEquipmentFallbacksEarly(actor, eq = {}) {
+    const parts = actor?.userData?.parts || actor?.userData?.actorParts || {};
+    for (const slot of ['armor', 'helmet', 'boots', 'backpack']) {
+      const itemId = String(equipmentVisualBaseId(eq?.[slot] || '') || '');
+      if (APPROVED_EQUIPMENT_ASSETS[itemId]?.slot === slot) {
+        approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
+      }
+    }
   }
 
   function applyApprovedEquipmentVisuals(actor, eq = {}) {

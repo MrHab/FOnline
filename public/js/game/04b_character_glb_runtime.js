@@ -1139,10 +1139,17 @@
     const runtime = actor?.userData?.characterGlbRuntime;
     if (!runtime?.root) return;
     setCharacterProceduralBaseVisible(actor, false);
-    const helmetOn = !!eq?.helmet;
+    // Экипировка НПС нередко приходит раньше, чем догрузится GLB-персонаж:
+    // тогда успевает встать старый коробочный оверлей. Здесь берём живой
+    // снимок экипировки и сносим оверлей — модель одевается по-настоящему.
+    const activeEq = actor.userData.enemyEquipment || eq;
+    if (actor.userData.enemyStaticEquipmentOverlay && typeof disposeEnemyStaticEquipmentOverlay === 'function') {
+      disposeEnemyStaticEquipmentOverlay(actor);
+    }
+    const helmetOn = !!activeEq?.helmet;
     applyCharacterGlbVisualVariants(runtime.root, runtime.appearance, { helmetOn });
-    if (typeof applyApprovedEquipmentVisuals === 'function') applyApprovedEquipmentVisuals(actor, eq);
-    else if (typeof applyApprovedBootsVisual === 'function') applyApprovedBootsVisual(actor, eq);
+    if (typeof applyApprovedEquipmentVisuals === 'function') applyApprovedEquipmentVisuals(actor, activeEq);
+    else if (typeof applyApprovedBootsVisual === 'function') applyApprovedBootsVisual(actor, activeEq);
   }
 
   function removeCharacterGlbRuntime(actor) {
@@ -1183,6 +1190,9 @@
     const requestId = Number(actor.userData.characterGlbRequestId || 0) + 1;
     actor.userData.characterGlbRequestId = requestId;
     actor.userData.characterAppearance = appearance;
+    if (typeof hideApprovedEquipmentFallbacksEarly === 'function') {
+      hideApprovedEquipmentFallbacksEarly(actor, options.equipment || {});
+    }
     return new Promise(resolve => {
       loader.load(characterModelUrl(appearance), gltf => {
         if (actor.userData.characterGlbRequestId !== requestId) {
@@ -1255,6 +1265,12 @@
         console.warn(`Character model failed to load (${key}):`, error);
         if (actor.userData.characterGlbRequestId === requestId) {
           setCharacterProceduralBaseVisible(actor, true);
+          if (typeof approvedEquipmentFallbackMeshes === 'function') {
+            const parts = actor.userData.parts || actor.userData.actorParts || {};
+            for (const slot of ['armor', 'helmet', 'boots', 'backpack']) {
+              approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = true; });
+            }
+          }
         }
         resolve(false);
       });

@@ -262,12 +262,14 @@ const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
 
 const equipmentRuntime = fs.readFileSync(EQUIPMENT_RUNTIME_FILE, 'utf8');
 [
-  'group.userData.approvedEquipmentCharacterRuntime?.root',
-  'disposeEnemyStaticEquipmentOverlay(group);',
   'applyApprovedEquipmentVisuals(group, eq);'
 ].forEach(marker => {
   assert(equipmentRuntime.includes(marker), `super mutant equipment integration is missing: ${marker}`);
 });
+assert(
+  !equipmentRuntime.includes('updateEnemyStaticEquipmentOverlay'),
+  'legacy box equipment overlay must stay removed from NPC visuals'
+);
 
 const humanoidRuntime = fs.readFileSync(HUMANOID_RUNTIME_FILE, 'utf8');
 [

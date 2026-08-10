@@ -634,7 +634,6 @@
     if (typeof captureCharacterProceduralBaseMeshes === 'function') {
       captureCharacterProceduralBaseMeshes(group, parts);
     }
-    buildModernCharacterArmorExtras(group, parts, !IS_MOBILE_DEVICE);
     parts.kind = 'humanoidNpc';
     parts.unifiedHumanoidNpc = true;
     group.userData.parts = parts;

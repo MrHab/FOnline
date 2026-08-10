@@ -232,86 +232,6 @@
     return weaponGroup;
   }
 
-  function disposeEnemyStaticEquipmentOverlay(group) {
-    const overlay = group?.userData?.enemyStaticEquipmentOverlay;
-    if (!overlay) return;
-    disposeGroupChildren(overlay);
-    try { group.remove(overlay); } catch (_) {}
-    group.userData.enemyStaticEquipmentOverlay = null;
-  }
-
-  function enemyStaticEquipmentMat(id = '') {
-    const key = networkEquipmentBaseId(id || '');
-    if (key === 'combatArmor' || key === 'heavyArmor') return actorMats?.rustPlate || mats.metal;
-    if (key === 'ballisticVest' || key === 'tacticalHelmet' || key === 'assaultHelmet') return mats.darkMetal || mats.metal;
-    if (key === 'leather' || key === 'boots' || key === 'backpack') return mats.leather || actorMats?.strap;
-    return mats.metal || actorMats?.rustPlate;
-  }
-
-  function addStaticEquipmentBox(parent, w, h, d, mat, x, y, z, s, rx = 0, ry = 0, rz = 0) {
-    const mesh = makeEnemyBox(w, h, d, mat, x, y, z, s, rx, ry, rz);
-    mesh.userData.staticEquipment = true;
-    parent.add(mesh);
-    return mesh;
-  }
-
-  function updateEnemyStaticEquipmentOverlay(enemy, parts = {}, eq = {}) {
-    const group = enemy?.mesh;
-    if (!group || !parts.staticModel) return;
-    disposeEnemyStaticEquipmentOverlay(group);
-    const overlay = new THREE.Group();
-    overlay.userData.staticEquipmentOverlay = true;
-    const s = Number(enemy.scale || 1) || 1;
-    const kind = parts.kind || group.userData.enemyVisual || 'raider';
-    const armorId = networkEquipmentBaseId(eq.armor || '');
-    const helmetId = networkEquipmentBaseId(eq.helmet || '');
-    const bootsId = networkEquipmentBaseId(eq.boots || '');
-    const backpackId = networkEquipmentBaseId(eq.backpack || '');
-    const yScale = kind === 'mutant' ? 1.16 : 1;
-    const chestY = kind === 'mutant' ? 1.18 : 1.02;
-    const headY = kind === 'mutant' ? 1.64 : 1.45;
-    const shoulderX = kind === 'mutant' ? 0.62 : 0.44;
-
-    if (armorId) {
-      const armorMat = enemyStaticEquipmentMat(armorId);
-      const thick = armorId === 'combatArmor' || armorId === 'heavyArmor' ? 0.12 : 0.08;
-      addStaticEquipmentBox(overlay, 0.66, 0.34 * yScale, thick, armorMat, 0, chestY, -0.34, s, 0.04, 0, 0);
-      addStaticEquipmentBox(overlay, 0.5, 0.26 * yScale, 0.07, armorMat, 0, chestY - 0.03, 0.2, s, -0.04, 0, 0);
-      if (armorId === 'combatArmor' || armorId === 'heavyArmor' || armorId === 'metalArmor') {
-        addStaticEquipmentBox(overlay, 0.18, 0.15, 0.24, armorMat, -shoulderX, chestY + 0.1, -0.08, s, 0, 0, -0.18);
-        addStaticEquipmentBox(overlay, 0.18, 0.15, 0.24, armorMat, shoulderX, chestY + 0.1, -0.08, s, 0, 0, 0.18);
-      }
-    }
-
-    if (helmetId) {
-      const helmetMat = enemyStaticEquipmentMat(helmetId);
-      const helmet = new THREE.Mesh(new THREE.CylinderGeometry(0.19 * s, 0.23 * s, 0.18 * s, 12), helmetMat);
-      helmet.position.set(0, headY * s, -0.04 * s);
-      helmet.userData.staticEquipment = true;
-      overlay.add(helmet);
-      if (helmetId === 'assaultHelmet' || helmetId === 'tacticalHelmet') {
-        addStaticEquipmentBox(overlay, 0.28, 0.055, 0.04, mats.glowGreen || mats.darkMetal, 0, headY - 0.02, -0.24, s, 0, 0, 0);
-      }
-    }
-
-    if (bootsId) {
-      const bootMat = enemyStaticEquipmentMat(bootsId);
-      addStaticEquipmentBox(overlay, 0.18, 0.14, 0.2, bootMat, -0.16, 0.16, -0.1, s, 0, 0, 0);
-      addStaticEquipmentBox(overlay, 0.18, 0.14, 0.2, bootMat, 0.16, 0.16, -0.1, s, 0, 0, 0);
-    }
-
-    if (backpackId) {
-      const packMat = enemyStaticEquipmentMat(backpackId);
-      addStaticEquipmentBox(overlay, 0.34, 0.42, 0.18, packMat, 0, 0.9, 0.38, s, -0.08, 0, 0);
-      addStaticEquipmentBox(overlay, 0.05, 0.46, 0.04, mats.darkMetal || packMat, -0.16, 0.92, 0.27, s, -0.08, 0, 0);
-      addStaticEquipmentBox(overlay, 0.05, 0.46, 0.04, mats.darkMetal || packMat, 0.16, 0.92, 0.27, s, -0.08, 0, 0);
-    }
-
-    if (!overlay.children.length) return;
-    group.add(overlay);
-    group.userData.enemyStaticEquipmentOverlay = overlay;
-  }
-
   function updateEnemyEquipmentVisuals(enemy) {
     const group = enemy?.mesh;
     if (!group) return;
@@ -323,7 +243,6 @@
         try { group.remove(group.userData.enemyWeaponGroup); } catch (_) {}
         group.userData.enemyWeaponGroup = null;
       }
-      disposeEnemyStaticEquipmentOverlay(group);
       enemy.equipment = naturalCreatureEquipment();
       enemy.weapon = 'fists';
       enemy.canDialogue = false;
@@ -348,18 +267,10 @@
 
     const parts = group.userData.actorParts || {};
     applyArmorVisualSet(parts, eq);
-    // У GLB-персонажей рантайм лежит в characterGlbRuntime — старая проверка
-    // одного лишь approvedEquipmentCharacterRuntime вечно гнала НПС по пути
-    // коробочного оверлея вместо утверждённых моделей экипировки.
-    const approvedRuntimeRoot = typeof approvedActorCharacterRuntime === 'function'
-      ? approvedActorCharacterRuntime(group)?.root
-      : group.userData.approvedEquipmentCharacterRuntime?.root;
-    if (approvedRuntimeRoot && typeof applyApprovedEquipmentVisuals === 'function') {
-      disposeEnemyStaticEquipmentOverlay(group);
-      applyApprovedEquipmentVisuals(group, eq);
-    } else {
-      updateEnemyStaticEquipmentOverlay(enemy, parts, eq);
-    }
+    // Старый коробочный оверлей удалён из игры: экипировку рисуют только
+    // утверждённые модели. Пока GLB-персонаж грузится, слоты пустуют, а
+    // применение по живому снимку повторится при подключении рантайма.
+    if (typeof applyApprovedEquipmentVisuals === 'function') applyApprovedEquipmentVisuals(group, eq);
     const weaponGroup = ensureEnemyWeaponGroup(enemy);
     if (parts.weaponStatic) parts.weaponStatic.visible = !eq.weapon || eq.weapon === 'fists';
     if (!weaponGroup) return;

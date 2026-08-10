@@ -633,10 +633,9 @@ if (!updateEnemyEquipmentVisualsBody.includes('group.remove(group.userData.enemy
   || !updateEnemyEquipmentVisualsBody.includes('enemy.traderQuests = []')) {
   fail('Client natural creature visuals must remove stale weapon groups and clear dialogue/trade state');
 }
-if (!network.includes('function updateEnemyStaticEquipmentOverlay')
-  || !updateEnemyEquipmentVisualsBody.includes('updateEnemyStaticEquipmentOverlay(enemy, parts, eq)')
-  || !network.includes('group.userData.enemyStaticEquipmentOverlay')) {
-  fail('Client GLB NPC models must render visible equipment overlays from their equipment snapshot');
+if (!updateEnemyEquipmentVisualsBody.includes('applyApprovedEquipmentVisuals(group, eq)')
+  || network.includes('updateEnemyStaticEquipmentOverlay')) {
+  fail('Client NPC equipment must come from approved fitted models only (legacy box overlay is removed)');
 }
 const applyEnemySnapshotBodyForVisuals = functionSlice(network, 'function applyNetworkEnemies', '\n  function ');
 if (!network.includes('function replaceEnemyVisualModel')

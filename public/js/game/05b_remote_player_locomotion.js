@@ -531,7 +531,6 @@
     if (typeof captureCharacterProceduralBaseMeshes === 'function') {
       captureCharacterProceduralBaseMeshes(g, parts);
     }
-    buildModernCharacterArmorExtras(g, parts, remoteCastShadow);
     initWeaponVisualState(parts.weaponGroup);
     initWeaponVisualState(parts.offhandWeaponGroup);
 

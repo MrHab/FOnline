@@ -13,7 +13,9 @@
     level: 1,
     perkPoints: 0,
     skillPoints: 0,
-    speed: 5.2,
+    // 5.2 выглядело мельтешением: даже клип бега на таком темпе читался
+    // как неестественно быстрый шаг. 4.6 — темп уверенного бега.
+    speed: 4.6,
     fireCooldown: 0,
     reloadTimer: 0,
     fireMode: 'single',

@@ -778,7 +778,7 @@
       direction = [vertical, horizontal].filter(Boolean).join('_') || 'forward';
     }
     const action = locomoting
-      ? (turning ? 'turn' : (backward ? 'walk' : (speed > 4.2 ? 'run' : 'walk')))
+      ? (turning ? 'turn' : (backward ? 'walk' : (speed > 3.4 ? 'run' : 'walk')))
       : 'idle';
     const playbackRate = turning
       ? (1.0 + Math.abs(turnAmount) * 0.5)
@@ -860,6 +860,14 @@
       dt
     );
     const moveBlend = runtime.directionalMoveBlend;
+    // Бег читается по силуэту: корпус подаётся вперёд заметно сильнее шага.
+    const runLean = locomotion.action === 'run' ? 0.11 : 0;
+    runtime.directionalRunLean = characterLocomotionBlend(
+      runtime.directionalRunLean ?? 0,
+      runLean,
+      6,
+      dt
+    );
     const lowerBodyYaw = runtime.directionalLowerBodyYaw * moveBlend;
     const counterYaw = -lowerBodyYaw;
     const side = runtime.directionalSideAmount * moveBlend;
@@ -870,8 +878,9 @@
     runtime.root.rotation.y = Number(runtime.baseRotationY ?? Math.PI) + lowerBodyYaw;
     const bones = runtime.locomotionBones || {};
     addCharacterGlbDirectionalBoneOffset(runtime, bones.pelvis, backwardLean * -0.025, turn * 0.06, side * -0.035);
-    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine01, forwardLean * 0.025 - backwardLean * 0.045, counterYaw * 0.16 - turn * 0.035, side * -0.018);
-    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine02, 0, counterYaw * 0.18, side * -0.012);
+    const runLeanNow = runtime.directionalRunLean * moveBlend;
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine01, forwardLean * 0.025 - backwardLean * 0.045 + runLeanNow * 0.5, counterYaw * 0.16 - turn * 0.035, side * -0.018);
+    addCharacterGlbDirectionalBoneOffset(runtime, bones.spine02, runLeanNow * 0.5, counterYaw * 0.18, side * -0.012);
     addCharacterGlbDirectionalBoneOffset(runtime, bones.spine03, 0, counterYaw * 0.18, side * 0.012);
     addCharacterGlbDirectionalBoneOffset(runtime, bones.neck, 0, counterYaw * 0.22, side * 0.008);
     addCharacterGlbDirectionalBoneOffset(runtime, bones.head, 0, counterYaw * 0.26, 0);

@@ -419,32 +419,98 @@ def create_turn_action(
 def create_authored_locomotion_actions(
     armature: bpy.types.Object,
     baseline: dict[str, dict[str, object]],
-    neutral: dict[str, dict[str, tuple[float, float, float]]],
 ) -> None:
-    """Клипы walk_back и crouch_walk из общей таблицы ключей.
+    """Клипы локомоции, выведенные из уже готовых walk/run.
 
-    Таблица authored_locomotion_clips.json — единый источник и для этого
-    билдера, и для Node-запекателя (tools/bake-authored-locomotion-clips.js):
-    оффсеты поверх idle-базлайна, петля замкнута (первый кадр == последний).
+    Общая таблица authored_locomotion_clips.json описывает вывод, а не сами
+    ключи: источник, обратное время, доля размаха ног и статичные оффсеты
+    позы. Так механика опоры и переноса наследуется от проверенных клипов —
+    опорная нога метёт монотонно и разворачивается в воздухе, поэтому клип
+    реально «покрывает землю». Рисовать эти клипы с нуля не выходит: нога
+    начинает разворачиваться, стоя на земле, и травел гасит сам себя.
+
+    Тот же вывод независимо выполняет Node-запекатель
+    tools/bake-authored-locomotion-clips.js; именно его байты лежат в ревью.
     """
+    leg_bones = set(LOCOMOTION_CLIP_TABLES.get("legBones", ()))
+    fps = float(LOCOMOTION_CLIP_TABLES.get("fps", 24))
     for name, clip in LOCOMOTION_CLIP_TABLES["clips"].items():
-        frames = tuple(
-            (
-                int(frame),
-                {
-                    **neutral,
-                    **{
-                        bone: {
-                            key: tuple(value)
-                            for key, value in transform.items()
-                        }
-                        for bone, transform in pose.items()
-                    },
-                },
-            )
-            for frame, pose in clip["frames"]
-        )
-        create_action(armature, name, frames, baseline)
+        source = bpy.data.actions.get(clip["derivedFrom"])
+        if source is None:
+            raise RuntimeError(f"{name}: нет исходного клипа {clip['derivedFrom']}")
+        stride = float(clip.get("legStrideScale", 1.0))
+        reverse = bool(clip.get("timeReverse", False))
+        additive = clip.get("additive", {})
+
+        first = int(source.frame_start)
+        last = int(source.frame_end)
+        span = max(1, last - first)
+        frames: list[tuple[int, dict[str, dict[str, object]]]] = []
+
+        armature.animation_data_create()
+        for offset in range(span + 1):
+            frame = first + offset
+            source_frame = last - offset if reverse else frame
+            armature.animation_data.action = source
+            bpy.context.scene.frame_set(source_frame)
+            bpy.context.view_layer.update()
+            pose: dict[str, dict[str, object]] = {}
+            for bone_name in baseline:
+                bone = armature.pose.bones[bone_name]
+                base = baseline[bone_name]
+                rotation = bone.rotation_quaternion.copy()
+                location = bone.location.copy()
+                if stride != 1.0 and bone_name in leg_bones:
+                    rotation = base["rotation"].slerp(rotation, stride)
+                    location = base["location"].lerp(location, stride)
+                extra = additive.get(bone_name, {})
+                if "rotation" in extra:
+                    rotation = rotation @ Euler(
+                        tuple(extra["rotation"]), "XYZ"
+                    ).to_quaternion()
+                if "location" in extra:
+                    location = location + Vector(tuple(extra["location"]))
+                pose[bone_name] = {
+                    "absoluteRotation": rotation,
+                    "absoluteLocation": location,
+                }
+            frames.append((frame, pose))
+        armature.animation_data.action = None
+        reset_pose(armature)
+        create_absolute_action(armature, name, tuple(frames), baseline, fps)
+
+
+def create_absolute_action(
+    armature: bpy.types.Object,
+    name: str,
+    frames: tuple[tuple[int, dict[str, dict[str, object]]], ...],
+    baseline: dict[str, dict[str, object]],
+    fps: float,
+) -> None:
+    """Как create_action, но ключи заданы абсолютной позой, а не оффсетами."""
+    existing = bpy.data.actions.get(name)
+    if existing is not None:
+        bpy.data.actions.remove(existing)
+    action = bpy.data.actions.new(name)
+    action.use_fake_user = True
+    armature.animation_data_create()
+    armature.animation_data.action = action
+    keyed_bones = tuple(sorted(baseline))
+    for frame, pose in frames:
+        apply_baseline(armature, baseline)
+        for bone_name, transform in pose.items():
+            bone = armature.pose.bones[bone_name]
+            bone.rotation_mode = "QUATERNION"
+            bone.rotation_quaternion = transform["absoluteRotation"]
+            bone.location = transform["absoluteLocation"]
+        key_complete_pose(armature, frame, keyed_bones)
+    for curve in action.fcurves:
+        for point in curve.keyframe_points:
+            point.interpolation = "LINEAR"
+    action.frame_start = frames[0][0]
+    action.frame_end = frames[-1][0]
+    armature.animation_data.action = None
+    reset_pose(armature)
 
 
 def add_combat_actions(armature: bpy.types.Object) -> None:
@@ -465,7 +531,7 @@ def add_combat_actions(armature: bpy.types.Object) -> None:
     }
     create_attack_action(armature, baseline, neutral)
     create_turn_action(armature, baseline, neutral)
-    create_authored_locomotion_actions(armature, baseline, neutral)
+    create_authored_locomotion_actions(armature, baseline)
     create_action(
         armature,
         "hurt",

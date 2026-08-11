@@ -818,6 +818,13 @@
     };
   }
 
+  function characterWrapAngle(angle) {
+    let value = Number(angle || 0);
+    while (value > Math.PI) value -= Math.PI * 2;
+    while (value < -Math.PI) value += Math.PI * 2;
+    return value;
+  }
+
   function characterDirectionalLocomotionState(state = {}) {
     const moving = !!state.moving;
     const turnAmount = Math.max(-1, Math.min(1, Number(state.turnAmount || 0)));
@@ -844,23 +851,28 @@
     const forwardAmount = Math.max(-1, Math.min(1, moveX * facingX + moveZ * facingZ));
     const sideAmount = Math.max(-1, Math.min(1, moveX * rightX + moveZ * rightZ));
     const relativeAngle = Math.atan2(sideAmount, forwardAmount);
-    const backward = moving && forwardAmount < -0.42;
+    // Режим заднего хода переключается около 90 градусов к прицелу с
+    // гистерезисом (вход 100, выход 80): на самой границе оба варианта
+    // равноправны, и без гистерезиса поза дребезжала бы между ними.
+    const backwardEnter = -0.17;
+    const backwardExit = 0.17;
+    const backward = moving && (state.previousBackward
+      ? forwardAmount < backwardExit
+      : forwardAmount < backwardEnter);
     const sideStrength = Math.abs(sideAmount);
     let lowerBodyYaw = 0;
     if (turning) {
       lowerBodyYaw = turnAmount * 0.28;
-    } else if (moving && !backward) {
-      // В движении ноги смотрят строго по движению: частичный разворот (0.7)
-      // оставлял свип клипа под углом до 44 градусов к фактическому пути —
-      // замки стоп рвались об дрейф, IK гнул колени поперёк («восьмёрка»).
-      // Излом к прицелу гасят корпус (52%) и голова — им это анатомично.
-      lowerBodyYaw = Math.max(-1.65, Math.min(1.65, relativeAngle));
-    } else if (backward) {
-      // Задний ход: ноги остаются лицом к прицелу, но ось шага доворачивается
-      // до противоположной фактическому пути — реверс клипа тогда идёт строго
-      // вдоль движения. Прежний лёгкий доворот (side * 0.38) оставлял диагональ
-      // назад под углом до 30 градусов к пути: стопы скользили боком.
-      lowerBodyYaw = Math.max(-0.95, Math.min(0.95, Math.atan2(-sideAmount, -forwardAmount)));
+    } else if (moving) {
+      // Ноги смотрят строго по пути: клип «вперёд» разворачивается на угол
+      // движения, клип «назад» — на противоположный. Обе ветки дают один и тот
+      // же непрерывный угол на границе режимов, поэтому переключение клипа не
+      // перекидывает таз рывком. Клэмп — страховка от сверхчеловеческого
+      // излома корпуса относительно ног.
+      const pathYaw = backward
+        ? characterWrapAngle(relativeAngle + Math.PI)
+        : relativeAngle;
+      lowerBodyYaw = Math.max(-1.65, Math.min(1.65, pathYaw));
     }
     let direction = turning ? (turnAmount > 0 ? 'turn_right' : 'turn_left') : 'idle';
     if (moving) {
@@ -931,6 +943,7 @@
       || runtime.currentAction === 'run'
       || runtime.currentAction === 'turn'
       || runtime.currentAction === 'walk_back'
+      || runtime.currentAction === 'run_back'
       || runtime.currentAction === 'crouch_walk';
     runtime.upperSwayDampBlend = characterLocomotionBlend(
       runtime.upperSwayDampBlend ?? 0,
@@ -948,6 +961,9 @@
       bone.quaternion.slerp(restQ, (1 - CHARACTER_UPPER_SWAY_KEEP[key]) * blend);
     }
   }
+
+  // Предел угловой скорости разворота нижней части корпуса, рад/с.
+  const CHARACTER_LOWER_BODY_YAW_RATE = 5.2;
 
   const characterDirectionalPoseEuler = new THREE.Euler();
 
@@ -990,12 +1006,20 @@
       locomotion.locomoting ? 9 : 6,
       dt
     );
-    runtime.directionalLowerBodyYaw = characterLocomotionBlend(
-      runtime.directionalLowerBodyYaw,
+    // Разворот таза ограничен по угловой скорости: без предела смена режима
+    // (вперёд <-> назад) или быстрый разворот прицела перекидывали ноги на
+    // 1200-1600 градусов в секунду — именно это читалось как «ноги глючат».
+    // CHARACTER_LOWER_BODY_YAW_RATE — быстрый, но человеческий разворот.
+    const previousLowerBodyYaw = runtime.directionalLowerBodyYaw;
+    const blendedLowerBodyYaw = characterLocomotionBlend(
+      previousLowerBodyYaw,
       locomotion.lowerBodyYaw,
       locomotion.locomoting ? 8.5 : 6.5,
       dt
     );
+    const maxYawStep = CHARACTER_LOWER_BODY_YAW_RATE * Math.max(0.001, dt);
+    runtime.directionalLowerBodyYaw = previousLowerBodyYaw
+      + Math.max(-maxYawStep, Math.min(maxYawStep, blendedLowerBodyYaw - previousLowerBodyYaw));
     runtime.directionalSideAmount = characterLocomotionBlend(
       runtime.directionalSideAmount,
       locomotion.sideAmount,
@@ -1054,11 +1078,16 @@
   // Естественная скорость шага клипов (замерена по опорной стопе при
   // единичном темпе): клип, проигранный быстрее или медленнее этой скорости,
   // скользит по земле. Темп клипа подтягивается к фактической скорости актёра.
+  // Скорость, с которой клип «покрывает землю» при единичном темпе. Значения
+  // не на глаз: их меряет tools/check-locomotion-clip-sync.js прямо по GLB
+  // (перемещение опорной стопы за цикл) и не даёт им разойтись с клипами —
+  // рассинхрон здесь напрямую превращается в скольжение стоп.
   const CHARACTER_CLIP_NATURAL_SPEEDS = Object.freeze({
-    walk: 1.5,
-    run: 3.75,
-    walk_back: 1.68,
-    crouch_walk: 1.23
+    walk: 1.25,
+    run: 3.72,
+    walk_back: 1.25,
+    run_back: 3.38,
+    crouch_walk: 2.13
   });
   const CHARACTER_STRIDE_SYNC_MIN = 0.6;
   const CHARACTER_STRIDE_SYNC_MAX = 2.9;
@@ -1273,7 +1302,12 @@
       const foot = chain?.[2] || runtime.root.getObjectByName(names[2]);
       if (!foot?.isBone || !sideState || rest <= 0) continue;
       const animated = foot.getWorldPosition(sideState.animated || (sideState.animated = new THREE.Vector3()));
-      const height = animated.y - groundY - rest;
+      // Таз опущен на kneeFlex, поэтому «земля клипа» ниже настоящей. Высоту
+      // считаем от настоящей земли: иначе в приседе (flex 0.26) стопа всегда
+      // числится «у земли», замок хватает её в воздухе, а свободная стопа
+      // уходит под пол.
+      const flex = Math.max(0, Number(runtime.kneeFlex || 0));
+      const height = animated.y - groundY - rest + flex;
       const footVelX = sideState.hasPrev ? (animated.x - sideState.prevAnim.x) / frameDt : 0;
       const footVelZ = sideState.hasPrev ? (animated.z - sideState.prevAnim.z) / frameDt : 0;
       const hadPrev = sideState.hasPrev;
@@ -1331,23 +1365,20 @@
         sideState.locked ? CHARACTER_FOOT_IK_BLEND_RATE : 6,
         frameDt
       );
+      // Стопа на настоящей земле — база для обоих случаев. Замок накладывается
+      // поверх неё. Раньше грунт-коррекция работала только при полностью
+      // снятом замке, а blend спадает со скоростью 6 (~0.6 с): всё это время
+      // отпущенная стопа тянулась к устаревшему замку и проваливалась.
+      const grounded = (sideState.grounded || (sideState.grounded = new THREE.Vector3()))
+        .copy(animated)
+        .setY(groundY + rest + Math.max(0, height));
       let target = null;
       if (sideState.blend >= 0.02) {
         target = (sideState.target || (sideState.target = new THREE.Vector3()))
-          .copy(animated)
+          .copy(grounded)
           .lerp(sideState.lockPos, sideState.blend);
-      } else if (!disabled) {
-        // Свободная стопа держит анимационную высоту над реальной землёй:
-        // таз опущен на kneeFlex, поэтому «земля клипа» ниже настоящей, и
-        // без поправки стопы тонут (или, без сгиба, проваливаются при
-        // наклонах корпуса).
-        const flex = Math.max(0, Number(runtime.kneeFlex || 0));
-        const wantedY = groundY + rest + Math.max(0, height + flex);
-        if (Math.abs(wantedY - animated.y) > 0.004) {
-          target = (sideState.target || (sideState.target = new THREE.Vector3()))
-            .copy(animated)
-            .setY(wantedY);
-        }
+      } else if (!disabled && Math.abs(grounded.y - animated.y) > 0.004) {
+        target = (sideState.target || (sideState.target = new THREE.Vector3())).copy(grounded);
       }
       if (target && solveCharacterLegChain(
         runtime.root,
@@ -1572,7 +1603,11 @@
     const runtime = actor?.userData?.characterGlbRuntime;
     if (!runtime?.mixer) return false;
     const frameDt = Math.max(0, Math.min(0.08, Number(dt || 0.016)));
-    const locomotion = characterDirectionalLocomotionState(state);
+    const locomotion = characterDirectionalLocomotionState({
+      ...state,
+      previousBackward: runtime.directionalBackward === true
+    });
+    runtime.directionalBackward = locomotion.backward;
     // Запечённое переступание есть не у всех сразу (клип грузится отдельно) —
     // до его прихода разворот отыгрывает старый walk.
     let locomotionAction = locomotion.action === 'turn' && !runtime.actions?.turn
@@ -1583,8 +1618,13 @@
     if (locomotion.moving) {
       if (state.crouching && runtime.actions?.crouch_walk) {
         locomotionAction = 'crouch_walk';
-      } else if (locomotion.backward && runtime.actions?.walk_back) {
-        locomotionAction = 'walk_back';
+      } else if (locomotion.backward) {
+        // Задний ход своей парой клипов, как и вперёд: медленный отход шагом,
+        // быстрый — бегом. Один walk_back на все скорости заставлял stride-sync
+        // разгонять его втрое, и стопы скользили.
+        const fastBack = locomotion.action === 'run' && runtime.actions?.run_back;
+        if (fastBack) locomotionAction = 'run_back';
+        else if (runtime.actions?.walk_back) locomotionAction = 'walk_back';
       }
     }
     const requestedAction = state.dead && runtime.actions?.death
@@ -1600,7 +1640,8 @@
       { restart: restartAttack }
     );
     // Авторский клип заднего хода сам шагает назад — реверс не нужен.
-    const playbackTarget = locomotionAction === 'walk_back' ? 1 : locomotion.playbackRate;
+    const authoredBackClip = locomotionAction === 'walk_back' || locomotionAction === 'run_back';
+    const playbackTarget = authoredBackClip ? 1 : locomotion.playbackRate;
     if (locomotion.locomoting && !runtime.directionalWasMoving) {
       runtime.directionalPlaybackRate = playbackTarget;
     }

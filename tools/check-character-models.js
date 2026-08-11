@@ -190,12 +190,27 @@ const approvedRuntime = fs.readFileSync(path.join(root, 'public', 'js', 'game', 
 // (с фолбэком на реверс, пока клип не догрузился) и подвешиваются всем гуманоидам.
 assert(glbRuntime.includes("locomotionAction = 'crouch_walk'")
   && glbRuntime.includes("locomotionAction = 'walk_back'")
-  && glbRuntime.includes("locomotionAction === 'walk_back' ? 1 : locomotion.playbackRate"),
-  'runtime does not select authored walk_back/crouch_walk clips');
-assert(glbRuntime.includes('walk_back: 1.68') && glbRuntime.includes('crouch_walk: 1.23'),
+  && glbRuntime.includes("locomotionAction = 'run_back'")
+  && glbRuntime.includes('authoredBackClip ? 1 : locomotion.playbackRate'),
+  'runtime does not select authored walk_back/run_back/crouch_walk clips');
+// Сами значения натуральных скоростей сверяет с клипами
+// tools/check-locomotion-clip-sync.js — здесь только их наличие.
+assert(glbRuntime.includes('walk_back:') && glbRuntime.includes('run_back:') && glbRuntime.includes('crouch_walk:'),
   'stride-sync natural speeds for authored locomotion clips are missing');
-assert(approvedRuntime.includes("APPROVED_LOOP_LOCOMOTION_CLIPS = Object.freeze(['turn', 'walk_back', 'crouch_walk'])"),
+assert(approvedRuntime.includes("APPROVED_LOOP_LOCOMOTION_CLIPS = Object.freeze(['turn', 'walk_back', 'run_back', 'crouch_walk'])"),
   'players do not receive the authored loop locomotion clips');
+// Ноги не должны перекидываться рывком: угловая скорость разворота таза
+// ограничена, а угол непрерывен на границе «вперёд/назад» (гистерезис).
+assert(glbRuntime.includes('CHARACTER_LOWER_BODY_YAW_RATE')
+  && /maxYawStep = CHARACTER_LOWER_BODY_YAW_RATE/.test(glbRuntime),
+  'lower-body yaw is not rate limited');
+assert(glbRuntime.includes('state.previousBackward') && glbRuntime.includes('characterWrapAngle(relativeAngle + Math.PI)'),
+  'backward mode has no hysteresis or continuous path yaw');
+// Высоты в IK стоп считаются от настоящей земли (с поправкой на kneeFlex),
+// иначе в приседе стопа уходит под пол.
+assert(glbRuntime.includes('const height = animated.y - groundY - rest + flex;')
+  && glbRuntime.includes('.setY(groundY + rest + Math.max(0, height));'),
+  'foot IK does not reason in real-ground space');
 assert(glbRuntime.includes('CHARACTER_KNEE_FLEX_CROUCH = 0.26'),
   'deepened crouch knee flex is missing');
 assert(modernRuntime.includes("typeof characterDirectionalLocomotionState === 'function'")
@@ -550,13 +565,26 @@ const directionalRuntime = {
   directionalPoseOffsets: [],
   locomotionBones: directionalBones
 };
-fitApi.applyCharacterGlbDirectionalPose(directionalRuntime, rightLocomotion, 0.2);
+// Разворот таза ограничен по угловой скорости, поэтому цель берётся не за
+// один кадр: гоняем кадры до сходимости и попутно следим, что ни один кадр не
+// перекидывает ноги быстрее человеческого разворота.
+let previousYaw = directionalRuntime.directionalLowerBodyYaw;
+let maxYawRate = 0;
+for (let frame = 0; frame < 240; frame += 1) {
+  // Как в рантайме: поза снимается перед каждым кадром.
+  if (frame > 0) fitApi.clearCharacterGlbDirectionalPose(directionalRuntime);
+  fitApi.applyCharacterGlbDirectionalPose(directionalRuntime, rightLocomotion, 1 / 60);
+  maxYawRate = Math.max(maxYawRate, Math.abs(directionalRuntime.directionalLowerBodyYaw - previousYaw) * 60);
+  previousYaw = directionalRuntime.directionalLowerBodyYaw;
+}
 closeTo(
   directionalRoot.rotation.y,
   Math.PI + rightLocomotion.lowerBodyYaw,
-  1e-7,
+  1e-3,
   'GLB lower-body movement heading'
 );
+assert(maxYawRate <= 5.3,
+  `lower-body yaw whips at ${maxYawRate.toFixed(1)} rad/s; the rate limit is meant to keep it human`);
 assert.strictEqual(directionalRuntime.directionalPoseOffsets.length, 6,
   'directional GLB pose is not distributed over the upper-body rig');
 fitApi.clearCharacterGlbDirectionalPose(directionalRuntime);
@@ -565,7 +593,9 @@ assert.strictEqual(directionalRuntime.directionalPoseOffsets.length, 6,
 assert.strictEqual(directionalRuntime.directionalPoseOffsetCount, 0,
   'directional GLB pose scratch remains logically active after cleanup');
 for (const [key, bone] of Object.entries(directionalBones)) {
-  closeTo(bone.quaternion.angleTo(new THREE.Quaternion()), 0, 1e-7, `${key} pose cleanup`);
+  // Допуск на накопленную ошибку float: выше прогнано 240 циклов
+  // «наложить позу / снять позу» через умножение кватернионов.
+  closeTo(bone.quaternion.angleTo(new THREE.Quaternion()), 0, 1e-5, `${key} pose cleanup`);
 }
 
 const legActor = new THREE.Group();

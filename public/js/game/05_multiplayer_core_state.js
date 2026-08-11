@@ -8,6 +8,7 @@
     transportState: 'idle',
     socketGeneration: 0,
     joinAttemptId: 0,
+    joinRequested: false,
     joinInFlight: false,
     joinPromise: null,
     joinSocketId: '',
@@ -189,6 +190,7 @@
     multiplayer.socketGeneration = Number(multiplayer.socketGeneration || 0) + 1;
     multiplayer.socket = null;
     multiplayer.connected = false;
+    multiplayer.joinRequested = false;
     clearMultiplayerJoinedContext();
     multiplayer.transportState = 'blocked';
     multiplayer.serverAuthoritativeEnemies = false;
@@ -263,6 +265,35 @@
         setTimeout(tick, 35);
       };
       tick();
+    });
+  }
+
+  function startupInitialSnapshotsReady() {
+    if (!multiplayer.joined || !multiplayer.roomId) return true;
+    return Number(multiplayer.lastEnemySnapshotAt || 0) > 0
+      && Number(multiplayer.lastGroundItemsSnapshotAt || 0) > 0
+      && Number(multiplayer.lastWorldContainersSnapshotAt || 0) > 0;
+  }
+
+  function waitForStartupInitialSnapshots(options = {}) {
+    if (startupInitialSnapshotsReady()) return Promise.resolve(true);
+    const timeoutMs = Math.max(180, Number(options.timeoutMs || 700));
+    const startedAt = performance.now();
+    return new Promise(resolve => {
+      const poll = () => {
+        if (startupInitialSnapshotsReady()) {
+          resolve(true);
+          return;
+        }
+        if (performance.now() - startedAt >= timeoutMs) {
+          // Snapshot events remain live after reveal, so a lost/late optional
+          // packet must never hold the player on the loading screen.
+          resolve(false);
+          return;
+        }
+        setTimeout(poll, 16);
+      };
+      poll();
     });
   }
 
@@ -418,6 +449,9 @@
     multiplayer.lastGroundItemsSnapshotT = 0;
     multiplayer.lastWorldContainersSnapshotT = 0;
     multiplayer.lastWorldStateApplied = 0;
+    multiplayer.lastEnemySnapshotAt = 0;
+    multiplayer.lastGroundItemsSnapshotAt = 0;
+    multiplayer.lastWorldContainersSnapshotAt = 0;
   }
 
 

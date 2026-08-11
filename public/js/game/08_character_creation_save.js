@@ -474,6 +474,19 @@
     };
     setSelectedServerCharacterForSaveContext(profile.serverCharacterId);
     localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
+    const startupTrace = typeof beginClientStartupTrace === 'function'
+      ? beginClientStartupTrace('new-character', { characterId: String(profile.serverCharacterId || '').slice(0, 64) })
+      : null;
+    const markStartup = (phase, details = {}) => typeof markClientStartupPhase === 'function'
+      ? markClientStartupPhase(startupTrace, phase, details)
+      : null;
+    const finishStartup = (outcome, details = {}) => typeof finishClientStartupTrace === 'function'
+      ? finishClientStartupTrace(startupTrace, outcome, details)
+      : null;
+    if (typeof connectMultiplayer === 'function') {
+      connectMultiplayer({ prepareOnly: true });
+      markStartup('socket-transport-started');
+    }
     const startNewWorld = () => {
       resetNewGameInventory();
       player.level = 1;
@@ -504,14 +517,30 @@
         location: LOCATIONS.settlement,
         subtitle: 'Создаю нового выжившего и подготавливаю поселение...',
         errorMessage: 'Не удалось создать мир для нового персонажа.',
+        criticalAssets: {
+          appearance: profile.appearance,
+          equipment: { weapon: 'fists', offhand: '', armor: '', helmet: '', boots: '', backpack: '' },
+          weaponIds: []
+        },
+        startupTrace,
         beforeRevealStep: 'Синхронизирую локацию с сервером...',
         beforeRevealProgress: 90,
         beforeReveal: async () => {
+          markStartup('network-join-started');
           const networkReady = await connectMultiplayer({ waitForJoin: true, timeoutMs: 4500 });
+          markStartup('network-join-finished', { ok: networkReady !== false });
           if (networkReady === false) {
             gameStarted = false;
             activeCharacterLeaseId = '';
-            if (multiplayer.socket) { try { multiplayer.socket.disconnect(); } catch (_) {} multiplayer.socket = null; }
+            if (typeof invalidateMultiplayerSessionContext === 'function') {
+              invalidateMultiplayerSessionContext('character-creation-join-failed', {
+                disconnect: true,
+                clearWorld: true
+              });
+            } else {
+              multiplayer.joinRequested = false;
+              if (multiplayer.socket) { try { multiplayer.socket.disconnect(); } catch (_) {} multiplayer.socket = null; }
+            }
             throw new Error('Сервер не разрешил создать игровую сессию для персонажа. Попробуйте ещё раз.');
           }
           // v7.74.67: reveal new character only after the server lease exists.
@@ -527,9 +556,11 @@
       }
     }
     if (!loaded) {
+      finishStartup('failed', { error: 'world-startup-failed' });
       setCharacterNotice('Не удалось подготовить мир. Попробуйте ещё раз.');
       return;
     }
+    finishStartup('ready', { locationId: 'settlement' });
     addLog(`Персонаж создан: ${profile.name}.`, null, 'level');
     queueSave(true);
   }

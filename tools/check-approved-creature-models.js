@@ -229,7 +229,8 @@ const staticRuntime = fs.readFileSync(STATIC_RUNTIME_FILE, 'utf8');
   "'enemySuperMutant'",
   "const NPC_SUPER_MUTANT_GLB_ASSET_VERSION = '7.78.0-super-mutant-bc-v1';",
   '? APPROVED_CREATURE_GLB_ASSET_VERSION',
-  '.filter(key => !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))',
+  'function staticModelKeysForLocation(',
+  '.filter(key => STATIC_MODEL_URLS[key] && !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))',
   'function cloneStaticModelSource(source)',
   'new THREE.Skeleton(bones, inverses)',
   'state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];'

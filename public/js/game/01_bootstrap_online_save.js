@@ -24,6 +24,61 @@
   let saveTimer = 0;
   let clientContextTransitionInFlight = false;
   let gameplayMarked = false;
+  let clientStartupTraceSequence = 0;
+
+  function clientStartupNow() {
+    return typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now();
+  }
+
+  function beginClientStartupTrace(label = 'character-load', meta = {}) {
+    const id = ++clientStartupTraceSequence;
+    const startedAt = clientStartupNow();
+    const trace = {
+      id,
+      label: String(label || 'character-load'),
+      meta: { ...meta },
+      startedAt,
+      lastAt: startedAt,
+      phases: [],
+      completed: false
+    };
+    try { performance.mark?.(`realm-startup-${id}-begin`); } catch (_) {}
+    return trace;
+  }
+
+  function markClientStartupPhase(trace, phase = '', details = {}) {
+    if (!trace || trace.completed) return null;
+    const now = clientStartupNow();
+    const row = {
+      phase: String(phase || 'phase'),
+      atMs: Math.round((now - trace.startedAt) * 10) / 10,
+      durationMs: Math.round((now - trace.lastAt) * 10) / 10,
+      ...details
+    };
+    trace.lastAt = now;
+    trace.phases.push(row);
+    try { performance.mark?.(`realm-startup-${trace.id}-${row.phase}`); } catch (_) {}
+    return row;
+  }
+
+  function finishClientStartupTrace(trace, outcome = 'ready', details = {}) {
+    if (!trace || trace.completed) return trace;
+    markClientStartupPhase(trace, outcome, details);
+    trace.completed = true;
+    trace.outcome = outcome;
+    trace.totalMs = Math.round((clientStartupNow() - trace.startedAt) * 10) / 10;
+    const diagnostics = window.__realmStartupDiagnostics || { history: [] };
+    diagnostics.last = trace;
+    diagnostics.history = [trace, ...(Array.isArray(diagnostics.history) ? diagnostics.history : [])].slice(0, 8);
+    window.__realmStartupDiagnostics = diagnostics;
+    const host = String(location.hostname || '').toLowerCase();
+    if (host === 'localhost' || host === '127.0.0.1' || trace.totalMs >= 1500) {
+      console.info('[startup]', trace.label, `${trace.totalMs}ms`, trace.phases);
+    }
+    return trace;
+  }
 
   // v7.74.92: gameplay visibility state must exist before world/roof creation.
   // The roof can ask isPointVisibleForGameplay() while the ordered client
@@ -410,8 +465,59 @@
     return Array.from(new Set(list.map(v => String(v || '').replace(/\/+$/, ''))));
   }
 
+  async function fetchServerApiWithTimeout(url, options = {}, timeoutMs = 8000, consumeResponse = null) {
+    const runRequest = async (requestOptions, responseSignal = requestOptions.signal) => {
+      const response = await fetch(url, requestOptions);
+      return typeof consumeResponse === 'function'
+        ? await consumeResponse(response, responseSignal)
+        : response;
+    };
+    if (typeof AbortController === 'undefined') return await runRequest(options);
+    const controller = new AbortController();
+    const externalSignal = options.signal;
+    let timeoutError = null;
+    const forwardAbort = () => {
+      try { controller.abort(externalSignal?.reason); } catch (_) { controller.abort(); }
+    };
+    if (externalSignal?.aborted) forwardAbort();
+    else externalSignal?.addEventListener?.('abort', forwardAbort, { once: true });
+    let timer = 0;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        timeoutError = new Error(`Сервер не ответил за ${Math.round(Number(timeoutMs) || 8000)} мс.`);
+        timeoutError.code = 'REQUEST_TIMEOUT';
+        try { controller.abort(); } catch (_) {}
+        reject(timeoutError);
+      }, Math.max(1000, Number(timeoutMs) || 8000));
+    });
+    try {
+      // Keep the same deadline through response-body parsing. Fetch resolves as
+      // soon as headers arrive, which is not enough on slow/half-open links.
+      return await Promise.race([
+        runRequest({ ...options, signal: controller.signal }, controller.signal),
+        timeoutPromise
+      ]);
+    } catch (error) {
+      if (timeoutError) throw timeoutError;
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      externalSignal?.removeEventListener?.('abort', forwardAbort);
+    }
+  }
+
   async function serverApi(path, options = {}) {
-    const headers = { ...(options.headers || {}) };
+    const method = String(options.method || 'GET').toUpperCase();
+    const timeoutMs = Math.max(1000, Number(options.timeoutMs) || (method === 'GET' ? 8000 : 10000));
+    const retryCount = method === 'GET'
+      ? Math.max(0, Math.min(2, Number.isFinite(Number(options.retryCount))
+        ? Number(options.retryCount)
+        : 1))
+      : 0;
+    const requestOptions = { ...options };
+    delete requestOptions.timeoutMs;
+    delete requestOptions.retryCount;
+    const headers = { ...(requestOptions.headers || {}) };
     const requestSessionToken = String(serverSession.token || '');
     headers['X-Device-Id'] = getDeviceId();
     headers['X-Client-Instance-Id'] = getClientInstanceId();
@@ -425,20 +531,47 @@
     for (let index = 0; index < candidates.length; index++) {
       const base = candidates[index];
       let response = null;
-      try {
-        response = await fetch(`${base}${path}`, { ...options, headers });
-      } catch (err) {
-        lastNetworkError = err;
-        continue;
-      }
       let data = null;
       let validJson = true;
-      try { data = await response.json(); } catch (_) {
-        validJson = false;
-        data = { ok: false, error: response.statusText || 'Ошибка сервера' };
+      for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+        try {
+          const result = await fetchServerApiWithTimeout(
+            `${base}${path}`,
+            { ...requestOptions, headers },
+            timeoutMs,
+            async (fetchedResponse, responseSignal) => {
+              let parsedData = null;
+              let parsedJson = true;
+              try { parsedData = await fetchedResponse.json(); } catch (error) {
+                if (responseSignal?.aborted) throw error;
+                parsedJson = false;
+                parsedData = { ok: false, error: fetchedResponse.statusText || 'Ошибка сервера' };
+              }
+              return { response: fetchedResponse, data: parsedData, validJson: parsedJson };
+            }
+          );
+          response = result.response;
+          data = result.data;
+          validJson = result.validJson;
+          break;
+        } catch (err) {
+          lastNetworkError = err;
+          if (requestOptions.signal?.aborted) throw err;
+          if (attempt < retryCount) {
+            await new Promise(resolve => setTimeout(resolve, 120 * (attempt + 1)));
+          }
+        }
+      }
+      if (!response) {
+        // A non-idempotent request may have reached the server even when its
+        // response was lost. Never repeat it against another candidate origin;
+        // deterministic 404/405 responses below can still select the local
+        // fallback safely. Malformed responses only fall back for safe GETs.
+        if (method !== 'GET') break;
+        continue;
       }
       const canTryDefaultPort = index < candidates.length - 1 && base === ''
-        && (!validJson || response.status === 404 || response.status === 405);
+        && ((method === 'GET' && !validJson) || response.status === 404 || response.status === 405);
       if (canTryDefaultPort) continue;
       if (response.status === 401) {
         // A response from an obsolete save/auth context must not clear a newer
@@ -624,6 +757,27 @@
     }
   }
 
+  function startupAssetBaseId(save = {}, itemId = '') {
+    const id = String(itemId || '');
+    if (!id) return '';
+    return String(save?.itemRuntime?.[id]?.baseId || id);
+  }
+
+  function startupCriticalAssetsFromSave(save = {}) {
+    const savedEquipment = save?.equipment && typeof save.equipment === 'object'
+      ? save.equipment
+      : {};
+    const normalizedEquipment = {};
+    for (const slot of ['weapon', 'offhand', 'armor', 'helmet', 'boots', 'backpack']) {
+      normalizedEquipment[slot] = startupAssetBaseId(save, savedEquipment[slot]);
+    }
+    return {
+      appearance: save?.characterProfile?.appearance || {},
+      equipment: normalizedEquipment,
+      weaponIds: [normalizedEquipment.weapon, normalizedEquipment.offhand].filter(Boolean)
+    };
+  }
+
   async function selectServerCharacter(characterId) {
     if (characterDeletePendingId) {
       setCharacterSelectStatus('Дождитесь завершения удаления персонажа.', '');
@@ -645,15 +799,36 @@
     const selectionIsCurrent = () => characterSelectionInFlight
       && characterSelectionEpoch === selectionEpoch
       && String(serverSession.token || '') === selectionToken;
+    const startupTrace = typeof beginClientStartupTrace === 'function'
+      ? beginClientStartupTrace('existing-character', { characterId: String(characterId || '').slice(0, 64) })
+      : null;
+    const markStartup = (phase, details = {}) => typeof markClientStartupPhase === 'function'
+      ? markClientStartupPhase(startupTrace, phase, details)
+      : null;
+    const finishStartup = (outcome, details = {}) => typeof finishClientStartupTrace === 'function'
+      ? finishClientStartupTrace(startupTrace, outcome, details)
+      : null;
     renderCharacterSelect();
     try {
       setCharacterSelectStatus('Загружаю персонажа...', '');
-      const data = await serverApi(`/api/characters/${encodeURIComponent(characterId)}`, { method: 'GET' });
+      if (typeof connectMultiplayer === 'function') {
+        connectMultiplayer({ prepareOnly: true });
+        markStartup('socket-transport-started');
+      }
+      const characterRequest = serverApi(`/api/characters/${encodeURIComponent(characterId)}`, {
+        method: 'GET',
+        timeoutMs: 8000,
+        retryCount: 1
+      });
+      const worldDataRequest = typeof ensureWorldDataReady === 'function'
+        ? ensureWorldDataReady()
+        : Promise.resolve(true);
+      const [data] = await Promise.all([characterRequest, worldDataRequest]);
+      markStartup('character-and-world-data-ready');
       if (!selectionIsCurrent()) return;
       if (!data.save) throw new Error('Данные персонажа повреждены или пустые.');
-      await ensureWorldDataReady();
-      if (!selectionIsCurrent()) return;
       const targetLocation = LOCATIONS[data.save.currentLocationId] || LOCATIONS.settlement;
+      const criticalAssets = startupCriticalAssetsFromSave(data.save);
       const loadWorld = () => {
         if (!selectionIsCurrent()) throw new Error('Загрузка персонажа была отменена.');
         if (!applySavedState(data.save)) throw new Error('Данные персонажа повреждены или пустые.');
@@ -668,12 +843,16 @@
           errorMessage: 'Не удалось загрузить данные персонажа.',
           beforeRevealStep: 'Синхронизирую локацию с сервером...',
           beforeRevealProgress: 90,
+          criticalAssets,
+          startupTrace,
           beforeReveal: async () => {
             if (!selectionIsCurrent()) throw new Error('Загрузка персонажа была отменена.');
             setSelectedServerCharacterForSaveContext(characterId);
             if (characterProfile) characterProfile.serverCharacterId = characterId;
             localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
+            markStartup('network-join-started');
             const networkReady = await connectMultiplayer({ waitForJoin: true, timeoutMs: 4500 });
+            markStartup('network-join-finished', { ok: networkReady !== false });
             if (!selectionIsCurrent()) throw new Error('Загрузка персонажа была отменена.');
             if (networkReady === false) {
               gameStarted = false;
@@ -710,12 +889,15 @@
       if (!loaded) throw new Error('Не удалось подготовить мир персонажа.');
       addLog(`Серверный персонаж загружен: ${characterProfile.name}.`, null, 'system');
       renderUI();
+      finishStartup('ready', { locationId: targetLocation.id });
     } catch (err) {
       console.warn('Character load failed:', err);
+      finishStartup('failed', { error: String(err?.message || err).slice(0, 160) });
       if (selectionIsCurrent()) {
         setCharacterSelectStatus(`Не удалось загрузить персонажа: ${err.message}`, 'err');
       }
     } finally {
+      if (startupTrace && !startupTrace.completed) finishStartup('cancelled');
       if (characterSelectionEpoch === selectionEpoch) {
         characterSelectionInFlight = false;
         renderCharacterSelect();

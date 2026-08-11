@@ -590,7 +590,8 @@ function assertMotionPacketContract() {
   );
   const bytes = Buffer.byteLength(JSON.stringify(packet));
   assert(bytes <= 250, `motion packet exceeds 250 bytes: ${bytes}`);
-  assert(serverSource.includes('const minRelayMs = 50;'), 'playerState relay is no longer capped at 20Hz');
+  assert(serverSource.includes('hardMovementApplied || emergencyTransitionApplied'),
+    'playerState relay is no longer coupled to a bounded movement decision');
   assert(serverSource.includes('const movementTransition = p.moving !== p.lastRelayedMoving;'),
     'movement stop/start transitions are no longer relayed immediately');
   assert(serverSource.includes('const crouchingTransition = p.crouching !== p.lastRelayedCrouching;')
@@ -598,6 +599,320 @@ function assertMotionPacketContract() {
     && serverSource.includes('const reliableStateTransition = movementTransition || crouchingTransition;')
     && serverSource.includes('const movementTransport = reliableStateTransition ? roomRelay : (roomRelay.volatile || roomRelay);'),
   'discrete movement/stance transitions can be dropped with volatile intermediate packets');
+}
+
+function assertMovementIngressBudgetAndMetrics() {
+  assert(multiplayerClientSource.includes('const stateSendInterval = movingNow ? 0.050'),
+    'moving clients no longer align their hot packet cadence with the 20Hz server relay');
+  assert(multiplayerClientSource.includes('|| justStarted || justStopped)'),
+    'the 20Hz cadence can delay immediate movement start/stop transitions');
+  assert(multiplayerClientSource.includes('multiplayer.movementSendAccumulator - stateSendInterval'),
+    'low-FPS clients quantize the 20Hz cadence down to every second rendered frame');
+
+  const positionSource = extractFunction(serverSource, 'serverStateHasFiniteMovementPosition');
+  const transitionSource = extractFunction(serverSource, 'serverMovementPacketHasReliableTransition');
+  const consumeSource = extractFunction(serverSource, 'serverConsumeMovementRateToken');
+  const decisionSource = extractFunction(serverSource, 'serverMovementPacketBudgetDecision');
+  const emergencySource = extractFunction(serverSource, 'serverApplyEmergencyMovementTransition');
+  const proposalSource = extractFunction(serverSource, 'serverApplyMovementProposal');
+  const context = vm.createContext({
+    MAP_SIZE: 140,
+    PLAYER_SPEED: 7,
+    PLAYER_COLLISION_RADIUS: 0.48,
+    PLAYER_STATE_TOKEN_INTERVAL_MS: 50,
+    PLAYER_STATE_TOKEN_CAPACITY: 2,
+    PLAYER_TRANSITION_EMERGENCY_INTERVAL_MS: 250,
+    PLAYER_TRANSITION_EMERGENCY_CAPACITY: 1,
+    clamp: (value, min, max) => Math.max(min, Math.min(max, Number(value))),
+    rooms: new Map(),
+    isRoomTerrainWalkableWorld: () => true,
+    roomStaticCollisionMoveAllowed: () => true,
+    roomEnemyCollisionMoveAllowed: () => true
+  });
+  vm.runInContext(
+    `${positionSource}\n${transitionSource}\n${consumeSource}\n${decisionSource}\n${emergencySource}\n${proposalSource}\n`
+      + 'this.api = { serverStateHasFiniteMovementPosition, serverMovementPacketHasReliableTransition, serverMovementPacketBudgetDecision, serverApplyEmergencyMovementTransition, serverApplyMovementProposal };',
+    context
+  );
+  const packet = (seq, moving = true, crouching = false) => ({
+    seq, x: seq / 100, z: 2, vx: moving ? 1 : 0, vz: 0,
+    angle: 0, moving, turning: false, crouching
+  });
+
+  // Reproduce the client's capped fractional accumulator at 30 FPS using the
+  // same floating-point comparison. It emits ~66ms/34ms intervals while
+  // remaining 20Hz long-term.
+  const fractionalTimes = [1000];
+  let accumulator = 0;
+  for (let frame = 1; frame <= 30; frame++) {
+    accumulator += 1 / 30;
+    if (accumulator < 0.05) continue;
+    fractionalTimes.push(1000 + Math.round(frame * 1000 / 30));
+    accumulator = Math.min(0.05, Math.max(0, accumulator - 0.05));
+  }
+  assert(fractionalTimes.some((time, index) => index > 0 && time - fractionalTimes[index - 1] < 40),
+    '30 FPS regression sequence contains no fractional short interval');
+  const fractionalPlayer = { moving: false, crouching: false };
+  const acceptedTimes = [];
+  const relayTimes = [];
+  fractionalTimes.forEach((time, index) => {
+    const row = packet(index + 1, true, false);
+    const decision = context.api.serverMovementPacketBudgetDecision(fractionalPlayer, row, time);
+    if (!decision.hardAllowed) return;
+    acceptedTimes.push(time);
+    fractionalPlayer.moving = row.moving;
+    fractionalPlayer.crouching = row.crouching;
+    relayTimes.push(time);
+  });
+  assert.deepStrictEqual(acceptedTimes, fractionalTimes,
+    'token credit rejects legitimate 30 FPS fractional 20Hz ingress');
+  assert.deepStrictEqual(relayTimes, fractionalTimes,
+    'relay budget turns the legitimate 33ms fractional frame into a 99ms gap');
+
+  const modifiedPlayer = { moving: true, crouching: false };
+  const modifiedFirst = context.api.serverMovementPacketBudgetDecision(
+    modifiedPlayer,
+    { ...packet(90), foo: 'bypass-attempt', hp: 9999 },
+    2500
+  );
+  const modifiedSecond = context.api.serverMovementPacketBudgetDecision(
+    modifiedPlayer,
+    { ...packet(91), foo: 'bypass-attempt', hp: 9999 },
+    2500
+  );
+  assert.strictEqual(modifiedFirst.hardAllowed, true,
+    'finite positional compatibility packet did not enter the hard movement budget');
+  assert.strictEqual(modifiedSecond.hardAllowed, false,
+    'an extra foo/hp key bypasses the depleted hard movement budget');
+
+  const burstPlayer = { moving: false, crouching: false, x: 0, z: 0, angle: 0, vx: 0, vz: 0 };
+  let collisionProcessed = 0;
+  let emergencyTransitions = 0;
+  let relays = 0;
+  for (let index = 0; index < 100; index++) {
+    const time = 3000 + index * 5;
+    const row = {
+      ...packet(100 + index, index % 2 === 0, index % 3 === 0),
+      x: 120,
+      z: 0,
+      vx: 999,
+      foo: 'modified-client',
+      hp: 9999
+    };
+    const decision = context.api.serverMovementPacketBudgetDecision(burstPlayer, row, time);
+    if (decision.hardAllowed) {
+      context.api.serverApplyMovementProposal(burstPlayer, row, time);
+      burstPlayer.moving = row.moving;
+      burstPlayer.crouching = row.crouching;
+      collisionProcessed++;
+      relays++;
+      continue;
+    }
+    if (!decision.emergencyTransition) continue;
+    const before = { x: burstPlayer.x, z: burstPlayer.z, angle: burstPlayer.angle };
+    assert.strictEqual(context.api.serverApplyEmergencyMovementTransition(burstPlayer, row), true);
+    assert.deepStrictEqual(
+      { x: burstPlayer.x, z: burstPlayer.z, angle: burstPlayer.angle },
+      before,
+      'metadata-only transition applied the unbudgeted client position or angle'
+    );
+    emergencyTransitions++;
+    relays++;
+  }
+  assert(collisionProcessed >= 9 && collisionProcessed <= 11,
+    `500ms toggle flood escaped the 20Hz collision budget: ${collisionProcessed}`);
+  assert(emergencyTransitions <= 3,
+    `toggle flood escaped the 4Hz emergency transition budget: ${emergencyTransitions}`);
+  assert(relays <= collisionProcessed + 3,
+    `toggle flood escaped the combined hard/emergency relay bound: ${relays}`);
+  assert(burstPlayer.x < 8,
+    `unbudgeted toggle positions produced a speedhack-sized displacement: ${burstPlayer.x}`);
+
+  const assertImmediateMetadataTransition = (label, initial, desired) => {
+    const player = { x: 5, z: 7, angle: 1.25, vx: initial.moving ? 2 : 0, vz: 0, ...initial };
+    const drain = packet(500, initial.moving, initial.crouching);
+    assert.strictEqual(context.api.serverMovementPacketBudgetDecision(player, drain, 5000).hardAllowed, true);
+    const malicious = { ...packet(501, desired.moving, desired.crouching), x: 120, z: 120, vx: 999, angle: 9 };
+    const decision = context.api.serverMovementPacketBudgetDecision(player, malicious, 5000);
+    assert.strictEqual(decision.hardAllowed, false, `${label}: transition received a free positional token`);
+    assert.strictEqual(decision.emergencyTransition, true, `${label}: single metadata transition was delayed`);
+    const beforePosition = { x: player.x, z: player.z, angle: player.angle };
+    const beforeVelocity = { vx: player.vx, vz: player.vz };
+    assert.strictEqual(context.api.serverApplyEmergencyMovementTransition(player, malicious), true);
+    assert.deepStrictEqual({ x: player.x, z: player.z, angle: player.angle }, beforePosition,
+      `${label}: emergency transition trusted client transform`);
+    assert.strictEqual(player.moving, desired.moving, `${label}: moving metadata was not immediate`);
+    assert.strictEqual(player.crouching, desired.crouching, `${label}: crouching metadata was not immediate`);
+    if (!desired.moving) assert.strictEqual(Math.hypot(player.vx, player.vz), 0, `${label}: stop retained velocity`);
+    else assert.deepStrictEqual({ vx: player.vx, vz: player.vz }, beforeVelocity,
+      `${label}: emergency transition trusted client velocity`);
+  };
+  assertImmediateMetadataTransition('start', { moving: false, crouching: false }, { moving: true, crouching: false });
+  assertImmediateMetadataTransition('stop', { moving: true, crouching: false }, { moving: false, crouching: false });
+  assertImmediateMetadataTransition('crouch', { moving: true, crouching: false }, { moving: true, crouching: true });
+
+  const stateHandlerStart = serverSource.indexOf("socket.on('state'");
+  const stateHandlerEnd = serverSource.indexOf("socket.on('equipmentAction'", stateHandlerStart);
+  const stateHandler = serverSource.slice(stateHandlerStart, stateHandlerEnd);
+  assert(stateHandler.includes('incomingMovementSeq <= lastAcceptedSeq'),
+    'duplicate movement sequences still repeat authoritative collision work');
+  assert(stateHandler.includes('serverMovementPacketBudgetDecision(p, data, stateReceivedAt)')
+    && stateHandler.includes('realtimeNetworkMetrics.movementPacketsRateDropped++')
+    && stateHandler.includes('realtimeNetworkMetrics.movementPacketsAccepted++'),
+  'movement ingress accepted/dropped counters are no longer wired to the hot path');
+  assert(stateHandler.includes('serverApplyMovementProposal(p, data, stateReceivedAt)')
+    && stateHandler.includes('movementProposalTotalMs')
+    && stateHandler.includes('movementProposalMaxMs'),
+  'authoritative movement proposal timing is no longer observable');
+  assert(stateHandler.includes('playerStateFanoutDeliveries')
+    && stateHandler.includes('playerStateReliableTransitions')
+    && stateHandler.includes('hardMovementApplied || emergencyTransitionApplied')
+    && stateHandler.includes('playerStateEmergencyTransitions++'),
+  'movement fanout and reliable-transition counters are no longer observable');
+  const budgetStart = stateHandler.indexOf('const movementBudget =');
+  const profileStart = stateHandler.indexOf('const progressionChanged =');
+  assert(budgetStart >= 0 && profileStart > budgetStart
+    && !stateHandler.slice(budgetStart, profileStart).includes('return;'),
+  'rate-limited positional data skips compatible profile processing');
+  assert(stateHandler.includes('serverApplyEmergencyMovementTransition(p, data)')
+    && !extractFunction(serverSource, 'serverApplyEmergencyMovementTransition').includes('player.x =')
+    && !extractFunction(serverSource, 'serverApplyEmergencyMovementTransition').includes('player.z ='),
+  'emergency transition can apply an unbudgeted client transform');
+  assert(serverSource.includes('realtimeNetwork: publicRealtimeNetworkMetrics()')
+    && serverSource.includes("strategy: 'tokenBucket'")
+    && serverSource.includes('targetHz: PLAYER_STATE_TARGET_HZ')
+    && serverSource.includes('burstPackets: PLAYER_STATE_TOKEN_CAPACITY')
+    && serverSource.includes('emergencyTransitionHz: PLAYER_TRANSITION_EMERGENCY_TARGET_HZ'),
+  'bounded token-credit contract is missing from /health');
+}
+
+function assertJoinRoomSnapshotsAreTargeted() {
+  const groundSource = extractFunction(serverSource, 'emitGroundItemsSnapshot');
+  const containerSource = extractFunction(serverSource, 'emitWorldContainersSnapshot');
+  let now = 1000;
+  const emissions = [];
+  const metrics = { targetedRoomSnapshots: 0, avoidedRoomSnapshotDeliveries: 0 };
+  const context = vm.createContext({
+    Date: { now: () => now },
+    realtimeNetworkMetrics: metrics,
+    publicGroundItem: item => ({ ...item }),
+    publicWorldContainer: item => ({ ...item }),
+    io: {
+      to(target) {
+        return {
+          emit(event, payload) { emissions.push({ target, event, payload }); }
+        };
+      }
+    }
+  });
+  vm.runInContext(
+    `${containerSource}\n${groundSource}\nthis.api = { emitWorldContainersSnapshot, emitGroundItemsSnapshot };`,
+    context
+  );
+  const room = {
+    id: 'crowded-room',
+    locationId: 'settlement',
+    sockets: new Set(['joining', 'other-a', 'other-b']),
+    groundItems: new Map([['ground', { id: 'ground' }]]),
+    containers: new Map([['box', { id: 'box' }]])
+  };
+  context.api.emitGroundItemsSnapshot(room, true, 'joining');
+  context.api.emitWorldContainersSnapshot(room, true, 'joining');
+  assert.deepStrictEqual(emissions.map(row => row.target), ['joining', 'joining'],
+    'joining player snapshots are still broadcast to the entire crowded room');
+  assert.strictEqual(room.lastGroundSnapshotAt, undefined,
+    'a targeted ground snapshot consumed the room-wide cadence gate');
+  assert.strictEqual(room.lastContainerSnapshotAt, undefined,
+    'a targeted container snapshot consumed the room-wide cadence gate');
+  assert.strictEqual(metrics.targetedRoomSnapshots, 2);
+  assert.strictEqual(metrics.avoidedRoomSnapshotDeliveries, 4);
+
+  now = 1001;
+  context.api.emitGroundItemsSnapshot(room, false);
+  context.api.emitWorldContainersSnapshot(room, false);
+  assert.deepStrictEqual(emissions.slice(2).map(row => row.target), ['crowded-room', 'crowded-room'],
+    'targeted join delivery suppressed the next legitimate room-wide snapshot');
+
+  for (const marker of [
+    'emitGroundItemsSnapshot(room, true, socket.id);',
+    'emitWorldContainersSnapshot(room, true, socket.id);'
+  ]) {
+    const matches = serverSource.split(marker).length - 1;
+    assert(matches >= 3, `${marker} is not used by join, room change, and world transfer`);
+  }
+  assert(serverSource.includes('emitGroundItemsSnapshot(settlement, true, p.id);')
+    && serverSource.includes('emitWorldContainersSnapshot(settlement, true, p.id);'),
+  'respawn still broadcasts unchanged ground/container baselines to existing players');
+}
+
+function assertPartyPersistenceIsBatched() {
+  const source = extractFunction(serverSource, 'persistActivePlayerStates');
+  const makeRuntime = failWrite => {
+    const stores = {
+      userA: {
+        charA: { state: { x: 0 }, updatedAt: 1, summary: { x: 0 } },
+        charB: { state: { x: 0 }, updatedAt: 1, summary: { x: 0 } }
+      }
+    };
+    let writes = 0;
+    let clock = 0;
+    const context = vm.createContext({
+      performance: { now: () => ++clock },
+      activePlayerPersistenceMetrics: {
+        writeAttempts: 0,
+        writeFailures: 0,
+        rowsStaged: 0,
+        coalescedWritesAvoided: 0,
+        writeTotalMs: 0,
+        writeMaxMs: 0
+      },
+      normalizeCharacterId: value => String(value || ''),
+      ensureUserCharacterStore: userId => stores[userId] || {},
+      mergeAuthoritativeCharacterState: (current, _previous, player) => ({ ...current, x: player.x }),
+      summarizeState: state => ({ x: state.x }),
+      persistSaves: () => {
+        writes++;
+        if (failWrite) throw new Error('injected batch write failure');
+      }
+    });
+    vm.runInContext(`${source}\nthis.persistActivePlayerStates = persistActivePlayerStates;`, context);
+    return { context, stores, writes: () => writes };
+  };
+
+  const success = makeRuntime(false);
+  assert.strictEqual(success.context.persistActivePlayerStates([
+    { userId: 'userA', characterId: 'charA', x: 5 },
+    { userId: 'userA', characterId: 'charB', x: 8 },
+    { userId: 'userA', characterId: 'charA', x: 99 }
+  ]), true);
+  assert.strictEqual(success.writes(), 1, 'one party transition performs more than one synchronous save write');
+  assert.strictEqual(success.stores.userA.charA.state.x, 5, 'duplicate party member was persisted twice');
+  assert.strictEqual(success.stores.userA.charB.state.x, 8);
+  assert.strictEqual(success.context.activePlayerPersistenceMetrics.coalescedWritesAvoided, 1,
+    'batched party persistence does not expose its avoided synchronous write count');
+
+  const failure = makeRuntime(true);
+  const previousA = failure.stores.userA.charA.state;
+  const previousB = failure.stores.userA.charB.state;
+  assert.throws(() => failure.context.persistActivePlayerStates([
+    { userId: 'userA', characterId: 'charA', x: 5 },
+    { userId: 'userA', characterId: 'charB', x: 8 }
+  ]), /injected batch write failure/);
+  assert.strictEqual(failure.stores.userA.charA.state, previousA,
+    'failed party persistence left the first in-memory row ahead of disk');
+  assert.strictEqual(failure.stores.userA.charB.state, previousB,
+    'failed party persistence left the second in-memory row ahead of disk');
+  assert.strictEqual(failure.context.activePlayerPersistenceMetrics.writeFailures, 1,
+    'failed active-player batch writes are not observable');
+
+  for (const marker of [
+    'persistActivePlayerStates(arrivingMembers);',
+    'persistActivePlayerStates(enteringMembers);',
+    'persistActivePlayerStates(cancellingMembers);',
+    'persistActivePlayerStates(membersToPersist);'
+  ]) assert(serverSource.includes(marker), `global travel does not use batched persistence: ${marker}`);
+  assert(serverSource.includes('activePlayerPersistence: publicActivePlayerPersistenceMetrics()'),
+    'active-player write latency and coalescing metrics are missing from /health');
 }
 
 function assertPlayerSnapshotIsLazyAndVolatile() {
@@ -694,6 +1009,9 @@ assertCrowdedEnemyFanoutCoalescesEquivalentViews();
 assertViewerSpecificEnemyDeltas();
 assertWorldStateRefreshIsCoalesced();
 assertMotionPacketContract();
+assertMovementIngressBudgetAndMetrics();
+assertJoinRoomSnapshotsAreTargeted();
+assertPartyPersistenceIsBatched();
 assertPlayerSnapshotIsLazyAndVolatile();
 assertCollisionCacheInvalidation();
-console.log('Crowded-room performance checks passed: actor/static broad phases, collision caches, and compact volatile player streams are guarded.');
+console.log('Crowded-room performance checks passed: actor/static broad phases, collision caches, fractional 20Hz movement ingress/relay, targeted join snapshots, batched party saves, and compact volatile streams are guarded.');

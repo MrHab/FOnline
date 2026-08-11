@@ -158,7 +158,8 @@ const staticRuntime = fs.readFileSync(STATIC_RUNTIME_FILE, 'utf8');
   'state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];',
   'const LAZY_SKINNED_STATIC_MODEL_KEYS = new Set([',
   "'enemyGhoul'",
-  '.filter(key => !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))'
+  'function staticModelKeysForLocation(',
+  '.filter(key => STATIC_MODEL_URLS[key] && !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))'
 ].forEach(marker => assert(staticRuntime.includes(marker), `ghoul loader integration is missing: ${marker}`));
 
 const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');

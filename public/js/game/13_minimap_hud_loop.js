@@ -377,6 +377,7 @@
 
   let worldDataReadyPromise = null;
   let worldRuntimeReadyPromise = null;
+  const CRITICAL_WORLD_ASSET_TIMEOUT_MS = 9000;
   document.body.dataset.worldRuntime = 'deferred';
 
   // Auth and character selection only need UI code. World data, textures and
@@ -393,18 +394,25 @@
     return worldDataReadyPromise;
   }
 
-  function ensureWorldRuntimeReady() {
+  function waitForCriticalWorldAssets(tasks = [], timeoutMs = CRITICAL_WORLD_ASSET_TIMEOUT_MS) {
+    let timer = 0;
+    const work = Promise.all(tasks).then(() => ({ timedOut: false }));
+    const timeout = new Promise(resolve => {
+      timer = setTimeout(() => resolve({ timedOut: true }), Math.max(1000, Number(timeoutMs) || CRITICAL_WORLD_ASSET_TIMEOUT_MS));
+    });
+    return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+  }
+
+  function ensureWorldRuntimeReady(options = {}) {
+    const requestedLocationId = String(
+      options.locationId || options.location?.id || currentLocation?.id || 'settlement'
+    );
     if (!worldRuntimeReadyPromise) {
       document.body.dataset.worldRuntime = 'loading';
       worldRuntimeReadyPromise = ensureWorldDataReady()
-        .then(async () => {
+        .then(() => {
           ensureWorldMaterials();
           createPlayerModel();
-          await preloadStaticWorldModels();
-          await preloadServiceScoutBootModel();
-          await preloadWeaponModelLibrary();
-          await preloadApprovedHumanoidAssets();
-          document.body.dataset.worldRuntime = 'ready';
           return true;
         })
         .catch(error => {
@@ -413,7 +421,43 @@
           throw error;
         });
     }
-    return worldRuntimeReadyPromise;
+    return worldRuntimeReadyPromise.then(async () => {
+      // World config can replace the authored location objects while the core
+      // promise is resolving. Re-resolve by stable ID so a new character does
+      // not preload the small fallback settlement captured before that fetch.
+      const location = LOCATIONS[requestedLocationId]
+        || options.location
+        || currentLocation
+        || LOCATIONS.settlement;
+      const appearance = options.appearance || characterProfile?.appearance || {};
+      const equipmentSnapshot = options.equipment && typeof options.equipment === 'object'
+        ? options.equipment
+        : (typeof equipment === 'object' ? equipment : {});
+      const weaponIds = Array.isArray(options.weaponIds)
+        ? options.weaponIds
+        : [equipmentSnapshot.weapon, equipmentSnapshot.offhand].filter(Boolean);
+      const assetGate = await waitForCriticalWorldAssets([
+        preloadStaticWorldModels({ location }),
+        typeof preloadCharacterAppearanceAsset === 'function'
+          ? preloadCharacterAppearanceAsset(appearance)
+          : Promise.resolve(false),
+        typeof preloadWeaponModels === 'function'
+          ? preloadWeaponModels(weaponIds)
+          : Promise.resolve(null),
+        preloadApprovedHumanoidAssets({
+          appearance,
+          equipment: equipmentSnapshot,
+          weaponIds,
+          includeNpcAnimations: false
+        })
+      ]);
+      if (assetGate.timedOut) {
+        console.warn('[startup] critical model preload timed out; continuing with placeholders while assets finish in background.');
+      }
+      document.body.dataset.worldRuntimeAssets = assetGate.timedOut ? 'background' : 'ready';
+      document.body.dataset.worldRuntime = 'ready';
+      return { ready: true, assetTimeout: assetGate.timedOut };
+    });
   }
 
   // ===== LOOP =====

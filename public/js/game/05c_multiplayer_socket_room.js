@@ -603,6 +603,10 @@
         setOnlineStatus(`Сеть: ${msg}`);
         activeCharacterLeaseId = '';
         multiplayer.characterLeaseId = '';
+        // Some terminal join rejections exist only in the ACK path. Clear the
+        // explicit intent before disconnect so a later prepare-only transport
+        // cannot auto-join the rejected character.
+        multiplayer.joinRequested = false;
         clearMultiplayerJoinedContext();
         if (typeof setClientAuthorityMode === 'function') {
           setClientAuthorityMode('blocked', 'join-rejected', { force: true, clearWorld: true });
@@ -658,7 +662,8 @@
 
   function connectMultiplayer(options = {}) {
     const shouldWaitForJoin = !!(options && options.waitForJoin);
-    if (!serverSession.token || !selectedServerCharacterId || !characterProfile) {
+    const prepareOnly = !!(options && options.prepareOnly);
+    if (!serverSession.token || (!prepareOnly && (!selectedServerCharacterId || !characterProfile))) {
       resolveMultiplayerJoinWaiters(false);
       return shouldWaitForJoin ? Promise.resolve(false) : undefined;
     }
@@ -682,12 +687,17 @@
         });
       }
     }
+    // Invalidating a stale joined/joining context resets joinRequested. Record
+    // the intent only after that reset so the replacement socket still joins.
+    if (!prepareOnly) multiplayer.joinRequested = true;
     const waitPromise = shouldWaitForJoin ? waitForMultiplayerJoin(options.timeoutMs || 4500) : null;
     if (multiplayer.socket) {
       const socket = multiplayer.socket;
       if (socket.connected) {
         multiplayer.connected = true;
-        if (multiplayerJoinedContextMatchesCurrent(socket)) {
+        if (prepareOnly) {
+          multiplayer.transportState = multiplayer.joined ? 'joined' : 'connected';
+        } else if (multiplayerJoinedContextMatchesCurrent(socket)) {
           multiplayer.transportState = 'joined';
           if (typeof setClientAuthorityMode === 'function') {
             setClientAuthorityMode('server', 'connect-current-socket');
@@ -719,7 +729,7 @@
       if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
       multiplayer.connected = true;
       multiplayer.transportState = 'connected';
-      joinMultiplayerRoom();
+      if (multiplayer.joinRequested) joinMultiplayerRoom();
     });
     socket.on('disconnect', () => {
       if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
@@ -760,6 +770,10 @@
       setOnlineStatus(`Сеть: ${msg}`);
       activeCharacterLeaseId = '';
       multiplayer.characterLeaseId = '';
+      // A server rejection is terminal for this explicit join intent. Keep
+      // transport retries for connect_error, but never auto-join a rejected
+      // character from a later prepare-only connection.
+      multiplayer.joinRequested = false;
       clearMultiplayerJoinedContext();
       multiplayer.transportState = 'blocked';
       if (typeof setClientAuthorityMode === 'function') {
@@ -817,11 +831,12 @@
       if (typeof refreshNetworkFogVisibilityNow === 'function') refreshNetworkFogVisibilityNow();
     });
     multiplayer.socket.on('enemySnapshot', data => {
-      markStartupNetworkEvent('enemySnapshot');
+      if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
       if (!networkSnapshotIsFresh(data || {}, 'lastEnemySnapshotT')) return;
       resetNetworkEnemyFrameSequence(data || {});
       multiplayer.serverAuthoritativeEnemies = true;
       applyNetworkEnemies(data.enemies || [], { allowPositionSync: true, fromServer: true, pruneMissing: true });
+      markStartupNetworkEvent('enemySnapshot');
     });
     multiplayer.socket.on('enemyFrame', data => {
       if (!networkEnemyFrameIsFresh(data || {})) return;
@@ -834,9 +849,10 @@
       applyNetworkEnemyActivityDelta(data.activities || []);
     });
     multiplayer.socket.on('groundItemsSnapshot', data => {
-      markStartupNetworkEvent('groundItemsSnapshot');
+      if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
       if (!networkSnapshotIsFresh(data || {}, 'lastGroundItemsSnapshotT')) return;
       applyNetworkGroundItems(data.items || []);
+      markStartupNetworkEvent('groundItemsSnapshot');
     });
     multiplayer.socket.on('groundItemDropped', data => {
       if (!networkPayloadIsForCurrentRoom(data) || !data.item) return;
@@ -847,9 +863,10 @@
       removeGroundItemVisual(data.id || data.item?.id);
     });
     multiplayer.socket.on('worldContainersSnapshot', data => {
-      markStartupNetworkEvent('worldContainersSnapshot');
+      if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
       if (!networkSnapshotIsFresh(data || {}, 'lastWorldContainersSnapshotT')) return;
       applyNetworkWorldContainers(data.containers || []);
+      markStartupNetworkEvent('worldContainersSnapshot');
     });
     multiplayer.socket.on('worldContainerUpdated', data => {
       if (!networkPayloadIsForCurrentRoom(data) || !data.container) return;
@@ -1612,6 +1629,7 @@
     updateNetworkPing(dt);
     if (!multiplayer.socket || !multiplayer.socket.connected || !multiplayer.joined || !characterProfile) return;
     multiplayer.lastStateSent += dt;
+    multiplayer.movementSendAccumulator = Number(multiplayer.movementSendAccumulator || 0) + Math.max(0, Number(dt) || 0);
     multiplayer.lastHeartbeat += dt;
     // v7.74.48: отправляем компактные координаты чаще, но только как playerState
     // поток движения. Полные snapshot теперь не должны дёргать модель второго игрока.
@@ -1632,14 +1650,15 @@
     const justStarted = !remoteWasMoving && !!physicallyMoving;
     const justStopped = remoteWasMoving && !physicallyMoving && !movedSinceLastSend;
     const movingNow = !!(physicallyMoving || movedSinceLastSend || turnedSinceLastSend);
-    // v7.74.54: движение лучше выглядит при ровном потоке 30-33 Гц, чем при
-    // слишком частых 50 Гц с микроджиттером браузера/сети. Полный профиль
-    // во время длинного бега отправляем редко, иначе каждые 250 мс возникают
-    // JSON/sanitize/GC пики, похожие на небольшие пролагивания.
+    // Сервер ретранслирует движение с частотой не выше 20 Гц. Такой же темп на
+    // клиенте не тратит входящий серверный бюджет на промежуточные пакеты,
+    // которые всё равно не увидят другие игроки. Старт и остановка по-прежнему
+    // проходят немедленно и надёжно, независимо от этого интервала.
     multiplayer.lastFullStateSent = Number(multiplayer.lastFullStateSent || 0) + Math.max(0, dt);
     multiplayer.lastHeavyProfileSent = Number(multiplayer.lastHeavyProfileSent || 0) + Math.max(0, dt);
-    const stateSendInterval = movingNow ? (IS_MOBILE_DEVICE ? 0.034 : 0.030) : (justStopped ? 0.001 : 0.140);
-    if (multiplayer.lastStateSent >= stateSendInterval || justStarted || justStopped) {
+    const stateSendInterval = movingNow ? 0.050 : (justStopped ? 0.001 : 0.140);
+    const movementCadenceReady = multiplayer.movementSendAccumulator >= stateSendInterval;
+    if (movementCadenceReady || justStarted || justStopped) {
       const fullSyncInterval = movingNow ? 1.25 : 2.50;
       const periodicProfileSync = multiplayer.lastFullStateSent >= fullSyncInterval;
       const transitionReliableMotion = justStarted || justStopped;
@@ -1652,6 +1671,15 @@
       const outgoingVx = smoothOutgoingVelocity('x', rawOutgoingVx, physicallyMoving, justStarted, turnedSinceLastSend && physicallyMoving);
       const outgoingVz = smoothOutgoingVelocity('z', rawOutgoingVz, physicallyMoving, justStarted, turnedSinceLastSend && physicallyMoving);
       multiplayer.lastStateSent = 0;
+      // Keep the fractional cadence budget instead of resetting it. At 20-30
+      // FPS this prevents a 50ms interval from quantizing down to one packet
+      // every two frames while the long-term rate still stays at 20 Hz.
+      multiplayer.movementSendAccumulator = justStarted || justStopped
+        ? 0
+        : Math.min(
+            stateSendInterval,
+            Math.max(0, multiplayer.movementSendAccumulator - stateSendInterval)
+          );
       if (periodicProfileSync || transitionReliableMotion) multiplayer.lastFullStateSent = 0;
       if (includeHeavyProfile) multiplayer.lastHeavyProfileSent = 0;
       multiplayer.lastSentX = player.x;

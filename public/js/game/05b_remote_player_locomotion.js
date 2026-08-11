@@ -102,8 +102,158 @@
   const REMOTE_ANIMATION_LOD_MID_INTERVAL = 0.05;
   const REMOTE_ANIMATION_LOD_FAR_INTERVAL = 0.08;
   const REMOTE_ANIMATION_LOD_MAX_DT = 0.08;
+  const REMOTE_ANIMATION_LOD_STAGGER_BUCKETS = 8;
+  const ACTOR_ANIMATION_DEFAULT_BUDGET = Object.freeze({
+    id: 'high',
+    actorAnimationNearDistance: 6,
+    actorAnimationCloseDistance: 11,
+    actorAnimationMidDistance: 19,
+    actorAnimationNearInterval: 0,
+    actorAnimationCloseInterval: 1 / 30,
+    actorAnimationMidInterval: 0.05,
+    actorAnimationFarInterval: 0.08,
+    actorAnimationCrowdMovingInterval: 1 / 30,
+    actorAnimationCrowdIdleInterval: 0.0667,
+    actorFootIkDistance: 6,
+    actorFacialDistance: 10
+  });
+  const ACTOR_ANIMATION_VIEW_PADDING = 3.2;
+  const actorAnimationViewProjection = new THREE.Matrix4();
+  const actorAnimationViewFrustum = new THREE.Frustum();
+  const actorAnimationViewSphere = new THREE.Sphere(new THREE.Vector3(), ACTOR_ANIMATION_VIEW_PADDING);
+  let actorAnimationViewFrustumReady = false;
+  const actorAnimationDiagnosticState = {
+    sequence: 0,
+    sampledAt: 0,
+    quality: 'high',
+    pressure: false,
+    heavyActors: 0,
+    awaitingRemote: false,
+    enemy: { important: 0, near: 0, close: 0, mid: 0, far: 0, offscreen: 0, updates: 0, skips: 0 },
+    remote: { important: 0, near: 0, close: 0, mid: 0, far: 0, offscreen: 0, updates: 0, skips: 0 }
+  };
 
-  function remoteAnimationLodInterval(distance, visible = true, important = false) {
+  function actorAnimationQualityBudget(settings = null) {
+    if (settings && typeof settings === 'object') return settings;
+    if (typeof graphicsSettings !== 'undefined' && graphicsSettings) return graphicsSettings;
+    return ACTOR_ANIMATION_DEFAULT_BUDGET;
+  }
+
+  function actorAnimationBudgetTier(distance, visible = true, important = false, settings = null) {
+    if (!visible) return 'offscreen';
+    if (important) return 'important';
+    const budget = actorAnimationQualityBudget(settings);
+    const numericDistance = Math.max(0, Number(distance || 0));
+    if (numericDistance <= Number(budget.actorAnimationNearDistance ?? 6)) return 'near';
+    if (numericDistance <= Number(budget.actorAnimationCloseDistance ?? 11)) return 'close';
+    if (numericDistance <= Number(budget.actorAnimationMidDistance ?? 19)) return 'mid';
+    return 'far';
+  }
+
+  function actorAnimationBudgetInterval(distance, visible = true, important = false, settings = null) {
+    const budget = actorAnimationQualityBudget(settings);
+    const tier = actorAnimationBudgetTier(distance, visible, important, budget);
+    if (tier === 'offscreen') return Infinity;
+    if (tier === 'important') return 0;
+    if (tier === 'near') return Math.max(0, Number(budget.actorAnimationNearInterval ?? 0));
+    if (tier === 'close') return Math.max(0, Number(budget.actorAnimationCloseInterval ?? (1 / 30)));
+    if (tier === 'mid') return Math.max(0, Number(budget.actorAnimationMidInterval ?? 0.05));
+    return Math.max(0, Number(budget.actorAnimationFarInterval ?? 0.08));
+  }
+
+  function actorAnimationCrowdInterval(interval, pressure = false, important = false, moving = false, settings = null) {
+    const base = Number(interval);
+    if (!Number.isFinite(base) || pressure !== true || important === true) return interval;
+    const budget = actorAnimationQualityBudget(settings);
+    const floor = moving
+      ? Number(budget.actorAnimationCrowdMovingInterval ?? (1 / 30))
+      : Number(budget.actorAnimationCrowdIdleInterval ?? 0.0667);
+    return Math.max(base, Math.max(0, floor));
+  }
+
+  function actorAnimationDetailEnabled(detail = '', distance = 0, important = false, settings = null) {
+    if (important) return true;
+    const budget = actorAnimationQualityBudget(settings);
+    const key = detail === 'facial' ? 'actorFacialDistance' : 'actorFootIkDistance';
+    const fallback = detail === 'facial' ? 10 : 6;
+    return Math.max(0, Number(distance || 0)) <= Math.max(0, Number(budget[key] ?? fallback));
+  }
+
+  function refreshActorAnimationViewFrustum() {
+    actorAnimationViewFrustumReady = false;
+    if (typeof camera === 'undefined' || !camera?.projectionMatrix || !camera?.matrixWorldInverse) return false;
+    camera.updateMatrixWorld?.();
+    actorAnimationViewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    actorAnimationViewFrustum.setFromProjectionMatrix(actorAnimationViewProjection);
+    actorAnimationViewFrustumReady = true;
+    return true;
+  }
+
+  function actorAnimationInView(actor, padding = ACTOR_ANIMATION_VIEW_PADDING) {
+    if (!actor || actor.visible === false) return false;
+    if (!actorAnimationViewFrustumReady || !actor.position) return true;
+    actorAnimationViewSphere.center.set(
+      Number(actor.position.x || 0),
+      Number(actor.position.y || 0) + 1.25,
+      Number(actor.position.z || 0)
+    );
+    actorAnimationViewSphere.radius = Math.max(ACTOR_ANIMATION_VIEW_PADDING, Number(padding || 0));
+    return actorAnimationViewFrustum.intersectsSphere(actorAnimationViewSphere);
+  }
+
+  function resetActorAnimationDiagnosticBucket(bucket) {
+    bucket.important = 0;
+    bucket.near = 0;
+    bucket.close = 0;
+    bucket.mid = 0;
+    bucket.far = 0;
+    bucket.offscreen = 0;
+    bucket.updates = 0;
+    bucket.skips = 0;
+  }
+
+  function beginActorAnimationDiagnostics(heavyActors = 0, pressure = false) {
+    actorAnimationDiagnosticState.sequence += 1;
+    actorAnimationDiagnosticState.sampledAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    actorAnimationDiagnosticState.quality = String(actorAnimationQualityBudget().id || 'high');
+    actorAnimationDiagnosticState.pressure = pressure === true;
+    actorAnimationDiagnosticState.heavyActors = Math.max(0, Number(heavyActors || 0));
+    actorAnimationDiagnosticState.awaitingRemote = true;
+    resetActorAnimationDiagnosticBucket(actorAnimationDiagnosticState.enemy);
+    resetActorAnimationDiagnosticBucket(actorAnimationDiagnosticState.remote);
+  }
+
+  function recordActorAnimationDiagnostic(kind = 'enemy', tier = 'far', updated = false, pressure = false) {
+    const bucket = kind === 'remote' ? actorAnimationDiagnosticState.remote : actorAnimationDiagnosticState.enemy;
+    if (Object.prototype.hasOwnProperty.call(bucket, tier)) bucket[tier] += 1;
+    if (updated) bucket.updates += 1;
+    else bucket.skips += 1;
+    if (pressure === true) actorAnimationDiagnosticState.pressure = true;
+  }
+
+  function actorAnimationDiagnosticsSnapshot() {
+    const state = actorAnimationDiagnosticState;
+    return {
+      sequence: state.sequence,
+      sampledAt: state.sampledAt,
+      quality: state.quality,
+      pressure: state.pressure,
+      heavyActors: state.heavyActors,
+      enemy: { ...state.enemy },
+      remote: { ...state.remote }
+    };
+  }
+
+  if (typeof window !== 'undefined') {
+    // On-demand only: the live counters reuse one object and do not allocate or
+    // log during frames. This snapshot is intentionally small for browser QA.
+    window.__realmActorAnimationStats = actorAnimationDiagnosticsSnapshot;
+  }
+
+  function remoteAnimationLodInterval(distance, visible = true, important = false, settings = null) {
+    if (settings || typeof actorAnimationBudgetInterval === 'function') {
+      return actorAnimationBudgetInterval(distance, visible, important, settings);
+    }
     if (!visible) return Infinity;
     if (important || Number(distance || 0) <= REMOTE_ANIMATION_LOD_NEAR_DISTANCE) return 0;
     return Number(distance || 0) <= REMOTE_ANIMATION_LOD_MID_DISTANCE
@@ -111,26 +261,78 @@
       : REMOTE_ANIMATION_LOD_FAR_INTERVAL;
   }
 
+  function remoteAnimationStableStaggerUnit(row = {}) {
+    const key = String(row?.id || row?.data?.id || row?.group?.uuid || '');
+    if (!key) return 0;
+    let hash = 2166136261;
+    for (let index = 0; index < key.length; index += 1) {
+      hash ^= key.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return ((hash >>> 0) % REMOTE_ANIMATION_LOD_STAGGER_BUCKETS) / REMOTE_ANIMATION_LOD_STAGGER_BUCKETS;
+  }
+
   function consumeRemoteAnimationLodDt(row, dt, interval, stateKey) {
     const numericDt = Number(dt);
     const frameDt = Number.isFinite(numericDt) ? Math.max(0, Math.min(0.05, numericDt)) : 0.016;
-    const accumulatedDt = Math.min(
+    // Cadence and mixer catch-up are deliberately separate: Low can schedule a
+    // 0.12s tier, while the mixer must never receive more than 0.08s at once.
+    const elapsedAnimationDt = Math.min(
       REMOTE_ANIMATION_LOD_MAX_DT,
-      Math.max(0, Number(row?.remoteAnimationLodDt || 0)) + frameDt
+      Math.max(0, Number(row?.remoteAnimationElapsedDt || 0)) + frameDt
     );
+    const rawCadenceDt = Math.max(0, Number(row?.remoteAnimationLodDt || 0)) + frameDt;
     const nextStateKey = String(stateKey || '');
     const stateChanged = String(row?.remoteAnimationLodStateKey || '') !== nextStateKey;
+    const previousInterval = row?.remoteAnimationLodInterval;
+    const finiteInterval = Number.isFinite(interval);
+    const intervalChanged = previousInterval !== undefined && (
+      Number.isFinite(previousInterval) !== finiteInterval
+      || (finiteInterval && Math.abs(Number(previousInterval) - Number(interval)) > 1e-6)
+    );
     row.remoteAnimationLodStateKey = nextStateKey;
-    if (!Number.isFinite(interval)) {
-      row.remoteAnimationLodDt = accumulatedDt;
+    row.remoteAnimationLodInterval = finiteInterval ? Math.max(0, Number(interval || 0)) : Infinity;
+    if (!finiteInterval) {
+      row.remoteAnimationLodDt = 0;
+      row.remoteAnimationElapsedDt = elapsedAnimationDt;
+      row.remoteAnimationLodThreshold = Infinity;
       return 0;
     }
-    if (!stateChanged && interval > 0 && accumulatedDt + 1e-6 < interval) {
-      row.remoteAnimationLodDt = accumulatedDt;
+    const normalizedInterval = Math.max(0, Number(interval || 0));
+    const accumulatedCadenceDt = normalizedInterval > 0
+      ? Math.min(normalizedInterval + 0.05, rawCadenceDt)
+      : 0;
+    if (stateChanged) {
+      row.remoteAnimationLodDt = 0;
+      row.remoteAnimationElapsedDt = 0;
+      row.remoteAnimationLodThreshold = normalizedInterval > 0
+        ? normalizedInterval * (1 - remoteAnimationStableStaggerUnit(row))
+        : 0;
+      return elapsedAnimationDt;
+    }
+    if (normalizedInterval <= 0) {
+      row.remoteAnimationLodDt = 0;
+      row.remoteAnimationElapsedDt = 0;
+      row.remoteAnimationLodThreshold = 0;
+      return elapsedAnimationDt;
+    }
+    if (intervalChanged) {
+      row.remoteAnimationLodThreshold = normalizedInterval > 0
+        ? normalizedInterval * (1 - remoteAnimationStableStaggerUnit(row))
+        : 0;
+    }
+    const threshold = normalizedInterval > 0
+      ? Math.max(0, Number(row?.remoteAnimationLodThreshold ?? normalizedInterval))
+      : 0;
+    if (accumulatedCadenceDt + 1e-6 < threshold) {
+      row.remoteAnimationLodDt = accumulatedCadenceDt;
+      row.remoteAnimationElapsedDt = elapsedAnimationDt;
       return 0;
     }
-    row.remoteAnimationLodDt = 0;
-    return accumulatedDt;
+    row.remoteAnimationLodDt = Math.max(0, accumulatedCadenceDt - threshold);
+    row.remoteAnimationElapsedDt = 0;
+    row.remoteAnimationLodThreshold = normalizedInterval;
+    return elapsedAnimationDt;
   }
 
   function moveRemotePositionToward(group, targetX, targetZ, dt, options = {}) {
@@ -742,19 +944,58 @@
     }
   }
 
+  function remoteObjectUsesSharedGeometry(obj) {
+    return !!(
+      (typeof isSharedWorldGeometry === 'function' && isSharedWorldGeometry(obj?.geometry))
+      || obj?.userData?.characterGlbSharedGeometry
+      || obj?.userData?.characterGlbSharedAsset
+      || obj?.userData?.approvedEquipmentSharedAsset
+      || obj?.userData?.weaponSharedAsset
+    );
+  }
+
+  function remoteObjectUsesSharedMaterial(obj, material) {
+    if (
+      material?.userData?.networkRevealManaged
+      || material?.userData?.characterGlbInstanceMaterial
+      || obj?.userData?.characterGlbInstanceMaterial
+    ) return false;
+    return !!(
+      (typeof isSharedWorldMaterial === 'function' && isSharedWorldMaterial(material))
+      || material?.userData?.characterGlbTemplateMaterial
+      || obj?.userData?.characterGlbSharedMaterial
+      || obj?.userData?.approvedEquipmentSharedAsset
+      || obj?.userData?.weaponSharedAsset
+    );
+  }
+
+  function disposeRemotePlayerVisual(root) {
+    if (!root?.traverse) return;
+    const disposedMaterials = new Set();
+    const disposedTextures = new Set();
+    root.traverse(obj => {
+      if (obj.geometry?.dispose && !remoteObjectUsesSharedGeometry(obj)) obj.geometry.dispose();
+      const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+      materials.filter(Boolean).forEach(material => {
+        if (disposedMaterials.has(material) || remoteObjectUsesSharedMaterial(obj, material)) return;
+        disposedMaterials.add(material);
+        material.dispose?.();
+      });
+      const texture = obj.userData?.texture;
+      if (texture?.dispose && !disposedTextures.has(texture)) {
+        disposedTextures.add(texture);
+        texture.dispose();
+      }
+      if (obj.userData) delete obj.userData.remotePlayerRow;
+    });
+  }
+
   function removeRemotePlayer(id) {
     const row = multiplayer.remotePlayers.get(id);
     if (!row) return;
     forgetNetworkRevealObject(row.group);
     try { if (row.group) scene.remove(row.group); } catch (_) {}
-    try {
-      row.group?.traverse(obj => {
-        if (obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
-        if (obj.material && obj.material.dispose) obj.material.dispose();
-        if (obj.userData && obj.userData.texture && obj.userData.texture.dispose) obj.userData.texture.dispose();
-        if (obj.userData) delete obj.userData.remotePlayerRow;
-      });
-    } catch (_) {}
+    try { disposeRemotePlayerVisual(row.group); } catch (_) {}
     multiplayer.remotePlayers.delete(id);
   }
 
@@ -795,7 +1036,12 @@
   function ensureNetworkRevealMaterial(mat) {
     if (!mat || typeof mat.opacity !== 'number') return mat;
     if (mat.userData && mat.userData.networkRevealManaged) return mat;
-    const managed = typeof mat.clone === 'function' ? mat.clone() : mat;
+    // Character GLB wrappers are already actor-local. Reuse them instead of
+    // cloning another wrapper and losing the first one; shared equipment and
+    // legacy materials still receive a private reveal clone here.
+    const managed = mat.userData?.characterGlbInstanceMaterial
+      ? mat
+      : (typeof mat.clone === 'function' ? mat.clone() : mat);
     if (!managed.userData) managed.userData = {};
     managed.userData.networkRevealManaged = true;
     managed.userData.networkRevealBaseOpacity = Number.isFinite(Number(managed.opacity)) ? Number(managed.opacity) : 1;
@@ -1462,6 +1708,17 @@
 
   function updateRemotePlayers(dt) {
     const now = performance.now();
+    refreshActorAnimationViewFrustum();
+    const animationBudget = actorAnimationQualityBudget();
+    const animationFrameContext = typeof enemyAnimationFrameContextState !== 'undefined'
+      ? enemyAnimationFrameContextState
+      : null;
+    const crowdPressure = actorAnimationDiagnosticState.awaitingRemote
+      && animationFrameContext?.crowdPressure === true;
+    if (!actorAnimationDiagnosticState.awaitingRemote) {
+      beginActorAnimationDiagnostics(multiplayer.remotePlayers.size, crowdPressure);
+    }
+    actorAnimationDiagnosticState.awaitingRemote = false;
     multiplayer.remotePlayers.forEach(row => {
       const g = row.group;
       if (!g) return;
@@ -1479,6 +1736,8 @@
         row.visualVelZ = 0;
         row.x = netX;
         row.z = netZ;
+        consumeRemoteAnimationLodDt(row, dt, Infinity, 'fog-hidden');
+        recordActorAnimationDiagnostic('remote', 'offscreen', false, crowdPressure);
         return;
       }
       updateRemoteVisualLocomotion(row, dt, now);
@@ -1488,6 +1747,8 @@
       const visualMoveZ = Number(row.visualVelZ || 0);
       const injuries = row.data?.injuries || {};
       const meleeStartedAt = Number(g.userData?.meleeAnim?.startedAt || 0);
+      const meleeDurationMs = Math.max(0.18, Number(g.userData?.meleeAnim?.duration || 0.32)) * 1000;
+      const meleeActive = meleeStartedAt > 0 && now < meleeStartedAt + meleeDurationMs;
       const attackToken = Number(g.userData?.attackAnimationToken || 0);
       const attackActive = attackToken > 0 && Number(g.userData?.attackAnimationUntil || 0) > now;
       const reloadStartedAt = Number(g.userData?.reloadAnim?.startedAt || 0);
@@ -1496,11 +1757,12 @@
       const hitReactionStartedAt = Number(g.userData?.hitReactionAnim?.startedAt || 0);
       const hitReactionDurationMs = Math.max(0, Number(g.userData?.hitReactionAnim?.duration || 0)) * 1000;
       const hitReactionActive = hitReactionStartedAt > 0 && now < hitReactionStartedAt + hitReactionDurationMs;
-      const visible = g.visible !== false;
+      const visible = g.visible !== false && actorAnimationInView(g);
       const distance = remotePlayerDistanceToLocal(row);
-      const important = attackActive || reloadActive || meleeStartedAt > 0 || hitReactionActive;
+      const important = attackActive || reloadActive || meleeActive || hitReactionActive;
       const stateKey = [
         visible ? 1 : 0,
+        String(animationBudget.id || ''),
         g.userData.remoteMoving ? 1 : 0,
         g.userData.crouching ? 1 : 0,
         attackToken,
@@ -1508,6 +1770,7 @@
         reloadStartedAt,
         reloadActive ? 1 : 0,
         meleeStartedAt,
+        meleeActive ? 1 : 0,
         hitReactionStartedAt,
         hitReactionActive ? 1 : 0,
         injuries.brokenArm ? 1 : 0,
@@ -1515,11 +1778,25 @@
         injuries.concussion ? 1 : 0,
         injuries.infection ? 1 : 0
       ].join('|');
+      const baseAnimationInterval = remoteAnimationLodInterval(distance, visible, important, animationBudget);
+      const animationInterval = actorAnimationCrowdInterval(
+        baseAnimationInterval,
+        crowdPressure,
+        important,
+        !!g.userData.remoteMoving,
+        animationBudget
+      );
       const animationDt = consumeRemoteAnimationLodDt(
         row,
         dt,
-        remoteAnimationLodInterval(distance, visible, important),
+        animationInterval,
         stateKey
+      );
+      recordActorAnimationDiagnostic(
+        'remote',
+        actorAnimationBudgetTier(distance, visible, important, animationBudget),
+        animationDt > 0,
+        crowdPressure
       );
       if (animationDt <= 0) return;
       applyCharacterCrouchVisual(g, !!g.userData.crouching, animationDt);
@@ -1530,7 +1807,8 @@
         moveX: visualMoveX,
         moveZ: visualMoveZ,
         facingAngle: Number(g.rotation.y || 0) - Math.PI,
-        footIk: important || distance <= 6
+        footIk: actorAnimationDetailEnabled('footIk', distance, important, animationBudget),
+        facial: actorAnimationDetailEnabled('facial', distance, important, animationBudget)
       });
       applyCharacterInjuryVisual(g, injuries, animationDt);
       const remoteWeaponOwner = {

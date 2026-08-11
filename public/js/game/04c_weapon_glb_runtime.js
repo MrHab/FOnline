@@ -22,6 +22,7 @@
   const weaponModelLibraryState = {
     promise: null,
     templates: new Map(),
+    promises: new Map(),
     failed: new Set()
   };
 
@@ -62,8 +63,11 @@
     if (!entry || weaponModelLibraryState.templates.has(entry.id)) {
       return Promise.resolve(weaponModelLibraryState.templates.get(entry?.id) || null);
     }
+    if (weaponModelLibraryState.promises.has(entry.id)) {
+      return weaponModelLibraryState.promises.get(entry.id);
+    }
     if (weaponModelLibraryState.failed.has(entry.id) || !THREE.GLTFLoader) return Promise.resolve(null);
-    return new Promise(resolve => {
+    const promise = new Promise(resolve => {
       const loader = new THREE.GLTFLoader();
       loader.load(`${entry.file}?v=${encodeURIComponent(WEAPON_MODEL_ASSET_VERSION)}`, gltf => {
         const template = prepareWeaponModelTemplate(entry, gltf);
@@ -80,6 +84,24 @@
         console.warn(`Не удалось загрузить GLB-оружие ${entry.id}.`, error);
         resolve(null);
       });
+    }).finally(() => {
+      weaponModelLibraryState.promises.delete(entry.id);
+    });
+    weaponModelLibraryState.promises.set(entry.id, promise);
+    return promise;
+  }
+
+  function preloadWeaponModels(weaponIds = []) {
+    const entries = Array.from(new Set((Array.isArray(weaponIds) ? weaponIds : [weaponIds])
+      .map(id => weaponModelCatalogEntry(id)?.id || '')
+      .filter(Boolean)))
+      .map(id => ({ id, ...WEAPON_MODEL_CATALOG[id] }));
+    if (!entries.length) return Promise.resolve(weaponModelLibraryState.templates);
+    return Promise.all(entries.map(loadWeaponModelTemplate)).then(() => {
+      if (typeof updatePlayerEquipmentVisuals === 'function' && typeof playerGroup !== 'undefined' && playerGroup) {
+        updatePlayerEquipmentVisuals();
+      }
+      return weaponModelLibraryState.templates;
     });
   }
 
@@ -88,13 +110,8 @@
       return Promise.resolve(weaponModelLibraryState.templates);
     }
     if (weaponModelLibraryState.promise) return weaponModelLibraryState.promise;
-    weaponModelLibraryState.promise = Promise.all(
-      Object.keys(WEAPON_MODEL_CATALOG).map(id => loadWeaponModelTemplate({ id, ...WEAPON_MODEL_CATALOG[id] }))
-    ).then(() => {
+    weaponModelLibraryState.promise = preloadWeaponModels(Object.keys(WEAPON_MODEL_CATALOG)).then(() => {
       weaponModelLibraryState.promise = null;
-      if (typeof updatePlayerEquipmentVisuals === 'function' && typeof playerGroup !== 'undefined' && playerGroup) {
-        updatePlayerEquipmentVisuals();
-      }
       return weaponModelLibraryState.templates;
     });
     return weaponModelLibraryState.promise;

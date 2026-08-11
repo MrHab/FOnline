@@ -458,8 +458,19 @@ async function waitForHealth(proc, logs) {
           if (data.playerLimitPerLocation !== null || Object.prototype.hasOwnProperty.call(data, 'roomCapacity')) {
             fail('/health still reports a per-location player limit', res.body);
           }
-          if (!data.eventLoopLagMs || !data.wastelandTickMs || !data.wastelandPublicCache) {
-            fail('/health is missing runtime latency and wasteland cache metrics', res.body);
+          if (!data.eventLoopLagMs
+            || !data.wastelandTickMs
+            || !data.wastelandPublicCache
+            || !data.realtimeNetwork
+            || !data.activePlayerPersistence) {
+            fail('/health is missing runtime latency, network, persistence, or wasteland cache metrics', res.body);
+          }
+          if (data.realtimeNetwork.rateControl?.strategy !== 'tokenBucket'
+            || Number(data.realtimeNetwork.rateControl?.targetHz || 0) !== 20
+            || Number(data.realtimeNetwork.rateControl?.burstPackets || 0) !== 2
+            || Number(data.realtimeNetwork.rateControl?.emergencyTransitionHz || 0) !== 4
+            || Number(data.realtimeNetwork.rateControl?.emergencyTransitionBurst || 0) !== 1) {
+            fail('/health is missing the bounded 20Hz movement token-credit contract', res.body);
           }
           return data;
         }
@@ -1242,6 +1253,65 @@ async function assertSocketMultiplayerLifecycle() {
         || !Number.isFinite(Number(pingAck.serverTime))) {
         fail('game socket did not acknowledge the network ping probe', JSON.stringify(pingAck));
       }
+    }
+
+    const networkMetricsBeforeResponse = await request('/health');
+    assertStatus(networkMetricsBeforeResponse, 200, 'GET /health before movement ingress burst');
+    const realtimeNetworkBefore = parseJsonResponse(
+      networkMetricsBeforeResponse,
+      'GET /health before movement ingress burst'
+    ).realtimeNetwork || {};
+    const networkMetricsBefore = realtimeNetworkBefore.movementPackets || {};
+    const relayMetricsBefore = realtimeNetworkBefore.playerState || {};
+    const ingressProbe = accounts[2];
+    for (let index = 0; index < 12; index++) {
+      ingressProbe.socket.emit('state', {
+        seq: 1000 + index,
+        x: Number(ingressProbe.join.x || ingressProbe.join.self?.x || 0) + 120,
+        z: Number(ingressProbe.join.z || ingressProbe.join.self?.z || 0),
+        vx: 999,
+        vz: 0,
+        angle: Number(ingressProbe.join.self?.angle || 0),
+        moving: index % 2 === 0,
+        turning: false,
+        crouching: index % 3 === 0,
+        hp: 9999,
+        foo: 'modified-client-bypass-attempt'
+      });
+    }
+    await delay(100);
+    const networkMetricsAfterResponse = await request('/health');
+    assertStatus(networkMetricsAfterResponse, 200, 'GET /health after movement ingress burst');
+    const realtimeNetworkAfter = parseJsonResponse(
+      networkMetricsAfterResponse,
+      'GET /health after movement ingress burst'
+    ).realtimeNetwork || {};
+    const networkMetricsAfter = realtimeNetworkAfter.movementPackets || {};
+    const relayMetricsAfter = realtimeNetworkAfter.playerState || {};
+    const receivedBurst = Number(networkMetricsAfter.received || 0) - Number(networkMetricsBefore.received || 0);
+    const processedBurst = Number(networkMetricsAfter.processed || 0) - Number(networkMetricsBefore.processed || 0);
+    const rateDroppedBurst = Number(networkMetricsAfter.rateDropped || 0) - Number(networkMetricsBefore.rateDropped || 0);
+    const emergencyAcceptedBurst = Number(networkMetricsAfter.emergencyTransitionsAccepted || 0)
+      - Number(networkMetricsBefore.emergencyTransitionsAccepted || 0);
+    const emergencyDroppedBurst = Number(networkMetricsAfter.emergencyTransitionsDropped || 0)
+      - Number(networkMetricsBefore.emergencyTransitionsDropped || 0);
+    const relayBurst = Number(relayMetricsAfter.emits || 0) - Number(relayMetricsBefore.emits || 0);
+    if (receivedBurst < 12
+      || rateDroppedBurst < 1
+      || processedBurst >= receivedBurst
+      || emergencyAcceptedBurst < 1
+      || emergencyDroppedBurst < 1
+      || relayBurst > processedBurst + emergencyAcceptedBurst) {
+      fail('modified-client toggle flood was not bounded or observable', JSON.stringify({
+        receivedBurst,
+        processedBurst,
+        rateDroppedBurst,
+        emergencyAcceptedBurst,
+        emergencyDroppedBurst,
+        relayBurst,
+        before: networkMetricsBefore,
+        after: networkMetricsAfter
+      }));
     }
 
     const worldResync = await socketAck(accounts[0].socket, 'requestWorldState', { reason: 'smoke' });

@@ -1513,11 +1513,29 @@
     return applyApprovedWeaponGrip(actor, weaponId);
   }
 
-  function preloadApprovedHumanoidAssets() {
-    const appearance = normalizeCharacterAppearance(characterProfile?.appearance || {});
-    return Promise.all([
-      loadApprovedNpcAnimationClips(),
-      loadApprovedEquipmentTemplate('boots', `${appearance.sex}_${appearance.bodyType}`),
-      loadApprovedAssaultRifleGrip()
-    ]);
+  function preloadApprovedHumanoidAssets(options = {}) {
+    const legacyFullPreload = arguments.length === 0;
+    const appearance = normalizeCharacterAppearance(
+      options.appearance || characterProfile?.appearance || {}
+    );
+    const bodyKey = `${appearance.sex}_${appearance.bodyType}`;
+    const activeEquipment = options.equipment && typeof options.equipment === 'object'
+      ? options.equipment
+      : (legacyFullPreload ? { boots: 'boots' } : {});
+    const promises = [];
+    for (const slot of ['armor', 'helmet', 'boots', 'backpack']) {
+      const itemId = String(equipmentVisualBaseId(activeEquipment[slot] || '') || '');
+      if (APPROVED_EQUIPMENT_ASSETS[itemId]?.slot === slot) {
+        promises.push(loadApprovedEquipmentTemplate(itemId, bodyKey));
+      }
+    }
+    const weaponIds = (Array.isArray(options.weaponIds) ? options.weaponIds : [])
+      .map(id => String(equipmentVisualBaseId(id || '') || ''));
+    if (legacyFullPreload || weaponIds.some(id => APPROVED_FIREARM_GRIP_PROFILES[id])) {
+      promises.push(loadApprovedAssaultRifleGrip());
+    }
+    if (legacyFullPreload || options.includeNpcAnimations === true) {
+      promises.push(loadApprovedNpcAnimationClips());
+    }
+    return Promise.all(promises);
   }

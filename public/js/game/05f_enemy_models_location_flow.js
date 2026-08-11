@@ -47,7 +47,10 @@
     crowdPressure: false
   };
 
-  function enemyAnimationLodInterval(distance, visible = true, important = false) {
+  function enemyAnimationLodInterval(distance, visible = true, important = false, settings = null) {
+    if (settings || typeof actorAnimationBudgetInterval === 'function') {
+      return actorAnimationBudgetInterval(distance, visible, important, settings);
+    }
     if (!visible) return Infinity;
     const numericDistance = Number(distance || 0);
     if (important || numericDistance <= ENEMY_ANIMATION_LOD_NEAR_DISTANCE) return 0;
@@ -88,22 +91,39 @@
     if (
       options.crowdPressure !== true
       || options.heavy !== true
-      || options.idle !== true
       || options.important === true
     ) return base;
-    return Math.max(base, ENEMY_ANIMATION_CROWD_IDLE_INTERVAL);
+    if (typeof actorAnimationCrowdInterval === 'function') {
+      return actorAnimationCrowdInterval(
+        base,
+        true,
+        false,
+        options.idle !== true,
+        options.settings || null
+      );
+    }
+    return Math.max(
+      base,
+      options.idle === true ? ENEMY_ANIMATION_CROWD_IDLE_INTERVAL : ENEMY_ANIMATION_LOD_CLOSE_INTERVAL
+    );
   }
 
-  function enemyActorUsesHeavyAnimation(actor) {
-    const mesh = actor?.mesh;
+  function enemyActorUsesHeavyAnimation(actor, requireVisible = true) {
+    const mesh = actor?.mesh || actor?.group;
     const parts = mesh?.userData?.actorParts || mesh?.userData?.parts;
+    const visible = requireVisible !== true || (
+      typeof actorAnimationInView === 'function'
+        ? actorAnimationInView(mesh)
+        : mesh?.visible !== false
+    );
     return !!(
       mesh
-      && mesh.visible !== false
+      && visible
       && !actor?._removed
       && !actor?.dead
       && (
         parts?.unifiedHumanoidNpc
+        || parts?.modernRig
         || mesh.userData?.characterGlbRuntime
         || mesh.userData?.npcCreatureGlbAnimation
         || mesh.userData?.approvedEquipmentCharacterRuntime
@@ -122,6 +142,11 @@
       }
     }
     if (!traderAlreadyCounted && enemyActorUsesHeavyAnimation(trader)) heavyActorCount += 1;
+    if (typeof multiplayer !== 'undefined' && multiplayer?.remotePlayers?.forEach) {
+      multiplayer.remotePlayers.forEach(row => {
+        if (enemyActorUsesHeavyAnimation(row)) heavyActorCount += 1;
+      });
+    }
     enemyAnimationCrowdPressureLatched = enemyAnimationCrowdPressure(
       heavyActorCount,
       measuredFps,
@@ -136,10 +161,13 @@
   function consumeEnemyAnimationLodDt(enemy, dt, interval, stateKey) {
     const numericDt = Number(dt);
     const frameDt = Number.isFinite(numericDt) ? Math.max(0, Math.min(0.05, numericDt)) : 0.016;
-    const accumulatedDt = Math.min(
+    // Keep the cadence accumulator long enough for 0.10/0.12s quality tiers;
+    // only the dt handed to the mixer/procedural animation is capped at 0.08s.
+    const elapsedAnimationDt = Math.min(
       ENEMY_ANIMATION_LOD_MAX_DT,
-      Math.max(0, Number(enemy?.heavyAnimationLodDt || 0)) + frameDt
+      Math.max(0, Number(enemy?.heavyAnimationElapsedDt || 0)) + frameDt
     );
+    const rawCadenceDt = Math.max(0, Number(enemy?.heavyAnimationLodDt || 0)) + frameDt;
     const nextStateKey = String(stateKey || '');
     const stateChanged = String(enemy?.heavyAnimationLodStateKey || '') !== nextStateKey;
     const previousInterval = enemy?.heavyAnimationLodInterval;
@@ -151,17 +179,28 @@
     enemy.heavyAnimationLodStateKey = nextStateKey;
     enemy.heavyAnimationLodInterval = finiteInterval ? Math.max(0, Number(interval || 0)) : Infinity;
     if (!finiteInterval) {
-      enemy.heavyAnimationLodDt = accumulatedDt;
+      enemy.heavyAnimationLodDt = 0;
+      enemy.heavyAnimationElapsedDt = elapsedAnimationDt;
       enemy.heavyAnimationLodThreshold = Infinity;
       return 0;
     }
     const normalizedInterval = Math.max(0, Number(interval || 0));
+    const accumulatedCadenceDt = normalizedInterval > 0
+      ? Math.min(normalizedInterval + 0.05, rawCadenceDt)
+      : 0;
     if (stateChanged) {
       enemy.heavyAnimationLodDt = 0;
+      enemy.heavyAnimationElapsedDt = 0;
       enemy.heavyAnimationLodThreshold = normalizedInterval > 0
         ? enemyAnimationLodStaggerThreshold(enemy, normalizedInterval)
         : 0;
-      return accumulatedDt;
+      return elapsedAnimationDt;
+    }
+    if (normalizedInterval <= 0) {
+      enemy.heavyAnimationLodDt = 0;
+      enemy.heavyAnimationElapsedDt = 0;
+      enemy.heavyAnimationLodThreshold = 0;
+      return elapsedAnimationDt;
     }
     if (intervalChanged) {
       enemy.heavyAnimationLodThreshold = normalizedInterval > 0
@@ -171,13 +210,15 @@
     const threshold = normalizedInterval > 0
       ? Math.max(0, Number(enemy?.heavyAnimationLodThreshold ?? normalizedInterval))
       : 0;
-    if (normalizedInterval > 0 && accumulatedDt + 1e-6 < threshold) {
-      enemy.heavyAnimationLodDt = accumulatedDt;
+    if (accumulatedCadenceDt + 1e-6 < threshold) {
+      enemy.heavyAnimationLodDt = accumulatedCadenceDt;
+      enemy.heavyAnimationElapsedDt = elapsedAnimationDt;
       return 0;
     }
-    enemy.heavyAnimationLodDt = 0;
+    enemy.heavyAnimationLodDt = Math.max(0, accumulatedCadenceDt - threshold);
+    enemy.heavyAnimationElapsedDt = 0;
     enemy.heavyAnimationLodThreshold = normalizedInterval;
-    return accumulatedDt;
+    return elapsedAnimationDt;
   }
 
   function makeEnemyBox(w, h, d, material, x, y, z, sx = 1, rx = 0, ry = 0, rz = 0) {
@@ -966,6 +1007,28 @@
     const mesh = enemy?.mesh;
     const parts = mesh?.userData?.actorParts;
     if (!mesh || !parts) return;
+    const distanceToPlayer = player ? Math.hypot(player.x - (enemy.x || 0), player.z - (enemy.z || 0)) : 0;
+    const animationBudget = typeof actorAnimationQualityBudget === 'function'
+      ? actorAnimationQualityBudget()
+      : null;
+    const visible = mesh.visible !== false
+      && (typeof actorAnimationInView !== 'function' || actorAnimationInView(mesh));
+    const heavyActor = !!(
+      parts.unifiedHumanoidNpc
+      || parts.modernRig
+      || mesh.userData.characterGlbRuntime
+      || mesh.userData.npcCreatureGlbAnimation
+      || mesh.userData.approvedEquipmentCharacterRuntime
+    );
+    if (!visible) {
+      if (heavyActor) {
+        consumeEnemyAnimationLodDt(enemy, dt, Infinity, 'offscreen');
+        if (typeof recordActorAnimationDiagnostic === 'function') {
+          recordActorAnimationDiagnostic('enemy', 'offscreen', false, frameContext?.crowdPressure === true);
+        }
+      }
+      return;
+    }
     if (
       mesh.userData.approvedEquipmentRefreshPending
       && mesh.userData.approvedEquipmentCharacterRuntime?.root
@@ -978,23 +1041,21 @@
       updateEnemyEquipmentVisuals(enemy);
       mesh.userData.approvedEquipmentRefreshPending = false;
     }
-    const distanceToPlayer = player ? Math.hypot(player.x - (enemy.x || 0), player.z - (enemy.z || 0)) : 0;
-    const visible = mesh.visible !== false;
-    const heavyActor = !!(
-      parts.unifiedHumanoidNpc
-      || mesh.userData.characterGlbRuntime
-      || mesh.userData.npcCreatureGlbAnimation
-      || mesh.userData.approvedEquipmentCharacterRuntime
-    );
     if (enemy.dead) {
       const animationDt = heavyActor
         ? consumeEnemyAnimationLodDt(
             enemy,
             dt,
-            enemyAnimationLodInterval(distanceToPlayer, visible, false),
-            `${visible ? 1 : 0}|dead`
+            enemyAnimationLodInterval(distanceToPlayer, visible, false, animationBudget),
+            `${String(animationBudget?.id || '')}|dead`
           )
         : dt;
+      if (heavyActor && typeof recordActorAnimationDiagnostic === 'function') {
+        const tier = typeof actorAnimationBudgetTier === 'function'
+          ? actorAnimationBudgetTier(distanceToPlayer, visible, false, animationBudget)
+          : 'far';
+        recordActorAnimationDiagnostic('enemy', tier, animationDt > 0, frameContext?.crowdPressure === true);
+      }
       if (animationDt <= 0) return;
       if (mesh.userData.characterGlbRuntime) {
         updateCharacterGlbAnimation(mesh, animationDt, { dead: true, moving: false, footIk: false });
@@ -1064,6 +1125,7 @@
     if (heavyActor) {
       const stateKey = [
         visible ? 1 : 0,
+        String(animationBudget?.id || ''),
         moving ? 1 : 0,
         inDialogue ? 1 : 0,
         String(enemy.aiState || ''),
@@ -1074,12 +1136,13 @@
         Number(enemy.flash || 0) > 0.02 ? 1 : 0
       ].join('|');
       const animationInterval = enemyAnimationCrowdAdjustedInterval(
-        enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant),
+        enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant, animationBudget),
         {
           crowdPressure: frameContext?.crowdPressure === true,
           heavy: true,
           idle: crowdIdle,
-          important: heavyImportant
+          important: heavyImportant,
+          settings: animationBudget
         }
       );
       animationDt = consumeEnemyAnimationLodDt(
@@ -1088,6 +1151,17 @@
         animationInterval,
         stateKey
       );
+      if (typeof recordActorAnimationDiagnostic === 'function') {
+        const tier = typeof actorAnimationBudgetTier === 'function'
+          ? actorAnimationBudgetTier(distanceToPlayer, visible, heavyImportant, animationBudget)
+          : 'far';
+        recordActorAnimationDiagnostic(
+          'enemy',
+          tier,
+          animationDt > 0,
+          frameContext?.crowdPressure === true
+        );
+      }
       if (animationDt <= 0) return;
     }
     // Keep the last skeletal/procedural pose intact between LOD ticks. Restoring
@@ -1109,7 +1183,12 @@
         attackToken: attackAnimation.token,
         hurt: Number(enemy.flash || 0) > 0.02,
         talking: inDialogue,
-        footIk: heavyImportant || distanceToPlayer <= 6
+        footIk: typeof actorAnimationDetailEnabled === 'function'
+          ? actorAnimationDetailEnabled('footIk', distanceToPlayer, heavyImportant, animationBudget)
+          : heavyImportant || distanceToPlayer <= 6,
+        facial: typeof actorAnimationDetailEnabled === 'function'
+          ? actorAnimationDetailEnabled('facial', distanceToPlayer, heavyImportant, animationBudget)
+          : true
       });
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;

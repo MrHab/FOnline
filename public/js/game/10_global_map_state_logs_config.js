@@ -392,11 +392,15 @@
     if (globalMapState.onWorldMap) renderGlobalMapPanel();
   }
 
-  async function loadGlobalMapConfig() {
+  function fetchGlobalMapConfig() {
+    return typeof serverApi === 'function'
+      ? serverApi('/api/global-map', { method: 'GET' })
+      : fetch('/api/global-map', { cache: 'no-store' }).then(res => res.json());
+  }
+
+  async function loadGlobalMapConfig(options = {}) {
     try {
-      const data = typeof serverApi === 'function'
-        ? await serverApi('/api/global-map', { method: 'GET' })
-        : await fetch('/api/global-map', { cache: 'no-store' }).then(res => res.json());
+      const data = options.data || await fetchGlobalMapConfig();
       if (data?.ok && data.map) applyClientGlobalMapConfig(data.map);
     } catch (err) {
       console.warn('[global-map] failed to load config', err);
@@ -544,6 +548,25 @@
     return true;
   }
 
+  function fetchWastelandSimState() {
+    return typeof serverApi === 'function'
+      ? serverApi('/api/wasteland', { method: 'GET' })
+      : fetch('/api/wasteland', { cache: 'no-store' }).then(res => res.json());
+  }
+
+  function applyFetchedWastelandSimState(data = {}) {
+    if (!data?.ok || !data.sim) return false;
+    applyWastelandSimState(data.sim);
+    if (globalMapState.onWorldMap) renderGlobalMapPanel({ skipMapDraw: true });
+    const pipboy = document.getElementById('inventory-window');
+    if (pipboy?.classList.contains('visible')
+      && ['world', 'quests', 'factions'].includes(pipboy.dataset.pipboyScreen)
+      && typeof renderPipboyInfoPanels === 'function') {
+      renderPipboyInfoPanels();
+    }
+    return true;
+  }
+
   async function loadWastelandSimState(options = {}) {
     const force = options.force === true;
     const now = performance.now();
@@ -552,17 +575,8 @@
     if (!force && now - wastelandSimLastFetchAt < minInterval) return;
     wastelandSimFetchPending = true;
     try {
-      const data = typeof serverApi === 'function'
-        ? await serverApi('/api/wasteland', { method: 'GET' })
-        : await fetch('/api/wasteland', { cache: 'no-store' }).then(res => res.json());
-      if (data?.ok && data.sim) {
-        applyWastelandSimState(data.sim);
-        if (globalMapState.onWorldMap) renderGlobalMapPanel({ skipMapDraw: true });
-        const pipboy = document.getElementById('inventory-window');
-        if (pipboy?.classList.contains('visible') && ['world', 'quests', 'factions'].includes(pipboy.dataset.pipboyScreen) && typeof renderPipboyInfoPanels === 'function') {
-          renderPipboyInfoPanels();
-        }
-      }
+      const data = options.data || await fetchWastelandSimState();
+      applyFetchedWastelandSimState(data);
     } catch (err) {
       console.warn('[global-map] failed to load wasteland simulation', err);
     } finally {
@@ -578,9 +592,54 @@
   }
 
   async function loadWorldDataConfig() {
-    if (typeof loadLocationConfig === 'function') await loadLocationConfig();
-    await loadGlobalMapConfig();
-    await loadWastelandSimState({ force: true });
+    // Location and map definitions are part of the critical character gate.
+    // Wasteland simulation is only needed on the global map, so start it in
+    // parallel but never let its timeout/retry hold the first playable frame.
+    const startInitialWastelandFetch = !wastelandSimFetchPending;
+    if (startInitialWastelandFetch) wastelandSimFetchPending = true;
+    const wastelandRequest = startInitialWastelandFetch
+      ? Promise.resolve()
+        .then(() => fetchWastelandSimState())
+        .then(data => ({ data, error: null }), error => ({ data: null, error }))
+      : null;
+    let settleCriticalConfig = null;
+    const criticalConfigSettled = new Promise(resolve => { settleCriticalConfig = resolve; });
+    if (wastelandRequest) {
+      void wastelandRequest.then(async result => {
+        const criticalConfigReady = await criticalConfigSettled;
+        try {
+          if (!criticalConfigReady) return;
+          if (result.error) console.warn('[global-map] failed to load wasteland simulation', result.error);
+          else applyFetchedWastelandSimState(result.data);
+        } catch (error) {
+          console.warn('[global-map] failed to apply wasteland simulation', error);
+        } finally {
+          wastelandSimLastFetchAt = performance.now();
+          wastelandSimFetchPending = false;
+        }
+      });
+    }
+    const criticalRequests = [
+      typeof fetchLocationConfig === 'function' ? fetchLocationConfig() : Promise.resolve(null),
+      fetchGlobalMapConfig()
+    ];
+    let locationConfigReady = false;
+    try {
+      const [locationResult, globalMapResult] = await Promise.allSettled(criticalRequests);
+      if (locationResult.status !== 'fulfilled' || !locationResult.value) {
+        throw locationResult.reason || new Error('Сервер не вернул конфигурацию локаций.');
+      }
+      locationConfigReady = await loadLocationConfig({ data: locationResult.value });
+      if (!locationConfigReady) throw new Error('Не удалось применить конфигурацию локаций сервера.');
+      if (globalMapResult.status === 'fulfilled' && globalMapResult.value) {
+        await loadGlobalMapConfig({ data: globalMapResult.value });
+      } else if (globalMapResult.status === 'rejected') {
+        console.warn('[global-map] failed to load config', globalMapResult.reason);
+      }
+      return true;
+    } finally {
+      if (settleCriticalConfig) settleCriticalConfig(locationConfigReady);
+    }
   }
 
   function globalMapNode(id = '') {

@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const os = require('os');
-const { monitorEventLoopDelay } = require('perf_hooks');
+const { monitorEventLoopDelay, performance } = require('perf_hooks');
 const nodemailer = require('nodemailer');
 const { version: GAME_VERSION } = require('./package.json');
 const {
@@ -144,6 +144,17 @@ const ACTIVE_ROOM_HOUSEKEEPING_MS = Math.max(250, Number(process.env.ACTIVE_ROOM
 const MAP_SIZE = 140;
 const PLAYER_SPEED = 7.0;
 const PLAYER_COLLISION_RADIUS = 0.48;
+// Both ingress collision work and room relay target 20 Hz. Two-token credit is
+// intentionally enough for the client's fractional 30-FPS cadence (~66ms/34ms)
+// and ordinary network bunching, but too small for an unbounded packet burst.
+// One separate 4Hz token may publish metadata-only start/stop/stance changes;
+// it never authorizes client coordinates or velocity.
+const PLAYER_STATE_TARGET_HZ = 20;
+const PLAYER_STATE_TOKEN_INTERVAL_MS = 1000 / PLAYER_STATE_TARGET_HZ;
+const PLAYER_STATE_TOKEN_CAPACITY = 2;
+const PLAYER_TRANSITION_EMERGENCY_TARGET_HZ = 4;
+const PLAYER_TRANSITION_EMERGENCY_INTERVAL_MS = 1000 / PLAYER_TRANSITION_EMERGENCY_TARGET_HZ;
+const PLAYER_TRANSITION_EMERGENCY_CAPACITY = 1;
 const LEGACY_INPUT_DEADMAN_MS = Math.max(500, Number(process.env.LEGACY_INPUT_DEADMAN_MS || 1250));
 const SESSION_LOCK_MS = Number(process.env.SESSION_LOCK_MS || 120000);
 const CONFIGURED_EPHEMERAL_ROOM_IDLE_TTL_MS = Number(process.env.EPHEMERAL_ROOM_IDLE_TTL_MS);
@@ -162,6 +173,92 @@ eventLoopDelay.enable();
 // измерителя на данной машине, а реальная нагрузка — то, что выше него.
 let eventLoopLagMs = { p50: 0, p95: 0, max: 0, floorMs: 0 };
 let wastelandTickMetrics = { lastMs: 0, maxMs: 0 };
+const realtimeNetworkMetricsStartedAt = Date.now();
+const realtimeNetworkMetrics = {
+  movementPacketsReceived: 0,
+  movementPacketsProcessed: 0,
+  movementPacketsAccepted: 0,
+  movementPacketsCorrected: 0,
+  movementPacketsRateDropped: 0,
+  movementPacketsStaleDropped: 0,
+  movementEmergencyTransitionsAccepted: 0,
+  movementEmergencyTransitionsDropped: 0,
+  movementProposalCount: 0,
+  movementProposalTotalMs: 0,
+  movementProposalMaxMs: 0,
+  playerStateEmits: 0,
+  playerStateReliableTransitions: 0,
+  playerStateEmergencyTransitions: 0,
+  playerStateFanoutDeliveries: 0,
+  targetedRoomSnapshots: 0,
+  avoidedRoomSnapshotDeliveries: 0
+};
+const activePlayerPersistenceMetrics = {
+  writeAttempts: 0,
+  writeFailures: 0,
+  rowsStaged: 0,
+  coalescedWritesAvoided: 0,
+  writeTotalMs: 0,
+  writeMaxMs: 0
+};
+
+function publicRealtimeNetworkMetrics(now = Date.now()) {
+  const sampleSec = Math.max(1, (Number(now) - realtimeNetworkMetricsStartedAt) / 1000);
+  const proposalCount = Number(realtimeNetworkMetrics.movementProposalCount || 0);
+  return {
+    sampleSec: Number(sampleSec.toFixed(1)),
+    rateControl: {
+      strategy: 'tokenBucket',
+      targetHz: PLAYER_STATE_TARGET_HZ,
+      burstPackets: PLAYER_STATE_TOKEN_CAPACITY,
+      emergencyTransitionHz: PLAYER_TRANSITION_EMERGENCY_TARGET_HZ,
+      emergencyTransitionBurst: PLAYER_TRANSITION_EMERGENCY_CAPACITY
+    },
+    movementPackets: {
+      received: realtimeNetworkMetrics.movementPacketsReceived,
+      processed: realtimeNetworkMetrics.movementPacketsProcessed,
+      accepted: realtimeNetworkMetrics.movementPacketsAccepted,
+      corrected: realtimeNetworkMetrics.movementPacketsCorrected,
+      rateDropped: realtimeNetworkMetrics.movementPacketsRateDropped,
+      staleDropped: realtimeNetworkMetrics.movementPacketsStaleDropped,
+      emergencyTransitionsAccepted: realtimeNetworkMetrics.movementEmergencyTransitionsAccepted,
+      emergencyTransitionsDropped: realtimeNetworkMetrics.movementEmergencyTransitionsDropped,
+      acceptedPerSec: Number((realtimeNetworkMetrics.movementPacketsAccepted / sampleSec).toFixed(2))
+    },
+    movementProposalMs: {
+      average: proposalCount > 0
+        ? Number((realtimeNetworkMetrics.movementProposalTotalMs / proposalCount).toFixed(3))
+        : 0,
+      max: Number(Number(realtimeNetworkMetrics.movementProposalMaxMs || 0).toFixed(3))
+    },
+    playerState: {
+      emits: realtimeNetworkMetrics.playerStateEmits,
+      reliableTransitions: realtimeNetworkMetrics.playerStateReliableTransitions,
+      emergencyTransitions: realtimeNetworkMetrics.playerStateEmergencyTransitions,
+      fanoutDeliveries: realtimeNetworkMetrics.playerStateFanoutDeliveries
+    },
+    targetedRoomSnapshots: {
+      emits: realtimeNetworkMetrics.targetedRoomSnapshots,
+      avoidedDeliveries: realtimeNetworkMetrics.avoidedRoomSnapshotDeliveries
+    }
+  };
+}
+
+function publicActivePlayerPersistenceMetrics() {
+  const attempts = Number(activePlayerPersistenceMetrics.writeAttempts || 0);
+  return {
+    writeAttempts: attempts,
+    writeFailures: activePlayerPersistenceMetrics.writeFailures,
+    rowsStaged: activePlayerPersistenceMetrics.rowsStaged,
+    coalescedWritesAvoided: activePlayerPersistenceMetrics.coalescedWritesAvoided,
+    writeMs: {
+      average: attempts > 0
+        ? Number((activePlayerPersistenceMetrics.writeTotalMs / attempts).toFixed(3))
+        : 0,
+      max: Number(Number(activePlayerPersistenceMetrics.writeMaxMs || 0).toFixed(3))
+    }
+  };
+}
 
 function eventLoopDelayMs(value) {
   const ms = Number(value || 0) / 1e6;
@@ -1583,6 +1680,8 @@ app.get('/health', (_, res) => {
     characters: Object.values(savesDb.characters).reduce((sum, row) => sum + Object.keys(row || {}).length, 0),
     eventLoopLagMs,
     wastelandTickMs: wastelandTickMetrics,
+    realtimeNetwork: publicRealtimeNetworkMetrics(),
+    activePlayerPersistence: publicActivePlayerPersistenceMetrics(),
     wastelandPublicCache: {
       ttlMs: WASTELAND_PUBLIC_CACHE_MS,
       bytes: Number(wastelandPublicCache?.bytes || 0),
@@ -7172,6 +7271,84 @@ function serverStateHasProgressionProfile(data = {}) {
   if (reason === 'profile' || reason === 'startProfile' || reason === 'idleProfile') return true;
   return Object.prototype.hasOwnProperty.call(data, 'skillRanks')
     || Object.prototype.hasOwnProperty.call(data, 'talentRanks');
+}
+
+function serverStateHasFiniteMovementPosition(data = {}) {
+  return !!data
+    && typeof data === 'object'
+    && Number.isFinite(Number(data.x))
+    && Number.isFinite(Number(data.z));
+}
+
+function serverMovementPacketHasReliableTransition(player = {}, data = {}) {
+  const movingTransition = Object.prototype.hasOwnProperty.call(data, 'moving')
+    && !!data.moving !== !!player.moving;
+  const crouchingTransition = Object.prototype.hasOwnProperty.call(data, 'crouching')
+    && !!data.crouching !== !!player.crouching;
+  return movingTransition || crouchingTransition;
+}
+
+function serverConsumeMovementRateToken(player = {}, now = Date.now(), bucket = 'hard') {
+  const emergencyBucket = bucket === 'transitionEmergency';
+  const tokenField = emergencyBucket ? 'movementTransitionEmergencyTokens' : 'movementIngressTokens';
+  const refillField = emergencyBucket ? 'movementTransitionEmergencyRefillAt' : 'movementIngressRefillAt';
+  const capacity = emergencyBucket ? PLAYER_TRANSITION_EMERGENCY_CAPACITY : PLAYER_STATE_TOKEN_CAPACITY;
+  const intervalMs = emergencyBucket ? PLAYER_TRANSITION_EMERGENCY_INTERVAL_MS : PLAYER_STATE_TOKEN_INTERVAL_MS;
+  const previousRefillAt = Math.max(0, Number(player[refillField] || 0));
+  const measuredNow = Math.max(0, Number(now) || 0);
+  const effectiveNow = previousRefillAt > 0 ? Math.max(previousRefillAt, measuredNow) : measuredNow;
+  const storedTokens = Number(player[tokenField]);
+  const previousTokens = Number.isFinite(storedTokens)
+    ? Math.max(0, Math.min(capacity, storedTokens))
+    : 1;
+  const elapsedMs = previousRefillAt > 0 ? Math.max(0, effectiveNow - previousRefillAt) : 0;
+  const availableTokens = Math.min(
+    capacity,
+    previousTokens + elapsedMs / intervalMs
+  );
+  player[refillField] = effectiveNow;
+  if (availableTokens + 1e-9 < 1) {
+    player[tokenField] = availableTokens;
+    return false;
+  }
+  player[tokenField] = availableTokens - 1;
+  return true;
+}
+
+function serverMovementPacketBudgetDecision(player = {}, data = {}, now = Date.now()) {
+  const hasPosition = serverStateHasFiniteMovementPosition(data);
+  const reliableTransition = hasPosition && serverMovementPacketHasReliableTransition(player, data);
+  if (!hasPosition) {
+    return { hasPosition: false, hardAllowed: false, reliableTransition: false, emergencyTransition: false };
+  }
+  // Every finite x/z proposal consumes the same hard token, regardless of
+  // profile/compatibility/unknown extra fields. No transition can bypass it.
+  const hardAllowed = serverConsumeMovementRateToken(player, now, 'hard');
+  const emergencyTransition = !hardAllowed
+    && reliableTransition
+    && serverConsumeMovementRateToken(player, now, 'transitionEmergency');
+  return { hasPosition: true, hardAllowed, reliableTransition, emergencyTransition };
+}
+
+function serverApplyEmergencyMovementTransition(player = {}, data = {}) {
+  let changed = false;
+  if (Object.prototype.hasOwnProperty.call(data, 'moving') && !!data.moving !== !!player.moving) {
+    player.moving = !!data.moving;
+    changed = true;
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'crouching') && !!data.crouching !== !!player.crouching) {
+    player.crouching = !!data.crouching;
+    changed = true;
+  }
+  // Emergency metadata never trusts client position, angle, or velocity. A
+  // stop is reflected immediately; start receives velocity on the next hard
+  // positional frame, normally within 50ms.
+  if (!player.moving) {
+    player.vx = 0;
+    player.vz = 0;
+    player.turning = false;
+  }
+  return changed;
 }
 
 function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
@@ -14825,24 +15002,34 @@ function publicWorldContainer(c) {
     restockDay: Number(c.restockDay || 0)
   };
 }
-function emitWorldContainersSnapshot(room, force = false) {
-  if (!room || !room.sockets.size) return;
+function emitWorldContainersSnapshot(room, force = false, targetSocketId = '') {
+  if (!room || (!targetSocketId && !room.sockets.size)) return;
   const now = Date.now();
-  if (!force && now - Number(room.lastContainerSnapshotAt || 0) < 160) return;
-  room.lastContainerSnapshotAt = now;
-  io.to(room.id).emit('worldContainersSnapshot', {
+  if (!targetSocketId && !force && now - Number(room.lastContainerSnapshotAt || 0) < 160) return;
+  if (!targetSocketId) room.lastContainerSnapshotAt = now;
+  const target = targetSocketId || room.id;
+  if (targetSocketId) {
+    realtimeNetworkMetrics.targetedRoomSnapshots++;
+    realtimeNetworkMetrics.avoidedRoomSnapshotDeliveries += Math.max(0, room.sockets.size - 1);
+  }
+  io.to(target).emit('worldContainersSnapshot', {
     roomId: room.id,
     locationId: room.locationId,
     t: now,
     containers: [...(room.containers || new Map()).values()].map(publicWorldContainer)
   });
 }
-function emitGroundItemsSnapshot(room, force = false) {
-  if (!room || !room.sockets.size) return;
+function emitGroundItemsSnapshot(room, force = false, targetSocketId = '') {
+  if (!room || (!targetSocketId && !room.sockets.size)) return;
   const now = Date.now();
-  if (!force && now - Number(room.lastGroundSnapshotAt || 0) < 120) return;
-  room.lastGroundSnapshotAt = now;
-  io.to(room.id).emit('groundItemsSnapshot', {
+  if (!targetSocketId && !force && now - Number(room.lastGroundSnapshotAt || 0) < 120) return;
+  if (!targetSocketId) room.lastGroundSnapshotAt = now;
+  const target = targetSocketId || room.id;
+  if (targetSocketId) {
+    realtimeNetworkMetrics.targetedRoomSnapshots++;
+    realtimeNetworkMetrics.avoidedRoomSnapshotDeliveries += Math.max(0, room.sockets.size - 1);
+  }
+  io.to(target).emit('groundItemsSnapshot', {
     roomId: room.id,
     locationId: room.locationId,
     t: now,
@@ -15073,9 +15260,9 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
     t: now
   });
   socket?.to(settlement.id).emit('playerJoined', respawnedPlayer);
-  emitEnemySnapshot(settlement, true);
-  emitGroundItemsSnapshot(settlement, true);
-  emitWorldContainersSnapshot(settlement, true);
+  emitEnemyBaselineForSocket(settlement, p.id);
+  emitGroundItemsSnapshot(settlement, true, p.id);
+  emitWorldContainersSnapshot(settlement, true, p.id);
   persistActivePlayerState(p);
   emitAuthoritativePlayerState(p, { reason: 'deathRespawn', detachedWorldTaskIds });
 }
@@ -17711,8 +17898,8 @@ function transferPlayerToServerRoom(p, room, options = {}) {
   try {
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
-    emitGroundItemsSnapshot(room, true);
-    emitWorldContainersSnapshot(room, true);
+    emitGroundItemsSnapshot(room, true, socket.id);
+    emitWorldContainersSnapshot(room, true, socket.id);
   } catch (error) {
     console.error('World transfer room snapshot failed:', p.id, room.id, error);
   }
@@ -18064,34 +18251,66 @@ function emitAuthoritativePlayerState(p = {}, extra = {}) {
   target.emit('authoritativePlayerState', { ...publicAuthoritativePlayerState(p), ...extra, t: Date.now() });
 }
 
-function persistActivePlayerState(p = {}) {
-  const userId = String(p.userId || '');
-  const characterId = normalizeCharacterId(p.characterId || '');
-  if (!userId || !characterId) return false;
-  const store = ensureUserCharacterStore(userId);
-  const row = store[characterId];
-  if (!row?.state) return false;
-  const previous = {
-    state: row.state,
-    updatedAt: row.updatedAt,
-    summary: row.summary
-  };
+function persistActivePlayerStates(playerList = []) {
+  const staged = [];
+  const seen = new Set();
+  let persistenceStartedAt = 0;
+  let persistenceAttempted = false;
   try {
-    const state = mergeAuthoritativeCharacterState(row.state, row.state, p, characterId);
-    const now = Date.now();
-    row.state = state;
-    row.updatedAt = now;
-    row.summary = summarizeState(state, characterId);
+    for (const p of Array.isArray(playerList) ? playerList : []) {
+      const userId = String(p?.userId || '');
+      const characterId = normalizeCharacterId(p?.characterId || '');
+      if (!userId || !characterId) continue;
+      const store = ensureUserCharacterStore(userId);
+      const row = store[characterId];
+      if (!row?.state || seen.has(row)) continue;
+      seen.add(row);
+      const previous = {
+        state: row.state,
+        updatedAt: row.updatedAt,
+        summary: row.summary
+      };
+      staged.push({ row, previous });
+      const state = mergeAuthoritativeCharacterState(row.state, row.state, p, characterId);
+      const now = Date.now();
+      row.state = state;
+      row.updatedAt = now;
+      row.summary = summarizeState(state, characterId);
+    }
+    if (!staged.length) return false;
+    // One atomic file replacement commits the whole party transition. This
+    // avoids N synchronous serializations/writes when a group enters, arrives,
+    // cancels, or is released from global travel.
+    activePlayerPersistenceMetrics.writeAttempts++;
+    activePlayerPersistenceMetrics.rowsStaged += staged.length;
+    activePlayerPersistenceMetrics.coalescedWritesAvoided += Math.max(0, staged.length - 1);
+    persistenceStartedAt = performance.now();
+    persistenceAttempted = true;
     persistSaves();
+    const persistenceMs = Math.max(0, performance.now() - persistenceStartedAt);
+    activePlayerPersistenceMetrics.writeTotalMs += persistenceMs;
+    activePlayerPersistenceMetrics.writeMaxMs = Math.max(activePlayerPersistenceMetrics.writeMaxMs, persistenceMs);
     return true;
   } catch (error) {
-    // A failed atomic write must not make the in-memory database look newer
-    // than the durable save. Callers may safely retry the same transition.
-    row.state = previous.state;
-    row.updatedAt = previous.updatedAt;
-    row.summary = previous.summary;
+    if (persistenceAttempted) {
+      const persistenceMs = Math.max(0, performance.now() - persistenceStartedAt);
+      activePlayerPersistenceMetrics.writeFailures++;
+      activePlayerPersistenceMetrics.writeTotalMs += persistenceMs;
+      activePlayerPersistenceMetrics.writeMaxMs = Math.max(activePlayerPersistenceMetrics.writeMaxMs, persistenceMs);
+    }
+    // A failed atomic write must not make any staged row look newer than the
+    // durable save. Callers may safely retry the whole group transition.
+    for (const { row, previous } of staged) {
+      row.state = previous.state;
+      row.updatedAt = previous.updatedAt;
+      row.summary = previous.summary;
+    }
     throw error;
   }
+}
+
+function persistActivePlayerState(p = {}) {
+  return persistActivePlayerStates([p]);
 }
 
 function publicTravelPartyMember(p, leaderId = '') {
@@ -18569,6 +18788,7 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
   };
 
   session.terminating = true;
+  const arrivingMembers = [];
   for (const id of session.memberIds) {
     const member = players.get(id);
     if (!member) continue;
@@ -18589,8 +18809,9 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
       expiresAt: now + 15000
     };
     member.onGlobalMap = stayOnWorldMap;
-    persistActivePlayerState(member);
+    arrivingMembers.push(member);
   }
+  persistActivePlayerStates(arrivingMembers);
 
   emitGlobalTravelToParty(session, 'globalTravelArrived', payload, false);
   globalTravelSessions.delete(socket.id);
@@ -18620,18 +18841,20 @@ function cleanupGlobalTravelSessionsForSocket(socketId = '') {
       // never leave the remaining online members trapped behind a dead leader.
       globalTravelSessions.delete(leaderId);
       const releasedMembers = [];
+      const membersToPersist = [];
       for (const memberId of memberIds) {
         const member = players.get(memberId);
         if (!member) continue;
         member.globalWorldPoint = point || member.globalWorldPoint || null;
         member.onGlobalMap = true;
         member.pendingLocationTransition = null;
-        try {
-          persistActivePlayerState(member);
-        } catch (error) {
-          console.error('Global travel release persistence failed:', member.id, error);
-        }
+        membersToPersist.push(member);
         if (String(memberId || '') !== id) releasedMembers.push(member);
+      }
+      try {
+        persistActivePlayerStates(membersToPersist);
+      } catch (error) {
+        console.error('Global travel release persistence failed:', membersToPersist.map(member => member.id).join(','), error);
       }
       for (const member of releasedMembers) {
         const memberSocket = io.sockets.sockets.get(member.id);
@@ -19088,21 +19311,47 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
-    emitGroundItemsSnapshot(room, true);
-    emitWorldContainersSnapshot(room, true);
+    emitGroundItemsSnapshot(room, true, socket.id);
+    emitWorldContainersSnapshot(room, true, socket.id);
   });
 
   socket.on('state', (data = {}) => {
     const p = players.get(socket.id);
     if (!p) return;
+    const stateReceivedAt = Date.now();
     const profileOnly = !!data.profileOnly;
     const incomingMovementSeq = Number(data.seq || 0);
     const hasMovementSeq = Number.isFinite(incomingMovementSeq) && incomingMovementSeq > 0;
     const lastAcceptedSeq = Number(p.lastAcceptedMovementSeq || 0);
-    const staleMovementPacket = hasMovementSeq && lastAcceptedSeq && incomingMovementSeq < lastAcceptedSeq;
+    const staleMovementPacket = hasMovementSeq && lastAcceptedSeq && incomingMovementSeq <= lastAcceptedSeq;
+    const hasMovementPosition = serverStateHasFiniteMovementPosition(data);
+    if (hasMovementPosition) realtimeNetworkMetrics.movementPacketsReceived++;
+    if (hasMovementPosition && staleMovementPacket) realtimeNetworkMetrics.movementPacketsStaleDropped++;
+    const movementBudget = hasMovementPosition && !staleMovementPacket
+      ? serverMovementPacketBudgetDecision(p, data, stateReceivedAt)
+      : { hasPosition: false, hardAllowed: false, reliableTransition: false, emergencyTransition: false };
+    let hardMovementApplied = false;
+    let emergencyTransitionApplied = false;
+    if (movementBudget.hasPosition && !movementBudget.hardAllowed) {
+      // Profile fields below remain independently compatible, but x/z never
+      // bypass the hard collision budget merely by carrying additional keys.
+      realtimeNetworkMetrics.movementPacketsRateDropped++;
+    }
 
-    if (!profileOnly && !staleMovementPacket) {
-      const movementResult = serverApplyMovementProposal(p, data, Date.now());
+    if (!profileOnly && !staleMovementPacket && movementBudget.hardAllowed) {
+      const movementProposalStartedAt = performance.now();
+      const movementResult = serverApplyMovementProposal(p, data, stateReceivedAt);
+      const movementProposalMs = Math.max(0, performance.now() - movementProposalStartedAt);
+      realtimeNetworkMetrics.movementPacketsProcessed++;
+      realtimeNetworkMetrics.movementProposalCount++;
+      realtimeNetworkMetrics.movementProposalTotalMs += movementProposalMs;
+      realtimeNetworkMetrics.movementProposalMaxMs = Math.max(
+        realtimeNetworkMetrics.movementProposalMaxMs,
+        movementProposalMs
+      );
+      if (movementResult.accepted) realtimeNetworkMetrics.movementPacketsAccepted++;
+      if (movementResult.corrected) realtimeNetworkMetrics.movementPacketsCorrected++;
+      hardMovementApplied = true;
       p.angle = Number.isFinite(Number(data.angle)) ? Number(data.angle) : p.angle;
       if (typeof data.crouching !== 'undefined') p.crouching = !!data.crouching;
       if (typeof data.moving !== 'undefined') p.moving = !!data.moving;
@@ -19114,10 +19363,26 @@ io.on('connection', (socket) => {
         p.lastAcceptedMovementSeq = incomingMovementSeq;
         p.movementSeq = incomingMovementSeq;
       }
-      if (movementResult.corrected && Date.now() - Number(p.lastMovementCorrectionAt || 0) > 250) {
-        p.lastMovementCorrectionAt = Date.now();
+      if (movementResult.corrected && stateReceivedAt - Number(p.lastMovementCorrectionAt || 0) > 250) {
+        p.lastMovementCorrectionAt = stateReceivedAt;
         emitAuthoritativePlayerState(p, { reason: 'movementCorrection' });
       }
+    } else if (!profileOnly && !staleMovementPacket && movementBudget.emergencyTransition) {
+      // The emergency path publishes only discrete metadata. The unbudgeted
+      // client position/angle/velocity is deliberately ignored.
+      emergencyTransitionApplied = serverApplyEmergencyMovementTransition(p, data);
+      if (emergencyTransitionApplied) {
+        realtimeNetworkMetrics.movementEmergencyTransitionsAccepted++;
+        if (hasMovementSeq) {
+          p.lastAcceptedMovementSeq = incomingMovementSeq;
+          p.movementSeq = incomingMovementSeq;
+        }
+      }
+    } else if (!profileOnly
+      && !staleMovementPacket
+      && movementBudget.reliableTransition
+      && !movementBudget.hardAllowed) {
+      realtimeNetworkMetrics.movementEmergencyTransitionsDropped++;
     }
     const progressionChanged = serverStateHasProgressionProfile(data)
       ? serverApplyProgressionRequest(p, data)
@@ -19130,21 +19395,21 @@ io.on('connection', (socket) => {
     const equipmentMismatch = data.equipment && typeof data.equipment === 'object'
       ? !serverEquipmentSnapshotMatchesAuthority(p, data.equipment)
       : false;
-    serverRegenPlayerAp(p, Date.now());
-    if ((progressionChanged || equipmentMismatch) && Date.now() - Number(p.lastProfileAckAt || 0) > 100) {
-      p.lastProfileAckAt = Date.now();
+    serverRegenPlayerAp(p, stateReceivedAt);
+    if ((progressionChanged || equipmentMismatch) && stateReceivedAt - Number(p.lastProfileAckAt || 0) > 100) {
+      p.lastProfileAckAt = stateReceivedAt;
       emitAuthoritativePlayerState(p, {
         reason: equipmentMismatch ? 'equipmentMismatch' : 'progression',
         error: equipmentMismatch ? 'Сервер: экипировка изменяется только подтверждённым действием.' : undefined
       });
     }
-    p.lastInputAt = Date.now();
-    if (p.token && usersDb.sessions[p.token]) usersDb.sessions[p.token].lastSeenAt = Date.now();
+    p.lastInputAt = stateReceivedAt;
+    if (p.token && usersDb.sessions[p.token]) usersDb.sessions[p.token].lastSeenAt = stateReceivedAt;
     // v7.74.48: быстрый компактный поток движения. Полный snapshot остаётся
     // авторитетным для состава комнаты, но не должен быть единственным источником
     // движения второго игрока — иначе модель заметно идёт ступеньками.
-    if (p.roomId && !p.dead && !profileOnly && !staleMovementPacket) {
-      const nowStateRelay = Date.now();
+    if (p.roomId && !p.dead && (hardMovementApplied || emergencyTransitionApplied)) {
+      const nowStateRelay = stateReceivedAt;
       const dxRelay = Number(p.x || 0) - Number(p.lastRelayedX ?? p.x);
       const dzRelay = Number(p.z || 0) - Number(p.lastRelayedZ ?? p.z);
       const angleRelay = Math.abs(Number(p.angle || 0) - Number(p.lastRelayedAngle ?? p.angle));
@@ -19155,8 +19420,10 @@ io.on('connection', (socket) => {
       const reliableStateTransition = movementTransition || crouchingTransition;
       const stateTransition = reliableStateTransition || turningTransition;
       const movedRelay = Math.hypot(dxRelay, dzRelay) > 0.004 || angleRelay > 0.006 || dvRelay > 0.035 || stateTransition;
-      const minRelayMs = 50;
-      if (movedRelay && (nowStateRelay - Number(p.lastPlayerStateRelayAt || 0) >= minRelayMs || stateTransition)) {
+      // Normal fanout can only follow a hard-budgeted collision proposal.
+      // The only exception is the separately bounded metadata-only emergency
+      // path, whose position and velocity remain server-authoritative.
+      if (movedRelay) {
         p.lastPlayerStateRelayAt = nowStateRelay;
         p.lastRelayedX = p.x;
         p.lastRelayedZ = p.z;
@@ -19172,6 +19439,11 @@ io.on('connection', (socket) => {
         // плавно продолжат движение.
         const roomRelay = socket.to(p.roomId);
         const movementTransport = reliableStateTransition ? roomRelay : (roomRelay.volatile || roomRelay);
+        realtimeNetworkMetrics.playerStateEmits++;
+        if (reliableStateTransition) realtimeNetworkMetrics.playerStateReliableTransitions++;
+        if (emergencyTransitionApplied) realtimeNetworkMetrics.playerStateEmergencyTransitions++;
+        const relayRoom = rooms.get(p.roomId);
+        realtimeNetworkMetrics.playerStateFanoutDeliveries += Math.max(0, Number(relayRoom?.sockets?.size || 0) - 1);
         movementTransport.emit('playerState', {
           roomId: p.roomId,
           locationId: p.locationId || '',
@@ -19599,6 +19871,7 @@ io.on('connection', (socket) => {
       party: publicParty,
       startedAt: session.startedAt
     };
+    const enteringMembers = [];
     for (const member of party) {
       const memberSocket = io.sockets.sockets.get(member.id);
       if (!memberSocket) continue;
@@ -19609,8 +19882,9 @@ io.on('connection', (socket) => {
       member.globalWorldPoint = worldPoint;
       member.currentWorldSiteId = '';
       member.pendingLocationTransition = null;
-      persistActivePlayerState(member);
+      enteringMembers.push(member);
     }
+    persistActivePlayerStates(enteringMembers);
     emitGlobalTravelToParty(session, 'globalTravelEnteredWorld', payload, false);
     if (typeof ack === 'function') ack({ ok: true, ...payload });
   });
@@ -19632,14 +19906,16 @@ io.on('connection', (socket) => {
       party: session.memberIds.map(id => players.get(id)).filter(Boolean).map(member => publicTravelPartyMember(member, socket.id))
     };
     session.terminating = true;
+    const cancellingMembers = [];
     for (const id of session.memberIds) {
       const member = players.get(id);
       if (!member) continue;
       member.onGlobalMap = true;
       member.globalWorldPoint = worldPoint;
       member.pendingLocationTransition = null;
-      persistActivePlayerState(member);
+      cancellingMembers.push(member);
     }
+    persistActivePlayerStates(cancellingMembers);
     emitGlobalTravelToParty(session, 'globalTravelCancelled', payload, false);
     globalTravelSessions.delete(socket.id);
     if (typeof ack === 'function') ack({ ok: true, ...payload });
@@ -21405,8 +21681,8 @@ io.on('connection', (socket) => {
     if (typeof ack === 'function') ack({ ok: true, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
-    emitGroundItemsSnapshot(room, true);
-    emitWorldContainersSnapshot(room, true);
+    emitGroundItemsSnapshot(room, true, socket.id);
+    emitWorldContainersSnapshot(room, true, socket.id);
   };
   socket.on('changeLocation', changeLocationHandler);
   socket.on('changeRoom', changeLocationHandler);

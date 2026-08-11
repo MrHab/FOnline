@@ -7,6 +7,18 @@
   const IS_MOBILE_DEVICE = deviceInfo.type === 'mobile';
   const MOBILE_PIXEL_RATIO_LIMIT = 2.00;
   const DESKTOP_PIXEL_RATIO_LIMIT = 2.00;
+  // Multisampling a large default framebuffer is redundant once Ultra already
+  // renders at (or above) native resolution, and the color/depth resolve alone
+  // can dominate an ultrawide frame. Keep hardware MSAA for smaller buffers;
+  // high-density canvases retain native/supersampled edge smoothing.
+  const DESKTOP_MSAA_BACKBUFFER_PIXEL_BUDGET = 2_500_000;
+  // Ultra used to render every desktop canvas at a fixed 2x supersampling
+  // target. On a 2K/4K browser window that creates an 8–33 megapixel
+  // backbuffer before any shadow pass, even though the extra samples are no
+  // longer visible at the isometric camera distance. Keep full 2x on smaller
+  // windows, but cap the total Ultra backbuffer so large displays stay sharp
+  // without spending most of the frame on fill-rate.
+  const ULTRA_RENDER_PIXEL_BUDGET = 4_000_000;
 
   const GRAPHICS_STORAGE_KEY = 'realmOfAshes.graphicsQuality.v1';
   // v7.76: real sun shadows are back on desktop High/Ultra. Mobile keeps the
@@ -176,23 +188,113 @@
   let adaptiveRenderScaleTimer = 0;
   let adaptiveRenderScaleRecoveryTimer = 0;
   let appliedRendererPixelRatio = 0;
+  let ultraRenderPressureElapsed = 0;
+  let ultraRenderPressureRecoveryElapsed = 0;
+  let ultraRenderPressureActive = false;
   const ADAPTIVE_RENDER_SCALE_DOWN_FPS = 57;
   const ADAPTIVE_RENDER_SCALE_UP_FPS = 59;
   const ADAPTIVE_RENDER_SCALE_RECOVERY_SECONDS = 3;
+  const ULTRA_RENDER_PRESSURE_ACTORS = 6;
+  const ULTRA_RENDER_PRESSURE_FPS = 42;
+  const ULTRA_RENDER_PRESSURE_SECONDS = 2;
+  const ULTRA_RENDER_PRESSURE_RECOVERY_FPS = 58;
+  const ULTRA_RENDER_PRESSURE_RECOVERY_SECONDS = 5;
+  const ULTRA_RENDER_PRESSURE_NATIVE_RATIO = 0.92;
+
+  function updateUltraRenderPressure(dt = 0) {
+    if (IS_MOBILE_DEVICE || String(graphicsQuality || '') !== 'ultra') {
+      ultraRenderPressureElapsed = 0;
+      ultraRenderPressureRecoveryElapsed = 0;
+      ultraRenderPressureActive = false;
+      return;
+    }
+    const actorCount = typeof shadowActorRosterSize === 'function'
+      ? Math.max(0, Number(shadowActorRosterSize() || 0))
+      : 0;
+    const seconds = Math.max(0, Math.min(0.1, Number(dt || 0)));
+    if (!ultraRenderPressureActive) {
+      ultraRenderPressureRecoveryElapsed = 0;
+      ultraRenderPressureElapsed = actorCount >= ULTRA_RENDER_PRESSURE_ACTORS
+        && fpsValue > 0
+        && fpsValue < ULTRA_RENDER_PRESSURE_FPS
+        ? ultraRenderPressureElapsed + seconds
+        : 0;
+      if (ultraRenderPressureElapsed >= ULTRA_RENDER_PRESSURE_SECONDS) {
+        ultraRenderPressureActive = true;
+        ultraRenderPressureElapsed = 0;
+      }
+      return;
+    }
+    ultraRenderPressureElapsed = 0;
+    const recovered = actorCount < ULTRA_RENDER_PRESSURE_ACTORS
+      || fpsValue >= ULTRA_RENDER_PRESSURE_RECOVERY_FPS;
+    ultraRenderPressureRecoveryElapsed = recovered
+      ? ultraRenderPressureRecoveryElapsed + seconds
+      : 0;
+    if (ultraRenderPressureRecoveryElapsed >= ULTRA_RENDER_PRESSURE_RECOVERY_SECONDS) {
+      ultraRenderPressureActive = false;
+      ultraRenderPressureRecoveryElapsed = 0;
+    }
+  }
 
   function adaptiveRenderScaleFloor() {
     if (IS_MOBILE_DEVICE) return 0.88;
     const id = String(graphicsQuality || 'high');
-    if (id === 'ultra') return 0.68;
+    if (id === 'ultra') {
+      const base = graphicsViewportBasePixelRatio();
+      // Stay native in normal play. Only after sustained low FPS with a crowded
+      // actor roster may a large canvas use a subtle 0.92x emergency tier; the
+      // DOM HUD remains full-resolution and small windows keep supersampling.
+      const targetRatio = ultraRenderPressureActive ? ULTRA_RENDER_PRESSURE_NATIVE_RATIO : 1;
+      return Math.max(0.60, Math.min(1.0, targetRatio / Math.max(1, base)));
+    }
     if (id === 'high') return 0.74;
     if (id === 'medium') return 0.84;
     return 0.92;
   }
 
-  function effectiveGraphicsPixelRatio() {
+  function graphicsViewportBasePixelRatio() {
     const base = graphicsPixelRatio();
+    if (IS_MOBILE_DEVICE || String(graphicsQuality || '') !== 'ultra') return base;
+    const width = Math.max(1, Number(canvas?.clientWidth || window.innerWidth || 1));
+    const height = Math.max(1, Number(canvas?.clientHeight || window.innerHeight || 1));
+    const cap = Math.max(1, Math.sqrt(ULTRA_RENDER_PIXEL_BUDGET / Math.max(1, width * height)));
+    return Math.min(base, cap);
+  }
+
+  function effectiveGraphicsPixelRatio() {
+    const base = graphicsViewportBasePixelRatio();
     const scale = Math.max(adaptiveRenderScaleFloor(), Math.min(1.0, Number(adaptiveRenderScale || 1)));
     return Math.max(IS_MOBILE_DEVICE ? 0.92 : 0.55, base * scale);
+  }
+
+  function desktopMsaaEnabledForViewport() {
+    if (IS_MOBILE_DEVICE) return false;
+    // WebGL antialias is immutable after context creation. Choose it against
+    // the largest stable viewport known at boot and the prospective Ultra
+    // ratio, independently of the current window size/preset. Otherwise a
+    // small Low window could keep MSAA after switching to fullscreen Ultra.
+    const stableWidth = Math.max(
+      1,
+      Number(canvas?.clientWidth || 0),
+      Number(window.innerWidth || 0),
+      Number(window.screen?.availWidth || 0),
+      Number(window.screen?.width || 0)
+    );
+    const stableHeight = Math.max(
+      1,
+      Number(canvas?.clientHeight || 0),
+      Number(window.innerHeight || 0),
+      Number(window.screen?.availHeight || 0),
+      Number(window.screen?.height || 0)
+    );
+    const stablePixels = stableWidth * stableHeight;
+    const prospectiveUltraRatio = Math.min(
+      DESKTOP_PIXEL_RATIO_LIMIT,
+      Math.max(1, Math.sqrt(ULTRA_RENDER_PIXEL_BUDGET / Math.max(1, stablePixels)))
+    );
+    return stablePixels * prospectiveUltraRatio * prospectiveUltraRatio
+      < DESKTOP_MSAA_BACKBUFFER_PIXEL_BUDGET;
   }
 
   function applyMainRendererPixelRatio(force = false) {
@@ -210,6 +312,9 @@
 
   function resetAdaptiveRenderScale(reason = 'quality') {
     adaptiveRenderScale = 1.0;
+    ultraRenderPressureElapsed = 0;
+    ultraRenderPressureRecoveryElapsed = 0;
+    ultraRenderPressureActive = false;
     resetAdaptiveRenderScaleSampling();
     applyMainRendererPixelRatio(true);
   }
@@ -222,6 +327,7 @@
       return;
     }
     if (!Number.isFinite(fpsValue) || fpsValue <= 0) return;
+    updateUltraRenderPressure(dt);
     adaptiveRenderScaleTimer += Math.max(0, Number(dt || 0));
     if (adaptiveRenderScaleTimer < 1.0) return;
     const sampleSeconds = adaptiveRenderScaleTimer;
@@ -245,7 +351,9 @@
     }
     if (Math.abs(next - adaptiveRenderScale) < 0.002) return;
     adaptiveRenderScale = next;
-    applyMainRendererPixelRatio(false);
+    // Do not leave the backing store a few pixels above the final floor just
+    // because the last adaptive step is smaller than the resize deadband.
+    applyMainRendererPixelRatio(next <= floor + 0.002 || next >= 0.999);
   }
 
   // v7.62 RAM budget: big textures are the main source of browser RAM usage.
@@ -289,7 +397,9 @@
   }
 
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !IS_MOBILE_DEVICE, alpha: false, powerPreference: 'high-performance' });
+  const desktopMsaaEnabled = desktopMsaaEnabledForViewport();
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: desktopMsaaEnabled, alpha: false, powerPreference: 'high-performance' });
+  canvas.dataset.rendererMsaa = desktopMsaaEnabled ? 'on' : 'off';
   applyMainRendererPixelRatio(true);
   renderer.setClearColor(0x080b0c, 1);
   // v7.51: единый кинематографичный цветовой пайплайн. Без внешних ассетов:

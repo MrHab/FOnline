@@ -1,6 +1,17 @@
   const NETWORK_PING_INTERVAL_SECONDS = 2;
   const NETWORK_PING_TIMEOUT_MS = 3500;
+  const NETWORK_PING_SCHEDULER_SAMPLE_MS = 50;
   const networkPingEl = document.getElementById('network-ping');
+
+  function currentNetworkPingTransport() {
+    return String(multiplayer.socket?.io?.engine?.transport?.name || '').trim().toLowerCase();
+  }
+
+  function networkPingObservedMainThreadStallMs(measuredPing, finishedAt, schedulerExpectedAt, maxSchedulerDelay) {
+    const measured = Math.max(0, Number(measuredPing) || 0);
+    const callbackSchedulerDelay = Math.max(0, (Number(finishedAt) || 0) - (Number(schedulerExpectedAt) || 0));
+    return Math.min(measured, Math.max(0, Number(maxSchedulerDelay) || 0, callbackSchedulerDelay));
+  }
 
   function renderNetworkPing(pingMs = null, status = 'offline') {
     multiplayer.networkPingStatus = status;
@@ -13,9 +24,35 @@
     networkPingEl.classList.remove('ping-good', 'ping-medium', 'ping-bad', 'ping-offline');
     networkPingEl.classList.add(`ping-${quality}`);
     networkPingEl.textContent = roundedPing === null ? (status === 'waiting' ? '…ms' : '—ms') : `${roundedPing}ms`;
-    networkPingEl.title = roundedPing === null
-      ? (status === 'waiting' ? 'Пинг до игрового сервера: измерение…' : 'Пинг до игрового сервера: нет соединения')
-      : `Пинг до игрового сервера: ${roundedPing} мс`;
+    if (roundedPing === null) {
+      networkPingEl.title = status === 'waiting'
+        ? 'RTT до игрового сервера: измерение…'
+        : (status === 'timeout'
+          ? 'RTT до игрового сервера: ответ не получен вовремя'
+          : 'RTT до игрового сервера: нет соединения');
+      delete networkPingEl.dataset.rawPingMs;
+      delete networkPingEl.dataset.mainThreadStallMs;
+      delete networkPingEl.dataset.transport;
+      return;
+    }
+    const rawPing = Number(multiplayer.networkPingMs);
+    const mainThreadStall = Number(multiplayer.networkPingMainThreadStallMs);
+    const transport = String(multiplayer.networkPingTransport || '').toLowerCase();
+    const details = [
+      `Полный RTT до игрового сервера: ${roundedPing} мс (сглажено)`,
+      Number.isFinite(rawPing) ? `Последний замер: ${Math.max(0, Math.round(rawPing))} мс` : '',
+      transport ? `Транспорт: ${transport === 'websocket' ? 'WebSocket' : transport}` : '',
+      Number.isFinite(mainThreadStall) && mainThreadStall >= 8
+        ? `Максимальная пауза главного потока во время замера: ${Math.max(0, Math.round(mainThreadStall))} мс (наблюдение, не часть RTT для вычитания)`
+        : ''
+    ].filter(Boolean);
+    networkPingEl.title = details.join('\n');
+    if (Number.isFinite(rawPing)) networkPingEl.dataset.rawPingMs = String(Math.max(0, Math.round(rawPing)));
+    else delete networkPingEl.dataset.rawPingMs;
+    if (Number.isFinite(mainThreadStall)) networkPingEl.dataset.mainThreadStallMs = String(Math.max(0, Math.round(mainThreadStall)));
+    else delete networkPingEl.dataset.mainThreadStallMs;
+    if (transport) networkPingEl.dataset.transport = transport;
+    else delete networkPingEl.dataset.transport;
   }
 
   function resetNetworkPingMeasurement(status = 'offline') {
@@ -26,7 +63,78 @@
     multiplayer.networkPingElapsed = status === 'waiting' ? NETWORK_PING_INTERVAL_SECONDS : 0;
     multiplayer.networkPingMs = null;
     multiplayer.networkPingSmoothedMs = null;
+    multiplayer.networkPingMainThreadStallMs = null;
+    multiplayer.networkPingTransport = '';
     renderNetworkPing(null, status);
+  }
+
+  function beginNetworkPingProbe(socket, requestId) {
+    if (requestId !== multiplayer.networkPingRequestId
+      || socket !== multiplayer.socket
+      || !socket?.connected
+      || !multiplayer.joined
+      || document.hidden) {
+      if (requestId === multiplayer.networkPingRequestId) {
+        multiplayer.networkPingInFlight = false;
+        multiplayer.networkPingElapsed = NETWORK_PING_INTERVAL_SECONDS;
+      }
+      return;
+    }
+
+    const startedAt = performance.now();
+    const clientTime = Date.now();
+    let schedulerExpectedAt = startedAt + NETWORK_PING_SCHEDULER_SAMPLE_MS;
+    let maxSchedulerDelay = 0;
+    let schedulerTimer = null;
+    const sampleSchedulerDelay = () => {
+      if (requestId !== multiplayer.networkPingRequestId) return;
+      const now = performance.now();
+      maxSchedulerDelay = Math.max(maxSchedulerDelay, now - schedulerExpectedAt);
+      schedulerExpectedAt = now + NETWORK_PING_SCHEDULER_SAMPLE_MS;
+      schedulerTimer = setTimeout(sampleSchedulerDelay, NETWORK_PING_SCHEDULER_SAMPLE_MS);
+    };
+    schedulerTimer = setTimeout(sampleSchedulerDelay, NETWORK_PING_SCHEDULER_SAMPLE_MS);
+
+    multiplayer.networkPingTimeout = setTimeout(() => {
+      if (requestId !== multiplayer.networkPingRequestId) return;
+      if (schedulerTimer) clearTimeout(schedulerTimer);
+      multiplayer.networkPingTimeout = null;
+      resetNetworkPingMeasurement('timeout');
+    }, NETWORK_PING_TIMEOUT_MS);
+
+    socket.emit('networkPing', { clientTime }, ack => {
+      if (requestId !== multiplayer.networkPingRequestId) return;
+      if (schedulerTimer) clearTimeout(schedulerTimer);
+      if (multiplayer.networkPingTimeout) clearTimeout(multiplayer.networkPingTimeout);
+      multiplayer.networkPingTimeout = null;
+      multiplayer.networkPingInFlight = false;
+      if (!ack
+        || ack.ok !== true
+        || Number(ack.clientTime) !== clientTime
+        || !Number.isFinite(Number(ack.serverTime))) {
+        resetNetworkPingMeasurement('timeout');
+        return;
+      }
+      const finishedAt = performance.now();
+      const measuredPing = Math.min(9999, Math.max(0, finishedAt - startedAt));
+      // This is deliberately diagnostic only. The displayed RTT keeps the full
+      // application delay instead of hiding a slow frame or a congested client.
+      const mainThreadStall = networkPingObservedMainThreadStallMs(
+        measuredPing,
+        finishedAt,
+        schedulerExpectedAt,
+        maxSchedulerDelay
+      );
+      const previousPing = multiplayer.networkPingSmoothedMs;
+      const smoothedPing = previousPing !== null && Number.isFinite(Number(previousPing))
+        ? Number(previousPing) * 0.68 + measuredPing * 0.32
+        : measuredPing;
+      multiplayer.networkPingMs = measuredPing;
+      multiplayer.networkPingSmoothedMs = smoothedPing;
+      multiplayer.networkPingMainThreadStallMs = mainThreadStall;
+      multiplayer.networkPingTransport = currentNetworkPingTransport();
+      renderNetworkPing(smoothedPing, 'online');
+    });
   }
 
   function updateNetworkPing(dt) {
@@ -43,34 +151,19 @@
     multiplayer.networkPingInFlight = true;
     const requestId = Number(multiplayer.networkPingRequestId || 0) + 1;
     multiplayer.networkPingRequestId = requestId;
-    const startedAt = performance.now();
-    multiplayer.networkPingTimeout = setTimeout(() => {
-      if (requestId !== multiplayer.networkPingRequestId) return;
-      multiplayer.networkPingRequestId = requestId + 1;
-      multiplayer.networkPingTimeout = null;
-      multiplayer.networkPingInFlight = false;
-      renderNetworkPing(null, 'timeout');
-    }, NETWORK_PING_TIMEOUT_MS);
-
-    socket.emit('networkPing', { clientTime: Date.now() }, ack => {
-      if (requestId !== multiplayer.networkPingRequestId) return;
-      if (multiplayer.networkPingTimeout) clearTimeout(multiplayer.networkPingTimeout);
-      multiplayer.networkPingTimeout = null;
-      multiplayer.networkPingInFlight = false;
-      if (!ack || ack.ok !== true || !Number.isFinite(Number(ack.serverTime))) {
-        renderNetworkPing(null, 'timeout');
-        return;
-      }
-      const measuredPing = Math.min(9999, Math.max(0, performance.now() - startedAt));
-      const previousPing = multiplayer.networkPingSmoothedMs;
-      const smoothedPing = previousPing !== null && Number.isFinite(Number(previousPing))
-        ? Number(previousPing) * 0.68 + measuredPing * 0.32
-        : measuredPing;
-      multiplayer.networkPingMs = measuredPing;
-      multiplayer.networkPingSmoothedMs = smoothedPing;
-      renderNetworkPing(smoothedPing, 'online');
-    });
+    // updateNetworkPing runs inside the render-frame update. Starting the clock
+    // in a microtask keeps the rest of that same Ultra frame out of the probe.
+    // Later client stalls remain part of the full application RTT and are
+    // reported separately as diagnostic context.
+    if (typeof queueMicrotask === 'function') queueMicrotask(() => beginNetworkPingProbe(socket, requestId));
+    else setTimeout(() => beginNetworkPingProbe(socket, requestId), 0);
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    const socket = multiplayer.socket;
+    resetNetworkPingMeasurement(socket?.connected && multiplayer.joined ? 'waiting' : 'offline');
+  });
 
   function applyServerLocalPositionAck(ack = {}) {
     const x = Number(ack.x);

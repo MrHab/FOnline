@@ -1394,20 +1394,80 @@
   }
 
   function updateEnemies(dt) {
+    const animationFrameContext = typeof createEnemyAnimationFrameContext === 'function'
+      ? createEnemyAnimationFrameContext(
+          enemies,
+          traderNpc,
+          typeof fpsValue === 'number' ? fpsValue : 0
+        )
+      : null;
     if (traderNpc?.mesh?.userData?.actorParts?.unifiedHumanoidNpc) {
       const traderTalking = !!String(traderNpc.speechText || '').trim();
       const traderDistance = player
         ? Math.hypot(Number(player.x || 0) - Number(traderNpc.x || 0), Number(player.z || 0) - Number(traderNpc.z || 0))
         : Infinity;
-      updateCharacterLocomotionAnimation(traderNpc.mesh, dt, {
-        moving: false,
-        speed: 0,
-        facingAngle: Number(traderNpc.mesh.rotation.y || 0) - Math.PI,
-        talking: traderTalking,
-        footIk: traderTalking || traderDistance <= 6
+      const traderNow = (typeof performance !== 'undefined' && performance.now)
+        ? performance.now()
+        : Date.now();
+      const traderAttack = typeof actorAttackAnimationPulseState === 'function'
+        ? actorAttackAnimationPulseState(traderNpc.mesh, String(traderNpc.aiState || '').toLowerCase() === 'attack')
+        : { active: String(traderNpc.aiState || '').toLowerCase() === 'attack', token: 0 };
+      const traderMelee = traderNpc.mesh.userData?.meleeAnim;
+      const traderMeleeActive = Number(traderMelee?.startedAt || 0) > 0
+        && traderNow < Number(traderMelee.startedAt || 0) + Math.max(0.18, Number(traderMelee.duration || 0.32)) * 1000;
+      const traderHitReaction = traderNpc.mesh.userData?.hitReactionAnim;
+      const traderHitReactionActive = Number(traderHitReaction?.startedAt || 0) > 0
+        && traderNow < Number(traderHitReaction.startedAt || 0) + Math.max(0.22, Number(traderHitReaction.duration || 0.34)) * 1000;
+      const traderSelected = !!player && player.attackTarget === traderNpc;
+      const traderHovered = (typeof hoveredEnemy !== 'undefined' && hoveredEnemy === traderNpc)
+        || (typeof activeWorldContextTarget !== 'undefined' && activeWorldContextTarget?.trader === traderNpc);
+      const traderImportant = traderTalking
+        || traderWindowOpen
+        || traderAttack.active
+        || traderMeleeActive
+        || traderHitReactionActive
+        || Number(traderNpc.flash || 0) > 0.02
+        || traderSelected
+        || traderHovered;
+      const traderVisible = traderNpc.mesh.visible !== false;
+      const traderBaseInterval = enemyAnimationLodInterval(traderDistance, traderVisible, traderImportant);
+      const traderAnimationInterval = enemyAnimationCrowdAdjustedInterval(traderBaseInterval, {
+        crowdPressure: animationFrameContext?.crowdPressure === true,
+        heavy: true,
+        idle: !traderImportant,
+        important: traderImportant
       });
-      if (traderNpc.mesh.userData.enemyWeaponGroup) {
-        updateWeaponVisualAnimation(traderNpc.mesh.userData.enemyWeaponGroup, dt, traderNpc);
+      const traderAnimationDt = consumeEnemyAnimationLodDt(
+        traderNpc,
+        dt,
+        traderAnimationInterval,
+        [
+          traderVisible ? 1 : 0,
+          traderTalking ? 1 : 0,
+          traderWindowOpen ? 1 : 0,
+          traderAttack.active ? 1 : 0,
+          Number(traderAttack.token || 0),
+          Number(traderMelee?.startedAt || 0),
+          Number(traderHitReaction?.startedAt || 0),
+          Number(traderNpc.flash || 0) > 0.02 ? 1 : 0,
+          traderSelected ? 1 : 0,
+          traderHovered ? 1 : 0
+        ].join('|')
+      );
+      if (traderAnimationDt > 0) {
+        updateCharacterLocomotionAnimation(traderNpc.mesh, traderAnimationDt, {
+          moving: false,
+          speed: 0,
+          facingAngle: Number(traderNpc.mesh.rotation.y || 0) - Math.PI,
+          attacking: traderAttack.active,
+          attackToken: traderAttack.token,
+          hurt: Number(traderNpc.flash || 0) > 0.02 || traderHitReactionActive,
+          talking: traderTalking,
+          footIk: traderImportant || traderDistance <= 6
+        });
+        if (traderNpc.mesh.userData.enemyWeaponGroup) {
+          updateWeaponVisualAnimation(traderNpc.mesh.userData.enemyWeaponGroup, traderAnimationDt, traderNpc);
+        }
       }
     }
     if (enemiesAreServerAuthoritative()) {
@@ -1488,7 +1548,7 @@
           rotateEnemyMeshForState(e, movementDx, movementDz, stepDt, 12, fallbackTarget);
           e.prevVisualX = nx;
           e.prevVisualZ = nz;
-          if (typeof animateEnemyVisual === 'function') animateEnemyVisual(e, dt);
+          if (typeof animateEnemyVisual === 'function') animateEnemyVisual(e, dt, animationFrameContext);
         }
         applyEnemyFlashVisual(e, dt);
       });
@@ -1555,7 +1615,7 @@
       e.mesh.position.set(e.x, 0, e.z);
       const fallbackTarget = (e.aiState === 'chase' || e.aiState === 'attack') ? player : null;
       rotateEnemyMeshForState(e, Number(e.x || 0) - previousX, Number(e.z || 0) - previousZ, dt, 14, fallbackTarget);
-      if (typeof animateEnemyVisual === 'function') animateEnemyVisual(e, dt);
+      if (typeof animateEnemyVisual === 'function') animateEnemyVisual(e, dt, animationFrameContext);
       applyEnemyFlashVisual(e, dt);
     });
   }

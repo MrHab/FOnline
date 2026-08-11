@@ -32,6 +32,40 @@
     return THREE.PCFSoftShadowMap;
   }
 
+  const ULTRA_SHADOW_PRESSURE_ACTORS = 6;
+  const ULTRA_SHADOW_PRESSURE_FPS = 48;
+  const ULTRA_SHADOW_RECOVERY_FPS = 58;
+  const ULTRA_SHADOW_RECOVERY_SECONDS = 3;
+
+  function ultraShadowLoadPressure(actorRosterSize = 0, measuredFps = 0) {
+    const actors = Math.max(0, Number(actorRosterSize || 0));
+    const fps = Math.max(0, Number(measuredFps || 0));
+    return actors >= ULTRA_SHADOW_PRESSURE_ACTORS
+      && fps > 0
+      && fps < ULTRA_SHADOW_PRESSURE_FPS;
+  }
+
+  function shadowMapSizeForSceneLoad(preset, actorRosterSize = 0, measuredFps = 0, currentSize = 0, recoveryReady = false) {
+    const baseSize = Math.max(256, Number(
+      IS_MOBILE_DEVICE
+        ? (preset.mobileShadowMap || Math.min(Number(preset.shadowMap || 1024), 768))
+        : (preset.shadowMap || 1024)
+    ));
+    if (IS_MOBILE_DEVICE || preset.id !== 'ultra' || baseSize <= 3072) return baseSize;
+    // 3072² remains above the High preset's 2048² map and keeps PCFSoftShadowMap,
+    // but removes 44% of the shadow texel work while a crowded Ultra scene is
+    // already below the smooth frame band. Hysteresis prevents resize churn.
+    const loadedSize = Math.max(2048, Math.round((baseSize * 0.75) / 256) * 256);
+    if (ultraShadowLoadPressure(actorRosterSize, measuredFps)) return loadedSize;
+    const recovered = Number(actorRosterSize || 0) <= 3
+      || Number(measuredFps || 0) <= 0
+      || (recoveryReady
+        && Number(actorRosterSize || 0) < ULTRA_SHADOW_PRESSURE_ACTORS
+        && Number(measuredFps || 0) >= ULTRA_SHADOW_RECOVERY_FPS);
+    if (Number(currentSize || 0) === loadedSize && !recovered) return loadedSize;
+    return baseSize;
+  }
+
   function configureShadowQuality(forceMapReset = false) {
     if (!renderer || !sun || !sun.shadow) return;
     const preset = graphicsSettings || GRAPHICS_PRESETS.medium;
@@ -49,9 +83,14 @@
     renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.needsUpdate = !!enabled;
     sun.castShadow = enabled;
-    const size = Math.max(256, Number(IS_MOBILE_DEVICE ? (preset.mobileShadowMap || Math.min(Number(preset.shadowMap || 1024), 768)) : (preset.shadowMap || 1024)));
     const currentW = Number(sun.shadow.mapSize?.x || 0);
     const currentH = Number(sun.shadow.mapSize?.y || 0);
+    const size = shadowMapSizeForSceneLoad(
+      preset,
+      typeof shadowActorRosterSize === 'function' ? shadowActorRosterSize() : 0,
+      typeof fpsValue !== 'undefined' ? fpsValue : 0,
+      currentW
+    );
     if (sun.shadow.mapSize && (currentW !== size || currentH !== size)) {
       sun.shadow.mapSize.set(size, size);
       forceMapReset = true;
@@ -88,6 +127,8 @@
     lastActorBudgetX: Infinity,
     lastActorBudgetZ: Infinity,
     lastActorRosterSize: -1,
+    lastUltraLoadShedding: false,
+    ultraRecoveryElapsed: 0,
     actorRebudgetElapsed: 999,
     lastSunAzimuth: Infinity,
     lastSunHeight: Infinity,
@@ -144,8 +185,9 @@
     // A 2048px directional shadow pass is one of the largest daytime GPU
     // costs in a crowded room. Keep the feature, but spend fewer full-map
     // updates while the renderer is already below the smooth-FPS band.
-    if (fpsValue > 0 && fpsValue < 30) fps *= 0.30;
-    else if (fpsValue > 0 && fpsValue < 42) fps *= 0.45;
+    if (fpsValue > 0 && fpsValue < 28) fps *= 0.28;
+    else if (fpsValue > 0 && fpsValue < 36) fps *= 0.36;
+    else if (fpsValue > 0 && fpsValue < 48) fps *= 0.48;
     else if (fpsValue > 0 && fpsValue > 72 && preset.id !== 'low') fps *= 1.12;
     return Math.max(2.5, Math.min(30, fps));
   }
@@ -276,7 +318,7 @@
     return allow;
   }
 
-  function shadowCasterAllowedByBudget(obj, actorAllowlist = null) {
+  function shadowCasterAllowedByBudget(obj, actorAllowlist = null, allowUltraMicroDetail = true) {
     const preset = graphicsSettings || GRAPHICS_PRESETS.medium;
     const mode = String(preset.shadowCasterMode || 'high');
     if (!obj || !obj.isMesh) return false;
@@ -296,7 +338,9 @@
     const dz = adaptiveShadowBudget.worldPos.z - focus.z;
     if ((dx * dx + dz * dz) > radius * radius) return false;
 
-    if (kind.includes('pebble') || kind.includes('grass') || kind.includes('blade') || kind.includes('decal')) return mode === 'ultra';
+    if (kind.includes('pebble') || kind.includes('grass') || kind.includes('blade') || kind.includes('decal')) {
+      return mode === 'ultra' && allowUltraMicroDetail;
+    }
     if (mode === 'major') {
       return /player|trader|npc|enemy|building|wall|door|post|tree|trunk|rock|boulder|vehicle|car|crate|storage|chest|barrel|gate|tower/.test(kind);
     }
@@ -315,6 +359,10 @@
     const enabled = !REAL_SHADOWS_TEMP_DISABLED && !!preset.shadows && sunShadowsAllowedByTime && mobileShadowAllowed;
     const actorRows = shadowActorRoster();
     const actorAllowlist = actorShadowCasterAllowlist(actorRows);
+    const baseShadowMapSize = Math.max(256, Number(preset.shadowMap || 1024));
+    const loadSheddingActive = preset.id === 'ultra'
+      && Number(sun?.shadow?.mapSize?.x || baseShadowMapSize) < baseShadowMapSize;
+    const allowUltraMicroDetail = !loadSheddingActive;
     scene.traverse(obj => {
       if (!obj || !obj.isMesh) return;
       if (obj.userData && obj.userData.forceNoShadow) {
@@ -322,9 +370,43 @@
         return;
       }
       if (obj.userData && obj.userData.baseCastShadow === undefined) obj.userData.baseCastShadow = !!obj.castShadow;
-      obj.castShadow = enabled && obj.userData.baseCastShadow && shadowCasterAllowedByBudget(obj, actorAllowlist);
+      obj.castShadow = enabled
+        && obj.userData.baseCastShadow
+        && shadowCasterAllowedByBudget(obj, actorAllowlist, allowUltraMicroDetail);
     });
     adaptiveShadowBudget.lastActorRosterSize = actorRows.length;
+  }
+
+  function updateAdaptiveShadowMapSize(actorRosterSize = 0, dt = 0) {
+    if (!sun?.shadow?.mapSize) return false;
+    const preset = graphicsSettings || GRAPHICS_PRESETS.medium;
+    const currentW = Number(sun.shadow.mapSize.x || 0);
+    const currentH = Number(sun.shadow.mapSize.y || 0);
+    const baseSize = Math.max(256, Number(preset.shadowMap || 1024));
+    const loadedTier = preset.id === 'ultra' && currentW > 0 && currentW < baseSize;
+    const sustainedRecoverySample = loadedTier
+      && Number(actorRosterSize || 0) > 3
+      && Number(actorRosterSize || 0) < ULTRA_SHADOW_PRESSURE_ACTORS
+      && Number(fpsValue || 0) >= ULTRA_SHADOW_RECOVERY_FPS;
+    adaptiveShadowBudget.ultraRecoveryElapsed = sustainedRecoverySample
+      ? adaptiveShadowBudget.ultraRecoveryElapsed + Math.max(0, Number(dt || 0))
+      : 0;
+    const recoveryReady = adaptiveShadowBudget.ultraRecoveryElapsed >= ULTRA_SHADOW_RECOVERY_SECONDS;
+    const size = shadowMapSizeForSceneLoad(preset, actorRosterSize, fpsValue, currentW, recoveryReady);
+    if (currentW === size && currentH === size) return false;
+    adaptiveShadowBudget.ultraRecoveryElapsed = 0;
+    sun.shadow.mapSize.set(size, size);
+    if (sun.shadow.map) {
+      try { sun.shadow.map.dispose(); } catch (_) {}
+      sun.shadow.map = null;
+    }
+    // A resized render target no longer contains a valid shadow texture. Force
+    // its replacement in this render frame instead of waiting for the normal
+    // throttled refresh interval (which would briefly drop the sun shadow).
+    sun.shadow.needsUpdate = true;
+    if (renderer?.shadowMap) renderer.shadowMap.needsUpdate = true;
+    requestAdaptiveShadowUpdate('shadow-map-load-tier');
+    return true;
   }
 
   function updateAdaptiveShadowBudget(dt = 0, force = false) {
@@ -356,22 +438,34 @@
     const actorX = Number(actorOrigin?.x || 0);
     const actorZ = Number(actorOrigin?.z || 0);
     const actorRosterSize = shadowActorRosterSize();
+    const shadowMapSizeChanged = updateAdaptiveShadowMapSize(actorRosterSize, dt);
+    const baseShadowMapSize = Math.max(256, Number(preset.shadowMap || 1024));
+    const ultraLoadShedding = preset.id === 'ultra'
+      && Number(sun.shadow.mapSize?.x || baseShadowMapSize) < baseShadowMapSize;
+    const ultraLoadSheddingChanged = ultraLoadShedding !== adaptiveShadowBudget.lastUltraLoadShedding;
     const staticBudgetMoved = Math.hypot(focus.x - adaptiveShadowBudget.lastCasterBudgetX, focus.z - adaptiveShadowBudget.lastCasterBudgetZ) > rebudgetDistance;
     const actorBudgetMoved = Math.hypot(actorX - adaptiveShadowBudget.lastActorBudgetX, actorZ - adaptiveShadowBudget.lastActorBudgetZ) > rebudgetDistance;
     const actorRosterChanged = actorRosterSize !== adaptiveShadowBudget.lastActorRosterSize;
     const crowdedActorRefresh = actorRosterSize > actorShadowCasterLimit() && adaptiveShadowBudget.actorRebudgetElapsed >= 1.25;
-    if (force || staticBudgetMoved || actorBudgetMoved || actorRosterChanged || crowdedActorRefresh) {
+    if (force || staticBudgetMoved || actorBudgetMoved || actorRosterChanged || crowdedActorRefresh || shadowMapSizeChanged || ultraLoadSheddingChanged) {
       applyShadowCasterBudget();
       adaptiveShadowBudget.lastCasterBudgetX = focus.x;
       adaptiveShadowBudget.lastCasterBudgetZ = focus.z;
       adaptiveShadowBudget.lastActorBudgetX = actorX;
       adaptiveShadowBudget.lastActorBudgetZ = actorZ;
       adaptiveShadowBudget.actorRebudgetElapsed = 0;
+      adaptiveShadowBudget.lastUltraLoadShedding = ultraLoadShedding;
       requestAdaptiveShadowUpdate('caster-budget');
+      if (shadowMapSizeChanged) {
+        // The resized target is already forced for the current render frame;
+        // do not repeat the same full shadow pass at the next throttle slot.
+        adaptiveShadowBudget.pending = false;
+        adaptiveShadowBudget.elapsed = 0;
+      }
     }
 
     const dynamicMoved = dynamicShadowMotionChanged();
-    if (!adaptiveShadowBudget.pending && dynamicMoved) {
+    if (!shadowMapSizeChanged && !adaptiveShadowBudget.pending && dynamicMoved) {
       // Actor movement requests a new shadow map, but it is still throttled by
       // the adaptive budget. Updating the full shadow pass every animation frame
       // makes movement near buildings look like a roof/cutaway FPS hitch.

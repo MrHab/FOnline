@@ -36,9 +36,9 @@ const modelBuilder = read('tools/build-wasteland-models.js');
 
 requireText(renderer, 'const REAL_SHADOWS_TEMP_DISABLED = false;', 'desktop real shadows must not be emergency-disabled');
 const numericConst = (source, name) => {
-  const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*([0-9.]+)`));
+  const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*([0-9._]+)`));
   if (!match) fail(`missing numeric constant ${name}`);
-  return Number(match[1]);
+  return Number(match[1].replaceAll('_', ''));
 };
 const maxRenderFps = numericConst(hudLoop, 'MAX_RENDER_FPS');
 const adaptiveDownFps = numericConst(renderer, 'ADAPTIVE_RENDER_SCALE_DOWN_FPS');
@@ -48,8 +48,115 @@ if (adaptiveUpFps > maxRenderFps) fail('adaptive render scale cannot recover abo
 if (adaptiveDownFps >= adaptiveUpFps) fail('adaptive render scale must retain an FPS hysteresis band');
 if (adaptiveRecoverySeconds < 2) fail('adaptive render scale recovery must require a sustained healthy frame rate');
 requireText(renderer, 'adaptiveRenderScaleRecoveryTimer += sampleSeconds;', 'adaptive render scale recovery dwell is missing');
+requireText(renderer, 'applyMainRendererPixelRatio(next <= floor + 0.002 || next >= 0.999)', 'adaptive scale can stop above its exact floor');
+requireText(renderer, 'function updateUltraRenderPressure', 'sustained Ultra crowd-pressure tier is missing');
+requireText(renderer, 'const ULTRA_RENDER_PRESSURE_NATIVE_RATIO = 0.92;', 'Ultra emergency tier is too aggressive or missing');
+const ultraPressurePolicy = new Function([
+  'const IS_MOBILE_DEVICE = false;',
+  "let graphicsQuality = 'ultra';",
+  'let fpsValue = 30;',
+  'let actorCount = 8;',
+  'let ultraRenderPressureElapsed = 0;',
+  'let ultraRenderPressureRecoveryElapsed = 0;',
+  'let ultraRenderPressureActive = false;',
+  `const ULTRA_RENDER_PRESSURE_ACTORS = ${numericConst(renderer, 'ULTRA_RENDER_PRESSURE_ACTORS')};`,
+  `const ULTRA_RENDER_PRESSURE_FPS = ${numericConst(renderer, 'ULTRA_RENDER_PRESSURE_FPS')};`,
+  `const ULTRA_RENDER_PRESSURE_SECONDS = ${numericConst(renderer, 'ULTRA_RENDER_PRESSURE_SECONDS')};`,
+  `const ULTRA_RENDER_PRESSURE_RECOVERY_FPS = ${numericConst(renderer, 'ULTRA_RENDER_PRESSURE_RECOVERY_FPS')};`,
+  `const ULTRA_RENDER_PRESSURE_RECOVERY_SECONDS = ${numericConst(renderer, 'ULTRA_RENDER_PRESSURE_RECOVERY_SECONDS')};`,
+  'function shadowActorRosterSize() { return actorCount; }',
+  functionSource(renderer, 'updateUltraRenderPressure'),
+  `return {
+    sample(dt, nextFps = fpsValue, nextActors = actorCount) {
+      fpsValue = nextFps;
+      actorCount = nextActors;
+      updateUltraRenderPressure(dt);
+      return ultraRenderPressureActive;
+    }
+  };`
+].join('\n'))();
+for (let index = 0; index < 18; index++) ultraPressurePolicy.sample(0.1, 30, 8);
+if (ultraPressurePolicy.sample(0.1, 30, 8)) fail('Ultra emergency tier activates before sustained pressure');
+if (!ultraPressurePolicy.sample(0.1, 30, 8)) fail('Ultra emergency tier ignores sustained crowded pressure');
+for (let index = 0; index < 49; index++) {
+  if (!ultraPressurePolicy.sample(0.1, 60, 8)) fail('Ultra emergency tier recovers without a stable dwell');
+}
+ultraPressurePolicy.sample(0.1, 60, 8);
+if (ultraPressurePolicy.sample(0.1, 60, 8)) fail('Ultra emergency tier never recovers after sustained healthy FPS');
 requireText(renderer, '!gameStarted || !renderer || document.hidden', 'inactive/hidden adaptive sampling guard is missing');
 requireText(renderer, "document.body.classList.contains('global-map-mode')", 'global-map adaptive sampling guard is missing');
+requireText(renderer, 'const ULTRA_RENDER_PIXEL_BUDGET = 4_000_000;', 'Ultra viewport pixel budget is missing');
+requireText(renderer, 'function graphicsViewportBasePixelRatio', 'Ultra viewport-aware pixel ratio is missing');
+requireText(renderer, 'const DESKTOP_MSAA_BACKBUFFER_PIXEL_BUDGET = 2_500_000;', 'large-canvas MSAA budget is missing');
+requireText(renderer, 'antialias: desktopMsaaEnabled', 'renderer bypasses the large-canvas MSAA budget');
+const desktopMsaaPolicy = new Function([
+  'let IS_MOBILE_DEVICE = false;',
+  `const DESKTOP_MSAA_BACKBUFFER_PIXEL_BUDGET = ${numericConst(renderer, 'DESKTOP_MSAA_BACKBUFFER_PIXEL_BUDGET')};`,
+  `const ULTRA_RENDER_PIXEL_BUDGET = ${numericConst(renderer, 'ULTRA_RENDER_PIXEL_BUDGET')};`,
+  `const DESKTOP_PIXEL_RATIO_LIMIT = ${numericConst(renderer, 'DESKTOP_PIXEL_RATIO_LIMIT')};`,
+  'let canvas = { clientWidth: 800, clientHeight: 600 };',
+  'const window = { innerWidth: 800, innerHeight: 600, screen: { width: 800, height: 600, availWidth: 800, availHeight: 600 } };',
+  functionSource(renderer, 'desktopMsaaEnabledForViewport'),
+  `return (width, height, screenWidth, screenHeight, mobile = false) => {
+    canvas.clientWidth = width;
+    canvas.clientHeight = height;
+    window.innerWidth = width;
+    window.innerHeight = height;
+    window.screen.width = screenWidth;
+    window.screen.availWidth = screenWidth;
+    window.screen.height = screenHeight;
+    window.screen.availHeight = screenHeight;
+    IS_MOBILE_DEVICE = mobile;
+    return desktopMsaaEnabledForViewport();
+  };`
+].join('\n'))();
+if (!desktopMsaaPolicy(800, 600, 800, 600)
+  || desktopMsaaPolicy(1280, 720, 1280, 720)
+  || desktopMsaaPolicy(800, 600, 2560, 1080)
+  || desktopMsaaPolicy(844, 390, 844, 390, true)) {
+  fail('large-canvas MSAA policy no longer protects expensive backbuffers');
+}
+const ultraViewportPolicy = new Function([
+  'const IS_MOBILE_DEVICE = false;',
+  `const ULTRA_RENDER_PIXEL_BUDGET = ${numericConst(renderer, 'ULTRA_RENDER_PIXEL_BUDGET')};`,
+  "let graphicsQuality = 'ultra';",
+  'let ultraRenderPressureActive = false;',
+  `const ULTRA_RENDER_PRESSURE_NATIVE_RATIO = ${numericConst(renderer, 'ULTRA_RENDER_PRESSURE_NATIVE_RATIO')};`,
+  'let adaptiveRenderScale = 1;',
+  'let canvas = { clientWidth: 2048, clientHeight: 1024 };',
+  'const window = { innerWidth: 2048, innerHeight: 1024 };',
+  'function graphicsPixelRatio() { return 2; }',
+  functionSource(renderer, 'adaptiveRenderScaleFloor'),
+  functionSource(renderer, 'graphicsViewportBasePixelRatio'),
+  functionSource(renderer, 'effectiveGraphicsPixelRatio'),
+  `return (width, height, scale = 1, pressure = false) => {
+    canvas.clientWidth = width;
+    canvas.clientHeight = height;
+    adaptiveRenderScale = scale;
+    ultraRenderPressureActive = pressure;
+    const base = graphicsViewportBasePixelRatio();
+    const floor = adaptiveRenderScaleFloor();
+    return { base, floor, effective: effectiveGraphicsPixelRatio() };
+  };`
+].join('\n'))();
+const ultra2k = ultraViewportPolicy(2048, 1024, 0.01);
+if (Math.abs(ultra2k.base - Math.sqrt(4_000_000 / (2048 * 1024))) > 1e-6
+  || Math.abs(ultra2k.base * ultra2k.floor - 1) > 1e-6
+  || Math.abs(ultra2k.effective - 1) > 1e-6) {
+  fail('Ultra 2K pressure tier does not preserve native resolution');
+}
+const ultraSmall = ultraViewportPolicy(1280, 720, 0.01);
+if (ultraSmall.base !== 2 || ultraSmall.floor !== 0.60 || ultraSmall.effective !== 1.2) {
+  fail('Ultra small-window pressure tier no longer retains modest supersampling');
+}
+const ultra4k = ultraViewportPolicy(3840, 2160, 0.01);
+if (ultra4k.base !== 1 || ultra4k.floor !== 1 || ultra4k.effective !== 1) {
+  fail('Ultra 4K viewport is allowed to render below native resolution');
+}
+const ultraPressure2k = ultraViewportPolicy(2560, 1080, 0.01, true);
+if (Math.abs(ultraPressure2k.effective - 0.92) > 1e-6) {
+  fail('Ultra sustained crowd-pressure tier does not stop at 0.92x native');
+}
 const samplingResetSource = functionSource(renderer, 'resetAdaptiveRenderScaleSampling');
 const resetSamplingTimers = new Function(`${samplingResetSource}
   let adaptiveRenderScaleTimer = 2.5;
@@ -71,19 +178,65 @@ if (!/mobileShadows:\s*false/.test(highBlock) || !/mobileShadows:\s*false/.test(
 }
 requireText(lighting, 'function actorShadowCasterAllowlist', 'crowded actor shadow-caster budget is missing');
 requireText(lighting, 'actorRosterSize > actorShadowCasterLimit()', 'crowded shadow budget does not refresh as actors change');
-requireText(lighting, 'fpsValue < 30) fps *= 0.30', 'overloaded desktop shadow refresh is not capped');
+requireText(lighting, 'fpsValue < 36) fps *= 0.36', 'overloaded desktop shadow refresh is not capped');
 requireText(lighting, 'fpsValue < 30) limit = Math.min(limit, 1)', 'overloaded actor shadow-caster budget is not capped');
 requireText(lighting, 'remote?.id || remote?.data?.id', 'remote-player shadow ownership ignores the real row shape');
+requireText(lighting, 'function shadowMapSizeForSceneLoad', 'Ultra shadow-map load tier is missing');
+requireText(lighting, 'baseSize * 0.75', 'crowded Ultra keeps the full 4096 shadow-map cost');
+requireText(lighting, 'allowUltraMicroDetail', 'crowded Ultra micro shadow casters are not budgeted');
+const shadowResize = functionSource(lighting, 'updateAdaptiveShadowMapSize');
+if (!shadowResize.includes('sun.shadow.needsUpdate = true')
+  || !shadowResize.includes('renderer.shadowMap.needsUpdate = true')) {
+  fail('Ultra shadow-map resize can leave a frame without a replacement shadow texture');
+}
+const adaptiveShadowBudgetSource = functionSource(lighting, 'updateAdaptiveShadowBudget');
+if (!adaptiveShadowBudgetSource.includes('if (shadowMapSizeChanged)')
+  || !adaptiveShadowBudgetSource.includes('adaptiveShadowBudget.pending = false')
+  || !adaptiveShadowBudgetSource.includes('adaptiveShadowBudget.elapsed = 0')
+  || !adaptiveShadowBudgetSource.includes('if (!shadowMapSizeChanged && !adaptiveShadowBudget.pending && dynamicMoved)')) {
+  fail('Ultra shadow-map resize schedules a duplicate full shadow pass');
+}
+const shadowLoadPolicy = new Function([
+  'const IS_MOBILE_DEVICE = false;',
+  `const ULTRA_SHADOW_PRESSURE_ACTORS = ${numericConst(lighting, 'ULTRA_SHADOW_PRESSURE_ACTORS')};`,
+  `const ULTRA_SHADOW_PRESSURE_FPS = ${numericConst(lighting, 'ULTRA_SHADOW_PRESSURE_FPS')};`,
+  `const ULTRA_SHADOW_RECOVERY_FPS = ${numericConst(lighting, 'ULTRA_SHADOW_RECOVERY_FPS')};`,
+  functionSource(lighting, 'ultraShadowLoadPressure'),
+  functionSource(lighting, 'shadowMapSizeForSceneLoad'),
+  'return shadowMapSizeForSceneLoad;'
+].join('\n'))();
+if (shadowLoadPolicy({ id: 'ultra', shadowMap: 4096 }, 8, 34, 4096) !== 3072) {
+  fail('crowded 34 FPS Ultra scene does not enter the 3072 shadow tier');
+}
+if (shadowLoadPolicy({ id: 'ultra', shadowMap: 4096 }, 2, 34, 4096) !== 4096) {
+  fail('uncrowded Ultra scene loses its full shadow tier');
+}
+if (shadowLoadPolicy({ id: 'ultra', shadowMap: 4096 }, 8, 59, 3072, true) !== 3072
+  || shadowLoadPolicy({ id: 'ultra', shadowMap: 4096 }, 5, 59, 3072, false) !== 3072
+  || shadowLoadPolicy({ id: 'ultra', shadowMap: 4096 }, 5, 59, 3072, true) !== 4096) {
+  fail('Ultra shadow tier recovery hysteresis is unstable');
+}
+requireText(lighting, 'const ULTRA_SHADOW_RECOVERY_SECONDS = 3;', 'Ultra shadow tier lacks sustained recovery dwell');
+const adaptiveShadowResize = functionSource(lighting, 'updateAdaptiveShadowMapSize');
+if (!adaptiveShadowResize.includes('adaptiveShadowBudget.ultraRecoveryElapsed')
+  || !adaptiveShadowResize.includes('>= ULTRA_SHADOW_RECOVERY_SECONDS')) {
+  fail('Ultra shadow tier can resize repeatedly from one-frame FPS samples');
+}
 requireText(characterRuntime, 'function enableConservativeCharacterFrustumCulling', 'conservative character frustum culling is missing');
 requireText(characterRuntime, 'geometry.userData.realmCharacterCullBaseRadius', 'shared character bounds can grow on every instance');
 requireText(characterRuntime, 'enableConservativeCharacterFrustumCulling(obj, 1.2)', 'hair and face variants bypass actor frustum culling');
 requireText(characterRuntime, 'state.footIk !== false', 'distant character foot IK cannot be suspended');
 requireText(characterRuntime, 'setCharacterFootIkEnabled(runtime, footIkEnabled)', 'foot IK suspension does not reset stale locks');
+requireText(characterRuntime, 'function characterLegIkSolveScratch', 'character leg IK does not reuse solve scratch');
+requireText(characterRuntime, 'directionalPoseOffsetCount', 'character directional pose still allocates offsets per frame');
+requireText(characterRuntime, 'characterFaceShapeHead', 'character face bone lookup is not cached');
 requireText(enemyFlow, 'footIk: heavyImportant || distanceToPlayer <= 6', 'distant enemy foot IK is not budgeted');
 requireText(remoteLocomotion, 'footIk: important || distance <= 6', 'distant remote-player foot IK is not budgeted');
 requireText(weaponRuntime, 'enableConservativeCharacterFrustumCulling(part, 2.4)', 'runtime weapons bypass actor frustum culling');
 requireText(approvedHumanoidRuntime, 'enableConservativeCharacterFrustumCulling(mesh, 2.4)', 'approved equipment bypasses actor frustum culling');
 requireText(approvedHumanoidRuntime, 'mesh.userData.enemy = characterRoot.userData.enemy', 'approved equipment is missing enemy shadow ownership');
+requireText(approvedHumanoidRuntime, 'function approvedArmSolveRuntime', 'approved weapon arm IK does not reuse solve scratch');
+requireText(approvedHumanoidRuntime, 'approvedGripTargetTransforms', 'approved weapon grip targets are rebuilt per frame');
 
 requireText(materials, 'wasteland_ground_albedo_v777.webp', 'new wasteland albedo is not integrated');
 requireText(materials, "normalMap: useReliefPbrMaps", 'wasteland ground must retain a normal map');

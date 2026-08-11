@@ -1519,6 +1519,9 @@
     stabilizeCharacterNoCull(playerGroup);
 
     applyArmorVisualSet(playerParts, equipment);
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(playerGroup, playerParts);
+    }
     renderEquipment();
     renderWeaponReadout();
     updateTargetHintFromHover();

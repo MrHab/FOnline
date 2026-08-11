@@ -210,6 +210,58 @@
     obj.frustumCulled = true;
   }
 
+  function characterSkinMatrixEquals(a, b) {
+    if (a === b) return true;
+    return !!(a && b && typeof a.equals === 'function' && a.equals(b));
+  }
+
+  function compatibleCharacterSkeletonMeshes(canonicalMesh, candidateMesh) {
+    const canonicalSkeleton = canonicalMesh?.skeleton;
+    const candidateSkeleton = candidateMesh?.skeleton;
+    if (!canonicalMesh?.isSkinnedMesh || !candidateMesh?.isSkinnedMesh) return false;
+    if (!canonicalSkeleton || !candidateSkeleton) return false;
+    if (canonicalMesh.bindMode !== candidateMesh.bindMode) return false;
+    if (!characterSkinMatrixEquals(canonicalMesh.bindMatrix, candidateMesh.bindMatrix)) return false;
+    if (!characterSkinMatrixEquals(canonicalMesh.bindMatrixInverse, candidateMesh.bindMatrixInverse)) return false;
+    if (canonicalSkeleton.bones.length !== candidateSkeleton.bones.length) return false;
+    if (canonicalSkeleton.boneInverses.length !== candidateSkeleton.boneInverses.length) return false;
+    for (let index = 0; index < canonicalSkeleton.bones.length; index += 1) {
+      if (canonicalSkeleton.bones[index] !== candidateSkeleton.bones[index]) return false;
+    }
+    for (let index = 0; index < canonicalSkeleton.boneInverses.length; index += 1) {
+      if (!characterSkinMatrixEquals(
+        canonicalSkeleton.boneInverses[index],
+        candidateSkeleton.boneInverses[index]
+      )) return false;
+    }
+    return true;
+  }
+
+  function shareCompatibleCharacterSkeletons(root) {
+    if (!root?.traverse) return 0;
+    const canonicalMeshes = [];
+    let sharedCount = 0;
+    root.traverse(obj => {
+      if (!obj?.isSkinnedMesh || !obj.skeleton) return;
+      let compatibleMesh = null;
+      for (const canonicalMesh of canonicalMeshes) {
+        if (compatibleCharacterSkeletonMeshes(canonicalMesh, obj)) {
+          compatibleMesh = canonicalMesh;
+          break;
+        }
+      }
+      if (!compatibleMesh) {
+        canonicalMeshes.push(obj);
+        return;
+      }
+      if (obj.skeleton !== compatibleMesh.skeleton) {
+        obj.skeleton = compatibleMesh.skeleton;
+        sharedCount += 1;
+      }
+    });
+    return sharedCount;
+  }
+
   function configureCharacterGlbScene(root, options = {}) {
     const castShadow = options.castShadow !== false;
     root.traverse(obj => {
@@ -223,6 +275,7 @@
         material.needsUpdate = true;
       });
     });
+    shareCompatibleCharacterSkeletons(root);
     root.position.set(0, 0, 0);
     root.rotation.set(0, 0, 0);
     root.scale.setScalar(1);
@@ -492,6 +545,10 @@
   function applyCharacterFaceShape(root, appearance) {
     const head = root?.getObjectByName?.('head');
     if (!head?.scale) return;
+    // The animated frame path runs for every visible humanoid. Keep the bone
+    // reference on the GLB root instead of walking the full hierarchy again on
+    // every mixer tick.
+    if (root?.userData) root.userData.characterFaceShapeHead = head;
     if (!Array.isArray(head.userData?.characterAppearanceBaseScale)) {
       head.userData.characterAppearanceBaseScale = [head.scale.x, head.scale.y, head.scale.z];
     }
@@ -502,7 +559,10 @@
   }
 
   function applyCharacterFaceShapeFrame(root) {
-    const head = root?.getObjectByName?.('head');
+    const head = root?.userData?.characterFaceShapeHead || root?.getObjectByName?.('head');
+    if (head && root?.userData && !root.userData.characterFaceShapeHead) {
+      root.userData.characterFaceShapeHead = head;
+    }
     const factors = head?.userData?.characterAppearanceScaleFactors;
     if (!head?.scale || !Array.isArray(factors)) return;
     const base = head.userData?.characterAppearanceBaseScale;
@@ -836,22 +896,37 @@
     return Number(current || 0) + (Number(target || 0) - Number(current || 0)) * step;
   }
 
+  const characterDirectionalPoseEuler = new THREE.Euler();
+
   function clearCharacterGlbDirectionalPose(runtime) {
     const offsets = Array.isArray(runtime?.directionalPoseOffsets)
       ? runtime.directionalPoseOffsets
       : [];
-    offsets.forEach(row => {
-      if (!row?.bone?.quaternion || !row.quaternion) return;
-      row.bone.quaternion.multiply(row.quaternion.clone().invert());
-    });
-    if (runtime) runtime.directionalPoseOffsets = [];
+    const count = Math.min(offsets.length, Math.max(0, Number(runtime?.directionalPoseOffsetCount || 0)));
+    for (let index = 0; index < count; index += 1) {
+      const row = offsets[index];
+      if (!row?.bone?.quaternion || !row.quaternion) continue;
+      row.inverse = row.inverse || new THREE.Quaternion();
+      row.bone.quaternion.multiply(row.inverse.copy(row.quaternion).invert());
+    }
+    if (runtime) runtime.directionalPoseOffsetCount = 0;
   }
 
   function addCharacterGlbDirectionalBoneOffset(runtime, bone, x = 0, y = 0, z = 0) {
     if (!runtime || !bone?.quaternion) return;
-    const quaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, 'XYZ'));
-    bone.quaternion.multiply(quaternion);
-    runtime.directionalPoseOffsets.push({ bone, quaternion });
+    const offsets = Array.isArray(runtime.directionalPoseOffsets)
+      ? runtime.directionalPoseOffsets
+      : (runtime.directionalPoseOffsets = []);
+    const index = Math.max(0, Number(runtime.directionalPoseOffsetCount || 0));
+    const row = offsets[index] || (offsets[index] = {
+      bone: null,
+      quaternion: new THREE.Quaternion(),
+      inverse: new THREE.Quaternion()
+    });
+    row.bone = bone;
+    row.quaternion.setFromEuler(characterDirectionalPoseEuler.set(x, y, z, 'XYZ'));
+    bone.quaternion.multiply(row.quaternion);
+    runtime.directionalPoseOffsetCount = index + 1;
   }
 
   function applyCharacterGlbDirectionalPose(runtime, locomotion, dt = 0.016) {
@@ -959,7 +1034,25 @@
       lockYaw: 0,
       relockCooldown: 0,
       prevAnim: new THREE.Vector3(),
+      animated: new THREE.Vector3(),
+      target: new THREE.Vector3(),
       hasPrev: false
+    };
+  }
+
+  function characterLegIkSolveScratch(count = 3) {
+    return {
+      positions: Array.from({ length: count }, () => new THREE.Vector3()),
+      lengths: Array.from({ length: Math.max(0, count - 1) }, () => 0),
+      base: new THREE.Vector3(),
+      direction: new THREE.Vector3(),
+      currentStart: new THREE.Vector3(),
+      currentEnd: new THREE.Vector3(),
+      currentDirection: new THREE.Vector3(),
+      wantedDirection: new THREE.Vector3(),
+      delta: new THREE.Quaternion(),
+      currentWorld: new THREE.Quaternion(),
+      parentWorld: new THREE.Quaternion()
     };
   }
 
@@ -968,55 +1061,74 @@
     runtime.root.updateMatrixWorld(true);
     const actorWorld = actor.getWorldPosition(new THREE.Vector3());
     const restHeights = {};
+    const chains = {};
+    const solveScratch = {};
     for (const [side, names] of Object.entries(CHARACTER_FOOT_IK_BONES)) {
-      const foot = runtime.root.getObjectByName(names[2]);
+      const chain = names.map(name => runtime.root.getObjectByName(name));
+      const foot = chain[2];
       if (!foot?.isBone) continue;
+      if (chain.every(bone => bone?.isBone)) {
+        chains[side] = chain;
+        solveScratch[side] = characterLegIkSolveScratch(chain.length);
+      }
       const height = foot.getWorldPosition(new THREE.Vector3()).y - actorWorld.y;
       if (Number.isFinite(height)) restHeights[side] = Math.max(0.015, height);
     }
     if (!Object.keys(restHeights).length) return;
     runtime.footIk = {
       restHeights,
+      chains,
+      solveScratch,
+      actorWorld: new THREE.Vector3(),
+      rootForward: new THREE.Vector3(),
+      rootQuaternion: new THREE.Quaternion(),
       lastActorPos: null,
       feet: { l: characterFootIkSideState(), r: characterFootIkSideState() }
     };
   }
 
-  function setCharacterBoneWorldQuaternion(bone, worldQuaternion) {
+  function setCharacterBoneWorldQuaternion(bone, worldQuaternion, parentQuaternionScratch = null) {
     if (!bone?.isBone || !bone.parent) return false;
-    const parentQuaternion = bone.parent.getWorldQuaternion(new THREE.Quaternion());
+    const parentQuaternion = bone.parent.getWorldQuaternion(parentQuaternionScratch || new THREE.Quaternion());
     bone.quaternion.copy(parentQuaternion.invert().multiply(worldQuaternion)).normalize();
     bone.updateWorldMatrix(false, true);
     return true;
   }
 
-  function solveCharacterLegChain(characterRoot, names, targetPosition) {
-    const chain = names.map(name => characterRoot?.getObjectByName?.(name) || null);
+  function solveCharacterLegChain(characterRoot, names, targetPosition, cachedChain = null, cachedScratch = null) {
+    const chain = Array.isArray(cachedChain)
+      ? cachedChain
+      : names.map(name => characterRoot?.getObjectByName?.(name) || null);
     if (chain.some(bone => !bone?.isBone) || !targetPosition) return false;
+    const scratch = cachedScratch || characterLegIkSolveScratch(chain.length);
+    const positions = scratch.positions;
+    const lengths = scratch.lengths;
     chain[0].updateWorldMatrix(true, true);
-    const positions = chain.map(bone => bone.getWorldPosition(new THREE.Vector3()));
-    const base = positions[0].clone();
-    const lengths = positions.slice(0, -1).map((position, index) => (
-      position.distanceTo(positions[index + 1])
-    ));
+    for (let index = 0; index < chain.length; index += 1) {
+      chain[index].getWorldPosition(positions[index]);
+    }
+    const base = scratch.base.copy(positions[0]);
+    for (let index = 0; index < chain.length - 1; index += 1) {
+      lengths[index] = positions[index].distanceTo(positions[index + 1]);
+    }
     if (lengths.some(length => !Number.isFinite(length) || length <= 0.0001)) return false;
     const totalLength = lengths.reduce((sum, length) => sum + length, 0);
     if (base.distanceTo(targetPosition) >= totalLength) {
-      const direction = targetPosition.clone().sub(base).normalize();
+      const direction = scratch.direction.subVectors(targetPosition, base).normalize();
       for (let index = 1; index < positions.length; index += 1) {
-        positions[index] = positions[index - 1].clone().addScaledVector(direction, lengths[index - 1]);
+        positions[index].copy(positions[index - 1]).addScaledVector(direction, lengths[index - 1]);
       }
     } else {
       for (let iteration = 0; iteration < 8; iteration += 1) {
-        positions[positions.length - 1] = targetPosition.clone();
+        positions[positions.length - 1].copy(targetPosition);
         for (let index = positions.length - 2; index >= 0; index -= 1) {
-          const direction = positions[index].clone().sub(positions[index + 1]).normalize();
-          positions[index] = positions[index + 1].clone().addScaledVector(direction, lengths[index]);
+          const direction = scratch.direction.subVectors(positions[index], positions[index + 1]).normalize();
+          positions[index].copy(positions[index + 1]).addScaledVector(direction, lengths[index]);
         }
-        positions[0] = base.clone();
+        positions[0].copy(base);
         for (let index = 1; index < positions.length; index += 1) {
-          const direction = positions[index].clone().sub(positions[index - 1]).normalize();
-          positions[index] = positions[index - 1].clone().addScaledVector(direction, lengths[index - 1]);
+          const direction = scratch.direction.subVectors(positions[index], positions[index - 1]).normalize();
+          positions[index].copy(positions[index - 1]).addScaledVector(direction, lengths[index - 1]);
         }
         if (positions[positions.length - 1].distanceTo(targetPosition) < 0.0008) break;
       }
@@ -1025,13 +1137,17 @@
     // бедро и голень, чтобы сустав стопы пришёл в целевую точку.
     for (let index = 0; index < chain.length - 1; index += 1) {
       chain[index].updateWorldMatrix(true, true);
-      const currentStart = chain[index].getWorldPosition(new THREE.Vector3());
-      const currentEnd = chain[index + 1].getWorldPosition(new THREE.Vector3());
-      const currentDirection = currentEnd.sub(currentStart).normalize();
-      const wantedDirection = positions[index + 1].clone().sub(positions[index]).normalize();
-      const delta = new THREE.Quaternion().setFromUnitVectors(currentDirection, wantedDirection);
-      const currentWorld = chain[index].getWorldQuaternion(new THREE.Quaternion());
-      if (!setCharacterBoneWorldQuaternion(chain[index], delta.multiply(currentWorld))) return false;
+      chain[index].getWorldPosition(scratch.currentStart);
+      chain[index + 1].getWorldPosition(scratch.currentEnd);
+      scratch.currentDirection.subVectors(scratch.currentEnd, scratch.currentStart).normalize();
+      scratch.wantedDirection.subVectors(positions[index + 1], positions[index]).normalize();
+      scratch.delta.setFromUnitVectors(scratch.currentDirection, scratch.wantedDirection);
+      chain[index].getWorldQuaternion(scratch.currentWorld);
+      if (!setCharacterBoneWorldQuaternion(
+        chain[index],
+        scratch.delta.multiply(scratch.currentWorld),
+        scratch.parentWorld
+      )) return false;
     }
     chain[0].updateWorldMatrix(true, true);
     return true;
@@ -1056,7 +1172,7 @@
     const frameDt = Math.max(0.001, Math.min(0.08, Number(dt || 0.016)));
     const disabled = !!state.dead;
     runtime.root.updateMatrixWorld(true);
-    const actorWorld = actor.getWorldPosition(new THREE.Vector3());
+    const actorWorld = actor.getWorldPosition(ik.actorWorld || (ik.actorWorld = new THREE.Vector3()));
     if (ik.lastActorPos && actorWorld.distanceTo(ik.lastActorPos) > CHARACTER_FOOT_IK_TELEPORT_RESET) {
       for (const side of Object.keys(ik.feet)) {
         ik.feet[side].locked = false;
@@ -1064,15 +1180,19 @@
         ik.feet[side].hasPrev = false;
       }
     }
-    const prevActor = ik.lastActorPos ? ik.lastActorPos.clone() : null;
+    const hadActorPosition = !!ik.lastActorPos;
+    const previousActorX = Number(ik.lastActorPos?.x || 0);
+    const previousActorZ = Number(ik.lastActorPos?.z || 0);
     ik.lastActorPos = (ik.lastActorPos || new THREE.Vector3()).copy(actorWorld);
-    const actorVelX = prevActor ? (actorWorld.x - prevActor.x) / frameDt : 0;
-    const actorVelZ = prevActor ? (actorWorld.z - prevActor.z) / frameDt : 0;
+    const actorVelX = hadActorPosition ? (actorWorld.x - previousActorX) / frameDt : 0;
+    const actorVelZ = hadActorPosition ? (actorWorld.z - previousActorZ) / frameDt : 0;
     const actorSpeed = Math.hypot(actorVelX, actorVelZ);
     const groundY = actorWorld.y;
-    const rootForward = new THREE.Vector3(0, 0, 1).applyQuaternion(
-      runtime.root.getWorldQuaternion(new THREE.Quaternion())
-    );
+    const rootForward = (ik.rootForward || (ik.rootForward = new THREE.Vector3()))
+      .set(0, 0, 1)
+      .applyQuaternion(runtime.root.getWorldQuaternion(
+        ik.rootQuaternion || (ik.rootQuaternion = new THREE.Quaternion())
+      ));
     const rootYaw = Math.atan2(rootForward.x, rootForward.z);
     const turning = !!locomotion?.turning;
     const idle = !locomotion?.locomoting;
@@ -1090,10 +1210,11 @@
     let applied = false;
     for (const [side, names] of Object.entries(CHARACTER_FOOT_IK_BONES)) {
       const rest = Number(ik.restHeights[side] || 0);
-      const foot = runtime.root.getObjectByName(names[2]);
       const sideState = ik.feet[side];
+      const chain = ik.chains?.[side];
+      const foot = chain?.[2] || runtime.root.getObjectByName(names[2]);
       if (!foot?.isBone || !sideState || rest <= 0) continue;
-      const animated = foot.getWorldPosition(new THREE.Vector3());
+      const animated = foot.getWorldPosition(sideState.animated || (sideState.animated = new THREE.Vector3()));
       const height = animated.y - groundY - rest;
       const footVelX = sideState.hasPrev ? (animated.x - sideState.prevAnim.x) / frameDt : 0;
       const footVelZ = sideState.hasPrev ? (animated.z - sideState.prevAnim.z) / frameDt : 0;
@@ -1154,7 +1275,9 @@
       );
       let target = null;
       if (sideState.blend >= 0.02) {
-        target = animated.clone().lerp(sideState.lockPos, sideState.blend);
+        target = (sideState.target || (sideState.target = new THREE.Vector3()))
+          .copy(animated)
+          .lerp(sideState.lockPos, sideState.blend);
       } else if (!disabled) {
         // Свободная стопа держит анимационную высоту над реальной землёй:
         // таз опущен на kneeFlex, поэтому «земля клипа» ниже настоящей, и
@@ -1163,10 +1286,18 @@
         const flex = Math.max(0, Number(runtime.kneeFlex || 0));
         const wantedY = groundY + rest + Math.max(0, height + flex);
         if (Math.abs(wantedY - animated.y) > 0.004) {
-          target = animated.clone().setY(wantedY);
+          target = (sideState.target || (sideState.target = new THREE.Vector3()))
+            .copy(animated)
+            .setY(wantedY);
         }
       }
-      if (target && solveCharacterLegChain(runtime.root, names, target)) applied = true;
+      if (target && solveCharacterLegChain(
+        runtime.root,
+        names,
+        target,
+        chain,
+        ik.solveScratch?.[side]
+      )) applied = true;
     }
     return applied;
   }
@@ -1221,13 +1352,23 @@
       if (obj?.isMesh && !keep.has(obj)) parts.proceduralCharacterBaseMeshes.push(obj);
     });
     parts.characterRoot = actor;
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(actor, parts);
+    }
   }
 
   function setCharacterProceduralBaseVisible(actor, visible) {
     const parts = actor?.userData?.parts || {};
+    let changed = false;
     (parts.proceduralCharacterBaseMeshes || []).forEach(mesh => {
-      if (mesh) mesh.visible = !!visible;
+      if (!mesh) return;
+      const nextVisible = !!visible;
+      if (mesh.visible !== nextVisible) changed = true;
+      mesh.visible = nextVisible;
     });
+    if (changed && typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(actor, parts);
+    }
   }
 
   function refreshCharacterGlbEquipmentLayers(actor, eq = {}) {

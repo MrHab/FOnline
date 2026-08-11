@@ -546,28 +546,84 @@
     return false;
   }
 
-  function modernProceduralRigNeedsAnimation(parts = {}, characterRoot = null) {
+  function invalidateModernProceduralRigAnimationCache(actor, partsOverride = null) {
+    const parts = partsOverride
+      || actor?.userData?.parts
+      || actor?.userData?.actorParts
+      || null;
+    if (!parts || typeof parts !== 'object') return 0;
+    const revision = Math.max(0, Number(parts.modernProceduralRigTopologyRevision || 0)) + 1;
+    parts.modernProceduralRigTopologyRevision = revision;
+    parts.modernProceduralRigAnimationCache = null;
+    if (actor?.userData) actor.userData.modernProceduralRigCacheIdentity = null;
+    return revision;
+  }
+
+  function modernProceduralRigAnimationCacheKey(actor, parts = {}, characterRoot = null) {
+    const rootId = String(characterRoot?.uuid || '');
+    const equipmentKey = String(actor?.userData?.equipmentKey || '');
+    const enemyEquipmentKey = String(actor?.userData?.enemyEquipmentKey || '');
+    const weaponId = String(actor?.userData?.weaponId || '');
+    const revision = Math.max(0, Number(parts?.modernProceduralRigTopologyRevision || 0));
+    const cached = actor?.userData?.modernProceduralRigCacheIdentity;
+    if (
+      cached
+      && cached.rootId === rootId
+      && cached.equipmentKey === equipmentKey
+      && cached.enemyEquipmentKey === enemyEquipmentKey
+      && cached.weaponId === weaponId
+      && cached.revision === revision
+    ) return cached.key;
+    const key = `${rootId}|${equipmentKey}|${enemyEquipmentKey}|${weaponId}|${revision}`;
+    if (actor?.userData) {
+      actor.userData.modernProceduralRigCacheIdentity = {
+        rootId,
+        equipmentKey,
+        enemyEquipmentKey,
+        weaponId,
+        revision,
+        key
+      };
+    }
+    return key;
+  }
+
+  function modernProceduralRigNeedsAnimation(parts = {}, characterRoot = null, cacheKey = '') {
+    const topologyKey = cacheKey
+      ? String(cacheKey)
+      : `${String(characterRoot?.uuid || '')}|${Math.max(0, Number(parts?.modernProceduralRigTopologyRevision || 0))}`;
+    const cached = parts?.modernProceduralRigAnimationCache;
+    if (cached?.key === topologyKey && typeof cached.value === 'boolean') return cached.value;
+
     const baseMeshes = Array.isArray(parts.proceduralCharacterBaseMeshes)
       ? parts.proceduralCharacterBaseMeshes
       : [];
-    if (!baseMeshes.length) return true;
+    let needed = !baseMeshes.length;
     for (let index = 0; index < baseMeshes.length; index += 1) {
-      if (baseMeshes[index] && baseMeshes[index].visible !== false) return true;
+      if (baseMeshes[index] && baseMeshes[index].visible !== false) {
+        needed = true;
+        break;
+      }
     }
 
-    if (modernAnimationHasVisibleMesh(parts.helmet)
+    if (!needed && (modernAnimationHasVisibleMesh(parts.helmet)
       || modernAnimationHasVisibleMesh(parts.backpack)
       || modernAnimationHasVisibleMesh(parts.backpackTop)
-      || modernAnimationHasVisibleMesh(parts.bedroll)) return true;
+      || modernAnimationHasVisibleMesh(parts.bedroll))) needed = true;
     const packAccessories = Array.isArray(parts.packAccessories) ? parts.packAccessories : [];
-    for (let index = 0; index < packAccessories.length; index += 1) {
-      if (modernAnimationHasVisibleMesh(packAccessories[index])) return true;
+    for (let index = 0; !needed && index < packAccessories.length; index += 1) {
+      if (modernAnimationHasVisibleMesh(packAccessories[index])) needed = true;
     }
 
     const weaponGroup = parts.weaponGroup;
-    if (weaponGroup?.parent !== characterRoot && modernAnimationHasVisibleMesh(weaponGroup)) return true;
+    if (!needed && weaponGroup?.parent !== characterRoot && modernAnimationHasVisibleMesh(weaponGroup)) needed = true;
     const offhandWeaponGroup = parts.offhandWeaponGroup;
-    return offhandWeaponGroup?.parent !== characterRoot && modernAnimationHasVisibleMesh(offhandWeaponGroup);
+    if (!needed && offhandWeaponGroup?.parent !== characterRoot && modernAnimationHasVisibleMesh(offhandWeaponGroup)) needed = true;
+
+    if (parts && typeof parts === 'object') {
+      parts.modernProceduralRigAnimationCache = { key: topologyKey, value: needed };
+    }
+    return needed;
   }
 
   function triggerCharacterReloadVisual(actor, weaponId = 'pistol', duration = 0.82) {
@@ -615,7 +671,9 @@
       weaponId = modernAnimationWeaponId(actor);
       updateModernApprovedWeaponGrip(actor, weaponId);
       approvedGripUpdated = true;
-      if (!modernProceduralRigNeedsAnimation(parts, actor.userData.characterGlbRuntime.root)) return;
+      const characterRoot = actor.userData.characterGlbRuntime.root;
+      const proceduralRigCacheKey = modernProceduralRigAnimationCacheKey(actor, parts, characterRoot);
+      if (!modernProceduralRigNeedsAnimation(parts, characterRoot, proceduralRigCacheKey)) return;
     }
     if (!parts.modernRig || !parts.motionRoot || !parts.torsoRig) return;
     const crouching = state.crouching !== undefined ? !!state.crouching : !!actor.userData.crouching;

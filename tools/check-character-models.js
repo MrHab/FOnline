@@ -238,7 +238,11 @@ this.__characterAppearanceFitApi = {
   characterOneShotRestart,
   setCharacterGlbAction,
   applyCharacterGlbDirectionalPose,
-  clearCharacterGlbDirectionalPose
+  clearCharacterGlbDirectionalPose,
+  captureCharacterFootIkRest,
+  solveCharacterLegChain,
+  compatibleCharacterSkeletonMeshes,
+  shareCompatibleCharacterSkeletons
 };`, compatibilityContext, { filename: runtimePath });
 const fitApi = compatibilityContext.__characterAppearanceFitApi;
 assert(fitApi, 'character appearance fit API could not be inspected');
@@ -486,10 +490,205 @@ closeTo(
 assert.strictEqual(directionalRuntime.directionalPoseOffsets.length, 6,
   'directional GLB pose is not distributed over the upper-body rig');
 fitApi.clearCharacterGlbDirectionalPose(directionalRuntime);
-assert.strictEqual(directionalRuntime.directionalPoseOffsets.length, 0);
+assert.strictEqual(directionalRuntime.directionalPoseOffsets.length, 6,
+  'directional GLB pose scratch was discarded instead of being reused');
+assert.strictEqual(directionalRuntime.directionalPoseOffsetCount, 0,
+  'directional GLB pose scratch remains logically active after cleanup');
 for (const [key, bone] of Object.entries(directionalBones)) {
   closeTo(bone.quaternion.angleTo(new THREE.Quaternion()), 0, 1e-7, `${key} pose cleanup`);
 }
+
+const legActor = new THREE.Group();
+const legRoot = new THREE.Group();
+const thigh = new THREE.Bone();
+const calf = new THREE.Bone();
+const foot = new THREE.Bone();
+thigh.name = 'thigh_l';
+calf.name = 'calf_l';
+foot.name = 'foot_l';
+thigh.position.set(0, 1, 0);
+calf.position.set(0, -0.52, 0);
+foot.position.set(0, -0.48, 0);
+thigh.add(calf);
+calf.add(foot);
+legRoot.add(thigh);
+legActor.add(legRoot);
+legActor.updateMatrixWorld(true);
+const legRuntime = { root: legRoot };
+fitApi.captureCharacterFootIkRest(legActor, legRuntime);
+const legChain = legRuntime.footIk?.chains?.l;
+const legScratch = legRuntime.footIk?.solveScratch?.l;
+assert(Array.isArray(legChain) && legChain.length === 3 && legScratch,
+  'foot IK did not cache its left-leg chain and solve scratch');
+const legScratchPositions = legScratch.positions.slice();
+const legScratchObjects = [
+  legScratch.base,
+  legScratch.direction,
+  legScratch.currentStart,
+  legScratch.currentEnd,
+  legScratch.currentDirection,
+  legScratch.wantedDirection,
+  legScratch.delta,
+  legScratch.currentWorld,
+  legScratch.parentWorld
+];
+const legTarget = new THREE.Vector3(0.18, 0.25, 0.12);
+const solveLeg = () => fitApi.solveCharacterLegChain(
+  legRoot,
+  ['thigh_l', 'calf_l', 'foot_l'],
+  legTarget,
+  legChain,
+  legScratch
+);
+assert.strictEqual(solveLeg(), true, 'cached foot IK failed its first reachable solve');
+legRoot.updateMatrixWorld(true);
+const firstLegEnd = foot.getWorldPosition(new THREE.Vector3());
+const firstLegQuaternions = legChain.map(bone => bone.quaternion.clone());
+legChain.forEach(bone => bone.quaternion.identity());
+legRoot.updateMatrixWorld(true);
+assert.strictEqual(solveLeg(), true, 'cached foot IK failed after resetting the same chain');
+legRoot.updateMatrixWorld(true);
+const secondLegEnd = foot.getWorldPosition(new THREE.Vector3());
+assert(firstLegEnd.distanceTo(secondLegEnd) < 1e-7
+  && secondLegEnd.distanceTo(legTarget) < 0.002,
+'reused foot IK scratch changed the solved endpoint');
+legChain.forEach((bone, index) => {
+  assert(bone.quaternion.angleTo(firstLegQuaternions[index]) < 1e-7,
+    `reused foot IK scratch changed bone ${bone.name}`);
+});
+assert.strictEqual(legRuntime.footIk.chains.l, legChain,
+  'foot IK replaced its cached bone chain');
+assert.strictEqual(legRuntime.footIk.solveScratch.l, legScratch,
+  'foot IK replaced its cached solve scratch');
+legScratchPositions.forEach((value, index) => {
+  assert.strictEqual(legScratch.positions[index], value,
+    `foot IK replaced scratch position ${index}`);
+});
+[
+  legScratch.base,
+  legScratch.direction,
+  legScratch.currentStart,
+  legScratch.currentEnd,
+  legScratch.currentDirection,
+  legScratch.wantedDirection,
+  legScratch.delta,
+  legScratch.currentWorld,
+  legScratch.parentWorld
+].forEach((value, index) => {
+  assert.strictEqual(value, legScratchObjects[index],
+    `foot IK replaced scratch object ${index}`);
+});
+
+const skeletonShareRoot = new THREE.Group();
+const skeletonShareBoneRoot = new THREE.Bone();
+const skeletonShareBoneChild = new THREE.Bone();
+skeletonShareBoneRoot.name = 'skeleton_share_root';
+skeletonShareBoneChild.name = 'skeleton_share_child';
+skeletonShareBoneChild.position.set(0, 0.8, 0);
+skeletonShareBoneRoot.add(skeletonShareBoneChild);
+skeletonShareRoot.add(skeletonShareBoneRoot);
+skeletonShareRoot.updateMatrixWorld(true);
+const skeletonShareBones = [skeletonShareBoneRoot, skeletonShareBoneChild];
+const skeletonShareInverses = skeletonShareBones.map(bone => (
+  new THREE.Matrix4().copy(bone.matrixWorld).invert()
+));
+const skeletonShareGeometry = new THREE.BufferGeometry();
+skeletonShareGeometry.setAttribute(
+  'position',
+  new THREE.Float32BufferAttribute([0.2, 0.45, -0.1], 3)
+);
+skeletonShareGeometry.setAttribute(
+  'skinIndex',
+  new THREE.Uint16BufferAttribute([0, 1, 0, 0], 4)
+);
+skeletonShareGeometry.setAttribute(
+  'skinWeight',
+  new THREE.Float32BufferAttribute([0.35, 0.65, 0, 0], 4)
+);
+const makeSkeletonShareMesh = ({
+  bones = skeletonShareBones,
+  inverses = skeletonShareInverses,
+  bindMatrix = new THREE.Matrix4(),
+  bindMode = 'attached'
+} = {}) => {
+  const mesh = new THREE.SkinnedMesh(
+    skeletonShareGeometry,
+    new THREE.MeshBasicMaterial({ skinning: true })
+  );
+  mesh.bindMode = bindMode;
+  mesh.bind(
+    new THREE.Skeleton(bones, inverses.map(matrix => matrix.clone())),
+    bindMatrix.clone()
+  );
+  skeletonShareRoot.add(mesh);
+  return mesh;
+};
+const skeletonShareCanonical = makeSkeletonShareMesh();
+const skeletonShareCandidate = makeSkeletonShareMesh();
+const distinctBoneRoot = skeletonShareBoneRoot.clone(true);
+const skeletonShareDistinctBones = makeSkeletonShareMesh({
+  bones: [distinctBoneRoot, distinctBoneRoot.children[0]]
+});
+const changedInverseMatrices = skeletonShareInverses.map(matrix => matrix.clone());
+changedInverseMatrices[1].elements[12] += 0.01;
+const skeletonShareChangedInverse = makeSkeletonShareMesh({ inverses: changedInverseMatrices });
+const skeletonShareChangedBind = makeSkeletonShareMesh({
+  bindMatrix: new THREE.Matrix4().makeTranslation(0.01, 0, 0)
+});
+const skeletonShareChangedMode = makeSkeletonShareMesh({ bindMode: 'detached' });
+const incompatibleSkeletons = [
+  skeletonShareDistinctBones,
+  skeletonShareChangedInverse,
+  skeletonShareChangedBind,
+  skeletonShareChangedMode
+].map(mesh => mesh.skeleton);
+const candidateSkeletonBeforeShare = skeletonShareCandidate.skeleton;
+const candidateBindMatrixBeforeShare = skeletonShareCandidate.bindMatrix.clone();
+const candidateBindMatrixInverseBeforeShare = skeletonShareCandidate.bindMatrixInverse.clone();
+const candidateBindModeBeforeShare = skeletonShareCandidate.bindMode;
+const candidateBoneInversesBeforeShare = skeletonShareCandidate.skeleton.boneInverses.map(matrix => (
+  matrix.clone()
+));
+const skinnedShareVertex = mesh => {
+  mesh.skeleton.update();
+  const vertex = new THREE.Vector3().fromBufferAttribute(mesh.geometry.attributes.position, 0);
+  mesh.boneTransform(0, vertex);
+  return vertex;
+};
+skeletonShareBoneChild.rotation.set(0.17, -0.08, 0.23);
+skeletonShareRoot.updateMatrixWorld(true);
+const candidateSkinBeforeShare = skinnedShareVertex(skeletonShareCandidate);
+assert.strictEqual(
+  fitApi.compatibleCharacterSkeletonMeshes(skeletonShareCanonical, skeletonShareCandidate),
+  true,
+  'equivalent primitive skeletons were not recognized as compatible'
+);
+assert.strictEqual(fitApi.shareCompatibleCharacterSkeletons(skeletonShareRoot), 1,
+  'character skeleton sharing did not replace exactly one compatible duplicate');
+assert.strictEqual(skeletonShareCandidate.skeleton, skeletonShareCanonical.skeleton,
+  'compatible primitive meshes do not share one Skeleton identity');
+assert.notStrictEqual(skeletonShareCandidate.skeleton, candidateSkeletonBeforeShare,
+  'compatible primitive mesh retained its duplicate Skeleton object');
+assert(skeletonShareCandidate.bindMatrix.equals(candidateBindMatrixBeforeShare)
+  && skeletonShareCandidate.bindMatrixInverse.equals(candidateBindMatrixInverseBeforeShare)
+  && skeletonShareCandidate.bindMode === candidateBindModeBeforeShare,
+'skeleton sharing changed a primitive bind transform or bind mode');
+candidateBoneInversesBeforeShare.forEach((matrix, index) => {
+  assert(skeletonShareCandidate.skeleton.boneInverses[index].equals(matrix),
+    `skeleton sharing changed bone inverse ${index}`);
+});
+const candidateSkinAfterShare = skinnedShareVertex(skeletonShareCandidate);
+assert(candidateSkinAfterShare.distanceTo(candidateSkinBeforeShare) < 1e-7,
+  'skeleton sharing changed the CPU-skinned vertex result');
+[
+  skeletonShareDistinctBones,
+  skeletonShareChangedInverse,
+  skeletonShareChangedBind,
+  skeletonShareChangedMode
+].forEach((mesh, index) => {
+  assert.strictEqual(mesh.skeleton, incompatibleSkeletons[index],
+    'an incompatible primitive skeleton was shared');
+});
 
 function finiteBox(box, label) {
   for (const value of [

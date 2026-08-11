@@ -496,8 +496,15 @@
   // ===== IN-GAME TIME / DAY-NIGHT CYCLE =====
   // 1 real hour = 1 full in-game day. Lighting is no longer tied to graphics quality.
   const GAME_DAY_REAL_MS = 60 * 60 * 1000;
+  // Времени суток в игре нет: освещение зафиксировано.
+  //
+  // Азимут солнца считается как dayFraction * 2PI - 0.35PI, а тень падает в
+  // сторону, противоположную солнцу. Час 16.2 даёт азимут ровно PI: солнце
+  // стоит на западе (-X), значит тень ложится на восток (+X). Высота солнца
+  // на этот час — около 35 градусов над горизонтом, то есть тень примерно
+  // в полтора раза длиннее объекта: рельеф читается, силуэты не сливаются.
+  const FIXED_WORLD_HOUR = 16.2;
   const GAME_MINUTES_PER_DAY = 24 * 60;
-  const gameTimeEls = [document.getElementById('desktop-game-time'), document.getElementById('mobile-game-time')].filter(Boolean);
   const dayNightColors = {
     skyNight: new THREE.Color(0x34394a),
     skyDawn: new THREE.Color(0x775033),
@@ -521,7 +528,6 @@
   const _timeColorA = new THREE.Color();
   const _timeColorB = new THREE.Color();
   const traderInteriorLightObjects = [];
-  let lastGameTimeText = '';
   let lastLightingSecond = -1;
   let gameClockHour = 12;
 
@@ -582,21 +588,8 @@
     });
   }
 
-  function currentAuthoritativeWorldHour(nowMs = Date.now()) {
-    try {
-      const sim = typeof WASTELAND_SIM_STATE !== 'undefined' ? WASTELAND_SIM_STATE : null;
-      const baseHour = Number(sim?.worldHour);
-      const sampledAt = Number(sim?.sampledAt || 0);
-      if (sim && Number.isFinite(baseHour) && sampledAt > 0) {
-        const dayMs = Math.max(60000, Number(sim.gameDayRealMs || GAME_DAY_REAL_MS));
-        const appliedAgeMs = Math.max(0, Number(sim.sampleAgeMs || 0));
-        const localAgeMs = typeof wastelandSimLastAppliedAt !== 'undefined' && Number(wastelandSimLastAppliedAt || 0) > 0
-          ? Math.max(0, performance.now() - Number(wastelandSimLastAppliedAt || 0))
-          : 0;
-        return Math.max(0, baseHour + (appliedAgeMs + localAgeMs) / dayMs * 24);
-      }
-    } catch (_) {}
-    return Number(nowMs || Date.now()) / GAME_DAY_REAL_MS * 24;
+  function currentAuthoritativeWorldHour() {
+    return FIXED_WORLD_HOUR;
   }
 
   function currentGameTimeInfo(nowMs = Date.now()) {
@@ -606,16 +599,15 @@
     const hour = Math.floor(totalMinutes / 60);
     const minute = totalMinutes % 60;
     const hourFloat = totalMinutes / 60;
-    let phase = 'Ночь';
-    if (hourFloat >= 5 && hourFloat < 7) phase = 'Рассвет';
-    else if (hourFloat >= 7 && hourFloat < 18) phase = 'День';
-    else if (hourFloat >= 18 && hourFloat < 20) phase = 'Закат';
-    const text = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} · ${phase}`;
-    return { absoluteWorldHour, dayFraction, totalMinutes, hour, minute, hourFloat, phase, text };
+    return { absoluteWorldHour, dayFraction, totalMinutes, hour, minute, hourFloat };
   }
 
+  // «День» больше не время суток, а такт восстановления мира: по нему
+  // пополняются контейнеры и товары торговцев. Считается от реального
+  // времени с прежним шагом, иначе при неподвижных часах мир перестал бы
+  // восстанавливаться вовсе.
   function currentGameDayIndex(nowMs = Date.now()) {
-    return Math.floor(currentAuthoritativeWorldHour(nowMs) / 24);
+    return Math.floor(Number(nowMs || Date.now()) / GAME_DAY_REAL_MS);
   }
 
   // Материалы окружения намеренно металлические: у ржавого металла, обшивки и
@@ -681,10 +673,6 @@
 
     const info = currentGameTimeInfo(nowMs);
     gameClockHour = info.hourFloat;
-    if (info.text !== lastGameTimeText) {
-      lastGameTimeText = info.text;
-      gameTimeEls.forEach(el => { el.textContent = info.text; });
-    }
 
     // Sun altitude: 06:00 sunrise, 12:00 noon, 18:00 sunset.
     const sunAltitude = Math.sin((info.hourFloat - 6) / 24 * Math.PI * 2);

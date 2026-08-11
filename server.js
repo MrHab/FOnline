@@ -2398,26 +2398,28 @@ function expireLegacyPlayerInput(p, now = Date.now()) {
   return true;
 }
 let serverGameClockStateProvider = null;
+// Времени суток в игре нет: освещение зафиксировано на послеполуденном часе,
+// солнце стоит на западе, тень падает на восток. Клиент держит ту же
+// константу (FIXED_WORLD_HOUR в 02b_lighting_time.js).
+//
+// «День» здесь — не время суток, а такт восстановления мира: по нему
+// пополняются контейнеры и товары. Он считается от реального времени, иначе
+// при неподвижных часах мир перестал бы восстанавливаться.
+//
+// Часы мировой симуляции (WASTELAND_SIM.state().worldHour) это не затрагивает:
+// экономика, задания и переходы по глобальной карте идут своим ходом.
+const FIXED_GAME_HOUR = 16.2;
+
 function currentGameClock(now = Date.now()) {
   const sampledNow = Number(now || Date.now());
-  const persisted = typeof serverGameClockStateProvider === 'function'
-    ? serverGameClockStateProvider()
-    : null;
-  if (persisted && Number.isFinite(Number(persisted.worldHour))) {
-    return resolveAuthoritativeClock({
-      worldHour: Number(persisted.worldHour || 0),
-      sampledAt: Number(persisted.lastTickAt || sampledNow),
-      now: sampledNow,
-      gameDayRealMs: GAME_DAY_REAL_MS
-    });
-  }
-  return resolveAuthoritativeClock({
-    worldHour: sampledNow / GAME_DAY_REAL_MS * 24,
-    sampledAt: sampledNow,
-    now: sampledNow,
-    gameDayRealMs: GAME_DAY_REAL_MS
-  });
+  return {
+    worldHour: FIXED_GAME_HOUR,
+    gameHour: FIXED_GAME_HOUR,
+    worldDay: Math.floor(sampledNow / GAME_DAY_REAL_MS),
+    sampledAt: sampledNow
+  };
 }
+
 function currentGameDayIndex(now = Date.now()) { return currentGameClock(now).worldDay; }
 function currentGameHour(now = Date.now()) { return currentGameClock(now).gameHour; }
 function safeName(name) { return String(name || 'Wanderer').slice(0, 24).replace(/[<>]/g, ''); }
@@ -4383,11 +4385,11 @@ const SERVER_SKILL_POINTS_PER_LEVEL = 5;
 const SERVER_PERK_LEVEL_INTERVAL = 3;
 const SERVER_TAGGED_SKILL_BONUS_PERCENT = 5;
 const SERVER_SKILL_IDS = new Set(['lightWeapons','heavyWeapons','energyWeapons','throwing','melee','unarmed','doctor','firstAid','stealth','lockpick','traps','science','repair','speech','barter','wanderer']);
-const SERVER_TALENT_IDS = new Set(['gunslinger','automaticMan','heavyShooter','machineGunner','pyromaniac','energyTech','grenadier','meleeBreaker','unarmedFighter','sharpshooter','ambush','vigilance','nightVision','awareness','ghost','fieldMedic','quickTreatment','surgeon','immunologist','fieldSurgeon','quickHands','engineer','merchant','diplomat','scrounger','cacheSense','weaponSmith','recycler','actionBoy','toughness','armorTraining','steadfastness','lucky','secondChance','ironBones','specialStr','specialPer','specialEnd','specialCha','specialInt','specialAgi','specialLuck']);
+const SERVER_TALENT_IDS = new Set(['gunslinger','automaticMan','heavyShooter','machineGunner','pyromaniac','energyTech','grenadier','meleeBreaker','unarmedFighter','sharpshooter','ambush','vigilance','awareness','ghost','fieldMedic','quickTreatment','surgeon','immunologist','fieldSurgeon','quickHands','engineer','merchant','diplomat','scrounger','cacheSense','weaponSmith','recycler','actionBoy','toughness','armorTraining','steadfastness','lucky','secondChance','ironBones','specialStr','specialPer','specialEnd','specialCha','specialInt','specialAgi','specialLuck']);
 const SERVER_TALENT_MAX_RANKS = {
   gunslinger: 3, automaticMan: 3, heavyShooter: 3, machineGunner: 3, pyromaniac: 3, energyTech: 3,
   grenadier: 2, meleeBreaker: 2, unarmedFighter: 2, sharpshooter: 2, ambush: 2,
-  vigilance: 2, nightVision: 2, awareness: 1, ghost: 2,
+  vigilance: 2, awareness: 1, ghost: 2,
   fieldMedic: 2, quickTreatment: 2, surgeon: 2, immunologist: 2, fieldSurgeon: 2,
   quickHands: 3, engineer: 2, merchant: 3, diplomat: 2, scrounger: 3,
   cacheSense: 2, weaponSmith: 2, recycler: 2,
@@ -4407,7 +4409,6 @@ const SERVER_TALENT_REQUIREMENTS = {
   sharpshooter: { level: 12, per: 7, luck: 5 },
   ambush: { level: 9, agi: 6, skill: { stealth: 60 } },
   vigilance: { level: 3, per: 6 },
-  nightVision: { level: 6, per: 6 },
   awareness: { level: 3, per: 5 },
   ghost: { level: 6, agi: 6, skill: { stealth: 60 } },
   fieldMedic: { level: 3, skill: { firstAid: 50 } },

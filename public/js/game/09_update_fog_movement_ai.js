@@ -447,11 +447,7 @@
   function perceptionTileVisionRadius() {
     const per = Math.max(1, Math.min(15, Number(statValue('per') || 5)));
     let radius = 5.5 + per * 0.7 + talentLevel('vigilance');
-    const hour = typeof gameClockHour === 'number' ? gameClockHour : null;
-    if (hour !== null) {
-      if (hour < 5 || hour >= 22) radius -= Math.max(0, 2 - talentLevel('nightVision'));
-      else if (hour < 7 || hour >= 20) radius -= Math.max(0, 1 - talentLevel('nightVision') * 0.5);
-    }
+    // Времени суток нет, поэтому ночного штрафа к обзору тоже нет.
     if (player?.crouching) radius -= 1;
     if (hasInjury('concussion')) radius -= 2;
     if (hasInjury('infection')) radius -= 0.5;

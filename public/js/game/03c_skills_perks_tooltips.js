@@ -149,7 +149,7 @@
     { key: 'combat_heavy', label: 'Тяжёлое, огонь, взрыв', side: 'left', angle: -165, row: -200, ids: ['heavyShooter', 'machineGunner', 'pyromaniac', 'grenadier'] },
     { key: 'combat_energy', label: 'Энергетика', side: 'left', angle: 165, row: 200, ids: ['energyTech'] },
     { key: 'combat_melee', label: 'Ближний бой', side: 'left', angle: 130, row: 600, ids: ['meleeBreaker', 'unarmedFighter'] },
-    { key: 'survival_vision', label: 'Обзор и скрытность', side: 'right', angle: -35, row: -600, ids: ['vigilance', 'nightVision', 'awareness', 'ghost'] },
+    { key: 'survival_vision', label: 'Обзор и скрытность', side: 'right', angle: -35, row: -600, ids: ['vigilance', 'awareness', 'ghost'] },
     { key: 'medicine', label: 'Медицина', side: 'right', angle: 0, row: -200, ids: ['fieldMedic', 'quickTreatment', 'surgeon', 'immunologist', 'fieldSurgeon'] },
     { key: 'tech', label: 'Техника', side: 'right', angle: 35, row: 200, ids: ['quickHands', 'engineer', 'weaponSmith', 'recycler'] },
     { key: 'trade', label: 'Торговля и мир', side: 'right', angle: 65, row: 600, ids: ['merchant', 'diplomat', 'scrounger', 'cacheSense'] },

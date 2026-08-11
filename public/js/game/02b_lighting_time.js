@@ -582,8 +582,26 @@
     });
   }
 
+  function currentAuthoritativeWorldHour(nowMs = Date.now()) {
+    try {
+      const sim = typeof WASTELAND_SIM_STATE !== 'undefined' ? WASTELAND_SIM_STATE : null;
+      const baseHour = Number(sim?.worldHour);
+      const sampledAt = Number(sim?.sampledAt || 0);
+      if (sim && Number.isFinite(baseHour) && sampledAt > 0) {
+        const dayMs = Math.max(60000, Number(sim.gameDayRealMs || GAME_DAY_REAL_MS));
+        const appliedAgeMs = Math.max(0, Number(sim.sampleAgeMs || 0));
+        const localAgeMs = typeof wastelandSimLastAppliedAt !== 'undefined' && Number(wastelandSimLastAppliedAt || 0) > 0
+          ? Math.max(0, performance.now() - Number(wastelandSimLastAppliedAt || 0))
+          : 0;
+        return Math.max(0, baseHour + (appliedAgeMs + localAgeMs) / dayMs * 24);
+      }
+    } catch (_) {}
+    return Number(nowMs || Date.now()) / GAME_DAY_REAL_MS * 24;
+  }
+
   function currentGameTimeInfo(nowMs = Date.now()) {
-    const dayFraction = ((nowMs % GAME_DAY_REAL_MS) + GAME_DAY_REAL_MS) % GAME_DAY_REAL_MS / GAME_DAY_REAL_MS;
+    const absoluteWorldHour = currentAuthoritativeWorldHour(nowMs);
+    const dayFraction = ((absoluteWorldHour % 24) + 24) % 24 / 24;
     const totalMinutes = Math.floor(dayFraction * GAME_MINUTES_PER_DAY) % GAME_MINUTES_PER_DAY;
     const hour = Math.floor(totalMinutes / 60);
     const minute = totalMinutes % 60;
@@ -593,11 +611,11 @@
     else if (hourFloat >= 7 && hourFloat < 18) phase = 'День';
     else if (hourFloat >= 18 && hourFloat < 20) phase = 'Закат';
     const text = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')} · ${phase}`;
-    return { dayFraction, totalMinutes, hour, minute, hourFloat, phase, text };
+    return { absoluteWorldHour, dayFraction, totalMinutes, hour, minute, hourFloat, phase, text };
   }
 
   function currentGameDayIndex(nowMs = Date.now()) {
-    return Math.floor(Number(nowMs || Date.now()) / GAME_DAY_REAL_MS);
+    return Math.floor(currentAuthoritativeWorldHour(nowMs) / 24);
   }
 
   // Материалы окружения намеренно металлические: у ржавого металла, обшивки и

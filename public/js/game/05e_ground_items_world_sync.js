@@ -733,6 +733,15 @@
       special: saved.special || null,
       scheduleState: saved.scheduleState || '',
       scheduleLabel: saved.scheduleLabel || '',
+      activityRevision: 0,
+      activityType: '',
+      goalActivity: '',
+      activityPhase: '',
+      visualAction: '',
+      activitySlotId: '',
+      activityFacing: null,
+      serviceAvailable: null,
+      _hasNetworkActivity: false,
       speechText: '',
       speechId: '',
       speechUntil: 0,
@@ -781,6 +790,7 @@
       path: [],
       pathTimer: 0
     };
+    applyNetworkEnemyActivityPacket(enemy, saved);
     applyEnemySpeechSnapshot(enemy, saved, naturalCreature);
     mesh.userData.enemy = enemy;
     mesh.traverse(child => { if (child.isMesh) child.userData.enemy = enemy; });
@@ -818,6 +828,10 @@
   function networkEnemyScheduleLabel(state = '') {
     const labels = {
       work: 'работает',
+      eat: 'ест',
+      shop: 'торгует',
+      patrol: 'патрулирует',
+      guard: 'на посту',
       rest: 'отдыхает',
       social: 'общается',
       sleep: 'спит',
@@ -825,6 +839,111 @@
       dialogue: 'разговор'
     };
     return labels[String(state || '').toLowerCase()] || '';
+  }
+
+  function networkEnemyHasActivityState(saved = {}) {
+    if (Array.isArray(saved.a)) return true;
+    return [
+      'activityRevision',
+      'activityType',
+      'goalActivity',
+      'activityPhase',
+      'visualAction',
+      'activitySlotId',
+      'activityFacing',
+      'serviceAvailable'
+    ].some(key => Object.prototype.hasOwnProperty.call(saved, key));
+  }
+
+  // Activity fields are optional so an older server can still drive the legacy
+  // scheduleState client. Once any field is present, explicit empty values are
+  // authoritative too: they must clear a previous package instead of reviving it.
+  function applyNetworkEnemyActivityState(enemy, saved = {}, options = {}) {
+    if (!enemy || !saved || typeof saved !== 'object') return false;
+    const previousServiceAvailable = enemy.serviceAvailable;
+    const compact = Array.isArray(saved.a) ? saved.a : null;
+    const compactIndex = {
+      activityRevision: 0,
+      activityType: 1,
+      goalActivity: 1,
+      activityPhase: 2,
+      visualAction: 3,
+      activitySlotId: 4,
+      activityFacing: 5,
+      serviceAvailable: 6
+    };
+    const hasOwn = key => Object.prototype.hasOwnProperty.call(saved, key)
+      || !!(compact && compact.length > compactIndex[key]);
+    const read = key => Object.prototype.hasOwnProperty.call(saved, key)
+      ? saved[key]
+      : (compact ? compact[compactIndex[key]] : undefined);
+    const hasExplicitActivityType = Object.prototype.hasOwnProperty.call(saved, 'activityType');
+    const hasExplicitGoalActivity = Object.prototype.hasOwnProperty.call(saved, 'goalActivity');
+    const hasActivityType = hasOwn('activityType');
+    const hasGoalActivity = hasOwn('goalActivity');
+    const hasActivityState = networkEnemyHasActivityState(saved);
+    if (!hasActivityState) return false;
+    if (options.rejectStaleRevision === true) {
+      if (!hasOwn('activityRevision')) return false;
+      const incomingRevision = Number(read('activityRevision'));
+      if (!Number.isFinite(incomingRevision)) return false;
+      const currentRevision = Math.max(0, Math.floor(Number(enemy.activityRevision || 0)));
+      if (enemy._hasNetworkActivity === true && Math.floor(incomingRevision) <= currentRevision) return false;
+    }
+
+    enemy._hasNetworkActivity = true;
+    if (hasOwn('activityRevision')) {
+      const revision = Number(read('activityRevision'));
+      enemy.activityRevision = Number.isFinite(revision) ? Math.max(0, Math.floor(revision)) : 0;
+    }
+    if (hasActivityType) enemy.activityType = String(read('activityType') ?? '');
+    if (hasGoalActivity) enemy.goalActivity = String(read('goalActivity') ?? '');
+    // Accept both protocol spellings and keep a single-field payload useful to
+    // old and new UI call sites. When both are sent, preserve both verbatim.
+    if (hasActivityType && !hasExplicitGoalActivity) enemy.goalActivity = enemy.activityType;
+    if (hasGoalActivity && !hasExplicitActivityType) enemy.activityType = enemy.goalActivity;
+    if (hasOwn('activityPhase')) enemy.activityPhase = String(read('activityPhase') ?? '');
+    if (hasOwn('visualAction')) enemy.visualAction = String(read('visualAction') ?? '');
+    if (hasOwn('activitySlotId')) enemy.activitySlotId = String(read('activitySlotId') ?? '');
+    if (hasOwn('activityFacing')) {
+      const rawFacing = read('activityFacing');
+      const facing = Number(rawFacing);
+      enemy.activityFacing = rawFacing === '' || rawFacing == null || !Number.isFinite(facing) ? null : facing;
+    }
+    if (hasOwn('serviceAvailable')) {
+      const rawAvailability = read('serviceAvailable');
+      enemy.serviceAvailable = rawAvailability === '' || rawAvailability == null ? null : !!rawAvailability;
+      if (
+        previousServiceAvailable !== false
+        && enemy.serviceAvailable === false
+        && typeof handleNpcScheduledTradeAvailabilityChanged === 'function'
+      ) {
+        handleNpcScheduledTradeAvailabilityChanged(enemy);
+      }
+    }
+    return true;
+  }
+
+  function applyNetworkEnemyActivityPacket(enemy, saved = {}, options = {}) {
+    if (!applyNetworkEnemyActivityState(enemy, saved, options)) return false;
+    const activityLabel = networkEnemyScheduleLabel(enemy.activityType || enemy.goalActivity || enemy.visualAction);
+    if (activityLabel) enemy.scheduleLabel = activityLabel;
+    return true;
+  }
+
+  // Activity changes are reliable and sparse. Structural enemy creation remains
+  // the responsibility of enemySnapshot, so a delta for an unknown id is ignored.
+  function applyNetworkEnemyActivityDelta(activities) {
+    if (!Array.isArray(activities)) return 0;
+    const enemyIndex = rebuildNetworkEnemyIndex();
+    let applied = 0;
+    for (const saved of activities) {
+      if (!saved?.id) continue;
+      const enemy = enemyIndex.get(String(saved.id));
+      if (!enemy) continue;
+      if (applyNetworkEnemyActivityPacket(enemy, saved, { rejectStaleRevision: true })) applied += 1;
+    }
+    return applied;
   }
 
   // Merge only absolute realtime fields from enemyFrame. Unknown ids are
@@ -850,8 +969,11 @@
       enemy.lookZ = (flags & 16) && Number.isFinite(Number(saved.lookZ)) ? Number(saved.lookZ) : null;
       if (Object.prototype.hasOwnProperty.call(saved, 'scheduleState')) {
         enemy.scheduleState = String(saved.scheduleState || '');
-        enemy.scheduleLabel = networkEnemyScheduleLabel(enemy.scheduleState);
+        if (enemy._hasNetworkActivity !== true) {
+          enemy.scheduleLabel = networkEnemyScheduleLabel(enemy.scheduleState);
+        }
       }
+      applyNetworkEnemyActivityPacket(enemy, saved);
       if (flags & 32) applyEnemySpeechSnapshot(enemy, saved, false);
       else if (enemy.speechText || enemy.speechId || enemy.speechUntil) applyEnemySpeechSnapshot(enemy, {}, false);
 
@@ -930,8 +1052,16 @@
       enemy.tradeProfile = saved.tradeProfile || enemy.tradeProfile || '';
       enemy.personality = saved.personality || enemy.personality || null;
       enemy.special = saved.special || enemy.special || null;
-      enemy.scheduleState = saved.scheduleState || enemy.scheduleState || '';
-      enemy.scheduleLabel = saved.scheduleLabel || enemy.scheduleLabel || '';
+      if (Object.prototype.hasOwnProperty.call(saved, 'scheduleState')) {
+        enemy.scheduleState = String(saved.scheduleState ?? '');
+        if (!Object.prototype.hasOwnProperty.call(saved, 'scheduleLabel')) {
+          enemy.scheduleLabel = networkEnemyScheduleLabel(enemy.scheduleState);
+        }
+      }
+      if (Object.prototype.hasOwnProperty.call(saved, 'scheduleLabel')) {
+        enemy.scheduleLabel = String(saved.scheduleLabel ?? '');
+      }
+      applyNetworkEnemyActivityPacket(enemy, saved);
       applyEnemySpeechSnapshot(enemy, saved, naturalCreature);
       enemy.visual = networkType.visual || saved.visual || enemy.visual || '';
       enemy.modelKey = saved.modelKey || networkType.modelKey || enemy.modelKey || '';
@@ -956,6 +1086,15 @@
         enemy.special = null;
         enemy.scheduleState = '';
         enemy.scheduleLabel = '';
+        enemy.activityRevision = 0;
+        enemy.activityType = '';
+        enemy.goalActivity = '';
+        enemy.activityPhase = '';
+        enemy.visualAction = '';
+        enemy.activitySlotId = '';
+        enemy.activityFacing = null;
+        enemy.serviceAvailable = null;
+        enemy._hasNetworkActivity = false;
         enemy.speechText = '';
         enemy.speechId = '';
         enemy.speechUntil = 0;

@@ -457,6 +457,9 @@ function assertCrowdedEnemyFanoutCoalescesEquivalentViews() {
     [
       extractFunction(serverSource, 'publicEnemySnapshotForViewer'),
       extractFunction(serverSource, 'publicEnemyFrameForViewer'),
+      extractFunction(serverSource, 'publicEnemyActivityDelta'),
+      extractFunction(serverSource, 'syncRoomEnemyActivityRevisions'),
+      extractFunction(serverSource, 'emitEnemyActivityDelta'),
       extractFunction(serverSource, 'emitFullEnemySnapshotToSockets'),
       extractFunction(serverSource, 'emitEnemySnapshot'),
       'return { emitEnemySnapshot };'

@@ -135,11 +135,13 @@
       },
       "entity": {
         "kind": "npc",
+        "npcId": "caravan_sayla",
+        "routineId": "caravan_sayla",
         "role": "merchant",
         "faction": "caravans",
         "hostileToPlayer": false,
         "canDialogue": true,
-        "stationary": true,
+        "stationary": false,
         "leader": true,
         "traderProfile": "caravan",
         "dialogueProfile": "caravan",
@@ -183,6 +185,21 @@
         "personal-bed",
         "caravans"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_sayla_bed",
+          "type": "bed",
+          "capacity": 1,
+          "ownerNpcId": "caravan_sayla",
+          "position": {
+            "x": -9,
+            "y": 0,
+            "z": 7
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
+      ],
       "footprint": {
         "x": 2,
         "z": 2
@@ -224,6 +241,20 @@
         "interactive",
         "jobBoard",
         "questBoard"
+      ],
+      "activitySlots": [
+        {
+          "id": "caravan_sayla_shop",
+          "type": "shop",
+          "capacity": 1,
+          "position": {
+            "x": -5,
+            "y": 0,
+            "z": 9
+          },
+          "rotationY": 0,
+          "visualAction": "shop"
+        }
       ],
       "footprint": {
         "x": 2,
@@ -322,6 +353,20 @@
         "crafting-station",
         "ammo_bench"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_work_ammo",
+          "type": "work",
+          "capacity": 1,
+          "position": {
+            "x": -14,
+            "y": 0,
+            "z": -6
+          },
+          "rotationY": 3.141592653589793,
+          "visualAction": "work"
+        }
+      ],
       "vision": {
         "mode": "cover"
       },
@@ -373,6 +418,20 @@
         "workshop",
         "crafting-station",
         "weapon_bench"
+      ],
+      "activitySlots": [
+        {
+          "id": "caravan_work_weapon",
+          "type": "work",
+          "capacity": 1,
+          "position": {
+            "x": -10,
+            "y": 0,
+            "z": -6
+          },
+          "rotationY": 3.141592653589793,
+          "visualAction": "work"
+        }
       ],
       "vision": {
         "mode": "cover"
@@ -426,6 +485,20 @@
         "crafting-station",
         "tool_bench"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_work_tools",
+          "type": "work",
+          "capacity": 1,
+          "position": {
+            "x": -6,
+            "y": 0,
+            "z": -6
+          },
+          "rotationY": 3.141592653589793,
+          "visualAction": "work"
+        }
+      ],
       "vision": {
         "mode": "cover"
       },
@@ -477,6 +550,20 @@
         "workshop",
         "crafting-station",
         "repair_bench"
+      ],
+      "activitySlots": [
+        {
+          "id": "caravan_work_repair",
+          "type": "work",
+          "capacity": 1,
+          "position": {
+            "x": -14,
+            "y": 0,
+            "z": -2
+          },
+          "rotationY": 3.141592653589793,
+          "visualAction": "work"
+        }
       ],
       "vision": {
         "mode": "cover"
@@ -530,6 +617,20 @@
         "crafting-station",
         "energy_bench"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_work_energy",
+          "type": "work",
+          "capacity": 1,
+          "position": {
+            "x": -10,
+            "y": 0,
+            "z": -2
+          },
+          "rotationY": 3.141592653589793,
+          "visualAction": "work"
+        }
+      ],
       "vision": {
         "mode": "cover"
       },
@@ -582,6 +683,20 @@
         "crafting-station",
         "chem_station"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_work_chem",
+          "type": "work",
+          "capacity": 1,
+          "position": {
+            "x": -6,
+            "y": 0,
+            "z": -2
+          },
+          "rotationY": 3.141592653589793,
+          "visualAction": "work"
+        }
+      ],
       "vision": {
         "mode": "cover"
       },
@@ -629,6 +744,20 @@
       },
       "collision": "solid",
       "tags": [],
+      "activitySlots": [
+        {
+          "id": "caravan_guard_north",
+          "type": "guard",
+          "capacity": 1,
+          "position": {
+            "x": 14,
+            "y": 0,
+            "z": 19
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "guard"
+        }
+      ],
       "footprint": {
         "x": 4,
         "z": 2
@@ -667,6 +796,20 @@
       },
       "collision": "solid",
       "tags": [],
+      "activitySlots": [
+        {
+          "id": "caravan_guard_cargo",
+          "type": "guard",
+          "capacity": 1,
+          "position": {
+            "x": 11,
+            "y": 0,
+            "z": 13
+          },
+          "rotationY": 0,
+          "visualAction": "guard"
+        }
+      ],
       "footprint": {
         "x": 4,
         "z": 2
@@ -705,6 +848,20 @@
       },
       "collision": "cover",
       "tags": [],
+      "activitySlots": [
+        {
+          "id": "caravan_guard_road",
+          "type": "guard",
+          "capacity": 1,
+          "position": {
+            "x": 9,
+            "y": 0,
+            "z": -1
+          },
+          "rotationY": 3.141592653589793,
+          "visualAction": "guard"
+        }
+      ],
       "footprint": {
         "x": 6,
         "z": 4
@@ -743,6 +900,20 @@
       },
       "collision": "cover",
       "tags": [],
+      "activitySlots": [
+        {
+          "id": "caravan_social_barrel",
+          "type": "social",
+          "capacity": 1,
+          "position": {
+            "x": 7,
+            "y": 0,
+            "z": 15
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "social"
+        }
+      ],
       "footprint": {
         "x": 2,
         "z": 2
@@ -826,6 +997,20 @@
         "personal-bed",
         "caravans"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_camp_bed_01",
+          "type": "bed",
+          "capacity": 1,
+          "position": {
+            "x": -15,
+            "y": 0,
+            "z": 13
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
+      ],
       "footprint": {
         "x": 2,
         "z": 2
@@ -870,6 +1055,20 @@
         "cot",
         "personal-bed",
         "caravans"
+      ],
+      "activitySlots": [
+        {
+          "id": "caravan_camp_bed_02",
+          "type": "bed",
+          "capacity": 1,
+          "position": {
+            "x": -11,
+            "y": 0,
+            "z": 13
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
       ],
       "footprint": {
         "x": 2,
@@ -916,6 +1115,20 @@
         "personal-bed",
         "caravans"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_camp_bed_03",
+          "type": "bed",
+          "capacity": 1,
+          "position": {
+            "x": -7,
+            "y": 0,
+            "z": 13
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
+      ],
       "footprint": {
         "x": 2,
         "z": 2
@@ -960,6 +1173,20 @@
         "cot",
         "personal-bed",
         "caravans"
+      ],
+      "activitySlots": [
+        {
+          "id": "caravan_camp_bed_04",
+          "type": "bed",
+          "capacity": 1,
+          "position": {
+            "x": -3,
+            "y": 0,
+            "z": 13
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
       ],
       "footprint": {
         "x": 2,
@@ -1006,6 +1233,20 @@
         "personal-bed",
         "caravans"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_camp_bed_05",
+          "type": "bed",
+          "capacity": 1,
+          "position": {
+            "x": -15,
+            "y": 0,
+            "z": 17
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
+      ],
       "footprint": {
         "x": 2,
         "z": 2
@@ -1050,6 +1291,20 @@
         "cot",
         "personal-bed",
         "caravans"
+      ],
+      "activitySlots": [
+        {
+          "id": "caravan_camp_bed_06",
+          "type": "bed",
+          "capacity": 1,
+          "position": {
+            "x": -11,
+            "y": 0,
+            "z": 17
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
       ],
       "footprint": {
         "x": 2,
@@ -1096,6 +1351,20 @@
         "personal-bed",
         "caravans"
       ],
+      "activitySlots": [
+        {
+          "id": "caravan_camp_bed_07",
+          "type": "bed",
+          "capacity": 1,
+          "position": {
+            "x": -7,
+            "y": 0,
+            "z": 17
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
+      ],
       "footprint": {
         "x": 2,
         "z": 2
@@ -1140,6 +1409,20 @@
         "cot",
         "personal-bed",
         "caravans"
+      ],
+      "activitySlots": [
+        {
+          "id": "caravan_camp_bed_08",
+          "type": "bed",
+          "capacity": 1,
+          "position": {
+            "x": -3,
+            "y": 0,
+            "z": 17
+          },
+          "rotationY": 1.5707963267948966,
+          "visualAction": "sleep"
+        }
       ],
       "footprint": {
         "x": 2,

@@ -1,7 +1,16 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const vm = require('vm');
 const { createWastelandSimulation } = require('../src/server/wasteland-sim');
+const {
+  createLegacyRoutine,
+  normalizeAuthoredRoutine,
+  routineInterruptBlocksService,
+  selectRoutinePackage,
+  resolveAuthoritativeClock
+} = require('../src/server/npc-routines');
+const { buildActivitySlotCatalog } = require('../src/server/npc-smart-objects');
 
 const ROOT = path.resolve(__dirname, '..');
 // The current authored map produces 117 sites, 125 friendly groups and 285
@@ -117,47 +126,161 @@ const scheduleBody = functionBody(server, 'createNpcSchedule');
 const updateScheduleBody = functionBody(server, 'updateNpcDailySchedule');
 const publicEnemyBody = functionBody(server, 'publicEnemy');
 const animateEnemyBody = functionBody(clientWorld, 'animateEnemyVisual');
+const updateEnemiesBody = functionBody(server, 'updateServerEnemies');
+const dialogueInterruptBody = functionBody(server, 'npcRoutineDialogueInterruptType');
+const ensureSlotsBody = functionBody(server, 'ensureRoomNpcActivitySlots');
+const reserveSlotBody = functionBody(server, 'reserveNpcActivitySlot');
+
+requireText('createNpcSchedule integration', scheduleBody, 'createLegacyRoutine');
+
+try {
+  const stableRoll = (_seed, salt) => salt === 'schedule-shift' ? 0.5 : 0;
+  const expectedTemplates = {
+    guard: 'guard',
+    patrol: 'guard',
+    merchant: 'merchant',
+    trader: 'merchant',
+    quartermaster: 'merchant',
+    craftsman: 'craftsman',
+    mechanic: 'craftsman',
+    worker: 'worker'
+  };
+  for (const [role, template] of Object.entries(expectedTemplates)) {
+    const routine = createLegacyRoutine({ seed: `check:${role}`, role, stableRoll });
+    if (routine.template !== template) errors.push(`legacy routine role ${role} resolved to ${routine.template}, expected ${template}`);
+    if (!Array.isArray(routine.packages) || !routine.packages.length) errors.push(`legacy routine ${role} has no executable packages`);
+  }
+  const guard = createLegacyRoutine({ seed: 'midnight', role: 'guard', stableRoll });
+  if (selectRoutinePackage({ routine: guard, gameHour: 23.5 })?.state !== 'sleep') errors.push('guard routine does not sleep before midnight');
+  if (selectRoutinePackage({ routine: guard, gameHour: 0.5 })?.state !== 'sleep') errors.push('guard routine does not preserve sleep across midnight');
+  if (selectRoutinePackage({ routine: guard, gameHour: 10, context: { investigate: true } })?.type !== 'investigate') {
+    errors.push('investigate interrupt does not outrank the daily routine');
+  }
+  if (selectRoutinePackage({ routine: guard, gameHour: 10, context: { combat: true, investigate: true } })?.type !== 'combat') {
+    errors.push('combat interrupt does not outrank investigate');
+  }
+  for (const type of ['combat', 'alarm', 'investigate']) {
+    if (!routineInterruptBlocksService({ [type]: true })) errors.push(`${type} interrupt does not close NPC services`);
+  }
+  if (routineInterruptBlocksService({ dialogue: true })) errors.push('dialogue alone incorrectly closes NPC services');
+  const clock = resolveAuthoritativeClock({ worldHour: 47, sampledAt: 1000, now: 151000, gameDayRealMs: 3600000 });
+  if (Math.abs(clock.gameHour - 0) > 0.001 || clock.worldDay !== 2) errors.push('authoritative clock did not cross the persisted day boundary');
+} catch (error) {
+  errors.push(`executable routine checks failed: ${error?.message || String(error)}`);
+}
 
 [
-  "'sleep'",
-  "'rest'",
-  "'social'",
-  "'work'",
-  "template: 'guard'",
-  "template: 'merchant'",
-  "template: 'craftsman'",
-  "template: 'worker'"
-].forEach(needle => requireText('createNpcSchedule', scheduleBody, needle));
-
-[
-  "r === 'guard'",
-  "r === 'patrol'",
-  "r === 'merchant'",
-  "r === 'trader'",
-  "r === 'quartermaster'",
-  "r === 'craftsman'",
-  "r === 'mechanic'"
-].forEach(needle => requireText('createNpcSchedule role coverage', scheduleBody, needle));
-
-[
-  'enemy.npcScheduleState = state',
-  "if (state === 'work') return false",
-  "enemy.aiState = state",
-  "state === 'sleep'",
+  'npcRoutinePackageForActor',
+  "routinePackage.source === 'interrupt'",
+  'reserveNpcActivitySlot',
+  "phase: 'travel'",
+  "phase: 'use'",
   'updateNpcSocialSpeech'
 ].forEach(needle => requireText('updateNpcDailySchedule', updateScheduleBody, needle));
+
+const combatBranch = updateEnemiesBody.indexOf('if (factionCombatActors.has(enemy.id))');
+const dialogueBranch = updateEnemiesBody.indexOf('if (Number(enemy.dialogueFocusUntil || 0) > 0)');
+if (combatBranch < 0 || dialogueBranch < 0 || combatBranch >= dialogueBranch) {
+  errors.push('updateServerEnemies no longer gives combat strict priority over dialogue focus');
+}
+[
+  "enemy.dialogueFocusUntil = 0;",
+  "enemy.dialoguePlayerId = '';",
+  "packageId: 'interrupt:combat'",
+  'serviceAvailable: false'
+].forEach(needle => requireText('combat clears active NPC dialogue', updateEnemiesBody, needle));
+[
+  'npcRoutineDialogueInterruptType(room, enemy, now)',
+  'enemy.dialogueFocusUntil = 0;',
+  'enemy.npcScheduleState = dialogueInterruptType;',
+  'serviceAvailable: false'
+].forEach(needle => requireText('combat/alarm clear active NPC dialogue', updateEnemiesBody, needle));
+if (/facing:\s*null,\s*facing:\s*null/.test(updateEnemiesBody)) {
+  errors.push('combat activity state contains duplicate facing fields');
+}
+try {
+  const dialogueInterruptType = new Function(
+    'npcRoutineCombatActive',
+    'npcRoutineAlarmActive',
+    'room',
+    'enemy',
+    'now',
+    dialogueInterruptBody
+  );
+  const room = {};
+  if (dialogueInterruptType(() => true, () => true, room, {}, 1000) !== 'combat') {
+    errors.push('combat does not outrank alarm when interrupting dialogue');
+  }
+  if (dialogueInterruptType(() => false, () => true, room, {}, 1000) !== 'alarm') {
+    errors.push('alarm does not interrupt active dialogue');
+  }
+  if (dialogueInterruptType(() => false, () => false, room, { aiState: 'investigate' }, 1000) !== '') {
+    errors.push('investigation incorrectly interrupts dialogue');
+  }
+} catch (error) {
+  errors.push(`dialogue interrupt priority check failed: ${error?.message || String(error)}`);
+}
+requireText(
+  'stationary NPC investigation override',
+  updateEnemiesBody,
+  "enemy.stationary && enemy.hostileToPlayer === false && !npcRoutineInvestigationActive(enemy, now)"
+);
+
+const dialogueStart = server.indexOf("socket.on('npcDialogueFocus'");
+const dialogueEnd = server.indexOf("socket.on('", dialogueStart + 12);
+const dialogueHandler = dialogueStart >= 0 && dialogueEnd > dialogueStart ? server.slice(dialogueStart, dialogueEnd) : '';
+const dialogueCombatCheck = dialogueHandler.indexOf('npcRoutineDialogueInterruptType(room, enemy, Date.now())');
+const dialogueFocusWrite = dialogueHandler.indexOf('enemy.dialogueFocusUntil = Date.now() + 16000');
+if (dialogueCombatCheck < 0 || dialogueFocusWrite < 0 || dialogueCombatCheck >= dialogueFocusWrite) {
+  errors.push('npcDialogueFocus can start or extend dialogue while the NPC is in combat or alarm');
+}
+requireText('npcDialogueFocus combat rejection', dialogueHandler, "dialogueInterruptType === 'combat'");
+requireText('npcDialogueFocus alarm rejection', dialogueHandler, "dialogueInterruptType === 'alarm'");
+if ((server.match(/npcScheduledServiceClosed\(room, actor, Date\.now\(\)\)/g) || []).length < 2) {
+  errors.push('NPC trade state/exchange do not both reject combat, alarm and investigation interruptions');
+}
+if ((server.match(/serviceAvailable:\s*!npcRoutineServiceInterrupted\(room, enemy,/g) || []).length < 2) {
+  errors.push('NPC activity snapshots can still advertise services during combat, alarm or investigation');
+}
+
+[
+  'room.npcActivitySlotObjectSource !== objectSource',
+  'npcActivityReservationsPrunedAtStructureRevision',
+  'buildActivitySlotIndexes(room.npcActivitySlots)'
+].forEach(needle => requireText('indexed activity-slot catalog', ensureSlotsBody, needle));
+[
+  'slotById: room.npcActivitySlotById',
+  'slotsByType: room.npcActivitySlotsByType',
+  'npcActivityReservationMiss'
+].forEach(needle => requireText('indexed activity-slot reservation', reserveSlotBody, needle));
+
+try {
+  const authoredNpcStationary = new Function('entity', 'role', functionBody(server, 'authoredNpcStationary'));
+  if (authoredNpcStationary({ stationary: false }, 'merchant') !== false) {
+    errors.push('authored merchant stationary:false is overridden by the merchant default');
+  }
+  if (authoredNpcStationary({}, 'merchant') !== true) errors.push('merchant stationary default was lost');
+} catch (error) {
+  errors.push(`authored stationary policy check failed: ${error?.message || String(error)}`);
+}
 
 [
   "aiState === 'dialogue' ? 'dialogue' : scheduleStateRaw",
   'scheduleState,',
   'scheduleLabel,',
+  'activityRevision:',
+  'activityPhase:',
+  'visualAction:',
+  'serviceAvailable:',
   'speechText,'
 ].forEach(needle => requireText('publicEnemy schedule snapshot', publicEnemyBody, needle));
 
 [
   'function enemyAnimApplySleepPose',
   'function enemyAnimApplyDialoguePose',
-  'const sleeping = scheduleState ===',
+  'function enemyAnimUsesSleepPose',
+  "visualAction || '').toLowerCase() === 'sleep'",
+  "activityPhase || '').toLowerCase() === 'use'",
   'const inDialogue = scheduleState ===',
   'enemyAnimApplySleepPose',
   'enemyAnimApplyDialoguePose',
@@ -257,6 +380,73 @@ for (const file of locationFiles) {
       warnings.push(`${path.relative(ROOT, file)}:${row.id || model || 'npc'} has no explicit role; default schedule will be worker`);
     }
   }
+}
+
+try {
+  const routineCatalog = readJson('data/npc-routines.json', { routines: {} });
+  const saylaRoutine = normalizeAuthoredRoutine(routineCatalog?.routines?.caravan_sayla || {}, { id: 'caravan_sayla' });
+  if (saylaRoutine.packages.length !== 6) errors.push(`caravan_sayla routine has ${saylaRoutine.packages.length} packages; expected 6`);
+  for (let hour = 0; hour < 24; hour += 0.25) {
+    const selected = selectRoutinePackage({ routine: saylaRoutine, gameHour: hour, fallback: false });
+    if (!selected) {
+      errors.push(`caravan_sayla routine has an uncovered time at ${hour.toFixed(2)}`);
+      break;
+    }
+  }
+  const morningShop = selectRoutinePackage({ routine: saylaRoutine, gameHour: 10, fallback: false });
+  const night = selectRoutinePackage({ routine: saylaRoutine, gameHour: 2, fallback: false });
+  if (morningShop?.type !== 'shop' || morningShop?.serviceAvailable !== true) errors.push('Sayla shop service is not open at 10:00');
+  if (night?.type !== 'sleep' || night?.serviceAvailable !== false) errors.push('Sayla does not sleep with service closed at 02:00');
+
+  const caravanCamp = readJson('data/locations/caravanCamp.json', {});
+  const slots = buildActivitySlotCatalog(caravanCamp);
+  const slotIds = new Set(slots.map(slot => slot.id));
+  if (slots.length < 20) errors.push(`caravanCamp exposes only ${slots.length} activity slots; expected at least 20`);
+  if (!slots.some(slot => slot.id === 'caravan_sayla_bed' && slot.ownerNpcId === 'caravan_sayla')) {
+    errors.push('Sayla personal bed slot is missing or has no owner');
+  }
+  for (const routinePackage of saylaRoutine.packages) {
+    const slotId = String(routinePackage?.target?.slotId || '');
+    if (slotId && !slotIds.has(slotId)) errors.push(`Sayla routine target ${slotId} is absent from caravanCamp activity slots`);
+    const slotType = String(routinePackage?.target?.slotType || '');
+    if (slotType && !slots.some(slot => slot.type === slotType)) {
+      errors.push(`Sayla routine target type ${slotType} is absent from caravanCamp activity slots`);
+    }
+  }
+  const caravanObjects = Array.isArray(caravanCamp.objects) ? caravanCamp.objects : [];
+  const shopSlotParent = caravanObjects.find(row => (Array.isArray(row?.activitySlots) ? row.activitySlots : [])
+    .some(slot => String(slot?.id || '') === 'caravan_sayla_shop'));
+  const storageHelpersStart = server.indexOf('function locationDefinitionObjectTags');
+  const storageHelpersEnd = server.indexOf('function locationDefinitionObjectIsNpc', storageHelpersStart);
+  if (storageHelpersStart < 0 || storageHelpersEnd <= storageHelpersStart) {
+    errors.push('cannot extract runtime location storage normalization helpers');
+  }
+  const runtimeObjectIsWarehouse = storageHelpersStart >= 0 && storageHelpersEnd > storageHelpersStart
+    ? vm.runInNewContext(`${server.slice(storageHelpersStart, storageHelpersEnd)}\nlocationDefinitionObjectIsWarehouse`, {})
+    : () => false;
+  if (!shopSlotParent) errors.push('Sayla shop slot has no authored parent object');
+  else if (runtimeObjectIsWarehouse(shopSlotParent)) {
+    errors.push('Sayla shop slot is attached to storage that normalizeLocationDefinition replaces at runtime');
+  }
+  const rawSlots = caravanObjects.flatMap(row => Array.isArray(row?.activitySlots) ? row.activitySlots : []);
+  if (new Set(rawSlots.map(slot => String(slot?.id || ''))).size !== rawSlots.length) {
+    errors.push('caravanCamp contains duplicate authored activity slot IDs');
+  }
+  if (slots.some(slot => slot.capacity !== 1)) errors.push('caravanCamp vertical-slice slots must all use capacity 1');
+  const ownedSlots = slots.filter(slot => slot.ownerNpcId);
+  if (ownedSlots.length !== 1 || ownedSlots[0].id !== 'caravan_sayla_bed') {
+    errors.push('only caravan_sayla_bed may be an owned activity slot in caravanCamp');
+  }
+  const saylaRow = (Array.isArray(caravanCamp.objects) ? caravanCamp.objects : [])
+    .find(row => String(row?.id || '') === 'caravan_sayla');
+  if (saylaRow?.entity?.npcId !== 'caravan_sayla' || saylaRow?.entity?.routineId !== 'caravan_sayla') {
+    errors.push('Sayla authored actor lacks stable npcId/routineId');
+  }
+  if (saylaRow?.entity?.stationary !== false) {
+    errors.push('Sayla must explicitly keep stationary:false so investigate and routine travel can move her');
+  }
+} catch (error) {
+  errors.push(`authored routine/activity slot checks failed: ${error?.message || String(error)}`);
 }
 
 cleanupScheduleFixture();

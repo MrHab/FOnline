@@ -96,7 +96,9 @@ const combat = read('public/js/game/06d_combat_damage_shooting.js');
 const resources = read('public/js/game/06e_combat_targeting_loot_resources.js');
 const containers = read('public/js/game/05d_world_containers_security.js');
 const worldSync = read('public/js/game/05e_ground_items_world_sync.js');
+const traderMarketStateSource = read('public/js/game/07b_trader_market_state.js');
 const quests = read('public/js/game/07c_trader_dialogues_quests.js');
+const traderBarterSource = read('public/js/game/07d_trader_barter_ui.js');
 const loot = read('public/js/game/07e_loot_interaction.js');
 const input = read('public/js/game/08f_input_events_proximity.js');
 const interaction = read('public/js/game/08b_interaction_quick_access.js');
@@ -1408,6 +1410,9 @@ function assertEnemySnapshotFanout() {
     [
       functionSource(server, 'publicEnemySnapshotForViewer'),
       functionSource(server, 'publicEnemyFrameForViewer'),
+      functionSource(server, 'publicEnemyActivityDelta'),
+      functionSource(server, 'syncRoomEnemyActivityRevisions'),
+      functionSource(server, 'emitEnemyActivityDelta'),
       functionSource(server, 'emitFullEnemySnapshotToSockets'),
       functionSource(server, 'emitEnemySnapshot'),
       'return { emitEnemySnapshot };'
@@ -1516,6 +1521,45 @@ function assertEnemySnapshotFanout() {
   assert.strictEqual(emissions[0].event, 'enemySnapshot');
   assert.strictEqual(emissions[0].volatile, false,
     'legacy enemy fallback must stay reliable for an already-open old tab');
+
+  playersBySocket.get('viewer-a').enemyFrameVersion = 1;
+  room.sockets = new Set(['viewer-a', 'viewer-b']);
+  const changedEnemy = room.enemies.get('enemy-a');
+  Object.assign(changedEnemy, {
+    npcActivityRevision: 1,
+    npcActivityType: 'work',
+    npcActivityPhase: 'active',
+    npcActivityVisualAction: 'craft',
+    npcActivitySlotId: 'workbench-a',
+    npcActivityFacing: 1.25,
+    npcServiceAvailable: false
+  });
+  room.lastEnemySnapshotAt = 0;
+  emissions.length = 0;
+  runtime.emitEnemySnapshot(room, false);
+  const activityDeltas = emissions.filter(row => row.event === 'enemyActivityDelta');
+  assert.strictEqual(activityDeltas.length, 1,
+    'one NPC activity revision did not produce exactly one room-wide delta');
+  assert.strictEqual(activityDeltas[0].volatile, false,
+    'NPC activity revisions must use reliable Socket.IO delivery');
+  assert.deepStrictEqual(activityDeltas[0].socketId, ['viewer-a', 'viewer-b'],
+    'NPC activity delta was personalized instead of sharing one room-wide payload');
+  assert.deepStrictEqual(activityDeltas[0].payload.activities, [{
+    id: 'enemy-a',
+    a: [1, 'work', 'active', 'craft', 'workbench-a', 1.25, 0]
+  }], 'NPC activity delta packing changed');
+  assert.strictEqual(emissions.filter(row => row.event === 'enemyFrame').length, 2,
+    'activity delivery replaced the normal realtime movement frames');
+
+  room.lastEnemySnapshotAt = 0;
+  emissions.length = 0;
+  runtime.emitEnemySnapshot(room, false);
+  assert.strictEqual(emissions.filter(row => row.event === 'enemyActivityDelta').length, 0,
+    'an unchanged NPC activity revision was retransmitted');
+
+  const joinBaseline = functionBody(server, 'emitEnemyBaselineForSocket');
+  assert(joinBaseline.includes('emitFullEnemySnapshotToSockets(room, [socketId]'),
+    'a newly joined client no longer receives a full NPC activity baseline');
 }
 
 function assertEnemyFrameBudgetAndSparseMerge() {
@@ -1551,7 +1595,14 @@ function assertEnemyFrameBudgetAndSparseMerge() {
     lookX: null,
     lookZ: null,
     npcScheduleState: 'work',
-    npcSpeechUntil: 0
+    npcSpeechUntil: 0,
+    npcActivityRevision: 19,
+    npcActivityType: 'work',
+    npcActivityPhase: 'active',
+    npcActivityVisualAction: 'craft',
+    npcActivitySlotId: `workbench-${index}`,
+    npcActivityFacing: 1.25,
+    npcServiceAvailable: index % 2 === 0
   }, null, 5000));
   const encodedBytes = Buffer.byteLength(JSON.stringify({
     roomId: 'settlement#crowded-scene',
@@ -1568,6 +1619,8 @@ function assertEnemyFrameBudgetAndSparseMerge() {
   ]);
   for (const row of frameRows) {
     assertContainsAll('enemyFrame absolute row', JSON.stringify(row), ['"id"', '"x"', '"z"', '"hp"', '"aiState"', '"flags"']);
+    assert(!Object.prototype.hasOwnProperty.call(row, 'a'),
+      'enemyFrame still repeats the packed NPC activity tuple every tick');
     const unexpected = Object.keys(row).filter(key => !allowedFrameFields.has(key));
     assert.deepStrictEqual(unexpected, [], `enemyFrame leaked static fields: ${unexpected.join(', ')}`);
   }
@@ -1577,7 +1630,26 @@ function assertEnemyFrameBudgetAndSparseMerge() {
     'rebuildNetworkEnemyIndex()',
     'enemyIndex.get(String(saved.id))',
     'enemy.hostileToPlayer = !!(flags & 8)',
+    'applyNetworkEnemyActivityPacket(enemy, saved)',
     'updateEnemyNetworkMotion(enemy, saved)'
+  ]);
+  const fullSnapshotBody = functionBody(worldSync, 'applyNetworkEnemies');
+  assertContainsAll('full enemy activity snapshot merger', fullSnapshotBody, [
+    "Object.prototype.hasOwnProperty.call(saved, 'scheduleState')",
+    "Object.prototype.hasOwnProperty.call(saved, 'scheduleLabel')",
+    'applyNetworkEnemyActivityPacket(enemy, saved)'
+  ]);
+  assert(!fullSnapshotBody.includes("saved.scheduleState || enemy.scheduleState"),
+    'full enemy snapshot can no longer clear an obsolete schedule state');
+  assert(!fullSnapshotBody.includes("saved.scheduleLabel || enemy.scheduleLabel"),
+    'full enemy snapshot can no longer clear an obsolete schedule label');
+  assert(functionBody(worldSync, 'createEnemyFromNetworkSnapshot').includes('applyNetworkEnemyActivityPacket(enemy, saved)'),
+    'new network enemies do not receive package activity fields from their full snapshot');
+  const activityDeltaBody = functionBody(worldSync, 'applyNetworkEnemyActivityDelta');
+  assertContainsAll('reliable enemy activity delta merger', activityDeltaBody, [
+    'rebuildNetworkEnemyIndex()',
+    'enemyIndex.get(String(saved.id))',
+    'applyNetworkEnemyActivityPacket(enemy, saved, { rejectStaleRevision: true })'
   ]);
   const forbiddenSparseWork = [
     'enemies.find(',
@@ -1639,8 +1711,12 @@ function assertEnemyFrameBudgetAndSparseMerge() {
       'const networkEnemyById = new Map();',
       functionSource(worldSync, 'rebuildNetworkEnemyIndex'),
       functionSource(worldSync, 'networkEnemyScheduleLabel'),
+      functionSource(worldSync, 'networkEnemyHasActivityState'),
+      functionSource(worldSync, 'applyNetworkEnemyActivityState'),
+      functionSource(worldSync, 'applyNetworkEnemyActivityPacket'),
+      functionSource(worldSync, 'applyNetworkEnemyActivityDelta'),
       functionSource(worldSync, 'applyNetworkEnemyFrame'),
-      'return { applyNetworkEnemyFrame };'
+      'return { applyNetworkEnemyFrame, applyNetworkEnemyActivityDelta, networkEnemyScheduleLabel, applyNetworkEnemyActivityState };'
     ].join('\n')
   )(
     runtimeEnemies,
@@ -1673,7 +1749,12 @@ function assertEnemyFrameBudgetAndSparseMerge() {
     }
   );
   const applied = sparseRuntime.applyNetworkEnemyFrame([
-    { id: 'enemy-a', x: 1.25, z: -0.75, vx: 1, vz: 0, hp: 37, aiState: 'investigate', lookX: 3, lookZ: 4, scheduleState: 'work', flags: 1 | 8 | 16 },
+    {
+      id: 'enemy-a', x: 1.25, z: -0.75, vx: 1, vz: 0, hp: 37,
+      aiState: 'investigate', lookX: 3, lookZ: 4, scheduleState: 'work', flags: 1 | 8 | 16,
+      activityRevision: 9, activityType: 'sleep', activityPhase: 'travel', visualAction: 'walk',
+      activitySlotId: 'bed:a', activityFacing: 1.25, serviceAvailable: false
+    },
     { id: 'unknown-structural-id', x: 9, z: 9, hp: 10, aiState: 'idle', flags: 0 }
   ]);
   assert.strictEqual(applied, 1, 'sparse enemy frame created or counted an unknown structural id');
@@ -1682,12 +1763,85 @@ function assertEnemyFrameBudgetAndSparseMerge() {
   assert.strictEqual(enemy.hp, 37, 'sparse enemy frame did not apply absolute HP');
   assert.strictEqual(enemy.hostileToPlayer, true, 'sparse enemy frame lost viewer hostility');
   assert.deepStrictEqual([enemy.lookX, enemy.lookZ], [3, 4], 'sparse enemy frame did not apply look coordinates');
-  assert.deepStrictEqual([enemy.scheduleState, enemy.scheduleLabel], ['work', 'работает'],
-    'sparse enemy frame did not preserve NPC schedule state');
+  assert.deepStrictEqual([enemy.scheduleState, enemy.scheduleLabel], ['work', 'спит'],
+    'exact NPC activity label did not override the broad schedule state');
+  assert.deepStrictEqual(
+    [enemy.activityRevision, enemy.activityType, enemy.goalActivity, enemy.activityPhase, enemy.visualAction,
+      enemy.activitySlotId, enemy.activityFacing, enemy.serviceAvailable, enemy._hasNetworkActivity],
+    [9, 'sleep', 'sleep', 'travel', 'walk', 'bed:a', 1.25, false, true],
+    'sparse enemy frame did not preserve the NPC package activity state'
+  );
+  assert.strictEqual(sparseRuntime.networkEnemyScheduleLabel('eat'), 'ест');
+  assert.strictEqual(sparseRuntime.networkEnemyScheduleLabel('shop'), 'торгует');
+  assert.strictEqual(sparseRuntime.networkEnemyScheduleLabel('patrol'), 'патрулирует');
+  assert.strictEqual(sparseRuntime.networkEnemyScheduleLabel('guard'), 'на посту');
   assert.strictEqual(untouched.hp, 99, 'sparse enemy frame mutated an omitted enemy');
   assert.strictEqual(enemy.equipment, equipment, 'sparse enemy frame rebuilt equipment');
   assert.strictEqual(enemy.inventory, inventory, 'sparse enemy frame rebuilt inventory');
   assert.strictEqual(enemy.traderMarket, traderMarket, 'sparse enemy frame rebuilt trader state');
+
+  const activityDeltaApplied = sparseRuntime.applyNetworkEnemyActivityDelta([{
+    id: 'enemy-a',
+    a: [10, 'shop', 'use', 'shop', 'counter:a', 0, 1]
+  }]);
+  assert.strictEqual(activityDeltaApplied, 1, 'reliable compact activity delta was not applied');
+  assert.deepStrictEqual(
+    [enemy.activityRevision, enemy.activityType, enemy.activityPhase, enemy.scheduleLabel],
+    [10, 'shop', 'use', 'торгует'],
+    'compact activity merge replaced the exact activity label with the broad schedule label'
+  );
+  sparseRuntime.applyNetworkEnemyFrame([{
+    id: 'enemy-a',
+    x: 1.25,
+    z: -0.75,
+    hp: 37,
+    aiState: 'work',
+    scheduleState: 'work',
+    flags: 0
+  }]);
+  assert.deepStrictEqual(
+    [enemy.scheduleState, enemy.scheduleLabel, enemy.activityRevision, enemy.activityType],
+    ['work', 'торгует', 10, 'shop'],
+    'frequent broad schedule frame erased the exact label from a reliable activity delta'
+  );
+  const staleDeltaApplied = sparseRuntime.applyNetworkEnemyActivityDelta([
+    { id: 'enemy-a', a: [9, 'sleep', 'use', 'sleep', 'bed:a', 1.5, 0] },
+    { id: 'unknown-structural-id', a: [11, 'guard', 'use', 'guard', 'post:a', 2.5, 0] }
+  ]);
+  assert.strictEqual(staleDeltaApplied, 0, 'stale or structurally unknown activity delta was applied');
+  assert.deepStrictEqual(
+    [enemy.activityRevision, enemy.activityType, enemy.activityPhase, enemy.scheduleLabel],
+    [10, 'shop', 'use', 'торгует'],
+    'stale activity revision rolled the NPC schedule back'
+  );
+
+  const staleActivity = {
+    activityRevision: 12,
+    activityType: 'shop',
+    goalActivity: 'shop',
+    activityPhase: 'use',
+    visualAction: 'shop',
+    activitySlotId: 'counter:a',
+    activityFacing: 2.5,
+    serviceAvailable: true
+  };
+  sparseRuntime.applyNetworkEnemyActivityState(staleActivity, {
+    activityRevision: '',
+    activityType: '',
+    goalActivity: '',
+    activityPhase: '',
+    visualAction: '',
+    activitySlotId: '',
+    activityFacing: null,
+    serviceAvailable: null
+  });
+  assert.deepStrictEqual(
+    [staleActivity.activityRevision, staleActivity.activityType, staleActivity.goalActivity,
+      staleActivity.activityPhase, staleActivity.visualAction, staleActivity.activitySlotId,
+      staleActivity.activityFacing, staleActivity.serviceAvailable],
+    [0, '', '', '', '', '', null, null],
+    'explicit empty activity fields from a full snapshot left stale client state behind'
+  );
 
   sparseRuntime.applyNetworkEnemyFrame([
     { id: 'enemy-a', x: 1.25, z: -0.75, hp: 0, aiState: 'dead', flags: 2 | 4 | 8 }
@@ -1742,15 +1896,86 @@ function assertEnemyFrameSequenceGuard() {
 
   const fullListenerStart = socketRoom.indexOf("multiplayer.socket.on('enemySnapshot'");
   const frameListenerStart = socketRoom.indexOf("multiplayer.socket.on('enemyFrame'", fullListenerStart);
-  const nextListenerStart = socketRoom.indexOf("multiplayer.socket.on('groundItemsSnapshot'", frameListenerStart);
-  assert(fullListenerStart >= 0 && frameListenerStart > fullListenerStart && nextListenerStart > frameListenerStart,
-    'enemySnapshot/enemyFrame listener ordering is missing');
+  const activityListenerStart = socketRoom.indexOf("multiplayer.socket.on('enemyActivityDelta'", frameListenerStart);
+  const nextListenerStart = socketRoom.indexOf("multiplayer.socket.on('groundItemsSnapshot'", activityListenerStart);
+  assert(fullListenerStart >= 0
+    && frameListenerStart > fullListenerStart
+    && activityListenerStart > frameListenerStart
+    && nextListenerStart > activityListenerStart,
+  'enemySnapshot/enemyFrame/enemyActivityDelta listener ordering is missing');
   assert(socketRoom.slice(fullListenerStart, frameListenerStart).includes('resetNetworkEnemyFrameSequence(data || {})'),
     'reliable enemySnapshot no longer resets the frame baseline');
-  assertContainsAll('enemyFrame client listener', socketRoom.slice(frameListenerStart, nextListenerStart), [
+  assertContainsAll('enemyFrame client listener', socketRoom.slice(frameListenerStart, activityListenerStart), [
     'networkEnemyFrameIsFresh(data || {})',
     'applyNetworkEnemyFrame(data.enemies || [])'
   ]);
+  assertContainsAll('reliable enemy activity client listener', socketRoom.slice(activityListenerStart, nextListenerStart), [
+    'networkPayloadIsForCurrentRoom(data || {})',
+    'applyNetworkEnemyActivityDelta(data.activities || [])'
+  ]);
+}
+
+function assertNpcScheduledTradeClosure() {
+  const activityMergeBody = functionBody(worldSync, 'applyNetworkEnemyActivityState');
+  assertContainsAll('scheduled trade transition hook', activityMergeBody, [
+    'previousServiceAvailable !== false',
+    'enemy.serviceAvailable === false',
+    'handleNpcScheduledTradeAvailabilityChanged(enemy)'
+  ]);
+  assertContainsAll('scheduled trade acceptance guard', functionBody(quests, 'tradeAcceptState'), [
+    'npcScheduledTradeClosed(trader)',
+    'Приходите в рабочие часы.'
+  ]);
+  assertContainsAll('scheduled trade submit guard', functionBody(traderBarterSource, 'submitServerNpcTradeExchange'), [
+    'npcScheduledTradeClosed(trader)',
+    'handleNpcScheduledTradeAvailabilityChanged(trader)',
+    'saleQueue.clear()',
+    'buyQueue.clear()',
+    'return false'
+  ]);
+
+  const runtime = new Function([
+    'let traderWindowOpen = true;',
+    'let activeTraderActor = null;',
+    "const saleQueue = new Map([['scrap', 2]]);",
+    "const buyQueue = new Map([['water', 1]]);",
+    'let closeCalls = 0;',
+    "let readout = '';",
+    'let socketEmits = 0;',
+    "const multiplayer = { joined: true, socket: { connected: true, emit() { socketEmits += 1; } } };",
+    'function closeTraderWindow() { closeCalls += 1; traderWindowOpen = false; activeTraderActor = null; saleQueue.clear(); buyQueue.clear(); }',
+    'function setReadout(value) { readout = String(value || \'\'); }',
+    functionSource(traderMarketStateSource, 'npcUsesScheduledTradeHours'),
+    functionSource(traderMarketStateSource, 'npcScheduledTradeClosed'),
+    functionSource(traderMarketStateSource, 'handleNpcScheduledTradeAvailabilityChanged'),
+    functionSource(traderBarterSource, 'submitServerNpcTradeExchange'),
+    'return {',
+    '  setActive(actor) { activeTraderActor = actor; },',
+    '  submit: submitServerNpcTradeExchange,',
+    '  state() { return { traderWindowOpen, activeTraderActor, saleSize: saleQueue.size, buySize: buyQueue.size, closeCalls, readout, socketEmits }; }',
+    '};'
+  ].join('\n'))();
+  const trader = {
+    id: 'merchant-a',
+    name: 'Сайла',
+    role: 'merchant',
+    _hasNetworkActivity: true,
+    serviceAvailable: false,
+    isTradeMachine: false,
+    tradePending: false
+  };
+  runtime.setActive(trader);
+  assert.strictEqual(runtime.submit(trader), false,
+    'closed scheduled trader still submitted an exchange');
+  assert.deepStrictEqual(runtime.state(), {
+    traderWindowOpen: false,
+    activeTraderActor: null,
+    saleSize: 0,
+    buySize: 0,
+    closeCalls: 1,
+    readout: 'Сайла закончил смену. Торговля закрыта до рабочих часов.',
+    socketEmits: 0
+  }, 'scheduled shift end did not close barter and safely clear its queues');
 }
 
 function assertEnemyHotPathAvoidsForcedFullSnapshots() {
@@ -2158,6 +2383,64 @@ function assertActorAnimationLod() {
     'updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, animationDt, enemy)',
     'updateCharacterMeleeAnimation(mesh, animationDt)'
   ]);
+  assertContainsAll('activity-aware NPC sleep gate', enemyUpdate, [
+    'const sleeping = !inDialogue && !activeAiState && enemyAnimUsesSleepPose(enemy, moving)',
+    'const sleepFacingApplied = sleeping && enemyAnimApplySleepFacing(enemy, mesh, animationDt)',
+    '&& !sleepFacingApplied',
+    'moving: sleeping ? false : moving',
+    'talking: !sleeping && inDialogue'
+  ]);
+  const unifiedBranchIndex = enemyUpdate.indexOf('if (parts.unifiedHumanoidNpc)');
+  const unifiedSleepPoseIndex = enemyUpdate.indexOf('enemyAnimApplySleepPose(enemy, mesh, parts, animationDt, sleepT)', unifiedBranchIndex);
+  const unifiedFirstReturnIndex = enemyUpdate.indexOf('return;', unifiedBranchIndex);
+  assert(unifiedBranchIndex >= 0
+    && unifiedSleepPoseIndex > unifiedBranchIndex
+    && unifiedSleepPoseIndex < unifiedFirstReturnIndex,
+  'unified humanoid NPC still returns before applying its sleep pose');
+  const sleepStateRuntime = new Function([
+    functionSource(enemyModels, 'enemyAnimHasNetworkActivityState'),
+    functionSource(enemyModels, 'enemyAnimUsesSleepPose'),
+    functionSource(enemyModels, 'enemyAnimSleepFacing'),
+    functionSource(enemyModels, 'enemyAnimApplySleepFacing'),
+    'return { uses: enemyAnimUsesSleepPose, facing: enemyAnimSleepFacing, applyFacing: enemyAnimApplySleepFacing };'
+  ].join('\n'))();
+  assert.strictEqual(sleepStateRuntime.uses({
+    _hasNetworkActivity: true,
+    visualAction: 'sleep',
+    activityPhase: 'travel',
+    scheduleState: 'sleep'
+  }, false), false, 'an NPC lies down while it is still travelling to its bed');
+  assert.strictEqual(sleepStateRuntime.uses({
+    _hasNetworkActivity: true,
+    visualAction: 'sleep',
+    activityPhase: 'use'
+  }, true), true, 'the authoritative use phase no longer activates the sleep pose');
+  assert.strictEqual(sleepStateRuntime.uses({ scheduleState: 'sleep' }, false), true,
+    'legacy NPC schedules lost their stationary sleep fallback');
+  assert.strictEqual(sleepStateRuntime.uses({ scheduleState: 'sleep' }, true), false,
+    'a legacy NPC can slide across the location in its sleep pose');
+  assert.strictEqual(sleepStateRuntime.facing({
+    _hasNetworkActivity: true,
+    visualAction: 'sleep',
+    activityPhase: 'use',
+    activityFacing: Math.PI / 2
+  }), Math.PI / 2, 'authoritative sleep orientation was not exposed to the unified actor');
+  assert.strictEqual(sleepStateRuntime.facing({ scheduleState: 'sleep', activityFacing: Math.PI / 2 }), null,
+    'legacy sleep fallback unexpectedly started forcing a new network orientation');
+  const orientedSleepMesh = { rotation: { y: 0 } };
+  assert.strictEqual(sleepStateRuntime.applyFacing({
+    _hasNetworkActivity: true,
+    visualAction: 'sleep',
+    activityPhase: 'use',
+    activityFacing: Math.PI / 2
+  }, orientedSleepMesh, 1), true, 'unified sleep orientation was not applied');
+  assert(Math.abs(orientedSleepMesh.rotation.y - Math.PI / 2) < 1e-9,
+    'unified sleep orientation did not converge to activityFacing');
+  const legacySleepMesh = { rotation: { y: 0.7 } };
+  assert.strictEqual(sleepStateRuntime.applyFacing({ scheduleState: 'sleep' }, legacySleepMesh, 1), false,
+    'legacy sleep fallback claimed an authoritative orientation');
+  assert.strictEqual(legacySleepMesh.rotation.y, 0.7,
+    'legacy sleep fallback orientation changed without activityFacing');
   assert(/idleVisualAnimTimer[\s\S]{0,180}Number\(animationDt \|\| 0\.016\)/.test(enemyUpdate),
     'enemy fallback idle timer ignores the time accumulated by heavy animation LOD');
 
@@ -2410,6 +2693,7 @@ async function main() {
   assertEnemySnapshotFanout();
   assertEnemyFrameBudgetAndSparseMerge();
   assertEnemyFrameSequenceGuard();
+  assertNpcScheduledTradeClosure();
   assertEnemyHotPathAvoidsForcedFullSnapshots();
   assertOnsiteWorldZoneSnapshotChangeDetection();
   assertEventDrivenMobilePanelState();

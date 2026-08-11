@@ -71,6 +71,50 @@ function evalExpression(source, constName) {
   return vm.runInNewContext(`(${expression})`, {});
 }
 
+function extractNamedFunction(source, name) {
+  const marker = `function ${name}`;
+  const start = source.indexOf(marker);
+  if (start < 0) throw new Error(`Missing ${marker}`);
+  const paramsOpen = source.indexOf('(', start + marker.length);
+  if (paramsOpen < 0) throw new Error(`Missing parameters for ${marker}`);
+  let paramsDepth = 0;
+  let paramsClose = -1;
+  for (let index = paramsOpen; index < source.length; index += 1) {
+    if (source[index] === '(') paramsDepth += 1;
+    else if (source[index] === ')') {
+      paramsDepth -= 1;
+      if (paramsDepth === 0) {
+        paramsClose = index;
+        break;
+      }
+    }
+  }
+  const open = paramsClose >= 0 ? source.indexOf('{', paramsClose) : -1;
+  if (open < 0) throw new Error(`Missing body for ${marker}`);
+  let depth = 0;
+  let quote = '';
+  let escaped = false;
+  for (let index = open; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      continue;
+    }
+    if (char === '{') depth += 1;
+    else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, index + 1);
+    }
+  }
+  throw new Error(`Unclosed body for ${marker}`);
+}
+
 function readStaticModelUrls() {
   return evalExpression(renderer, 'STATIC_MODEL_URLS');
 }
@@ -92,6 +136,41 @@ const entityRules = evalExpression(editor, 'MODEL_ENTITY_RULES');
 const placementRules = evalExpression(editor, 'MODEL_PLACEMENT_RULES');
 const generationProfiles = evalExpression(editor, 'NPC_AUTO_GENERATION_PROFILES');
 const staticModelUrls = readStaticModelUrls();
+const mergeAuthoredObjectMetadata = vm.runInNewContext(
+  `(${extractNamedFunction(editor, 'mergeAuthoredObjectMetadata')})`,
+  {}
+);
+
+const caravanCamp = JSON.parse(fs.readFileSync(path.join(root, 'data', 'locations', 'caravanCamp.json'), 'utf8'));
+const saylaSource = caravanCamp.objects.find(row => row.id === 'caravan_sayla');
+const shopParentSource = caravanCamp.objects.find(row => (row.activitySlots || []).some(slot => slot.id === 'caravan_sayla_shop'));
+const saylaRoundTrip = mergeAuthoredObjectMetadata({
+  id: saylaSource.id,
+  model: saylaSource.model,
+  position: { x: -6, y: 0, z: 4 },
+  entity: { kind: 'npc', role: 'merchant', faction: 'old_klim', stationary: true }
+}, saylaSource);
+const shopParentRoundTrip = mergeAuthoredObjectMetadata({
+  id: shopParentSource.id,
+  model: shopParentSource.model,
+  position: shopParentSource.position
+}, shopParentSource);
+if (saylaRoundTrip.entity?.npcId !== 'caravan_sayla' || saylaRoundTrip.entity?.routineId !== 'caravan_sayla') {
+  fail('location editor round-trip drops authored npcId/routineId');
+}
+if (saylaRoundTrip.entity?.faction !== 'caravans' || saylaRoundTrip.entity?.stationary !== false) {
+  fail('location editor round-trip overwrites authored NPC metadata with model defaults');
+}
+if (saylaRoundTrip.position?.x !== -6 || saylaRoundTrip.position?.z !== 4) {
+  fail('location editor round-trip lets stale authored coordinates overwrite edited coordinates');
+}
+if (!(shopParentRoundTrip.activitySlots || []).some(slot => slot.id === 'caravan_sayla_shop')) {
+  fail('location editor round-trip drops authored activitySlots');
+}
+if (!editor.includes('createPlacedObject(def, { ...object, authoredSource: object })')
+  || !editor.includes('mergeAuthoredObjectMetadata(generated, object.authoredSource)')) {
+  fail('location editor does not wire authored object metadata through import and export');
+}
 
 const libraryByKey = new Map();
 for (const model of modelLibrary) {

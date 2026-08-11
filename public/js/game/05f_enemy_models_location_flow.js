@@ -925,6 +925,45 @@
     }
   }
 
+  function enemyAnimHasNetworkActivityState(enemy = {}) {
+    if (enemy?._hasNetworkActivity === true) return true;
+    if (Math.max(0, Number(enemy?.activityRevision || 0)) > 0) return true;
+    if (enemy?.activityFacing != null || enemy?.serviceAvailable != null) return true;
+    return [
+      enemy?.activityType,
+      enemy?.goalActivity,
+      enemy?.activityPhase,
+      enemy?.visualAction,
+      enemy?.activitySlotId
+    ].some(value => String(value || '').trim().length > 0);
+  }
+
+  function enemyAnimUsesSleepPose(enemy, moving = false) {
+    if (enemyAnimHasNetworkActivityState(enemy)) {
+      return String(enemy?.visualAction || '').toLowerCase() === 'sleep'
+        && String(enemy?.activityPhase || '').toLowerCase() === 'use';
+    }
+    return String(enemy?.scheduleState || '').toLowerCase() === 'sleep' && !moving;
+  }
+
+  function enemyAnimSleepFacing(enemy) {
+    if (!enemyAnimUsesSleepPose(enemy, false)) return null;
+    const rawFacing = enemy?.activityFacing;
+    const facing = Number(rawFacing);
+    return rawFacing === '' || rawFacing == null || !Number.isFinite(facing) ? null : facing;
+  }
+
+  function enemyAnimApplySleepFacing(enemy, mesh, dt = 0.016) {
+    if (!mesh?.rotation) return false;
+    const target = enemyAnimSleepFacing(enemy);
+    if (target == null) return false;
+    const current = Number(mesh.rotation.y || 0);
+    const delta = Math.atan2(Math.sin(target - current), Math.cos(target - current));
+    const amount = Math.min(1, Math.max(0, Number(dt || 0.016)) * 8);
+    mesh.rotation.y = current + delta * amount;
+    return true;
+  }
+
   function enemyAnimApplySleepPose(enemy, mesh, parts, dt, t) {
     if (!mesh || !enemyAnimHumanoid(parts)) return false;
     const k = Math.min(1, Math.max(0, Number(dt || 0.016)) * 8);
@@ -1022,21 +1061,22 @@
     const restoreK = Math.min(1, Math.max(0, Number(dt || 0.016)) * 10);
     const nowMs = performance.now();
     const scheduleState = String(enemy.scheduleState || enemy.aiState || '').toLowerCase();
-    const sleeping = scheduleState === 'sleep';
     const inDialogue = scheduleState === 'dialogue'
       || String(enemy.aiState || '').toLowerCase() === 'dialogue'
       || (!!String(enemy.speechText || '').trim() && Number(enemy.speechUntil || 0) > nowMs);
-    if (!sleeping) {
-      mesh.rotation.z = enemyAnimLerp(Number(mesh.rotation.z || 0), 0, restoreK);
-      mesh.position.y = enemyAnimLerp(Number(mesh.position.y || 0), 0, restoreK);
-      enemyAnimWeaponVisible(mesh, true);
-    }
     const visualX = Number(mesh.position?.x ?? enemy.visualX ?? enemy.x ?? 0);
     const visualZ = Number(mesh.position?.z ?? enemy.visualZ ?? enemy.z ?? 0);
     const moved = Math.hypot(visualX - Number(enemy.prevAnimX ?? visualX), visualZ - Number(enemy.prevAnimZ ?? visualZ)); 
     enemy.prevAnimX = visualX;
     enemy.prevAnimZ = visualZ;
     const moving = moved > 0.002 || Number(enemy.enemyVisualSpeed || 0) > 0.035 || Number(enemy.speed || 0) > 0.035 && !!enemy.moving;
+    const activeAiState = ['attack', 'chase', 'flee'].includes(String(enemy.aiState || '').toLowerCase());
+    const sleeping = !inDialogue && !activeAiState && enemyAnimUsesSleepPose(enemy, moving);
+    if (!sleeping) {
+      mesh.rotation.z = enemyAnimLerp(Number(mesh.rotation.z || 0), 0, restoreK);
+      mesh.position.y = enemyAnimLerp(Number(mesh.position.y || 0), 0, restoreK);
+      enemyAnimWeaponVisible(mesh, true);
+    }
     const important = moving
       || sleeping
       || inDialogue
@@ -1071,7 +1111,6 @@
       || Number(enemy.flash || 0) > 0.02
       || (!!player && player.attackTarget === enemy)
       || (typeof hoveredEnemy !== 'undefined' && hoveredEnemy === enemy);
-    const activeAiState = ['attack', 'chase', 'flee'].includes(String(enemy.aiState || '').toLowerCase());
     const crowdIdle = !moving
       && !sleeping
       && !inDialogue
@@ -1116,23 +1155,30 @@
     const animationRestoreK = Math.min(1, Math.max(0, Number(animationDt || 0.016)) * 10);
     enemyAnimRestoreActorParts(parts, animationRestoreK);
     if (parts.unifiedHumanoidNpc) {
+      const sleepFacingApplied = sleeping && enemyAnimApplySleepFacing(enemy, mesh, animationDt);
       const facingAngle = Number.isFinite(Number(enemy.angle))
+        && !sleepFacingApplied
         ? Number(enemy.angle)
         : Number(mesh.rotation.y || 0) - Math.PI;
       updateCharacterLocomotionAnimation(mesh, animationDt, {
-        moving,
-        speed: visualSpeed,
-        moveX: visualX - Number(enemy.prevUnifiedAnimX ?? visualX),
-        moveZ: visualZ - Number(enemy.prevUnifiedAnimZ ?? visualZ),
+        moving: sleeping ? false : moving,
+        speed: sleeping ? 0 : visualSpeed,
+        moveX: sleeping ? 0 : visualX - Number(enemy.prevUnifiedAnimX ?? visualX),
+        moveZ: sleeping ? 0 : visualZ - Number(enemy.prevUnifiedAnimZ ?? visualZ),
         facingAngle,
-        attacking: attackAnimation.active,
+        attacking: sleeping ? false : attackAnimation.active,
         attackToken: attackAnimation.token,
         hurt: Number(enemy.flash || 0) > 0.02,
-        talking: inDialogue,
+        talking: !sleeping && inDialogue,
         footIk: heavyImportant || distanceToPlayer <= 6
       });
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;
+      const sleepT = performance.now() * 0.006;
+      if (sleeping && enemyAnimApplySleepPose(enemy, mesh, parts, animationDt, sleepT)) {
+        if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, animationDt);
+        return;
+      }
       const npcWeaponGroup = mesh.userData.enemyWeaponGroup;
       if (npcWeaponGroup?.userData?.weaponMeshLegacy && typeof makeWeaponModelMesh === 'function') {
         const upgraded = makeWeaponModelMesh(mesh.userData.weaponId || enemy.weapon || '');

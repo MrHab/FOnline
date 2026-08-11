@@ -2532,6 +2532,9 @@
           resourceType: options.resourceType || options.resource || '',
           hp: Number(options.hp || options.maxHp || 0),
           maxHp: Number(options.maxHp || options.hp || 0),
+          authoredSource: options.authoredSource && typeof options.authoredSource === 'object'
+            ? JSON.parse(JSON.stringify(options.authoredSource))
+            : null,
           group: new THREE.Group(),
           loading: true
         };
@@ -3136,6 +3139,23 @@
         };
       }
 
+      function mergeAuthoredObjectMetadata(generated = {}, authoredSource = null) {
+        const source = authoredSource && typeof authoredSource === 'object' && !Array.isArray(authoredSource)
+          ? authoredSource
+          : {};
+        const merged = { ...source, ...generated };
+        for (const key of ['entity', 'interactive']) {
+          const authoredNested = source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])
+            ? source[key]
+            : null;
+          const generatedNested = generated[key] && typeof generated[key] === 'object' && !Array.isArray(generated[key])
+            ? generated[key]
+            : null;
+          if (authoredNested || generatedNested) merged[key] = { ...(generatedNested || {}), ...(authoredNested || {}) };
+        }
+        return merged;
+      }
+
       function buildExportObject() {
         const groundPreset = groundById.get(dom.groundPreset.value) || GROUND_PRESETS[0];
         const pvpMode = normalizeLocationPvpMode(dom.locationSafe.value);
@@ -3171,20 +3191,23 @@
             edges: ['north', 'south', 'west', 'east']
           };
         });
-        const objects = state.objects.map(object => ({
-          id: object.id,
-          model: object.model,
-          name: object.name,
-          url: object.url,
-          position: { x: roundValue(object.x), y: roundValue(object.y), z: roundValue(object.z) },
-          rotation: { x: 0, y: roundValue(object.rotationY), z: 0 },
-          scale: { x: roundValue(object.scaleX), y: roundValue(object.scaleY), z: roundValue(object.scaleZ) },
-          collision: object.collision,
-          tags: uniqueTags(object.tags, [...(modelRuleFor(object.model)?.tags || []), ...entityTagsFor(object.model), ...resourceTagsFor(object.model)]),
-          ...createRuleMetadata(object),
-          ...createResourceMetadata(object),
-          ...createEntityMetadata(object)
-        }));
+        const objects = state.objects.map(object => {
+          const generated = {
+            id: object.id,
+            model: object.model,
+            name: object.name,
+            url: object.url,
+            position: { x: roundValue(object.x), y: roundValue(object.y), z: roundValue(object.z) },
+            rotation: { x: 0, y: roundValue(object.rotationY), z: 0 },
+            scale: { x: roundValue(object.scaleX), y: roundValue(object.scaleY), z: roundValue(object.scaleZ) },
+            collision: object.collision,
+            tags: uniqueTags(object.tags, [...(modelRuleFor(object.model)?.tags || []), ...entityTagsFor(object.model), ...resourceTagsFor(object.model)]),
+            ...createRuleMetadata(object),
+            ...createResourceMetadata(object),
+            ...createEntityMetadata(object)
+          };
+          return mergeAuthoredObjectMetadata(generated, object.authoredSource);
+        });
         const entryPoint = exportTilePoint(state.entry);
         const firstTransition = transitions[0];
         return {
@@ -3356,7 +3379,7 @@
         objects.forEach(object => {
           const def = modelByKey.get(object.model) || modelByUrl.get(object.url) || MODEL_LIBRARY.find(item => item.file === object.file);
           if (!def) return;
-          createPlacedObject(def, object);
+          createPlacedObject(def, { ...object, authoredSource: object });
           const match = String(object.id || '').match(/obj_(\d+)/);
           if (match) state.nextObjectNumber = Math.max(state.nextObjectNumber, Number(match[1]) + 1);
         });

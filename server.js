@@ -35,6 +35,22 @@ const {
   transferCorpseLoot
 } = require('./src/server/npc-inventory');
 const {
+  createLegacyRoutine,
+  normalizeAuthoredRoutine,
+  routineInterruptBlocksService,
+  selectRoutinePackage,
+  resolveAuthoritativeClock,
+  nextRoutineBoundary,
+  hourInsideWindow
+} = require('./src/server/npc-routines');
+const {
+  buildActivitySlotCatalog,
+  buildActivitySlotIndexes,
+  pruneActivityReservations,
+  releaseActivityReservation,
+  reserveActivitySlot
+} = require('./src/server/npc-smart-objects');
+const {
   actorHostilityKeys,
   actorIsExplicitlyHostileToPlayer,
   markActorHostileToPlayer,
@@ -225,6 +241,7 @@ const LOCATIONS_DIR = path.join(DATA_DIR, 'locations');
 const GLOBAL_MAP_FILE = path.join(DATA_DIR, 'global-map.json');
 const WASTELAND_SIM_FILE = path.join(DATA_DIR, 'wasteland-sim.json');
 const TRADER_PROFILES_FILE = path.join(DATA_DIR, 'traders.json');
+const NPC_ROUTINES_FILE = path.join(DATA_DIR, 'npc-routines.json');
 const QUESTS_FILE = path.join(DATA_DIR, 'quests.json');
 const ENCOUNTERS_FILE = path.join(DATA_DIR, 'encounters.json');
 const LOOT_TABLES_FILE = path.join(DATA_DIR, 'loot-tables.json');
@@ -2380,11 +2397,29 @@ function expireLegacyPlayerInput(p, now = Date.now()) {
   p.vz = 0;
   return true;
 }
-function currentGameDayIndex(now = Date.now()) { return Math.floor(Number(now || Date.now()) / GAME_DAY_REAL_MS); }
-function currentGameHour(now = Date.now()) {
-  const ms = ((Number(now || Date.now()) % GAME_DAY_REAL_MS) + GAME_DAY_REAL_MS) % GAME_DAY_REAL_MS;
-  return (ms / GAME_DAY_REAL_MS) * 24;
+let serverGameClockStateProvider = null;
+function currentGameClock(now = Date.now()) {
+  const sampledNow = Number(now || Date.now());
+  const persisted = typeof serverGameClockStateProvider === 'function'
+    ? serverGameClockStateProvider()
+    : null;
+  if (persisted && Number.isFinite(Number(persisted.worldHour))) {
+    return resolveAuthoritativeClock({
+      worldHour: Number(persisted.worldHour || 0),
+      sampledAt: Number(persisted.lastTickAt || sampledNow),
+      now: sampledNow,
+      gameDayRealMs: GAME_DAY_REAL_MS
+    });
+  }
+  return resolveAuthoritativeClock({
+    worldHour: sampledNow / GAME_DAY_REAL_MS * 24,
+    sampledAt: sampledNow,
+    now: sampledNow,
+    gameDayRealMs: GAME_DAY_REAL_MS
+  });
 }
+function currentGameDayIndex(now = Date.now()) { return currentGameClock(now).worldDay; }
+function currentGameHour(now = Date.now()) { return currentGameClock(now).gameHour; }
 function safeName(name) { return String(name || 'Wanderer').slice(0, 24).replace(/[<>]/g, ''); }
 
 const VALID_HAND_EQUIPMENT = new Set(['pistol', 'rifle', 'assaultRifle', 'machineGun', 'laserPistol', 'flamethrower', 'plasmaRifle', 'shotgun', 'rocketLauncher', 'knife', 'fists', 'medkit', 'stim', 'doctorBag', 'antibiotics', 'pickaxe', 'axe', 'handPump']);
@@ -3296,6 +3331,26 @@ function loadServerTraderProfiles() {
 
 const SERVER_TRADER_PROFILES = loadServerTraderProfiles();
 
+function normalizeServerNpcRoutines(raw = {}) {
+  const source = raw && typeof raw === 'object' && raw.routines && typeof raw.routines === 'object'
+    ? raw.routines
+    : raw;
+  const routines = {};
+  for (const [routineId, row] of Object.entries(source || {})) {
+    if (!row || typeof row !== 'object') continue;
+    const id = String(row.id || routineId || '').trim().replace(/[^a-zA-Z0-9_:-]/g, '_').slice(0, 96);
+    if (!id) continue;
+    const routine = normalizeAuthoredRoutine(row, { id });
+    if (!Array.isArray(routine.packages) || !routine.packages.length) continue;
+    routines[id] = routine;
+  }
+  return routines;
+}
+
+const SERVER_NPC_ROUTINES = normalizeServerNpcRoutines(
+  readAuthoredDataJson(NPC_ROUTINES_FILE, { schema: 'realm.npc-routines.v1', version: 1, routines: {} })
+);
+
 const WASTELAND_SIM = createWastelandSimulation({
   stateFile: WASTELAND_SIM_FILE,
   gameDayRealMs: GAME_DAY_REAL_MS,
@@ -3305,6 +3360,7 @@ const WASTELAND_SIM = createWastelandSimulation({
   itemIds: SERVER_ITEM_IDS,
   traderProfiles: SERVER_TRADER_PROFILES
 });
+serverGameClockStateProvider = () => (typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null);
 
 function reconcileSavedWorldPartyMembers() {
   if (typeof WASTELAND_SIM.reconcileWorldPartyMembers !== 'function') return { removed: 0, kept: 0 };
@@ -3565,96 +3621,25 @@ function createNpcSpecial(seed = '', role = '', faction = '') {
   };
 }
 
-function shiftedHour(hour = 0, shift = 0) {
-  return (Number(hour || 0) + Number(shift || 0) + 24) % 24;
-}
-
 function createNpcSchedule(seed = '', role = '', faction = '') {
-  const r = String(role || '').toLowerCase();
-  const shift = Math.floor(npcStableRoll(seed, 'schedule-shift') * 3) - 1;
-  const nightGuard = r === 'guard' && npcStableRoll(seed, 'night-guard') > 0.72;
-  const wrap = (start, end, state) => ({ start: shiftedHour(start, shift), end: shiftedHour(end, shift), state });
-  if (nightGuard) {
-    return {
-      template: 'night_guard',
-      segments: [
-        wrap(0, 6, 'work'),
-        wrap(6, 8, 'social'),
-        wrap(8, 15, 'sleep'),
-        wrap(15, 17, 'rest'),
-        wrap(17, 24, 'work')
-      ]
-    };
-  }
-  if (r === 'guard' || r === 'patrol') {
-    return {
-      template: 'guard',
-      segments: [
-        wrap(0, 5, 'sleep'),
-        wrap(5, 7, 'rest'),
-        wrap(7, 13, 'work'),
-        wrap(13, 14, 'rest'),
-        wrap(14, 20, 'work'),
-        wrap(20, 22, 'social'),
-        wrap(22, 24, 'sleep')
-      ]
-    };
-  }
-  if (r === 'merchant' || r === 'trader' || r === 'quartermaster') {
-    return {
-      template: 'merchant',
-      segments: [
-        wrap(0, 7, 'sleep'),
-        wrap(7, 8, 'rest'),
-        wrap(8, 13, 'work'),
-        wrap(13, 14, 'rest'),
-        wrap(14, 20, 'work'),
-        wrap(20, 22, 'social'),
-        wrap(22, 24, 'sleep')
-      ]
-    };
-  }
-  if (r === 'craftsman' || r === 'mechanic') {
-    return {
-      template: 'craftsman',
-      segments: [
-        wrap(0, 6, 'sleep'),
-        wrap(6, 8, 'rest'),
-        wrap(8, 12, 'work'),
-        wrap(12, 13, 'social'),
-        wrap(13, 18, 'work'),
-        wrap(18, 21, 'social'),
-        wrap(21, 24, 'sleep')
-      ]
-    };
-  }
-  return {
-    template: 'worker',
-    segments: [
-      wrap(0, 6, 'sleep'),
-      wrap(6, 7, 'rest'),
-      wrap(7, 12, 'work'),
-      wrap(12, 13, 'rest'),
-      wrap(13, 18, 'work'),
-      wrap(18, 21, 'social'),
-      wrap(21, 24, 'sleep')
-    ]
-  };
+  return createLegacyRoutine({ seed, role, faction, stableRoll: npcStableRoll });
 }
 
 function hourInsideSegment(hour = 0, start = 0, end = 0) {
-  const h = shiftedHour(hour, 0);
-  const s = shiftedHour(start, 0);
-  const e = shiftedHour(end, 0);
-  if (Math.abs(s - e) < 0.001) return true;
-  return s < e ? h >= s && h < e : h >= s || h < e;
+  return hourInsideWindow(hour, start, end);
+}
+
+function npcSchedulePackageAt(schedule = {}, now = Date.now(), context = {}) {
+  const clock = currentGameClock(now);
+  return selectRoutinePackage({
+    routine: schedule,
+    gameHour: clock.gameHour,
+    context: { ...context, now, gameHour: clock.gameHour, worldDay: clock.worldDay }
+  });
 }
 
 function npcScheduleStateAt(schedule = {}, now = Date.now()) {
-  const hour = currentGameHour(now);
-  const segments = Array.isArray(schedule?.segments) ? schedule.segments : [];
-  const found = segments.find(row => row && hourInsideSegment(hour, Number(row.start || 0), Number(row.end || 0)));
-  return String(found?.state || 'work');
+  return String(npcSchedulePackageAt(schedule, now)?.state || 'work');
 }
 
 function npcScheduleLabel(state = '') {
@@ -3663,6 +3648,12 @@ function npcScheduleLabel(state = '') {
     rest: 'отдыхает',
     social: 'общается',
     sleep: 'спит',
+    eat: 'ест',
+    shop: 'торгует',
+    patrol: 'патрулирует',
+    guard: 'на посту',
+    investigate: 'проверяет шум',
+    alarm: 'тревога',
     combat: 'тревога',
     dialogue: 'разговор'
   };
@@ -3933,11 +3924,17 @@ function updateNpcSocialSpeech(enemy = {}, friend = null, now = Date.now(), room
 function createServerNpcProfile(seed = '', opts = {}, loc = {}) {
   const role = String(opts.role || '').toLowerCase();
   const faction = serverFactionKey(opts.faction || '');
+  const npcId = String(opts.npcId || seed || '').replace(/[^a-zA-Z0-9_:-]/g, '_').slice(0, 96);
+  const requestedRoutineId = String(opts.routineId || opts.npcRoutineId || '').replace(/[^a-zA-Z0-9_:-]/g, '_').slice(0, 96);
+  const authoredRoutine = requestedRoutineId ? SERVER_NPC_ROUTINES[requestedRoutineId] : null;
+  const schedule = authoredRoutine || createNpcSchedule(seed, role, faction);
   const personality = NPC_PERSONALITY_ARCHETYPES[
     Math.floor(npcStableRoll(seed, 'personality') * NPC_PERSONALITY_ARCHETYPES.length) % NPC_PERSONALITY_ARCHETYPES.length
   ];
   return {
     id: String(seed || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64),
+    npcId,
+    routineId: String(authoredRoutine?.id || schedule?.id || requestedRoutineId || '').slice(0, 96),
     personality: {
       id: personality.id,
       label: personality.label,
@@ -3947,7 +3944,7 @@ function createServerNpcProfile(seed = '', opts = {}, loc = {}) {
       discipline: clamp(Math.round(personality.discipline + (npcStableRoll(seed, 'discipline') - 0.5) * 18), 5, 100)
     },
     special: createNpcSpecial(seed, role, faction),
-    schedule: createNpcSchedule(seed, role, faction),
+    schedule,
     homeLocationId: String(loc?.id || '').slice(0, 64)
   };
 }
@@ -12669,6 +12666,13 @@ function authoredNpcDefaultRole(row = {}) {
   return 'npc';
 }
 
+function authoredNpcStationary(entity = {}, role = '') {
+  if (entity && Object.prototype.hasOwnProperty.call(entity, 'stationary')) {
+    return entity.stationary === true;
+  }
+  return String(role || '').toLowerCase() === 'merchant';
+}
+
 function authoredNpcDefaultStock(role = '', faction = '', loc = {}, entity = {}, marketKey = '') {
   const profile = serverTraderProfileById(
     entity.tradeProfile,
@@ -12765,6 +12769,9 @@ function spawnAuthoredLocationActors(room, loc) {
       visual,
       modelKey: String(row.model || '').slice(0, 64),
       tags: locationDefinitionObjectTags(row),
+      npcSeed: String(entity.npcId || row.id || `${loc.id}:npc_${index + 1}`).slice(0, 160),
+      npcId: String(entity.npcId || row.id || '').slice(0, 96),
+      routineId: String(entity.routineId || '').slice(0, 96),
       species: String(entity.species || visual || '').slice(0, 32),
       profile: String(entity.profile || '').slice(0, 64),
       statProfile: String(entity.statProfile || '').slice(0, 64),
@@ -12777,7 +12784,7 @@ function spawnAuthoredLocationActors(room, loc) {
       role,
       faction,
       hostileToPlayer,
-      stationary: entity.stationary === true || role === 'merchant',
+      stationary: authoredNpcStationary(entity, role),
       equipment: entity.equipment || {},
       traderStock: trade.stock,
       traderBaseStock: trade.baseStock || trade.stock,
@@ -12829,6 +12836,7 @@ function spawnAuthoredLocationActors(room, loc) {
       : explicitQuests;
     actor.traderMarket = trade.market || null;
     if (serverNpcIsNaturalCreature(actor, actor)) normalizeServerNaturalCreatureState(actor);
+    else materializeAuthoredNpcRoutine(room, loc, actor, Date.now());
     serverPrepareNpcCorpseLoot(actor);
     count++;
   });
@@ -12961,6 +12969,140 @@ function wastelandSiteWorkerLaborKind(role = '', site = {}) {
 
 function wastelandLocationRows(loc = {}) {
   return Array.isArray(loc?.objects) ? loc.objects : [];
+}
+
+function bumpRoomNpcActivityReservationRevision(room) {
+  if (!room) return 0;
+  room.npcActivityReservationRevision = Math.max(0, Math.floor(Number(room.npcActivityReservationRevision || 0))) + 1;
+  return room.npcActivityReservationRevision;
+}
+
+function ensureRoomNpcActivitySlots(room, loc = {}) {
+  if (!room) return [];
+  const locationId = String(loc?.id || room.locationId || '');
+  const objectSource = Array.isArray(loc?.objects) ? loc.objects : null;
+  if (room.npcActivitySlotLocationId !== locationId || room.npcActivitySlotObjectSource !== objectSource) {
+    room.npcActivitySlotLocationId = locationId;
+    room.npcActivitySlotObjectSource = objectSource;
+    room.npcActivitySlots = buildActivitySlotCatalog(loc);
+    const indexes = buildActivitySlotIndexes(room.npcActivitySlots);
+    room.npcActivitySlotById = indexes.byId;
+    room.npcActivitySlotsByType = indexes.byType;
+    room.npcActivityReservations = new Map();
+    room.npcActivitySlotCatalogRevision = Math.max(0, Math.floor(Number(room.npcActivitySlotCatalogRevision || 0))) + 1;
+    bumpRoomNpcActivityReservationRevision(room);
+    room.npcActivityReservationsPrunedAtStructureRevision = Number(room.enemyStructureRevision || 0);
+  }
+  if (!(room.npcActivityReservations instanceof Map)) room.npcActivityReservations = new Map();
+  if (!(room.npcActivitySlotById instanceof Map) || !(room.npcActivitySlotsByType instanceof Map)) {
+    const indexes = buildActivitySlotIndexes(room.npcActivitySlots);
+    room.npcActivitySlotById = indexes.byId;
+    room.npcActivitySlotsByType = indexes.byType;
+  }
+  const structureRevision = Number(room.enemyStructureRevision || 0);
+  if (Number(room.npcActivityReservationsPrunedAtStructureRevision) !== structureRevision) {
+    const removed = pruneActivityReservations(room.npcActivityReservations, actorId => {
+      const actor = room.enemies instanceof Map ? room.enemies.get(actorId) : null;
+      return !!(actor && !actor.dead);
+    });
+    if (removed > 0) bumpRoomNpcActivityReservationRevision(room);
+    room.npcActivityReservationsPrunedAtStructureRevision = structureRevision;
+  }
+  return Array.isArray(room.npcActivitySlots) ? room.npcActivitySlots : [];
+}
+
+function npcRoutineSlotType(value = '') {
+  const type = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (type === 'bed') return 'sleep';
+  if (type === 'rest' || type === 'campfire' || type === 'socialize') return 'social';
+  if (type === 'shop_counter' || type === 'merchant' || type === 'trade') return 'shop';
+  if (type === 'guard_post' || type === 'patrol') return 'guard';
+  if (type === 'workstation' || type === 'worksite' || type === 'craft') return 'work';
+  return type;
+}
+
+function npcRoutineSlotTarget(routinePackage = {}) {
+  const raw = routinePackage?.target;
+  if (raw && typeof raw === 'object') {
+    const slotId = String(raw.slotId || raw.activitySlotId || raw.id || '').slice(0, 96);
+    const slotType = npcRoutineSlotType(raw.slotType || raw.type || '');
+    return { ...(slotId ? { slotId } : {}), ...(slotType ? { slotType } : {}) };
+  }
+  const text = String(raw || '').trim();
+  if (text) return { slotType: npcRoutineSlotType(text) };
+  const packageType = npcRoutineSlotType(routinePackage?.type || routinePackage?.state || '');
+  return packageType ? { slotType: packageType } : {};
+}
+
+function releaseNpcActivitySlot(room, enemy, clearState = false) {
+  if (!room || !enemy) return false;
+  const released = releaseActivityReservation(room.npcActivityReservations, enemy.id) > 0;
+  if (released) bumpRoomNpcActivityReservationRevision(room);
+  enemy.npcActivityReservationMiss = null;
+  if (clearState) {
+    enemy.npcActivitySlotId = '';
+    enemy.npcActivityFacing = null;
+  }
+  return released;
+}
+
+function reserveNpcActivitySlot(room, loc = {}, enemy = {}, routinePackage = {}) {
+  const slots = ensureRoomNpcActivitySlots(room, loc);
+  const target = npcRoutineSlotTarget(routinePackage);
+  if (!target.slotId && !target.slotType) return null;
+  const missKey = `${String(routinePackage.id || '')}|${String(target.slotId || '')}|${String(target.slotType || '')}`;
+  const catalogRevision = Number(room.npcActivitySlotCatalogRevision || 0);
+  const reservationRevision = Number(room.npcActivityReservationRevision || 0);
+  const previousMiss = enemy.npcActivityReservationMiss;
+  if (previousMiss
+    && previousMiss.key === missKey
+    && Number(previousMiss.catalogRevision) === catalogRevision
+    && Number(previousMiss.reservationRevision) === reservationRevision) return null;
+  const currentSlotId = String(enemy.npcActivitySlotId || '');
+  const heldBefore = !!(currentSlotId
+    && room.npcActivityReservations.get(currentSlotId) instanceof Set
+    && room.npcActivityReservations.get(currentSlotId).has(enemy.id));
+  const slot = reserveActivitySlot({
+    slots,
+    slotById: room.npcActivitySlotById,
+    slotsByType: room.npcActivitySlotsByType,
+    reservations: room.npcActivityReservations,
+    npc: enemy,
+    target,
+    currentSlotId,
+    locationId: loc.id || room.locationId
+  });
+  if (!slot) {
+    enemy.npcActivityReservationMiss = { key: missKey, catalogRevision, reservationRevision };
+    return null;
+  }
+  enemy.npcActivityReservationMiss = null;
+  if (!heldBefore || currentSlotId !== slot.id) bumpRoomNpcActivityReservationRevision(room);
+  return slot;
+}
+
+function setNpcActivityState(enemy, next = {}) {
+  if (!enemy) return false;
+  const values = {
+    npcRoutinePackageId: String(next.packageId ?? enemy.npcRoutinePackageId ?? '').slice(0, 96),
+    npcActivityType: String(next.type ?? enemy.npcActivityType ?? '').slice(0, 32),
+    npcActivityPhase: String(next.phase ?? enemy.npcActivityPhase ?? '').slice(0, 24),
+    npcActivityVisualAction: String(next.visualAction ?? enemy.npcActivityVisualAction ?? '').slice(0, 32),
+    npcActivitySlotId: String(next.slotId ?? enemy.npcActivitySlotId ?? '').slice(0, 96),
+    npcActivityFacing: next.facing === null
+      ? null
+      : (Number.isFinite(Number(next.facing ?? enemy.npcActivityFacing)) ? Number(next.facing ?? enemy.npcActivityFacing) : null),
+    npcServiceAvailable: Boolean(next.serviceAvailable ?? enemy.npcServiceAvailable),
+    npcActivityInterruptReason: String(next.interruptReason ?? enemy.npcActivityInterruptReason ?? '').slice(0, 32)
+  };
+  let changed = false;
+  for (const [key, value] of Object.entries(values)) {
+    if (enemy[key] === value) continue;
+    enemy[key] = value;
+    changed = true;
+  }
+  if (changed) enemy.npcActivityRevision = Math.max(0, Math.floor(Number(enemy.npcActivityRevision || 0))) + 1;
+  return changed;
 }
 
 function wastelandObjectLooksLikeStorage(row = {}) {
@@ -13148,6 +13290,15 @@ function updateWastelandSiteWorkerLabor(room, enemy, dt, loc) {
   clearEnemyTacticalGoal(enemy);
 
   if (dist > 0.62) {
+    setNpcActivityState(enemy, {
+      type: kind === 'craft' ? 'craft' : 'work',
+      phase: 'travel',
+      visualAction: 'walk',
+      slotId: '',
+      facing: null,
+      serviceAvailable: false,
+      interruptReason: ''
+    });
     setEnemyLookAt(enemy, target);
     moveEnemyTowards(room, enemy, target.x, target.z, Math.max(0.45, Number(enemy.speed || 1.25) * 0.48), dt, {
       separationWeight: 0.14,
@@ -13164,6 +13315,15 @@ function updateWastelandSiteWorkerLabor(room, enemy, dt, loc) {
     state.timer = 0;
   }
   if (state.phase === 'work') {
+    setNpcActivityState(enemy, {
+      type: kind === 'craft' ? 'craft' : 'work',
+      phase: 'use',
+      visualAction: 'work',
+      slotId: '',
+      facing: null,
+      serviceAvailable: false,
+      interruptReason: ''
+    });
     state.timer = Number(state.timer || 0) + dt;
     setEnemyLookAt(enemy, { x: Number(workPoint.lookX ?? workPoint.x), z: Number(workPoint.lookZ ?? workPoint.z) });
     updateNpcSocialSpeech(enemy, null, Date.now(), room, loc, { allowSolo: true, workKind: kind, site });
@@ -13179,6 +13339,15 @@ function updateWastelandSiteWorkerLabor(room, enemy, dt, loc) {
     state.timer = 0;
   }
   if (state.phase === 'deposit') {
+    setNpcActivityState(enemy, {
+      type: kind === 'craft' ? 'craft' : 'work',
+      phase: 'use',
+      visualAction: 'work',
+      slotId: '',
+      facing: null,
+      serviceAvailable: false,
+      interruptReason: ''
+    });
     state.timer = Number(state.timer || 0) + dt;
     setEnemyLookAt(enemy, storagePoint);
     if (state.timer >= 1.05) {
@@ -13270,6 +13439,179 @@ function npcSocialLookTarget(room, enemy) {
   return best;
 }
 
+function npcRoutineCombatActive(room, enemy) {
+  if (!enemy || enemy.dead) return false;
+  if (enemy.targetId || enemy.factionTargetId) return true;
+  if (['combat', 'attack', 'chase', 'reload', 'retreat'].includes(String(enemy.aiState || '').toLowerCase())) return true;
+  return npcHasLiveFactionFoes(room, enemy);
+}
+
+function npcRoutineAlarmActive(enemy, now = Date.now()) {
+  if (!enemy || enemy.dead) return false;
+  return enemy.alarmActive === true
+    || String(enemy.aiState || '').toLowerCase() === 'alarm'
+    || Number(enemy.alarmUntil || 0) > now;
+}
+
+function npcRoutineDialogueInterruptType(room, enemy, now = Date.now()) {
+  if (npcRoutineCombatActive(room, enemy)) return 'combat';
+  if (npcRoutineAlarmActive(enemy, now)) return 'alarm';
+  return '';
+}
+
+function npcRoutineInvestigationActive(enemy, now = Date.now()) {
+  if (!enemy || enemy.dead) return false;
+  return String(enemy.aiState || '').toLowerCase() === 'investigate'
+    || Number(enemy.investigateUntil || 0) > now
+    || Number(enemy.searchUntil || 0) > now;
+}
+
+function npcRoutineInterruptContext(room, enemy, now = Date.now()) {
+  const combat = npcRoutineCombatActive(room, enemy);
+  const alarm = !combat && npcRoutineAlarmActive(enemy, now);
+  const dialogue = Number(enemy.dialogueFocusUntil || 0) > now && !!enemy.dialoguePlayerId;
+  const investigate = !combat && !alarm && npcRoutineInvestigationActive(enemy, now);
+  return {
+    now,
+    aiState: combat ? 'combat' : alarm ? 'alarm' : dialogue ? 'dialogue' : investigate ? 'investigate' : enemy.aiState,
+    combat,
+    alarm,
+    dialogue,
+    investigate,
+    hasCombatTarget: combat,
+    investigateUntil: Number(enemy.investigateUntil || enemy.searchUntil || 0),
+    investigateTarget: investigate ? {
+      x: Number(enemy.investigateX || enemy.x || 0),
+      z: Number(enemy.investigateZ || enemy.z || 0)
+    } : null
+  };
+}
+
+function npcRoutinePackageForActor(room, enemy, now = Date.now(), options = {}) {
+  const schedule = enemy?.npcProfile?.schedule;
+  if (!schedule) return null;
+  const clock = currentGameClock(now);
+  const context = options.context || npcRoutineInterruptContext(room, enemy, now);
+  const interruptSignature = context.combat ? 'combat'
+    : context.alarm ? 'alarm'
+      : context.dialogue ? 'dialogue'
+        : context.investigate ? 'investigate'
+          : 'routine';
+  const cached = enemy.npcRoutineSelectionCache;
+  const canReuse = options.force !== true
+    && !enemy.npcRoutineInvalidated
+    && cached
+    && cached.schedule === schedule
+    && cached.interruptSignature === interruptSignature
+    && clock.absoluteWorldHour < Number(cached.nextBoundaryWorldHour || 0);
+  if (canReuse) return cached.package || null;
+
+  const routinePackage = selectRoutinePackage({
+    routine: schedule,
+    gameHour: clock.gameHour,
+    context: { ...context, now, gameHour: clock.gameHour, worldDay: clock.worldDay }
+  });
+  const boundary = nextRoutineBoundary({
+    routine: schedule,
+    gameHour: clock.gameHour,
+    worldDay: clock.worldDay,
+    gameDayRealMs: GAME_DAY_REAL_MS
+  });
+  const nextBoundaryWorldHour = Number(boundary?.absoluteWorldHour || (clock.absoluteWorldHour + 1));
+  enemy.npcRoutineSelectionCache = {
+    schedule,
+    interruptSignature,
+    package: routinePackage,
+    nextBoundaryWorldHour
+  };
+  enemy.npcRoutineNextBoundaryWorldHour = nextBoundaryWorldHour;
+  enemy.npcRoutineInvalidated = false;
+  return routinePackage;
+}
+
+function npcActivityFacingLookPoint(enemy = {}, facing = 0) {
+  const yaw = Number(facing || 0);
+  return {
+    x: Number(enemy.x || 0) + Math.sin(yaw - Math.PI) * 2,
+    z: Number(enemy.z || 0) + Math.cos(yaw - Math.PI) * 2
+  };
+}
+
+function npcRoutineFallbackTarget(room, loc = {}, enemy = {}, routinePackage = {}) {
+  const type = npcRoutineSlotType(routinePackage.type || routinePackage.state || '');
+  if (['sleep', 'rest', 'social'].includes(type)) {
+    const legacyState = type === 'social' ? 'social' : type;
+    return npcScheduleAnchor(room, loc, enemy, legacyState);
+  }
+  if (type === 'shop') {
+    return { x: Number(enemy.homeX || enemy.x || 0), z: Number(enemy.homeZ || enemy.z || 0) };
+  }
+  return null;
+}
+
+function npcRoutineUnderlyingServiceAvailable(enemy = {}, now = Date.now()) {
+  if (!enemy?.npcProfile?.schedule) return false;
+  const clock = currentGameClock(now);
+  const routinePackage = selectRoutinePackage({
+    routine: enemy.npcProfile.schedule,
+    gameHour: clock.gameHour,
+    context: { now, gameHour: clock.gameHour, worldDay: clock.worldDay }
+  });
+  return !!routinePackage?.serviceAvailable;
+}
+
+function npcRoutineServiceInterrupted(room, enemy = {}, now = Date.now()) {
+  return routineInterruptBlocksService(npcRoutineInterruptContext(room, enemy, now));
+}
+
+function npcRoutineHasScheduledService(enemy = {}) {
+  const packages = Array.isArray(enemy?.npcProfile?.schedule?.packages)
+    ? enemy.npcProfile.schedule.packages
+    : [];
+  return packages.some(row => row?.serviceAvailable === true);
+}
+
+function npcScheduledServiceClosed(room, enemy = {}, now = Date.now()) {
+  if (npcRoutineServiceInterrupted(room, enemy, now)) return true;
+  return npcRoutineHasScheduledService(enemy) && !npcRoutineUnderlyingServiceAvailable(enemy, now);
+}
+
+function materializeAuthoredNpcRoutine(room, loc = {}, enemy = {}, now = Date.now()) {
+  if (!room || !enemy || enemy.dead || !enemy.authoredLocationId && !enemy.npcRoutineId) return false;
+  const routinePackage = npcRoutinePackageForActor(room, enemy, now, { force: true, context: { now } });
+  if (!routinePackage || routinePackage.source === 'interrupt') return false;
+  const slot = reserveNpcActivitySlot(room, loc, enemy, routinePackage);
+  if (!slot) return false;
+  const target = { x: Number(slot.position.x || 0), z: Number(slot.position.z || 0) };
+  if (isEnemyStepOpen(room, enemy, target.x, target.z, 0.3)) {
+    enemy.x = target.x;
+    enemy.z = target.z;
+  } else {
+    const tile = worldToTile(target.x, target.z);
+    const safe = wastelandSafePointNearTile(room, tile.tx, tile.tz, 4);
+    enemy.x = safe.x;
+    enemy.z = safe.z;
+  }
+  enemy.vx = 0;
+  enemy.vz = 0;
+  enemy.aiState = String(routinePackage.state || 'idle');
+  enemy.npcScheduleState = String(routinePackage.state || 'work');
+  enemy.npcScheduleLabel = npcScheduleLabel(routinePackage.type || routinePackage.state);
+  setNpcActivityState(enemy, {
+    packageId: routinePackage.id,
+    type: npcRoutineSlotType(routinePackage.type || routinePackage.state),
+    phase: 'use',
+    visualAction: slot.visualAction,
+    slotId: slot.id,
+    facing: slot.facing,
+    serviceAvailable: routinePackage.serviceAvailable,
+    interruptReason: ''
+  });
+  if (String(routinePackage.state || '') === 'sleep') clearEnemyLook(enemy);
+  else setEnemyLookAt(enemy, npcActivityFacingLookPoint(enemy, slot.facing));
+  return true;
+}
+
 function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
   if (!room || !enemy || enemy.dead || serverNpcIsNaturalCreature(enemy, enemy)) return false;
   if (!enemy.npcProfile || typeof enemy.npcProfile !== 'object') {
@@ -13277,30 +13619,85 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
     enemy.npcProfile = createServerNpcProfile(seed, { role: enemy.role, faction: enemy.faction }, loc);
   }
   if (enemy.hostileToPlayer !== false) return false;
-  if (enemy.targetId || enemy.factionTargetId || npcHasLiveFactionFoes(room, enemy)) {
-    enemy.npcScheduleState = 'combat';
-    enemy.npcScheduleLabel = npcScheduleLabel('combat');
+  const routinePackage = npcRoutinePackageForActor(room, enemy, now);
+  if (!routinePackage) return false;
+  const packageChanged = String(enemy.npcRoutinePackageId || '') !== String(routinePackage.id || '');
+  if (packageChanged) releaseNpcActivitySlot(room, enemy, true);
+  const state = String(routinePackage.state || 'work');
+  const activityType = npcRoutineSlotType(routinePackage.type || state);
+  enemy.npcScheduleState = state;
+  enemy.npcScheduleLabel = npcScheduleLabel(activityType || state);
+  enemy.npcScheduleUpdatedAt = now;
+
+  if (routinePackage.source === 'interrupt') {
+    releaseNpcActivitySlot(room, enemy, true);
     enemy.npcSpeechText = '';
     enemy.npcSpeechUntil = 0;
+    setNpcActivityState(enemy, {
+      packageId: routinePackage.id,
+      type: activityType,
+      phase: 'use',
+      visualAction: '',
+      slotId: '',
+      facing: null,
+      serviceAvailable: false,
+      interruptReason: routinePackage.type
+    });
     return false;
   }
-  const state = npcScheduleStateAt(enemy.npcProfile.schedule, now);
-  enemy.npcScheduleState = state;
-  enemy.npcScheduleLabel = npcScheduleLabel(state);
-  enemy.npcScheduleUpdatedAt = now;
   if (state !== 'social') {
     enemy.npcSpeechText = '';
     enemy.npcSpeechUntil = 0;
   }
-  if (state === 'work') return false;
+  const laborManaged = !!enemy.wastelandSiteWorkerLocationId && ['work', 'craft'].includes(activityType);
+  if (laborManaged) {
+    releaseNpcActivitySlot(room, enemy, true);
+    setNpcActivityState(enemy, {
+      packageId: routinePackage.id,
+      type: activityType,
+      phase: 'use',
+      visualAction: activityType === 'craft' ? 'work' : activityType,
+      slotId: '',
+      facing: null,
+      serviceAvailable: routinePackage.serviceAvailable,
+      interruptReason: ''
+    });
+    return false;
+  }
 
-  const target = npcScheduleAnchor(room, loc, enemy, state);
+  const slot = reserveNpcActivitySlot(room, loc, enemy, routinePackage);
+  const target = slot
+    ? { x: Number(slot.position.x || 0), z: Number(slot.position.z || 0), facing: Number(slot.facing || 0) }
+    : npcRoutineFallbackTarget(room, loc, enemy, routinePackage);
+  if (!target) {
+    setNpcActivityState(enemy, {
+      packageId: routinePackage.id,
+      type: activityType,
+      phase: 'use',
+      visualAction: activityType === 'socialize' ? 'social' : activityType,
+      slotId: '',
+      facing: null,
+      serviceAvailable: routinePackage.serviceAvailable,
+      interruptReason: ''
+    });
+    return false;
+  }
   const dist = Math.hypot(Number(target.x || 0) - Number(enemy.x || 0), Number(target.z || 0) - Number(enemy.z || 0));
   enemy.targetId = '';
   enemy.factionTargetId = '';
   clearEnemyTacticalGoal(enemy);
   enemy.aiState = state;
   if (dist > 0.68) {
+    setNpcActivityState(enemy, {
+      packageId: routinePackage.id,
+      type: activityType,
+      phase: 'travel',
+      visualAction: 'walk',
+      slotId: slot?.id || '',
+      facing: slot ? slot.facing : null,
+      serviceAvailable: routinePackage.serviceAvailable,
+      interruptReason: ''
+    });
     setEnemyLookAt(enemy, target);
     moveEnemyTowards(room, enemy, target.x, target.z, Math.max(0.38, Number(enemy.speed || 1.2) * 0.42), dt, {
       separationWeight: 0.2,
@@ -13311,6 +13708,16 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
   enemy.vx = 0;
   enemy.vz = 0;
   invalidateEnemyPath(enemy);
+  setNpcActivityState(enemy, {
+    packageId: routinePackage.id,
+    type: activityType,
+    phase: 'use',
+    visualAction: String(slot?.visualAction || (activityType === 'socialize' ? 'social' : activityType)).slice(0, 32),
+    slotId: slot?.id || '',
+    facing: slot ? slot.facing : null,
+    serviceAvailable: routinePackage.serviceAvailable,
+    interruptReason: ''
+  });
   if (state === 'social') {
     const friend = npcSocialLookTarget(room, enemy);
     if (friend) {
@@ -13319,6 +13726,8 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
     }
   } else if (state === 'sleep') {
     clearEnemyLook(enemy);
+  } else if (slot && Number.isFinite(Number(slot.facing))) {
+    setEnemyLookAt(enemy, npcActivityFacingLookPoint(enemy, slot.facing));
   } else {
     setEnemyLookAt(enemy, target);
   }
@@ -13867,13 +14276,22 @@ function roomEnemySet(room, id, enemy) {
 
 function roomEnemyDelete(room, id) {
   if (!(room?.enemies instanceof Map)) return false;
+  const enemy = room.enemies.get(id);
+  if (enemy) releaseNpcActivitySlot(room, enemy, true);
   const removed = room.enemies.delete(id);
-  if (removed) markRoomEnemyStructureDirty(room);
+  if (removed) {
+    if (room.enemyActivityBroadcastRevisions instanceof Map) {
+      room.enemyActivityBroadcastRevisions.delete(String(id));
+    }
+    markRoomEnemyStructureDirty(room);
+  }
   return removed;
 }
 
 function clearRoomEnemies(room) {
   if (!(room?.enemies instanceof Map) || room.enemies.size === 0) return false;
+  if (room.npcActivityReservations instanceof Map) room.npcActivityReservations.clear();
+  bumpRoomNpcActivityReservationRevision(room);
   room.enemies.clear();
   markRoomEnemyStructureDirty(room);
   return true;
@@ -13997,6 +14415,19 @@ function publicEnemy(e, viewer = null) {
     } : null,
     scheduleState,
     scheduleLabel,
+    routineId: naturalCreature ? '' : String(e.npcRoutineId || e.npcProfile?.routineId || '').slice(0, 96),
+    routinePackageId: naturalCreature ? '' : String(e.npcRoutinePackageId || '').slice(0, 96),
+    activityRevision: naturalCreature ? 0 : Math.max(0, Math.floor(Number(e.npcActivityRevision || 0))),
+    activityType: naturalCreature ? '' : String(e.npcActivityType || '').slice(0, 32),
+    goalActivity: naturalCreature ? '' : String(e.npcActivityType || '').slice(0, 32),
+    activityPhase: naturalCreature ? '' : String(e.npcActivityPhase || '').slice(0, 24),
+    visualAction: naturalCreature ? '' : String(e.npcActivityVisualAction || '').slice(0, 32),
+    activitySlotId: naturalCreature ? '' : String(e.npcActivitySlotId || '').slice(0, 96),
+    activityFacing: naturalCreature || e.npcActivityFacing == null || !Number.isFinite(Number(e.npcActivityFacing))
+      ? null
+      : Number(Number(e.npcActivityFacing).toFixed(4)),
+    serviceAvailable: naturalCreature ? null : !!e.npcServiceAvailable,
+    activityInterruptReason: naturalCreature ? '' : String(e.npcActivityInterruptReason || '').slice(0, 32),
     speechText,
     speechId: speechText ? String(e.npcSpeechId || `${e.id || 'npc'}:${speechText}`).slice(0, 140) : '',
     speechMs: speechText ? Math.max(0, Math.round(Number(e.npcSpeechUntil || 0) - now)) : 0,
@@ -14100,6 +14531,55 @@ function publicEnemyFrame(e, viewer = null, now = Date.now()) {
     frame.speechMs = Math.max(0, Math.round(Number(e.npcSpeechUntil || 0) - now));
   }
   return frame;
+}
+
+function publicEnemyActivityDelta(e = {}) {
+  return {
+    id: String(e.id || '').slice(0, 64),
+    a: [
+      Math.max(0, Math.floor(Number(e.npcActivityRevision || 0))),
+      String(e.npcActivityType || '').slice(0, 32),
+      String(e.npcActivityPhase || '').slice(0, 24),
+      String(e.npcActivityVisualAction || '').slice(0, 32),
+      String(e.npcActivitySlotId || '').slice(0, 96),
+      e.npcActivityFacing == null || !Number.isFinite(Number(e.npcActivityFacing))
+        ? null
+        : Number(Number(e.npcActivityFacing).toFixed(4)),
+      e.npcServiceAvailable ? 1 : 0
+    ]
+  };
+}
+
+function syncRoomEnemyActivityRevisions(room) {
+  if (!room) return new Map();
+  const revisions = new Map();
+  for (const enemy of room.enemies instanceof Map ? room.enemies.values() : []) {
+    const revision = Math.max(0, Math.floor(Number(enemy?.npcActivityRevision || 0)));
+    if (revision > 0 && enemy?.id) revisions.set(String(enemy.id), revision);
+  }
+  room.enemyActivityBroadcastRevisions = revisions;
+  return revisions;
+}
+
+function emitEnemyActivityDelta(room, socketIds = [], now = Date.now()) {
+  if (!room || !Array.isArray(socketIds) || !socketIds.length) return 0;
+  if (!(room.enemyActivityBroadcastRevisions instanceof Map)) room.enemyActivityBroadcastRevisions = new Map();
+  const activities = [];
+  for (const enemy of room.enemies instanceof Map ? room.enemies.values() : []) {
+    const revision = Math.max(0, Math.floor(Number(enemy?.npcActivityRevision || 0)));
+    if (!enemy?.id || revision <= 0 || Number(room.enemyActivityBroadcastRevisions.get(enemy.id) || 0) === revision) continue;
+    activities.push(publicEnemyActivityDelta(enemy));
+  }
+  if (!activities.length) return 0;
+  const targets = socketIds.length === 1 ? socketIds[0] : socketIds;
+  io.to(targets).emit('enemyActivityDelta', {
+    roomId: room.id,
+    locationId: room.locationId,
+    t: now,
+    activities
+  });
+  for (const row of activities) room.enemyActivityBroadcastRevisions.set(row.id, row.a[0]);
+  return activities.length;
 }
 
 function publicEnemyFrameForViewer(enemy, viewer = null, sharedFrame = null, now = Date.now()) {
@@ -14717,6 +15197,8 @@ function spawnServerEnemy(room, opts = {}) {
   } else if (naturalCreature) {
     enemyInventory = stripServerCreatureInventoryRows(enemyInventory);
   }
+  const initialRoutinePackage = npcProfile ? npcSchedulePackageAt(npcProfile.schedule, Date.now()) : null;
+  const initialScheduleState = String(initialRoutinePackage?.state || '');
   const enemy = {
     ...type,
     id: makeServerEntityId('enemy'),
@@ -14756,9 +15238,21 @@ function spawnServerEnemy(room, opts = {}) {
     equipment,
     weapon: equipment.weapon,
     npcProfile,
-    npcScheduleState: npcProfile ? npcScheduleStateAt(npcProfile.schedule, Date.now()) : '',
-    npcScheduleLabel: npcProfile ? npcScheduleLabel(npcScheduleStateAt(npcProfile.schedule, Date.now())) : '',
+    npcId: naturalCreature ? '' : String(opts.npcId || npcProfile?.npcId || npcProfile?.id || '').slice(0, 96),
+    npcRoutineId: naturalCreature ? '' : String(opts.routineId || npcProfile?.routineId || '').slice(0, 96),
+    npcScheduleState: initialScheduleState,
+    npcScheduleLabel: initialScheduleState ? npcScheduleLabel(initialScheduleState) : '',
     npcScheduleUpdatedAt: Date.now(),
+    npcRoutinePackageId: String(initialRoutinePackage?.id || '').slice(0, 96),
+    npcRoutineNextBoundaryWorldHour: 0,
+    npcActivityRevision: initialRoutinePackage ? 1 : 0,
+    npcActivityType: String(initialRoutinePackage?.type || '').slice(0, 32),
+    npcActivityPhase: initialRoutinePackage ? 'travel' : '',
+    npcActivityVisualAction: '',
+    npcActivitySlotId: '',
+    npcActivityFacing: null,
+    npcServiceAvailable: !!initialRoutinePackage?.serviceAvailable,
+    npcActivityInterruptReason: '',
     stationary: !!opts.stationary,
     traderStock: Array.isArray(opts.traderStock) ? opts.traderStock.map(x => ({
       id: String(x.id || '').slice(0, 64),
@@ -16061,19 +16555,77 @@ function updateServerEnemies(room, dt, opts = {}) {
   const now = Date.now();
   for (const enemy of [...room.enemies.values()]) {
     if (enemy.dead) {
+      releaseNpcActivitySlot(room, enemy, true);
       if (serverShouldRemoveCorpse(enemy, now)) {
         if (roomEnemyDelete(room, enemy.id)) enemyStructureChanged = true;
       }
       continue;
     }
     ensureEnemyHome(enemy);
+    if (factionCombatActors.has(enemy.id)) {
+      enemy.dialogueFocusUntil = 0;
+      enemy.dialoguePlayerId = '';
+      releaseNpcActivitySlot(room, enemy, true);
+      enemy.npcScheduleState = 'combat';
+      enemy.npcScheduleLabel = npcScheduleLabel('combat');
+      setNpcActivityState(enemy, {
+        packageId: 'interrupt:combat',
+        type: 'combat',
+        phase: 'use',
+        visualAction: '',
+        slotId: '',
+        facing: null,
+        serviceAvailable: false,
+        interruptReason: 'combat'
+      });
+      enemy.npcRoutineInvalidated = true;
+      continue;
+    }
+    const dialogueInterruptType = Number(enemy.dialogueFocusUntil || 0) > 0
+      ? npcRoutineDialogueInterruptType(room, enemy, now)
+      : '';
+    if (dialogueInterruptType) {
+      enemy.dialogueFocusUntil = 0;
+      enemy.dialoguePlayerId = '';
+      enemy.lookX = null;
+      enemy.lookZ = null;
+      releaseNpcActivitySlot(room, enemy, true);
+      enemy.npcScheduleState = dialogueInterruptType;
+      enemy.npcScheduleLabel = npcScheduleLabel(dialogueInterruptType);
+      setNpcActivityState(enemy, {
+        packageId: `interrupt:${dialogueInterruptType}`,
+        type: dialogueInterruptType,
+        phase: 'active',
+        visualAction: dialogueInterruptType,
+        slotId: '',
+        facing: null,
+        serviceAvailable: false,
+        interruptReason: dialogueInterruptType
+      });
+      enemy.npcRoutineInvalidated = true;
+      if (enemy.aiState === 'dialogue') enemy.aiState = 'idle';
+    }
     if (Number(enemy.dialogueFocusUntil || 0) > 0) {
       const focusPlayer = players.get(enemy.dialoguePlayerId || '');
       const focusOk = focusPlayer && focusPlayer.roomId === room.id && !focusPlayer.dead && enemy.hostileToPlayer === false
         && Math.hypot(Number(focusPlayer.x || 0) - Number(enemy.x || 0), Number(focusPlayer.z || 0) - Number(enemy.z || 0)) <= 6.2
         && now < Number(enemy.dialogueFocusUntil || 0);
       if (focusOk) {
+        releaseNpcActivitySlot(room, enemy, true);
         enemy.aiState = 'dialogue';
+        enemy.npcScheduleState = 'dialogue';
+        enemy.npcScheduleLabel = npcScheduleLabel('dialogue');
+        setNpcActivityState(enemy, {
+          packageId: 'interrupt:dialogue',
+          type: 'dialogue',
+          phase: 'use',
+          visualAction: 'dialogue',
+          slotId: '',
+          facing: null,
+          serviceAvailable: !npcRoutineServiceInterrupted(room, enemy, now)
+            && npcRoutineUnderlyingServiceAvailable(enemy, now),
+          interruptReason: 'dialogue'
+        });
         enemy.targetId = '';
         enemy.factionTargetId = '';
         enemy.vx = 0;
@@ -16088,14 +16640,14 @@ function updateServerEnemies(room, dt, opts = {}) {
       enemy.dialoguePlayerId = '';
       enemy.lookX = null;
       enemy.lookZ = null;
+      enemy.npcRoutineInvalidated = true;
       if (enemy.aiState === 'dialogue') enemy.aiState = 'idle';
     }
-    if (factionCombatActors.has(enemy.id)) continue;
     if (updateServerNpcCorpseLooting(room, enemy, dt, now)) continue;
     if (updateOnsitePartyActorLifecycle(room, enemy, dt)) continue;
     if (updateNpcDailySchedule(room, enemy, dt, loc, now)) continue;
     if (updateWastelandSiteWorkerLabor(room, enemy, dt, loc)) continue;
-    if (enemy.stationary && enemy.hostileToPlayer === false) {
+    if (enemy.stationary && enemy.hostileToPlayer === false && !npcRoutineInvestigationActive(enemy, now)) {
       const hasLiveFoes = npcHasLiveFactionFoes(room, enemy);
       if (!hasLiveFoes) {
         enemy.aiState = 'idle';
@@ -16439,6 +16991,7 @@ function emitEnemySnapshot(room, force = false) {
   const socketIds = [...room.sockets];
   if (reliable) {
     emitFullEnemySnapshotToSockets(room, socketIds, now);
+    syncRoomEnemyActivityRevisions(room);
     room.enemyStructureDirty = false;
     return;
   }
@@ -16458,6 +17011,10 @@ function emitEnemySnapshot(room, force = false) {
   }
 
   if (frameSocketIds.length) {
+    // Activity changes are rare and shared by the whole room. Keep them on a
+    // reliable channel instead of repeating the packed tuple in every
+    // high-frequency, volatile movement frame.
+    emitEnemyActivityDelta(room, frameSocketIds, now);
     room.enemyFrameSeq = Math.max(0, Math.floor(Number(room.enemyFrameSeq || 0))) + 1;
     const seq = room.enemyFrameSeq;
     const sharedFrames = frameSocketIds.length > 1
@@ -18855,6 +19412,7 @@ io.on('connection', (socket) => {
         enemy.dialoguePlayerId = '';
         enemy.lookX = null;
         enemy.lookZ = null;
+        enemy.npcRoutineInvalidated = true;
         if (enemy.aiState === 'dialogue') enemy.aiState = 'idle';
       }
       emitEnemySnapshot(room);
@@ -18864,13 +19422,33 @@ io.on('connection', (socket) => {
     ensureServerFriendlyNpcSocialState(enemy);
     const canTalk = enemy.canDialogue !== false
       && !serverNpcIsNaturalCreature(enemy, enemy)
-      && enemy.hostileToPlayer === false;
+      && !serverActorHostileToPlayer(enemy, p);
     if (!canTalk) return fail('Этот НПС не настроен на разговор.');
+    const dialogueInterruptType = npcRoutineDialogueInterruptType(room, enemy, Date.now());
+    if (dialogueInterruptType === 'combat') return fail('НПС сейчас в бою.');
+    if (dialogueInterruptType === 'alarm') return fail('НПС сейчас занят из-за тревоги.');
     const dist = Math.hypot(Number(enemy.x || 0) - Number(p.x || 0), Number(enemy.z || 0) - Number(p.z || 0));
     if (dist > 6.2) return fail('Подойдите ближе к НПС.');
+    if (enemy.dialoguePlayerId && enemy.dialoguePlayerId !== socket.id && Number(enemy.dialogueFocusUntil || 0) > Date.now()) {
+      return fail('Этот НПС уже разговаривает с другим игроком.');
+    }
+    releaseNpcActivitySlot(room, enemy, true);
     enemy.dialogueFocusUntil = Date.now() + 16000;
     enemy.dialoguePlayerId = socket.id;
     enemy.aiState = 'dialogue';
+    enemy.npcScheduleState = 'dialogue';
+    enemy.npcScheduleLabel = npcScheduleLabel('dialogue');
+    setNpcActivityState(enemy, {
+      packageId: 'interrupt:dialogue',
+      type: 'dialogue',
+      phase: 'use',
+      visualAction: 'dialogue',
+      slotId: '',
+      facing: null,
+      serviceAvailable: !npcRoutineServiceInterrupted(room, enemy, Date.now())
+        && npcRoutineUnderlyingServiceAvailable(enemy, Date.now()),
+      interruptReason: 'dialogue'
+    });
     enemy.targetId = '';
     enemy.factionTargetId = '';
     enemy.vx = 0;
@@ -20053,6 +20631,7 @@ io.on('connection', (socket) => {
     const dist = Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0));
     if (dist > 5.2) return fail('NPC слишком далеко.');
     if (actor.hostileToPlayer !== false || serverNpcIsNaturalCreature(actor, actor)) return fail('С этим NPC нельзя торговать.');
+    if (npcScheduledServiceClosed(room, actor, Date.now())) return fail('Торговец сейчас не работает или занят. Приходите позже.');
     const grudgeHours = serverCaravanGrievanceHours(actor, p);
     if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
 
@@ -20071,6 +20650,7 @@ io.on('connection', (socket) => {
     const actor = room.enemies.get(enemyId);
     if (!actor || actor.dead) return fail('NPC недоступен.');
     if (actor.hostileToPlayer !== false || serverNpcIsNaturalCreature(actor, actor)) return fail('С этим NPC нельзя торговать.');
+    if (npcScheduledServiceClosed(room, actor, Date.now())) return fail('Торговец сейчас не работает или занят. Приходите позже.');
     const grudgeHours = serverCaravanGrievanceHours(actor, p);
     if (grudgeHours > 0) return fail(`Торговцы фракции не работают с грабителями их караванов. Обида остынет через ${grudgeHours} ч.`);
     if (Math.hypot(Number(p.x || 0) - Number(actor.x || 0), Number(p.z || 0) - Number(actor.z || 0)) > 5.2) return fail('NPC слишком далеко.');

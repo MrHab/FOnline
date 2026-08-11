@@ -101,7 +101,10 @@ assert.strictEqual(npcGlb.json.skins?.length, 1);
 assert.strictEqual(npcGlb.json.skins[0].joints?.length, 65);
 assert.deepStrictEqual(
   (npcGlb.json.animations || []).map(animation => animation.name).sort(),
-  ['attack', 'crouch_walk', 'death', 'hurt', 'idle', 'run', 'run_back', 'turn', 'walk', 'walk_back']
+  [
+    'attack', 'crouch_walk', 'crouch_walk_back', 'death', 'hurt', 'idle',
+    'run', 'run_back', 'turn', 'walk', 'walk_back'
+  ]
 );
 const npcDeath = (npcGlb.json.animations || []).find(animation => animation.name === 'death');
 const npcDeathDuration = Math.max(...npcDeath.samplers.map(sampler => (
@@ -238,7 +241,7 @@ const runtimeSource = fs.readFileSync(
   'utf8'
 );
 [
-  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v21-derived-locomotion'",
+  "const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v22-backward-locomotion'",
   'const APPROVED_EQUIPMENT_ASSETS = Object.freeze({',
   'const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([',
   'function attachApprovedNpcAnimations(runtime)',

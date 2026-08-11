@@ -27,7 +27,8 @@ const CLIP_USAGE = {
   run: { speed: 4.2, direction: 1 },
   walk_back: { speed: 2.0, direction: -1 },
   run_back: { speed: 4.2, direction: -1 },
-  crouch_walk: { speed: 2.6, direction: 1 }
+  crouch_walk: { speed: 2.6, direction: 1 },
+  crouch_walk_back: { speed: 2.6, direction: -1 }
 };
 const MAX_PIN_ERROR = 0.12;      // допуск пина к замеру
 const MAX_TEMPO = 1.8;           // темп выше — клип выглядит суетливым

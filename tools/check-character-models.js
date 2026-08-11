@@ -191,13 +191,18 @@ const approvedRuntime = fs.readFileSync(path.join(root, 'public', 'js', 'game', 
 assert(glbRuntime.includes("locomotionAction = 'crouch_walk'")
   && glbRuntime.includes("locomotionAction = 'walk_back'")
   && glbRuntime.includes("locomotionAction = 'run_back'")
+  && glbRuntime.includes("locomotionAction = 'crouch_walk_back'")
   && glbRuntime.includes('authoredBackClip ? 1 : locomotion.playbackRate'),
-  'runtime does not select authored walk_back/run_back/crouch_walk clips');
+  'runtime does not select a dedicated clip for every locomotion direction');
+// Отход в приседе обязан иметь свой клип: раньше присед перехватывал выбор
+// до проверки направления и играл crouch_walk задом наперёд.
+assert(glbRuntime.includes('const crouchBack = locomotion.backward && runtime.actions?.crouch_walk_back;'),
+  'crouch keeps hijacking clip selection before the direction check');
 // Сами значения натуральных скоростей сверяет с клипами
 // tools/check-locomotion-clip-sync.js — здесь только их наличие.
 assert(glbRuntime.includes('walk_back:') && glbRuntime.includes('run_back:') && glbRuntime.includes('crouch_walk:'),
   'stride-sync natural speeds for authored locomotion clips are missing');
-assert(approvedRuntime.includes("APPROVED_LOOP_LOCOMOTION_CLIPS = Object.freeze(['turn', 'walk_back', 'run_back', 'crouch_walk'])"),
+assert(/APPROVED_LOOP_LOCOMOTION_CLIPS = Object\.freeze\(\[[\s\S]*?'crouch_walk_back'[\s\S]*?\]\)/.test(approvedRuntime),
   'players do not receive the authored loop locomotion clips');
 // Ноги не должны перекидываться рывком: угловая скорость разворота таза
 // ограничена, а угол непрерывен на границе «вперёд/назад» (гистерезис).

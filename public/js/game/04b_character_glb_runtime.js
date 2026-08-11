@@ -944,7 +944,8 @@
       || runtime.currentAction === 'turn'
       || runtime.currentAction === 'walk_back'
       || runtime.currentAction === 'run_back'
-      || runtime.currentAction === 'crouch_walk';
+      || runtime.currentAction === 'crouch_walk'
+      || runtime.currentAction === 'crouch_walk_back';
     runtime.upperSwayDampBlend = characterLocomotionBlend(
       runtime.upperSwayDampBlend ?? 0,
       damped ? 1 : 0,
@@ -1083,11 +1084,12 @@
   // (перемещение опорной стопы за цикл) и не даёт им разойтись с клипами —
   // рассинхрон здесь напрямую превращается в скольжение стоп.
   const CHARACTER_CLIP_NATURAL_SPEEDS = Object.freeze({
-    walk: 1.25,
+    walk: 1.26,
     run: 3.72,
-    walk_back: 1.25,
-    run_back: 3.38,
-    crouch_walk: 2.13
+    walk_back: 1.20,
+    run_back: 3.41,
+    crouch_walk: 2.11,
+    crouch_walk_back: 2.23
   });
   const CHARACTER_STRIDE_SYNC_MIN = 0.6;
   const CHARACTER_STRIDE_SYNC_MAX = 2.9;
@@ -1616,8 +1618,13 @@
     // Авторские клипы: ходьба в приседе и шаг назад. Пока клип не догрузился,
     // работает прежний фолбэк (реверс walk/run, поза приседа поверх walk).
     if (locomotion.moving) {
-      if (state.crouching && runtime.actions?.crouch_walk) {
-        locomotionAction = 'crouch_walk';
+      if (state.crouching) {
+        // У приседа своя пара клипов. Раньше присед перехватывал выбор до
+        // проверки направления, и отход в приседе играл crouch_walk задом
+        // наперёд — шаги шли не в ту сторону.
+        const crouchBack = locomotion.backward && runtime.actions?.crouch_walk_back;
+        if (crouchBack) locomotionAction = 'crouch_walk_back';
+        else if (runtime.actions?.crouch_walk) locomotionAction = 'crouch_walk';
       } else if (locomotion.backward) {
         // Задний ход своей парой клипов, как и вперёд: медленный отход шагом,
         // быстрый — бегом. Один walk_back на все скорости заставлял stride-sync
@@ -1640,7 +1647,10 @@
       { restart: restartAttack }
     );
     // Авторский клип заднего хода сам шагает назад — реверс не нужен.
-    const authoredBackClip = locomotionAction === 'walk_back' || locomotionAction === 'run_back';
+    // Клипы заднего хода шагают назад сами — реверс им не нужен.
+    const authoredBackClip = locomotionAction === 'walk_back'
+      || locomotionAction === 'run_back'
+      || locomotionAction === 'crouch_walk_back';
     const playbackTarget = authoredBackClip ? 1 : locomotion.playbackRate;
     if (locomotion.locomoting && !runtime.directionalWasMoving) {
       runtime.directionalPlaybackRate = playbackTarget;

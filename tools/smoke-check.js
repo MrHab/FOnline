@@ -1590,6 +1590,22 @@ async function assertSocketMultiplayerLifecycle() {
       || partyCancel.self?.worldTaskAccepted?.includes('smoke_world_party_task')) {
       fail('world-party cancel did not atomically detach authoritative state', JSON.stringify(partyCancel));
     }
+    const soloTravel = await socketAck(first.socket, 'globalTravelStart', {
+      worldPoint: { x: 300, y: 600 },
+      targetLocationId: 'wasteland'
+    });
+    if (!soloTravel.ok || !soloTravel.fromPoint || !soloTravel.targetPoint) {
+      fail('detached global-map player could not start an independent route', JSON.stringify(soloTravel));
+    }
+    await delay(300);
+    const soloTravelCancel = await socketAck(first.socket, 'globalTravelCancel', {});
+    const soloDistance = Math.hypot(
+      Number(soloTravelCancel.worldPoint?.x || 0) - Number(soloTravel.fromPoint.x || 0),
+      Number(soloTravelCancel.worldPoint?.y || 0) - Number(soloTravel.fromPoint.y || 0)
+    );
+    if (!soloTravelCancel.ok || soloDistance <= 0.01) {
+      fail('authoritative global-map route did not advance the player', JSON.stringify({ soloTravel, soloTravelCancel, soloDistance }));
+    }
 
     await assertCharacterDeletionLifecycle(accounts[2]);
   } finally {

@@ -1040,6 +1040,103 @@ function assertServerPersistenceFaultRecovery() {
     'join/task attachment mutation without an inline save did not schedule a durable retry');
 }
 
+function assertGlobalTravelLeaderDisconnectRecovery() {
+  const serverSource = fs.readFileSync(path.join(PROJECT_ROOT, 'server.js'), 'utf8');
+  const globalTravelSessions = new Map();
+  const emitted = [];
+  const persisted = [];
+  const persistenceErrors = [];
+  let failingPersistId = '';
+  const leader = {
+    id: 'socket_leader', name: 'Leader', onGlobalMap: true,
+    globalWorldPoint: { x: 10, y: 20 }, pendingLocationTransition: null
+  };
+  const follower = {
+    id: 'socket_follower', name: 'Follower', onGlobalMap: true,
+    globalWorldPoint: { x: 10, y: 20 }, pendingLocationTransition: null
+  };
+  const players = new Map([[leader.id, leader], [follower.id, follower]]);
+  const api = evaluateServerFunctions(
+    serverSource,
+    [['function cleanupGlobalTravelSessionsForSocket(', 'function publicPlayerMovement(']],
+    ['cleanupGlobalTravelSessionsForSocket'],
+    {
+      globalTravelSessions,
+      players,
+      serverGlobalTravelCurrentPoint: () => ({ x: 33, y: 44 }),
+      persistActivePlayerState: member => {
+        persisted.push(member.id);
+        if (member.id === failingPersistId) throw new Error('injected global travel write failure');
+        return true;
+      },
+      console: { error: (...args) => persistenceErrors.push(args) },
+      io: {
+        sockets: {
+          sockets: new Map([[follower.id, {
+            emit: (eventName, payload) => emitted.push({ eventName, payload })
+          }]])
+        }
+      }
+    }
+  );
+  globalTravelSessions.set(leader.id, {
+    id: 'travel_a', leaderId: leader.id, leaderName: leader.name,
+    memberIds: [leader.id, follower.id], terminating: false
+  });
+  api.cleanupGlobalTravelSessionsForSocket(leader.id);
+  assert.strictEqual(globalTravelSessions.size, 0,
+    'leader disconnect retained a dead global travel session');
+  assert.deepStrictEqual(persisted.sort(), [follower.id, leader.id].sort(),
+    'leader disconnect did not persist every released member at the route point');
+  assert.strictEqual(emitted.length, 1,
+    'leader disconnect did not emit exactly one release to the remaining follower');
+  assert.strictEqual(emitted[0].eventName, 'globalTravelGroupReleased');
+  assert.deepStrictEqual(
+    {
+      previousLeaderId: emitted[0].payload.previousLeaderId,
+      leaderId: emitted[0].payload.leaderId,
+      worldPoint: emitted[0].payload.worldPoint
+    },
+    {
+      previousLeaderId: leader.id,
+      leaderId: follower.id,
+      worldPoint: { x: 33, y: 44 }
+    },
+    'released follower did not receive a self-led authoritative world-map state'
+  );
+
+  emitted.length = 0;
+  globalTravelSessions.set(leader.id, {
+    id: 'travel_b', leaderId: leader.id, leaderName: leader.name,
+    memberIds: [leader.id, follower.id], terminating: false
+  });
+  api.cleanupGlobalTravelSessionsForSocket(follower.id);
+  assert.strictEqual(globalTravelSessions.get(leader.id)?.memberIds.length, 1,
+    'follower disconnect incorrectly dissolved the leader route');
+  assert.strictEqual(globalTravelSessions.get(leader.id)?.memberIds[0], leader.id);
+  assert.strictEqual(emitted.length, 0,
+    'follower disconnect emitted a false leader-release event');
+
+  emitted.length = 0;
+  persisted.length = 0;
+  failingPersistId = leader.id;
+  globalTravelSessions.set(leader.id, {
+    id: 'travel_c', leaderId: leader.id, leaderName: leader.name,
+    memberIds: [leader.id, follower.id], terminating: false
+  });
+  api.cleanupGlobalTravelSessionsForSocket(leader.id);
+  assert.strictEqual(globalTravelSessions.size, 0,
+    'failed release persistence retained the dead leader session lock');
+  assert.deepStrictEqual(persisted, [leader.id, follower.id],
+    'one failed release persistence prevented later members from being processed');
+  assert.strictEqual(emitted.length, 1,
+    'one failed release persistence prevented the online follower release event');
+  assert.strictEqual(emitted[0].payload.leaderId, follower.id,
+    'persistence failure released the follower under the wrong leader');
+  assert.strictEqual(persistenceErrors.length, 1,
+    'release persistence failure was not contained and reported exactly once');
+}
+
 function assertServerWorldTransferFaultRecovery() {
   const serverSource = fs.readFileSync(path.join(PROJECT_ROOT, 'server.js'), 'utf8');
   const transferErrors = [];
@@ -1355,6 +1452,10 @@ function assertSocketAndClientContract() {
   assert(travelCleanup.indexOf('session.terminating = true') >= 0
     && travelCleanup.indexOf('session.terminating = true') < travelCleanup.indexOf('persistActivePlayerState(member)'),
   'leader disconnect persists players before suppressing the cancelled route descriptor');
+  assert(travelCleanup.indexOf('globalTravelSessions.delete(leaderId)') >= 0
+    && travelCleanup.indexOf('globalTravelSessions.delete(leaderId)') < travelCleanup.indexOf('persistActivePlayerState(member)')
+    && travelCleanup.includes("console.error('Global travel release persistence failed:'"),
+  'leader disconnect can leave a follower locked when one release save fails');
   const travelCancel = serverSource.slice(
     serverSource.indexOf("socket.on('globalTravelCancel'"),
     serverSource.indexOf("socket.on('globalMapCreateAmbush'", serverSource.indexOf("socket.on('globalTravelCancel'"))
@@ -1370,6 +1471,13 @@ function assertSocketAndClientContract() {
   assert(serverSource.includes('attachedPartyId,')
     && serverSource.includes('attachedPartyTaskId,'),
   'authoritative global-map state omits server world-party attachment');
+  const authoritativeGlobalMap = serverSource.slice(
+    serverSource.indexOf('function serverAuthoritativeGlobalMapState('),
+    serverSource.indexOf('function publicAuthoritativePlayerState(', serverSource.indexOf('function serverAuthoritativeGlobalMapState('))
+  );
+  assert(authoritativeGlobalMap.includes('travelLeaderId: session?.leaderId')
+    && authoritativeGlobalMap.includes('travelLeaderName: session?.leaderName'),
+  'authoritative global-map state omits the reconnect-safe travel leader');
   assert(serverSource.includes('SERVER_JOINABLE_WORLD_FACTIONS.has(frozenFactionId)'),
     'reward reputation does not prioritize the faction frozen at task completion');
   assert(serverSource.includes("p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);"),
@@ -1481,9 +1589,10 @@ try {
   assertPublicMotionSnapshot();
   assertUnrelatedEncounterCannotFinishEscorts();
   assertServerPersistenceFaultRecovery();
+  assertGlobalTravelLeaderDisconnectRecovery();
   assertServerWorldTransferFaultRecovery();
   assertSocketAndClientContract();
-  console.log('World-party integrity check passed: authoritative attachment, motion snapshots, late-join patrol duty, bounded claims, trusted rewards, and public redaction.');
+  console.log('World-party integrity check passed: authoritative attachment, reconnect-safe travel leaders, motion snapshots, late-join patrol duty, bounded claims, trusted rewards, and public redaction.');
 } finally {
   fs.rmSync(tempRoot, { recursive: true, force: true });
 }

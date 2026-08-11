@@ -182,6 +182,7 @@
 
   function invalidateMultiplayerSessionContext(reason = 'session-context-changed', options = {}) {
     const socket = multiplayer.socket;
+    if (typeof globalMapState === 'object') globalMapState.partyDetachPending = false;
     try {
       if (typeof cancelMultiplayerJoinAttempt === 'function') cancelMultiplayerJoinAttempt(reason);
     } catch (_) {}

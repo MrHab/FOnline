@@ -240,6 +240,8 @@ this.__characterAppearanceFitApi = {
   applyCharacterGlbDirectionalPose,
   clearCharacterGlbDirectionalPose,
   captureCharacterFootIkRest,
+  captureCharacterUpperBodyRest,
+  applyCharacterUpperBodySwayDamping,
   solveCharacterLegChain,
   compatibleCharacterSkeletonMeshes,
   shareCompatibleCharacterSkeletons
@@ -351,11 +353,65 @@ const backwardLocomotion = fitApi.characterDirectionalLocomotionState({
   moveZ: -1
 });
 assert.strictEqual(backwardLocomotion.direction, 'backward');
-assert.strictEqual(backwardLocomotion.action, 'walk');
-assert(backwardLocomotion.playbackRate < 0, 'backpedal does not reverse the walk cycle');
+// Задний ход на скорости бега играет реверс run: walk, разогнанный втрое
+// strideSync'ом, выглядел как судорожное семенение.
+assert.strictEqual(backwardLocomotion.action, 'run');
+assert(backwardLocomotion.playbackRate < 0, 'backpedal does not reverse the locomotion cycle');
 assert(backwardLocomotion.strideScale < forwardLocomotion.strideScale,
   'backpedal stride is not shortened');
 closeTo(backwardLocomotion.lowerBodyYaw, 0, 1e-7, 'backward lower-body yaw');
+
+const slowBackwardLocomotion = fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 2,
+  facingAngle: 0,
+  moveX: 0,
+  moveZ: -1
+});
+assert.strictEqual(slowBackwardLocomotion.action, 'walk');
+assert(slowBackwardLocomotion.playbackRate < 0, 'slow backpedal does not reverse the walk cycle');
+
+// Диагональ назад: ось шага доворачивается до противоположной движению,
+// чтобы реверс клипа шёл строго вдоль фактического пути.
+const diagonalBackwardLocomotion = fitApi.characterDirectionalLocomotionState({
+  moving: true,
+  speed: 6,
+  facingAngle: 0,
+  moveX: Math.SQRT1_2,
+  moveZ: -Math.SQRT1_2
+});
+assert.strictEqual(diagonalBackwardLocomotion.direction, 'backward_right');
+closeTo(diagonalBackwardLocomotion.lowerBodyYaw, -Math.PI / 4, 1e-6, 'diagonal backpedal step axis');
+
+// Прижим размаха верха: клип run мотает голову на ±40°, рантайм обязан
+// прижимать шею/голову к рест-позе во время локомоции и не трогать их в idle.
+const swayRuntime = {
+  currentAction: 'run',
+  locomotionBones: {
+    spine02: new THREE.Bone(),
+    spine03: new THREE.Bone(),
+    neck: new THREE.Bone(),
+    head: new THREE.Bone()
+  }
+};
+fitApi.captureCharacterUpperBodyRest(swayRuntime);
+const swayEuler = new THREE.Euler();
+const clipHeadYaw = 0.7;
+for (let frame = 0; frame < 90; frame++) {
+  swayRuntime.locomotionBones.head.quaternion.setFromEuler(swayEuler.set(0, clipHeadYaw, 0));
+  fitApi.applyCharacterUpperBodySwayDamping(swayRuntime, 0.016);
+}
+const dampedHeadYaw = swayEuler.setFromQuaternion(swayRuntime.locomotionBones.head.quaternion, 'YXZ').y;
+assert(dampedHeadYaw < clipHeadYaw * 0.3,
+  `locomotion head sway is not damped (yaw ${dampedHeadYaw.toFixed(3)} rad)`);
+swayRuntime.currentAction = 'idle';
+for (let frame = 0; frame < 90; frame++) {
+  swayRuntime.locomotionBones.head.quaternion.setFromEuler(swayEuler.set(0, clipHeadYaw, 0));
+  fitApi.applyCharacterUpperBodySwayDamping(swayRuntime, 0.016);
+}
+const idleHeadYaw = swayEuler.setFromQuaternion(swayRuntime.locomotionBones.head.quaternion, 'YXZ').y;
+assert(Math.abs(idleHeadYaw - clipHeadYaw) < 0.05,
+  `idle head pose must stay untouched by sway damping (yaw ${idleHeadYaw.toFixed(3)} rad)`);
 
 const rightLocomotion = fitApi.characterDirectionalLocomotionState({
   moving: true,

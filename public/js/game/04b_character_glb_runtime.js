@@ -856,7 +856,11 @@
       // Излом к прицелу гасят корпус (52%) и голова — им это анатомично.
       lowerBodyYaw = Math.max(-1.65, Math.min(1.65, relativeAngle));
     } else if (backward) {
-      lowerBodyYaw = sideAmount * 0.38;
+      // Задний ход: ноги остаются лицом к прицелу, но ось шага доворачивается
+      // до противоположной фактическому пути — реверс клипа тогда идёт строго
+      // вдоль движения. Прежний лёгкий доворот (side * 0.38) оставлял диагональ
+      // назад под углом до 30 градусов к пути: стопы скользили боком.
+      lowerBodyYaw = Math.max(-0.95, Math.min(0.95, Math.atan2(-sideAmount, -forwardAmount)));
     }
     let direction = turning ? (turnAmount > 0 ? 'turn_right' : 'turn_left') : 'idle';
     if (moving) {
@@ -864,15 +868,18 @@
       const horizontal = sideAmount > 0.42 ? 'right' : (sideAmount < -0.42 ? 'left' : '');
       direction = [vertical, horizontal].filter(Boolean).join('_') || 'forward';
     }
+    // Задний ход на скорости бега играет реверс клипа run, а не разогнанный
+    // втрое walk: strideSync подгоняет темп к фактической скорости, и walk
+    // назад при 4.6 м/с выглядел как судорожное семенение.
     const action = locomoting
-      ? (turning ? 'turn' : (backward ? 'walk' : (speed > 3.4 ? 'run' : 'walk')))
+      ? (turning ? 'turn' : (speed > 3.4 ? 'run' : 'walk'))
       : 'idle';
     const playbackRate = turning
       ? (1.0 + Math.abs(turnAmount) * 0.5)
-      : (!moving ? 1 : (backward ? -0.82 : (sideStrength > 0.62 ? 0.92 : 1)));
+      : (!moving ? 1 : (backward ? -0.88 : (sideStrength > 0.62 ? 0.92 : 1)));
     const strideScale = turning
       ? (0.28 + Math.abs(turnAmount) * 0.18)
-      : (!moving ? 0 : (backward ? 0.68 : (sideStrength > 0.62 ? 0.84 : 1)));
+      : (!moving ? 0 : (backward ? 0.8 : (sideStrength > 0.62 ? 0.84 : 1)));
     return {
       moving,
       turning,
@@ -894,6 +901,49 @@
   function characterLocomotionBlend(current, target, rate, dt) {
     const step = Math.min(1, Math.max(0.001, Number(dt || 0.016)) * Math.max(0, Number(rate || 0)));
     return Number(current || 0) + (Number(target || 0) - Number(current || 0)) * step;
+  }
+
+  // Клипы локомоции авторизованы с размашистым верхом (в run шея и голова
+  // качаются на ±40 градусов) — в игре это читается как «мотание головой» и у
+  // игрока, и у гуманоидных НПС. Сразу после микшера верх прижимается к
+  // рест-позе: keep — доля клипового движения, которая остаётся.
+  const CHARACTER_UPPER_SWAY_KEEP = Object.freeze({
+    spine02: 0.65,
+    spine03: 0.45,
+    neck: 0.3,
+    head: 0.22
+  });
+
+  function captureCharacterUpperBodyRest(runtime) {
+    const bones = runtime?.locomotionBones || {};
+    const rest = {};
+    for (const key of Object.keys(CHARACTER_UPPER_SWAY_KEEP)) {
+      if (bones[key]?.quaternion) rest[key] = bones[key].quaternion.clone();
+    }
+    runtime.upperBodyRestQuats = rest;
+  }
+
+  function applyCharacterUpperBodySwayDamping(runtime, dt = 0.016) {
+    const rest = runtime?.upperBodyRestQuats;
+    if (!rest) return;
+    const damped = runtime.currentAction === 'walk'
+      || runtime.currentAction === 'run'
+      || runtime.currentAction === 'turn';
+    runtime.upperSwayDampBlend = characterLocomotionBlend(
+      runtime.upperSwayDampBlend ?? 0,
+      damped ? 1 : 0,
+      8,
+      dt
+    );
+    const blend = runtime.upperSwayDampBlend;
+    if (blend < 0.01) return;
+    const bones = runtime.locomotionBones || {};
+    for (const key of Object.keys(CHARACTER_UPPER_SWAY_KEEP)) {
+      const bone = bones[key];
+      const restQ = rest[key];
+      if (!bone?.quaternion || !restQ) continue;
+      bone.quaternion.slerp(restQ, (1 - CHARACTER_UPPER_SWAY_KEEP[key]) * blend);
+    }
   }
 
   const characterDirectionalPoseEuler = new THREE.Euler();
@@ -1480,6 +1530,7 @@
         actor.add(root);
         actor.userData.characterGlbRuntime = runtime;
         captureCharacterFootIkRest(actor, runtime);
+        captureCharacterUpperBodyRest(runtime);
         setCharacterGlbAction(runtime, 'idle', 0);
         refreshCharacterGlbEquipmentLayers(actor, options.equipment || {});
         if (options.npcAnimations && typeof attachApprovedNpcAnimations === 'function') {
@@ -1561,6 +1612,7 @@
     runtime.root.position.y = -runtime.kneeFlex;
     runtime.mixer.update(frameDt);
     applyCharacterFaceShapeFrame(runtime.root);
+    applyCharacterUpperBodySwayDamping(runtime, frameDt);
     applyCharacterGlbDirectionalPose(runtime, locomotion, frameDt);
     runtime.crouchBlend = characterLocomotionBlend(
       runtime.crouchBlend ?? 0,

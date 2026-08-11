@@ -17984,7 +17984,8 @@ function publicPlayer(p) {
 }
 
 function serverAuthoritativeGlobalMapState(p = {}) {
-  const session = globalTravelSessionForMember(p.id || '');
+  const candidateSession = globalTravelSessionForMember(p.id || '');
+  const session = candidateSession && !candidateSession.terminating ? candidateSession : null;
   const serverNow = Date.now();
   const attachedPartyId = worldTransferId(p.attachedPartyId || '');
   const attachedPartyTaskId = worldTransferRecordId(p.attachedPartyTaskId || '');
@@ -18013,6 +18014,8 @@ function serverAuthoritativeGlobalMapState(p = {}) {
     currentWorldSiteId: siteId,
     attachedPartyId,
     attachedPartyTaskId,
+    travelLeaderId: session?.leaderId || (p.onGlobalMap && !attachedPartyId ? String(p.id || '') : ''),
+    travelLeaderName: session?.leaderName || (p.onGlobalMap && !attachedPartyId ? String(p.name || 'Игрок') : ''),
     lastEntryCircle: null,
     travel: serverGlobalTravelPublicDescriptor(session, serverNow),
     encounter: null
@@ -18624,7 +18627,7 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
 function globalTravelMemberIsFollower(memberId = '') {
   const id = String(memberId || '');
   const session = globalTravelSessionForMember(id);
-  return !!(session && String(session.leaderId || '') && String(session.leaderId || '') !== id);
+  return !!(session && !session.terminating && String(session.leaderId || '') && String(session.leaderId || '') !== id);
 }
 
 function cleanupGlobalTravelSessionsForSocket(socketId = '') {
@@ -18638,15 +18641,36 @@ function cleanupGlobalTravelSessionsForSocket(socketId = '') {
     if (String(leaderId || '') === id || String(session.leaderId || '') === id) {
       session.terminating = true;
       const point = serverGlobalTravelCurrentPoint(session, Date.now());
-      for (const memberId of (Array.isArray(session.memberIds) ? session.memberIds : [])) {
+      const memberIds = Array.isArray(session.memberIds) ? [...session.memberIds] : [];
+      // Remove the authority lock before persistence. A failed disk write must
+      // never leave the remaining online members trapped behind a dead leader.
+      globalTravelSessions.delete(leaderId);
+      const releasedMembers = [];
+      for (const memberId of memberIds) {
         const member = players.get(memberId);
         if (!member) continue;
         member.globalWorldPoint = point || member.globalWorldPoint || null;
         member.onGlobalMap = true;
         member.pendingLocationTransition = null;
-        persistActivePlayerState(member);
+        try {
+          persistActivePlayerState(member);
+        } catch (error) {
+          console.error('Global travel release persistence failed:', member.id, error);
+        }
+        if (String(memberId || '') !== id) releasedMembers.push(member);
       }
-      globalTravelSessions.delete(leaderId);
+      for (const member of releasedMembers) {
+        const memberSocket = io.sockets.sockets.get(member.id);
+        if (!memberSocket) continue;
+        memberSocket.emit('globalTravelGroupReleased', {
+          previousLeaderId: id,
+          previousLeaderName: String(session.leaderName || ''),
+          leaderId: member.id,
+          leaderName: member.name || 'Игрок',
+          worldPoint: point || member.globalWorldPoint || null,
+          reason: 'leaderDisconnected'
+        });
+      }
       continue;
     }
     if (Array.isArray(session.memberIds)) {
@@ -21436,11 +21460,28 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const p = players.get(socket.id);
-    cleanupGlobalTravelSessionsForSocket(socket.id);
-    if (p) persistActivePlayerState(p);
-    leaveCurrentRoom(socket);
-    releaseSocketLocks(socket);
-    players.delete(socket.id);
+    try {
+      cleanupGlobalTravelSessionsForSocket(socket.id);
+    } catch (error) {
+      console.error('Global travel disconnect cleanup failed:', socket.id, error);
+    }
+    try {
+      if (p) persistActivePlayerState(p);
+    } catch (error) {
+      console.error('Disconnect persistence failed:', socket.id, error);
+    }
+    try {
+      leaveCurrentRoom(socket);
+    } catch (error) {
+      console.error('Disconnect room cleanup failed:', socket.id, error);
+    }
+    try {
+      releaseSocketLocks(socket);
+    } catch (error) {
+      console.error('Disconnect lock cleanup failed:', socket.id, error);
+    } finally {
+      players.delete(socket.id);
+    }
   });
 });
 

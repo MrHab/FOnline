@@ -892,6 +892,243 @@ function assertInputDeadman() {
   ]);
 }
 
+function assertGlobalMapLeaderRecovery() {
+  const runtime = new Function([
+    'const multiplayer = { socket: { id: "socket-new", connected: true }, joined: true };',
+    'const globalMapState = {',
+    '  onWorldMap: true, travelLeaderId: "socket-old", travelLeaderName: "Old leader",',
+    '  playerX: 10, playerY: 20, selectedX: 10, selectedY: 20,',
+    '  travel: { progress: 0.4 }, encounter: null, party: []',
+    '};',
+    'const characterProfile = { name: "Reconnected" };',
+    'const player = { name: "Reconnected" };',
+    'const logs = [];',
+    'let renders = 0;',
+    'let saves = 0;',
+    'function globalMapSavedPoint(point) { return { x: Number(point?.x || 0), y: Number(point?.y || 0) }; }',
+    'function globalMapPlayerPoint() { return { x: globalMapState.playerX, y: globalMapState.playerY }; }',
+    'function globalMapPartySnapshot() { return [{ id: multiplayer.socket.id, leader: true }]; }',
+    'function addLog(message) { logs.push(message); }',
+    'function renderGlobalMapPanel() { renders += 1; }',
+    'function renderGlobalEncounterPanel() {}',
+    'function queueSave() { saves += 1; }',
+    'function globalMapLocationName(id) { return id || "wasteland"; }',
+    'function setGlobalPlayerPointFromLocation() {}',
+    functionSource(globalMapState, 'globalMapLocalSocketId'),
+    functionSource(globalMapState, 'globalMapSetTravelLeader'),
+    functionSource(globalMapState, 'globalMapIsPlayerGroupFollower'),
+    functionSource(globalMapState, 'globalMapGroupMovementLocked'),
+    functionSource(globalMapTravel, 'handleGlobalTravelGroupReleased'),
+    functionSource(globalMapTravel, 'handleGlobalTravelCancelled'),
+    functionSource(globalMapTravel, 'handleGlobalTravelArrived'),
+    'return {',
+    '  globalMapState, logs,',
+    '  locked: globalMapGroupMovementLocked,',
+    '  release: handleGlobalTravelGroupReleased, cancel: handleGlobalTravelCancelled, arrive: handleGlobalTravelArrived,',
+    '  counters: () => ({ renders, saves })',
+    '};'
+  ].join('\n'))();
+
+  assert.strictEqual(runtime.locked(), true,
+    'a stale pre-reconnect socket id did not reproduce the global-map movement lock');
+  assert.strictEqual(runtime.release({
+    previousLeaderId: 'socket-old',
+    leaderId: 'socket-new',
+    leaderName: 'Reconnected',
+    worldPoint: { x: 31, y: 47 }
+  }), true, 'leader disconnect did not release the follower');
+  assert.strictEqual(runtime.locked(), false,
+    'released player is still treated as a global-map follower');
+  assert.strictEqual(runtime.globalMapState.travelLeaderId, 'socket-new',
+    'released player was not rebound to the current socket id');
+  assert.deepStrictEqual(
+    { x: runtime.globalMapState.playerX, y: runtime.globalMapState.playerY },
+    { x: 31, y: 47 },
+    'leader release lost the authoritative world point'
+  );
+  assert.strictEqual(runtime.globalMapState.travel, null,
+    'leader release retained a route owned by the disconnected socket');
+  assert.deepStrictEqual(runtime.counters(), { renders: 1, saves: 1 });
+  assert.strictEqual(runtime.release({
+    previousLeaderId: 'another-old-leader',
+    leaderId: 'socket-new',
+    worldPoint: { x: 90, y: 90 }
+  }), false, 'a stale release event overwrote a newer travel leader');
+  assert.deepStrictEqual(
+    { x: runtime.globalMapState.playerX, y: runtime.globalMapState.playerY },
+    { x: 31, y: 47 }
+  );
+
+  runtime.globalMapState.travelLeaderId = 'route-leader';
+  runtime.globalMapState.travelLeaderName = 'Route leader';
+  runtime.globalMapState.travel = { progress: 0.5 };
+  runtime.cancel({
+    leaderId: 'route-leader',
+    leaderName: 'Route leader',
+    worldPoint: { x: 41, y: 51 }
+  });
+  assert.strictEqual(runtime.locked(), false,
+    'a follower remained movement-locked after the leader cancelled the route');
+  assert.strictEqual(runtime.globalMapState.travelLeaderId, 'socket-new',
+    'route cancellation did not promote the released follower to self leader');
+
+  runtime.globalMapState.travelLeaderId = 'arrival-leader';
+  runtime.globalMapState.travelLeaderName = 'Arrival leader';
+  runtime.globalMapState.travel = { progress: 0.95 };
+  runtime.arrive({
+    leaderId: 'arrival-leader',
+    leaderName: 'Arrival leader',
+    targetLocationId: 'wasteland',
+    worldPoint: { x: 61, y: 71 },
+    stayOnWorldMap: true
+  });
+  assert.strictEqual(runtime.locked(), false,
+    'a follower remained movement-locked after arriving at a wilderness point');
+  assert.strictEqual(runtime.globalMapState.travelLeaderId, 'socket-new',
+    'wilderness arrival did not promote the released follower to self leader');
+
+  const restoreBody = functionBody(globalMapState, 'applySavedGlobalMapState');
+  assertContainsAll('authoritative global-map leader restore', restoreBody, [
+    'saved.travelLeaderId',
+    'saved.travelLeaderName',
+    'savedTravelLeaderId || localLeaderId',
+    'globalMapSetTravelLeader('
+  ]);
+  const attachmentRestoreStart = restoreBody.indexOf('globalMapState.attachedPartyId =');
+  const travelLeaderRestoreStart = restoreBody.indexOf('const savedTravelLeaderId', attachmentRestoreStart);
+  assert(attachmentRestoreStart >= 0
+    && travelLeaderRestoreStart > attachmentRestoreStart
+    && !restoreBody.slice(attachmentRestoreStart, travelLeaderRestoreStart).includes('partyDetachPending = false'),
+  'a pre-ACK detached authoritative snapshot can clear the route acknowledgement latch');
+  const disconnectStart = socketRoom.indexOf("socket.on('disconnect'");
+  const disconnectEnd = socketRoom.indexOf("socket.on('connect_error'", disconnectStart);
+  const disconnectBody = socketRoom.slice(disconnectStart, disconnectEnd);
+  assertContainsAll('global-map transport leader cleanup', disconnectBody, [
+    'globalMapState?.onWorldMap',
+    "globalMapSetTravelLeader('', '')"
+  ]);
+  assert(socketRoom.includes("multiplayer.socket.on('globalTravelGroupReleased'"),
+    'the client does not listen for server group release events');
+  const selectBody = functionBody(globalMapTravel, 'selectGlobalMapDestination');
+  assert(selectBody.indexOf('detachGlobalMapWorldParty(') >= 0
+    && selectBody.indexOf('detachGlobalMapWorldParty(') < selectBody.indexOf('blockGlobalMapGroupMovement()'),
+  'route selection checks the attachment lock before its intended auto-detach path');
+
+  const detachRouteRuntime = () => new Function([
+    'const globalMapState = {',
+    '  attachedPartyId: "party-a", attachedPartyTaskId: "task-a", partyDetachPending: false,',
+    '  playerX: 10, playerY: 20, selectedX: 10, selectedY: 20, travel: null, encounter: null, pendingWorldDrop: null',
+    '};',
+    'let pendingAck = null;',
+    'let starts = 0;',
+    'const emitted = [];',
+    'const readouts = [];',
+    'const multiplayer = { joined: true, socket: {',
+    '  connected: true,',
+    '  emit(eventName, payload, ack) { emitted.push({ eventName, payload }); pendingAck = ack; }',
+    '} };',
+    'function rejectBlockedGameplayAction() { return false; }',
+    'function globalMapAttachedParty() { return { id: "party-a", name: "Patrol", x: 10, y: 20 }; }',
+    'function clampGlobalMapPoint(x, y) {',
+    '  const point = x && typeof x === "object" ? x : { x, y };',
+    '  return { x: Number(point?.x || 0), y: Number(point?.y || 0) };',
+    '}',
+    'function applyServerAuthoritativePlayerState(self) {',
+    '  globalMapState.attachedPartyId = String(self?.globalMap?.attachedPartyId || "");',
+    '  globalMapState.attachedPartyTaskId = String(self?.globalMap?.attachedPartyTaskId || "");',
+    '}',
+    'function applyWastelandSimState() {}',
+    'function addLog() {}',
+    'function renderGlobalMapPanel() {}',
+    'function queueSave() {}',
+    'function setReadout(value) { readouts.push(value); }',
+    'function blockGlobalMapGroupMovement() { return false; }',
+    'function keepGlobalMapCameraAfterManualDestination() {}',
+    'function sanitizeGlobalMapPlayerLandState() {}',
+    'function globalMapPointIsWater() { return false; }',
+    'function globalMapPlayerPoint() { return { x: globalMapState.playerX, y: globalMapState.playerY }; }',
+    'function globalMapPointDistance(left, right) { return Math.hypot(left.x - right.x, left.y - right.y); }',
+    'function startGlobalTravel() { starts += 1; return true; }',
+    functionSource(globalMapState, 'detachGlobalMapWorldParty'),
+    functionSource(globalMapTravel, 'selectGlobalMapDestination'),
+    'return {',
+    '  globalMapState, emitted, readouts, select: selectGlobalMapDestination, detach: detachGlobalMapWorldParty,',
+    '  acknowledge: value => pendingAck(value), starts: () => starts',
+    '};'
+  ].join('\n'))();
+
+  const detachSuccess = detachRouteRuntime();
+  assert.strictEqual(detachSuccess.select(30, 40), true,
+    'attached route selection did not begin the confirmed detach flow');
+  assert.strictEqual(detachSuccess.starts(), 0,
+    'route started before the server confirmed world-party cancellation');
+  assert.deepStrictEqual(detachSuccess.emitted, [{
+    eventName: 'worldTaskAction', payload: { action: 'cancel', taskId: 'task-a' }
+  }]);
+  // The server emits an authoritative detached snapshot before acknowledging
+  // worldTaskAction. That snapshot must not unlock a newer route click or let
+  // it race the destination captured by the original acknowledgement.
+  detachSuccess.globalMapState.attachedPartyId = '';
+  detachSuccess.globalMapState.attachedPartyTaskId = '';
+  assert.strictEqual(detachSuccess.globalMapState.partyDetachPending, true,
+    'a pre-ACK detached snapshot cleared the route acknowledgement latch');
+  assert.strictEqual(detachSuccess.select(31, 41), false,
+    'a pre-ACK detached snapshot let a newer route bypass the pending acknowledgement');
+  assert.strictEqual(detachSuccess.detach(), false,
+    'the leave-group button bypassed a pending route detach acknowledgement');
+  assert.strictEqual(detachSuccess.emitted.length, 1,
+    'a repeated click sent a duplicate world-party cancellation');
+  detachSuccess.acknowledge({
+    ok: true,
+    self: { globalMap: { attachedPartyId: '', attachedPartyTaskId: '' } }
+  });
+  assert.strictEqual(detachSuccess.starts(), 1,
+    'confirmed detach did not resume the selected independent route');
+  assert.strictEqual(detachSuccess.globalMapState.partyDetachPending, false,
+    'confirmed detach left the route gate stuck');
+  assert.deepStrictEqual(
+    { x: detachSuccess.globalMapState.selectedX, y: detachSuccess.globalMapState.selectedY },
+    { x: 30, y: 40 },
+    'confirmed detach did not preserve the original destination'
+  );
+
+  const detachFailure = detachRouteRuntime();
+  detachFailure.select(30, 40);
+  detachFailure.acknowledge({
+    ok: false,
+    error: 'still attached',
+    self: { globalMap: { attachedPartyId: 'party-a', attachedPartyTaskId: 'task-a' } }
+  });
+  assert.strictEqual(detachFailure.starts(), 0,
+    'rejected detach still started an independent route');
+  assert.strictEqual(detachFailure.globalMapState.attachedPartyId, 'party-a',
+    'rejected detach lost the authoritative party attachment');
+  assert.strictEqual(detachFailure.globalMapState.partyDetachPending, false,
+    'rejected detach left the route gate stuck');
+
+  const detachButton = detachRouteRuntime();
+  assert.strictEqual(detachButton.detach(), true,
+    'the leave-group button did not begin a confirmed detach');
+  assert.strictEqual(detachButton.select(30, 40), false,
+    'a map click bypassed the leave-group acknowledgement');
+  assert.strictEqual(detachButton.starts(), 0,
+    'button-initiated detach started a route before its acknowledgement');
+  assert.strictEqual(detachButton.emitted.length, 1,
+    'button-initiated detach emitted a duplicate cancellation');
+  detachButton.acknowledge({
+    ok: true,
+    self: { globalMap: { attachedPartyId: '', attachedPartyTaskId: '' } }
+  });
+  assert.strictEqual(detachButton.select(30, 40), true,
+    'a confirmed button detach did not unlock later route selection');
+  assert.strictEqual(detachButton.starts(), 1,
+    'a confirmed button detach did not start the later selected route');
+
+  assert(functionBody(core, 'invalidateMultiplayerSessionContext')
+    .includes('globalMapState.partyDetachPending = false'),
+  'changing session or character context can retain a stale pending party detach gate');
+}
+
 function assertGlobalMapMotionIntegrity() {
   const motionRuntime = new Function([
     'let now = 100;',
@@ -2684,6 +2921,7 @@ async function main() {
   assertMovementAccuracyIntent();
   assertHarvestIntegrity();
   assertInputDeadman();
+  assertGlobalMapLeaderRecovery();
   assertGlobalMapMotionIntegrity();
   assertGlobalMapSnapshotPerformance();
   assertBlockedGameplayGates();
@@ -2701,7 +2939,7 @@ async function main() {
   assertCrowdedActorInteractionBudget();
   assertRemotePlayerStateFastPath();
   assertNetworkPingDiagnostics();
-  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, movement accuracy, compact network hot paths, sparse sequenced enemy frames, onsite-zone change detection, actor animation LOD, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
+  console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, global-map leader recovery, movement accuracy, compact network hot paths, sparse sequenced enemy frames, onsite-zone change detection, actor animation LOD, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
 }
 
 main().catch(error => {

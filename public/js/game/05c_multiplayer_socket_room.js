@@ -726,6 +726,9 @@
       cancelMultiplayerJoinAttempt('disconnect');
       multiplayer.connected = false;
       clearMultiplayerJoinedContext();
+      if (typeof globalMapState === 'object' && globalMapState?.onWorldMap
+        && typeof globalMapSetTravelLeader === 'function') globalMapSetTravelLeader('', '');
+      if (typeof globalMapState === 'object') globalMapState.partyDetachPending = false;
       multiplayer.transportState = socket.active ? 'connecting' : 'blocked';
       multiplayer.serverAuthoritativeEnemies = false;
       if (multiplayer.pendingEquipmentSlots?.clear) multiplayer.pendingEquipmentSlots.clear();
@@ -1027,6 +1030,9 @@
     });
     multiplayer.socket.on('globalTravelEnteredWorld', data => {
       if (typeof handleGlobalTravelEnteredWorld === 'function') handleGlobalTravelEnteredWorld(data || {});
+    });
+    multiplayer.socket.on('globalTravelGroupReleased', data => {
+      if (typeof handleGlobalTravelGroupReleased === 'function') handleGlobalTravelGroupReleased(data || {});
     });
     multiplayer.socket.on('globalTravelEncounterDecision', data => {
       if (typeof handleGlobalTravelEncounterDecision === 'function') handleGlobalTravelEncounterDecision(data || {});

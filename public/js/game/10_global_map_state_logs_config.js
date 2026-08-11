@@ -163,6 +163,7 @@
     currentWorldSiteId: '',
     attachedPartyId: '',
     attachedPartyTaskId: '',
+    partyDetachPending: false,
     travelLeaderId: '',
     travelLeaderName: '',
     routeContactStops: {},
@@ -1073,19 +1074,49 @@
     const label = party?.name || 'группа';
     const leavingTaskId = String(globalMapState.attachedPartyTaskId || '').trim();
     const socket = typeof multiplayer === 'object' ? multiplayer.socket : null;
+    const finishDetach = () => {
+      globalMapState.partyDetachPending = false;
+      globalMapState.attachedPartyId = '';
+      globalMapState.attachedPartyTaskId = '';
+      if (reason) addLog(reason, null, 'system');
+      else addLog(`Глобальная карта: вы покинули группу ${label}.`, null, 'system');
+      renderGlobalMapPanel();
+      if (typeof queueSave === 'function') queueSave(true);
+    };
     if (!options.skipServerCancel && leavingTaskId && socket?.connected && typeof multiplayer === 'object' && multiplayer.joined && typeof socket.emit === 'function') {
-      socket.emit('worldTaskAction', { action: 'cancel', taskId: leavingTaskId }, ack => {
+      if (globalMapState.partyDetachPending) {
+        setReadout('Сервер подтверждает выход из группы.');
+        return false;
+      }
+      globalMapState.partyDetachPending = true;
+      const handleServerAck = ack => {
         if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
         if (ack?.sim && typeof applyWastelandSimState === 'function') applyWastelandSimState(ack.sim);
-        if (ack?.ok === false) addLog(ack.error || 'Сервер не подтвердил выход из группы.', null, 'quest');
-      });
+        if (!ack || ack.ok === false) {
+          globalMapState.partyDetachPending = false;
+          addLog(ack?.error || 'Сервер не подтвердил выход из группы.', null, 'quest');
+          renderGlobalMapPanel();
+          if (typeof options.onServerResult === 'function') options.onServerResult(false, ack || null);
+          return;
+        }
+        finishDetach();
+        if (typeof options.onServerResult === 'function') options.onServerResult(true, ack);
+      };
+      const requestSent = typeof emitGuardedMultiplayerGameplayAction === 'function'
+        ? emitGuardedMultiplayerGameplayAction(
+          'worldTaskAction',
+          { action: 'cancel', taskId: leavingTaskId },
+          handleServerAck
+        )
+        : (socket.emit('worldTaskAction', { action: 'cancel', taskId: leavingTaskId }, handleServerAck), true);
+      if (!requestSent) {
+        globalMapState.partyDetachPending = false;
+        setReadout('Нет подтверждённого соединения с сервером.');
+        return false;
+      }
+      return true;
     }
-    globalMapState.attachedPartyId = '';
-    globalMapState.attachedPartyTaskId = '';
-    if (reason) addLog(reason, null, 'system');
-    else addLog(`Глобальная карта: вы покинули группу ${label}.`, null, 'system');
-    renderGlobalMapPanel();
-    if (typeof queueSave === 'function') queueSave(true);
+    finishDetach();
     return true;
   }
 
@@ -1642,6 +1673,7 @@
 
   function applySavedGlobalMapState(saved = null) {
     if (!saved || typeof saved !== 'object') {
+      globalMapState.partyDetachPending = false;
       globalMapState.onWorldMap = false;
       globalMapState.travel = null;
       globalMapState.encounter = null;
@@ -1681,6 +1713,8 @@
     globalMapState.currentWorldSiteId = String(saved.currentWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     globalMapState.attachedPartyId = String(saved.attachedPartyId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
     globalMapState.attachedPartyTaskId = String(saved.attachedPartyTaskId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120);
+    const savedTravelLeaderId = String(saved.travelLeaderId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    const savedTravelLeaderName = String(saved.travelLeaderName || '').slice(0, 80);
     globalMapState.lastEntryCircle = sanitizeGlobalMapEntryCircle(saved.lastEntryCircle);
     const restoredTravel = restoreGlobalMapTravel(saved.travel);
     if (restoredTravel
@@ -1698,6 +1732,14 @@
 
     const active = !!saved.onWorldMap;
     globalMapState.onWorldMap = active;
+    const localLeaderId = active && !globalMapState.attachedPartyId
+      && multiplayer?.socket?.connected && multiplayer.joined
+      ? globalMapLocalSocketId()
+      : '';
+    globalMapSetTravelLeader(
+      active ? (savedTravelLeaderId || localLeaderId) : '',
+      active ? (savedTravelLeaderName || (localLeaderId ? (characterProfile?.name || player?.name || 'Игрок') : '')) : ''
+    );
     if (active) {
       if (!globalMapState.travel && !globalMapState.encounter) {
         const settlement = globalMapSettlementAt(playerPoint.x, playerPoint.y);

@@ -1,6 +1,10 @@
   function startGlobalTravel() {
     if (typeof rejectBlockedGameplayAction === 'function'
       && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Маршрут временно недоступен.')) return false;
+    if (globalMapState.partyDetachPending) {
+      setReadout('Сервер подтверждает выход из группы.');
+      return false;
+    }
     if (blockGlobalMapGroupMovement()) return false;
     const serverRequired = typeof clientWorldRequiresServer === 'function' && clientWorldRequiresServer();
     if (serverRequired && !(multiplayer?.socket?.connected && multiplayer.joined)) {
@@ -107,8 +111,7 @@
     if (typeof rejectBlockedGameplayAction === 'function'
       && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Маршрут временно нельзя изменить.')) return false;
     if (globalMapState.attachedPartyId) {
-      detachGlobalMapWorldParty();
-      return;
+      return detachGlobalMapWorldParty();
     }
     if (!globalMapState.travel || globalMapState.encounter) return;
     const finishCancel = serverPoint => {
@@ -165,11 +168,29 @@
   function selectGlobalMapDestination(x, y) {
     if (typeof rejectBlockedGameplayAction === 'function'
       && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Выбор маршрута временно недоступен.')) return false;
-    if (globalMapState.encounter) return false;
-    if (blockGlobalMapGroupMovement()) return false;
-    if (globalMapState.attachedPartyId) {
-      detachGlobalMapWorldParty('Глобальная карта: вы покинули группу и выбрали собственный маршрут.');
+    if (globalMapState.partyDetachPending) {
+      setReadout('Сервер подтверждает выход из группы.');
+      return false;
     }
+    if (globalMapState.encounter) return false;
+    if (globalMapState.attachedPartyId) {
+      const waitForServerAck = !!(
+        globalMapState.attachedPartyTaskId
+        && multiplayer?.socket?.connected
+        && multiplayer.joined
+      );
+      const detached = detachGlobalMapWorldParty(
+        'Глобальная карта: вы покинули группу и выбрали собственный маршрут.',
+        {
+          onServerResult: ok => {
+            if (ok) selectGlobalMapDestination(x, y);
+          }
+        }
+      );
+      if (!detached && globalMapState.attachedPartyId) return false;
+      if (waitForServerAck) return detached;
+    }
+    if (blockGlobalMapGroupMovement()) return false;
     keepGlobalMapCameraAfterManualDestination();
     if (globalMapState.travel) {
       const rawPoint = globalMapTravelCurrentPoint(globalMapState.travel);
@@ -627,6 +648,29 @@
     renderGlobalMapPanel();
   }
 
+  function handleGlobalTravelGroupReleased(data = {}) {
+    const previousLeaderId = String(data.previousLeaderId || '').trim();
+    const activeLeaderId = String(globalMapState.travelLeaderId || '').trim();
+    if (previousLeaderId && activeLeaderId && activeLeaderId !== previousLeaderId) return false;
+    const point = data.worldPoint ? globalMapSavedPoint(data.worldPoint) : globalMapPlayerPoint();
+    globalMapState.playerX = point.x;
+    globalMapState.playerY = point.y;
+    globalMapState.selectedX = point.x;
+    globalMapState.selectedY = point.y;
+    globalMapState.travel = null;
+    globalMapState.encounter = null;
+    globalMapState.onWorldMap = true;
+    globalMapSetTravelLeader(
+      data.leaderId || globalMapLocalSocketId(),
+      data.leaderName || characterProfile?.name || player?.name || 'Игрок'
+    );
+    globalMapState.party = globalMapPartySnapshot();
+    addLog('Связь с лидером группы потеряна. Теперь вы можете выбрать собственный маршрут.', null, 'system');
+    renderGlobalMapPanel();
+    if (typeof queueSave === 'function') queueSave(true);
+    return true;
+  }
+
   function handleGlobalTravelEncounterDecision(data = {}) {
     if (data.leaderId === multiplayer?.socket?.id) return;
     if (data.pending) addLog(`Лидер группы обнаружил событие: ${data.title || 'неизвестная угроза'}.`, null, 'combat');
@@ -643,7 +687,11 @@
     globalMapState.travel = null;
     globalMapState.encounter = null;
     globalMapState.onWorldMap = true;
-    if (Array.isArray(data.party)) globalMapState.party = data.party;
+    globalMapSetTravelLeader(
+      globalMapLocalSocketId(),
+      characterProfile?.name || player?.name || 'Игрок'
+    );
+    globalMapState.party = globalMapPartySnapshot();
     addLog(`${data.leaderName || 'Лидер группы'} остановил движение.`, null, 'system');
     renderGlobalMapPanel();
     if (typeof queueSave === 'function') queueSave(true);
@@ -667,6 +715,11 @@
     globalMapState.encounter = null;
     if (data.stayOnWorldMap) {
       globalMapState.onWorldMap = true;
+      globalMapSetTravelLeader(
+        globalMapLocalSocketId(),
+        characterProfile?.name || player?.name || 'Игрок'
+      );
+      globalMapState.party = globalMapPartySnapshot();
       globalMapState.pendingEncounterId = '';
       globalMapState.pendingEncounterRoomId = '';
       globalMapState.pendingEncounterWorldZoneId = '';

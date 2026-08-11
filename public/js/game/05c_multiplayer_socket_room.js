@@ -825,6 +825,11 @@
       multiplayer.serverAuthoritativeEnemies = true;
       applyNetworkEnemyFrame(data.enemies || []);
     });
+    multiplayer.socket.on('enemyActivityDelta', data => {
+      if (!networkPayloadIsForCurrentRoom(data || {})) return;
+      multiplayer.serverAuthoritativeEnemies = true;
+      applyNetworkEnemyActivityDelta(data.activities || []);
+    });
     multiplayer.socket.on('groundItemsSnapshot', data => {
       markStartupNetworkEvent('groundItemsSnapshot');
       if (!networkSnapshotIsFresh(data || {}, 'lastGroundItemsSnapshotT')) return;

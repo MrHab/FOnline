@@ -275,6 +275,39 @@
     return !!(actor && !actor.dead && !actor._removed && actor.hostileToPlayer === false);
   }
 
+  function npcUsesScheduledTradeHours(actor) {
+    if (!actor || actor.isTradeMachine) return false;
+    const role = String(actor.role || actor.encounterRole || '').toLowerCase();
+    return ['merchant', 'trader', 'quartermaster'].includes(role);
+  }
+
+  function npcScheduledTradeClosed(actor) {
+    return npcUsesScheduledTradeHours(actor)
+      && actor?._hasNetworkActivity === true
+      && actor.serviceAvailable === false;
+  }
+
+  function handleNpcScheduledTradeAvailabilityChanged(actor) {
+    if (!npcScheduledTradeClosed(actor) || typeof traderWindowOpen === 'undefined' || !traderWindowOpen) return false;
+    const active = typeof activeTraderActor !== 'undefined' ? activeTraderActor : null;
+    const sameActor = active === actor
+      || !!(active?.id && actor?.id && String(active.id) === String(actor.id));
+    if (!sameActor) return false;
+
+    if (typeof closeTraderWindow === 'function') {
+      closeTraderWindow();
+    } else {
+      if (typeof saleQueue !== 'undefined' && typeof saleQueue?.clear === 'function') saleQueue.clear();
+      if (typeof buyQueue !== 'undefined' && typeof buyQueue?.clear === 'function') buyQueue.clear();
+      traderWindowOpen = false;
+      activeTraderActor = null;
+    }
+    if (typeof setReadout === 'function') {
+      setReadout(`${actor.name || 'Торговец'} закончил смену. Торговля закрыта до рабочих часов.`);
+    }
+    return true;
+  }
+
   function canTalkToNpcActor(actor) {
     if (!actor || actor.dead || actor._removed || actor.hostileToPlayer !== false) return false;
     return !isSilentCreatureActor(actor);
@@ -451,7 +484,11 @@
   function syncNpcTradeStateToServer(trader = null) {
     if (!trader || trader.isTradeMachine || !trader.id || typeof multiplayer === 'undefined' || !multiplayer?.socket || !multiplayer.socket.connected) return;
     multiplayer.socket.emit('syncNpcTradeState', { enemyId: trader.id }, ack => {
-      if (!ack || !ack.ok || !ack.enemy || typeof applyNetworkEnemies !== 'function') return;
+      if (!ack || !ack.ok) {
+        if (ack?.error) setReadout(ack.error);
+        return;
+      }
+      if (!ack.enemy || typeof applyNetworkEnemies !== 'function') return;
       applyNetworkEnemies([ack.enemy], { allowPositionSync: false, fromServer: true, pruneMissing: false });
       const updated = enemies.find(enemy => enemy.id === ack.enemy.id);
       if (updated) applyServerTraderMarketUpdate(updated);

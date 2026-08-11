@@ -419,6 +419,7 @@ function seedCharacterState(account, options, usersDb, savesDb) {
 function seedCombatFixtures(accounts) {
   const usersFile = path.join(DATA_DIR, 'users.json');
   const savesFile = path.join(DATA_DIR, 'saves.json');
+  const wastelandFile = path.join(DATA_DIR, 'wasteland-sim.json');
   const usersDb = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
   const savesDb = JSON.parse(fs.readFileSync(savesFile, 'utf8'));
 
@@ -537,6 +538,17 @@ function seedCombatFixtures(accounts) {
   }, usersDb, savesDb);
 
   fs.writeFileSync(savesFile, JSON.stringify(savesDb, null, 2));
+
+  // Trading is now governed by the authoritative NPC routine clock. Keep this
+  // combat/equipment fixture deterministic by starting its world during the
+  // merchant work shift instead of depending on the wall-clock test runtime.
+  invariant(fs.existsSync(wastelandFile), 'Wasteland clock fixture is missing');
+  const wastelandState = JSON.parse(fs.readFileSync(wastelandFile, 'utf8'));
+  const clockSampleAt = Date.now();
+  wastelandState.worldHour = 10;
+  wastelandState.lastTickAt = clockSampleAt;
+  wastelandState.updatedAt = clockSampleAt;
+  fs.writeFileSync(wastelandFile, JSON.stringify(wastelandState, null, 2));
 }
 
 function inventoryRowsToSavedObject(rows, equipment = {}) {

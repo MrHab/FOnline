@@ -5,6 +5,10 @@
       return false;
     }
     const tradeMachine = trader?.isTradeMachine === true;
+    if (!tradeMachine && typeof npcScheduledTradeClosed === 'function' && npcScheduledTradeClosed(trader)) {
+      setReadout(`${trader.name || 'Торговец'} сейчас не работает. Приходите в рабочие часы.`);
+      return false;
+    }
     if (trader !== traderNpc && !tradeMachine && !isCaravanTrader(trader)) {
       setReadout(`${trader.name || 'НПС'} сейчас ничего не продаёт.`);
       return false;
@@ -302,6 +306,15 @@
     const net = tradeNetCost();
     const money = inventory.get('silver') || 0;
     const trader = activeTraderOrNearby(4.2);
+    if (typeof npcScheduledTradeClosed === 'function' && npcScheduledTradeClosed(trader)) {
+      return {
+        ok: false,
+        reason: `${trader?.name || 'Торговец'} сейчас не работает. Приходите в рабочие часы.`,
+        net,
+        projectedWeight: tradeProjectedWeight(),
+        capacity: carryCapacity()
+      };
+    }
     if (trader?.tradePending) return { ok: false, reason: 'Автомат проводит обмен на сервере.', net, projectedWeight: tradeProjectedWeight(), capacity: carryCapacity() };
     const traderCaps = activeTraderCaps(trader);
     const projectedWeight = tradeProjectedWeight();
@@ -707,7 +720,13 @@
     line.textContent = lineOverride || friendlyNpcDialogueLine(actor);
     options.innerHTML = '';
     addDialogueOption(options, '\u041a\u0430\u043a \u0438\u0434\u0443\u0442 \u0434\u0435\u043b\u0430?', () => renderFriendlyNpcDialogue(actor, friendlyNpcDialogueLine(actor, 1)));
-    addDialogueOption(options, '\u041f\u043e\u043a\u0430\u0436\u0438, \u0447\u0435\u043c \u0433\u043e\u0442\u043e\u0432 \u043e\u0431\u043c\u0435\u043d\u044f\u0442\u044c\u0441\u044f.', () => openTraderWindow(actor));
+    if (typeof npcScheduledTradeClosed === 'function' && npcScheduledTradeClosed(actor)) {
+      addDialogueOption(options, '\u0422\u043e\u0440\u0433\u043e\u0432\u043b\u044f \u0441\u0435\u0439\u0447\u0430\u0441 \u0437\u0430\u043a\u0440\u044b\u0442\u0430.', () => {
+        setReadout(`${actor.name || '\u0422\u043e\u0440\u0433\u043e\u0432\u0435\u0446'} \u0432\u0435\u0440\u043d\u0451\u0442\u0441\u044f \u043a \u043f\u0440\u0438\u043b\u0430\u0432\u043a\u0443 \u0432 \u0440\u0430\u0431\u043e\u0447\u0438\u0435 \u0447\u0430\u0441\u044b.`);
+      });
+    } else {
+      addDialogueOption(options, '\u041f\u043e\u043a\u0430\u0436\u0438, \u0447\u0435\u043c \u0433\u043e\u0442\u043e\u0432 \u043e\u0431\u043c\u0435\u043d\u044f\u0442\u044c\u0441\u044f.', () => openTraderWindow(actor));
+    }
     addDialogueOption(options, '\u0414\u043e \u0432\u0441\u0442\u0440\u0435\u0447\u0438.', closeNpcDialogueWindow);
     return showNpcDialogueWindow(win, actor);
   }

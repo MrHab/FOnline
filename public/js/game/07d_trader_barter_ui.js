@@ -311,6 +311,18 @@
 
   function submitServerNpcTradeExchange(trader, state = {}, requested = null) {
     if (!trader || trader.isTradeMachine || trader.tradePending) return false;
+    if (typeof npcScheduledTradeClosed === 'function' && npcScheduledTradeClosed(trader)) {
+      const closedActiveWindow = typeof handleNpcScheduledTradeAvailabilityChanged === 'function'
+        && handleNpcScheduledTradeAvailabilityChanged(trader);
+      if (!closedActiveWindow) {
+        saleQueue.clear();
+        buyQueue.clear();
+        if (typeof setReadout === 'function') {
+          setReadout(`${trader.name || 'Торговец'} сейчас не работает. Приходите в рабочие часы.`);
+        }
+      }
+      return false;
+    }
     if (typeof multiplayer === 'undefined' || !multiplayer?.socket?.connected || !multiplayer.joined) {
       setReadout('Обмен с NPC требует соединения с сервером мира.');
       return false;

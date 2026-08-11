@@ -848,7 +848,9 @@
       if (neutral) {
         const options = [
           { label: '\u041f\u043e\u0433\u043e\u0432\u043e\u0440\u0438\u0442\u044c', action: () => talkToTraderQuest(actor) },
-          { label: '\u0422\u043e\u0440\u0433\u043e\u0432\u0430\u0442\u044c', action: () => openTraderWindow(actor) }
+          (typeof npcScheduledTradeClosed === 'function' && npcScheduledTradeClosed(actor))
+            ? { label: '\u041c\u0430\u0433\u0430\u0437\u0438\u043d \u0437\u0430\u043a\u0440\u044b\u0442', action: () => setReadout(`${actor.name || '\u0422\u043e\u0440\u0433\u043e\u0432\u0435\u0446'} \u0441\u0435\u0439\u0447\u0430\u0441 \u043d\u0435 \u0440\u0430\u0431\u043e\u0442\u0430\u0435\u0442.`) }
+            : { label: '\u0422\u043e\u0440\u0433\u043e\u0432\u0430\u0442\u044c', action: () => openTraderWindow(actor) }
         ];
         if (npcCombatAllowed) {
           if (actor.encounterRole === 'merchant') options.push({ label: '\u041e\u0433\u0440\u0430\u0431\u0438\u0442\u044c \u043a\u0430\u0440\u0430\u0432\u0430\u043d', action: () => robEncounterActor(actor) });

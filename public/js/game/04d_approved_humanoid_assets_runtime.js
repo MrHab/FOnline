@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v21-derived-locomotion';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v22-backward-locomotion';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([
@@ -245,7 +245,7 @@
       if (!name || runtime.actions?.[name]) return;
       const action = runtime.mixer.clipAction(clip, runtime.root);
       action.enabled = true;
-      if (name === 'turn' || name === 'walk_back' || name === 'run_back' || name === 'crouch_walk') {
+      if (APPROVED_LOOP_LOCOMOTION_CLIPS.includes(name)) {
         action.setLoop(THREE.LoopRepeat, Infinity);
       } else {
         action.setLoop(THREE.LoopOnce, 1);
@@ -260,7 +260,9 @@
   // Игроку и удалённым игрокам боевые клипы НПС не ставим (их бой рисует свой
   // слой), но зацикленные клипы локомоции — переступание, шаг назад и ходьбу
   // в приседе — нужны всем гуманоидам одинаково.
-  const APPROVED_LOOP_LOCOMOTION_CLIPS = Object.freeze(['turn', 'walk_back', 'run_back', 'crouch_walk']);
+  const APPROVED_LOOP_LOCOMOTION_CLIPS = Object.freeze([
+    'turn', 'walk_back', 'run_back', 'crouch_walk', 'crouch_walk_back'
+  ]);
 
   function attachApprovedTurnAnimation(runtime) {
     if (!runtime?.mixer) return Promise.resolve(false);

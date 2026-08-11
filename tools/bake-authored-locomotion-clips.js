@@ -12,6 +12,11 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const THREE = require('three');
+
+global.ProgressEvent = global.ProgressEvent || class ProgressEvent {};
+global.self = global.self || global;
+global.createImageBitmap = global.createImageBitmap || (async () => ({ width: 1, height: 1, close() {} }));
 
 const ROOT = path.join(__dirname, '..');
 const REVIEW_DIR = path.join(ROOT, 'docs', 'art', 'reviews', 'unified-humanoid-npc-v6', 'base');
@@ -123,7 +128,114 @@ function sampleChannel(times, values, t, isQuat) {
   return a.map((av, c) => av + (b[c] - av) * u);
 }
 
-function main() {
+// Зеркало позы: левое <-> правое. Поворот вокруг X сохраняется, вокруг Y и Z
+// меняет знак; смещение вбок меняет знак.
+function mirrorBoneName(name) {
+  if (name.endsWith('_l')) return `${name.slice(0, -2)}_r`;
+  if (name.endsWith('_r')) return `${name.slice(0, -2)}_l`;
+  return name;
+}
+
+function mirrorPose(pose) {
+  const out = {};
+  for (const [bone, transform] of Object.entries(pose)) {
+    const mirrored = {};
+    if (transform.rotation) {
+      mirrored.rotation = [transform.rotation[0], -transform.rotation[1], -transform.rotation[2]];
+    }
+    if (transform.location) {
+      mirrored.location = [-transform.location[0], transform.location[1], transform.location[2]];
+    }
+    out[mirrorBoneName(bone)] = mirrored;
+  }
+  return out;
+}
+
+// Полный цикл из авторской половины: вторая половина — зеркало первой,
+// сдвинутое на halfFrames. Ключ первой половины на последнем кадре
+// зеркалится в замыкающий кадр, поэтому петля сходится точно.
+function expandAuthoredKeys(authored) {
+  const half = Number(authored.halfFrames);
+  const base = authored.base || {};
+  const merge = (pose) => {
+    const merged = {};
+    for (const [bone, transform] of Object.entries(base)) merged[bone] = { ...transform };
+    for (const [bone, transform] of Object.entries(pose)) {
+      merged[bone] = { ...(merged[bone] || {}), ...transform };
+    }
+    return merged;
+  };
+  const frames = [];
+  for (const [frame, pose] of authored.keys) frames.push([Number(frame), merge(pose)]);
+  for (const [frame, pose] of authored.keys) {
+    if (Number(frame) === 1) continue;
+    frames.push([Number(frame) + half, mirrorPose(merge(pose))]);
+  }
+  frames.sort((a, b) => a[0] - b[0]);
+  return frames;
+}
+
+// Плавная интерполяция между разреженными ключами (аналог auto-clamped).
+function smoothstep(u) { return u * u * (3 - 2 * u); }
+
+function sampleAuthored(frames, boneName, key, frame) {
+  const valueAt = (pose) => {
+    const transform = pose[boneName];
+    return transform && transform[key] ? transform[key] : [0, 0, 0];
+  };
+  if (frame <= frames[0][0]) return valueAt(frames[0][1]);
+  for (let i = 0; i < frames.length - 1; i += 1) {
+    const [frameA, poseA] = frames[i];
+    const [frameB, poseB] = frames[i + 1];
+    if (frame >= frameA && frame <= frameB) {
+      const u = frameB === frameA ? 0 : smoothstep((frame - frameA) / (frameB - frameA));
+      const a = valueAt(poseA);
+      const b = valueAt(poseB);
+      return a.map((value, c) => value + (b[c] - value) * u);
+    }
+  }
+  return valueAt(frames[frames.length - 1][1]);
+}
+
+
+// Досчёт ноги до цели простым CCD. Поза-затравка берётся из источника,
+// поэтому колено остаётся согнутым вперёд и решение не выворачивается.
+function solveLegToTarget(thigh, calf, foot, target, iterations = 12) {
+  const bonePos = new THREE.Vector3();
+  const footPos = new THREE.Vector3();
+  const toFoot = new THREE.Vector3();
+  const toTarget = new THREE.Vector3();
+  const delta = new THREE.Quaternion();
+  const boneWorld = new THREE.Quaternion();
+  const parentWorld = new THREE.Quaternion();
+  for (let i = 0; i < iterations; i += 1) {
+    for (const bone of [thigh, calf]) {
+      bone.updateMatrixWorld(true);
+      foot.updateMatrixWorld(true);
+      bone.getWorldPosition(bonePos);
+      foot.getWorldPosition(footPos);
+      toFoot.copy(footPos).sub(bonePos);
+      toTarget.copy(target).sub(bonePos);
+      if (toFoot.lengthSq() < 1e-10 || toTarget.lengthSq() < 1e-10) continue;
+      delta.setFromUnitVectors(toFoot.normalize(), toTarget.normalize());
+      bone.getWorldQuaternion(boneWorld);
+      bone.parent.getWorldQuaternion(parentWorld);
+      bone.quaternion.copy(parentWorld.invert().multiply(delta.multiply(boneWorld)));
+      bone.updateMatrixWorld(true);
+    }
+  }
+}
+
+// Зеркало позы «спереди-назад» в сагиттальной плоскости: поворот вокруг
+// боковой оси меняет знак, вокруг остальных сохраняется.
+function mirrorSagittalQuaternion(quaternion, rest) {
+  const relative = rest.clone().invert().multiply(quaternion);
+  const euler = new THREE.Euler().setFromQuaternion(relative, 'XYZ');
+  euler.x = -euler.x;
+  return rest.clone().multiply(new THREE.Quaternion().setFromEuler(euler));
+}
+
+async function main() {
   const { json, bin } = parseGlb(GLB_FILE);
   const nodeNames = json.nodes.map(node => node.name || '');
   const joints = json.skins[0].joints;
@@ -177,8 +289,214 @@ function main() {
     return json.accessors.length - 1;
   };
 
+  // Сцена нужна только для клипов, выводимых по траектории лодыжки.
+  const needsScene = Object.values(TABLES.clips).some(clip => clip.sagittalMirror);
+  let sceneApi = null;
+  if (needsScene) {
+    const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+    const loader = new GLTFLoader();
+    const data = fs.readFileSync(GLB_FILE);
+    const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+    const gltf = await new Promise((resolve, reject) => loader.parse(buffer, '', resolve, reject));
+    const scene = gltf.scene;
+    scene.updateMatrixWorld(true);
+    sceneApi = {
+      scene,
+      mixer: new THREE.AnimationMixer(scene),
+      clips: new Map((gltf.animations || []).map(animation => [animation.name, animation])),
+      bone: (name) => scene.getObjectByName(name)
+    };
+  }
+
+  // Клип заднего хода из клипа переднего: траектория лодыжки зеркалится
+  // спереди-назад относительно таза, ноги досчитываются IK. Контакт с землёй
+  // и монотонность опоры наследуются от источника точь-в-точь, а время идёт
+  // вперёд, поэтому «перемотанной» походки не возникает.
+  function bakeSagittalMirror(clipName, clip) {
+    const source = sceneApi.clips.get(clip.sagittalMirror);
+    if (!source) throw new Error(`${clipName}: нет исходного клипа ${clip.sagittalMirror}`);
+    const { scene, mixer } = sceneApi;
+    mixer.stopAllAction();
+    const action = mixer.clipAction(source, scene);
+    action.reset();
+    action.play();
+
+    const strideScale = Number(clip.legStrideScale ?? 1);
+    // Подъём стопы масштабируется отдельно от длины шага: у приседа шаг берётся
+    // от бегового источника ради темпа, но колени не должны лететь к груди.
+    const liftScale = Number(clip.legLiftScale ?? 1);
+    const additive = clip.additive || {};
+    const mirroredBones = ['upperarm_l', 'lowerarm_l', 'upperarm_r', 'lowerarm_r', 'foot_l', 'foot_r'];
+    const pelvis = sceneApi.bone('pelvis');
+    const legs = ['l', 'r'].map(side => ({
+      thigh: sceneApi.bone(`thigh_${side}`),
+      calf: sceneApi.bone(`calf_${side}`),
+      foot: sceneApi.bone(`foot_${side}`)
+    }));
+    const restRotations = new Map();
+    mixer.setTime(0);
+    scene.updateMatrixWorld(true);
+    for (const name of mirroredBones) {
+      const bone = sceneApi.bone(name);
+      if (bone) restRotations.set(name, bone.quaternion.clone());
+    }
+
+    const frameCount = Math.max(2, Math.round(source.duration * FPS) + 1);
+    const times = [];
+    for (let f = 0; f < frameCount; f += 1) times.push([(f / (frameCount - 1)) * source.duration]);
+
+    // Опорная высота лодыжки: от неё отсчитывается подъём при переносе.
+    const plantedY = legs.map(() => Infinity);
+    if (liftScale !== 1) {
+      const probe = new THREE.Vector3();
+      for (let f = 0; f < frameCount; f += 1) {
+        mixer.setTime(times[f][0]);
+        scene.updateMatrixWorld(true);
+        legs.forEach((leg, index) => {
+          leg.foot.getWorldPosition(probe);
+          plantedY[index] = Math.min(plantedY[index], probe.y);
+        });
+      }
+    }
+
+    const perNode = new Map();
+    const anklePos = new THREE.Vector3();
+    const pelvisPos = new THREE.Vector3();
+    for (let f = 0; f < frameCount; f += 1) {
+      mixer.setTime(times[f][0]);
+      scene.updateMatrixWorld(true);
+      pelvis.getWorldPosition(pelvisPos);
+
+      // Цели лодыжек: смещение от таза вдоль «вперёд» меняет знак.
+      const targets = legs.map(leg => {
+        leg.foot.getWorldPosition(anklePos);
+        return new THREE.Vector3(
+          anklePos.x,
+          anklePos.y,
+          pelvisPos.z - (anklePos.z - pelvisPos.z) * strideScale
+        );
+      });
+      if (liftScale !== 1) {
+        targets.forEach((point, index) => {
+          point.y = plantedY[index] + (point.y - plantedY[index]) * liftScale;
+        });
+      }
+      legs.forEach((leg, index) => solveLegToTarget(leg.thigh, leg.calf, leg.foot, targets[index]));
+
+      // Стопа и руки зеркалятся по тангажу: назад ступают носком, а маховая
+      // работа рук противоположна ходьбе вперёд.
+      for (const name of mirroredBones) {
+        const bone = sceneApi.bone(name);
+        const rest = restRotations.get(name);
+        if (!bone || !rest) continue;
+        bone.quaternion.copy(mirrorSagittalQuaternion(bone.quaternion, rest));
+      }
+      for (const [name, offsets] of Object.entries(additive)) {
+        const bone = sceneApi.bone(name);
+        if (!bone || !offsets.rotation) continue;
+        bone.quaternion.multiply(
+          new THREE.Quaternion().setFromEuler(new THREE.Euler(offsets.rotation[0], offsets.rotation[1], offsets.rotation[2], 'XYZ'))
+        );
+      }
+      scene.updateMatrixWorld(true);
+
+      for (const nodeIndex of joints) {
+        const bone = sceneApi.bone(nodeNames[nodeIndex]);
+        if (!bone) continue;
+        if (!perNode.has(nodeIndex)) perNode.set(nodeIndex, { translation: [], rotation: [], scale: [] });
+        const rows = perNode.get(nodeIndex);
+        rows.translation.push([bone.position.x, bone.position.y, bone.position.z]);
+        const q = [bone.quaternion.x, bone.quaternion.y, bone.quaternion.z, bone.quaternion.w];
+        const previous = rows.rotation[rows.rotation.length - 1];
+        if (previous) {
+          const dot = q[0] * previous[0] + q[1] * previous[1] + q[2] * previous[2] + q[3] * previous[3];
+          if (dot < 0) for (let c = 0; c < 4; c += 1) q[c] = -q[c];
+        }
+        rows.rotation.push(q);
+        rows.scale.push([bone.scale.x, bone.scale.y, bone.scale.z]);
+      }
+    }
+    mixer.stopAllAction();
+
+    const inputAccessor = pushAccessor(times, 'SCALAR', true);
+    const samplers = [];
+    const channels = [];
+    for (const [nodeIndex, rows] of perNode) {
+      for (const [pathName, values, type] of [
+        ['translation', rows.translation, 'VEC3'],
+        ['rotation', rows.rotation, 'VEC4'],
+        ['scale', rows.scale, 'VEC3']
+      ]) {
+        const outputAccessor = pushAccessor(values, type, false);
+        samplers.push({ input: inputAccessor, interpolation: 'LINEAR', output: outputAccessor });
+        channels.push({ sampler: samplers.length - 1, target: { node: nodeIndex, path: pathName } });
+      }
+    }
+    json.animations.push({ name: clipName, samplers, channels });
+    clipByName.set(clipName, json.animations[json.animations.length - 1]);
+    console.log(`запечён ${clipName}: зеркало траектории лодыжки из ${clip.sagittalMirror},`
+      + ` размах ${(strideScale * 100).toFixed(0)}%, ${channels.length} каналов,`
+      + ` ${frameCount} кадров, ${source.duration.toFixed(3)} с`);
+  }
   for (const [clipName, clip] of Object.entries(TABLES.clips)) {
     if (clipByName.has(clipName)) throw new Error(`clip ${clipName} already exists in review GLB`);
+
+    if (clip.sagittalMirror) {
+      bakeSagittalMirror(clipName, clip);
+      continue;
+    }
+
+    if (clip.authored) {
+      const frames = expandAuthoredKeys(clip.authored);
+      const firstFrame = frames[0][0];
+      const lastFrame = frames[frames.length - 1][0];
+      const times = [];
+      for (let frame = firstFrame; frame <= lastFrame; frame += 1) times.push([(frame - firstFrame) / FPS]);
+      const inputAccessor = pushAccessor(times, 'SCALAR', true);
+      const samplers = [];
+      const channels = [];
+      for (const nodeIndex of joints) {
+        const name = nodeNames[nodeIndex];
+        const rest = restPose.get(nodeIndex);
+        const translations = [];
+        const rotations = [];
+        const scales = [];
+        let prevQuat = null;
+        for (let frame = firstFrame; frame <= lastFrame; frame += 1) {
+          const rotationOffset = sampleAuthored(frames, name, 'rotation', frame);
+          const locationOffset = sampleAuthored(frames, name, 'location', frame);
+          let quat = quatNormalize(quatMultiply(rest.rotation, quatFromEulerXYZ(rotationOffset)));
+          if (prevQuat) {
+            const dot = quat[0] * prevQuat[0] + quat[1] * prevQuat[1] + quat[2] * prevQuat[2] + quat[3] * prevQuat[3];
+            if (dot < 0) quat = quat.map(value => -value);
+          }
+          prevQuat = quat;
+          rotations.push(quat);
+          // Авторские оси кости (вбок, вперёд, вверх) -> оси узла GLB (x, y, z).
+          translations.push([
+            rest.translation[0] + locationOffset[0],
+            rest.translation[1] + locationOffset[2],
+            rest.translation[2] + locationOffset[1]
+          ]);
+          scales.push(rest.scale.slice());
+        }
+        for (const [pathName, rows, type] of [
+          ['translation', translations, 'VEC3'],
+          ['rotation', rotations, 'VEC4'],
+          ['scale', scales, 'VEC3']
+        ]) {
+          const outputAccessor = pushAccessor(rows, type, false);
+          samplers.push({ input: inputAccessor, interpolation: 'LINEAR', output: outputAccessor });
+          channels.push({ sampler: samplers.length - 1, target: { node: nodeIndex, path: pathName } });
+        }
+      }
+      json.animations.push({ name: clipName, samplers, channels });
+      clipByName.set(clipName, json.animations[json.animations.length - 1]);
+      console.log(`запечён ${clipName}: рисованный, ${channels.length} каналов,`
+        + ` ${times.length} кадров, ${times[times.length - 1][0].toFixed(3)} с`);
+      continue;
+    }
+
     const source = clipByName.get(clip.derivedFrom);
     if (!source) throw new Error(`source clip ${clip.derivedFrom} missing for ${clipName}`);
 

@@ -1,5 +1,5 @@
   // ===== APPROVED HUMANOID NPC / BOOTS / ASSAULT-RIFLE RUNTIME =====
-  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v19-turn-step';
+  const APPROVED_HUMANOID_ASSET_VERSION = '7.76.6-approved-humanoid-assets-v20-back-crouch-clips';
   const APPROVED_NPC_ANIMATION_URL = '/assets/models/characters/npc/npc_humanoid_animations.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_URL = '/assets/models/weapons/approved_assault_rifle_grip.glb';
   const APPROVED_ASSAULT_RIFLE_GRIP_BONES = Object.freeze([
@@ -245,7 +245,7 @@
       if (!name || runtime.actions?.[name]) return;
       const action = runtime.mixer.clipAction(clip, runtime.root);
       action.enabled = true;
-      if (name === 'turn') {
+      if (name === 'turn' || name === 'walk_back' || name === 'crouch_walk') {
         action.setLoop(THREE.LoopRepeat, Infinity);
       } else {
         action.setLoop(THREE.LoopOnce, 1);
@@ -258,18 +258,24 @@
   }
 
   // Игроку и удалённым игрокам боевые клипы НПС не ставим (их бой рисует свой
-  // слой), но переступание на месте нужно всем гуманоидам одинаково.
+  // слой), но зацикленные клипы локомоции — переступание, шаг назад и ходьбу
+  // в приседе — нужны всем гуманоидам одинаково.
+  const APPROVED_LOOP_LOCOMOTION_CLIPS = Object.freeze(['turn', 'walk_back', 'crouch_walk']);
+
   function attachApprovedTurnAnimation(runtime) {
     if (!runtime?.mixer) return Promise.resolve(false);
-    if (runtime.actions?.turn) return Promise.resolve(true);
+    const missing = () => APPROVED_LOOP_LOCOMOTION_CLIPS.filter(name => !runtime.actions?.[name]);
+    if (!missing().length) return Promise.resolve(true);
     return loadApprovedNpcAnimationClips().then(clips => {
-      const clip = clips.find(row => String(row?.name || '').toLowerCase() === 'turn');
-      if (!clip || runtime.actions?.turn) return !!runtime.actions?.turn;
-      const action = runtime.mixer.clipAction(clip, runtime.root);
-      action.enabled = true;
-      action.setLoop(THREE.LoopRepeat, Infinity);
-      runtime.actions.turn = action;
-      return true;
+      for (const name of missing()) {
+        const clip = clips.find(row => String(row?.name || '').toLowerCase() === name);
+        if (!clip || runtime.actions?.[name]) continue;
+        const action = runtime.mixer.clipAction(clip, runtime.root);
+        action.enabled = true;
+        action.setLoop(THREE.LoopRepeat, Infinity);
+        runtime.actions[name] = action;
+      }
+      return !missing().length;
     });
   }
 

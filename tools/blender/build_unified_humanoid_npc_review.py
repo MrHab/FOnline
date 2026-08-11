@@ -20,7 +20,17 @@ from mathutils import Euler, Vector
 
 
 COMBAT_ACTIONS = ("attack", "hurt", "death")
-REQUIRED_ACTIONS = ("idle", "walk", "run", "turn", *COMBAT_ACTIONS)
+LOCOMOTION_CLIP_TABLES = json.loads(
+    (Path(__file__).parent / "authored_locomotion_clips.json").read_text("utf-8")
+)
+REQUIRED_ACTIONS = (
+    "idle",
+    "walk",
+    "run",
+    "turn",
+    *LOCOMOTION_CLIP_TABLES["clips"].keys(),
+    *COMBAT_ACTIONS,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -406,6 +416,37 @@ def create_turn_action(
     )
 
 
+def create_authored_locomotion_actions(
+    armature: bpy.types.Object,
+    baseline: dict[str, dict[str, object]],
+    neutral: dict[str, dict[str, tuple[float, float, float]]],
+) -> None:
+    """Клипы walk_back и crouch_walk из общей таблицы ключей.
+
+    Таблица authored_locomotion_clips.json — единый источник и для этого
+    билдера, и для Node-запекателя (tools/bake-authored-locomotion-clips.js):
+    оффсеты поверх idle-базлайна, петля замкнута (первый кадр == последний).
+    """
+    for name, clip in LOCOMOTION_CLIP_TABLES["clips"].items():
+        frames = tuple(
+            (
+                int(frame),
+                {
+                    **neutral,
+                    **{
+                        bone: {
+                            key: tuple(value)
+                            for key, value in transform.items()
+                        }
+                        for bone, transform in pose.items()
+                    },
+                },
+            )
+            for frame, pose in clip["frames"]
+        )
+        create_action(armature, name, frames, baseline)
+
+
 def add_combat_actions(armature: bpy.types.Object) -> None:
     baseline = capture_idle_baseline(armature)
     neutral = {
@@ -424,6 +465,7 @@ def add_combat_actions(armature: bpy.types.Object) -> None:
     }
     create_attack_action(armature, baseline, neutral)
     create_turn_action(armature, baseline, neutral)
+    create_authored_locomotion_actions(armature, baseline, neutral)
     create_action(
         armature,
         "hurt",

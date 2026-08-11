@@ -184,6 +184,20 @@ assert(remoteRuntime.includes('moveX: visualMoveX')
   && remoteRuntime.includes('moveZ: visualMoveZ')
   && remoteRuntime.includes('facingAngle: Number(g.rotation.y || 0) - Math.PI'),
   'remote locomotion does not receive visual movement relative to facing');
+const glbRuntime = fs.readFileSync(runtimePath, 'utf8');
+const approvedRuntime = fs.readFileSync(path.join(root, 'public', 'js', 'game', '04d_approved_humanoid_assets_runtime.js'), 'utf8');
+// Авторские клипы локомоции: задний ход и ходьба в приседе выбираются рантаймом
+// (с фолбэком на реверс, пока клип не догрузился) и подвешиваются всем гуманоидам.
+assert(glbRuntime.includes("locomotionAction = 'crouch_walk'")
+  && glbRuntime.includes("locomotionAction = 'walk_back'")
+  && glbRuntime.includes("locomotionAction === 'walk_back' ? 1 : locomotion.playbackRate"),
+  'runtime does not select authored walk_back/crouch_walk clips');
+assert(glbRuntime.includes('walk_back: 1.68') && glbRuntime.includes('crouch_walk: 1.23'),
+  'stride-sync natural speeds for authored locomotion clips are missing');
+assert(approvedRuntime.includes("APPROVED_LOOP_LOCOMOTION_CLIPS = Object.freeze(['turn', 'walk_back', 'crouch_walk'])"),
+  'players do not receive the authored loop locomotion clips');
+assert(glbRuntime.includes('CHARACTER_KNEE_FLEX_CROUCH = 0.26'),
+  'deepened crouch knee flex is missing');
 assert(modernRuntime.includes("typeof characterDirectionalLocomotionState === 'function'")
   && modernRuntime.includes('parts.motionRoot.rotation.y = lowerBodyYaw;')
   && modernRuntime.includes('dt * phaseSpeed * actor.userData.modernPlaybackRate'),

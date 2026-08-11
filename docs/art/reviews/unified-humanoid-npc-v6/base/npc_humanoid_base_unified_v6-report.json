@@ -91,6 +91,8 @@
     "walk",
     "run",
     "turn",
+    "walk_back",
+    "crouch_walk",
     "attack",
     "hurt",
     "death"
@@ -112,7 +114,9 @@
       "idle",
       "run",
       "turn",
-      "walk"
+      "walk",
+      "walk_back",
+      "crouch_walk"
     ],
     "nodes": [
       "head",
@@ -201,5 +205,5 @@
   },
   "reviewOnly": true,
   "runtimeIntegrationAllowed": false,
-  "sha256": "22C453C6679F825F605EC68124C5AFF1550CEC5EAD9EDFDAAD48C932ABFFAAEA"
+  "sha256": "FE68D77F4F51CE049ECC0C75DD58C8C1F7B2274FF9F3B14DB0A15A731DCC115A"
 }

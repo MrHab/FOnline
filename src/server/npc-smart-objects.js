@@ -17,7 +17,6 @@ function safeId(value = '', fallback = '') {
 
 function safeType(value = '', fallback = 'sandbox') {
   const normalized = safeId(value, fallback).toLowerCase();
-  if (normalized === 'bed') return 'sleep';
   if (normalized === 'merchant' || normalized === 'trade') return 'shop';
   if (normalized === 'campfire' || normalized === 'rest') return 'social';
   if (normalized === 'workbench' || normalized === 'craft') return 'work';
@@ -52,7 +51,6 @@ function stableHash(value = '') {
 
 function activityVisualAction(type = '') {
   const normalized = safeType(type);
-  if (normalized === 'sleep') return 'sleep';
   if (normalized === 'shop') return 'shop';
   if (normalized === 'social') return 'social';
   if (normalized === 'eat') return 'eat';

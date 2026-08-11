@@ -6,47 +6,47 @@ const HOUR_EPSILON = 1e-9;
 
 const LEGACY_ROUTINE_TEMPLATES = Object.freeze({
   guard: freezeTemplate([
-    [0, 5, 'sleep'],
+    [0, 5, 'rest'],
     [5, 7, 'rest'],
     [7, 13, 'work'],
     [13, 14, 'rest'],
     [14, 20, 'work'],
     [20, 22, 'social'],
-    [22, 24, 'sleep']
+    [22, 24, 'rest']
   ]),
   night_guard: freezeTemplate([
     [0, 6, 'work'],
     [6, 8, 'social'],
-    [8, 15, 'sleep'],
+    [8, 15, 'rest'],
     [15, 17, 'rest'],
     [17, 24, 'work']
   ]),
   merchant: freezeTemplate([
-    [0, 7, 'sleep'],
+    [0, 7, 'rest'],
     [7, 8, 'rest'],
     [8, 13, 'work'],
     [13, 14, 'rest'],
     [14, 20, 'work'],
     [20, 22, 'social'],
-    [22, 24, 'sleep']
+    [22, 24, 'rest']
   ]),
   craftsman: freezeTemplate([
-    [0, 6, 'sleep'],
+    [0, 6, 'rest'],
     [6, 8, 'rest'],
     [8, 12, 'work'],
     [12, 13, 'social'],
     [13, 18, 'work'],
     [18, 21, 'social'],
-    [21, 24, 'sleep']
+    [21, 24, 'rest']
   ]),
   worker: freezeTemplate([
-    [0, 6, 'sleep'],
+    [0, 6, 'rest'],
     [6, 7, 'rest'],
     [7, 12, 'work'],
     [12, 13, 'rest'],
     [13, 18, 'work'],
     [18, 21, 'social'],
-    [21, 24, 'sleep']
+    [21, 24, 'rest']
   ])
 });
 
@@ -70,7 +70,9 @@ const ROUTINE_TYPE_DEFAULT_STATES = Object.freeze({
   service: 'work',
   craft: 'work',
   work: 'work',
-  sleep: 'sleep',
+  // Сна в игре нет: НПС не ложатся. Авторские пакеты с типом sleep
+  // деградируют в обычный отдых, чтобы старые данные не роняли распорядок.
+  sleep: 'rest',
   rest: 'rest',
   social: 'social',
   socialize: 'social',
@@ -174,7 +176,6 @@ function legacyActionType(template = 'worker', state = 'work') {
 }
 
 function legacyTarget(template = 'worker', state = 'work') {
-  if (state === 'sleep') return 'bed';
   if (state === 'rest') return 'rest';
   if (state === 'social') return 'social';
   if (template === 'guard' || template === 'night_guard') return 'guard_post';

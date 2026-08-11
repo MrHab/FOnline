@@ -1989,8 +1989,8 @@ function assertEnemyFrameBudgetAndSparseMerge() {
     {
       id: 'enemy-a', x: 1.25, z: -0.75, vx: 1, vz: 0, hp: 37,
       aiState: 'investigate', lookX: 3, lookZ: 4, scheduleState: 'work', flags: 1 | 8 | 16,
-      activityRevision: 9, activityType: 'sleep', activityPhase: 'travel', visualAction: 'walk',
-      activitySlotId: 'bed:a', activityFacing: 1.25, serviceAvailable: false
+      activityRevision: 9, activityType: 'rest', activityPhase: 'travel', visualAction: 'walk',
+      activitySlotId: 'cot:a', activityFacing: 1.25, serviceAvailable: false
     },
     { id: 'unknown-structural-id', x: 9, z: 9, hp: 10, aiState: 'idle', flags: 0 }
   ]);
@@ -2000,12 +2000,12 @@ function assertEnemyFrameBudgetAndSparseMerge() {
   assert.strictEqual(enemy.hp, 37, 'sparse enemy frame did not apply absolute HP');
   assert.strictEqual(enemy.hostileToPlayer, true, 'sparse enemy frame lost viewer hostility');
   assert.deepStrictEqual([enemy.lookX, enemy.lookZ], [3, 4], 'sparse enemy frame did not apply look coordinates');
-  assert.deepStrictEqual([enemy.scheduleState, enemy.scheduleLabel], ['work', 'спит'],
+  assert.deepStrictEqual([enemy.scheduleState, enemy.scheduleLabel], ['work', 'отдыхает'],
     'exact NPC activity label did not override the broad schedule state');
   assert.deepStrictEqual(
     [enemy.activityRevision, enemy.activityType, enemy.goalActivity, enemy.activityPhase, enemy.visualAction,
       enemy.activitySlotId, enemy.activityFacing, enemy.serviceAvailable, enemy._hasNetworkActivity],
-    [9, 'sleep', 'sleep', 'travel', 'walk', 'bed:a', 1.25, false, true],
+    [9, 'rest', 'rest', 'travel', 'walk', 'cot:a', 1.25, false, true],
     'sparse enemy frame did not preserve the NPC package activity state'
   );
   assert.strictEqual(sparseRuntime.networkEnemyScheduleLabel('eat'), 'ест');
@@ -2042,7 +2042,7 @@ function assertEnemyFrameBudgetAndSparseMerge() {
     'frequent broad schedule frame erased the exact label from a reliable activity delta'
   );
   const staleDeltaApplied = sparseRuntime.applyNetworkEnemyActivityDelta([
-    { id: 'enemy-a', a: [9, 'sleep', 'use', 'sleep', 'bed:a', 1.5, 0] },
+    { id: 'enemy-a', a: [9, 'rest', 'use', 'rest', 'cot:a', 1.5, 0] },
     { id: 'unknown-structural-id', a: [11, 'guard', 'use', 'guard', 'post:a', 2.5, 0] }
   ]);
   assert.strictEqual(staleDeltaApplied, 0, 'stale or structurally unknown activity delta was applied');
@@ -2620,64 +2620,21 @@ function assertActorAnimationLod() {
     'updateWeaponVisualAnimation(mesh.userData.enemyWeaponGroup, animationDt, enemy)',
     'updateCharacterMeleeAnimation(mesh, animationDt)'
   ]);
-  assertContainsAll('activity-aware NPC sleep gate', enemyUpdate, [
-    'const sleeping = !inDialogue && !activeAiState && enemyAnimUsesSleepPose(enemy, moving)',
-    'const sleepFacingApplied = sleeping && enemyAnimApplySleepFacing(enemy, mesh, animationDt)',
-    '&& !sleepFacingApplied',
-    'moving: sleeping ? false : moving',
-    'talking: !sleeping && inDialogue'
+  // Сна в игре нет: у НПС не должно остаться ни позы лежания, ни ветвлений
+  // по ней. Ловим возврат сна как регрессию.
+  for (const forbidden of [
+    'enemyAnimApplySleepPose',
+    'enemyAnimUsesSleepPose',
+    'enemyAnimApplySleepFacing',
+    'const sleeping ='
+  ]) {
+    assert(!enemyUpdate.includes(forbidden),
+      `клиент снова умеет укладывать НПС спать: ${forbidden}`);
+  }
+  assertContainsAll('NPC actors are kept upright', enemyUpdate, [
+    'mesh.rotation.z = enemyAnimLerp(Number(mesh.rotation.z || 0), 0, restoreK)',
+    'talking: inDialogue'
   ]);
-  const unifiedBranchIndex = enemyUpdate.indexOf('if (parts.unifiedHumanoidNpc)');
-  const unifiedSleepPoseIndex = enemyUpdate.indexOf('enemyAnimApplySleepPose(enemy, mesh, parts, animationDt, sleepT)', unifiedBranchIndex);
-  const unifiedFirstReturnIndex = enemyUpdate.indexOf('return;', unifiedBranchIndex);
-  assert(unifiedBranchIndex >= 0
-    && unifiedSleepPoseIndex > unifiedBranchIndex
-    && unifiedSleepPoseIndex < unifiedFirstReturnIndex,
-  'unified humanoid NPC still returns before applying its sleep pose');
-  const sleepStateRuntime = new Function([
-    functionSource(enemyModels, 'enemyAnimHasNetworkActivityState'),
-    functionSource(enemyModels, 'enemyAnimUsesSleepPose'),
-    functionSource(enemyModels, 'enemyAnimSleepFacing'),
-    functionSource(enemyModels, 'enemyAnimApplySleepFacing'),
-    'return { uses: enemyAnimUsesSleepPose, facing: enemyAnimSleepFacing, applyFacing: enemyAnimApplySleepFacing };'
-  ].join('\n'))();
-  assert.strictEqual(sleepStateRuntime.uses({
-    _hasNetworkActivity: true,
-    visualAction: 'sleep',
-    activityPhase: 'travel',
-    scheduleState: 'sleep'
-  }, false), false, 'an NPC lies down while it is still travelling to its bed');
-  assert.strictEqual(sleepStateRuntime.uses({
-    _hasNetworkActivity: true,
-    visualAction: 'sleep',
-    activityPhase: 'use'
-  }, true), true, 'the authoritative use phase no longer activates the sleep pose');
-  assert.strictEqual(sleepStateRuntime.uses({ scheduleState: 'sleep' }, false), true,
-    'legacy NPC schedules lost their stationary sleep fallback');
-  assert.strictEqual(sleepStateRuntime.uses({ scheduleState: 'sleep' }, true), false,
-    'a legacy NPC can slide across the location in its sleep pose');
-  assert.strictEqual(sleepStateRuntime.facing({
-    _hasNetworkActivity: true,
-    visualAction: 'sleep',
-    activityPhase: 'use',
-    activityFacing: Math.PI / 2
-  }), Math.PI / 2, 'authoritative sleep orientation was not exposed to the unified actor');
-  assert.strictEqual(sleepStateRuntime.facing({ scheduleState: 'sleep', activityFacing: Math.PI / 2 }), null,
-    'legacy sleep fallback unexpectedly started forcing a new network orientation');
-  const orientedSleepMesh = { rotation: { y: 0 } };
-  assert.strictEqual(sleepStateRuntime.applyFacing({
-    _hasNetworkActivity: true,
-    visualAction: 'sleep',
-    activityPhase: 'use',
-    activityFacing: Math.PI / 2
-  }, orientedSleepMesh, 1), true, 'unified sleep orientation was not applied');
-  assert(Math.abs(orientedSleepMesh.rotation.y - Math.PI / 2) < 1e-9,
-    'unified sleep orientation did not converge to activityFacing');
-  const legacySleepMesh = { rotation: { y: 0.7 } };
-  assert.strictEqual(sleepStateRuntime.applyFacing({ scheduleState: 'sleep' }, legacySleepMesh, 1), false,
-    'legacy sleep fallback claimed an authoritative orientation');
-  assert.strictEqual(legacySleepMesh.rotation.y, 0.7,
-    'legacy sleep fallback orientation changed without activityFacing');
   assert(/idleVisualAnimTimer[\s\S]{0,180}Number\(animationDt \|\| 0\.016\)/.test(enemyUpdate),
     'enemy fallback idle timer ignores the time accumulated by heavy animation LOD');
 

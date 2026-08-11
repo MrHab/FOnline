@@ -3647,7 +3647,6 @@ function npcScheduleLabel(state = '') {
     work: 'работает',
     rest: 'отдыхает',
     social: 'общается',
-    sleep: 'спит',
     eat: 'ест',
     shop: 'торгует',
     patrol: 'патрулирует',
@@ -13013,7 +13012,6 @@ function ensureRoomNpcActivitySlots(room, loc = {}) {
 
 function npcRoutineSlotType(value = '') {
   const type = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
-  if (type === 'bed') return 'sleep';
   if (type === 'rest' || type === 'campfire' || type === 'socialize') return 'social';
   if (type === 'shop_counter' || type === 'merchant' || type === 'trade') return 'shop';
   if (type === 'guard_post' || type === 'patrol') return 'guard';
@@ -13160,7 +13158,7 @@ function wastelandRowAnchorPoint(room, row = {}, enemy = {}, state = 'rest') {
   const point = wastelandSafePointNearTile(room, tile.tx, tile.tz, 6);
   point.lookX = Number(pos.x || point.x || 0);
   point.lookZ = Number(pos.z || point.z || 0);
-  const spread = state === 'sleep' ? 0.42 : 0.72;
+  const spread = 0.72;
   const angle = stableEnemyUnit(`${row.id || row.objectId || row.model || ''}:${enemy.id || ''}:${state}:angle`) * Math.PI * 2;
   point.x += Math.cos(angle) * spread;
   point.z += Math.sin(angle) * spread;
@@ -13171,32 +13169,14 @@ function npcScheduleActorSortKey(actor = {}) {
   return String(actor.npcProfile?.id || actor.id || actor.name || '').slice(0, 180);
 }
 
-function npcScheduleSleepRowForActor(room, rows = [], enemy = {}) {
-  if (!room || !rows.length || !enemy) return null;
-  const actors = [...(room.enemies || new Map()).values()]
-    .filter(actor => actor
-      && !actor.dead
-      && actor.hostileToPlayer === false
-      && !serverNpcIsNaturalCreature(actor, actor))
-    .sort((a, b) => npcScheduleActorSortKey(a).localeCompare(npcScheduleActorSortKey(b)));
-  const actorIndex = actors.findIndex(actor => actor.id === enemy.id);
-  if (actorIndex < 0) return null;
-  return rows[actorIndex] || null;
-}
-
 function npcScheduleObjectAnchor(room, loc = {}, enemy = {}, state = 'rest') {
   const rows = wastelandLocationRows(loc)
     .filter(row => {
       if (!row || locationDefinitionObjectIsNpc(row)) return false;
-      if (state === 'sleep') return wastelandObjectLooksLikeSleep(row);
       if (state === 'social') return wastelandObjectLooksLikeRest(row);
       return wastelandObjectLooksLikeRest(row) || wastelandObjectLooksLikeSleep(row);
     });
   if (!rows.length) return null;
-  if (state === 'sleep') {
-    const assignedRow = npcScheduleSleepRowForActor(room, rows, enemy);
-    if (assignedRow) return wastelandRowAnchorPoint(room, assignedRow, enemy, state);
-  }
   const seed = `${loc.id || room?.locationId || ''}:${enemy.npcProfile?.id || enemy.id || ''}:${state}:schedule-object`;
   const index = Math.floor(stableEnemyUnit(seed) * rows.length) % rows.length;
   return wastelandRowAnchorPoint(room, rows[index], enemy, state);
@@ -13414,9 +13394,6 @@ function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest') {
   if (state === 'social') {
     tx = Number(base.tx || 19) + offset[0];
     tz = Number(base.tz || 19) + offset[1];
-  } else if (state === 'sleep') {
-    tx = Number(base.tx || 19) - offset[0];
-    tz = Number(base.tz || 19) - offset[1];
   } else {
     tx = home.tx + Math.round(offset[0] * 0.65);
     tz = home.tz + Math.round(offset[1] * 0.65);
@@ -13539,7 +13516,7 @@ function npcActivityFacingLookPoint(enemy = {}, facing = 0) {
 
 function npcRoutineFallbackTarget(room, loc = {}, enemy = {}, routinePackage = {}) {
   const type = npcRoutineSlotType(routinePackage.type || routinePackage.state || '');
-  if (['sleep', 'rest', 'social'].includes(type)) {
+  if (['rest', 'social'].includes(type)) {
     const legacyState = type === 'social' ? 'social' : type;
     return npcScheduleAnchor(room, loc, enemy, legacyState);
   }
@@ -13607,8 +13584,7 @@ function materializeAuthoredNpcRoutine(room, loc = {}, enemy = {}, now = Date.no
     serviceAvailable: routinePackage.serviceAvailable,
     interruptReason: ''
   });
-  if (String(routinePackage.state || '') === 'sleep') clearEnemyLook(enemy);
-  else setEnemyLookAt(enemy, npcActivityFacingLookPoint(enemy, slot.facing));
+  setEnemyLookAt(enemy, npcActivityFacingLookPoint(enemy, slot.facing));
   return true;
 }
 
@@ -13724,8 +13700,6 @@ function updateNpcDailySchedule(room, enemy, dt, loc, now = Date.now()) {
       setEnemyLookAt(enemy, friend);
       updateNpcSocialSpeech(enemy, friend, now, room, loc);
     }
-  } else if (state === 'sleep') {
-    clearEnemyLook(enemy);
   } else if (slot && Number.isFinite(Number(slot.facing))) {
     setEnemyLookAt(enemy, npcActivityFacingLookPoint(enemy, slot.facing));
   } else {
@@ -14343,7 +14317,7 @@ function publicEnemy(e, viewer = null) {
     : aiState === 'return' ? 0.62
       : aiState === 'investigate' ? 0.72
         : (aiState === 'harvest' || aiState === 'craft') ? 0.48
-          : (aiState === 'rest' || aiState === 'social' || aiState === 'sleep') ? 0.42
+          : (aiState === 'rest' || aiState === 'social') ? 0.42
             : 1;
   const speed = movingState ? Math.max(0, Number(e.speed || 0) * stateFactor) : 0;
   const nx = dirLen > 0.001 ? dirX / dirLen : 0;
@@ -14487,7 +14461,7 @@ function publicEnemyFrame(e, viewer = null, now = Date.now()) {
     : aiState === 'return' ? 0.62
       : aiState === 'investigate' ? 0.72
         : (aiState === 'harvest' || aiState === 'craft') ? 0.48
-          : (aiState === 'rest' || aiState === 'social' || aiState === 'sleep') ? 0.42
+          : (aiState === 'rest' || aiState === 'social') ? 0.42
             : 1;
   const speed = moving ? Math.max(0, Number(e.speed || 0) * stateFactor) : 0;
   const hostile = viewer
@@ -14637,7 +14611,6 @@ function serverNpcCanLootCorpses(enemy = {}) {
   const faction = serverCombatFactionGroup(enemy.faction || 'neutral');
   if (role === 'animal' || role === 'monster') return false;
   if (['wild', 'ghouls', 'radscorpions', 'mutant_ants', 'geckos', 'ash_wolves', 'monsters'].includes(faction)) return false;
-  if (String(enemy.npcScheduleState || '').toLowerCase() === 'sleep') return false;
   return true;
 }
 

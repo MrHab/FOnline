@@ -99,6 +99,10 @@ const {
   queryRoomActorSpatialIndex
 } = require('./src/server/room-actor-spatial-index');
 const {
+  buildStaticCollisionSpatialIndex,
+  queryStaticCollisionSpatialIndex
+} = require('./src/server/static-collision-spatial-index');
+const {
   actorFacingIntent: resolveActorFacingIntent,
   actorFacingYaw: resolveActorFacingYaw
 } = require('./public/js/game/00a_actor_facing');
@@ -9021,10 +9025,21 @@ function chooseVisibleEnemyTarget(room, enemy, candidates, now = Date.now()) {
   return { target: best, distance, threat: bestScore };
 }
 
-function chooseImmediatePlayerThreat(room, enemy, roomPlayers = [], now = Date.now()) {
+function roomPlayerById(roomPlayers = [], roomPlayersById = null, playerId = '') {
+  const key = String(playerId || '');
+  if (!key) return null;
+  if (roomPlayersById instanceof Map) return roomPlayersById.get(key) || null;
+  return roomPlayers.find(player => String(player?.id || '') === key) || null;
+}
+
+function chooseImmediatePlayerThreat(room, enemy, roomPlayers = [], now = Date.now(), roomPlayersById = null) {
   if (!room || !enemy || enemy.dead) return null;
   const currentTargetId = String(enemy.targetId || '');
-  const remembered = currentTargetId ? roomPlayers.find(p => p && p.id === currentTargetId && !p.dead && Number(p.hp || 0) > 0 && serverActorHostileToPlayer(enemy, p)) : null;
+  const rememberedPlayer = roomPlayerById(roomPlayers, roomPlayersById, currentTargetId);
+  const remembered = rememberedPlayer && !rememberedPlayer.dead && Number(rememberedPlayer.hp || 0) > 0
+    && serverActorHostileToPlayer(enemy, rememberedPlayer)
+    ? rememberedPlayer
+    : null;
   if (remembered && now - Number(enemy.lastSenseAt || 0) <= enemyChaseMemoryMs(enemy)) {
     const visible = enemyCanSeePlayer(room, enemy, remembered, now);
     if (visible) refreshEnemyTrackToMovingTarget(room, enemy, remembered, now);
@@ -9058,12 +9073,14 @@ function findNearestFactionFoe(room, actor, actors = null, actorSet = null, now 
   return { foe: best, distance: bestDist };
 }
 
-function chooseFactionCombatPlayerThreat(room, actor, roomPlayers = [], now = Date.now(), hasFactionFoe = false) {
+function chooseFactionCombatPlayerThreat(room, actor, roomPlayers = [], now = Date.now(), hasFactionFoe = false, roomPlayersById = null) {
   if (!room || !actor || actor.dead) return null;
   if (hasFactionFoe) {
     const currentTargetId = String(actor.targetId || '');
-    const remembered = currentTargetId
-      ? roomPlayers.find(p => p && p.id === currentTargetId && !p.dead && Number(p.hp || 0) > 0 && serverActorHostileToPlayer(actor, p))
+    const rememberedPlayer = roomPlayerById(roomPlayers, roomPlayersById, currentTargetId);
+    const remembered = rememberedPlayer && !rememberedPlayer.dead && Number(rememberedPlayer.hp || 0) > 0
+      && serverActorHostileToPlayer(actor, rememberedPlayer)
+      ? rememberedPlayer
       : null;
     const freshTarget = remembered && (now - Number(actor.lastSenseAt || 0) <= enemyChaseMemoryMs(actor) || now <= Number(actor.trackingUntil || 0));
     const wasCombatProvoked = remembered && (String(actor.lastNoiseType || '') === 'combat' || String(actor.lastNoiseType || '') === 'shot');
@@ -9072,7 +9089,7 @@ function chooseFactionCombatPlayerThreat(room, actor, roomPlayers = [], now = Da
       return sensed.target ? { target: sensed.target, visible: true, remembered: false } : null;
     }
   }
-  return chooseImmediatePlayerThreat(room, actor, roomPlayers, now);
+  return chooseImmediatePlayerThreat(room, actor, roomPlayers, now, roomPlayersById);
 }
 
 function chooseNoiseInvestigationPoint(room, x, z, enemy) {
@@ -9443,10 +9460,18 @@ function addRoomNoise(room, x, z, radius = ENEMY_HEARING_SHOT_RANGE, sourceId = 
   const sourceLock = roomNoiseLock(room, sourceKey, now);
   const sourceLocked = sourceLock && now < Number(sourceLock.until || 0);
   const clusterLimit = noiseType === 'harvest' ? ENEMY_NOISE_CLUSTER_MAX_HARVEST : Math.max(ENEMY_NOISE_CLUSTER_MAX_SHOT, weaponNoise ? 6 : 3);
+  // The old path rescanned every NPC for every candidate reacting to one noise
+  // event. Keep the same sequential cluster cap with one initial count and
+  // increment it only when this loop assigns another nearby investigator.
+  let activeInvestigatorsHere = activeNoiseInvestigatorsNear(room, nx, nz, now);
 
   for (const enemy of room.enemies.values()) {
     if (!enemy || enemy.dead) continue;
     ensureEnemyHome(enemy);
+    const wasActiveInvestigatorHere = enemy.aiState === 'investigate'
+      && Number.isFinite(Number(enemy.investigateX)) && Number.isFinite(Number(enemy.investigateZ))
+      && Math.hypot(Number(enemy.investigateX) - nx, Number(enemy.investigateZ) - nz) <= ENEMY_NOISE_CLUSTER_RADIUS
+      && now - Number(enemy.lastNoiseAt || 0) <= enemyInvestigateMs(enemy);
 
     // v7.38: моб, который уже сходил проверить шум и возвращается домой,
     // не должен снова и снова разворачиваться от каждого выстрела игрока.
@@ -9482,6 +9507,9 @@ function addRoomNoise(room, x, z, radius = ENEMY_HEARING_SHOT_RANGE, sourceId = 
       else chance = Math.max(chance, 0.68);
       if (canSeeSource || d <= 1.35 || Math.random() <= chance) {
         setEnemyChaseTarget(room, enemy, sourcePlayerInRoom, now, { type: noiseType, visible: canSeeSource });
+        if (wasActiveInvestigatorHere && enemy.aiState !== 'investigate') {
+          activeInvestigatorsHere = Math.max(0, activeInvestigatorsHere - 1);
+        }
         if (sourceLock) {
           sourceLock.assignedIds.add(enemy.id);
           sourceLock.until = Math.max(Number(sourceLock.until || 0), now + Math.floor(ENEMY_NOISE_SOURCE_LOCK_MS * 0.55));
@@ -9521,7 +9549,7 @@ function addRoomNoise(room, x, z, radius = ENEMY_HEARING_SHOT_RANGE, sourceId = 
 
     // Не вся комната должна сбегаться в одну точку. К шуму идут только
     // несколько ближайших/отреагировавших мобов, остальные остаются в патруле.
-    const alreadyInvestigatingHere = activeNoiseInvestigatorsNear(room, nx, nz, now);
+    const alreadyInvestigatingHere = activeInvestigatorsHere;
     const alreadyAssignedHere = enemy.aiState === 'investigate' &&
       Number.isFinite(Number(enemy.investigateX)) && Number.isFinite(Number(enemy.investigateZ)) &&
       Math.hypot(Number(enemy.investigateX) - nx, Number(enemy.investigateZ) - nz) <= ENEMY_NOISE_CLUSTER_RADIUS;
@@ -9544,6 +9572,14 @@ function addRoomNoise(room, x, z, radius = ENEMY_HEARING_SHOT_RANGE, sourceId = 
     enemy.noiseLockUntil = now + ENEMY_NOISE_RETARGET_LOCK_MS + Math.floor(Math.random() * 450);
     enemy.nextNoiseRetargetAt = enemy.noiseLockUntil;
     enemy.wanderTimer = 0;
+    const isActiveInvestigatorHere = enemy.aiState === 'investigate'
+      && Number.isFinite(Number(enemy.investigateX)) && Number.isFinite(Number(enemy.investigateZ))
+      && Math.hypot(Number(enemy.investigateX) - nx, Number(enemy.investigateZ) - nz) <= ENEMY_NOISE_CLUSTER_RADIUS
+      && now - Number(enemy.lastNoiseAt || 0) <= enemyInvestigateMs(enemy);
+    if (!wasActiveInvestigatorHere && isActiveInvestigatorHere) activeInvestigatorsHere++;
+    else if (wasActiveInvestigatorHere && !isActiveInvestigatorHere) {
+      activeInvestigatorsHere = Math.max(0, activeInvestigatorsHere - 1);
+    }
     if (sourceLock) {
       sourceLock.assignedIds.add(enemy.id);
       sourceLock.until = Math.max(Number(sourceLock.until || 0), now + ENEMY_NOISE_SOURCE_LOCK_MS);
@@ -12142,11 +12178,34 @@ function roomStaticCollisionCacheKey(room, loc) {
   ].join(':');
 }
 
+const ROOM_STATIC_COLLISION_SPATIAL_CELL_SIZE = 8;
+
+function rebuildRoomStaticCollisionSpatialIndex(room, blockers) {
+  if (!room || !Array.isArray(blockers)) return null;
+  try {
+    const index = buildStaticCollisionSpatialIndex(blockers, {
+      cellSize: ROOM_STATIC_COLLISION_SPATIAL_CELL_SIZE
+    });
+    room.staticCollisionSpatialIndex = index;
+    room.staticCollisionSpatialSource = blockers;
+    return index;
+  } catch (_) {
+    room.staticCollisionSpatialIndex = null;
+    room.staticCollisionSpatialSource = blockers;
+    return null;
+  }
+}
+
 function roomStaticCollisionObjects(room) {
   if (!room) return [];
   const loc = roomLocation(room);
   const key = roomStaticCollisionCacheKey(room, loc);
-  if (room.staticCollisionKey === key && Array.isArray(room.staticCollisionObjects)) return room.staticCollisionObjects;
+  if (room.staticCollisionKey === key && Array.isArray(room.staticCollisionObjects)) {
+    if (room.staticCollisionSpatialSource !== room.staticCollisionObjects) {
+      rebuildRoomStaticCollisionSpatialIndex(room, room.staticCollisionObjects);
+    }
+    return room.staticCollisionObjects;
+  }
   const blockers = roomStaticCollisionBlockersFromMap(room);
   blockers.push(...roomStaticCollisionBlockersFromTrader(loc));
   if (Array.isArray(loc?.objects)) {
@@ -12162,7 +12221,24 @@ function roomStaticCollisionObjects(room) {
   }
   room.staticCollisionKey = key;
   room.staticCollisionObjects = blockers;
+  rebuildRoomStaticCollisionSpatialIndex(room, blockers);
   return blockers;
+}
+
+function roomStaticCollisionCandidates(room, minX, minZ, maxX, maxZ) {
+  const blockers = roomStaticCollisionObjects(room);
+  if (!blockers.length) return blockers;
+  const index = room.staticCollisionSpatialSource === blockers
+    ? room.staticCollisionSpatialIndex
+    : rebuildRoomStaticCollisionSpatialIndex(room, blockers);
+  if (!index) return blockers;
+  try {
+    return queryStaticCollisionSpatialIndex(index, minX, minZ, maxX, maxZ);
+  } catch (_) {
+    // Broad phase is an optimization only. The exact legacy scan remains the
+    // safe fallback if a room carries malformed authored collision data.
+    return blockers;
+  }
 }
 
 function circleIntersectsRotatedBlocker(x, z, radius, blocker) {
@@ -12188,7 +12264,18 @@ function serverBlockerIsLowBallisticCover(blocker = {}) {
 }
 
 function roomStaticCollisionBlocksSegment(room, fromX, fromZ, toX, toZ, radius = 0.04, opts = {}) {
-  for (const blocker of roomStaticCollisionObjects(room)) {
+  // segmentIntersectsRotatedBlocker expands both local rectangle axes by the
+  // radius. Once rotated, that square expansion can reach sqrt(2) * radius in
+  // a world axis, so use the conservative maximum for the broad-phase AABB.
+  const padding = Math.max(0.01, Math.max(0, Number(radius || 0)) * Math.SQRT2);
+  const blockers = roomStaticCollisionCandidates(
+    room,
+    Math.min(Number(fromX || 0), Number(toX || 0)) - padding,
+    Math.min(Number(fromZ || 0), Number(toZ || 0)) - padding,
+    Math.max(Number(fromX || 0), Number(toX || 0)) + padding,
+    Math.max(Number(fromZ || 0), Number(toZ || 0)) + padding
+  );
+  for (const blocker of blockers) {
     if (opts.ignoreLowCover && serverBlockerIsLowBallisticCover(blocker)) continue;
     if (segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius, opts)) return true;
   }
@@ -12216,7 +12303,15 @@ function circleRotatedBlockerPenalty(x, z, radius, blocker) {
 
 function roomStaticCollisionPenaltyAt(room, x, z, radius = 0.35) {
   let penalty = 0;
-  for (const blocker of roomStaticCollisionObjects(room)) {
+  const reach = Math.max(0.01, Number(radius || 0));
+  const blockers = roomStaticCollisionCandidates(
+    room,
+    Number(x || 0) - reach,
+    Number(z || 0) - reach,
+    Number(x || 0) + reach,
+    Number(z || 0) + reach
+  );
+  for (const blocker of blockers) {
     penalty = Math.max(penalty, circleRotatedBlockerPenalty(x, z, radius, blocker));
   }
   return penalty;
@@ -12230,7 +12325,14 @@ function roomStaticCollisionMoveAllowed(room, currentX, currentZ, nextX, nextZ, 
 }
 
 function roomStaticCollisionBlocksCircle(room, x, z, radius = 0.35) {
-  const blockers = roomStaticCollisionObjects(room);
+  const reach = Math.max(0.01, Number(radius || 0));
+  const blockers = roomStaticCollisionCandidates(
+    room,
+    Number(x || 0) - reach,
+    Number(z || 0) - reach,
+    Number(x || 0) + reach,
+    Number(z || 0) + reach
+  );
   if (!blockers.length) return false;
   for (const blocker of blockers) {
     if (circleIntersectsRotatedBlocker(x, z, radius, blocker)) return true;
@@ -15666,18 +15768,25 @@ function setupRandomEncounterRoom(room, encounterId = '', options = {}) {
   refreshRoomWorldState(room);
 }
 
-function updateEncounterFactionCombat(room, dt, roomPlayers = []) {
+function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersById = null) {
   const engaged = new Set();
   if (locationIsFactionCapital(roomLocation(room))) return engaged;
   if (!room.enemies || room.enemies.size < 2) return engaged;
   const now = Date.now();
   const actors = [...room.enemies.values()].filter(e => e && !e.dead && e.faction && !(e.hostileToPlayer === false && now < Number(e.dialogueFocusUntil || 0)));
   const actorSet = new Set(actors);
+  const liveFactionGroups = new Set(actors.map(actor => serverCombatFactionGroup(actor.faction || '')));
+  const oneFactionCrowd = liveFactionGroups.size <= 1;
   for (const actor of actors) {
     if (!actor || actor.dead) continue;
-    const factionTarget = findNearestFactionFoe(room, actor, actors, actorSet, now);
+    // The dominant settlement case has one live faction and therefore cannot
+    // contain a faction foe. Mixed authored encounters keep the established
+    // sparse spatial lookup without introducing an O(F²) faction pre-pass.
+    const factionTarget = oneFactionCrowd
+      ? { foe: null, distance: Infinity }
+      : findNearestFactionFoe(room, actor, actors, actorSet, now);
     const foe = factionTarget.foe;
-    const playerThreat = chooseFactionCombatPlayerThreat(room, actor, roomPlayers, now, !!foe);
+    const playerThreat = chooseFactionCombatPlayerThreat(room, actor, roomPlayers, now, !!foe, roomPlayersById);
     if (playerThreat?.target) {
       actor.factionTargetId = '';
       actor.factionGoalAngle = null;
@@ -15932,7 +16041,8 @@ function updateServerEnemies(room, dt, opts = {}) {
   const roomPlayers = Array.isArray(opts.players)
     ? opts.players.filter(p => p && Number(p.hp || 1) > 0 && !p.dead)
     : livePlayersInRoom(room).filter(p => Number(p.hp || 1) > 0 && !p.dead);
-  const factionCombatActors = updateEncounterFactionCombat(room, dt, roomPlayers);
+  const roomPlayersById = new Map(roomPlayers.map(player => [String(player.id || ''), player]));
+  const factionCombatActors = updateEncounterFactionCombat(room, dt, roomPlayers, roomPlayersById);
   rebuildRoomEnemyAiLookupCaches(room);
   const isFactionCapital = locationIsFactionCapital(loc);
   const allowSpawn = opts.allowSpawn !== false && !isFactionCapital && !loc.safe && !loc.noRespawn && !room.locationWorldEvent;
@@ -16022,7 +16132,7 @@ function updateServerEnemies(room, dt, opts = {}) {
         enemy.searchUntil = 0;
       }
     } else if (enemy.targetId) {
-      const oldTarget = roomPlayers.find(p => p.id === enemy.targetId);
+      const oldTarget = roomPlayerById(roomPlayers, roomPlayersById, enemy.targetId);
       if (oldTarget && serverActorHostileToPlayer(enemy, oldTarget) && enemyCanSeePlayer(room, enemy, oldTarget, now)) {
         visibleTarget = oldTarget;
         visibleDistance = Math.hypot(oldTarget.x - enemy.x, oldTarget.z - enemy.z);
@@ -16042,7 +16152,7 @@ function updateServerEnemies(room, dt, opts = {}) {
 
     let target = visibleTarget;
     if (!target && enemy.targetId) {
-      const remembered = roomPlayers.find(p => p.id === enemy.targetId);
+      const remembered = roomPlayerById(roomPlayers, roomPlayersById, enemy.targetId);
       if (remembered && serverActorHostileToPlayer(enemy, remembered) && now - Number(enemy.lastSenseAt || 0) <= enemyChaseMemoryMs(enemy)) {
         target = remembered;
       } else if (now - Number(enemy.lastSenseAt || 0) > enemyChaseMemoryMs(enemy)) {
@@ -16277,6 +16387,35 @@ function emitFullEnemySnapshotToSockets(room, socketIds, now = Date.now()) {
         snapshot: publicEnemy(enemy)
       }))
     : null;
+  // Crowded rooms usually share one hostility view. Coalesce those viewers into
+  // one Socket.IO broadcast so the adapter serializes the heavyweight reliable
+  // payload once per distinct view instead of once per connected player.
+  if (sharedEnemies && socketIds.length >= 3) {
+    const groups = new Map();
+    for (const socketId of socketIds) {
+      const viewer = players.get(socketId) || null;
+      let signature = '';
+      for (const { enemy, snapshot } of sharedEnemies) {
+        const hostile = viewer ? serverActorHostileToPlayer(enemy, viewer) : snapshot.hostileToPlayer;
+        signature += hostile ? '1' : '0';
+      }
+      if (!groups.has(signature)) groups.set(signature, []);
+      groups.get(signature).push(socketId);
+    }
+    for (const [signature, groupSocketIds] of groups) {
+      const targetSocketIds = groupSocketIds.length === 1 ? groupSocketIds[0] : groupSocketIds;
+      io.to(targetSocketIds).emit('enemySnapshot', {
+        roomId: room.id,
+        locationId: room.locationId,
+        t: now,
+        enemies: sharedEnemies.map(({ snapshot }, index) => ({
+          ...snapshot,
+          hostileToPlayer: signature[index] === '1'
+        }))
+      });
+    }
+    return;
+  }
   for (const socketId of socketIds) {
     const viewer = players.get(socketId) || null;
     io.to(socketId).emit('enemySnapshot', {
@@ -16327,17 +16466,44 @@ function emitEnemySnapshot(room, force = false) {
           frame: publicEnemyFrame(enemy, null, now)
         }))
       : null;
-    for (const socketId of frameSocketIds) {
-      const viewer = players.get(socketId) || null;
-      io.to(socketId).volatile.emit('enemyFrame', {
-        roomId: room.id,
-        locationId: room.locationId,
-        t: now,
-        seq,
-        enemies: sharedFrames
-          ? sharedFrames.map(({ enemy, frame }) => publicEnemyFrameForViewer(enemy, viewer, frame, now))
-          : [...room.enemies.values()].map(enemy => publicEnemyFrame(enemy, viewer, now))
-      });
+    if (sharedFrames && frameSocketIds.length >= 3) {
+      const groups = new Map();
+      for (const socketId of frameSocketIds) {
+        const viewer = players.get(socketId) || null;
+        let signature = '';
+        for (const { enemy, frame } of sharedFrames) {
+          const hostile = viewer ? serverActorHostileToPlayer(enemy, viewer) : !!(frame.flags & 8);
+          signature += hostile ? '1' : '0';
+        }
+        if (!groups.has(signature)) groups.set(signature, []);
+        groups.get(signature).push(socketId);
+      }
+      for (const [signature, groupSocketIds] of groups) {
+        const targetSocketIds = groupSocketIds.length === 1 ? groupSocketIds[0] : groupSocketIds;
+        io.to(targetSocketIds).volatile.emit('enemyFrame', {
+          roomId: room.id,
+          locationId: room.locationId,
+          t: now,
+          seq,
+          enemies: sharedFrames.map(({ frame }, index) => ({
+            ...frame,
+            flags: signature[index] === '1' ? (frame.flags | 8) : (frame.flags & ~8)
+          }))
+        });
+      }
+    } else {
+      for (const socketId of frameSocketIds) {
+        const viewer = players.get(socketId) || null;
+        io.to(socketId).volatile.emit('enemyFrame', {
+          roomId: room.id,
+          locationId: room.locationId,
+          t: now,
+          seq,
+          enemies: sharedFrames
+            ? sharedFrames.map(({ enemy, frame }) => publicEnemyFrameForViewer(enemy, viewer, frame, now))
+            : [...room.enemies.values()].map(enemy => publicEnemyFrame(enemy, viewer, now))
+        });
+      }
     }
   }
   emitFullEnemySnapshotToSockets(room, legacySocketIds, now);

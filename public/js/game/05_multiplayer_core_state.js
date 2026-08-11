@@ -28,6 +28,8 @@
     networkPingElapsed: 0,
     networkPingMs: null,
     networkPingSmoothedMs: null,
+    networkPingMainThreadStallMs: null,
+    networkPingTransport: '',
     networkPingRequestId: 0,
     networkPingInFlight: false,
     networkPingTimeout: null,

@@ -35,6 +35,17 @@
   const ENEMY_ANIMATION_LOD_MID_INTERVAL = 0.05;
   const ENEMY_ANIMATION_LOD_FAR_INTERVAL = 0.08;
   const ENEMY_ANIMATION_LOD_MAX_DT = 0.08;
+  const ENEMY_ANIMATION_CROWD_MIN_HEAVY_ACTORS = 6;
+  const ENEMY_ANIMATION_CROWD_PRESSURE_FPS = 48;
+  const ENEMY_ANIMATION_CROWD_RECOVERY_FPS = 54;
+  const ENEMY_ANIMATION_CROWD_IDLE_INTERVAL = 0.05;
+  const ENEMY_ANIMATION_LOD_STAGGER_BUCKETS = 8;
+  let enemyAnimationCrowdPressureLatched = false;
+  const enemyAnimationFrameContextState = {
+    heavyActorCount: 0,
+    measuredFps: 0,
+    crowdPressure: false
+  };
 
   function enemyAnimationLodInterval(distance, visible = true, important = false) {
     if (!visible) return Infinity;
@@ -46,6 +57,82 @@
       : ENEMY_ANIMATION_LOD_FAR_INTERVAL;
   }
 
+  function enemyAnimationStableStaggerUnit(enemy = {}) {
+    const key = String(enemy?.id || enemy?.mesh?.uuid || enemy?.name || '');
+    if (!key) return 0;
+    let hash = 2166136261;
+    for (let index = 0; index < key.length; index += 1) {
+      hash ^= key.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    const buckets = Math.max(1, ENEMY_ANIMATION_LOD_STAGGER_BUCKETS);
+    return ((hash >>> 0) % buckets) / buckets;
+  }
+
+  function enemyAnimationLodStaggerThreshold(enemy, interval) {
+    const seconds = Math.max(0, Number(interval || 0));
+    if (!Number.isFinite(seconds) || seconds <= 0) return 0;
+    return seconds * (1 - enemyAnimationStableStaggerUnit(enemy));
+  }
+
+  function enemyAnimationCrowdPressure(actorCount = 0, measuredFps = 0, active = false) {
+    if (Math.max(0, Number(actorCount || 0)) < ENEMY_ANIMATION_CROWD_MIN_HEAVY_ACTORS) return false;
+    const fps = Math.max(0, Number(measuredFps || 0));
+    if (active) return fps <= 0 || fps < ENEMY_ANIMATION_CROWD_RECOVERY_FPS;
+    return fps > 0 && fps < ENEMY_ANIMATION_CROWD_PRESSURE_FPS;
+  }
+
+  function enemyAnimationCrowdAdjustedInterval(interval, options = {}) {
+    const base = Number(interval);
+    if (!Number.isFinite(base)) return interval;
+    if (
+      options.crowdPressure !== true
+      || options.heavy !== true
+      || options.idle !== true
+      || options.important === true
+    ) return base;
+    return Math.max(base, ENEMY_ANIMATION_CROWD_IDLE_INTERVAL);
+  }
+
+  function enemyActorUsesHeavyAnimation(actor) {
+    const mesh = actor?.mesh;
+    const parts = mesh?.userData?.actorParts || mesh?.userData?.parts;
+    return !!(
+      mesh
+      && mesh.visible !== false
+      && !actor?._removed
+      && !actor?.dead
+      && (
+        parts?.unifiedHumanoidNpc
+        || mesh.userData?.characterGlbRuntime
+        || mesh.userData?.npcCreatureGlbAnimation
+        || mesh.userData?.approvedEquipmentCharacterRuntime
+      )
+    );
+  }
+
+  function createEnemyAnimationFrameContext(rows = [], trader = null, measuredFps = 0) {
+    let heavyActorCount = 0;
+    let traderAlreadyCounted = false;
+    if (Array.isArray(rows)) {
+      for (let index = 0; index < rows.length; index += 1) {
+        const actor = rows[index];
+        if (trader && (actor === trader || actor?.mesh === trader?.mesh)) traderAlreadyCounted = true;
+        if (enemyActorUsesHeavyAnimation(actor)) heavyActorCount += 1;
+      }
+    }
+    if (!traderAlreadyCounted && enemyActorUsesHeavyAnimation(trader)) heavyActorCount += 1;
+    enemyAnimationCrowdPressureLatched = enemyAnimationCrowdPressure(
+      heavyActorCount,
+      measuredFps,
+      enemyAnimationCrowdPressureLatched
+    );
+    enemyAnimationFrameContextState.heavyActorCount = heavyActorCount;
+    enemyAnimationFrameContextState.measuredFps = Math.max(0, Number(measuredFps || 0));
+    enemyAnimationFrameContextState.crowdPressure = enemyAnimationCrowdPressureLatched;
+    return enemyAnimationFrameContextState;
+  }
+
   function consumeEnemyAnimationLodDt(enemy, dt, interval, stateKey) {
     const numericDt = Number(dt);
     const frameDt = Number.isFinite(numericDt) ? Math.max(0, Math.min(0.05, numericDt)) : 0.016;
@@ -55,16 +142,41 @@
     );
     const nextStateKey = String(stateKey || '');
     const stateChanged = String(enemy?.heavyAnimationLodStateKey || '') !== nextStateKey;
+    const previousInterval = enemy?.heavyAnimationLodInterval;
+    const finiteInterval = Number.isFinite(interval);
+    const intervalChanged = previousInterval !== undefined && (
+      Number.isFinite(previousInterval) !== finiteInterval
+      || (finiteInterval && Math.abs(Number(previousInterval) - Number(interval)) > 1e-6)
+    );
     enemy.heavyAnimationLodStateKey = nextStateKey;
-    if (!Number.isFinite(interval)) {
+    enemy.heavyAnimationLodInterval = finiteInterval ? Math.max(0, Number(interval || 0)) : Infinity;
+    if (!finiteInterval) {
       enemy.heavyAnimationLodDt = accumulatedDt;
+      enemy.heavyAnimationLodThreshold = Infinity;
       return 0;
     }
-    if (!stateChanged && interval > 0 && accumulatedDt + 1e-6 < interval) {
+    const normalizedInterval = Math.max(0, Number(interval || 0));
+    if (stateChanged) {
+      enemy.heavyAnimationLodDt = 0;
+      enemy.heavyAnimationLodThreshold = normalizedInterval > 0
+        ? enemyAnimationLodStaggerThreshold(enemy, normalizedInterval)
+        : 0;
+      return accumulatedDt;
+    }
+    if (intervalChanged) {
+      enemy.heavyAnimationLodThreshold = normalizedInterval > 0
+        ? enemyAnimationLodStaggerThreshold(enemy, normalizedInterval)
+        : 0;
+    }
+    const threshold = normalizedInterval > 0
+      ? Math.max(0, Number(enemy?.heavyAnimationLodThreshold ?? normalizedInterval))
+      : 0;
+    if (normalizedInterval > 0 && accumulatedDt + 1e-6 < threshold) {
       enemy.heavyAnimationLodDt = accumulatedDt;
       return 0;
     }
     enemy.heavyAnimationLodDt = 0;
+    enemy.heavyAnimationLodThreshold = normalizedInterval;
     return accumulatedDt;
   }
 
@@ -799,7 +911,18 @@
   function enemyAnimWeaponVisible(mesh, visible = true) {
     const weaponGroup = mesh?.userData?.enemyWeaponGroup;
     if (!weaponGroup) return;
-    weaponGroup.visible = !!visible && weaponGroup.children.length > 0;
+    const nextVisible = !!visible && weaponGroup.children.length > 0;
+    if (weaponGroup.visible === nextVisible) return;
+    weaponGroup.visible = nextVisible;
+    // Visibility participates in the cached decision that skips the fallback
+    // procedural rig. Sleep/wake must invalidate it so a weapon still attached
+    // to that rig resumes animating immediately after the NPC wakes up.
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(
+        mesh,
+        mesh?.userData?.parts || mesh?.userData?.actorParts || null
+      );
+    }
   }
 
   function enemyAnimApplySleepPose(enemy, mesh, parts, dt, t) {
@@ -855,7 +978,7 @@
     return true;
   }
 
-  function animateEnemyVisual(enemy, dt = 0.016) {
+  function animateEnemyVisual(enemy, dt = 0.016, frameContext = null) {
     const mesh = enemy?.mesh;
     const parts = mesh?.userData?.actorParts;
     if (!mesh || !parts) return;
@@ -937,11 +1060,25 @@
     const meleeAnim = mesh.userData?.meleeAnim;
     const meleeWindowActive = Number(meleeAnim?.startedAt || 0) > 0
       && nowMs < Number(meleeAnim.startedAt || 0) + Math.max(0.18, Number(meleeAnim.duration || 0.32)) * 1000;
-    const heavyImportant = attackWindowActive
+    const hitReaction = mesh.userData?.hitReactionAnim;
+    const hitReactionActive = Number(hitReaction?.startedAt || 0) > 0
+      && nowMs < Number(hitReaction.startedAt || 0) + Math.max(0.22, Number(hitReaction.duration || 0.34)) * 1000;
+    const heavyImportant = attackAnimation.active
+      || attackWindowActive
       || meleeWindowActive
+      || hitReactionActive
+      || inDialogue
       || Number(enemy.flash || 0) > 0.02
       || (!!player && player.attackTarget === enemy)
       || (typeof hoveredEnemy !== 'undefined' && hoveredEnemy === enemy);
+    const activeAiState = ['attack', 'chase', 'flee'].includes(String(enemy.aiState || '').toLowerCase());
+    const crowdIdle = !moving
+      && !sleeping
+      && !inDialogue
+      && !activeAiState
+      && !attackAnimation.active
+      && !meleeWindowActive
+      && !hitReactionActive;
     let animationDt = dt;
     if (heavyActor) {
       const stateKey = [
@@ -953,12 +1090,22 @@
         attackAnimation.active ? 1 : 0,
         Number(attackAnimation.token || 0),
         Number(mesh.userData?.meleeAnim?.startedAt || 0),
+        Number(hitReaction?.startedAt || 0),
         Number(enemy.flash || 0) > 0.02 ? 1 : 0
       ].join('|');
+      const animationInterval = enemyAnimationCrowdAdjustedInterval(
+        enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant),
+        {
+          crowdPressure: frameContext?.crowdPressure === true,
+          heavy: true,
+          idle: crowdIdle,
+          important: heavyImportant
+        }
+      );
       animationDt = consumeEnemyAnimationLodDt(
         enemy,
         dt,
-        enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant),
+        animationInterval,
         stateKey
       );
       if (animationDt <= 0) return;

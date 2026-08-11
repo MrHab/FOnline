@@ -6,6 +6,13 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
+const {
+  buildStaticCollisionSpatialIndex,
+  queryStaticCollisionSpatialIndex,
+  staticCollisionBlockerBounds
+} = require('../src/server/static-collision-spatial-index');
+const { segmentIntersectsRotatedBlocker } = require('../src/server/enemy-ai');
+
 const ROOT = path.join(__dirname, '..');
 const serverSource = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
 const multiplayerClientSource = fs.readFileSync(
@@ -50,6 +57,168 @@ function extractFunction(source, name) {
   throw new Error(`unterminated function ${name}`);
 }
 
+function assertStaticCollisionSpatialBroadPhase() {
+  const blockers = [];
+  for (let z = 0; z < 30; z++) {
+    for (let x = 0; x < 30; x++) {
+      blockers.push({
+        id: `blocker-${x}-${z}`,
+        x: x * 6 - 87,
+        z: z * 6 - 87,
+        halfX: 0.45 + ((x * 7 + z * 3) % 5) * 0.12,
+        halfZ: 0.4 + ((x * 2 + z * 11) % 4) * 0.15,
+        rotationY: ((x * 17 + z * 13) % 19) * Math.PI / 19
+      });
+    }
+  }
+  // A large rotated authored wall exercises multi-cell indexing and deduplication.
+  blockers.push({ id: 'large-wall', x: 4, z: -3, halfX: 18, halfZ: 0.75, rotationY: Math.PI / 5 });
+
+  const index = buildStaticCollisionSpatialIndex(blockers, { cellSize: 8 });
+  assert.strictEqual(index.size, blockers.length, 'static blocker index dropped a valid authored blocker');
+  assert.throws(
+    () => buildStaticCollisionSpatialIndex([{ x: 0, z: 0, halfX: Infinity, halfZ: 1 }]),
+    /must be finite/,
+    'malformed static geometry no longer triggers the exact full-scan fallback'
+  );
+  assert.throws(
+    () => buildStaticCollisionSpatialIndex([{ x: 0, z: 0, halfX: Number.MAX_VALUE, halfZ: Number.MAX_VALUE }]),
+    /derived blocker bounds must be finite|cell coordinate exceeds/,
+    'derived blocker-bound overflow no longer triggers the exact full-scan fallback'
+  );
+  assert.throws(
+    () => buildStaticCollisionSpatialIndex([{ x: 0, z: 0, halfX: 1_000_000, halfZ: 1_000_000 }]),
+    /cell budget exceeded/,
+    'huge finite blocker can allocate an unbounded number of spatial cells'
+  );
+  assert.throws(
+    () => queryStaticCollisionSpatialIndex(index, 0, 0, Infinity, 1),
+    /must be finite/,
+    'malformed collision queries no longer trigger the exact full-scan fallback'
+  );
+  assert.throws(
+    () => queryStaticCollisionSpatialIndex(index, -1_000_000, -1_000_000, 1_000_000, 1_000_000),
+    /query cell budget exceeded/,
+    'huge finite collision query can scan an unbounded number of spatial cells'
+  );
+  let indexedCandidates = 0;
+  let exhaustiveCandidates = 0;
+  for (let sample = 0; sample < 240; sample++) {
+    const centerX = ((sample * 37) % 181) - 90;
+    const centerZ = ((sample * 61) % 181) - 90;
+    const reach = 0.35 + (sample % 7) * 0.18;
+    const query = {
+      minX: centerX - reach,
+      maxX: centerX + reach,
+      minZ: centerZ - reach,
+      maxZ: centerZ + reach
+    };
+    const expected = blockers.filter(blocker => {
+      const bounds = staticCollisionBlockerBounds(blocker);
+      return bounds.minX <= query.maxX
+        && bounds.maxX >= query.minX
+        && bounds.minZ <= query.maxZ
+        && bounds.maxZ >= query.minZ;
+    });
+    const actual = queryStaticCollisionSpatialIndex(
+      index,
+      query.minX,
+      query.minZ,
+      query.maxX,
+      query.maxZ
+    );
+    assert.deepStrictEqual(
+      actual.map(blocker => blocker.id),
+      expected.map(blocker => blocker.id),
+      `static collision broad phase changed deterministic candidates for sample ${sample}`
+    );
+    indexedCandidates += actual.length;
+    exhaustiveCandidates += blockers.length;
+  }
+  assert(indexedCandidates < exhaustiveCandidates * 0.04,
+    `static collision broad phase is not selective enough: ${indexedCandidates}/${exhaustiveCandidates}`);
+
+  const collisionContext = vm.createContext({
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    segmentIntersectsRotatedBlocker,
+    roomStaticCollisionCandidates: (_room, minX, minZ, maxX, maxZ) => (
+      queryStaticCollisionSpatialIndex(index, minX, minZ, maxX, maxZ)
+    )
+  });
+  vm.runInContext([
+    extractFunction(serverSource, 'circleIntersectsRotatedBlocker'),
+    extractFunction(serverSource, 'roomStaticCollisionBlocksSegment'),
+    extractFunction(serverSource, 'circleRotatedBlockerPenalty'),
+    extractFunction(serverSource, 'roomStaticCollisionPenaltyAt'),
+    extractFunction(serverSource, 'roomStaticCollisionBlocksCircle'),
+    'this.collision = { roomStaticCollisionBlocksSegment, circleRotatedBlockerPenalty, roomStaticCollisionPenaltyAt, roomStaticCollisionBlocksCircle };'
+  ].join('\n'), collisionContext);
+  for (let sample = 0; sample < 360; sample++) {
+    const x = ((sample * 43) % 197) - 98;
+    const z = ((sample * 71) % 197) - 98;
+    const radius = 0.04 + (sample % 11) * 0.075;
+    const toX = x + ((sample * 29) % 31) - 15;
+    const toZ = z + ((sample * 47) % 31) - 15;
+    const opts = { startPadding: (sample % 4) * 0.08, endPadding: (sample % 5) * 0.07 };
+    const expectedSegment = blockers.some(blocker => (
+      segmentIntersectsRotatedBlocker(x, z, toX, toZ, blocker, radius, opts)
+    ));
+    const indexedSegment = collisionContext.collision.roomStaticCollisionBlocksSegment(
+      {}, x, z, toX, toZ, radius, opts
+    );
+    assert.strictEqual(indexedSegment, expectedSegment,
+      `static segment broad phase changed exact collision result for sample ${sample}`);
+
+    let expectedPenalty = 0;
+    for (const blocker of blockers) {
+      expectedPenalty = Math.max(
+        expectedPenalty,
+        collisionContext.collision.circleRotatedBlockerPenalty(x, z, radius, blocker)
+      );
+    }
+    const indexedPenalty = collisionContext.collision.roomStaticCollisionPenaltyAt({}, x, z, radius);
+    assert.strictEqual(indexedPenalty, expectedPenalty,
+      `static penalty broad phase changed exact collision result for sample ${sample}`);
+    assert.strictEqual(
+      collisionContext.collision.roomStaticCollisionBlocksCircle({}, x, z, radius),
+      expectedPenalty > 0.0001,
+      `static circle broad phase changed exact collision result for sample ${sample}`
+    );
+  }
+}
+
+function assertStaticCollisionSpatialIntegration() {
+  for (const marker of [
+    "require('./src/server/static-collision-spatial-index')",
+    'function rebuildRoomStaticCollisionSpatialIndex(',
+    'function roomStaticCollisionCandidates('
+  ]) {
+    assert(serverSource.includes(marker), `missing static collision spatial marker: ${marker}`);
+  }
+
+  const objects = extractFunction(serverSource, 'roomStaticCollisionObjects');
+  assert(objects.includes('rebuildRoomStaticCollisionSpatialIndex(room, room.staticCollisionObjects)')
+    && objects.includes('rebuildRoomStaticCollisionSpatialIndex(room, blockers)'),
+  'authored static collision cache no longer keeps its spatial index synchronized');
+
+  const segment = extractFunction(serverSource, 'roomStaticCollisionBlocksSegment');
+  const penalty = extractFunction(serverSource, 'roomStaticCollisionPenaltyAt');
+  const circle = extractFunction(serverSource, 'roomStaticCollisionBlocksCircle');
+  assert(segment.includes('roomStaticCollisionCandidates(')
+    && segment.includes('segmentIntersectsRotatedBlocker('),
+  'segment collision lost its spatial broad phase or exact rotated narrow phase');
+  assert(penalty.includes('roomStaticCollisionCandidates(')
+    && penalty.includes('circleRotatedBlockerPenalty('),
+  'static collision penalty lost its spatial broad phase or exact rotated narrow phase');
+  assert(circle.includes('roomStaticCollisionCandidates(')
+    && circle.includes('circleIntersectsRotatedBlocker('),
+  'circle collision lost its spatial broad phase or exact rotated narrow phase');
+
+  const walkability = extractFunction(serverSource, 'isEnemyPathTileOpen');
+  assert(walkability.includes('isRoomWalkableWorld('),
+    'NPC pathfinding no longer routes through authoritative room walkability');
+}
+
 function assertSpatialIntegration() {
   for (const marker of [
     "require('./src/server/room-actor-spatial-index')",
@@ -63,7 +232,7 @@ function assertSpatialIntegration() {
 
   const update = extractFunction(serverSource, 'updateServerEnemies');
   const startRebuild = update.indexOf('rebuildRoomEnemySpatialIndex(room, roomEnemySpatialMovementPadding(room, dt));');
-  const factionUpdate = update.indexOf('updateEncounterFactionCombat(room, dt, roomPlayers)');
+  const factionUpdate = update.indexOf('updateEncounterFactionCombat(room, dt, roomPlayers, roomPlayersById)');
   const endRebuild = update.lastIndexOf('rebuildRoomEnemySpatialIndex(room, 0);');
   assert(startRebuild >= 0 && startRebuild < factionUpdate,
     'AI tick does not build its broad-phase snapshot before faction movement');
@@ -132,6 +301,45 @@ function assertRemainingEnemyAiScansUseCrowdIndexes() {
   assert(update.includes('rebuildRoomEnemyAiLookupCaches(room);')
     && update.includes('const hasLiveFoes = npcHasLiveFactionFoes(room, enemy);'),
   'active AI tick bypasses the cached crowd lookups');
+}
+
+function assertEnemyPlayerTargetLookupsAreIndexed() {
+  const lookup = extractFunction(serverSource, 'roomPlayerById');
+  assert(lookup.includes('roomPlayersById instanceof Map')
+    && lookup.includes('roomPlayersById.get(key)'),
+  'player target lookup no longer uses the per-room ID map');
+
+  const immediateThreat = extractFunction(serverSource, 'chooseImmediatePlayerThreat');
+  const factionThreat = extractFunction(serverSource, 'chooseFactionCombatPlayerThreat');
+  const factionCombat = extractFunction(serverSource, 'updateEncounterFactionCombat');
+  const update = extractFunction(serverSource, 'updateServerEnemies');
+  assert(immediateThreat.includes('roomPlayerById(roomPlayers, roomPlayersById, currentTargetId)')
+    && factionThreat.includes('roomPlayerById(roomPlayers, roomPlayersById, currentTargetId)')
+    && factionCombat.includes('roomPlayersById)'),
+  'one of the enemy threat paths returned to repeated linear player lookup');
+  assert(update.includes('const roomPlayersById = new Map(')
+    && update.includes('updateEncounterFactionCombat(room, dt, roomPlayers, roomPlayersById)')
+    && (update.match(/roomPlayerById\(roomPlayers, roomPlayersById, enemy\.targetId\)/g) || []).length >= 2
+    && !update.includes('roomPlayers.find('),
+  'active AI tick no longer builds or consistently reuses its player ID lookup');
+}
+
+function assertCrowdEventScansAreCoalesced() {
+  const factionCombat = extractFunction(serverSource, 'updateEncounterFactionCombat');
+  assert(factionCombat.includes('const liveFactionGroups = new Set(')
+    && factionCombat.includes('const oneFactionCrowd = liveFactionGroups.size <= 1;')
+    && factionCombat.includes('const factionTarget = oneFactionCrowd')
+    && factionCombat.includes(': findNearestFactionFoe(')
+    && !factionCombat.includes('for (const faction of liveFactionGroups)'),
+  'peaceful same-faction crowds returned to per-actor spatial foe scans');
+
+  const noise = extractFunction(serverSource, 'addRoomNoise');
+  assert.strictEqual((noise.match(/activeNoiseInvestigatorsNear\(/g) || []).length, 1,
+    'one noise event rescans every NPC once per reacting NPC');
+  assert(noise.includes('let activeInvestigatorsHere = activeNoiseInvestigatorsNear(')
+    && noise.includes('const alreadyInvestigatingHere = activeInvestigatorsHere;')
+    && noise.includes('activeInvestigatorsHere++;'),
+  'noise investigator cluster count no longer preserves sequential assignments without quadratic rescans');
 }
 
 function assertStructuralEnemyChangesStayReliable() {
@@ -209,6 +417,101 @@ function assertEnemyFrameCompatibilityFallback() {
   );
   assert(joinHandler.includes('emitEnemyBaselineForSocket(room, socket.id);'),
     'join still broadcasts a heavyweight enemy baseline to every existing player');
+}
+
+function assertCrowdedEnemyFanoutCoalescesEquivalentViews() {
+  const viewers = new Map();
+  for (let index = 0; index < 8; index++) {
+    viewers.set(`viewer-${index}`, {
+      enemyFrameVersion: 1,
+      hostile: index < 4
+    });
+  }
+  const emissions = [];
+  const makeTarget = (targets, volatile = false) => ({
+    get volatile() { return makeTarget(targets, true); },
+    emit(event, payload) {
+      emissions.push({
+        targets: Array.isArray(targets) ? [...targets] : [targets],
+        volatile,
+        event,
+        payload
+      });
+    }
+  });
+  const enemies = new Map(Array.from({ length: 12 }, (_, index) => [
+    `enemy-${index}`,
+    { id: `enemy-${index}`, x: index, z: -index, hp: 10 }
+  ]));
+  let fullRows = 0;
+  let frameRows = 0;
+  const runtime = new Function(
+    'players',
+    'io',
+    'publicEnemy',
+    'publicEnemyFrame',
+    'serverActorHostileToPlayer',
+    'roomNeedsHotEnemySnapshots',
+    'LEGACY_ENEMY_SNAPSHOT_INTERVAL_MS',
+    'Date',
+    [
+      extractFunction(serverSource, 'publicEnemySnapshotForViewer'),
+      extractFunction(serverSource, 'publicEnemyFrameForViewer'),
+      extractFunction(serverSource, 'emitFullEnemySnapshotToSockets'),
+      extractFunction(serverSource, 'emitEnemySnapshot'),
+      'return { emitEnemySnapshot };'
+    ].join('\n')
+  )(
+    viewers,
+    { to: targets => makeTarget(targets) },
+    enemy => {
+      fullRows++;
+      return { id: enemy.id, hostileToPlayer: false, inventory: [{ id: 'water', qty: 1 }] };
+    },
+    enemy => {
+      frameRows++;
+      return { id: enemy.id, x: enemy.x, z: enemy.z, hp: enemy.hp, aiState: 'idle', flags: 0 };
+    },
+    (_enemy, viewer) => viewer.hostile === true,
+    () => true,
+    360,
+    { now: () => 1000 }
+  );
+  const room = {
+    id: 'crowded-room',
+    locationId: 'settlement',
+    sockets: new Set(viewers.keys()),
+    enemies,
+    lastEnemySnapshotAt: 0,
+    enemyFrameSeq: 0
+  };
+
+  runtime.emitEnemySnapshot(room, false);
+  assert.strictEqual(frameRows, enemies.size,
+    'crowded enemy frame rebuilt base rows per viewer');
+  assert.strictEqual(emissions.length, 2,
+    'eight viewers with two hostility views were not coalesced into two frame encodes');
+  assert(emissions.every(row => row.volatile && row.event === 'enemyFrame' && row.targets.length === 4),
+    'coalesced realtime groups lost volatile transport or exact recipients');
+  assert.deepStrictEqual(
+    emissions.map(row => !!(row.payload.enemies[0].flags & 8)),
+    [true, false],
+    'coalesced frame groups lost their viewer-specific hostility overlay'
+  );
+
+  emissions.length = 0;
+  runtime.emitEnemySnapshot(room, true);
+  assert.strictEqual(fullRows, enemies.size,
+    'crowded reliable snapshot rebuilt heavyweight base rows per viewer');
+  assert.strictEqual(emissions.length, 2,
+    'eight viewers with two hostility views were not coalesced into two reliable encodes');
+  assert(emissions.every(row => !row.volatile && row.event === 'enemySnapshot' && row.targets.length === 4),
+    'coalesced reliable groups lost exact recipients or transport reliability');
+  assert.deepStrictEqual(
+    emissions.map(row => row.payload.enemies[0].hostileToPlayer),
+    [true, false],
+    'coalesced reliable groups lost their viewer-specific hostility overlay'
+  );
 }
 
 function assertViewerSpecificEnemyDeltas() {
@@ -375,14 +678,19 @@ function assertCollisionCacheInvalidation() {
   assert.strictEqual(finalBlockers[0].x, 6.5, 'invalidated blocker cache changed exact transform output');
 }
 
+assertStaticCollisionSpatialBroadPhase();
+assertStaticCollisionSpatialIntegration();
 assertSpatialIntegration();
 assertAdaptiveSpatialMovementPadding();
 assertRemainingEnemyAiScansUseCrowdIndexes();
+assertEnemyPlayerTargetLookupsAreIndexed();
+assertCrowdEventScansAreCoalesced();
 assertStructuralEnemyChangesStayReliable();
 assertEnemyFrameCompatibilityFallback();
+assertCrowdedEnemyFanoutCoalescesEquivalentViews();
 assertViewerSpecificEnemyDeltas();
 assertWorldStateRefreshIsCoalesced();
 assertMotionPacketContract();
 assertPlayerSnapshotIsLazyAndVolatile();
 assertCollisionCacheInvalidation();
-console.log('Crowded-room performance checks passed: spatial broad phase, collision caches, and compact volatile player streams are guarded.');
+console.log('Crowded-room performance checks passed: actor/static broad phases, collision caches, and compact volatile player streams are guarded.');

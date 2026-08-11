@@ -385,6 +385,9 @@
     state.requestId = Number(state.requestId || 0) + 1;
     state.mesh?.parent?.remove?.(state.mesh);
     delete runtimes[slot];
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(actor);
+    }
   }
 
   function removeApprovedEquipmentRuntimes(actor) {
@@ -443,6 +446,9 @@
       mesh.userData.approvedEquipmentBasePositionZ = mesh.position.z;
       group.add(mesh);
     }
+    if (typeof shareCompatibleCharacterSkeletons === 'function') {
+      shareCompatibleCharacterSkeletons(group);
+    }
     return group.children.length === sourceMeshes.length ? group : null;
   }
 
@@ -497,6 +503,9 @@
         approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
       }
       syncApprovedHazmatHoodVisibility(actor, eq);
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(actor, parts);
+      }
       return false;
     }
     const bodyKey = approvedEquipmentBodyKey(actor);
@@ -504,6 +513,9 @@
       placeApprovedEquipmentRuntime(current.mesh, slot, eq);
       approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
       syncApprovedHazmatHoodVisibility(actor, eq);
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(actor, parts);
+      }
       return true;
     }
     removeApprovedEquipmentRuntime(actor, slot);
@@ -514,9 +526,15 @@
     // Утверждённая модель уже выбрана — старый процедурный вариант не должен
     // мелькать, пока GLB грузится. Если загрузка сорвётся, вернём его.
     approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(actor, parts);
+    }
     const restoreFallback = () => {
       if (actor.userData.approvedEquipmentRuntimes?.[slot]?.requestId !== requestId) return;
       approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = true; });
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(actor, parts);
+      }
     };
     loadApprovedEquipmentTemplate(itemId, bodyKey).then(template => {
       const runtime = actor.userData.approvedEquipmentRuntimes?.[slot];
@@ -544,6 +562,9 @@
       runtime.mesh = mesh;
       approvedEquipmentFallbackMeshes(parts, slot).forEach(fallback => { fallback.visible = false; });
       syncApprovedHazmatHoodVisibility(actor, activeEquipment);
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(actor, parts);
+      }
     });
     return false;
   }
@@ -558,6 +579,9 @@
       if (APPROVED_EQUIPMENT_ASSETS[itemId]?.slot === slot) {
         approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
       }
+    }
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(actor, parts);
     }
   }
 
@@ -675,18 +699,27 @@
   function captureApprovedAssaultRifleRestPose(root) {
     if (!root?.traverse) return null;
     const bones = new Map();
+    const boneNodes = new Map();
     root.traverse(node => {
       if (!node?.isBone) return;
+      boneNodes.set(node.name, node);
       bones.set(node.name, {
         position: node.position.clone(),
         quaternion: node.quaternion.clone(),
         scale: node.scale.clone()
       });
     });
-    return { bones };
+    return { bones, boneNodes };
   }
 
   function approvedGripTargetTransform(runtime, pose, boneName, transform) {
+    if (!runtime) return transform;
+    if (runtime.approvedGripTargetPose !== pose) {
+      runtime.approvedGripTargetPose = pose;
+      runtime.approvedGripTargetTransforms = new Map();
+    }
+    const cached = runtime.approvedGripTargetTransforms?.get?.(boneName);
+    if (cached) return cached;
     const donorRest = pose?.restBones?.get?.(boneName);
     const targetRest = runtime?.approvedAssaultRifleRestPose?.bones?.get?.(boneName);
     if (!donorRest || !targetRest) return transform;
@@ -701,6 +734,7 @@
       const delta = donorRest.quaternion.clone().invert().multiply(poseQuaternion);
       result.quaternion = targetRest.quaternion.clone().multiply(delta).normalize();
     }
+    runtime.approvedGripTargetTransforms.set(boneName, result);
     return result;
   }
 
@@ -744,6 +778,7 @@
     if (!state) return;
     const weaponGroup = state.weaponGroup;
     if (weaponGroup && state.parent) {
+      const parentChanged = weaponGroup.parent !== state.parent;
       state.parent.add(weaponGroup);
       weaponGroup.position.copy(state.position);
       weaponGroup.quaternion.copy(state.quaternion);
@@ -752,6 +787,9 @@
       weaponGroup.userData.baseRotation = state.baseRotation.clone();
       weaponGroup.userData.characterPose = {};
       weaponGroup.userData.approvedGripMounted = false;
+      if (parentChanged && typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(actor);
+      }
     }
     delete actor.userData.approvedWeaponGripMount;
     delete actor.userData.approvedAssaultRifleGrip;
@@ -762,65 +800,112 @@
     restoreApprovedWeaponGrip(actor);
   }
 
-  function setApprovedBoneWorldQuaternion(bone, worldQuaternion) {
+  function setApprovedBoneWorldQuaternion(bone, worldQuaternion, parentQuaternionScratch = null) {
     if (!bone?.isBone || !bone.parent) return false;
-    const parentQuaternion = bone.parent.getWorldQuaternion(new THREE.Quaternion());
+    const parentQuaternion = bone.parent.getWorldQuaternion(parentQuaternionScratch || new THREE.Quaternion());
     bone.quaternion.copy(parentQuaternion.invert().multiply(worldQuaternion)).normalize();
     bone.updateWorldMatrix(false, true);
     return true;
   }
 
-  function solveApprovedArm(characterRoot, side = 'l', targetMatrix) {
+  function approvedArmSolveRuntime(characterRoot, side = 'l') {
+    if (!characterRoot?.userData) return null;
     const suffix = side === 'r' ? 'r' : 'l';
+    const cache = characterRoot.userData.approvedArmSolveRuntimes
+      || (characterRoot.userData.approvedArmSolveRuntimes = {});
+    if (cache[suffix]) return cache[suffix];
     const chain = [`clavicle_${suffix}`, `upperarm_${suffix}`, `lowerarm_${suffix}`, `hand_${suffix}`].map(name => (
-      characterRoot?.getObjectByName?.(name) || null
+      characterRoot.getObjectByName?.(name) || null
     ));
-    if (chain.some(bone => !bone?.isBone) || !targetMatrix) return false;
+    if (chain.some(bone => !bone?.isBone)) return null;
+    const runtime = {
+      chain,
+      positions: chain.map(() => new THREE.Vector3()),
+      lengths: Array.from({ length: chain.length - 1 }, () => 0),
+      base: new THREE.Vector3(),
+      targetPosition: new THREE.Vector3(),
+      targetQuaternion: new THREE.Quaternion(),
+      targetScale: new THREE.Vector3(),
+      direction: new THREE.Vector3(),
+      currentStart: new THREE.Vector3(),
+      currentEnd: new THREE.Vector3(),
+      currentDirection: new THREE.Vector3(),
+      wantedDirection: new THREE.Vector3(),
+      delta: new THREE.Quaternion(),
+      currentWorld: new THREE.Quaternion(),
+      parentWorld: new THREE.Quaternion(),
+      finalPosition: new THREE.Vector3()
+    };
+    cache[suffix] = runtime;
+    return runtime;
+  }
+
+  function solveApprovedArm(characterRoot, side = 'l', targetMatrix) {
+    const solveRuntime = approvedArmSolveRuntime(characterRoot, side);
+    if (!solveRuntime || !targetMatrix) return false;
+    const { chain, positions, lengths } = solveRuntime;
     chain[0].updateWorldMatrix(true, true);
-    const positions = chain.map(bone => bone.getWorldPosition(new THREE.Vector3()));
-    const base = positions[0].clone();
-    const lengths = positions.slice(0, -1).map((position, index) => (
-      position.distanceTo(positions[index + 1])
-    ));
+    for (let index = 0; index < chain.length; index += 1) {
+      chain[index].getWorldPosition(positions[index]);
+    }
+    const base = solveRuntime.base.copy(positions[0]);
+    for (let index = 0; index < chain.length - 1; index += 1) {
+      lengths[index] = positions[index].distanceTo(positions[index + 1]);
+    }
     if (lengths.some(length => !Number.isFinite(length) || length <= 0.0001)) return false;
-    const targetPosition = new THREE.Vector3();
-    const targetQuaternion = new THREE.Quaternion();
-    targetMatrix.decompose(targetPosition, targetQuaternion, new THREE.Vector3());
+    const targetPosition = solveRuntime.targetPosition;
+    const targetQuaternion = solveRuntime.targetQuaternion;
+    targetMatrix.decompose(targetPosition, targetQuaternion, solveRuntime.targetScale);
     const totalLength = lengths.reduce((sum, length) => sum + length, 0);
     if (base.distanceTo(targetPosition) >= totalLength) {
-      const direction = targetPosition.clone().sub(base).normalize();
+      const direction = solveRuntime.direction.subVectors(targetPosition, base).normalize();
       for (let index = 1; index < positions.length; index += 1) {
-        positions[index] = positions[index - 1].clone().addScaledVector(direction, lengths[index - 1]);
+        positions[index].copy(positions[index - 1]).addScaledVector(direction, lengths[index - 1]);
       }
     } else {
       for (let iteration = 0; iteration < 12; iteration += 1) {
-        positions[positions.length - 1] = targetPosition.clone();
+        positions[positions.length - 1].copy(targetPosition);
         for (let index = positions.length - 2; index >= 0; index -= 1) {
-          const direction = positions[index].clone().sub(positions[index + 1]).normalize();
-          positions[index] = positions[index + 1].clone().addScaledVector(direction, lengths[index]);
+          const direction = solveRuntime.direction.subVectors(positions[index], positions[index + 1]).normalize();
+          positions[index].copy(positions[index + 1]).addScaledVector(direction, lengths[index]);
         }
-        positions[0] = base.clone();
+        positions[0].copy(base);
         for (let index = 1; index < positions.length; index += 1) {
-          const direction = positions[index].clone().sub(positions[index - 1]).normalize();
-          positions[index] = positions[index - 1].clone().addScaledVector(direction, lengths[index - 1]);
+          const direction = solveRuntime.direction.subVectors(positions[index], positions[index - 1]).normalize();
+          positions[index].copy(positions[index - 1]).addScaledVector(direction, lengths[index - 1]);
         }
         if (positions[positions.length - 1].distanceTo(targetPosition) < 0.001) break;
       }
     }
     for (let index = 0; index < chain.length - 1; index += 1) {
       chain[index].updateWorldMatrix(true, true);
-      const currentStart = chain[index].getWorldPosition(new THREE.Vector3());
-      const currentEnd = chain[index + 1].getWorldPosition(new THREE.Vector3());
-      const currentDirection = currentEnd.sub(currentStart).normalize();
-      const wantedDirection = positions[index + 1].clone().sub(positions[index]).normalize();
-      const delta = new THREE.Quaternion().setFromUnitVectors(currentDirection, wantedDirection);
-      const currentWorld = chain[index].getWorldQuaternion(new THREE.Quaternion());
-      if (!setApprovedBoneWorldQuaternion(chain[index], delta.multiply(currentWorld))) return false;
+      chain[index].getWorldPosition(solveRuntime.currentStart);
+      chain[index + 1].getWorldPosition(solveRuntime.currentEnd);
+      solveRuntime.currentDirection
+        .subVectors(solveRuntime.currentEnd, solveRuntime.currentStart)
+        .normalize();
+      solveRuntime.wantedDirection
+        .subVectors(positions[index + 1], positions[index])
+        .normalize();
+      solveRuntime.delta.setFromUnitVectors(
+        solveRuntime.currentDirection,
+        solveRuntime.wantedDirection
+      );
+      chain[index].getWorldQuaternion(solveRuntime.currentWorld);
+      if (!setApprovedBoneWorldQuaternion(
+        chain[index],
+        solveRuntime.delta.multiply(solveRuntime.currentWorld),
+        solveRuntime.parentWorld
+      )) return false;
     }
-    if (!setApprovedBoneWorldQuaternion(chain[chain.length - 1], targetQuaternion)) return false;
+    if (!setApprovedBoneWorldQuaternion(
+      chain[chain.length - 1],
+      targetQuaternion,
+      solveRuntime.parentWorld
+    )) return false;
     chain[0].updateWorldMatrix(true, true);
     return chain[chain.length - 1]
-      .getWorldPosition(new THREE.Vector3())
+      .getWorldPosition(solveRuntime.finalPosition)
       .distanceTo(targetPosition) < 0.01;
   }
 
@@ -1062,7 +1147,12 @@
       new THREE.Vector3(1, 1, 1)
     );
     const weaponWorld = primaryTargetWorld.clone().multiply(primaryLocalMatrix.invert());
-    if (weaponGroup.parent !== runtime.root) runtime.root.add(weaponGroup);
+    if (weaponGroup.parent !== runtime.root) {
+      runtime.root.add(weaponGroup);
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(actor);
+      }
+    }
     const mountLocal = runtime.root.matrixWorld.clone().invert().multiply(weaponWorld);
     mountLocal.decompose(weaponGroup.position, weaponGroup.quaternion, weaponGroup.scale);
     weaponGroup.updateMatrixWorld(true);
@@ -1297,7 +1387,12 @@
     }
     const scaledPrimary = primaryLocal.position.clone().multiply(state.scale).applyQuaternion(weaponQuaternion);
     const weaponPosition = meleePose.primary.clone().sub(scaledPrimary);
-    if (weaponGroup.parent !== characterRuntime.root) characterRuntime.root.add(weaponGroup);
+    if (weaponGroup.parent !== characterRuntime.root) {
+      characterRuntime.root.add(weaponGroup);
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(actor);
+      }
+    }
     weaponGroup.position.copy(weaponPosition);
     weaponGroup.quaternion.copy(weaponQuaternion).normalize();
     weaponGroup.scale.copy(state.scale);
@@ -1369,7 +1464,8 @@
     delete actor.userData.approvedPhysicalMeleeGripActive;
     updateApprovedWeaponObstruction(actor, approvedActorWeaponGroup(actor));
     pose.bones.forEach((transform, boneName) => {
-      const bone = characterRoot.getObjectByName?.(boneName);
+      const bone = characterRuntime.approvedAssaultRifleRestPose?.boneNodes?.get?.(boneName)
+        || characterRoot.getObjectByName?.(boneName);
       if (!bone?.isBone) return;
       const target = approvedGripTargetTransform(
         characterRuntime,

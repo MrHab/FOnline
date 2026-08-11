@@ -84,6 +84,9 @@ function assertContainsAll(label, source, snippets) {
 const core = read('public/js/game/05_multiplayer_core_state.js');
 const actorVisuals = read('public/js/game/04_player_model_visuals.js');
 const modernActorRuntime = read('public/js/game/04a_player_model_modern_runtime.js');
+const characterGlbRuntime = read('public/js/game/04b_character_glb_runtime.js');
+const approvedHumanoidRuntime = read('public/js/game/04d_approved_humanoid_assets_runtime.js');
+const remoteEquipmentRuntime = read('public/js/game/05a_remote_actor_equipment.js');
 const remoteLocomotion = read('public/js/game/05b_remote_player_locomotion.js');
 const socketRoom = read('public/js/game/05c_multiplayer_socket_room.js');
 const enemyModels = read('public/js/game/05f_enemy_models_location_flow.js');
@@ -2038,9 +2041,18 @@ function assertActorAnimationLod() {
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MID_INTERVAL'),
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_FAR_INTERVAL'),
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MAX_DT'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_CROWD_MIN_HEAVY_ACTORS'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_CROWD_PRESSURE_FPS'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_CROWD_RECOVERY_FPS'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_CROWD_IDLE_INTERVAL'),
+    statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_STAGGER_BUCKETS'),
     functionSource(enemyModels, 'enemyAnimationLodInterval'),
+    functionSource(enemyModels, 'enemyAnimationStableStaggerUnit'),
+    functionSource(enemyModels, 'enemyAnimationLodStaggerThreshold'),
+    functionSource(enemyModels, 'enemyAnimationCrowdPressure'),
+    functionSource(enemyModels, 'enemyAnimationCrowdAdjustedInterval'),
     functionSource(enemyModels, 'consumeEnemyAnimationLodDt'),
-    'return { interval: enemyAnimationLodInterval, consume: consumeEnemyAnimationLodDt };'
+    'return { interval: enemyAnimationLodInterval, stagger: enemyAnimationStableStaggerUnit, pressure: enemyAnimationCrowdPressure, crowdInterval: enemyAnimationCrowdAdjustedInterval, consume: consumeEnemyAnimationLodDt };'
   ].join('\n'))();
   assert.strictEqual(enemyRuntime.interval(2, false, true), Infinity,
     'hidden enemies must not run heavy animation work');
@@ -2054,6 +2066,34 @@ function assertActorAnimationLod() {
     'mid-distance enemy animation must run near 20 Hz');
   assert.strictEqual(enemyRuntime.interval(24, true, false), 0.08,
     'far enemy animation must run near 12.5 Hz');
+  assert.strictEqual(enemyRuntime.pressure(6, 30, false), true,
+    'a low-FPS heavy NPC crowd does not enable animation pressure');
+  assert.strictEqual(enemyRuntime.pressure(5, 30, true), false,
+    'animation pressure remains enabled below the crowded-actor threshold');
+  assert.strictEqual(enemyRuntime.pressure(6, 53, true), true,
+    'animation pressure loses its recovery hysteresis');
+  assert.strictEqual(enemyRuntime.pressure(6, 54, true), false,
+    'animation pressure does not recover at the upper FPS threshold');
+  assert.strictEqual(enemyRuntime.crowdInterval(0, {
+    crowdPressure: true, heavy: true, idle: true, important: false
+  }), 0.05, 'crowd pressure does not cap idle heavy NPC animation at 20 Hz');
+  assert.strictEqual(enemyRuntime.crowdInterval(0, {
+    crowdPressure: true, heavy: true, idle: true, important: true
+  }), 0, 'important enemy animation was throttled by crowd pressure');
+  assert.strictEqual(enemyRuntime.crowdInterval(0, {
+    crowdPressure: true, heavy: true, idle: false, important: false
+  }), 0, 'moving enemy animation was throttled by the idle crowd budget');
+  assert.strictEqual(enemyRuntime.crowdInterval(0.08, {
+    crowdPressure: true, heavy: true, idle: true, important: false
+  }), 0.08, 'crowd pressure sped up an already slower far animation tier');
+  const staggerA = enemyRuntime.stagger({ id: 'crowd-alpha' });
+  assert.strictEqual(staggerA, enemyRuntime.stagger({ id: 'crowd-alpha' }),
+    'enemy animation staggering is not stable for an actor id');
+  const testedPhases = new Set(Array.from({ length: 16 }, (_, index) => (
+    enemyRuntime.stagger({ id: `crowd-phase-${index}` })
+  )));
+  assert(testedPhases.size > 1,
+    'different actor ids collapse into one animation phase');
   const hiddenEnemy = {};
   for (let frame = 0; frame < 5; frame += 1) {
     assert.strictEqual(enemyRuntime.consume(hiddenEnemy, 0.05, Infinity, 'hidden'), 0,
@@ -2061,6 +2101,10 @@ function assertActorAnimationLod() {
   }
   assert(Math.abs(enemyRuntime.consume(hiddenEnemy, 0.016, 0.08, 'visible') - 0.08) < 1e-8,
     'enemy animation catch-up exceeded or lost the bounded accumulated time');
+  const importantEnemy = { id: 'important-target' };
+  enemyRuntime.consume(importantEnemy, 0.016, 0.05, 'idle');
+  assert(enemyRuntime.consume(importantEnemy, 0.016, 0, 'attack') > 0,
+    'an important enemy state change waited for the crowded idle interval');
 
   const remoteUpdate = functionBody(remoteLocomotion, 'updateRemotePlayers');
   assertContainsAll('fog-hidden remote fast path', remoteUpdate, [
@@ -2086,8 +2130,11 @@ function assertActorAnimationLod() {
   const heavyImportanceEnd = enemyUpdate.indexOf('let animationDt = dt;', heavyImportanceStart);
   const heavyImportance = enemyUpdate.slice(heavyImportanceStart, heavyImportanceEnd);
   assertContainsAll('enemy full-rate animation importance', heavyImportance, [
+    'attackAnimation.active',
     'attackWindowActive',
     'meleeWindowActive',
+    'hitReactionActive',
+    'inDialogue',
     'Number(enemy.flash || 0) > 0.02',
     'player.attackTarget === enemy',
     'hoveredEnemy === enemy'
@@ -2103,6 +2150,7 @@ function assertActorAnimationLod() {
     'enemy procedural pose is restored on frames skipped by heavy animation LOD');
   assertContainsAll('enemy heavy animation LOD bundle', enemyUpdate, [
     'const heavyActor = !!(',
+    'enemyAnimationCrowdAdjustedInterval(',
     'enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant)',
     'if (animationDt <= 0) return',
     'updateCharacterLocomotionAnimation(mesh, animationDt',
@@ -2119,41 +2167,118 @@ function assertActorAnimationLod() {
     'e.mesh.position.set(tx, 0, tz)',
     'applyEnemyFlashVisual(e, dt)'
   ]);
+  assertContainsAll('crowded idle trader animation scheduler', updateEnemies, [
+    'createEnemyAnimationFrameContext(',
+    'const traderImportant = traderTalking',
+    'traderAttack.active',
+    'traderHitReactionActive',
+    'traderSelected',
+    'traderHovered',
+    'enemyAnimationCrowdAdjustedInterval(traderBaseInterval',
+    'consumeEnemyAnimationLodDt(',
+    'if (traderAnimationDt > 0)',
+    'animateEnemyVisual(e, dt, animationFrameContext)'
+  ]);
 
   const proceduralRuntime = new Function([
     functionSource(modernActorRuntime, 'modernAnimationHasVisibleMesh'),
+    functionSource(modernActorRuntime, 'invalidateModernProceduralRigAnimationCache'),
+    functionSource(modernActorRuntime, 'modernProceduralRigAnimationCacheKey'),
     functionSource(modernActorRuntime, 'modernProceduralRigNeedsAnimation'),
-    'return modernProceduralRigNeedsAnimation;'
+    'return { needs: modernProceduralRigNeedsAnimation, invalidate: invalidateModernProceduralRigAnimationCache, key: modernProceduralRigAnimationCacheKey };'
   ].join('\n'))();
   const characterRoot = {};
   const hiddenBase = { isMesh: true, visible: false };
-  assert.strictEqual(proceduralRuntime({}, characterRoot), true,
+  assert.strictEqual(proceduralRuntime.needs({}, characterRoot), true,
     'actors without a captured procedural fallback were incorrectly fast-pathed');
-  assert.strictEqual(proceduralRuntime({ proceduralCharacterBaseMeshes: [hiddenBase] }, characterRoot), false,
+  assert.strictEqual(proceduralRuntime.needs({ proceduralCharacterBaseMeshes: [hiddenBase] }, characterRoot), false,
     'fully hidden procedural fallback still runs its locomotion rig');
-  assert.strictEqual(proceduralRuntime({
+  assert.strictEqual(proceduralRuntime.needs({
     proceduralCharacterBaseMeshes: [hiddenBase],
     backpack: { isMesh: true, visible: true }
   }, characterRoot), true, 'visible fallback equipment no longer animates with the procedural rig');
-  assert.strictEqual(proceduralRuntime({
+  assert.strictEqual(proceduralRuntime.needs({
     proceduralCharacterBaseMeshes: [hiddenBase],
     weaponGroup: { visible: true, parent: {}, children: [{ isMesh: true, visible: true }] }
   }, characterRoot), true, 'an unmounted visible weapon no longer keeps its procedural anchor animated');
-  assert.strictEqual(proceduralRuntime({
+  assert.strictEqual(proceduralRuntime.needs({
     proceduralCharacterBaseMeshes: [hiddenBase],
     weaponGroup: { visible: true, parent: characterRoot, children: [{ isMesh: true, visible: true }] }
   }, characterRoot), false, 'a GLB-mounted approved weapon incorrectly keeps the hidden procedural rig active');
 
+  let visibilityReads = 0;
+  const countedHiddenBase = { isMesh: true };
+  Object.defineProperty(countedHiddenBase, 'visible', {
+    configurable: true,
+    get() { visibilityReads += 1; return false; }
+  });
+  const cachedParts = { proceduralCharacterBaseMeshes: [countedHiddenBase] };
+  const cachedActor = { userData: { parts: cachedParts, equipmentKey: 'equipment-a', weaponId: 'pistol' } };
+  const cachedRoot = { uuid: 'character-root-a' };
+  const firstCacheKey = proceduralRuntime.key(cachedActor, cachedParts, cachedRoot);
+  assert.strictEqual(proceduralRuntime.needs(cachedParts, cachedRoot, firstCacheKey), false);
+  const readsAfterFirstScan = visibilityReads;
+  assert.strictEqual(proceduralRuntime.needs(cachedParts, cachedRoot, firstCacheKey), false);
+  assert.strictEqual(visibilityReads, readsAfterFirstScan,
+    'stable procedural equipment topology is rescanned on every GLB animation tick');
+  proceduralRuntime.invalidate(cachedActor, cachedParts);
+  const invalidatedCacheKey = proceduralRuntime.key(cachedActor, cachedParts, cachedRoot);
+  assert.notStrictEqual(invalidatedCacheKey, firstCacheKey,
+    'procedural rig cache invalidation does not advance the topology revision');
+  assert.strictEqual(proceduralRuntime.needs(cachedParts, cachedRoot, invalidatedCacheKey), false);
+  assert(visibilityReads > readsAfterFirstScan,
+    'procedural rig topology was not rescanned after explicit invalidation');
+  cachedActor.userData.equipmentKey = 'equipment-b';
+  assert.notStrictEqual(
+    proceduralRuntime.key(cachedActor, cachedParts, cachedRoot),
+    invalidatedCacheKey,
+    'equipment key changes do not invalidate the procedural rig cache key'
+  );
+
+  const weaponVisibilityRuntime = new Function([
+    'const invalidations = [];',
+    'function invalidateModernProceduralRigAnimationCache(actor, parts) { invalidations.push({ actor, parts }); }',
+    functionSource(enemyModels, 'enemyAnimWeaponVisible'),
+    'return { set: enemyAnimWeaponVisible, invalidations };'
+  ].join('\n'))();
+  const wakeParts = {};
+  const wakeWeapon = { visible: false, children: [{}] };
+  const wakeMesh = { userData: { enemyWeaponGroup: wakeWeapon, parts: wakeParts } };
+  weaponVisibilityRuntime.set(wakeMesh, true);
+  assert.strictEqual(wakeWeapon.visible, true, 'waking an NPC no longer restores its weapon visibility');
+  assert.deepStrictEqual(weaponVisibilityRuntime.invalidations, [{ actor: wakeMesh, parts: wakeParts }],
+    'sleep/wake visibility change does not invalidate the procedural rig cache');
+  weaponVisibilityRuntime.set(wakeMesh, true);
+  assert.strictEqual(weaponVisibilityRuntime.invalidations.length, 1,
+    'unchanged weapon visibility needlessly invalidates the procedural rig cache');
+  weaponVisibilityRuntime.set(wakeMesh, false);
+  assert.strictEqual(weaponVisibilityRuntime.invalidations.length, 2,
+    'putting an NPC to sleep does not invalidate the procedural rig cache');
+
   const modernUpdate = functionBody(modernActorRuntime, 'updateCharacterLocomotionAnimation');
   const glbUpdateIndex = modernUpdate.indexOf('updateCharacterGlbAnimation(actor, dt, animationState) === true');
   const approvedGripIndex = modernUpdate.indexOf('updateModernApprovedWeaponGrip(actor, weaponId)');
-  const hiddenRigGateIndex = modernUpdate.indexOf('if (!modernProceduralRigNeedsAnimation(parts, actor.userData.characterGlbRuntime.root)) return');
+  const hiddenRigGateIndex = modernUpdate.indexOf('if (!modernProceduralRigNeedsAnimation(parts, characterRoot, proceduralRigCacheKey)) return');
   const proceduralAnimationIndex = modernUpdate.indexOf('const crouching =');
   assert(glbUpdateIndex >= 0
     && approvedGripIndex > glbUpdateIndex
     && hiddenRigGateIndex > approvedGripIndex
     && proceduralAnimationIndex > hiddenRigGateIndex,
   'the successful GLB fast path no longer preserves approved grip before skipping the hidden procedural rig');
+  for (const [label, body] of [
+    ['player equipment', functionBody(actorVisuals, 'updatePlayerEquipmentVisuals')],
+    ['procedural mesh capture', functionBody(characterGlbRuntime, 'captureCharacterProceduralBaseMeshes')],
+    ['procedural visibility', functionBody(characterGlbRuntime, 'setCharacterProceduralBaseVisible')],
+    ['remote equipment', functionBody(remoteEquipmentRuntime, 'updateRemoteEquipmentVisuals')],
+    ['enemy equipment', functionBody(remoteEquipmentRuntime, 'updateEnemyEquipmentVisuals')],
+    ['approved equipment', functionBody(approvedHumanoidRuntime, 'applyApprovedEquipmentSlot')],
+    ['approved weapon restore', functionBody(approvedHumanoidRuntime, 'restoreApprovedWeaponGrip')],
+    ['approved ranged weapon mount', functionBody(approvedHumanoidRuntime, 'mountApprovedWeapon')],
+    ['approved melee weapon mount', functionBody(approvedHumanoidRuntime, 'placeApprovedMeleeWeapon')]
+  ]) {
+    assert(body.includes('invalidateModernProceduralRigAnimationCache('),
+      `${label} refresh does not invalidate the procedural rig topology cache`);
+  }
 }
 
 function assertCrowdedActorInteractionBudget() {
@@ -2227,6 +2352,46 @@ function assertRemotePlayerStateFastPath() {
   ]);
 }
 
+function assertNetworkPingDiagnostics() {
+  assertContainsAll('network ping state', core, [
+    'networkPingMainThreadStallMs: null',
+    "networkPingTransport: ''"
+  ]);
+  const updatePing = functionBody(socketRoom, 'updateNetworkPing');
+  assertContainsAll('post-frame network ping probe', updatePing, [
+    "typeof queueMicrotask === 'function'",
+    'beginNetworkPingProbe(socket, requestId)'
+  ]);
+  const beginProbe = functionBody(socketRoom, 'beginNetworkPingProbe');
+  assertContainsAll('honest application RTT diagnostics', beginProbe, [
+    'finishedAt - startedAt',
+    'Number(ack.clientTime) !== clientTime',
+    "resetNetworkPingMeasurement('timeout')",
+    'networkPingObservedMainThreadStallMs(',
+    'multiplayer.networkPingMs = measuredPing',
+    'multiplayer.networkPingMainThreadStallMs = mainThreadStall',
+    'multiplayer.networkPingTransport = currentNetworkPingTransport()'
+  ]);
+  const renderPing = functionBody(socketRoom, 'renderNetworkPing');
+  assertContainsAll('network ping diagnostic tooltip', renderPing, [
+    'Полный RTT до игрового сервера',
+    'Последний замер:',
+    'Максимальная пауза главного потока',
+    'не часть RTT для вычитания',
+    'networkPingEl.dataset.mainThreadStallMs'
+  ]);
+  const observedStall = new Function([
+    functionSource(socketRoom, 'networkPingObservedMainThreadStallMs'),
+    'return networkPingObservedMainThreadStallMs;'
+  ].join('\n'))();
+  assert.strictEqual(observedStall(300, 1300, 1250, 20), 50,
+    'network ping diagnostics lost the callback scheduler delay');
+  assert.strictEqual(observedStall(300, 1300, 1320, 75), 75,
+    'network ping diagnostics lost the sampled main-thread delay');
+  assert.strictEqual(observedStall(40, 140, 50, 90), 40,
+    'observed main-thread stall must never exceed the full measured RTT');
+}
+
 async function main() {
   assertAuthorityModes();
   assertAuthorityTransitionCleanup();
@@ -2251,6 +2416,7 @@ async function main() {
   assertActorAnimationLod();
   assertCrowdedActorInteractionBudget();
   assertRemotePlayerStateFastPath();
+  assertNetworkPingDiagnostics();
   console.log('Client-state integrity checks passed: authority, guarded gameplay ACKs, join/reconnect, movement accuracy, compact network hot paths, sparse sequenced enemy frames, onsite-zone change detection, actor animation LOD, global-map motion, deferred world bootstrap, input lifecycle, harvest, world-state resync, event-driven mobile panels and dead-man switch.');
 }
 

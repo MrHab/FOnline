@@ -148,6 +148,9 @@
       const mesh = weaponId && weaponId !== 'fists' ? makeRemoteWeaponMesh(weaponId) : null;
       if (mesh) weaponGroup.add(mesh);
     });
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(group, parts);
+    }
   }
 
   function enemyEquipmentFromData(data = {}) {
@@ -229,6 +232,9 @@
     initWeaponVisualState(weaponGroup);
     group.add(weaponGroup);
     group.userData.enemyWeaponGroup = weaponGroup;
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(group, parts);
+    }
     return weaponGroup;
   }
 
@@ -256,6 +262,9 @@
       group.userData.weaponId = 'fists';
       group.userData.enemyEquipmentKey = 'natural-creature';
       group.userData.enemyEquipment = enemy.equipment;
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(group, parts);
+      }
       return;
     }
     const eq = enemyEquipmentFromData(enemy);
@@ -278,7 +287,12 @@
     if (typeof applyApprovedEquipmentVisuals === 'function') applyApprovedEquipmentVisuals(group, eq);
     const weaponGroup = ensureEnemyWeaponGroup(enemy);
     if (parts.weaponStatic) parts.weaponStatic.visible = !eq.weapon || eq.weapon === 'fists';
-    if (!weaponGroup) return;
+    if (!weaponGroup) {
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(group, parts);
+      }
+      return;
+    }
     disposeGroupChildren(weaponGroup);
     initWeaponVisualState(weaponGroup);
     const mesh = eq.weapon && eq.weapon !== 'fists' ? makeRemoteWeaponMesh(eq.weapon) : null;
@@ -287,6 +301,9 @@
     // GLB-шаблон ствола мог ещё не загрузиться — тогда встал старый меш без
     // сокетов хвата. Помечаем, чтобы кадровый цикл заменил его на GLB.
     weaponGroup.userData.weaponMeshLegacy = !!mesh && !mesh.userData?.weaponSharedAsset;
+    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+      invalidateModernProceduralRigAnimationCache(group, parts);
+    }
   }
 
   function enemyRenderKey(type = {}) {

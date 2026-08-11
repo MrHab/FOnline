@@ -54,6 +54,18 @@ function runtimeFile(url) {
   return path.join(ROOT, 'public', String(url || '').replace(/^\//, ''));
 }
 
+function functionSource(source, name) {
+  const start = source.indexOf(`function ${name}`);
+  assert(start >= 0, `runtime function is missing: ${name}`);
+  const open = source.indexOf('{', start);
+  let depth = 0;
+  for (let index = open; index < source.length; index += 1) {
+    if (source[index] === '{') depth += 1;
+    else if (source[index] === '}' && --depth === 0) return source.slice(start, index + 1);
+  }
+  throw new Error(`runtime function is truncated: ${name}`);
+}
+
 assert(fs.existsSync(MANIFEST_FILE), 'approved humanoid asset manifest is missing');
 const manifest = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf8'));
 assert.strictEqual(manifest.schema, 'realm.approved-humanoid-assets.v2');
@@ -233,6 +245,8 @@ const runtimeSource = fs.readFileSync(
   'const sourceMeshes = []',
   "mesh.name = `approved_equipment_${itemId}_${sourceMesh.name || sourceMesh.material?.name || group.children.length}`",
   'new THREE.Skeleton(',
+  "if (typeof shareCompatibleCharacterSkeletons === 'function')",
+  'shareCompatibleCharacterSkeletons(group);',
   'function applyApprovedEquipmentVisuals(actor, eq = {})',
   'const APPROVED_BACKPACK_ARMOR_OFFSETS = Object.freeze({',
   'function approvedBackpackArmorOffset(eq = {})',
@@ -262,6 +276,9 @@ assert(characterSource.includes("state.dead && runtime.actions?.death"));
 assert(characterSource.includes("options.npcAnimations && typeof attachApprovedNpcAnimations === 'function'"));
 assert(characterSource.includes("typeof applyApprovedEquipmentVisuals === 'function'"));
 assert(characterSource.includes("approvedAssaultRifleRestPose: typeof captureApprovedAssaultRifleRestPose === 'function'"));
+assert(characterSource.includes('function compatibleCharacterSkeletonMeshes(')
+  && characterSource.includes('function shareCompatibleCharacterSkeletons('),
+'character runtime does not expose conservative per-instance Skeleton sharing');
 
 const enemySource = fs.readFileSync(path.join(ROOT, 'public', 'js', 'game', '05f_enemy_models_location_flow.js'), 'utf8');
 assert(enemySource.includes('function buildUnifiedHumanoidNpc(group, type = {}, visual = \'raider\')'));
@@ -280,6 +297,104 @@ async function verifyThreeRuntime() {
     close() {}
   }));
   const THREE = await import('three');
+  const approvedIkApi = new Function('THREE', [
+    functionSource(runtimeSource, 'setApprovedBoneWorldQuaternion'),
+    functionSource(runtimeSource, 'approvedArmSolveRuntime'),
+    functionSource(runtimeSource, 'solveApprovedArm'),
+    'return { solveApprovedArm };'
+  ].join('\n'))(THREE);
+  const skeletonShareApi = new Function('THREE', [
+    functionSource(characterSource, 'characterSkinMatrixEquals'),
+    functionSource(characterSource, 'compatibleCharacterSkeletonMeshes'),
+    functionSource(characterSource, 'shareCompatibleCharacterSkeletons'),
+    'return { shareCompatibleCharacterSkeletons };'
+  ].join('\n'))(THREE);
+  const armRoot = new THREE.Group();
+  const clavicle = new THREE.Bone();
+  const upperArm = new THREE.Bone();
+  const lowerArm = new THREE.Bone();
+  const hand = new THREE.Bone();
+  clavicle.name = 'clavicle_l';
+  upperArm.name = 'upperarm_l';
+  lowerArm.name = 'lowerarm_l';
+  hand.name = 'hand_l';
+  clavicle.position.set(0, 1.2, 0);
+  upperArm.position.set(0.12, 0, 0);
+  lowerArm.position.set(0.35, 0, 0);
+  hand.position.set(0.3, 0, 0);
+  clavicle.add(upperArm);
+  upperArm.add(lowerArm);
+  lowerArm.add(hand);
+  armRoot.add(clavicle);
+  armRoot.updateMatrixWorld(true);
+  const armTargetPosition = new THREE.Vector3(0.55, 1.35, 0.15);
+  const armTargetQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(0.1, 0.2, -0.08));
+  const armTargetMatrix = new THREE.Matrix4().compose(
+    armTargetPosition,
+    armTargetQuaternion,
+    new THREE.Vector3(1, 1, 1)
+  );
+  assert.strictEqual(approvedIkApi.solveApprovedArm(armRoot, 'l', armTargetMatrix), true,
+    'cached approved-arm IK failed its first reachable solve');
+  armRoot.updateMatrixWorld(true);
+  const firstArmEnd = hand.getWorldPosition(new THREE.Vector3());
+  const armChain = [clavicle, upperArm, lowerArm, hand];
+  const firstArmQuaternions = armChain.map(bone => bone.quaternion.clone());
+  const armScratch = armRoot.userData.approvedArmSolveRuntimes?.l;
+  assert(armScratch, 'approved-arm IK did not retain solve scratch');
+  const armScratchPositions = armScratch.positions.slice();
+  const armScratchObjects = [
+    armScratch.base,
+    armScratch.targetPosition,
+    armScratch.targetQuaternion,
+    armScratch.targetScale,
+    armScratch.direction,
+    armScratch.currentStart,
+    armScratch.currentEnd,
+    armScratch.currentDirection,
+    armScratch.wantedDirection,
+    armScratch.delta,
+    armScratch.currentWorld,
+    armScratch.parentWorld,
+    armScratch.finalPosition
+  ];
+  armChain.forEach(bone => bone.quaternion.identity());
+  armRoot.updateMatrixWorld(true);
+  assert.strictEqual(approvedIkApi.solveApprovedArm(armRoot, 'l', armTargetMatrix), true,
+    'cached approved-arm IK failed after resetting the same chain');
+  armRoot.updateMatrixWorld(true);
+  const secondArmEnd = hand.getWorldPosition(new THREE.Vector3());
+  assert(firstArmEnd.distanceTo(secondArmEnd) < 1e-7
+    && secondArmEnd.distanceTo(armTargetPosition) < 0.01,
+  'reused approved-arm IK scratch changed the solved endpoint');
+  armChain.forEach((bone, index) => {
+    assert(bone.quaternion.angleTo(firstArmQuaternions[index]) < 1e-7,
+      `reused approved-arm IK scratch changed bone ${bone.name}`);
+  });
+  assert.strictEqual(armRoot.userData.approvedArmSolveRuntimes.l, armScratch,
+    'approved-arm IK replaced its solve runtime');
+  armScratchPositions.forEach((value, index) => {
+    assert.strictEqual(armScratch.positions[index], value,
+      `approved-arm IK replaced scratch position ${index}`);
+  });
+  [
+    armScratch.base,
+    armScratch.targetPosition,
+    armScratch.targetQuaternion,
+    armScratch.targetScale,
+    armScratch.direction,
+    armScratch.currentStart,
+    armScratch.currentEnd,
+    armScratch.currentDirection,
+    armScratch.wantedDirection,
+    armScratch.delta,
+    armScratch.currentWorld,
+    armScratch.parentWorld,
+    armScratch.finalPosition
+  ].forEach((value, index) => {
+    assert.strictEqual(value, armScratchObjects[index],
+      `approved-arm IK replaced scratch object ${index}`);
+  });
   const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
   const loader = new GLTFLoader();
   const load = file => {
@@ -287,6 +402,61 @@ async function verifyThreeRuntime() {
     const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
     return new Promise((resolve, reject) => loader.parse(buffer, '', resolve, reject));
   };
+
+  const sharedHelmet = await load(runtimeFile(byId.get('helmet_male_medium').file));
+  const sharedHelmetMeshes = [];
+  sharedHelmet.scene.traverse(node => {
+    if (node?.isSkinnedMesh && node.skeleton) sharedHelmetMeshes.push(node);
+  });
+  assert(sharedHelmetMeshes.length > 1,
+    'approved helmet does not expose multiple primitive skeletons for the sharing guard');
+  assert.strictEqual(
+    new Set(sharedHelmetMeshes.map(mesh => mesh.skeleton)).size,
+    sharedHelmetMeshes.length,
+    'approved helmet loader no longer creates one Skeleton per primitive'
+  );
+  const sharedHelmetHead = sharedHelmetMeshes[0].skeleton.bones.find(bone => bone.name === 'head');
+  assert(sharedHelmetHead?.isBone, 'approved helmet head bone is missing');
+  sharedHelmetHead.rotation.set(0.08, -0.12, 0.19);
+  sharedHelmet.scene.updateMatrixWorld(true);
+  const sharedHelmetSkinVertex = mesh => {
+    mesh.skeleton.update();
+    const vertex = new THREE.Vector3().fromBufferAttribute(mesh.geometry.attributes.position, 0);
+    mesh.boneTransform(0, vertex);
+    return vertex;
+  };
+  const sharedHelmetBefore = sharedHelmetMeshes.map(mesh => ({
+    skeleton: mesh.skeleton,
+    bindMatrix: mesh.bindMatrix.clone(),
+    bindMatrixInverse: mesh.bindMatrixInverse.clone(),
+    bindMode: mesh.bindMode,
+    boneInverses: mesh.skeleton.boneInverses.map(matrix => matrix.clone()),
+    vertex: sharedHelmetSkinVertex(mesh)
+  }));
+  assert.strictEqual(
+    skeletonShareApi.shareCompatibleCharacterSkeletons(sharedHelmet.scene),
+    sharedHelmetMeshes.length - 1,
+    'approved equipment did not collapse every compatible primitive Skeleton'
+  );
+  assert.strictEqual(new Set(sharedHelmetMeshes.map(mesh => mesh.skeleton)).size, 1,
+    'approved equipment primitives do not share one Skeleton identity');
+  sharedHelmet.scene.updateMatrixWorld(true);
+  sharedHelmetMeshes[0].skeleton.update();
+  sharedHelmetMeshes.forEach((mesh, meshIndex) => {
+    const before = sharedHelmetBefore[meshIndex];
+    assert.strictEqual(mesh.skeleton, sharedHelmetBefore[0].skeleton,
+      `helmet primitive ${meshIndex}: shared Skeleton identity is not canonical`);
+    assert(mesh.bindMatrix.equals(before.bindMatrix)
+      && mesh.bindMatrixInverse.equals(before.bindMatrixInverse)
+      && mesh.bindMode === before.bindMode,
+    `helmet primitive ${meshIndex}: Skeleton sharing changed its bind transform or mode`);
+    before.boneInverses.forEach((matrix, boneIndex) => {
+      assert(mesh.skeleton.boneInverses[boneIndex].equals(matrix),
+        `helmet primitive ${meshIndex}: Skeleton sharing changed inverse ${boneIndex}`);
+    });
+    assert(sharedHelmetSkinVertex(mesh).distanceTo(before.vertex) < 1e-7,
+      `helmet primitive ${meshIndex}: Skeleton sharing changed its skinned vertex`);
+  });
 
   const skinnedMeshBounds = mesh => {
     assert(mesh?.isSkinnedMesh && mesh.skeleton, 'cannot measure a missing skinned mesh');

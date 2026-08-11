@@ -936,6 +936,28 @@
     runtime.upperBodyRestQuats = rest;
   }
 
+  function captureCharacterUpperSwayCleanPose(runtime) {
+    const bones = runtime?.locomotionBones;
+    if (!bones) return;
+    const store = runtime.upperSwayCleanPose || (runtime.upperSwayCleanPose = {});
+    for (const key of Object.keys(CHARACTER_UPPER_SWAY_KEEP)) {
+      const bone = bones[key];
+      if (!bone?.quaternion) continue;
+      (store[key] || (store[key] = new THREE.Quaternion())).copy(bone.quaternion);
+    }
+    runtime.hasUpperSwayCleanPose = true;
+  }
+
+  function clearCharacterUpperSwayPose(runtime) {
+    if (!runtime?.hasUpperSwayCleanPose) return;
+    const bones = runtime.locomotionBones || {};
+    for (const key of Object.keys(CHARACTER_UPPER_SWAY_KEEP)) {
+      const bone = bones[key];
+      const saved = runtime.upperSwayCleanPose?.[key];
+      if (bone?.quaternion && saved) bone.quaternion.copy(saved);
+    }
+  }
+
   function applyCharacterUpperBodySwayDamping(runtime, dt = 0.016) {
     const rest = runtime?.upperBodyRestQuats;
     if (!rest) return;
@@ -954,6 +976,7 @@
     );
     const blend = runtime.upperSwayDampBlend;
     if (blend < 0.01) return;
+    captureCharacterUpperSwayCleanPose(runtime);
     const bones = runtime.locomotionBones || {};
     for (const key of Object.keys(CHARACTER_UPPER_SWAY_KEEP)) {
       const bone = bones[key];
@@ -1255,6 +1278,45 @@
     addCharacterGlbDirectionalBoneOffset(runtime, bones.head, -0.14 * b, 0, 0);
   }
 
+  // Three.js не записывает кость, если значение клипа не изменилось с прошлого
+  // кадра (PropertyMixer сравнивает с тем, что записал сам). В клипах со
+  // статичными ногами — например, в боевом attack — микшер перестаёт их
+  // трогать, и правка IK остаётся в кости: на следующем кадре IK добавляет
+  // ещё столько же, и нога неограниченно уезжает вверх.
+  //
+  // Поэтому поза ног снимается тем же приёмом, что и направленная поза:
+  // до микшера кости возвращаются к чистым значениям клипа, после микшера
+  // снимок обновляется, и только потом решается IK.
+  function captureCharacterFootIkCleanPose(runtime) {
+    const ik = runtime?.footIk;
+    if (!ik?.chains) return;
+    const store = ik.cleanPose || (ik.cleanPose = {});
+    for (const side of Object.keys(ik.chains)) {
+      const chain = ik.chains[side];
+      if (!Array.isArray(chain)) continue;
+      const slot = store[side] || (store[side] = chain.map(() => new THREE.Quaternion()));
+      for (let index = 0; index < chain.length; index += 1) {
+        const bone = chain[index];
+        if (bone?.quaternion && slot[index]) slot[index].copy(bone.quaternion);
+      }
+    }
+    ik.hasCleanPose = true;
+  }
+
+  function clearCharacterFootIkPose(runtime) {
+    const ik = runtime?.footIk;
+    if (!ik?.chains || !ik.hasCleanPose) return;
+    for (const side of Object.keys(ik.chains)) {
+      const chain = ik.chains[side];
+      const slot = ik.cleanPose?.[side];
+      if (!Array.isArray(chain) || !slot) continue;
+      for (let index = 0; index < chain.length; index += 1) {
+        const bone = chain[index];
+        if (bone?.quaternion && slot[index]) bone.quaternion.copy(slot[index]);
+      }
+    }
+  }
+
   function applyCharacterFootIk(actor, runtime, dt = 0.016, state = {}, locomotion = null) {
     const ik = runtime?.footIk;
     if (!ik?.feet || !runtime.root) return false;
@@ -1296,6 +1358,8 @@
         ik.feet[side].relockCooldown = 0.12;
       }
     }
+    // Снимок чистой позы: сюда кости вернутся перед следующим микшером.
+    captureCharacterFootIkCleanPose(runtime);
     let applied = false;
     for (const [side, names] of Object.entries(CHARACTER_FOOT_IK_BONES)) {
       const rest = Number(ik.restHeights[side] || 0);
@@ -1403,6 +1467,7 @@
     // foot locks so returning to the near tier cannot pull a leg backwards.
     ik.lastActorPos = null;
     ik.lastAction = '';
+    ik.hasCleanPose = false;
     Object.values(ik.feet).forEach(side => {
       if (!side) return;
       side.locked = false;
@@ -1673,6 +1738,8 @@
       action.setEffectiveTimeScale(baseRate * runtime.directionalPlaybackRate * runtime.strideSyncRate);
     }
     clearCharacterGlbDirectionalPose(runtime);
+    clearCharacterFootIkPose(runtime);
+    clearCharacterUpperSwayPose(runtime);
     const kneeFlexTarget = state.dead
       ? 0
       : (state.crouching

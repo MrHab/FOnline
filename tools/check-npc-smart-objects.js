@@ -17,8 +17,8 @@ const location = {
       position: { x: 4, y: 0, z: 8 },
       rotation: { y: 1.5 },
       activitySlots: [
-        { id: 'named_bed', type: 'sleep', capacity: 1, ownerNpcId: 'named', visualAction: 'sleep' },
-        { id: 'shared_bed', type: 'sleep', capacity: 1, position: { x: 6, y: 0, z: 8 } }
+        { id: 'named_bed', type: 'guard', capacity: 1, ownerNpcId: 'named', visualAction: 'guard' },
+        { id: 'shared_bed', type: 'guard', capacity: 1, position: { x: 6, y: 0, z: 8 } }
       ]
     },
     {
@@ -48,17 +48,17 @@ assert.strictEqual(
   'other NPCs must not use an owned slot'
 );
 
-const workerSlot = reserveActivitySlot({ slots, reservations, npc: workerA, target: { slotType: 'sleep' }, locationId: location.id });
+const workerSlot = reserveActivitySlot({ slots, reservations, npc: workerA, target: { slotType: 'guard' }, locationId: location.id });
 assert.strictEqual(workerSlot?.id, 'shared_bed');
 assert.strictEqual(
-  reserveActivitySlot({ slots, reservations, npc: workerB, target: { slotType: 'sleep' }, locationId: location.id }),
+  reserveActivitySlot({ slots, reservations, npc: workerB, target: { slotType: 'guard' }, locationId: location.id }),
   null,
   'capacity-one slot must not stack NPCs'
 );
 
 releaseActivityReservation(reservations, workerA);
 assert.strictEqual(
-  reserveActivitySlot({ slots, reservations, npc: workerB, target: { slotType: 'sleep' }, locationId: location.id })?.id,
+  reserveActivitySlot({ slots, reservations, npc: workerB, target: { slotType: 'guard' }, locationId: location.id })?.id,
   'shared_bed',
   'released slots should be reusable'
 );
@@ -87,7 +87,7 @@ assert.strictEqual(
     slotsByType: indexes.byType,
     reservations: fastReservations,
     npc: workerB,
-    target: { slotType: 'sleep' },
+    target: { slotType: 'guard' },
     currentSlotId: 'shared_bed',
     locationId: location.id
   })?.id,

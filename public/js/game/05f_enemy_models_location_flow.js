@@ -915,7 +915,7 @@
     if (weaponGroup.visible === nextVisible) return;
     weaponGroup.visible = nextVisible;
     // Visibility participates in the cached decision that skips the fallback
-    // procedural rig. Sleep/wake must invalidate it so a weapon still attached
+    // procedural rig. Смена состояния должна его сбрасывать, иначе оружие
     // to that rig resumes animating immediately after the NPC wakes up.
     if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
       invalidateModernProceduralRigAnimationCache(
@@ -936,61 +936,6 @@
       enemy?.visualAction,
       enemy?.activitySlotId
     ].some(value => String(value || '').trim().length > 0);
-  }
-
-  function enemyAnimUsesSleepPose(enemy, moving = false) {
-    if (enemyAnimHasNetworkActivityState(enemy)) {
-      return String(enemy?.visualAction || '').toLowerCase() === 'sleep'
-        && String(enemy?.activityPhase || '').toLowerCase() === 'use';
-    }
-    return String(enemy?.scheduleState || '').toLowerCase() === 'sleep' && !moving;
-  }
-
-  function enemyAnimSleepFacing(enemy) {
-    if (!enemyAnimUsesSleepPose(enemy, false)) return null;
-    const rawFacing = enemy?.activityFacing;
-    const facing = Number(rawFacing);
-    return rawFacing === '' || rawFacing == null || !Number.isFinite(facing) ? null : facing;
-  }
-
-  function enemyAnimApplySleepFacing(enemy, mesh, dt = 0.016) {
-    if (!mesh?.rotation) return false;
-    const target = enemyAnimSleepFacing(enemy);
-    if (target == null) return false;
-    const current = Number(mesh.rotation.y || 0);
-    const delta = Math.atan2(Math.sin(target - current), Math.cos(target - current));
-    const amount = Math.min(1, Math.max(0, Number(dt || 0.016)) * 8);
-    mesh.rotation.y = current + delta * amount;
-    return true;
-  }
-
-  function enemyAnimApplySleepPose(enemy, mesh, parts, dt, t) {
-    if (!mesh || !enemyAnimHumanoid(parts)) return false;
-    const k = Math.min(1, Math.max(0, Number(dt || 0.016)) * 8);
-    mesh.rotation.z = enemyAnimLerp(Number(mesh.rotation.z || 0), Math.PI / 2, k);
-    mesh.position.y = enemyAnimLerp(Number(mesh.position.y || 0), 0.08, k);
-    enemyAnimWeaponVisible(mesh, false);
-    const breath = Math.sin(t * 0.62) * 0.018;
-    if (parts.body) {
-      parts.body.rotation.x += 0.08;
-      parts.body.position.y += breath;
-    }
-    if (parts.chest) parts.chest.position.y += breath * 0.7;
-    if (parts.head) {
-      parts.head.rotation.z += -0.16;
-      parts.head.rotation.x += 0.06 + Math.sin(t * 0.45) * 0.012;
-    }
-    if (parts.legs) parts.legs.rotation.z += 0.12;
-    if (parts.armL) {
-      parts.armL.rotation.z += -0.88;
-      parts.armL.rotation.x += 0.08;
-    }
-    if (parts.armR) {
-      parts.armR.rotation.z += 0.88;
-      parts.armR.rotation.x += -0.05;
-    }
-    enemy.enemyVisualSpeed = 0;
-    return true;
   }
 
   function enemyAnimApplyDialoguePose(enemy, mesh, parts, dt, t) {
@@ -1071,14 +1016,12 @@
     enemy.prevAnimZ = visualZ;
     const moving = moved > 0.002 || Number(enemy.enemyVisualSpeed || 0) > 0.035 || Number(enemy.speed || 0) > 0.035 && !!enemy.moving;
     const activeAiState = ['attack', 'chase', 'flee'].includes(String(enemy.aiState || '').toLowerCase());
-    const sleeping = !inDialogue && !activeAiState && enemyAnimUsesSleepPose(enemy, moving);
-    if (!sleeping) {
-      mesh.rotation.z = enemyAnimLerp(Number(mesh.rotation.z || 0), 0, restoreK);
-      mesh.position.y = enemyAnimLerp(Number(mesh.position.y || 0), 0, restoreK);
-      enemyAnimWeaponVisible(mesh, true);
-    }
+    // Сна в игре нет: НПС всегда стоят вертикально. Возврат крена и высоты
+    // оставлен, чтобы старые сохранённые состояния не оставили модель лежащей.
+    mesh.rotation.z = enemyAnimLerp(Number(mesh.rotation.z || 0), 0, restoreK);
+    mesh.position.y = enemyAnimLerp(Number(mesh.position.y || 0), 0, restoreK);
+    enemyAnimWeaponVisible(mesh, true);
     const important = moving
-      || sleeping
       || inDialogue
       || enemy.aiState === 'attack'
       || enemy.aiState === 'chase'
@@ -1112,7 +1055,6 @@
       || (!!player && player.attackTarget === enemy)
       || (typeof hoveredEnemy !== 'undefined' && hoveredEnemy === enemy);
     const crowdIdle = !moving
-      && !sleeping
       && !inDialogue
       && !activeAiState
       && !attackAnimation.active
@@ -1123,7 +1065,6 @@
       const stateKey = [
         visible ? 1 : 0,
         moving ? 1 : 0,
-        sleeping ? 1 : 0,
         inDialogue ? 1 : 0,
         String(enemy.aiState || ''),
         attackAnimation.active ? 1 : 0,
@@ -1155,30 +1096,23 @@
     const animationRestoreK = Math.min(1, Math.max(0, Number(animationDt || 0.016)) * 10);
     enemyAnimRestoreActorParts(parts, animationRestoreK);
     if (parts.unifiedHumanoidNpc) {
-      const sleepFacingApplied = sleeping && enemyAnimApplySleepFacing(enemy, mesh, animationDt);
       const facingAngle = Number.isFinite(Number(enemy.angle))
-        && !sleepFacingApplied
         ? Number(enemy.angle)
         : Number(mesh.rotation.y || 0) - Math.PI;
       updateCharacterLocomotionAnimation(mesh, animationDt, {
-        moving: sleeping ? false : moving,
-        speed: sleeping ? 0 : visualSpeed,
-        moveX: sleeping ? 0 : visualX - Number(enemy.prevUnifiedAnimX ?? visualX),
-        moveZ: sleeping ? 0 : visualZ - Number(enemy.prevUnifiedAnimZ ?? visualZ),
+        moving,
+        speed: visualSpeed,
+        moveX: visualX - Number(enemy.prevUnifiedAnimX ?? visualX),
+        moveZ: visualZ - Number(enemy.prevUnifiedAnimZ ?? visualZ),
         facingAngle,
-        attacking: sleeping ? false : attackAnimation.active,
+        attacking: attackAnimation.active,
         attackToken: attackAnimation.token,
         hurt: Number(enemy.flash || 0) > 0.02,
-        talking: !sleeping && inDialogue,
+        talking: inDialogue,
         footIk: heavyImportant || distanceToPlayer <= 6
       });
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;
-      const sleepT = performance.now() * 0.006;
-      if (sleeping && enemyAnimApplySleepPose(enemy, mesh, parts, animationDt, sleepT)) {
-        if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, animationDt);
-        return;
-      }
       const npcWeaponGroup = mesh.userData.enemyWeaponGroup;
       if (npcWeaponGroup?.userData?.weaponMeshLegacy && typeof makeWeaponModelMesh === 'function') {
         const upgraded = makeWeaponModelMesh(mesh.userData.weaponId || enemy.weapon || '');
@@ -1205,7 +1139,6 @@
     updateEnemyStaticGlbAnimation(enemy, animationDt, {
       moving,
       visualSpeed,
-      sleeping,
       inDialogue,
       attackActive: attackAnimation.active,
       attackToken: attackAnimation.token
@@ -1227,10 +1160,6 @@
     const far = distanceToPlayer > 18;
     if (far && (graphicsSettings?.id === 'low' || graphicsSettings?.id === 'medium')) return;
     const t = performance.now() * 0.006;
-    if (sleeping && enemyAnimApplySleepPose(enemy, mesh, parts, animationDt, t)) {
-      if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, animationDt);
-      return;
-    }
     const accent = mesh.userData.variantAccent;
     if (accent && accent.material) {
       const baseOpacity = Number(accent.userData.baseOpacity || 0.4);

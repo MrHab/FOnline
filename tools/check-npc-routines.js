@@ -32,11 +32,11 @@ assert.deepStrictEqual(
     rows.map(row => [row.startHour, row.endHour, row.state])
   ])),
   {
-    guard: [[0, 5, 'sleep'], [5, 7, 'rest'], [7, 13, 'work'], [13, 14, 'rest'], [14, 20, 'work'], [20, 22, 'social'], [22, 24, 'sleep']],
-    night_guard: [[0, 6, 'work'], [6, 8, 'social'], [8, 15, 'sleep'], [15, 17, 'rest'], [17, 24, 'work']],
-    merchant: [[0, 7, 'sleep'], [7, 8, 'rest'], [8, 13, 'work'], [13, 14, 'rest'], [14, 20, 'work'], [20, 22, 'social'], [22, 24, 'sleep']],
-    craftsman: [[0, 6, 'sleep'], [6, 8, 'rest'], [8, 12, 'work'], [12, 13, 'social'], [13, 18, 'work'], [18, 21, 'social'], [21, 24, 'sleep']],
-    worker: [[0, 6, 'sleep'], [6, 7, 'rest'], [7, 12, 'work'], [12, 13, 'rest'], [13, 18, 'work'], [18, 21, 'social'], [21, 24, 'sleep']]
+    guard: [[0, 5, 'rest'], [5, 7, 'rest'], [7, 13, 'work'], [13, 14, 'rest'], [14, 20, 'work'], [20, 22, 'social'], [22, 24, 'rest']],
+    night_guard: [[0, 6, 'work'], [6, 8, 'social'], [8, 15, 'rest'], [15, 17, 'rest'], [17, 24, 'work']],
+    merchant: [[0, 7, 'rest'], [7, 8, 'rest'], [8, 13, 'work'], [13, 14, 'rest'], [14, 20, 'work'], [20, 22, 'social'], [22, 24, 'rest']],
+    craftsman: [[0, 6, 'rest'], [6, 8, 'rest'], [8, 12, 'work'], [12, 13, 'social'], [13, 18, 'work'], [18, 21, 'social'], [21, 24, 'rest']],
+    worker: [[0, 6, 'rest'], [6, 7, 'rest'], [7, 12, 'work'], [12, 13, 'rest'], [13, 18, 'work'], [18, 21, 'social'], [21, 24, 'rest']]
   },
   'legacy windows must remain byte-for-byte compatible with the existing schedules'
 );
@@ -48,13 +48,13 @@ assert.strictEqual(guard.shift, 0);
 assert.deepStrictEqual(
   guard.segments.map(row => [row.start, row.end, row.state]),
   [
-    [0, 5, 'sleep'],
+    [0, 5, 'rest'],
     [5, 7, 'rest'],
     [7, 13, 'work'],
     [13, 14, 'rest'],
     [14, 20, 'work'],
     [20, 22, 'social'],
-    [22, 0, 'sleep']
+    [22, 0, 'rest']
   ],
   'guard windows must stay compatible with the legacy server schedule'
 );
@@ -66,7 +66,7 @@ const nightGuard = createLegacyRoutine({
 });
 assert.strictEqual(nightGuard.template, 'night_guard', 'guard roll above 0.72 must select the night shift');
 assert.strictEqual(selected(nightGuard, 2).state, 'work');
-assert.strictEqual(selected(nightGuard, 10).state, 'sleep');
+assert.strictEqual(selected(nightGuard, 10).state, 'rest');
 
 const earlyWorker = createLegacyRoutine({
   seed: 'worker-early',
@@ -98,8 +98,8 @@ const authored = normalizeAuthoredRoutine({
   id: 'old-klim',
   packages: [
     {
-      id: 'sleep-at-home',
-      type: 'sleep',
+      id: 'rest-at-home',
+      type: 'rest',
       time: { start: '22:00', end: '06:00' },
       target: 'bed:old-klim',
       priority: 100
@@ -159,7 +159,7 @@ for (const row of authored.packages) {
     assert.ok(Object.prototype.hasOwnProperty.call(row, field), `normalized package must contain ${field}`);
   }
 }
-assert.strictEqual(selected(authored, 23).id, 'sleep-at-home', 'authored midnight window must select sleep');
+assert.strictEqual(selected(authored, 23).id, 'rest-at-home', 'authored midnight window must select rest');
 assert.strictEqual(
   selected(authored, 10, { flags: { shopUnlocked: true }, questStage: 1 }).id,
   'open-shop',
@@ -225,7 +225,7 @@ assert.strictEqual(merchantBoundary.worldDay, 4);
 assert.strictEqual(merchantBoundary.millisecondsUntil, 75000);
 
 const midnightBoundary = nextRoutineBoundary({
-  packages: authored.packages.filter(row => row.id === 'sleep-at-home'),
+  packages: authored.packages.filter(row => row.id === 'rest-at-home'),
   gameHour: 23.5,
   worldDay: 7,
   gameDayRealMs

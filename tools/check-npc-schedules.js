@@ -151,8 +151,9 @@ try {
     if (!Array.isArray(routine.packages) || !routine.packages.length) errors.push(`legacy routine ${role} has no executable packages`);
   }
   const guard = createLegacyRoutine({ seed: 'midnight', role: 'guard', stableRoll });
-  if (selectRoutinePackage({ routine: guard, gameHour: 23.5 })?.state !== 'sleep') errors.push('guard routine does not sleep before midnight');
-  if (selectRoutinePackage({ routine: guard, gameHour: 0.5 })?.state !== 'sleep') errors.push('guard routine does not preserve sleep across midnight');
+  // Сна в игре нет: ночные окна распорядка отыгрываются отдыхом.
+  if (selectRoutinePackage({ routine: guard, gameHour: 23.5 })?.state !== 'rest') errors.push('guard routine does not rest before midnight');
+  if (selectRoutinePackage({ routine: guard, gameHour: 0.5 })?.state !== 'rest') errors.push('guard routine does not preserve rest across midnight');
   if (selectRoutinePackage({ routine: guard, gameHour: 10, context: { investigate: true } })?.type !== 'investigate') {
     errors.push('investigate interrupt does not outrank the daily routine');
   }
@@ -276,13 +277,9 @@ try {
 ].forEach(needle => requireText('publicEnemy schedule snapshot', publicEnemyBody, needle));
 
 [
-  'function enemyAnimApplySleepPose',
   'function enemyAnimApplyDialoguePose',
-  'function enemyAnimUsesSleepPose',
-  "visualAction || '').toLowerCase() === 'sleep'",
-  "activityPhase || '').toLowerCase() === 'use'",
+
   'const inDialogue = scheduleState ===',
-  'enemyAnimApplySleepPose',
   'enemyAnimApplyDialoguePose',
   'enemy.enemyVisualSpeed'
 ].forEach(needle => requireText('client NPC animations', clientWorld, needle));
@@ -291,7 +288,7 @@ try {
   'enemyAnimRestoreActorParts(parts, animationRestoreK)',
   'enemyAnimWeaponVisible(mesh, true)'
 ].forEach(needle => requireText('client NPC animation cleanup', animateEnemyBody, needle));
-requireText('client NPC sleep weapon cleanup', clientWorld, 'enemyAnimWeaponVisible(mesh, false)');
+requireText('client NPC weapon restore', clientWorld, 'enemyAnimWeaponVisible(mesh, true)');
 
 const hostileWorkerRoles = new Set([
   'wild_creature',
@@ -396,7 +393,9 @@ try {
   const morningShop = selectRoutinePackage({ routine: saylaRoutine, gameHour: 10, fallback: false });
   const night = selectRoutinePackage({ routine: saylaRoutine, gameHour: 2, fallback: false });
   if (morningShop?.type !== 'shop' || morningShop?.serviceAvailable !== true) errors.push('Sayla shop service is not open at 10:00');
-  if (night?.type !== 'sleep' || night?.serviceAvailable !== false) errors.push('Sayla does not sleep with service closed at 02:00');
+  if (night?.type !== 'rest' || night?.serviceAvailable !== false) errors.push('Sayla does not rest with service closed at 02:00');
+  const sleepPackages = saylaRoutine.packages.filter(row => String(row.type || '').toLowerCase() === 'sleep');
+  if (sleepPackages.length) errors.push('authored routines still schedule sleep');
 
   const caravanCamp = readJson('data/locations/caravanCamp.json', {});
   const slots = buildActivitySlotCatalog(caravanCamp);

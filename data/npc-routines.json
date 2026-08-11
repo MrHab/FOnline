@@ -7,14 +7,11 @@
       "label": "Распорядок караванщицы Сайлы",
       "packages": [
         {
-          "id": "caravan_sayla_sleep",
-          "type": "sleep",
+          "id": "caravan_sayla_night_rest",
+          "type": "rest",
           "startHour": 22,
           "endHour": 7,
           "priority": 40,
-          "target": {
-            "slotId": "caravan_sayla_bed"
-          },
           "interruptPolicy": "immediate",
           "resumePolicy": "reevaluate",
           "serviceAvailable": false

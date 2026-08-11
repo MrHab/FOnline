@@ -891,6 +891,7 @@
       forwardAmount,
       sideAmount,
       relativeAngle,
+      backward,
       lowerBodyYaw,
       upperBodyYaw: -lowerBodyYaw,
       playbackRate,
@@ -928,7 +929,9 @@
     if (!rest) return;
     const damped = runtime.currentAction === 'walk'
       || runtime.currentAction === 'run'
-      || runtime.currentAction === 'turn';
+      || runtime.currentAction === 'turn'
+      || runtime.currentAction === 'walk_back'
+      || runtime.currentAction === 'crouch_walk';
     runtime.upperSwayDampBlend = characterLocomotionBlend(
       runtime.upperSwayDampBlend ?? 0,
       damped ? 1 : 0,
@@ -1051,7 +1054,12 @@
   // Естественная скорость шага клипов (замерена по опорной стопе при
   // единичном темпе): клип, проигранный быстрее или медленнее этой скорости,
   // скользит по земле. Темп клипа подтягивается к фактической скорости актёра.
-  const CHARACTER_CLIP_NATURAL_SPEEDS = Object.freeze({ walk: 1.5, run: 3.75 });
+  const CHARACTER_CLIP_NATURAL_SPEEDS = Object.freeze({
+    walk: 1.5,
+    run: 3.75,
+    walk_back: 1.68,
+    crouch_walk: 1.23
+  });
   const CHARACTER_STRIDE_SYNC_MIN = 0.6;
   const CHARACTER_STRIDE_SYNC_MAX = 2.9;
 
@@ -1074,7 +1082,7 @@
   // в движении чуть больше, в приседе — глубоко.
   const CHARACTER_KNEE_FLEX_IDLE = 0.04;
   const CHARACTER_KNEE_FLEX_MOVE = 0.055;
-  const CHARACTER_KNEE_FLEX_CROUCH = 0.2;
+  const CHARACTER_KNEE_FLEX_CROUCH = 0.26;
 
   function characterFootIkSideState() {
     return {
@@ -1567,9 +1575,18 @@
     const locomotion = characterDirectionalLocomotionState(state);
     // Запечённое переступание есть не у всех сразу (клип грузится отдельно) —
     // до его прихода разворот отыгрывает старый walk.
-    const locomotionAction = locomotion.action === 'turn' && !runtime.actions?.turn
+    let locomotionAction = locomotion.action === 'turn' && !runtime.actions?.turn
       ? 'walk'
       : locomotion.action;
+    // Авторские клипы: ходьба в приседе и шаг назад. Пока клип не догрузился,
+    // работает прежний фолбэк (реверс walk/run, поза приседа поверх walk).
+    if (locomotion.moving) {
+      if (state.crouching && runtime.actions?.crouch_walk) {
+        locomotionAction = 'crouch_walk';
+      } else if (locomotion.backward && runtime.actions?.walk_back) {
+        locomotionAction = 'walk_back';
+      }
+    }
     const requestedAction = state.dead && runtime.actions?.death
       ? 'death'
       : (state.hurt && runtime.actions?.hurt
@@ -1582,13 +1599,15 @@
       requestedAction === locomotionAction ? 0.16 : 0.08,
       { restart: restartAttack }
     );
+    // Авторский клип заднего хода сам шагает назад — реверс не нужен.
+    const playbackTarget = locomotionAction === 'walk_back' ? 1 : locomotion.playbackRate;
     if (locomotion.locomoting && !runtime.directionalWasMoving) {
-      runtime.directionalPlaybackRate = locomotion.playbackRate;
+      runtime.directionalPlaybackRate = playbackTarget;
     }
     runtime.directionalPlaybackRate = characterLocomotionBlend(
       runtime.directionalPlaybackRate,
-      locomotion.playbackRate,
-      locomotion.playbackRate < 0 ? 7 : 9,
+      playbackTarget,
+      playbackTarget < 0 ? 7 : 9,
       frameDt
     );
     runtime.strideSyncRate = characterLocomotionBlend(

@@ -1,6 +1,13 @@
 /* v7.49.2: держим основной HUD видимым при открытых игровых окнах.
-   Окна лута, контейнеров, торговли, хранилища, инвентаря и других панелей
-   больше не должны прятать время, миникарту, системный журнал, fullscreen и меню. */
+   Окна лута,
+контейнеров,
+торговли,
+хранилища,
+инвентаря и других панелей
+   больше не должны прятать время,
+миникарту,
+системный журнал,
+fullscreen и меню. */
 
 body.game-ui-panel-open #global-fullscreen-btn,
 body.game-ui-panel-open #mobile-fullscreen-btn,
@@ -8,20 +15,12 @@ body.game-ui-panel-open #game-settings-btn,
 body.game-ui-panel-open #desktop-minimap-hud,
 body.game-ui-panel-open #mobile-minimap-hud,
 body.game-ui-panel-open #system-log-panel,
-body.game-ui-panel-open #desktop-game-time,
-body.game-ui-panel-open #mobile-game-time,
 body.loot-window-open #desktop-minimap-hud,
 body.loot-window-open #mobile-minimap-hud,
-body.loot-window-open #desktop-game-time,
-body.loot-window-open #mobile-game-time,
 body.trader-window-open #desktop-minimap-hud,
 body.trader-window-open #mobile-minimap-hud,
-body.trader-window-open #desktop-game-time,
-body.trader-window-open #mobile-game-time,
 body.storage-window-open #desktop-minimap-hud,
-body.storage-window-open #mobile-minimap-hud,
-body.storage-window-open #desktop-game-time,
-body.storage-window-open #mobile-game-time {
+body.storage-window-open #mobile-minimap-hud {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;

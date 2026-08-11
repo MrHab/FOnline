@@ -7,7 +7,6 @@
 /* ПК: никогда не показываем мобильный HUD и мобильный системный блок. */
 body.device-desktop #mobile-controls,
 body.device-desktop #mobile-minimap-hud,
-body.device-desktop #mobile-game-time,
 body.device-desktop #mobile-fullscreen-btn,
 body.device-desktop .mobile-left-rail,
 body.device-desktop .mobile-right-rail,
@@ -22,7 +21,6 @@ body.device-desktop .touch-buttons,
 body.device-desktop #system-log-panel,
 body.device-desktop.game-ui-panel-open #mobile-controls,
 body.device-desktop.game-ui-panel-open #mobile-minimap-hud,
-body.device-desktop.game-ui-panel-open #mobile-game-time,
 body.device-desktop.game-ui-panel-open #mobile-fullscreen-btn,
 body.device-desktop.game-ui-panel-open .mobile-left-rail,
 body.device-desktop.game-ui-panel-open .mobile-right-rail,
@@ -42,13 +40,9 @@ body.device-desktop.storage-window-open #system-log-panel {
 body.device-desktop.game-ui-panel-open #global-fullscreen-btn,
 body.device-desktop.game-ui-panel-open #game-settings-btn,
 body.device-desktop.game-ui-panel-open #desktop-minimap-hud,
-body.device-desktop.game-ui-panel-open #desktop-game-time,
 body.device-desktop.loot-window-open #desktop-minimap-hud,
-body.device-desktop.loot-window-open #desktop-game-time,
 body.device-desktop.trader-window-open #desktop-minimap-hud,
-body.device-desktop.trader-window-open #desktop-game-time,
-body.device-desktop.storage-window-open #desktop-minimap-hud,
-body.device-desktop.storage-window-open #desktop-game-time {
+body.device-desktop.storage-window-open #desktop-minimap-hud {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -75,16 +69,12 @@ body.device-mobile.storage-window-open #log {
 
 /* Мобильная версия: при открытых окнах сохраняем только мобильный HUD. */
 body.device-mobile.landscape-mode.game-ui-panel-open #mobile-minimap-hud,
-body.device-mobile.landscape-mode.game-ui-panel-open #mobile-game-time,
 body.device-mobile.landscape-mode.game-ui-panel-open #system-log-panel,
 body.device-mobile.landscape-mode.loot-window-open #mobile-minimap-hud,
-body.device-mobile.landscape-mode.loot-window-open #mobile-game-time,
 body.device-mobile.landscape-mode.loot-window-open #system-log-panel,
 body.device-mobile.landscape-mode.trader-window-open #mobile-minimap-hud,
-body.device-mobile.landscape-mode.trader-window-open #mobile-game-time,
 body.device-mobile.landscape-mode.trader-window-open #system-log-panel,
 body.device-mobile.landscape-mode.storage-window-open #mobile-minimap-hud,
-body.device-mobile.landscape-mode.storage-window-open #mobile-game-time,
 body.device-mobile.landscape-mode.storage-window-open #system-log-panel {
   display: block !important;
   visibility: visible !important;

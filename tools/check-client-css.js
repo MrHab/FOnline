@@ -25,7 +25,8 @@ const parts = [
   '17_player_frame_hud.css',
   '18_hud_readability.css',
   '19_weapon_modification_workbench.css',
-  '20_caravan_staging_window.css'
+  '20_caravan_staging_window.css',
+  '21_actor_nameplates.css'
 ];
 
 const retiredParts = [

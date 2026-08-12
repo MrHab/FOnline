@@ -13,7 +13,8 @@ const ROOT = path.resolve(__dirname, '..');
 const read = (...parts) => fs.readFileSync(path.join(ROOT, ...parts), 'utf8');
 
 const html = read('public', 'index.html');
-const css = read('public', 'css', 'game', '04_mobile_inventory_trade_quality.css');
+const bundle = read('public', 'css', 'game.css');
+const css = read('public', 'css', 'game', '21_actor_nameplates.css');
 const loop = read('public', 'js', 'game', '09_update_fog_movement_ai.js');
 const targets = read('public', 'js', 'game', '08d_world_context_targets.js');
 
@@ -21,12 +22,22 @@ const targets = read('public', 'js', 'game', '08d_world_context_targets.js');
 assert(html.includes('id="actor-nameplates"'), 'в разметке нет слоя подписей над моделями');
 assert(/#actor-nameplates\s*\{[^}]*pointer-events:\s*none/.test(css),
   'слой подписей перехватывает указатель и закроет собой игровое поле');
+assert(/\.actor-nameplate\s*\{[^}]*position:\s*absolute/.test(css),
+  'плашка без position свалится потоком в угол экрана');
 for (const cls of ['.actor-nameplate', '.plate-name', '.plate-health', '.plate-player', '.plate-critical']) {
   assert(css.includes(cls), `нет стиля ${cls}`);
 }
 
+// --- Стиль подписей должен обходить кэш браузера ---
+// Скрипты подключаются с версией, а безверсионный css остаётся у игрока
+// старым: код рисует плашки, стиля для них нет, и они уезжают в угол.
+const importLine = /@import url\("\/css\/game\/21_actor_nameplates\.css(\?[^"]*)?"\);/.exec(bundle);
+assert(importLine, 'стиль подписей не подключён в game.css');
+assert(importLine[1] && /[?&]v=[^&]+/.test(importLine[1]),
+  'стиль подписей подключён без версии в адресе — игрок получит его из кэша старым');
+
 // --- Шанс попадания ярко-красный ---
-const chanceRule = /#target-hint \.hit-chance \{([^}]*)\}/.exec(css);
+const chanceRule = /#target-hint \.hit-chance[^{]*\{([^}]*)\}/.exec(css);
 assert(chanceRule, 'нет стиля шанса попадания');
 const colour = /color:\s*(#[0-9a-f]{6})/i.exec(chanceRule[1]);
 assert(colour, 'у шанса попадания не задан цвет');
@@ -44,6 +55,15 @@ assert(loop.includes("enemy.canDialogue !== true"),
   'подписи вешаются не только на именных персонажей');
 assert(loop.includes('multiplayer?.remotePlayers') || loop.includes('multiplayer.remotePlayers'),
   'другие игроки не получают подписей');
+
+// --- Раскладка не должна зависеть только от таблицы стилей ---
+const acquire = /function acquireNameplate\([\s\S]*?\n  \}/.exec(loop);
+assert(acquire, 'нет создания плашки');
+assert(/node\.style\.position = 'absolute'/.test(acquire[0]),
+  'плашка полагается только на css: со старым кэшем она уедет в левый верхний угол');
+const layerFn = /function nameplateLayerElement\([\s\S]*?\n  \}/.exec(loop);
+assert(layerFn && /style\.position = 'fixed'/.test(layerFn[0]) && /style\.pointerEvents = 'none'/.test(layerFn[0]),
+  'слой подписей полагается только на css и без него перекроет игровое поле');
 
 // --- Точное HP только по перку ---
 const healthFn = /function nameplateHealthText\([\s\S]*?\n  \}/.exec(loop);
@@ -71,4 +91,10 @@ for (const field of ['name', 'hp', 'maxHp', 'x', 'z', 'hostileToPlayer']) {
   assert(hintTarget[0].includes(`${field}:`), `у цели-игрока нет поля ${field}, подсказка его ждёт`);
 }
 
-console.log('Actor nameplates OK: слой подписей, точное HP по перку, словесное состояние без него, игроки видны курсору, шанс попадания ярко-красный.');
+// --- Подсказка без мыши не должна уезжать в угол ---
+const hintFn = /function showTargetHint\([\s\S]*?\n  \}/.exec(targets);
+assert(hintFn, 'нет вывода подсказки');
+assert(/Number\.isFinite\(Number\(clientX\)\)/.test(hintFn[0]) && /window\.innerWidth \* 0\.5/.test(hintFn[0]),
+  'при осмотре с клавиатуры подсказка снова прыгнет в левый верхний угол');
+
+console.log('Actor nameplates OK: слой и стиль с версией, раскладка не зависит от кэша, точное HP по перку, игроки видны курсору, шанс попадания ярко-красный.');

@@ -1903,6 +1903,19 @@
   function nameplateLayerElement() {
     if (nameplateLayer && nameplateLayer.isConnected) return nameplateLayer;
     nameplateLayer = document.getElementById('actor-nameplates');
+    // Раскладку слоя и плашек задаём прямо в элементах, а не только в таблице
+    // стилей: у игрока она может лежать в кэше со старой версией, и тогда
+    // подписи без position сваливаются потоком в левый верхний угол экрана.
+    if (nameplateLayer) {
+      const style = nameplateLayer.style;
+      style.position = 'fixed';
+      style.left = '0';
+      style.top = '0';
+      style.right = '0';
+      style.bottom = '0';
+      style.pointerEvents = 'none';
+      style.overflow = 'hidden';
+    }
     return nameplateLayer;
   }
 
@@ -1912,6 +1925,10 @@
     if (!layer) return null;
     const node = document.createElement('div');
     node.className = 'actor-nameplate';
+    node.style.position = 'absolute';
+    node.style.transform = 'translate(-50%, -100%)';
+    node.style.whiteSpace = 'nowrap';
+    node.style.textAlign = 'center';
     const name = document.createElement('span');
     name.className = 'plate-name';
     const health = document.createElement('span');

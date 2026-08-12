@@ -488,7 +488,9 @@
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
 
-  const camera = new THREE.OrthographicCamera(-22, 22, 14, -14, 0.1, 300);
+  // Камера ортографическая: приближение задают границы кадра, а не
+  // расстояние до модели. Границы вдвое уже прежних (-22..22, -14..14).
+  const camera = new THREE.OrthographicCamera(-11, 11, 7, -7, 0.1, 300);
   camera.rotation.order = 'YXZ';
 
   const raycaster = new THREE.Raycaster();
@@ -703,7 +705,9 @@
     if (deviceInfo.type === 'mobile') document.body.classList.toggle('landscape-mode', !portrait);
     const compactLandscape = deviceInfo.type === 'mobile' && !portrait && h < 560;
     // v7.4: камера ближе к игроку, но без смены угла управления.
-    const viewHeight = deviceInfo.type === 'mobile' ? (portrait ? 29 : (compactLandscape ? 18 : 20)) : 22;
+    // Высоты вдвое меньше прежних (29 / 18 / 20 / 22): модель крупнее ровно
+    // в два раза, угол обзора и управление не меняются.
+    const viewHeight = deviceInfo.type === 'mobile' ? (portrait ? 14.5 : (compactLandscape ? 9 : 10)) : 11;
     camera.zoom = 1;
     camera.left = -viewHeight * aspect / 2;
     camera.right = viewHeight * aspect / 2;

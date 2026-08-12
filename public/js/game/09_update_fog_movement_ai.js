@@ -451,7 +451,10 @@
     if (player?.crouching) radius -= 1;
     if (hasInjury('concussion')) radius -= 2;
     if (hasInjury('infection')) radius -= 0.5;
-    return Math.max(5, Math.min(18, Math.round(radius)));
+    // Обзор вдвое меньше прежнего: камера подведена к модели в два раза
+    // ближе, и прежний радиус открывал карту далеко за краем экрана.
+    // Границы тоже уполовинены, иначе нижний порог не дал бы радиусу упасть.
+    return Math.max(3, Math.min(9, Math.round(radius / 2)));
   }
 
   function hasStrictTileLineOfSight(startTx, startTz, endTx, endTz) {

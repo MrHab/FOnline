@@ -19,6 +19,48 @@
     updatePointerWorld(keepX, keepY);
   }
 
+  // Другой игрок как цель подсказки. Подсказка ждёт поля обычного актёра,
+  // поэтому строку сети приводим к тому же виду; сам объект одноразовый и
+  // никуда не сохраняется.
+  function remotePlayerHintTarget(row) {
+    const data = row?.data || {};
+    const pvpAllowed = String(currentLocation?.pvpMode || 'pvp') !== 'peaceful';
+    return {
+      id: String(data.id || ''),
+      name: String(data.name || 'Игрок'),
+      hp: Number(data.hp || 0),
+      maxHp: Math.max(1, Number(data.maxHp || data.hp || 1)),
+      x: Number(row?.visualX ?? data.x ?? 0),
+      z: Number(row?.visualZ ?? data.z ?? 0),
+      scale: 1,
+      dead: Number(data.hp || 0) <= 0,
+      hostileToPlayer: pvpAllowed,
+      isRemotePlayer: true
+    };
+  }
+
+  function findRemotePlayerFromPointer() {
+    const remote = multiplayer?.remotePlayers;
+    if (!remote || typeof remote.forEach !== 'function' || !remote.size) return null;
+    const roots = [];
+    remote.forEach(row => {
+      if (!row?.group || row.group.visible === false) return;
+      row.group.userData.remotePlayerHintRow = row;
+      roots.push(row.group);
+    });
+    if (!roots.length) return null;
+    const hits = raycaster.intersectObjects(roots, true);
+    for (const hit of hits) {
+      let obj = hit.object;
+      while (obj) {
+        const row = obj.userData?.remotePlayerHintRow;
+        if (row) return remotePlayerHintTarget(row);
+        obj = obj.parent;
+      }
+    }
+    return null;
+  }
+
   function findEnemyFromEvent(clientX, clientY, pointerAlreadyUpdated = false) {
     if (!pointerAlreadyUpdated) updatePointerWorld(clientX, clientY);
     const proxies = [];
@@ -42,6 +84,8 @@
         obj = obj.parent;
       }
     }
+    const remotePlayer = findRemotePlayerFromPointer();
+    if (remotePlayer) return remotePlayer;
     return null;
   }
 
@@ -87,10 +131,13 @@
 
   function buildTargetHintHtml(enemy) {
     const info = getTargetHitInfo(enemy);
-    const cls = hitChanceClass(info.chance);
+    // Шанс попадания всегда ярко-красный: игрок читает его первым.
+    const cls = 'hit-chance';
     const aware = talentLevel('awareness') > 0;
     const state = enemyHealthStateText(enemy);
-    const attitude = enemy.hostileToPlayer === false ? '\u041d\u0435\u0439\u0442\u0440\u0430\u043b\u044c\u043d\u044b\u0439' : '\u0412\u0440\u0430\u0436\u0434\u0435\u0431\u043d\u044b\u0439';
+    const attitude = enemy.isRemotePlayer
+      ? (enemy.hostileToPlayer === false ? 'Игрок · мирная зона' : 'Игрок')
+      : (enemy.hostileToPlayer === false ? '\u041d\u0435\u0439\u0442\u0440\u0430\u043b\u044c\u043d\u044b\u0439' : '\u0412\u0440\u0430\u0436\u0434\u0435\u0431\u043d\u044b\u0439');
     const hpLine = aware
       ? `HP ${Math.max(0, Math.ceil(enemy.hp))}/${enemy.maxHp}<br>\u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435: ${state}`
       : `\u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435: ${state}`;

@@ -1790,7 +1790,140 @@
     camera.updateMatrixWorld(true);
   }
 
+  // Подписи над моделями: имя и здоровье. Показываются у именных персонажей
+  // (тех, с кем можно говорить) и у других игроков. Точное число HP видно
+  // только с перком «Осведомлённость», иначе — словесное состояние.
+  const NAMEPLATE_MAX_DISTANCE = 26;
+  const NAMEPLATE_HEIGHT = 2.05;
+  const NAMEPLATE_UPDATE_MS = 60;
+  const nameplatePool = [];
+  let nameplateLayer = null;
+  let nameplateNextUpdateAt = 0;
+  const nameplateProjected = new THREE.Vector3();
+
+  function nameplateLayerElement() {
+    if (nameplateLayer && nameplateLayer.isConnected) return nameplateLayer;
+    nameplateLayer = document.getElementById('actor-nameplates');
+    return nameplateLayer;
+  }
+
+  function acquireNameplate(index) {
+    if (nameplatePool[index]) return nameplatePool[index];
+    const layer = nameplateLayerElement();
+    if (!layer) return null;
+    const node = document.createElement('div');
+    node.className = 'actor-nameplate';
+    const name = document.createElement('span');
+    name.className = 'plate-name';
+    const health = document.createElement('span');
+    health.className = 'plate-health';
+    node.appendChild(name);
+    node.appendChild(document.createElement('br'));
+    node.appendChild(health);
+    layer.appendChild(node);
+    const entry = { node, name, health, nameText: '', healthText: '', tone: '', kind: '' };
+    nameplatePool[index] = entry;
+    return entry;
+  }
+
+  function nameplateHealthText(actor) {
+    const aware = typeof talentLevel === 'function' && talentLevel('awareness') > 0;
+    const hp = Math.max(0, Math.ceil(Number(actor?.hp || 0)));
+    const maxHp = Math.max(1, Math.ceil(Number(actor?.maxHp || hp || 1)));
+    if (aware) return `${hp}/${maxHp}`;
+    return typeof enemyHealthStateText === 'function' ? enemyHealthStateText(actor) : '';
+  }
+
+  function nameplateTone(actor) {
+    const hp = Math.max(0, Number(actor?.hp || 0));
+    const maxHp = Math.max(1, Number(actor?.maxHp || hp || 1));
+    const ratio = hp / maxHp;
+    if (ratio <= 0.34) return 'plate-critical';
+    if (ratio <= 0.72) return 'plate-hurt';
+    return '';
+  }
+
+  function collectNameplateActors() {
+    const rows = [];
+    const px = Number(player?.x || 0);
+    const pz = Number(player?.z || 0);
+    if (Array.isArray(enemies)) {
+      for (const enemy of enemies) {
+        // Именные персонажи — те, с кем можно заговорить. Зверьё и рядовые
+        // враги подписей не получают, иначе экран превращается в список.
+        if (!enemy || enemy.dead || enemy._removed || enemy.canDialogue !== true) continue;
+        if (!enemy.mesh || enemy.mesh.visible === false) continue;
+        if (Math.hypot(Number(enemy.x || 0) - px, Number(enemy.z || 0) - pz) > NAMEPLATE_MAX_DISTANCE) continue;
+        rows.push({
+          name: String(enemy.name || ''),
+          hp: enemy.hp,
+          maxHp: enemy.maxHp,
+          x: Number(enemy.x || 0),
+          z: Number(enemy.z || 0),
+          scale: Number(enemy.scale || 1),
+          kind: enemy.hostileToPlayer === false ? '' : 'plate-hostile'
+        });
+      }
+    }
+    const remote = multiplayer?.remotePlayers;
+    if (remote && typeof remote.forEach === 'function') {
+      remote.forEach(row => {
+        const data = row?.data || {};
+        if (!row?.group || row.group.visible === false) return;
+        const x = Number(row.visualX ?? data.x ?? 0);
+        const z = Number(row.visualZ ?? data.z ?? 0);
+        if (Math.hypot(x - px, z - pz) > NAMEPLATE_MAX_DISTANCE) return;
+        rows.push({
+          name: String(data.name || 'Игрок'),
+          hp: data.hp,
+          maxHp: data.maxHp,
+          x,
+          z,
+          scale: 1,
+          kind: 'plate-player'
+        });
+      });
+    }
+    return rows;
+  }
+
   function updateHpBars() {
-    // HP-бары над игроками и мобами отключены. Функция оставлена пустой,
-    // чтобы не ломать существующий цикл обновления.
+    const layer = nameplateLayerElement();
+    if (!layer || typeof camera === 'undefined' || !camera) return;
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (now < nameplateNextUpdateAt) return;
+    nameplateNextUpdateAt = now + NAMEPLATE_UPDATE_MS;
+
+    const rows = collectNameplateActors();
+    const rect = canvas.getBoundingClientRect();
+    let used = 0;
+    for (const row of rows) {
+      nameplateProjected.set(row.x, NAMEPLATE_HEIGHT * row.scale, row.z).project(camera);
+      if (nameplateProjected.z > 1) continue;
+      const left = rect.left + (nameplateProjected.x + 1) * rect.width * 0.5;
+      const top = rect.top + (1 - nameplateProjected.y) * rect.height * 0.5;
+      if (left < -120 || top < -60 || left > window.innerWidth + 120 || top > window.innerHeight + 60) continue;
+      const entry = acquireNameplate(used);
+      if (!entry) break;
+      used += 1;
+      const healthText = nameplateHealthText(row);
+      if (entry.nameText !== row.name) {
+        entry.name.textContent = row.name;
+        entry.nameText = row.name;
+      }
+      if (entry.healthText !== healthText) {
+        entry.health.textContent = healthText;
+        entry.healthText = healthText;
+      }
+      const tone = nameplateTone(row);
+      const className = `actor-nameplate ${row.kind} ${tone}`.replace(/\s+/g, ' ').trim();
+      if (entry.node.className !== className) entry.node.className = className;
+      entry.node.style.left = `${Math.round(left)}px`;
+      entry.node.style.top = `${Math.round(top)}px`;
+      if (entry.node.style.display !== 'block') entry.node.style.display = 'block';
+    }
+    for (let index = used; index < nameplatePool.length; index += 1) {
+      const entry = nameplatePool[index];
+      if (entry && entry.node.style.display !== 'none') entry.node.style.display = 'none';
+    }
   }

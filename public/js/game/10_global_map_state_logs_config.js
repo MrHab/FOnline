@@ -98,10 +98,10 @@
     water: { base: '#254a52', accent: '#7fb3a5', fill: 'rgba(42,90,96,0.56)' }
   };
   let GLOBAL_MAP_NODES = [
-    { id: 'settlement', x: 255, y: 615, kind: 'settlement', danger: 0, locationCount: 1, model: 'oldKlimYard', modelScale: 1, rotationY: 0, note: 'Караванный двор, торговец, хранилище.' },
-    { id: 'scrapTown', x: 555, y: 645, kind: 'settlement', danger: 1, locationCount: 1, model: 'scrapTown', modelScale: 1, rotationY: 0, note: 'Мастерские, запчасти, безопасная стоянка.' },
-    { id: 'relayStation', x: 675, y: 315, kind: 'settlement', danger: 2, locationCount: 1, model: 'relayStation', modelScale: 1, rotationY: 0, note: 'Техническая станция с защищённым тайником.' },
-    { id: 'caravanCamp', x: 495, y: 495, kind: 'settlement', danger: 1, locationCount: 1, model: 'brahminPen', modelScale: 1, rotationY: 0, note: 'Караван-сарай «Перекрёсток»: столица вольных караванов.' }
+    { id: 'settlement', x: 195, y: 690, kind: 'settlement', danger: 0, locationCount: 1, model: 'oldKlimYard', modelScale: 1, rotationY: 0, note: 'Караванный двор, торговец, хранилище.' },
+    { id: 'scrapTown', x: 735, y: 690, kind: 'settlement', danger: 1, locationCount: 1, model: 'scrapTown', modelScale: 1, rotationY: 0, note: 'Мастерские, запчасти, безопасная стоянка.' },
+    { id: 'relayStation', x: 705, y: 195, kind: 'settlement', danger: 2, locationCount: 1, model: 'relayStation', modelScale: 1, rotationY: 0, note: 'Техническая станция с защищённым тайником.' },
+    { id: 'caravanCamp', x: 495, y: 495, kind: 'settlement', danger: 1, locationCount: 1, model: 'wastelandShack', modelScale: 1, rotationY: 0, note: 'Караван-сарай «Перекрёсток»: столица вольных караванов.' }
   ];
   let GLOBAL_MAP_INFRASTRUCTURE = [
     { id: 'southern_caravan_road', name: 'Южная караванная трасса', type: 'road', model: 'broken_asphalt', walkable: true, travelFactor: 0.58, width: 8, points: [{ x: 195, y: 690 }, { x: 405, y: 615 }, { x: 525, y: 705 }, { x: 735, y: 690 }] },

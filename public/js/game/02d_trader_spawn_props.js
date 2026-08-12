@@ -102,22 +102,13 @@
 
   function createExitPortal(tx, tz, label) {
     const pos = tileToWorld(tx, tz);
-    const group = new THREE.Group();
-    group.position.set(pos.x, 0, pos.z);
+    // The highway sign is the authored GLB landmark; the torus remains a cheap
+    // non-model interaction marker so exits stay readable from the isometric camera.
+    const group = makeStaticModelGroup('highwaySign', pos.x, pos.z, 0, 'location-exit');
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.035, 8, 42), new THREE.MeshBasicMaterial({ color: 0xd8bd6e, transparent: true, opacity: 0.72 }));
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.08;
     group.add(ring);
-    const postA = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.1, 8), mats.trunk);
-    postA.position.set(-0.65, 0.55, 0);
-    postA.castShadow = true;
-    const postB = postA.clone();
-    postB.position.x = 0.65;
-    group.add(postA, postB);
-    const board = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.26, 0.12), mats.leather);
-    board.position.y = 1.18;
-    board.castShadow = true;
-    group.add(board);
     // Надписи в мире оставляем только для торговца и хранилища.
     // У перехода остаётся визуальный маркер без постоянного текста над объектом.
     if (isTraderYardLocation()) markNoRuntimeCull(group, 'trader-yard-exit');

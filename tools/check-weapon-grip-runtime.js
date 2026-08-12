@@ -11,7 +11,7 @@ const BODY_IDS = Object.freeze([
   'male_slim', 'male_medium', 'male_large'
 ]);
 const FIREARMS = Object.freeze({
-  pistol: { reloadPart: 'magazine', reloadRotation: [0.05, -0.25, -1.0] },
+  pistol: { reloadPart: 'breech_cap', reloadRotation: [0.05, -0.25, -1.0] },
   rifle: { reloadPart: 'cartridge_clip', reloadRotation: [-0.55, 0.05, -0.25] },
   assaultRifle: { reloadPart: 'magazine', reloadRotation: [0.05, -0.25, -0.9] },
   machineGun: { reloadPart: 'ammo_box', reloadRotation: [-0.15, -0.35, -0.55] },

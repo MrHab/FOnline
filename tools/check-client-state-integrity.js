@@ -85,6 +85,7 @@ const core = read('public/js/game/05_multiplayer_core_state.js');
 const actorVisuals = read('public/js/game/04_player_model_visuals.js');
 const modernActorRuntime = read('public/js/game/04a_player_model_modern_runtime.js');
 const characterGlbRuntime = read('public/js/game/04b_character_glb_runtime.js');
+const weaponGlbRuntime = read('public/js/game/04c_weapon_glb_runtime.js');
 const approvedHumanoidRuntime = read('public/js/game/04d_approved_humanoid_assets_runtime.js');
 const remoteEquipmentRuntime = read('public/js/game/05a_remote_actor_equipment.js');
 const remoteLocomotion = read('public/js/game/05b_remote_player_locomotion.js');
@@ -108,6 +109,7 @@ const mobileControls = read('public/js/game/08c_hud_edit_windows_touch.js');
 const updateLoop = read('public/js/game/09_update_fog_movement_ai.js');
 const globalMapState = read('public/js/game/10_global_map_state_logs_config.js');
 const globalMapTerritories = read('public/js/game/11c_global_map_sites_territory.js');
+const globalMapPlayerModels = read('public/js/game/11a_global_map_player_models.js');
 const globalMapParties = read('public/js/game/11d_global_map_parties.js');
 const globalMapWorldStatus = read('public/js/game/12a_global_map_world_status.js');
 const globalMapPanel = read('public/js/game/12b_global_map_panel_window.js');
@@ -116,6 +118,7 @@ const globalMapEntry = read('public/js/game/12d_global_map_entry_ambush_controls
 const hudLoop = read('public/js/game/13_minimap_hud_loop.js');
 const authBootstrap = read('public/js/game/01_bootstrap_online_save.js');
 const worldMaterials = read('public/js/game/02a_materials_static_models.js');
+const traderProps = read('public/js/game/02d_trader_spawn_props.js');
 const locationLoading = read('public/js/game/02c_map_locations_collision.js');
 const playerVisuals = read('public/js/game/04_player_model_visuals.js');
 const characterCreation = read('public/js/game/08_character_creation_save.js');
@@ -1385,6 +1388,38 @@ function assertGlobalMapSnapshotPerformance() {
   assert(!partySignature.includes('row?.x') && !partySignature.includes('row?.y'),
     'party marker identity still includes continuously changing coordinates');
 
+  assertContainsAll('GLB-only world-party markers', globalMapParties, [
+    'const GLOBAL_MAP_PARTY_GLB_KEYS = Object.freeze({',
+    'function buildGlobalMapWorldPartyGlb(',
+    'makeStaticModelGroup(glbKey,',
+    'const model = buildGlobalMapWorldPartyGlb(key, visualRadius)',
+    'new THREE.TorusBufferGeometry('
+  ]);
+  for (const forbidden of [
+    'function globalMapWorldPartyMat(',
+    'function globalMapAddBox(',
+    'function globalMapAddSphere(',
+    'function globalMapAddCylinder(',
+    'function globalMapAddCone(',
+    'function globalMapBuildHumanoidMini(',
+    'function globalMapBuildCaravanMini(',
+    'function globalMapBuildMutantMini(',
+    'function globalMapBuildRaiderMini(',
+    'function globalMapBuildBrahminMini(',
+    'function globalMapBuildScorpionMini(',
+    'function globalMapBuildAntMini(',
+    'function globalMapBuildGeckoMini(',
+    'function globalMapBuildGhoulMini(',
+    'function globalMapBuildWolfMini(',
+    'new THREE.BoxBufferGeometry(',
+    'new THREE.SphereBufferGeometry(',
+    'new THREE.CylinderBufferGeometry(',
+    'new THREE.ConeBufferGeometry('
+  ]) {
+    assert(!globalMapParties.includes(forbidden),
+      `global-map world parties still ship procedural model code: ${forbidden}`);
+  }
+
   const territorySignature = functionBody(globalMapTerritories, 'globalMapFactionTerritory3DSignature');
   assert(!territorySignature.includes('row.strength'),
     'territory geometry is still rebuilt for opacity-only strength changes');
@@ -1633,7 +1668,7 @@ function assertDeferredWorldRuntime() {
     'LOCATIONS[requestedLocationId]',
     'ensureWorldMaterials()',
     'createPlayerModel()',
-    'preloadStaticWorldModels({ location })',
+    'preloadStaticWorldModels({ location, includeSkinned: true })',
     'preloadCharacterAppearanceAsset(appearance)',
     'preloadWeaponModels(weaponIds)',
     'preloadApprovedHumanoidAssets({',
@@ -1679,6 +1714,88 @@ function assertDeferredWorldRuntime() {
   assert(!locationLoading.includes('STARTUP_REVEAL_EXTRA_HOLD_MS')
     && functionBody(locationLoading, 'waitForStartupVisualRevealSettle').includes('waitForStartupInitialSnapshots'),
   'startup reveal still uses an arbitrary fixed post-join hold');
+  assertContainsAll('GLB-only reveal gate', functionBody(locationLoading, 'waitForPendingWorldGlbAssets'), [
+    'waitForGlbAssetQuiescence(worldGlbPendingSnapshot',
+    'timeoutMs: Number(options.timeoutMs || WORLD_GLB_REVEAL_TIMEOUT_MS)',
+    'quietMs: WORLD_GLB_REVEAL_QUIET_MS',
+    'document.body.dataset.glbRevealAssets'
+  ]);
+  assertContainsAll('fresh GLB pending snapshot', functionBody(locationLoading, 'worldGlbPendingSnapshot'), [
+    'pendingCharacterGlbAssetSnapshot()',
+    'pendingStaticGlbAssetSnapshot()',
+    'pendingWeaponGlbAssetSnapshot()',
+    'pendingApprovedHumanoidGlbAssetSnapshot()',
+    'pendingGroundItemGlbAssetSnapshot()',
+    'activeCount:',
+    'unresolvedCount:',
+    'retryScheduledCount:'
+  ]);
+  assertContainsAll('static GLB pending snapshot', functionBody(worldMaterials, 'pendingStaticGlbAssetSnapshot'), [
+    'state?.promise || state?.loading',
+    'state?.retryTimer',
+    'staticModelHolderAttached(entry?.holder)',
+    'retryScheduledCount: retryScheduledStates.length'
+  ]);
+  assertContainsAll('detached static GLB cleanup', worldMaterials, [
+    'function staticModelHolderAttached(holder)',
+    'function purgeDetachedStaticModelRequests()',
+    'purgeDetachedStaticModelRequests();'
+  ]);
+  assertContainsAll('character GLB pending snapshot', functionBody(characterGlbRuntime, 'pendingCharacterGlbAssetSnapshot'), [
+    'const activeStates = states.filter(state => !!state?.promise)',
+    'Number(state?.failureCount || 0) > 0',
+    'retryScheduledCount: failedStates.length'
+  ]);
+  assertContainsAll('weapon GLB pending snapshot', functionBody(weaponGlbRuntime, 'pendingWeaponGlbAssetSnapshot'), [
+    'weaponGlbActiveLoadKeys',
+    'weaponModelLibraryState.promises.get(key)',
+    'weaponModelLibraryState.failures.keys()',
+    'retryScheduledCount: passiveRetryKeys.length'
+  ]);
+  assertContainsAll('weapon GLB load revision', functionBody(weaponGlbRuntime, 'loadWeaponModelTemplate'), [
+    'markWeaponGlbLoadStarted(entry.id)',
+    'markWeaponGlbLoadSettled(entry.id)'
+  ]);
+  assertContainsAll('approved humanoid GLB pending snapshot', functionBody(approvedHumanoidRuntime, 'pendingApprovedHumanoidGlbAssetSnapshot'), [
+    'approvedHumanoidGlbActiveLoadKeys',
+    'approvedEquipmentState.promises.get(',
+    'approvedNpcAnimationState.promise',
+    'approvedAssaultGripState.promise',
+    'retryScheduledCount: passiveRetryKeys.length'
+  ]);
+  assertContainsAll('approved equipment GLB load revision', functionBody(approvedHumanoidRuntime, 'loadApprovedEquipmentTemplate'), [
+    'markApprovedHumanoidGlbLoadStarted(`equipment:${cacheKey}`)',
+    'markApprovedHumanoidGlbLoadSettled(`equipment:${cacheKey}`)'
+  ]);
+  assertContainsAll('approved NPC animation GLB load revision', functionBody(approvedHumanoidRuntime, 'loadApprovedNpcAnimationClips'), [
+    "markApprovedHumanoidGlbLoadStarted('npcAnimations')",
+    "markApprovedHumanoidGlbLoadSettled('npcAnimations')",
+    'APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS',
+    'APPROVED_AUXILIARY_RETRY_COOLDOWN_MS'
+  ]);
+  assertContainsAll('approved grip GLB retry', functionBody(approvedHumanoidRuntime, 'loadApprovedAssaultRifleGrip'), [
+    "markApprovedHumanoidGlbLoadStarted('assaultGrip')",
+    "markApprovedHumanoidGlbLoadSettled('assaultGrip')",
+    'APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS',
+    'APPROVED_AUXILIARY_RETRY_COOLDOWN_MS'
+  ]);
+  assert(!approvedHumanoidRuntime.includes('approvedNpcAnimationState.failed')
+    && !approvedHumanoidRuntime.includes('approvedAssaultGripState.failed'),
+  'approved NPC animation or grip loader remains session-sticky after a transient failure');
+  assertContainsAll('ground-item GLB pending snapshot', functionBody(worldSync, 'pendingGroundItemGlbAssetSnapshot'), [
+    'groundItemModelState.libraryPromise',
+    'groundItemModelState.libraryFailureCount',
+    'retryScheduledCount: retryScheduled ? 1 : 0'
+  ]);
+  assert(!functionBody(worldMaterials, 'waitForPendingStaticGlbAssets').includes('const watched ='),
+    'static GLB reveal gate still freezes a one-time state snapshot');
+  assert(!functionBody(characterGlbRuntime, 'waitForPendingCharacterGlbAssets').includes('const pending ='),
+    'character GLB reveal gate still freezes a one-time promise snapshot');
+  assertContainsAll('target-location GLB preload', functionBody(locationLoading, 'runLocationTransition'), [
+    'preloadStaticWorldModels({ location: targetLocation, includeSkinned: true })',
+    'waitForStartupInitialSnapshots({ timeoutMs: 1600 })',
+    'waitForPendingWorldGlbAssets({ timeoutMs: 8500, progress: 81 })'
+  ]);
 
   assertContainsAll('shared character GLB template cache', characterGlbRuntime, [
     'const characterGlbTemplateCache = new Map()',
@@ -1710,6 +1827,16 @@ function assertDeferredWorldRuntime() {
     'world materials are not isolated behind a lazy factory');
   assert(worldMaterials.includes('function preloadStaticWorldModels(options = {})'),
     'static GLB preloading is not controlled by the world runtime bootstrap');
+  const exitPortalBody = functionBody(traderProps, 'createExitPortal');
+  assert(exitPortalBody.includes("makeStaticModelGroup('highwaySign'"),
+    'location exit restored a generated sign instead of its authored GLB');
+  assert(!exitPortalBody.includes('new THREE.CylinderGeometry(')
+    && !exitPortalBody.includes('new THREE.BoxGeometry('),
+  'location exit still builds visible model geometry at runtime');
+  assert(worldMaterials.includes('STATIC_MODEL_GLB_ASSET_VERSION')
+    && worldMaterials.includes('staticModelKeysForLocation(options.location, options)')
+    && worldMaterials.includes('options.includeSkinned || !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key)'),
+  'target-location skinned GLBs are not cache-versioned and preloadable');
   assert(worldMaterials.includes('const stateKey = STATIC_MODEL_URLS[key] || key;'),
     'static model aliases do not share state by their resolved GLB URL');
   assert(worldMaterials.includes('state.pending.push({ holder, key, opts });')
@@ -1727,6 +1854,176 @@ function assertDeferredWorldRuntime() {
     'the lightweight auth profile bootstrap is missing');
   assert(!authShellTail.includes('buildWorld();') && !authShellTail.includes('loadWorldDataConfig();'),
     'the auth shell still builds or fetches world state before character selection');
+}
+
+async function assertGlbRevealQuiescence() {
+  const waitForGlbAssetQuiescence = new Function(
+    `return async ${functionSource(locationLoading, 'waitForGlbAssetQuiescence')};`
+  )();
+
+  let clock = 0;
+  const latePromise = Promise.resolve(true);
+  const lateResult = await waitForGlbAssetQuiescence(() => {
+    if (clock < 50) {
+      return { revision: 0, promises: [], activeCount: 0, unresolvedCount: 0 };
+    }
+    if (clock < 140) {
+      return { revision: 1, promises: [latePromise], activeCount: 1, unresolvedCount: 1 };
+    }
+    return { revision: 2, promises: [], activeCount: 0, unresolvedCount: 0 };
+  }, {
+    timeoutMs: 8_500,
+    quietMs: 150,
+    pollMs: 25,
+    now: () => clock,
+    sleep: async delay => { clock += delay; }
+  });
+  assert.strictEqual(lateResult, true,
+    'GLB reveal gate rejected a late request that settled successfully');
+  assert(clock >= 300,
+    'GLB reveal gate did not restart its 150ms quiet window for a late promise');
+
+  clock = 0;
+  const passiveRetryResult = await waitForGlbAssetQuiescence(() => ({
+    revision: 1,
+    promises: [],
+    activeCount: 0,
+    unresolvedCount: 1,
+    retryScheduledCount: 1
+  }), {
+    timeoutMs: 8_500,
+    quietMs: 150,
+    pollMs: 25,
+    now: () => clock,
+    sleep: async delay => { clock += delay; }
+  });
+  assert.strictEqual(passiveRetryResult, false,
+    'offline GLB retry timer was reported as a completed reveal set');
+  assert(clock < 500,
+    'passive offline GLB retry timer held the overlay until its deadline');
+
+  clock = 0;
+  const deadlineResult = await waitForGlbAssetQuiescence(() => ({
+    revision: 1,
+    promises: [latePromise],
+    activeCount: 1,
+    unresolvedCount: 1
+  }), {
+    timeoutMs: 8_500,
+    quietMs: 150,
+    pollMs: 50,
+    now: () => clock,
+    sleep: async delay => { clock += delay; }
+  });
+  assert.strictEqual(deadlineResult, false,
+    'half-open GLB request was accepted at the reveal deadline');
+  assert.strictEqual(clock, 8_500,
+    'GLB reveal gate does not enforce one shared 8.5s deadline');
+
+  const snapshotPromiseRows = Array.from({ length: 5 }, () => Promise.resolve(true));
+  const snapshotReaders = [
+    () => ({ revision: 'character', promises: [snapshotPromiseRows[0]], activeCount: 1, unresolvedCount: 1, retryScheduledCount: 0 }),
+    () => ({ revision: 'static', promises: [snapshotPromiseRows[1]], activeCount: 1, unresolvedCount: 1, retryScheduledCount: 0 }),
+    () => ({ revision: 'weapon', promises: [snapshotPromiseRows[2]], activeCount: 1, unresolvedCount: 2, retryScheduledCount: 1 }),
+    () => ({ revision: 'approved', promises: [snapshotPromiseRows[3]], activeCount: 1, unresolvedCount: 3, retryScheduledCount: 2 }),
+    () => ({ revision: 'ground', promises: [snapshotPromiseRows[4]], activeCount: 1, unresolvedCount: 1, retryScheduledCount: 0 })
+  ];
+  const readWorldSnapshot = new Function(
+    'pendingCharacterGlbAssetSnapshot',
+    'pendingStaticGlbAssetSnapshot',
+    'pendingWeaponGlbAssetSnapshot',
+    'pendingApprovedHumanoidGlbAssetSnapshot',
+    'pendingGroundItemGlbAssetSnapshot',
+    `${functionSource(locationLoading, 'worldGlbPendingSnapshot')}\nreturn worldGlbPendingSnapshot;`
+  )(...snapshotReaders);
+  const combined = readWorldSnapshot();
+  assert.strictEqual(combined.promises.length, 5,
+    'world GLB reveal snapshot drops a late character/static/weapon/equipment/ground promise');
+  assert.strictEqual(combined.activeCount, 5,
+    'world GLB reveal snapshot loses active loaders from one of its libraries');
+  assert.strictEqual(combined.unresolvedCount, 8,
+    'world GLB reveal snapshot loses unresolved strict-GLB assets');
+  assert.strictEqual(combined.retryScheduledCount, 3,
+    'world GLB reveal snapshot loses passive retry state');
+  assert.strictEqual(combined.revision, 'character:static:weapon:approved:ground',
+    'world GLB reveal revision cannot detect a late library request');
+
+  const passiveWeaponPromise = Promise.resolve(true);
+  const weaponActiveKeys = new Set();
+  const weaponState = {
+    templates: new Map(),
+    promises: new Map([['pistol', passiveWeaponPromise]]),
+    failures: new Map([['pistol', 1]]),
+    nextRetryAt: new Map([['pistol', Date.now() + 7_000]])
+  };
+  const readWeaponSnapshot = new Function(
+    'weaponGlbActiveLoadKeys',
+    'weaponModelLibraryState',
+    'weaponGlbLoadRevision',
+    `${functionSource(weaponGlbRuntime, 'pendingWeaponGlbAssetSnapshot')}\nreturn pendingWeaponGlbAssetSnapshot;`
+  )(weaponActiveKeys, weaponState, 4);
+  let librarySnapshot = readWeaponSnapshot();
+  assert.strictEqual(librarySnapshot.activeCount, 0);
+  assert.strictEqual(librarySnapshot.promises.length, 0,
+    'passive weapon retry is still treated as active network loading');
+  assert.strictEqual(librarySnapshot.unresolvedCount, 1);
+  assert.strictEqual(librarySnapshot.retryScheduledCount, 1);
+  weaponActiveKeys.add('pistol');
+  librarySnapshot = readWeaponSnapshot();
+  assert.strictEqual(librarySnapshot.activeCount, 1);
+  assert.strictEqual(librarySnapshot.promises[0], passiveWeaponPromise,
+    'active late weapon GLB promise is missing from the reveal snapshot');
+
+  const passiveEquipmentPromise = Promise.resolve(true);
+  const approvedActiveKeys = new Set();
+  const approvedEquipmentSnapshotState = {
+    templates: new Map(),
+    promises: new Map([['helmet:male_medium', passiveEquipmentPromise]]),
+    failures: new Map([['helmet:male_medium', 1]]),
+    nextRetryAt: new Map([['helmet:male_medium', Date.now() + 8_000]])
+  };
+  const npcAnimationSnapshotState = { promise: null, clips: null, failureCount: 0, nextRetryAt: 0 };
+  const assaultGripSnapshotState = { promise: null, pose: null, failureCount: 0, nextRetryAt: 0 };
+  const readApprovedSnapshot = new Function(
+    'approvedHumanoidGlbActiveLoadKeys',
+    'approvedEquipmentState',
+    'approvedNpcAnimationState',
+    'approvedAssaultGripState',
+    'approvedHumanoidGlbLoadRevision',
+    `${functionSource(approvedHumanoidRuntime, 'pendingApprovedHumanoidGlbAssetSnapshot')}\nreturn pendingApprovedHumanoidGlbAssetSnapshot;`
+  )(
+    approvedActiveKeys,
+    approvedEquipmentSnapshotState,
+    npcAnimationSnapshotState,
+    assaultGripSnapshotState,
+    6
+  );
+  librarySnapshot = readApprovedSnapshot();
+  assert.strictEqual(librarySnapshot.activeCount, 0);
+  assert.strictEqual(librarySnapshot.promises.length, 0,
+    'passive equipment retry is still treated as active network loading');
+  assert.strictEqual(librarySnapshot.unresolvedCount, 1);
+  assert.strictEqual(librarySnapshot.retryScheduledCount, 1);
+  approvedActiveKeys.add('equipment:helmet:male_medium');
+  npcAnimationSnapshotState.promise = Promise.resolve(true);
+  approvedActiveKeys.add('npcAnimations');
+  librarySnapshot = readApprovedSnapshot();
+  assert.strictEqual(librarySnapshot.activeCount, 2);
+  assert(librarySnapshot.promises.includes(passiveEquipmentPromise),
+    'active late equipment GLB promise is missing from the reveal snapshot');
+  assert(librarySnapshot.promises.includes(npcAnimationSnapshotState.promise),
+    'active late NPC animation GLB promise is missing from the reveal snapshot');
+  approvedActiveKeys.clear();
+  npcAnimationSnapshotState.promise = null;
+  npcAnimationSnapshotState.failureCount = 1;
+  npcAnimationSnapshotState.nextRetryAt = Date.now() + 8_000;
+  assaultGripSnapshotState.failureCount = 1;
+  assaultGripSnapshotState.nextRetryAt = Date.now() + 8_000;
+  librarySnapshot = readApprovedSnapshot();
+  assert.strictEqual(librarySnapshot.activeCount, 0);
+  assert.strictEqual(librarySnapshot.unresolvedCount, 3);
+  assert.strictEqual(librarySnapshot.retryScheduledCount, 3,
+    'passive equipment/NPC-animation/grip cooldown state is missing from reveal diagnostics');
 }
 
 async function assertOptionalWastelandDoesNotBlockStartup() {
@@ -1775,6 +2072,21 @@ async function assertOptionalWastelandDoesNotBlockStartup() {
 }
 
 function assertServerAuthoritativeWorldStateRequests() {
+  const containerVisualBody = functionBody(containers, 'createWorldContainerMesh');
+  assertContainsAll('GLB-only server world containers', containerVisualBody, [
+    "? 'tradeMachine'",
+    "? 'crate' : 'storageChest'",
+    'makeStaticModelGroup(modelKey, 0, 0, 0, \'worldContainer\''
+  ]);
+  for (const forbidden of [
+    'new THREE.BoxGeometry(',
+    'new THREE.MeshStandardMaterial(',
+    'worldContainerPalette('
+  ]) {
+    assert(!containerVisualBody.includes(forbidden),
+      `server world container restored generated model code: ${forbidden}`);
+  }
+
   const requestBody = functionBody(worldSync, 'requestWorldStateFromServer');
   assertContainsAll('authoritative world-state request', requestBody, [
     "socket.emit('requestWorldState'",
@@ -3215,60 +3527,38 @@ function assertActorAnimationLod() {
   assert.strictEqual(spriteTextureDisposals, 1,
     'remote cleanup leaked the unique name-sprite texture');
 
-  const proceduralRuntime = new Function([
-    functionSource(modernActorRuntime, 'modernAnimationHasVisibleMesh'),
-    functionSource(modernActorRuntime, 'invalidateModernProceduralRigAnimationCache'),
-    functionSource(modernActorRuntime, 'modernProceduralRigAnimationCacheKey'),
-    functionSource(modernActorRuntime, 'modernProceduralRigNeedsAnimation'),
-    'return { needs: modernProceduralRigNeedsAnimation, invalidate: invalidateModernProceduralRigAnimationCache, key: modernProceduralRigAnimationCacheKey };'
-  ].join('\n'))();
-  const characterRoot = {};
-  const hiddenBase = { isMesh: true, visible: false };
-  assert.strictEqual(proceduralRuntime.needs({}, characterRoot), true,
-    'actors without a captured procedural fallback were incorrectly fast-pathed');
-  assert.strictEqual(proceduralRuntime.needs({ proceduralCharacterBaseMeshes: [hiddenBase] }, characterRoot), false,
-    'fully hidden procedural fallback still runs its locomotion rig');
-  assert.strictEqual(proceduralRuntime.needs({
-    proceduralCharacterBaseMeshes: [hiddenBase],
-    backpack: { isMesh: true, visible: true }
-  }, characterRoot), true, 'visible fallback equipment no longer animates with the procedural rig');
-  assert.strictEqual(proceduralRuntime.needs({
-    proceduralCharacterBaseMeshes: [hiddenBase],
-    weaponGroup: { visible: true, parent: {}, children: [{ isMesh: true, visible: true }] }
-  }, characterRoot), true, 'an unmounted visible weapon no longer keeps its procedural anchor animated');
-  assert.strictEqual(proceduralRuntime.needs({
-    proceduralCharacterBaseMeshes: [hiddenBase],
-    weaponGroup: { visible: true, parent: characterRoot, children: [{ isMesh: true, visible: true }] }
-  }, characterRoot), false, 'a GLB-mounted approved weapon incorrectly keeps the hidden procedural rig active');
-
-  let visibilityReads = 0;
-  const countedHiddenBase = { isMesh: true };
-  Object.defineProperty(countedHiddenBase, 'visible', {
-    configurable: true,
-    get() { visibilityReads += 1; return false; }
+  const forbiddenHumanoidGeometry = [
+    'function buildWastelandHumanoid(',
+    'function makeActorBox(',
+    'function makeActorCylinder(',
+    'function addWastelandActorDetailPass(',
+    'function buildModernWastelandHumanoid(',
+    'function modernCharacterGeometry(',
+    'function modernCharacterMesh(',
+    'function buildModernCharacterLeg(',
+    'function buildModernCharacterArm(',
+    'function addCharacterHairVariant(',
+    'function addCharacterHairPiece(',
+    "new THREE.IcosahedronGeometry(1, detail)",
+    'new THREE.BufferGeometry()'
+  ];
+  const humanoidModelSources = `${actorVisuals}\n${modernActorRuntime}\n${characterGlbRuntime}`;
+  forbiddenHumanoidGeometry.forEach(marker => {
+    assert(!humanoidModelSources.includes(marker),
+      `GLB-only humanoid runtime restored generated geometry: ${marker}`);
   });
-  const cachedParts = { proceduralCharacterBaseMeshes: [countedHiddenBase] };
-  const cachedActor = { userData: { parts: cachedParts, equipmentKey: 'equipment-a', weaponId: 'pistol' } };
-  const cachedRoot = { uuid: 'character-root-a' };
-  const firstCacheKey = proceduralRuntime.key(cachedActor, cachedParts, cachedRoot);
-  assert.strictEqual(proceduralRuntime.needs(cachedParts, cachedRoot, firstCacheKey), false);
-  const readsAfterFirstScan = visibilityReads;
-  assert.strictEqual(proceduralRuntime.needs(cachedParts, cachedRoot, firstCacheKey), false);
-  assert.strictEqual(visibilityReads, readsAfterFirstScan,
-    'stable procedural equipment topology is rescanned on every GLB animation tick');
-  proceduralRuntime.invalidate(cachedActor, cachedParts);
-  const invalidatedCacheKey = proceduralRuntime.key(cachedActor, cachedParts, cachedRoot);
-  assert.notStrictEqual(invalidatedCacheKey, firstCacheKey,
-    'procedural rig cache invalidation does not advance the topology revision');
-  assert.strictEqual(proceduralRuntime.needs(cachedParts, cachedRoot, invalidatedCacheKey), false);
-  assert(visibilityReads > readsAfterFirstScan,
-    'procedural rig topology was not rescanned after explicit invalidation');
-  cachedActor.userData.equipmentKey = 'equipment-b';
-  assert.notStrictEqual(
-    proceduralRuntime.key(cachedActor, cachedParts, cachedRoot),
-    invalidatedCacheKey,
-    'equipment key changes do not invalidate the procedural rig cache key'
+  assert(
+    functionBody(modernActorRuntime, 'invalidateModernProceduralRigAnimationCache').includes('return 0'),
+    'legacy rig invalidation hook must remain a compatibility no-op for GLB-only actors'
   );
+  const visualVariantsBody = functionBody(characterGlbRuntime, 'applyCharacterGlbVisualVariants');
+  assert(visualVariantsBody.includes("obj.visible = !helmetOn && appearance.hairId !== 'shaved'"),
+    'authored GLB hair is not restored correctly after removing a helmet');
+  assert(!visualVariantsBody.includes('new THREE.Mesh(')
+    && !visualVariantsBody.includes('new THREE.BufferGeometry(')
+    && !visualVariantsBody.includes('new THREE.IcosahedronGeometry(')
+    && !visualVariantsBody.includes('addCharacterHairVariant('),
+    'character appearance still creates runtime geometry instead of using authored GLB nodes');
 
   const weaponVisibilityRuntime = new Function([
     'const invalidations = [];',
@@ -3290,20 +3580,60 @@ function assertActorAnimationLod() {
   assert.strictEqual(weaponVisibilityRuntime.invalidations.length, 2,
     'putting an NPC to sleep does not invalidate the procedural rig cache');
 
+  const armorRefreshBody = functionBody(actorVisuals, 'applyArmorVisualSet');
+  assertContainsAll('GLB-only armor refresh', armorRefreshBody, [
+    'const actor = parts?.characterRoot',
+    'if (!actor?.userData?.glbOnlyCharacterVisual) return',
+    'refreshCharacterGlbEquipmentLayers(actor, eq)',
+    'setCharacterProceduralBaseVisible(actor, false)'
+  ]);
+  assert(!armorRefreshBody.includes('parts.chest')
+    && !armorRefreshBody.includes('.material =')
+    && !armorRefreshBody.includes('applyServiceScoutBootVisual('),
+  'equipment changes still enter the removed generated-material visual branch');
+
+  const weaponVisibilityApi = new Function([
+    functionSource(weaponGlbRuntime, 'weaponGroupGlbOnlyOwner'),
+    functionSource(weaponGlbRuntime, 'setWeaponGlbGroupVisibility'),
+    'return { set: setWeaponGlbGroupVisibility };'
+  ].join('\n'))();
+  const glbOnlyOwner = { userData: { glbOnlyCharacterVisual: true }, parent: null };
+  const cachedWeaponGroup = { userData: {}, parent: glbOnlyOwner, visible: true };
+  assert.strictEqual(weaponVisibilityApi.set(cachedWeaponGroup, true), false,
+    'cached GLB weapon becomes visible before its GLB-only character body');
+  glbOnlyOwner.userData.characterGlbRuntime = { root: {} };
+  assert.strictEqual(weaponVisibilityApi.set(cachedWeaponGroup, true), true,
+    'cached GLB weapon stays hidden after its character body is ready');
+  assert.strictEqual(weaponVisibilityApi.set(cachedWeaponGroup, false), false,
+    'an empty GLB weapon slot becomes visible');
+  for (const [label, body] of [
+    ['player cached weapon', functionBody(actorVisuals, 'updatePlayerEquipmentVisuals')],
+    ['remote cached weapon', functionBody(remoteEquipmentRuntime, 'updateRemoteEquipmentVisuals')],
+    ['enemy cached weapon', functionBody(remoteEquipmentRuntime, 'updateEnemyEquipmentVisuals')],
+    ['global-map cached weapon', functionBody(globalMapPlayerModels, 'updateGlobalMapPlayerModelVisuals')],
+    ['body-ready weapon reveal', functionBody(characterGlbRuntime, 'refreshCharacterGlbEquipmentLayers')]
+  ]) {
+    assert(body.includes('setWeaponGlbGroupVisibility('),
+      `${label} bypasses the GLB-body visibility gate`);
+  }
+
   const modernUpdate = functionBody(modernActorRuntime, 'updateCharacterLocomotionAnimation');
   const glbUpdateIndex = modernUpdate.indexOf('updateCharacterGlbAnimation(actor, dt, animationState) === true');
-  const approvedGripIndex = modernUpdate.indexOf('updateModernApprovedWeaponGrip(actor, weaponId)');
-  const hiddenRigGateIndex = modernUpdate.indexOf('if (!modernProceduralRigNeedsAnimation(parts, characterRoot, proceduralRigCacheKey)) return');
-  const proceduralAnimationIndex = modernUpdate.indexOf('const crouching =');
+  const glbReadyGuardIndex = modernUpdate.indexOf('if (!glbUpdated || !actor.userData?.characterGlbRuntime?.root) return');
+  const approvedGripIndex = modernUpdate.indexOf(
+    'updateModernApprovedWeaponGrip(actor, modernAnimationWeaponId(actor))'
+  );
   assert(glbUpdateIndex >= 0
-    && approvedGripIndex > glbUpdateIndex
-    && hiddenRigGateIndex > approvedGripIndex
-    && proceduralAnimationIndex > hiddenRigGateIndex,
-  'the successful GLB fast path no longer preserves approved grip before skipping the hidden procedural rig');
+    && glbReadyGuardIndex > glbUpdateIndex
+    && approvedGripIndex > glbReadyGuardIndex,
+  'GLB animation bridge no longer updates approved weapon grips after the authored body is ready');
+  assert(!modernUpdate.includes('parts.motionRoot')
+    && !modernUpdate.includes('parts.torsoRig')
+    && !modernUpdate.includes('modernProceduralRigNeedsAnimation('),
+  'GLB animation bridge still contains the removed generated-rig animation path');
   for (const [label, body] of [
     ['player equipment', functionBody(actorVisuals, 'updatePlayerEquipmentVisuals')],
-    ['procedural mesh capture', functionBody(characterGlbRuntime, 'captureCharacterProceduralBaseMeshes')],
-    ['procedural visibility', functionBody(characterGlbRuntime, 'setCharacterProceduralBaseVisible')],
+    ['GLB-only visibility guard', functionBody(characterGlbRuntime, 'setCharacterProceduralBaseVisible')],
     ['remote equipment', functionBody(remoteEquipmentRuntime, 'updateRemoteEquipmentVisuals')],
     ['enemy equipment', functionBody(remoteEquipmentRuntime, 'updateEnemyEquipmentVisuals')],
     ['approved equipment', functionBody(approvedHumanoidRuntime, 'applyApprovedEquipmentSlot')],
@@ -3324,10 +3654,11 @@ function assertCrowdedActorInteractionBudget() {
   ]);
   assertContainsAll('enemy interaction proxy attachment', enemyModels, [
     "attachActorInteractionProxy(group, {",
-    'radius: Math.max(0.48, ringRadius * Number(type.scale || 1))'
+    'radius: Math.max(0.48, ringRadius * Number(renderType.scale || 1))'
   ]);
   assertContainsAll('remote-player interaction proxy attachment', remoteLocomotion, [
-    "attachActorInteractionProxy(g, { radius: 0.68, height: 2.1 })"
+    'buildGlbOnlyHumanoidAnchors(g, parts, {',
+    'interactionProxy: { radius: 0.68, height: 2.1 }'
   ]);
   const enemyRaycast = functionBody(worldContextTargets, 'findEnemyFromEvent');
   assert(enemyRaycast.includes('raycaster.intersectObjects(proxies, false)'),
@@ -3441,6 +3772,7 @@ async function main() {
   assertGlobalMapSnapshotPerformance();
   assertBlockedGameplayGates();
   assertDeferredWorldRuntime();
+  await assertGlbRevealQuiescence();
   await assertOptionalWastelandDoesNotBlockStartup();
   assertServerAuthoritativeWorldStateRequests();
   assertServerNetworkHotPath();

@@ -550,225 +550,37 @@
     renderUI();
   }
 
-  // ===== WASTELAND ACTOR VISUALS =====
-  // v7.53: общий набор материалов и примитивов для персонажа и удалённых игроков.
-  // Это не внешние GLTF-ассеты, а лёгкие процедурные модели: мало мешей, общие материалы,
-  // читаемый силуэт сверху и отсутствие нагрузки на мобильную версию.
-  const actorMats = {
-    coat: matStandard({ color: 0x6f4b2e, map: makeNoiseTexture('actor-dust-coat', 0x6f4b2e, 0x8d6440, 0x2b1b11, { seed: 151, repeat: 1.0, lines: 9, specks: 52, lineAlpha: 0.13 }), roughness: 0.9, metalness: 0.03 }),
-    pants: matStandard({ color: 0x2e3030, map: makeNoiseTexture('actor-pants-charcoal', 0x2e3030, 0x444540, 0x141616, { seed: 153, repeat: 1.0, lines: 6, specks: 36 }), roughness: 0.88, metalness: 0.04 }),
-    armor: matStandard({ color: 0x55584d, map: makeNoiseTexture('actor-scrap-armor', 0x55584d, 0x747467, 0x242723, { seed: 157, repeat: 1.0, lines: 15, specks: 48, lineAlpha: 0.2 }), roughness: 0.58, metalness: 0.38 }),
-    rustPlate: matStandard({ color: 0x804727, map: makeNoiseTexture('actor-rust-plate', 0x804727, 0xa46235, 0x29180f, { seed: 159, repeat: 1.0, lines: 12, specks: 80 }), roughness: 0.8, metalness: 0.22 }),
-    strap: matStandard({ color: 0x2b1d13, map: makeNoiseTexture('actor-leather-straps', 0x2b1d13, 0x52351e, 0x120d09, { seed: 163, repeat: 1.0, lines: 7, specks: 28 }), roughness: 0.86, metalness: 0.02 }),
-    scarf: matStandard({ color: 0xb2925f, map: makeNoiseTexture('actor-dust-scarf', 0xb2925f, 0xd0b176, 0x594326, { seed: 167, repeat: 1.0, lines: 8, specks: 36 }), roughness: 0.94 }),
-    glass: matStandard({ color: 0x7fb6a3, emissive: 0x132820, emissiveIntensity: 0.18, roughness: 0.26, metalness: 0.08, transparent: true, opacity: 0.82 }),
-    boot: matStandard({ color: 0x1a1713, map: makeNoiseTexture('actor-worn-boots', 0x1a1713, 0x3a2b1d, 0x080706, { seed: 171, repeat: 1.0, lines: 6, specks: 28 }), roughness: 0.78, metalness: 0.08 }),
-    pack: matStandard({ color: 0x3e412c, map: makeNoiseTexture('actor-canvas-pack', 0x3e412c, 0x5b5d3c, 0x1c1e14, { seed: 173, repeat: 1.0, lines: 9, specks: 44 }), roughness: 0.92 })
-  };
-
-  function makeActorBox(w, h, d, material, x, y, z, rx = 0, ry = 0, rz = 0, castShadow = true) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-    mesh.position.set(x, y, z);
-    mesh.rotation.set(rx, ry, rz);
-    mesh.castShadow = castShadow;
-    mesh.receiveShadow = false;
-    return mesh;
-  }
-
-  function makeActorCylinder(r1, r2, h, radial, material, x, y, z, rx = 0, ry = 0, rz = 0, castShadow = true) {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, radial), material);
-    mesh.position.set(x, y, z);
-    mesh.rotation.set(rx, ry, rz);
-    mesh.castShadow = castShadow;
-    mesh.receiveShadow = false;
-    return mesh;
-  }
-
-  function addWastelandActorDetailPass(root, parts = {}, castShadow = true, isPlayer = false) {
-    const detailMeshes = [];
-    const add = mesh => {
-      if (!mesh) return null;
-      mesh.userData.cosmeticLod = true;
-      detailMeshes.push(mesh);
-      root.add(mesh);
-      return mesh;
-    };
-
-    const handL = add(makeActorBox(0.16, 0.13, 0.17, mats.skin, -0.60, 0.61, -0.10, 0.03, 0, -0.08, castShadow));
-    const handR = add(makeActorBox(0.16, 0.13, 0.17, mats.skin, 0.60, 0.61, -0.10, 0.03, 0, 0.08, castShadow));
-    const gloveL = add(makeActorBox(0.18, 0.08, 0.19, actorMats.strap, -0.60, 0.67, -0.09, 0.02, 0, -0.08, castShadow));
-    const gloveR = add(makeActorBox(0.18, 0.08, 0.19, actorMats.strap, 0.60, 0.67, -0.09, 0.02, 0, 0.08, castShadow));
-    parts.handL = handL;
-    parts.handR = handR;
-    parts.gloveL = gloveL;
-    parts.gloveR = gloveR;
-
-    add(makeActorBox(0.23, 0.10, 0.23, actorMats.rustPlate, -0.18, 0.38, -0.12, 0.08, 0, 0.05, castShadow));
-    add(makeActorBox(0.23, 0.10, 0.23, actorMats.armor, 0.18, 0.38, -0.12, -0.06, 0, -0.05, castShadow));
-    add(makeActorBox(0.30, 0.055, 0.36, actorMats.boot, -0.17, 0.15, -0.20, 0.03, 0, 0.02, castShadow));
-    add(makeActorBox(0.30, 0.055, 0.36, actorMats.boot, 0.17, 0.15, -0.20, 0.03, 0, -0.02, castShadow));
-
-    add(makeActorBox(0.13, 0.13, 0.08, actorMats.rustPlate, 0, 0.73, -0.24, 0, 0, 0.02, castShadow));
-    add(makeActorBox(0.12, 0.16, 0.10, actorMats.strap, -0.36, 0.78, -0.20, 0.04, 0, -0.08, castShadow));
-    add(makeActorBox(0.12, 0.16, 0.10, actorMats.strap, 0.36, 0.78, -0.20, 0.04, 0, 0.08, castShadow));
-    add(makeActorBox(0.18, 0.24, 0.12, actorMats.pack, -0.50, 0.86, 0.12, 0.03, 0, 0.10, castShadow));
-    add(makeActorBox(0.18, 0.24, 0.12, actorMats.pack, 0.50, 0.86, 0.12, 0.03, 0, -0.10, castShadow));
-
-    const bandolierA = add(makeActorBox(0.075, 0.78, 0.075, actorMats.strap, -0.18, 1.08, -0.25, 0.12, 0, -0.58, castShadow));
-    const bandolierB = add(makeActorBox(0.06, 0.62, 0.06, actorMats.scarf, 0.22, 1.06, -0.255, 0.08, 0, 0.58, castShadow));
-    parts.bandolierA = bandolierA;
-    parts.bandolierB = bandolierB;
-    [-0.18, -0.07, 0.04].forEach((x, i) => {
-      add(makeActorBox(0.055, 0.10, 0.045, actorMats.rustPlate, x, 1.02 - i * 0.055, -0.305, 0.1, 0, -0.58, castShadow));
-    });
-
-    add(makeActorBox(0.19, 0.045, 0.055, actorMats.armor, -0.11, 1.59, -0.265, 0, 0, 0.02, castShadow));
-    add(makeActorBox(0.19, 0.045, 0.055, actorMats.armor, 0.11, 1.59, -0.265, 0, 0, -0.02, castShadow));
-    add(makeActorBox(0.045, 0.08, 0.035, actorMats.strap, 0, 1.50, -0.282, 0, 0, 0, castShadow));
-    if (isPlayer) {
-      const rankPlate = add(makeActorBox(0.18, 0.055, 0.03, actorMats.scarf, 0, 1.205, -0.292, -0.03, 0, 0, castShadow));
-      parts.playerRankPlate = rankPlate;
-    }
-
-    parts.cosmeticLodMeshes = (parts.cosmeticLodMeshes || []).concat(detailMeshes);
-    parts.actorDetailMeshes = detailMeshes;
-  }
-
-  function buildWastelandHumanoid(root, parts = {}, options = {}) {
-    const castShadow = options.castShadow !== false;
-    const isPlayer = !!options.isPlayer;
-
-    const shadow = new THREE.Mesh(
-      new THREE.CircleGeometry(isPlayer ? 0.72 : 0.66, 24),
-      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: isPlayer ? 0.3 : 0.24, depthWrite: false })
-    );
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = 0.015;
-    shadow.visible = true; // v7.74.81: cheap pseudo contact shadow while real shadow maps are disabled
-    root.add(shadow);
-    parts.shadow = shadow;
-
-    const legs = new THREE.Group();
-    const legL = makeActorBox(0.18, 0.56, 0.22, actorMats.pants, -0.17, 0.36, 0.02, 0.05, 0, 0.03, castShadow);
-    const legR = makeActorBox(0.18, 0.56, 0.22, actorMats.pants, 0.17, 0.36, 0.02, -0.04, 0, -0.03, castShadow);
-    const bootL = makeActorBox(0.26, 0.16, 0.34, actorMats.boot, -0.17, 0.08, -0.04, 0, 0, 0.02, castShadow);
-    const bootR = makeActorBox(0.26, 0.16, 0.34, actorMats.boot, 0.17, 0.08, -0.04, 0, 0, -0.02, castShadow);
-    legs.add(legL, legR, bootL, bootR);
-    root.add(legs);
-    parts.legs = legs;
-    parts.legL = legL;
-    parts.legR = legR;
-
-    const body = makeActorCylinder(0.32, 0.43, 0.88, 10, actorMats.coat, 0, 0.88, 0.03, 0, 0, 0, castShadow);
-    root.add(body);
-    parts.body = body;
-
-    const chest = makeActorBox(0.74, 0.56, 0.34, actorMats.coat, 0, 1.08, -0.02, 0.03, 0, 0, castShadow);
-    root.add(chest);
-    parts.chest = chest;
-
-    const chestPlate = makeActorBox(0.54, 0.38, 0.09, actorMats.armor, 0, 1.09, -0.22, -0.06, 0, 0, castShadow);
-    const bellyPlate = makeActorBox(0.44, 0.18, 0.08, actorMats.rustPlate, 0.02, 0.82, -0.22, 0.06, 0, -0.02, castShadow);
-    const belt = makeActorBox(0.78, 0.12, 0.44, actorMats.strap, 0, 0.72, -0.01, 0, 0, 0, castShadow);
-    chestPlate.userData.cosmeticLod = true;
-    bellyPlate.userData.cosmeticLod = true;
-    root.add(chestPlate, bellyPlate, belt);
-    parts.baseChestPlate = chestPlate;
-    parts.baseBellyPlate = bellyPlate;
-    parts.belt = belt;
-
-    const coatBack = makeActorBox(0.66, 0.5, 0.12, actorMats.coat, 0, 0.67, 0.28, -0.08, 0, 0, castShadow);
-    const coatLeft = makeActorBox(0.16, 0.44, 0.17, actorMats.coat, -0.42, 0.72, 0.11, -0.05, 0, 0.1, castShadow);
-    const coatRight = makeActorBox(0.16, 0.44, 0.17, actorMats.coat, 0.42, 0.72, 0.11, -0.05, 0, -0.1, castShadow);
-    coatBack.userData.cosmeticLod = true;
-    coatLeft.userData.cosmeticLod = true;
-    coatRight.userData.cosmeticLod = true;
-    root.add(coatBack, coatLeft, coatRight);
-    parts.coatBack = coatBack;
-
-    const shoulderL = makeActorBox(0.27, 0.14, 0.26, actorMats.rustPlate, -0.49, 1.28, -0.02, 0, 0, -0.2, castShadow);
-    const shoulderR = makeActorBox(0.27, 0.14, 0.26, actorMats.armor, 0.49, 1.28, -0.02, 0, 0, 0.2, castShadow);
-    shoulderL.userData.cosmeticLod = true;
-    shoulderR.userData.cosmeticLod = true;
-    root.add(shoulderL, shoulderR);
-    parts.baseShoulderL = shoulderL;
-    parts.baseShoulderR = shoulderR;
-
-    const armL = makeActorBox(0.15, 0.62, 0.17, actorMats.coat, -0.52, 1.02, 0.0, 0.02, 0, -0.22, castShadow);
-    const armR = makeActorBox(0.15, 0.62, 0.17, actorMats.coat, 0.52, 1.02, 0.0, 0.02, 0, 0.22, castShadow);
-    const forearmL = makeActorBox(0.15, 0.28, 0.18, actorMats.strap, -0.58, 0.75, -0.06, 0.02, 0, -0.08, castShadow);
-    const forearmR = makeActorBox(0.15, 0.28, 0.18, actorMats.strap, 0.58, 0.75, -0.06, 0.02, 0, 0.08, castShadow);
-    root.add(armL, armR, forearmL, forearmR);
-    parts.armL = armL;
-    parts.armR = armR;
-    parts.forearmL = forearmL;
-    parts.forearmR = forearmR;
-
-    const neckWrap = makeActorCylinder(0.25, 0.28, 0.14, 12, actorMats.scarf, 0, 1.38, -0.02, 0, 0, 0, castShadow);
-    root.add(neckWrap);
-    parts.neckWrap = neckWrap;
-
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 12), mats.skin);
-    head.position.set(0, 1.6, -0.02);
-    head.castShadow = castShadow;
-    root.add(head);
-    parts.head = head;
-
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.285, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.58), actorMats.armor);
-    helmet.position.set(0, 1.69, -0.01);
-    helmet.castShadow = castShadow;
-    root.add(helmet);
-    parts.helmet = helmet;
-
-    const goggles = makeActorBox(0.34, 0.11, 0.075, actorMats.glass, 0, 1.59, -0.22, 0, 0, 0, castShadow);
-    const mask = makeActorBox(0.19, 0.13, 0.105, actorMats.strap, 0, 1.49, -0.22, 0, 0, 0, castShadow);
-    const filterL = makeActorCylinder(0.045, 0.045, 0.11, 8, actorMats.armor, -0.12, 1.48, -0.24, Math.PI / 2, 0, 0, castShadow);
-    const filterR = filterL.clone();
-    filterR.position.x = 0.12;
-    root.add(goggles, mask, filterL, filterR);
-    parts.goggles = goggles;
-    parts.mask = mask;
-
-    const backpack = makeActorBox(0.58, 0.66, 0.24, actorMats.pack, 0, 1.03, 0.38, 0, 0, 0, castShadow);
-    const bedroll = makeActorCylinder(0.11, 0.11, 0.62, 12, actorMats.scarf, 0, 1.37, 0.42, 0, 0, Math.PI / 2, castShadow);
-    const packStrap = makeActorBox(0.08, 0.78, 0.06, actorMats.strap, -0.23, 1.04, 0.22, 0.05, 0, 0.06, castShadow);
-    const packStrap2 = packStrap.clone();
-    packStrap2.position.x = 0.23;
-    packStrap2.rotation.z = -0.06;
-    root.add(backpack, bedroll, packStrap, packStrap2);
-    parts.backpack = backpack;
-    parts.bedroll = bedroll;
-
-    addWastelandActorDetailPass(root, parts, castShadow, isPlayer);
-
-    const weaponGroup = new THREE.Group();
-    weaponGroup.position.set(0.53, 1.04, -0.27);
-    weaponGroup.rotation.set(0.04, 0, -0.08);
-    weaponGroup.userData.handSlot = 'weapon';
-    root.add(weaponGroup);
-    parts.weaponGroup = weaponGroup;
-
-    const offhandWeaponGroup = new THREE.Group();
-    offhandWeaponGroup.position.set(-0.53, 1.04, -0.27);
-    offhandWeaponGroup.rotation.set(0.04, 0, 0.08);
-    offhandWeaponGroup.userData.handSlot = 'offhand';
-    root.add(offhandWeaponGroup);
-    parts.offhandWeaponGroup = offhandWeaponGroup;
-
-    parts.cosmeticLodMeshes = [
-      chestPlate, bellyPlate, coatBack, coatLeft, coatRight, shoulderL, shoulderR,
-      goggles, mask, filterL, filterR, bedroll, packStrap, packStrap2,
-      ...(parts.actorDetailMeshes || [])
-    ];
-    parts.baseMaterials = { body: actorMats.coat, chest: actorMats.coat, arm: actorMats.coat, helmet: actorMats.armor, backpack: actorMats.pack };
-    root.userData.parts = parts;
-    return parts;
-  }
-
   const playerGroup = new THREE.Group();
   scene.add(playerGroup);
 
   let playerParts = {};
+
+  function buildGlbOnlyHumanoidAnchors(root, parts = {}, options = {}) {
+    if (!root?.add || !parts) return parts;
+    const weaponGroup = new THREE.Group();
+    weaponGroup.position.set(0.5, 1.06, -0.27);
+    weaponGroup.rotation.set(0.04, 0, -0.08);
+    weaponGroup.userData.handSlot = 'weapon';
+    const offhandWeaponGroup = new THREE.Group();
+    offhandWeaponGroup.position.set(-0.5, 1.06, -0.27);
+    offhandWeaponGroup.rotation.set(0.04, 0, 0.08);
+    offhandWeaponGroup.userData.handSlot = 'offhand';
+    const injuryGroup = new THREE.Group();
+    injuryGroup.position.set(0, 2.45, 0);
+    injuryGroup.visible = false;
+    root.add(weaponGroup, offhandWeaponGroup, injuryGroup);
+    parts.weaponGroup = weaponGroup;
+    parts.offhandWeaponGroup = offhandWeaponGroup;
+    parts.injuryGroup = injuryGroup;
+    parts.glbOnly = true;
+    parts.characterRoot = root;
+    root.userData.parts = parts;
+    root.userData.glbOnlyCharacterVisual = true;
+    if (options.interactionProxy && typeof attachActorInteractionProxy === 'function') {
+      attachActorInteractionProxy(root, options.interactionProxy);
+    }
+    return parts;
+  }
 
   function stabilizeCharacterNoCull(root) {
     if (!root || !root.traverse) return;
@@ -786,10 +598,7 @@
     if (typeof removeCharacterGlbRuntime === 'function') removeCharacterGlbRuntime(playerGroup);
     playerGroup.clear();
     playerParts = {};
-    buildModernWastelandHumanoid(playerGroup, playerParts, { castShadow: true, isPlayer: true });
-    if (typeof captureCharacterProceduralBaseMeshes === 'function') {
-      captureCharacterProceduralBaseMeshes(playerGroup, playerParts);
-    }
+    buildGlbOnlyHumanoidAnchors(playerGroup, playerParts);
     initWeaponVisualState(playerParts.weaponGroup);
     initWeaponVisualState(playerParts.offhandWeaponGroup);
     playerGroup.userData.parts = playerParts;
@@ -1133,361 +942,20 @@
     catch (_) { return id; }
   }
 
-  function setCharacterArmMaterial(parts, side, material = null, fallbackMaterial = null) {
-    const rows = parts?.[`armMaterialMeshes${side}`];
-    if (Array.isArray(rows) && rows.length) {
-      rows.forEach(row => {
-        if (row?.mesh) row.mesh.material = material || row.material;
-      });
-      return;
-    }
-    const arm = parts?.[`arm${side}`];
-    if (arm?.isMesh && (material || fallbackMaterial)) arm.material = material || fallbackMaterial;
-  }
-
   function applyArmorVisualSet(parts, eq = {}) {
-    if (!parts || !parts.chest) return;
-    const armorId = String(equipmentVisualBaseId(eq.armor) || '');
-    const helmetOn = !!eq.helmet;
-    const bootsOn = !!eq.boots;
-    const backpackOn = !!eq.backpack;
-    const matsSet = parts.styleMats || {};
-    const baseMats = parts.baseMaterials || {};
-    const clothingMat = baseMats.body || mats.cloth;
-    const chestMat = baseMats.chest || mats.leather;
-    const armMat = baseMats.arm || clothingMat;
-
-    if (parts.body) parts.body.material = clothingMat;
-    setCharacterArmMaterial(parts, 'L', null, armMat);
-    setCharacterArmMaterial(parts, 'R', null, armMat);
-    if (parts.chest) {
-      parts.chest.material = chestMat;
-      parts.chest.scale.set(1, 1, 1);
+    const actor = parts?.characterRoot;
+    if (!actor?.userData?.glbOnlyCharacterVisual) return;
+    if (typeof refreshCharacterGlbEquipmentLayers === 'function') {
+      refreshCharacterGlbEquipmentLayers(actor, eq);
     }
-    if (parts.helmet) {
-      parts.helmet.material = baseMats.helmet || mats.metal;
-      parts.helmet.scale.set(1, parts.modernRig ? 0.72 : 1, 1);
-      parts.helmet.visible = helmetOn;
+    if (typeof setCharacterProceduralBaseVisible === 'function') {
+      setCharacterProceduralBaseVisible(actor, false);
     }
-    if (Array.isArray(parts.hairMeshes)) parts.hairMeshes.forEach(mesh => { if (mesh) mesh.visible = !helmetOn; });
-    if (parts.boots) parts.boots.visible = true;
-    if (parts.backpack) parts.backpack.visible = backpackOn;
-    if (Array.isArray(parts.packAccessories)) parts.packAccessories.forEach(mesh => { if (mesh) mesh.visible = backpackOn; });
-    ['chestPlate','shoulderL','shoulderR','energyCore','visor','canister','helmetVisor','helmetFront','helmetPodL','helmetPodR','bootL','bootR','leatherTorso','leatherSleeveL','leatherSleeveR','leatherCollarL','leatherCollarR'].forEach(key => { if (parts[key]) parts[key].visible = false; });
-
-    const helmetId = String(equipmentVisualBaseId(eq.helmet) || '');
-    if (helmetOn && parts.helmet) {
-      if (helmetId === 'tacticalHelmet') {
-        parts.helmet.material = mats.darkMetal;
-        if (parts.helmetVisor) parts.helmetVisor.visible = true;
-      } else if (helmetId === 'assaultHelmet') {
-        parts.helmet.material = matsSet.heavy || mats.metal;
-        parts.helmet.scale.set(1.05, parts.modernRig ? 0.76 : 1.05, 1.05);
-        if (parts.helmetFront) parts.helmetFront.visible = true;
-        if (parts.helmetPodL && parts.helmetPodR) { parts.helmetPodL.visible = true; parts.helmetPodR.visible = true; }
-        if (parts.helmetVisor) parts.helmetVisor.visible = true;
-      }
-    }
-
-    const bootsId = String(equipmentVisualBaseId(eq.boots) || '');
-    const serviceScoutBootActive = applyServiceScoutBootVisual(parts, bootsOn ? bootsId : '');
-    if (!serviceScoutBootActive) {
-      if (parts.baseBootL) parts.baseBootL.visible = true;
-      if (parts.baseBootR) parts.baseBootR.visible = true;
-      if (parts.baseGaiterL) parts.baseGaiterL.visible = true;
-      if (parts.baseGaiterR) parts.baseGaiterR.visible = true;
-    }
-    if (bootsOn && parts.bootL && parts.bootR) {
-      parts.bootL.visible = !serviceScoutBootActive;
-      parts.bootR.visible = !serviceScoutBootActive;
-      parts.bootL.scale.set(1, 1, 1);
-      parts.bootR.scale.set(1, 1, 1);
-      if (bootsId === 'scoutBoots') {
-        parts.bootL.material = mats.leaves2 || mats.darkMetal;
-        parts.bootR.material = mats.leaves2 || mats.darkMetal;
-        parts.bootL.scale.set(0.88, 0.8, 1.1);
-        parts.bootR.scale.set(0.88, 0.8, 1.1);
-      } else if (bootsId === 'reinforcedBoots') {
-        parts.bootL.material = matsSet.heavy || mats.darkMetal;
-        parts.bootR.material = matsSet.heavy || mats.darkMetal;
-        parts.bootL.scale.set(1.08, 1.12, 1.05);
-        parts.bootR.scale.set(1.08, 1.12, 1.05);
-      } else {
-        parts.bootL.material = mats.darkMetal;
-        parts.bootR.material = mats.darkMetal;
-      }
-    }
-
-    if (armorId === 'leather') {
-      parts.chest.material = matsSet.leatherJacket || mats.leather;
-      if (parts.body) parts.body.material = matsSet.leatherTrim || mats.leather;
-      if (parts.leatherTorso) parts.leatherTorso.visible = true;
-      if (parts.leatherSleeveL) parts.leatherSleeveL.visible = true;
-      if (parts.leatherSleeveR) parts.leatherSleeveR.visible = true;
-      if (parts.leatherCollarL) parts.leatherCollarL.visible = true;
-      if (parts.leatherCollarR) parts.leatherCollarR.visible = true;
-    } else if (armorId === 'metalArmor') {
-      parts.chest.material = mats.metal;
-      if (parts.chestPlate) { parts.chestPlate.visible = true; parts.chestPlate.material = matsSet.plateDark || mats.darkMetal; }
-      if (parts.shoulderL && parts.shoulderR) { parts.shoulderL.visible = true; parts.shoulderR.visible = true; }
-    } else if (armorId === 'ballisticVest') {
-      if (parts.body) parts.body.material = matsSet.vest || mats.darkMetal;
-      setCharacterArmMaterial(parts, 'L', matsSet.vest || mats.darkMetal);
-      setCharacterArmMaterial(parts, 'R', matsSet.vest || mats.darkMetal);
-      parts.chest.material = matsSet.vest || mats.darkMetal;
-      if (parts.chestPlate) { parts.chestPlate.visible = true; parts.chestPlate.material = matsSet.vest || mats.darkMetal; }
-    } else if (armorId === 'combatArmor') {
-      if (parts.body) parts.body.material = matsSet.combat || mats.metal;
-      parts.chest.material = matsSet.combat || mats.metal;
-      parts.chest.scale.set(1.08, 1.06, 1);
-      if (parts.chestPlate) { parts.chestPlate.visible = true; parts.chestPlate.material = matsSet.plateDark || mats.darkMetal; }
-      if (parts.shoulderL && parts.shoulderR) { parts.shoulderL.visible = true; parts.shoulderR.visible = true; }
-    } else if (armorId === 'hazmatSuit') {
-      if (parts.body) parts.body.material = matsSet.hazmat || mats.cloth;
-      setCharacterArmMaterial(parts, 'L', matsSet.hazmat || mats.cloth);
-      setCharacterArmMaterial(parts, 'R', matsSet.hazmat || mats.cloth);
-      parts.chest.material = matsSet.hazmat || mats.cloth;
-      if (parts.canister) parts.canister.visible = true;
-      if (parts.visor) parts.visor.visible = helmetOn;
-      if (parts.helmet) parts.helmet.material = matsSet.hazmatDark || mats.metal;
-    } else if (armorId === 'heavyArmor') {
-      if (parts.body) parts.body.material = matsSet.heavy || mats.metal;
-      parts.chest.material = matsSet.heavy || mats.metal;
-      parts.chest.scale.set(1.12, 1.1, 1.04);
-      if (parts.chestPlate) { parts.chestPlate.visible = true; parts.chestPlate.scale.set(1.1, 1.12, 1.1); parts.chestPlate.material = matsSet.heavy || mats.metal; }
-      if (parts.shoulderL && parts.shoulderR) { parts.shoulderL.visible = true; parts.shoulderR.visible = true; parts.shoulderL.scale.set(1.25, 1.25, 1.25); parts.shoulderR.scale.set(1.25, 1.25, 1.25); }
-      if (parts.visor) parts.visor.visible = helmetOn;
-    } else if (armorId === 'energySuit') {
-      if (parts.body) parts.body.material = matsSet.energy || mats.metal;
-      setCharacterArmMaterial(parts, 'L', matsSet.energy || mats.metal);
-      setCharacterArmMaterial(parts, 'R', matsSet.energy || mats.metal);
-      parts.chest.material = matsSet.energy || mats.metal;
-      if (parts.chestPlate) { parts.chestPlate.visible = true; parts.chestPlate.material = matsSet.energy || mats.metal; }
-      if (parts.energyCore) parts.energyCore.visible = true;
-      if (parts.visor) parts.visor.visible = helmetOn;
-    }
-
-    if (armorId !== 'heavyArmor' && parts.shoulderL && parts.shoulderR) {
-      parts.shoulderL.scale.set(1, 1, 1);
-      parts.shoulderR.scale.set(1, 1, 1);
-    }
-    if (armorId !== 'heavyArmor' && parts.chestPlate) parts.chestPlate.scale.set(1, 1, 1);
-    if (!['hazmatSuit','energySuit','heavyArmor'].includes(armorId) && parts.visor) parts.visor.visible = false;
-    if (typeof refreshCharacterGlbEquipmentLayers === 'function' && parts.characterRoot) {
-      refreshCharacterGlbEquipmentLayers(parts.characterRoot, eq);
-    }
-  }
-
-  function makePistolMesh() {
-    const g = new THREE.Group();
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.68), mats.darkMetal);
-    barrel.position.z = -0.32;
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.32, 0.16), mats.darkMetal);
-    grip.position.set(0.02, -0.15, 0.04);
-    grip.rotation.x = 0.35;
-    g.add(barrel, grip);
-    return g;
-  }
-
-  function makeRifleMesh() {
-    const g = new THREE.Group();
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.62), mats.leather);
-    stock.position.z = 0.18;
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.1), mats.darkMetal);
-    barrel.position.z = -0.52;
-    const scope = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.36, 8), mats.metal);
-    scope.rotation.z = Math.PI / 2;
-    scope.position.set(0, 0.13, -0.28);
-    g.add(stock, barrel, scope);
-    return g;
-  }
-
-  function makeAssaultRifleMesh() {
-    const g = new THREE.Group();
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.52), mats.leather);
-    stock.position.z = 0.22;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.45), mats.darkMetal);
-    body.position.z = -0.16;
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.8), mats.metal);
-    barrel.position.z = -0.72;
-    const mag = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.34, 0.14), mats.darkMetal);
-    mag.position.set(0, -0.18, -0.08);
-    g.add(stock, body, barrel, mag);
-    return g;
-  }
-
-  function makeKnifeMesh() {
-    const g = new THREE.Group();
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.035, 0.58), mats.metal);
-    blade.position.z = -0.26;
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.07, 0.25), mats.leather);
-    handle.position.z = 0.18;
-    g.add(blade, handle);
-    return g;
-  }
-
-  function makePickaxeMesh() {
-    const g = new THREE.Group();
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.05), mats.leather);
-    handle.position.z = -0.22;
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.08, 0.1), mats.metal);
-    head.position.set(0, 0.04, -0.76);
-    const spikeL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.07, 0.08), mats.metal);
-    spikeL.position.set(-0.44, 0.04, -0.76);
-    spikeL.rotation.y = -0.28;
-    const spikeR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.07, 0.08), mats.metal);
-    spikeR.position.set(0.44, 0.04, -0.76);
-    spikeR.rotation.y = 0.28;
-    g.add(handle, head, spikeL, spikeR);
-    g.rotation.z = -0.2;
-    return g;
-  }
-
-  function makeAxeMesh() {
-    const g = new THREE.Group();
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.95), mats.leather);
-    handle.position.z = -0.18;
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08, 0.28), mats.metal);
-    head.position.set(0.18, 0.04, -0.66);
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.055, 0.38), mats.metal);
-    blade.position.set(0.36, 0.04, -0.66);
-    blade.rotation.y = -0.18;
-    g.add(handle, head, blade);
-    g.rotation.z = 0.16;
-    return g;
-  }
-
-  function makeHandPumpMesh() {
-    const g = new THREE.Group();
-    const tube = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.82), mats.metal);
-    tube.position.z = -0.24;
-    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.08, 0.08), mats.leather);
-    handle.position.set(0, 0.1, -0.58);
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 0.1), mats.leather);
-    grip.position.set(0.32, -0.05, 0.1);
-    const nozzle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.28), mats.darkMetal);
-    nozzle.position.z = -0.78;
-    g.add(tube, handle, grip, nozzle);
-    g.rotation.z = -0.08;
-    return g;
-  }
-
-  function makeMachineGunMesh() {
-    const g = new THREE.Group();
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.5), mats.leather);
-    stock.position.z = 0.28;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.22, 0.7), mats.darkMetal);
-    body.position.z = -0.14;
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 1.05), mats.metal);
-    barrel.position.z = -0.9;
-    const top = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.34), mats.metal);
-    top.position.set(0, 0.12, -0.18);
-    const ammoBox = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.26, 0.2), mats.darkMetal);
-    ammoBox.position.set(0.02, -0.16, -0.12);
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.28, 0.12), mats.leather);
-    grip.position.set(0.02, -0.18, 0.08);
-    g.add(stock, body, barrel, top, ammoBox, grip);
-    return g;
-  }
-
-  function makeLaserPistolMesh() {
-    const g = new THREE.Group();
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.58), mats.darkMetal);
-    frame.position.z = -0.2;
-    const emitter = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.11, 0.22), new THREE.MeshStandardMaterial({ color: 0xff708f, emissive: 0xff2f5b, emissiveIntensity: 0.9, roughness: 0.18, metalness: 0.22 }));
-    emitter.position.z = -0.58;
-    const coil = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.28), new THREE.MeshStandardMaterial({ color: 0x5ec8ff, emissive: 0x2d86ff, emissiveIntensity: 0.8, roughness: 0.15 }));
-    coil.position.set(0, 0.08, -0.14);
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.3, 0.16), mats.darkMetal);
-    grip.position.set(0.02, -0.15, 0.08);
-    grip.rotation.x = 0.35;
-    g.add(frame, emitter, coil, grip);
-    return g;
-  }
-
-  function makeFlamethrowerMesh() {
-    const g = new THREE.Group();
-    const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.6, 10), new THREE.MeshStandardMaterial({ color: 0x6a6c70, roughness: 0.45, metalness: 0.45 }));
-    tank.rotation.x = Math.PI / 2;
-    tank.position.set(0, -0.02, 0.22);
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.78), mats.darkMetal);
-    body.position.z = -0.2;
-    const nozzle = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.38), new THREE.MeshStandardMaterial({ color: 0x6d7780, roughness: 0.34, metalness: 0.5 }));
-    nozzle.position.z = -0.76;
-    const pilot = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.16), new THREE.MeshStandardMaterial({ color: 0xff9234, emissive: 0xff5a00, emissiveIntensity: 1.0 }));
-    pilot.position.z = -0.97;
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.28, 0.14), mats.leather);
-    grip.position.set(0.03, -0.16, 0.02);
-    g.add(tank, body, nozzle, pilot, grip);
-    return g;
-  }
-
-  function makePlasmaRifleMesh() {
-    const g = new THREE.Group();
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.42), mats.darkMetal);
-    stock.position.z = 0.28;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.72), new THREE.MeshStandardMaterial({ color: 0x35505e, roughness: 0.36, metalness: 0.35 }));
-    body.position.z = -0.12;
-    const chamber = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.28), new THREE.MeshStandardMaterial({ color: 0x6df0b1, emissive: 0x17c96f, emissiveIntensity: 1.1, roughness: 0.15 }));
-    chamber.position.set(0, 0.08, -0.18);
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.82), mats.metal);
-    barrel.position.z = -0.82;
-    g.add(stock, body, chamber, barrel);
-    return g;
-  }
-
-  function makeShotgunMesh() {
-    const g = new THREE.Group();
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.48), mats.leather);
-    stock.position.z = 0.26;
-    const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.34), mats.darkMetal);
-    receiver.position.z = -0.02;
-    const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.95), mats.metal);
-    barrel.position.z = -0.74;
-    const pump = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.12, 0.3), mats.leather);
-    pump.position.z = -0.44;
-    g.add(stock, receiver, barrel, pump);
-    return g;
-  }
-
-  function makeRocketLauncherMesh() {
-    const g = new THREE.Group();
-    const tubeMat = new THREE.MeshStandardMaterial({ color: 0x4d5555, roughness: 0.5, metalness: 0.45 });
-    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.25, 14), tubeMat);
-    tube.rotation.x = Math.PI / 2;
-    tube.position.z = -0.35;
-    const rear = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.16, 14), mats.darkMetal);
-    rear.rotation.x = Math.PI / 2;
-    rear.position.z = 0.32;
-    const muzzle = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 0.18, 14), mats.metal);
-    muzzle.rotation.x = Math.PI / 2;
-    muzzle.position.z = -1.02;
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.12), mats.leather);
-    grip.position.set(0.02, -0.2, -0.05);
-    grip.rotation.x = 0.28;
-    const sight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 0.22), mats.darkMetal);
-    sight.position.set(0, 0.15, -0.42);
-    g.add(tube, rear, muzzle, grip, sight);
-    return g;
   }
 
   function makePlayerWeaponMesh(weaponId = '') {
     if (!weaponId || weaponId === 'fists') return null;
-    let mesh = typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(weaponId) : null;
-    if (!mesh && weaponId === 'pistol') mesh = makePistolMesh();
-    else if (!mesh && weaponId === 'rifle') mesh = makeRifleMesh();
-    else if (!mesh && weaponId === 'assaultRifle') mesh = makeAssaultRifleMesh();
-    else if (!mesh && weaponId === 'machineGun') mesh = makeMachineGunMesh();
-    else if (!mesh && weaponId === 'laserPistol') mesh = makeLaserPistolMesh();
-    else if (!mesh && weaponId === 'flamethrower') mesh = makeFlamethrowerMesh();
-    else if (!mesh && weaponId === 'plasmaRifle') mesh = makePlasmaRifleMesh();
-    else if (!mesh && weaponId === 'shotgun') mesh = makeShotgunMesh();
-    else if (!mesh && weaponId === 'rocketLauncher') mesh = makeRocketLauncherMesh();
-    else if (!mesh && weaponId === 'knife') mesh = makeKnifeMesh();
-    else if (!mesh && weaponId === 'pickaxe') mesh = makePickaxeMesh();
-    else if (!mesh && weaponId === 'axe') mesh = makeAxeMesh();
-    else if (!mesh && weaponId === 'handPump') mesh = makeHandPumpMesh();
-    return mesh;
+    return typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(weaponId) : null;
   }
 
   function updatePlayerEquipmentVisuals() {
@@ -1508,12 +976,27 @@
       [playerParts.offhandWeaponGroup, leftWeaponId, 'offhand']
     ].forEach(([weaponGroup, slotWeaponId, handSlot]) => {
       if (!weaponGroup) return;
+      if (typeof cancelWeaponGlbForGroup === 'function') cancelWeaponGlbForGroup(weaponGroup);
       weaponGroup.clear();
+      weaponGroup.userData.weaponGlbRequestId = Number(weaponGroup.userData.weaponGlbRequestId || 0) + 1;
       initWeaponVisualState(weaponGroup);
       weaponGroup.userData.handSlot = handSlot;
       weaponGroup.userData.weaponId = slotWeaponId || 'fists';
       const mesh = makePlayerWeaponMesh(slotWeaponId);
+      if (typeof setWeaponGlbGroupVisibility === 'function') {
+        setWeaponGlbGroupVisibility(weaponGroup, !!mesh);
+      } else weaponGroup.visible = !!mesh;
       if (mesh) weaponGroup.add(mesh);
+      else if (slotWeaponId && slotWeaponId !== 'fists' && typeof requestWeaponGlbForGroup === 'function') {
+        requestWeaponGlbForGroup(weaponGroup, slotWeaponId, {
+          onReady() {
+            stabilizeCharacterNoCull(playerGroup);
+            if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+              invalidateModernProceduralRigAnimationCache(playerGroup, playerParts);
+            }
+          }
+        });
+      }
     });
     stabilizeCharacterNoCull(playerGroup);
 

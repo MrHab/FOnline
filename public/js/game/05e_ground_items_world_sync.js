@@ -10,42 +10,75 @@
   const groundItemModelState = {
     library: null,
     libraryPromise: null,
-    libraryFailed: false,
+    libraryFailureCount: 0,
+    libraryNextRetryAt: 0,
     requestCounter: 0
   };
+  const GROUND_ITEM_GLB_FLIGHT_RETRY_DELAYS_MS = Object.freeze([450, 1_200, 2_800]);
+  const GROUND_ITEM_GLB_RETRY_COOLDOWN_MS = 8_000;
+  const GROUND_ITEM_GLB_OWNER_RETRY_MAX_DELAY_MS = 30_000;
 
   function loadGroundItemLibrary() {
     if (groundItemModelState.library) return Promise.resolve(groundItemModelState.library);
     if (groundItemModelState.libraryPromise) return groundItemModelState.libraryPromise;
-    if (groundItemModelState.libraryFailed || !THREE.GLTFLoader) return Promise.resolve(null);
+    if (!THREE.GLTFLoader) return Promise.resolve(null);
     groundItemModelState.libraryPromise = new Promise(resolve => {
-      const loader = new THREE.GLTFLoader();
-      loader.load(
-        `${GROUND_ITEM_LIBRARY_URL}?v=${encodeURIComponent(GROUND_ITEM_MODEL_ASSET_VERSION)}`,
-        gltf => {
+      let flightAttempt = 0;
+      const finishFailure = error => {
+        groundItemModelState.libraryFailureCount += 1;
+        const retryIndex = Math.min(flightAttempt, GROUND_ITEM_GLB_FLIGHT_RETRY_DELAYS_MS.length - 1);
+        const retryDelay = GROUND_ITEM_GLB_FLIGHT_RETRY_DELAYS_MS[retryIndex];
+        groundItemModelState.libraryNextRetryAt = Date.now() + retryDelay;
+        if (flightAttempt < GROUND_ITEM_GLB_FLIGHT_RETRY_DELAYS_MS.length - 1) {
+          flightAttempt += 1;
+          setTimeout(runAttempt, retryDelay);
+          return;
+        }
+        groundItemModelState.libraryNextRetryAt = Date.now() + GROUND_ITEM_GLB_RETRY_COOLDOWN_MS;
+        console.warn('Не удалось загрузить библиотеку физических предметов; GLB появятся после retry.', error);
+        resolve(null);
+      };
+      const runAttempt = () => {
+        const loader = THREE.GLTFLoader ? new THREE.GLTFLoader() : null;
+        if (!loader) {
+          finishFailure(new Error('THREE.GLTFLoader is unavailable'));
+          return;
+        }
+        loader.load(`${GROUND_ITEM_LIBRARY_URL}?v=${encodeURIComponent(GROUND_ITEM_MODEL_ASSET_VERSION)}`, gltf => {
           const sceneRoot = gltf?.scene || gltf?.scenes?.[0] || null;
           const complete = sceneRoot && [...GROUND_ITEM_LIBRARY_IDS].every(id => (
             !!sceneRoot.getObjectByName?.(`ground_item_${id}`)
           ));
           if (!complete) {
-            groundItemModelState.libraryFailed = true;
-            console.warn('Библиотека физических предметов не содержит полный набор моделей.');
-            resolve(null);
+            finishFailure(new Error('Библиотека физических предметов не содержит полный набор моделей'));
             return;
           }
           prepareStaticModelObject(sceneRoot);
           groundItemModelState.library = sceneRoot;
+          groundItemModelState.libraryFailureCount = 0;
+          groundItemModelState.libraryNextRetryAt = 0;
           resolve(sceneRoot);
-        },
-        undefined,
-        error => {
-          groundItemModelState.libraryFailed = true;
-          console.warn('Не удалось загрузить библиотеку физических предметов.', error);
-          resolve(null);
-        }
-      );
+        }, undefined, finishFailure);
+      };
+      const initialDelay = Math.max(0, groundItemModelState.libraryNextRetryAt - Date.now());
+      if (initialDelay > 0) setTimeout(runAttempt, initialDelay);
+      else runAttempt();
     }).finally(() => { groundItemModelState.libraryPromise = null; });
     return groundItemModelState.libraryPromise;
+  }
+
+  function pendingGroundItemGlbAssetSnapshot() {
+    const pending = groundItemModelState.libraryPromise;
+    const retryScheduled = !groundItemModelState.library
+      && groundItemModelState.libraryFailureCount > 0
+      && groundItemModelState.libraryNextRetryAt > Date.now();
+    return {
+      revision: groundItemModelState.requestCounter + groundItemModelState.libraryFailureCount,
+      promises: pending ? [pending] : [],
+      activeCount: pending ? 1 : 0,
+      unresolvedCount: (pending || retryScheduled) ? 1 : 0,
+      retryScheduledCount: retryScheduled ? 1 : 0
+    };
   }
 
   function groundItemModelKind(itemId = '') {
@@ -120,48 +153,61 @@
     return bounds;
   }
 
-  function removeGroundItemFallback(group) {
-    const fallback = group?.userData?.groundItemFallback;
-    if (!fallback) return;
-    fallback.geometry?.dispose?.();
-    fallback.material?.dispose?.();
-    fallback.parent?.remove?.(fallback);
-    group.userData.groundItemFallback = null;
-  }
-
   function requestGroundItemPhysicalModel(group, itemId = '') {
     const kind = groundItemModelKind(itemId);
     if (!group || !kind) return;
     const requestId = ++groundItemModelState.requestCounter;
+    clearTimeout(group.userData.groundItemModelRetryTimer || 0);
+    group.userData.groundItemModelRetryTimer = 0;
     group.userData.groundItemModelRequestId = requestId;
-    loadGroundItemPhysicalModel(itemId).then(model => {
-      if (
-        !model
-        || group.userData.groundItemModelActive === false
-        || group.userData.groundItemModelRequestId !== requestId
-      ) return;
-      const bounds = fitGroundItemPhysicalModel(model, itemId, kind);
-      if (!bounds) return;
-      removeGroundItemFallback(group);
-      group.add(model);
-      group.userData.groundItemPhysicalModel = model;
-      const row = group.userData.groundItem;
-      model.traverse(child => { child.userData.groundItem = row; });
-      const size = bounds.getSize(new THREE.Vector3());
-      const shadow = group.userData.groundItemShadow;
-      if (shadow) {
-        shadow.scale.set(
-          Math.max(0.48, size.x / 0.76),
-          Math.max(0.42, size.z / 0.76),
-          1
-        );
-      }
-    });
+    const tryLoad = retryRound => {
+      loadGroundItemPhysicalModel(itemId).then(model => {
+        if (
+          group.userData.groundItemModelActive === false
+          || group.userData.groundItemModelRequestId !== requestId
+        ) return;
+        const bounds = model ? fitGroundItemPhysicalModel(model, itemId, kind) : null;
+        if (!model || !bounds) {
+          const retryDelay = Math.min(
+            GROUND_ITEM_GLB_OWNER_RETRY_MAX_DELAY_MS,
+            900 * (2 ** Math.min(5, retryRound))
+          );
+          group.userData.groundItemModelRetryTimer = setTimeout(() => {
+            group.userData.groundItemModelRetryTimer = 0;
+            if (
+              group.userData.groundItemModelActive !== false
+              && group.userData.groundItemModelRequestId === requestId
+            ) tryLoad(retryRound + 1);
+          }, retryDelay);
+          return;
+        }
+        clearTimeout(group.userData.groundItemModelRetryTimer || 0);
+        group.userData.groundItemModelRetryTimer = 0;
+        group.add(model);
+        group.userData.groundItemPhysicalModel = model;
+        const row = group.userData.groundItem;
+        model.traverse(child => { child.userData.groundItem = row; });
+        const size = bounds.getSize(new THREE.Vector3());
+        const shadow = group.userData.groundItemShadow;
+        if (shadow) {
+          shadow.scale.set(
+            Math.max(0.48, size.x / 0.76),
+            Math.max(0.42, size.z / 0.76),
+            1
+          );
+        }
+      });
+    };
+    tryLoad(0);
   }
 
   function clearGroundItemsVisuals() {
     multiplayer.groundItemMeshes.forEach(mesh => {
-      if (mesh?.userData) mesh.userData.groundItemModelActive = false;
+      if (mesh?.userData) {
+        mesh.userData.groundItemModelActive = false;
+        clearTimeout(mesh.userData.groundItemModelRetryTimer || 0);
+        mesh.userData.groundItemModelRetryTimer = 0;
+      }
       forgetNetworkRevealObject(mesh);
       try { scene.remove(mesh); } catch (_) {}
     });
@@ -180,25 +226,8 @@
     group.userData.groundItemShadow = shadow;
     group.userData.groundItemModelActive = true;
 
-    const colorByType = {
-      weapon: 0x7e6b4f,
-      armor: 0x5f6b63,
-      ammo: 0x5d5d54,
-      consumable: 0x6b3150,
-      material: 0x6d5734,
-      money: 0xc8a846,
-      loot: 0x7d5ec5,
-      tool: 0x7e613d,
-      misc: 0x5c6d75
-    };
-    const mat = new THREE.MeshStandardMaterial({ color: colorByType[item.type] || colorByType.misc, roughness: 0.82, metalness: item.type === 'money' || item.type === 'ammo' ? 0.35 : 0.05 });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.18, 0.42), mat);
-    body.position.y = 0.12;
-    body.rotation.y = 0.65;
-    body.castShadow = true;
-    group.add(body);
-    group.userData.groundItemFallback = body;
-
+    // Physical loot is GLB-only. Keep the holder empty until the authored
+    // model is ready instead of flashing an old generated box into the world.
     requestGroundItemPhysicalModel(group, itemId);
 
     // Предметы на земле тоже без надписей над объектом.
@@ -211,7 +240,11 @@
     if (!row) return;
     const idx = multiplayer.groundItemMeshes.indexOf(row.mesh);
     if (idx >= 0) multiplayer.groundItemMeshes.splice(idx, 1);
-    if (row.mesh?.userData) row.mesh.userData.groundItemModelActive = false;
+    if (row.mesh?.userData) {
+      row.mesh.userData.groundItemModelActive = false;
+      clearTimeout(row.mesh.userData.groundItemModelRetryTimer || 0);
+      row.mesh.userData.groundItemModelRetryTimer = 0;
+    }
     forgetNetworkRevealObject(row.mesh);
     if (row.mesh) scene.remove(row.mesh);
     multiplayer.groundItems.delete(id);
@@ -236,6 +269,8 @@
       row.z = Number(src.z ?? row.z ?? 0);
       if (row.mesh && previousItemId !== row.itemId) {
         row.mesh.userData.groundItemModelActive = false;
+        clearTimeout(row.mesh.userData.groundItemModelRetryTimer || 0);
+        row.mesh.userData.groundItemModelRetryTimer = 0;
         forgetNetworkRevealObject(row.mesh);
         scene.remove(row.mesh);
         const idx = multiplayer.groundItemMeshes.indexOf(row.mesh);
@@ -381,22 +416,52 @@
   const enemyMeshes = [];
   const networkEnemyById = new Map();
   const ENEMY_TYPES = [
-    { name: 'Рейдер', hp: 55, atk: 9, speed: 2.45, xp: 25, scale: 1.0, visual: 'raider' },
-    { name: 'Гуль', hp: 42, atk: 7, speed: 2.85, xp: 18, scale: 0.92, visual: 'ghoul' },
-    { name: 'Супермутант', hp: 120, atk: 18, speed: 1.75, xp: 70, scale: 1.32, visual: 'mutant' },
-    { name: 'Пепельный волк', hp: 36, atk: 8, speed: 3.15, xp: 20, scale: 0.82, visual: 'wolf' },
-    { name: 'Радскорпион', hp: 76, atk: 14, speed: 1.9, xp: 36, scale: 1.05, visual: 'radscorpion' },
-    { name: 'Большой мутировавший муравей', hp: 52, atk: 10, speed: 2.55, xp: 24, scale: 0.9, visual: 'mutantAnt' },
-    { name: 'Геккон пустоши', hp: 46, atk: 9, speed: 2.7, xp: 22, scale: 0.92, visual: 'gecko' },
-    { name: 'Огненный геккон', hp: 62, atk: 12, speed: 2.42, xp: 34, scale: 1.02, visual: 'fireGecko' }
+    { name: 'Рейдер', hp: 55, atk: 9, speed: 2.45, xp: 25, scale: 1.0, visual: 'raider', modelKey: 'enemyRaider' },
+    { name: 'Гуль', hp: 42, atk: 7, speed: 2.85, xp: 18, scale: 0.92, visual: 'ghoul', modelKey: 'enemyGhoul' },
+    { name: 'Супермутант', hp: 120, atk: 18, speed: 1.75, xp: 70, scale: 1.32, visual: 'mutant', modelKey: 'enemySuperMutant' },
+    { name: 'Пепельный волк', hp: 36, atk: 8, speed: 3.15, xp: 20, scale: 0.82, visual: 'wolf', modelKey: 'enemyAshWolf' },
+    { name: 'Радскорпион', hp: 76, atk: 14, speed: 1.9, xp: 36, scale: 1.05, visual: 'radscorpion', modelKey: 'enemyRadscorpion' },
+    { name: 'Большой мутировавший муравей', hp: 52, atk: 10, speed: 2.55, xp: 24, scale: 0.9, visual: 'mutantAnt', modelKey: 'enemyMutantAnt' },
+    { name: 'Геккон пустоши', hp: 46, atk: 9, speed: 2.7, xp: 22, scale: 0.92, visual: 'gecko', modelKey: 'enemyGecko' },
+    { name: 'Огненный геккон', hp: 62, atk: 12, speed: 2.42, xp: 34, scale: 1.02, visual: 'fireGecko', modelKey: 'enemyFireGecko' }
   ];
 
-  function enemyVisualFromNetworkSnapshot(saved = {}, fallback = '') {
-    const explicit = String(saved.visual || saved.species || saved.modelKey || '').trim();
-    if (explicit) return explicit;
+  const ENEMY_GLB_IDENTITY_BY_TOKEN = Object.freeze({
+    raider: { visual: 'raider', modelKey: 'enemyRaider' },
+    enemyraider: { visual: 'raider', modelKey: 'enemyRaider' },
+    ghoul: { visual: 'ghoul', modelKey: 'enemyGhoul' },
+    enemyghoul: { visual: 'ghoul', modelKey: 'enemyGhoul' },
+    mutant: { visual: 'mutant', modelKey: 'enemySuperMutant' },
+    supermutant: { visual: 'mutant', modelKey: 'enemySuperMutant' },
+    enemysupermutant: { visual: 'mutant', modelKey: 'enemySuperMutant' },
+    wolf: { visual: 'wolf', modelKey: 'enemyAshWolf' },
+    ashwolf: { visual: 'wolf', modelKey: 'enemyAshWolf' },
+    enemyashwolf: { visual: 'wolf', modelKey: 'enemyAshWolf' },
+    radscorpion: { visual: 'radscorpion', modelKey: 'enemyRadscorpion' },
+    enemyradscorpion: { visual: 'radscorpion', modelKey: 'enemyRadscorpion' },
+    mutantant: { visual: 'mutantAnt', modelKey: 'enemyMutantAnt' },
+    enemymutantant: { visual: 'mutantAnt', modelKey: 'enemyMutantAnt' },
+    gecko: { visual: 'gecko', modelKey: 'enemyGecko' },
+    enemygecko: { visual: 'gecko', modelKey: 'enemyGecko' },
+    firegecko: { visual: 'fireGecko', modelKey: 'enemyFireGecko' },
+    enemyfiregecko: { visual: 'fireGecko', modelKey: 'enemyFireGecko' },
+    brahmin: { visual: 'brahmin', modelKey: 'friendlyBrahmin' },
+    friendlybrahmin: { visual: 'brahmin', modelKey: 'friendlyBrahmin' }
+  });
+
+  function enemyGlbIdentityFromValue(value = '') {
+    const token = String(value || '').replace(/[^a-zA-Z0-9]+/g, '').toLowerCase();
+    return token ? (ENEMY_GLB_IDENTITY_BY_TOKEN[token] || null) : null;
+  }
+
+  function enemyGlbIdentityFromText(saved = {}) {
     const text = [
       saved.name,
       saved.typeName,
+      saved.visual,
+      saved.species,
+      saved.modelKey,
+      saved.model,
       saved.role,
       saved.encounterRole,
       saved.profile,
@@ -405,13 +470,42 @@
       saved.lootProfile
     ].map(value => String(value || '')).join(' ').toLowerCase();
     const compact = text.replace(/[^a-z0-9]+/g, '');
-    if (compact.includes('brahmin') || text.includes('брамин')) return 'brahmin';
-    if (compact.includes('radscorpion') || text.includes('скорпион')) return 'radscorpion';
-    if (compact.includes('mutantant') || text.includes('мурав')) return 'mutantAnt';
-    if (compact.includes('firegecko') || (text.includes('огненн') && text.includes('геккон'))) return 'fireGecko';
-    if (compact.includes('gecko') || text.includes('геккон')) return 'gecko';
-    if (compact.includes('ashwolf') || text.includes('wolf') || text.includes('волк')) return 'wolf';
-    return fallback || '';
+    if (compact.includes('firegecko') || (text.includes('огнен') && text.includes('геккон'))) return ENEMY_GLB_IDENTITY_BY_TOKEN.firegecko;
+    if (compact.includes('radscorpion') || text.includes('скорпион')) return ENEMY_GLB_IDENTITY_BY_TOKEN.radscorpion;
+    if (compact.includes('mutantant') || text.includes('мурав')) return ENEMY_GLB_IDENTITY_BY_TOKEN.mutantant;
+    if (compact.includes('ashwolf') || text.includes('wolf') || text.includes('волк')) return ENEMY_GLB_IDENTITY_BY_TOKEN.ashwolf;
+    if (compact.includes('brahmin') || text.includes('брамин') || String(saved.role || saved.encounterRole || '').toLowerCase() === 'animal') return ENEMY_GLB_IDENTITY_BY_TOKEN.brahmin;
+    if (compact.includes('supermutant') || text.includes('супермутант')) return ENEMY_GLB_IDENTITY_BY_TOKEN.supermutant;
+    if (compact.includes('ghoul') || text.includes('гул')) return ENEMY_GLB_IDENTITY_BY_TOKEN.ghoul;
+    if (compact.includes('gecko') || text.includes('геккон')) return ENEMY_GLB_IDENTITY_BY_TOKEN.gecko;
+    if (compact.includes('raider') || text.includes('рейдер')) return ENEMY_GLB_IDENTITY_BY_TOKEN.raider;
+    return null;
+  }
+
+  function enemyGlbModelKeyFromSnapshot(saved = {}, fallbackVisual = '') {
+    const explicit = String(saved.modelKey || saved.model || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+    const explicitIdentity = enemyGlbIdentityFromValue(explicit);
+    if (explicitIdentity) return explicitIdentity.modelKey;
+    if (explicit && typeof STATIC_MODEL_URLS !== 'undefined' && STATIC_MODEL_URLS[explicit]) return explicit;
+    const candidates = [saved.visual, saved.species];
+    for (const candidate of candidates) {
+      const identity = enemyGlbIdentityFromValue(candidate);
+      if (identity) return identity.modelKey;
+    }
+    const inferred = enemyGlbIdentityFromText(saved);
+    if (inferred) return inferred.modelKey;
+    return enemyGlbIdentityFromValue(fallbackVisual)?.modelKey || '';
+  }
+
+  function enemyVisualFromNetworkSnapshot(saved = {}, fallback = '') {
+    for (const candidate of [saved.visual, saved.species, saved.modelKey, saved.model]) {
+      const identity = enemyGlbIdentityFromValue(candidate);
+      if (identity) return identity.visual;
+    }
+    const inferred = enemyGlbIdentityFromText(saved);
+    if (inferred) return inferred.visual;
+    const fallbackIdentity = enemyGlbIdentityFromValue(fallback);
+    return fallbackIdentity?.visual || String(saved.visual || saved.species || fallback || '').trim();
   }
 
   function enemyTypeFromNetworkSnapshot(saved = {}) {
@@ -429,7 +523,7 @@
       xp: Number.isFinite(Number(saved.xp)) ? Number(saved.xp) : base.xp,
       scale: Number.isFinite(Number(saved.scale)) && Number(saved.scale) > 0 ? Number(saved.scale) : (visual === 'brahmin' ? 1.08 : base.scale),
       visual,
-      modelKey: saved.modelKey || '',
+      modelKey: enemyGlbModelKeyFromSnapshot(saved, visual || base.visual) || base.modelKey || '',
       species: saved.species || (visual === 'brahmin' ? 'brahmin' : ''),
       variantId: saved.variantId || 'normal',
       variantName: saved.variantName || ''
@@ -812,6 +906,7 @@
     if (enemy.id && networkEnemyById.get(String(enemy.id)) === enemy) networkEnemyById.delete(String(enemy.id));
     const midx = enemyMeshes.indexOf(enemy.mesh);
     if (midx >= 0) enemyMeshes.splice(midx, 1);
+    if (typeof cancelActorGlbVisualRequests === 'function') cancelActorGlbVisualRequests(enemy.mesh);
     forgetNetworkRevealObject(enemy.mesh);
     if (enemy.mesh) scene.remove(enemy.mesh);
   }
@@ -1322,12 +1417,14 @@
     } else if (currentLocation.id === 'settlement' && !clientLocationConfigLoaded) {
       createSettlementProps();
     } else {
-      const camp = new THREE.Group();
-      const fireBase = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.12, 16), new THREE.MeshStandardMaterial({ color: 0x332418, roughness: 0.8 }));
-      fireBase.position.set(-2.6, 0.06, 2.2);
-      camp.add(fireBase);
+      const camp = typeof makeStaticModelGroup === 'function'
+        ? makeStaticModelGroup('campfireRest', -2.6, 2.2, 0, 'campfire-rest-area', {
+            castShadow: true,
+            receiveShadow: true
+          })
+        : new THREE.Group();
       const glow = new THREE.PointLight(0xffa64a, 1.8, 9, 2.2);
-      glow.position.set(-2.6, 1.1, 2.2);
+      glow.position.set(0, 1.1, 0);
       camp.add(glow);
       worldGroup.add(camp);
     }

@@ -17,14 +17,9 @@
     ]
   };
   const CHARACTER_HAIR_OPTIONS = [
-    { id: 'shaved', label: 'Без волос' },
-    { id: 'short_crop', label: 'Короткая' },
-    { id: 'side_swept', label: 'Набок' },
-    { id: 'mohawk', label: 'Ирокез' },
-    { id: 'braids', label: 'Косы' },
-    { id: 'tied_back', label: 'Собранная' },
-    { id: 'long', label: 'Длинная' },
-    { id: 'buns', label: 'Два пучка' }
+    { id: 'shaved', label: 'Без волос', sexes: ['female', 'male'] },
+    { id: 'short_crop', label: 'Короткая', sexes: ['male'] },
+    { id: 'tied_back', label: 'Собранная', sexes: ['female'] }
   ];
   const CHARACTER_HAIR_COLOR_OPTIONS = [
     { id: 'hair_01', label: 'Чёрный', hex: '#1A1512' },
@@ -103,6 +98,11 @@
     return options.find(option => option.id === id) || options[0] || null;
   }
 
+  function characterHairOptionsForSex(sex = 'male') {
+    const normalizedSex = CHARACTER_SEXES.includes(String(sex || '')) ? String(sex) : 'male';
+    return CHARACTER_HAIR_OPTIONS.filter(option => option.sexes.includes(normalizedSex));
+  }
+
   function normalizeCharacterAppearance(input = {}) {
     const sex = CHARACTER_SEXES.includes(String(input?.sex || ''))
       ? String(input.sex)
@@ -115,7 +115,8 @@
     const faceId = faceOptions.some(option => option.id === String(input?.faceId || ''))
       ? String(input.faceId)
       : defaults.faceId;
-    const hairId = CHARACTER_HAIR_OPTIONS.some(option => option.id === String(input?.hairId || ''))
+    const hairOptions = characterHairOptionsForSex(sex);
+    const hairId = hairOptions.some(option => option.id === String(input?.hairId || ''))
       ? String(input.hairId)
       : defaults.hairId;
     const hairColorId = CHARACTER_HAIR_COLOR_OPTIONS.some(option => option.id === String(input?.hairColorId || ''))
@@ -138,7 +139,7 @@
   function characterAppearanceLabel(input = {}) {
     const appearance = normalizeCharacterAppearance(input);
     const face = characterAppearanceOption(CHARACTER_FACE_OPTIONS[appearance.sex], appearance.faceId);
-    const hair = characterAppearanceOption(CHARACTER_HAIR_OPTIONS, appearance.hairId);
+    const hair = characterAppearanceOption(characterHairOptionsForSex(appearance.sex), appearance.hairId);
     const hairColor = characterAppearanceOption(CHARACTER_HAIR_COLOR_OPTIONS, appearance.hairColorId);
     return [
       CHARACTER_SEX_LABELS[appearance.sex],
@@ -149,8 +150,23 @@
     ].join(' · ');
   }
 
+  // Content fingerprints come from the deterministic character manifest. They
+  // keep the long-lived production cache safe when a body GLB is regenerated
+  // under the same canonical filename.
+  const CHARACTER_GLB_ASSET_VERSIONS = Object.freeze({
+    female_slim: '7b93c9b064f41116',
+    female_medium: 'f8cf08e4c8cdc20d',
+    female_large: '8da5199fbfea9683',
+    male_slim: 'dbdbf0e4cdbc1f4b',
+    male_medium: '55b8394edc670092',
+    male_large: '7b9b70759f25bfed'
+  });
+
   function characterModelUrl(input = {}) {
-    return `/assets/models/characters/base/character_${characterAppearanceKey(input)}.glb`;
+    const key = characterAppearanceKey(input);
+    const baseUrl = `/assets/models/characters/base/character_${key}.glb`;
+    const version = CHARACTER_GLB_ASSET_VERSIONS[key] || 'character-glb-v1';
+    return `${baseUrl}?v=${encodeURIComponent(version)}`;
   }
 
   function characterGlbLoader() {
@@ -163,6 +179,10 @@
   // skeleton, while geometry, textures and animation clips are shared. Material
   // wrappers stay per-instance because hit flashes and reveal fading mutate them.
   const characterGlbTemplateCache = new Map();
+  const CHARACTER_GLB_FLIGHT_RETRY_DELAYS_MS = Object.freeze([450, 1_200, 2_800]);
+  const CHARACTER_GLB_RETRY_COOLDOWN_MS = 8_000;
+  const CHARACTER_GLB_ACTOR_RETRY_MAX_DELAY_MS = 30_000;
+  let characterGlbLoadRevision = 0;
 
   function markCharacterGlbMaterialTexturesShared(material) {
     if (!material || typeof material !== 'object') return;
@@ -268,29 +288,64 @@
     const key = characterAppearanceKey(appearance);
     let state = characterGlbTemplateCache.get(key);
     if (!state) {
-      state = { key, source: null, animations: [], promise: null, failed: false };
+      state = {
+        key,
+        source: null,
+        animations: [],
+        promise: null,
+        failureCount: 0,
+        nextRetryAt: 0
+      };
       characterGlbTemplateCache.set(key, state);
     }
     if (state.source) return Promise.resolve(state);
     if (state.promise) return state.promise;
     const loader = characterGlbLoader();
-    if (!loader || state.failed) return Promise.resolve(null);
+    if (!loader) return Promise.resolve(null);
     state.promise = new Promise(resolve => {
-      loader.load(characterModelUrl(appearance), gltf => {
-        const source = gltf?.scene || gltf?.scenes?.[0] || null;
-        if (!source) {
-          state.failed = true;
-          resolve(null);
+      let flightAttempt = 0;
+      const finishFailure = error => {
+        characterGlbLoadRevision += 1;
+        state.failureCount = Math.max(0, Number(state.failureCount || 0)) + 1;
+        const retryIndex = Math.min(
+          flightAttempt,
+          CHARACTER_GLB_FLIGHT_RETRY_DELAYS_MS.length - 1
+        );
+        const retryDelay = CHARACTER_GLB_FLIGHT_RETRY_DELAYS_MS[retryIndex];
+        state.nextRetryAt = Date.now() + retryDelay;
+        if (flightAttempt < CHARACTER_GLB_FLIGHT_RETRY_DELAYS_MS.length - 1) {
+          flightAttempt += 1;
+          setTimeout(runAttempt, retryDelay);
           return;
         }
-        state.source = markCharacterGlbTemplateShared(source);
-        state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];
-        resolve(state);
-      }, undefined, error => {
-        state.failed = true;
-        console.warn(`Character model failed to load (${key}):`, error);
+        state.nextRetryAt = Date.now() + CHARACTER_GLB_RETRY_COOLDOWN_MS;
+        console.warn(`Character model failed to load (${key}); GLB-only actor stays hidden until retry.`, error);
         resolve(null);
-      });
+      };
+      const runAttempt = () => {
+        const activeLoader = characterGlbLoader();
+        if (!activeLoader) {
+          finishFailure(new Error('THREE.GLTFLoader is unavailable'));
+          return;
+        }
+        characterGlbLoadRevision += 1;
+        activeLoader.load(characterModelUrl(appearance), gltf => {
+          const source = gltf?.scene || gltf?.scenes?.[0] || null;
+          if (!source) {
+            finishFailure(new Error('GLB has no runtime scene'));
+            return;
+          }
+          state.source = markCharacterGlbTemplateShared(source);
+          state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];
+          state.failureCount = 0;
+          state.nextRetryAt = 0;
+          characterGlbLoadRevision += 1;
+          resolve(state);
+        }, undefined, finishFailure);
+      };
+      const initialDelay = Math.max(0, Number(state.nextRetryAt || 0) - Date.now());
+      if (initialDelay > 0) setTimeout(runAttempt, initialDelay);
+      else runAttempt();
     }).finally(() => {
       state.promise = null;
     });
@@ -299,6 +354,34 @@
 
   function preloadCharacterAppearanceAsset(input = {}) {
     return loadCharacterGlbTemplate(input).then(template => !!template?.source);
+  }
+
+  function pendingCharacterGlbAssetSnapshot() {
+    const states = Array.from(characterGlbTemplateCache.values());
+    const activeStates = states.filter(state => !!state?.promise);
+    const promises = Array.from(new Set(activeStates.map(state => state.promise)));
+    const failedStates = states.filter(state => (
+      !state?.source
+      && !state?.promise
+      && Number(state?.failureCount || 0) > 0
+    ));
+    return {
+      revision: characterGlbLoadRevision,
+      promises,
+      activeCount: activeStates.length,
+      unresolvedCount: activeStates.length + failedStates.length,
+      retryScheduledCount: failedStates.length
+    };
+  }
+
+  function waitForPendingCharacterGlbAssets(options = {}) {
+    if (typeof waitForGlbAssetQuiescence === 'function') {
+      return waitForGlbAssetQuiescence(pendingCharacterGlbAssetSnapshot, options);
+    }
+    const snapshot = pendingCharacterGlbAssetSnapshot();
+    if (!snapshot.promises.length) return Promise.resolve(snapshot.unresolvedCount === 0);
+    return Promise.allSettled(snapshot.promises)
+      .then(() => pendingCharacterGlbAssetSnapshot().unresolvedCount === 0);
   }
 
   function characterModelMaterials(root, callback) {
@@ -453,53 +536,6 @@
     return root;
   }
 
-  function characterVariantMaterial(color, options = {}) {
-    const materialColor = new THREE.Color(color);
-    materialColor.convertSRGBToLinear?.();
-    return new THREE.MeshStandardMaterial({
-      color: materialColor,
-      roughness: options.roughness ?? 0.9,
-      metalness: 0,
-      flatShading: true,
-      transparent: !!options.transparent,
-      opacity: options.opacity ?? 1,
-      depthWrite: options.depthWrite !== false
-    });
-  }
-
-  function characterHeadRestMatrix(root) {
-    const head = root?.getObjectByName?.('head');
-    if (!head) return null;
-    const saved = head.userData?.characterAppearanceRestMatrix;
-    if (Array.isArray(saved) && saved.length === 16) {
-      return new THREE.Matrix4().fromArray(saved);
-    }
-    root.updateMatrixWorld(true);
-    const rootInverse = new THREE.Matrix4().copy(root.matrixWorld).invert();
-    const restMatrix = rootInverse.multiply(head.matrixWorld);
-    head.userData.characterAppearanceRestMatrix = restMatrix.toArray();
-    return restMatrix;
-  }
-
-  function attachCharacterVariantToHead(root, group, appearance = {}) {
-    if (!root || !group) return;
-    const head = root.getObjectByName?.('head');
-    const restMatrix = characterHeadRestMatrix(root);
-    if (!head || !restMatrix) {
-      root.add(group);
-      root.updateMatrixWorld(true);
-      return;
-    }
-    const factors = characterFaceFitProfile(appearance).headScale;
-    const fittedRestMatrix = restMatrix.clone().multiply(
-      new THREE.Matrix4().makeScale(factors[0], factors[1], factors[2])
-    );
-    const attachmentMatrix = fittedRestMatrix.invert();
-    head.add(group);
-    attachmentMatrix.decompose(group.position, group.quaternion, group.scale);
-    group.updateMatrixWorld(true);
-  }
-
   function characterFaceFitProfile(input = {}) {
     const appearance = normalizeCharacterAppearance(input);
     const profileId = String(appearance.faceId || '').slice(-2);
@@ -510,207 +546,6 @@
       top: head.top + profile.topOffset,
       centerZ: head.centerZ
     };
-  }
-
-  function characterHairPoint(fit, x, y, z) {
-    const baseTop = CHARACTER_HEAD_FIT.female.top;
-    const baseCenterZ = CHARACTER_HEAD_FIT.female.centerZ;
-    return [
-      x * fit.scalpScale[0],
-      y + (fit.top - baseTop),
-      fit.centerZ + (z - baseCenterZ) * fit.scalpScale[1]
-    ];
-  }
-
-  function addCharacterScalpCap(group, material, style, fit) {
-    const centerY = fit.top - 0.084;
-    const radiusX = 0.0947 * fit.scalpScale[0];
-    const radiusY = 0.11;
-    const radiusZ = 0.118 * fit.scalpScale[1];
-    const segments = 14;
-    const rings = 6;
-    const positions = [0, centerY + radiusY, fit.centerZ];
-    const indices = [];
-    for (let ring = 1; ring <= rings; ring += 1) {
-      const fraction = ring / rings;
-      for (let segment = 0; segment < segments; segment += 1) {
-        const phi = Math.PI * 2 * segment / segments;
-        const directionZ = Math.sin(phi);
-        let thetaMax = directionZ < -0.45 ? 1.04 : (directionZ > 0.45 ? 1.58 : 1.18);
-        if (style === 'short_crop') thetaMax -= 0.1;
-        const theta = thetaMax * fraction;
-        positions.push(
-          Math.cos(phi) * Math.sin(theta) * radiusX,
-          centerY + Math.cos(theta) * radiusY,
-          fit.centerZ - Math.sin(phi) * Math.sin(theta) * radiusZ
-        );
-      }
-    }
-    for (let segment = 0; segment < segments; segment += 1) {
-      indices.push(0, 1 + segment, 1 + ((segment + 1) % segments));
-    }
-    for (let ring = 0; ring < rings - 1; ring += 1) {
-      const current = 1 + ring * segments;
-      const following = current + segments;
-      for (let segment = 0; segment < segments; segment += 1) {
-        const next = (segment + 1) % segments;
-        indices.push(
-          current + segment,
-          following + segment,
-          following + next,
-          current + segment,
-          following + next,
-          current + next
-        );
-      }
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals();
-    const cap = new THREE.Mesh(geometry, material);
-    cap.name = 'hair_variant_scalp';
-    group.add(cap);
-  }
-
-  function addCharacterHairPiece(group, material, name, fit, position, scale, rotation = [0, 0, 0], detail = 0) {
-    const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, detail), material);
-    const fitted = characterHairPoint(fit, position[0], position[1], position[2]);
-    mesh.name = `hair_variant_${name}`;
-    mesh.position.set(fitted[0], fitted[1], fitted[2]);
-    mesh.scale.set(
-      scale[0] * fit.scalpScale[0],
-      scale[1],
-      scale[2] * fit.scalpScale[1]
-    );
-    mesh.rotation.set(rotation[0], rotation[1], rotation[2]);
-    group.add(mesh);
-  }
-
-  function addCharacterSideSweptHair(group, material, fit) {
-    [-0.065, -0.043, -0.02, 0.004, 0.028, 0.051].forEach((offsetX, index) => {
-      addCharacterHairPiece(group, material, `sweep_${index}`, fit, [
-        offsetX + 0.02,
-        1.8485 - Math.abs(offsetX) * 0.22,
-        0.006 - index * 0.009
-      ], [0.019, 0.024, 0.09], [0.11, -0.2, -0.32]);
-    });
-    for (let index = 0; index < 3; index += 1) {
-      addCharacterHairPiece(group, material, `fringe_${index}`, fit, [
-        0.064 + index * 0.007,
-        1.7685 - index * 0.034,
-        0.044
-      ], [0.014, 0.058, 0.019], [0, 0.12, -0.18]);
-    }
-  }
-
-  function addCharacterMohawk(group, material, fit) {
-    [-0.085, -0.06, -0.035, -0.01, 0.018, 0.047, 0.076, 0.103].forEach((offsetZ, index) => {
-      const height = 0.08 + 0.028 * Math.sin((index + 1) * Math.PI / 9);
-      addCharacterHairPiece(group, material, `mohawk_blade_${index}`, fit, [
-        0,
-        1.8285 + height * 0.36,
-        -0.006 - offsetZ
-      ], [0.02, height, 0.027], [0, -0.07 + index * 0.018, 0]);
-    });
-    [-1, 1].forEach(side => {
-      [-0.045, 0.015, 0.072].forEach((offsetZ, index) => {
-        addCharacterHairPiece(group, material, `mohawk_root_${side}_${index}`, fit, [
-          side * 0.017,
-          1.8035,
-          -0.006 - offsetZ
-        ], [0.014, 0.015, 0.044]);
-      });
-    });
-  }
-
-  function addCharacterBraids(group, material, fit) {
-    [-1, 1].forEach(side => {
-      for (let index = 0; index < 8; index += 1) {
-        const sway = Math.sin(index * 1.25 + (side > 0 ? 0.8 : 0)) * 0.008;
-        addCharacterHairPiece(group, material, `braid_${side}_${index}`, fit, [
-          side * (0.066 + sway),
-          1.7235 - index * 0.04,
-          -0.088 - index * 0.003
-        ], [0.018, 0.027, 0.02], [0, side * 0.15, side * 0.2]);
-      }
-      for (let index = 0; index < 4; index += 1) {
-        addCharacterHairPiece(group, material, `braid_crown_${side}_${index}`, fit, [
-          side * (0.018 + index * 0.015),
-          1.8385 - index * 0.012,
-          -0.026 - index * 0.016
-        ], [0.014, 0.016, 0.034], [0, side * 0.12, side * -0.2]);
-      }
-    });
-  }
-
-  function addCharacterTiedBackHair(group, material, fit) {
-    addCharacterHairPiece(group, material, 'tied_knot', fit, [
-      0, 1.7785, -0.148
-    ], [0.043, 0.043, 0.039]);
-    for (let index = 0; index < 5; index += 1) {
-      addCharacterHairPiece(group, material, `tied_tail_${index}`, fit, [
-        Math.sin(index * 0.8) * 0.012,
-        1.7335 - index * 0.05,
-        -0.16
-      ], [0.026, 0.04, 0.025], [0, 0.12, Math.sin(index) * 0.15]);
-    }
-  }
-
-  function addCharacterLongHair(group, material, fit) {
-    [-1, 1].forEach(side => {
-      for (let index = 0; index < 7; index += 1) {
-        const offset = index * 0.012;
-        addCharacterHairPiece(group, material, `long_side_${side}_${index}`, fit, [
-          side * (0.058 + offset * 0.55),
-          1.6935 - index * 0.036,
-          -0.021 - offset
-        ], [0.018, 0.09, 0.028], [0.04, side * 0.08, side * (0.1 + index * 0.018)]);
-      }
-    });
-    [-0.045, -0.022, 0, 0.022, 0.045].forEach((offsetX, index) => {
-      addCharacterHairPiece(group, material, `long_back_${index}`, fit, [
-        offsetX, 1.5835, -0.118
-      ], [0.02, 0.19, 0.026], [0.03, -offsetX * 0.8, offsetX * 0.8]);
-    });
-  }
-
-  function addCharacterBuns(group, material, fit) {
-    [-1, 1].forEach(side => {
-      addCharacterHairPiece(group, material, `bun_${side}`, fit, [
-        side * 0.08, 1.8465, -0.038
-      ], [0.04, 0.041, 0.038]);
-      for (let index = 0; index < 4; index += 1) {
-        const angle = Math.PI * 2 * index / 4;
-        addCharacterHairPiece(group, material, `bun_lock_${side}_${index}`, fit, [
-          side * 0.08 + Math.cos(angle) * 0.028,
-          1.8465 + Math.sin(angle * 0.5) * 0.02,
-          -0.038 - Math.sin(angle) * 0.023
-        ], [0.018, 0.016, 0.032], [angle * 0.2, side * 0.18, angle]);
-      }
-    });
-    [-0.05, -0.025, 0, 0.025, 0.05].forEach((offsetX, index) => {
-      addCharacterHairPiece(group, material, `bun_crown_${index}`, fit, [
-        offsetX, 1.8335, -0.016
-      ], [0.018, 0.021, 0.075], [0, -offsetX * 1.2, -offsetX * 1.8]);
-    });
-  }
-
-  function addCharacterHairVariant(group, material, appearance) {
-    const hairId = appearance.hairId;
-    if (hairId === 'shaved') return false;
-    const fit = characterFaceFitProfile(appearance);
-    if (hairId !== 'mohawk') addCharacterScalpCap(group, material, hairId, fit);
-    const builders = {
-      side_swept: addCharacterSideSweptHair,
-      mohawk: addCharacterMohawk,
-      braids: addCharacterBraids,
-      tied_back: addCharacterTiedBackHair,
-      long: addCharacterLongHair,
-      buns: addCharacterBuns
-    };
-    builders[hairId]?.(group, material, fit);
-    return true;
   }
 
   function applyCharacterFaceShape(root, appearance) {
@@ -881,40 +716,37 @@
     const helmetOn = !!options.helmetOn;
     const appearanceKey = `${appearance.faceId}:${appearance.hairId}:${appearance.hairColorId}:${helmetOn ? 1 : 0}`;
     if (root.userData?.characterAppearanceKey === appearanceKey) return;
-    characterHeadRestMatrix(root);
     applyCharacterFaceShape(root, appearance);
     root.updateMatrixWorld(true);
+    const hairColor = characterAppearanceOption(CHARACTER_HAIR_COLOR_OPTIONS, appearance.hairColorId);
+    const hairTint = new THREE.Color(hairColor?.hex || '#4B3023');
+    hairTint.convertSRGBToLinear?.();
     root.traverse(obj => {
       if (!obj || obj.userData?.characterAppearanceVariant) return;
       const layer = String(obj.userData?.realm_character_layer || '').toLowerCase();
       const name = String(obj.name || '').toLowerCase();
       if (layer === 'hair' || name.startsWith('hair_')) {
-        obj.visible = false;
+        obj.visible = !helmetOn && appearance.hairId !== 'shaved';
+        const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+        materials.filter(Boolean).forEach(material => {
+          // Every live character owns cloned material wrappers. Geometry and
+          // textures remain shared with the immutable GLB template, while the
+          // base-color tint is safe to customize per actor.
+          if (
+            !material.color
+            || material.userData?.characterGlbTemplateMaterial
+            || material.userData?.characterGlbInstanceMaterial !== true
+          ) return;
+          material.color.copy(hairTint);
+          material.userData.characterGlbHairTintId = hairColor?.id || 'hair_03';
+          material.needsUpdate = true;
+        });
       }
     });
     const previous = root.userData?.characterAppearanceVariantGroup;
     if (previous?.parent) previous.parent.remove(previous);
     if (previous) disposeCharacterGlbObject(previous);
-    const group = new THREE.Group();
-    group.name = 'character_appearance_variants';
-    group.userData.characterAppearanceVariant = true;
-    if (!helmetOn && appearance.hairId !== 'shaved') {
-      const hairColor = characterAppearanceOption(CHARACTER_HAIR_COLOR_OPTIONS, appearance.hairColorId);
-      const hairMaterial = characterVariantMaterial(hairColor?.hex || '#4B3023', { roughness: 0.94 });
-      if (!addCharacterHairVariant(group, hairMaterial, appearance)) hairMaterial.dispose();
-    }
-    if (group.children.length) {
-      group.traverse(obj => {
-        if (!obj?.isMesh) return;
-        obj.castShadow = true;
-        obj.receiveShadow = false;
-        enableConservativeCharacterFrustumCulling(obj, 1.2);
-      });
-      attachCharacterVariantToHead(root, group, appearance);
-      root.userData.characterAppearanceVariantGroup = group;
-    } else {
-      delete root.userData.characterAppearanceVariantGroup;
-    }
+    delete root.userData.characterAppearanceVariantGroup;
     root.userData.characterAppearanceKey = appearanceKey;
   }
 
@@ -1687,32 +1519,12 @@
     runtime.currentAction = nextName;
   }
 
-  function captureCharacterProceduralBaseMeshes(actor, parts = {}) {
-    if (!actor?.traverse || !parts) return;
-    const keep = new Set([
-      parts.shadow,
-      parts.helmet,
-      parts.backpack,
-      parts.backpackTop,
-      parts.bedroll,
-      ...(Array.isArray(parts.packAccessories) ? parts.packAccessories : [])
-    ].filter(Boolean));
-    parts.proceduralCharacterBaseMeshes = [];
-    actor.traverse(obj => {
-      if (obj?.isMesh && !keep.has(obj)) parts.proceduralCharacterBaseMeshes.push(obj);
-    });
-    parts.characterRoot = actor;
-    if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
-      invalidateModernProceduralRigAnimationCache(actor, parts);
-    }
-  }
-
-  function setCharacterProceduralBaseVisible(actor, visible) {
+  function setCharacterProceduralBaseVisible(actor, _visible) {
     const parts = actor?.userData?.parts || {};
     let changed = false;
     (parts.proceduralCharacterBaseMeshes || []).forEach(mesh => {
       if (!mesh) return;
-      const nextVisible = !!visible;
+      const nextVisible = false;
       if (mesh.visible !== nextVisible) changed = true;
       mesh.visible = nextVisible;
     });
@@ -1732,11 +1544,31 @@
     applyCharacterGlbVisualVariants(runtime.root, runtime.appearance, { helmetOn });
     if (typeof applyApprovedEquipmentVisuals === 'function') applyApprovedEquipmentVisuals(actor, activeEq);
     else if (typeof applyApprovedBootsVisual === 'function') applyApprovedBootsVisual(actor, activeEq);
+    const parts = actor.userData.parts || actor.userData.actorParts || {};
+    [parts.weaponGroup, parts.offhandWeaponGroup, actor.userData.enemyWeaponGroup]
+      .filter(Boolean)
+      .forEach(group => {
+        if (typeof setWeaponGlbGroupVisibility === 'function') {
+          setWeaponGlbGroupVisibility(group, group.children?.length > 0);
+        } else group.visible = group.children?.length > 0;
+      });
+  }
+
+  function cancelPendingCharacterGlbAppearance(actor) {
+    if (!actor?.userData) return;
+    actor.userData.characterGlbRequestId = Number(actor.userData.characterGlbRequestId || 0) + 1;
+    clearTimeout(actor.userData.characterGlbRetryTimer || 0);
+    delete actor.userData.characterGlbRetryTimer;
   }
 
   function removeCharacterGlbRuntime(actor) {
-    const runtime = actor?.userData?.characterGlbRuntime;
-    if (!runtime) return;
+    if (!actor?.userData) return;
+    cancelPendingCharacterGlbAppearance(actor);
+    const runtime = actor.userData.characterGlbRuntime;
+    if (!runtime) {
+      setCharacterProceduralBaseVisible(actor, false);
+      return;
+    }
     if (typeof restoreApprovedWeaponGrip === 'function') restoreApprovedWeaponGrip(actor);
     else if (typeof restoreApprovedAssaultRifleGrip === 'function') restoreApprovedAssaultRifleGrip(actor);
     if (typeof removeApprovedEquipmentRuntimes === 'function') removeApprovedEquipmentRuntimes(actor);
@@ -1745,15 +1577,53 @@
     if (runtime.root?.parent) runtime.root.parent.remove(runtime.root);
     disposeCharacterGlbObject(runtime.root);
     delete actor.userData.characterGlbRuntime;
-    setCharacterProceduralBaseVisible(actor, true);
+    setCharacterProceduralBaseVisible(actor, false);
+  }
+
+  function characterGlbActorAttached(actor) {
+    if (!actor) return false;
+    let root = actor;
+    while (root.parent) root = root.parent;
+    if (typeof scene !== 'undefined' && scene) return root === scene;
+    return !!actor.parent || (typeof playerGroup !== 'undefined' && actor === playerGroup);
+  }
+
+  function scheduleCharacterGlbActorRetry(actor, appearance, options, requestId) {
+    if (!actor?.userData || actor.userData.characterGlbRequestId !== requestId) return;
+    const retryRound = Math.max(0, Number(options?.characterGlbRetryRound || 0));
+    const state = characterGlbTemplateCache.get(characterAppearanceKey(appearance));
+    const delay = Math.min(
+      CHARACTER_GLB_ACTOR_RETRY_MAX_DELAY_MS,
+      Math.max(
+        250,
+        Number(state?.nextRetryAt || 0) - Date.now(),
+        Math.min(
+          CHARACTER_GLB_ACTOR_RETRY_MAX_DELAY_MS,
+          1_000 * (2 ** Math.min(5, retryRound))
+        )
+      )
+    );
+    clearTimeout(actor.userData.characterGlbRetryTimer || 0);
+    actor.userData.characterGlbRetryTimer = setTimeout(() => {
+      if (!actor?.userData || actor.userData.characterGlbRequestId !== requestId) return;
+      if (!characterGlbActorAttached(actor)) return;
+      delete actor.userData.characterGlbRetryTimer;
+      void applyCharacterGlbAppearance(actor, appearance, {
+        ...options,
+        characterGlbRetryRound: retryRound + 1
+      });
+    }, delay);
   }
 
   function applyCharacterGlbAppearance(actor, input = {}, options = {}) {
     if (!actor?.userData) return Promise.resolve(false);
     const appearance = normalizeCharacterAppearance(input);
     const key = characterAppearanceKey(appearance);
+    setCharacterProceduralBaseVisible(actor, false);
     const current = actor.userData.characterGlbRuntime;
     if (current?.key === key && current.root) {
+      clearTimeout(actor.userData.characterGlbRetryTimer || 0);
+      delete actor.userData.characterGlbRetryTimer;
       current.appearance = appearance;
       actor.userData.characterAppearance = appearance;
       refreshCharacterGlbEquipmentLayers(actor, options.equipment || {});
@@ -1765,27 +1635,35 @@
       return Promise.resolve(true);
     }
     if (!characterGlbLoader()) {
-      setCharacterProceduralBaseVisible(actor, true);
+      setCharacterProceduralBaseVisible(actor, false);
       return Promise.resolve(false);
     }
+    clearTimeout(actor.userData.characterGlbRetryTimer || 0);
+    delete actor.userData.characterGlbRetryTimer;
     const requestId = Number(actor.userData.characterGlbRequestId || 0) + 1;
     actor.userData.characterGlbRequestId = requestId;
     actor.userData.characterAppearance = appearance;
+    const requestParent = actor.parent || null;
+    const requestWasAttached = characterGlbActorAttached(actor);
     if (typeof hideApprovedEquipmentFallbacksEarly === 'function') {
       hideApprovedEquipmentFallbacksEarly(actor, options.equipment || {});
     }
     return loadCharacterGlbTemplate(appearance).then(template => {
         if (actor.userData.characterGlbRequestId !== requestId) return false;
+        if ((requestParent && !actor.parent) || (requestWasAttached && !characterGlbActorAttached(actor))) return false;
         const templateRoot = template?.source || null;
         const instanceRoot = cloneCharacterGlbTemplateScene(templateRoot);
+        if (
+          actor.userData.characterGlbRequestId !== requestId
+          || (requestParent && !actor.parent)
+          || (requestWasAttached && !characterGlbActorAttached(actor))
+        ) {
+          if (instanceRoot) disposeCharacterGlbObject(instanceRoot);
+          return false;
+        }
         if (!instanceRoot) {
-          setCharacterProceduralBaseVisible(actor, true);
-          if (typeof approvedEquipmentFallbackMeshes === 'function') {
-            const parts = actor.userData.parts || actor.userData.actorParts || {};
-            for (const slot of ['armor', 'helmet', 'boots', 'backpack']) {
-              approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = true; });
-            }
-          }
+          setCharacterProceduralBaseVisible(actor, false);
+          scheduleCharacterGlbActorRetry(actor, appearance, options, requestId);
           return false;
         }
         const root = configureCharacterGlbScene(instanceRoot, {
@@ -1835,6 +1713,8 @@
         const previous = actor.userData.characterGlbRuntime;
         actor.add(root);
         actor.userData.characterGlbRuntime = runtime;
+        clearTimeout(actor.userData.characterGlbRetryTimer || 0);
+        delete actor.userData.characterGlbRetryTimer;
         captureCharacterFootIkRest(actor, runtime);
         captureCharacterUpperBodyRest(runtime);
         setCharacterGlbAction(runtime, 'idle', 0);

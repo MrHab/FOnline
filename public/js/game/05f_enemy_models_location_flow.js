@@ -10,24 +10,6 @@
     return group;
   }
 
-  // v7.53: враги больше не являются одинаковыми цилиндрами. Силуэты собраны
-  // из лёгких примитивов и специально читаются с изометрической камеры:
-  // рейдер — человек с оружием и рваной бронёй, гуль — худой сгорбленный,
-  // супермутант — широкий тяжёлый силуэт, пепельный волк — низкий зверь.
-  const enemyVisualMats = {
-    raiderCloth: matStandard({ color: 0x6d4633, map: makeNoiseTexture('enemy-raider-cloth', 0x6d4633, 0x8f6144, 0x271913, { seed: 211, repeat: 1, lines: 8, specks: 42 }), roughness: 0.88 }),
-    raiderArmor: matStandard({ color: 0x5b5d55, map: makeNoiseTexture('enemy-raider-scrap', 0x5b5d55, 0x7c7b6e, 0x252721, { seed: 213, repeat: 1, lines: 16, specks: 50, lineAlpha: 0.22 }), roughness: 0.58, metalness: 0.34 }),
-    ghoulSkin: matStandard({ color: 0x736c4e, map: makeNoiseTexture('enemy-ghoul-skin', 0x736c4e, 0x958a60, 0x302d20, { seed: 217, repeat: 1, lines: 7, specks: 62 }), roughness: 0.92 }),
-    mutantSkin: matStandard({ color: 0x6d7552, map: makeNoiseTexture('enemy-mutant-skin', 0x6d7552, 0x8d956a, 0x303623, { seed: 219, repeat: 1, lines: 8, specks: 56 }), roughness: 0.86 }),
-    wolfHide: matStandard({ color: 0x4b4435, map: makeNoiseTexture('enemy-ash-wolf-hide', 0x4b4435, 0x6c604a, 0x1f1c16, { seed: 223, repeat: 1, lines: 14, specks: 60 }), roughness: 0.9 }),
-    scorpionCarapace: matStandard({ color: 0x3b3024, map: makeNoiseTexture('enemy-radscorpion-shell', 0x3b3024, 0x6a4a2d, 0x15100d, { seed: 229, repeat: 1, lines: 18, specks: 70 }), roughness: 0.82, metalness: 0.08 }),
-    antCarapace: matStandard({ color: 0x5a2c1b, map: makeNoiseTexture('enemy-mutant-ant-shell', 0x5a2c1b, 0x8a4628, 0x21110b, { seed: 233, repeat: 1, lines: 14, specks: 64 }), roughness: 0.76 }),
-    geckoHide: matStandard({ color: 0x587047, map: makeNoiseTexture('enemy-gecko-hide', 0x587047, 0x81965e, 0x202d1b, { seed: 239, repeat: 1, lines: 10, specks: 78 }), roughness: 0.88 }),
-    fireGeckoHide: matStandard({ color: 0x74513a, map: makeNoiseTexture('enemy-fire-gecko-hide', 0x74513a, 0xb46b34, 0x26160f, { seed: 241, repeat: 1, lines: 13, specks: 84 }), roughness: 0.84 }),
-    bone: matStandard({ color: 0xc4b68e, roughness: 0.82 }),
-    ember: matStandard({ color: 0xe77d38, emissive: 0x7a250d, emissiveIntensity: 0.55, roughness: 0.62 }),
-    toxic: matStandard({ color: 0x9fe36b, emissive: 0x4ba92c, emissiveIntensity: 0.55, roughness: 0.7 })
-  };
   const ENEMY_ANIMATION_LOD_NEAR_DISTANCE = 5;
   const ENEMY_ANIMATION_LOD_CLOSE_DISTANCE = 10;
   const ENEMY_ANIMATION_LOD_MID_DISTANCE = 18;
@@ -162,7 +144,7 @@
     const numericDt = Number(dt);
     const frameDt = Number.isFinite(numericDt) ? Math.max(0, Math.min(0.05, numericDt)) : 0.016;
     // Keep the cadence accumulator long enough for 0.10/0.12s quality tiers;
-    // only the dt handed to the mixer/procedural animation is capped at 0.08s.
+    // only the dt handed to the skeletal animation runtime is capped at 0.08s.
     const elapsedAnimationDt = Math.min(
       ENEMY_ANIMATION_LOD_MAX_DT,
       Math.max(0, Number(enemy?.heavyAnimationElapsedDt || 0)) + frameDt
@@ -221,32 +203,6 @@
     return elapsedAnimationDt;
   }
 
-  function makeEnemyBox(w, h, d, material, x, y, z, sx = 1, rx = 0, ry = 0, rz = 0) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w * sx, h * sx, d * sx), material);
-    mesh.position.set(x * sx, y * sx, z * sx);
-    mesh.rotation.set(rx, ry, rz);
-    mesh.castShadow = !IS_MOBILE_DEVICE;
-    mesh.receiveShadow = false;
-    return mesh;
-  }
-
-  function makeEnemyCylinder(r1, r2, h, material, x, y, z, sx = 1, radial = 10, rx = 0, ry = 0, rz = 0) {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r1 * sx, r2 * sx, h * sx, radial), material);
-    mesh.position.set(x * sx, y * sx, z * sx);
-    mesh.rotation.set(rx, ry, rz);
-    mesh.castShadow = !IS_MOBILE_DEVICE;
-    mesh.receiveShadow = false;
-    return mesh;
-  }
-
-  function makeEnemySphere(r, material, x, y, z, sx = 1, seg = 12) {
-    const mesh = new THREE.Mesh(new THREE.SphereGeometry(r * sx, seg, Math.max(8, Math.floor(seg * 0.75))), material);
-    mesh.position.set(x * sx, y * sx, z * sx);
-    mesh.castShadow = !IS_MOBILE_DEVICE;
-    mesh.receiveShadow = false;
-    return mesh;
-  }
-
   function addEnemyBaseShadow(group, scale, radius = 0.64) {
     const shadow = new THREE.Mesh(
       new THREE.CircleGeometry(radius * scale, 22),
@@ -292,309 +248,6 @@
     accent.userData.baseOpacity = profile.opacity;
     group.add(accent);
     group.userData.variantAccent = accent;
-  }
-
-  function addEnemyHumanoidDetailPass(group, s = 1, profile = 'raider') {
-    const armorMat = profile === 'mutant' ? enemyVisualMats.raiderArmor : actorMats.rustPlate;
-    const skinMat = profile === 'mutant' ? enemyVisualMats.mutantSkin : mats.skin;
-    const clothMat = profile === 'mutant' ? enemyVisualMats.raiderArmor : actorMats.strap;
-    group.add(makeEnemyBox(0.15, 0.11, 0.15, skinMat, -0.52, 0.64, -0.10, s, 0.03, 0, -0.08));
-    group.add(makeEnemyBox(0.15, 0.11, 0.15, skinMat, 0.52, 0.64, -0.10, s, 0.03, 0, 0.08));
-    group.add(makeEnemyBox(0.20, 0.09, 0.20, armorMat, -0.16, 0.38, -0.12, s, 0.07, 0, 0.05));
-    group.add(makeEnemyBox(0.20, 0.09, 0.20, armorMat, 0.16, 0.38, -0.12, s, -0.07, 0, -0.05));
-    group.add(makeEnemyBox(0.07, 0.68, 0.06, clothMat, -0.15, 1.02, -0.25, s, 0.08, 0, -0.54));
-    group.add(makeEnemyBox(0.13, 0.10, 0.05, armorMat, 0.06, 0.92, -0.28, s, 0, 0, -0.08));
-    group.add(makeEnemyBox(0.15, 0.20, 0.11, actorMats.pack, -0.34, 0.78, -0.02, s, 0.02, 0, -0.08));
-    group.add(makeEnemyBox(0.15, 0.20, 0.11, actorMats.pack, 0.34, 0.78, -0.02, s, 0.02, 0, 0.08));
-    if (profile === 'mutant') {
-      group.add(makeEnemyBox(0.58, 0.10, 0.08, actorMats.rustPlate, 0, 1.30, -0.32, s, 0, 0, 0.02));
-      group.add(makeEnemyBox(0.22, 0.18, 0.10, enemyVisualMats.bone, -0.16, 1.52, -0.28, s, 0, 0, 0.04));
-      group.add(makeEnemyBox(0.22, 0.18, 0.10, enemyVisualMats.bone, 0.16, 1.52, -0.28, s, 0, 0, -0.04));
-    } else {
-      group.add(makeEnemyBox(0.20, 0.10, 0.06, actorMats.strap, 0, 1.39, -0.21, s));
-      group.add(makeEnemyBox(0.14, 0.055, 0.045, actorMats.armor, -0.09, 1.43, -0.255, s));
-      group.add(makeEnemyBox(0.14, 0.055, 0.045, actorMats.armor, 0.09, 1.43, -0.255, s));
-    }
-  }
-
-  function addGhoulDetailPass(group, s = 1) {
-    group.add(makeEnemyBox(0.20, 0.055, 0.04, enemyVisualMats.bone, 0, 1.25, -0.31, s, -0.08, 0, 0));
-    group.add(makeEnemySphere(0.04, enemyVisualMats.toxic, -0.17, 0.73, -0.22, s, 8));
-    group.add(makeEnemySphere(0.032, enemyVisualMats.toxic, 0.12, 1.17, -0.25, s, 8));
-    group.add(makeEnemyBox(0.08, 0.22, 0.055, enemyVisualMats.bone, -0.43, 0.50, -0.22, s, 0.22, 0, -0.58));
-    group.add(makeEnemyBox(0.08, 0.22, 0.055, enemyVisualMats.bone, 0.43, 0.50, -0.22, s, 0.22, 0, 0.58));
-    [-0.14, 0, 0.14].forEach((x, i) => {
-      group.add(makeEnemyBox(0.045, 0.10, 0.035, enemyVisualMats.bone, x, 0.98 - i * 0.055, -0.245, s, -0.14, 0, 0));
-    });
-  }
-
-  function addCreatureDetailPass(group, s = 1, kind = '') {
-    if (kind === 'wolf') {
-      group.add(makeEnemyBox(0.07, 0.18, 0.07, enemyVisualMats.bone, -0.12, 0.86, -0.72, s, -0.2, 0, -0.28));
-      group.add(makeEnemyBox(0.07, 0.18, 0.07, enemyVisualMats.bone, 0.12, 0.86, -0.72, s, -0.2, 0, 0.28));
-      group.add(makeEnemySphere(0.035, enemyVisualMats.toxic, -0.08, 0.73, -0.84, s, 8));
-      group.add(makeEnemySphere(0.035, enemyVisualMats.toxic, 0.08, 0.73, -0.84, s, 8));
-      return;
-    }
-    if (kind === 'scorpion') {
-      [-0.24, 0, 0.24].forEach((x, i) => {
-        group.add(makeEnemyBox(0.18, 0.045, 0.30, enemyVisualMats.bone, x, 0.57 + i * 0.035, -0.04 + i * 0.18, s, 0.04, 0, x * 0.3));
-      });
-      group.add(makeEnemySphere(0.055, enemyVisualMats.toxic, 0, 0.82, 1.25, s, 8));
-      return;
-    }
-    if (kind === 'ant') {
-      [-0.16, 0.16].forEach(x => {
-        group.add(makeEnemySphere(0.045, enemyVisualMats.ember, x, 0.43, -0.62, s, 8));
-        group.add(makeEnemyBox(0.05, 0.05, 0.34, enemyVisualMats.bone, x * 0.9, 0.29, -0.74, s, 0, x < 0 ? -0.38 : 0.38, x < 0 ? -0.12 : 0.12));
-      });
-      return;
-    }
-    if (kind === 'gecko' || kind === 'fireGecko') {
-      const glow = kind === 'fireGecko' ? enemyVisualMats.ember : enemyVisualMats.toxic;
-      group.add(makeEnemyBox(0.10, 0.08, 0.36, glow, 0, 0.57, -0.20, s, 0.08, 0, 0));
-      group.add(makeEnemyBox(0.08, 0.07, 0.28, glow, -0.13, 0.53, 0.12, s, 0.06, 0, -0.18));
-      group.add(makeEnemyBox(0.08, 0.07, 0.28, glow, 0.13, 0.53, 0.12, s, 0.06, 0, 0.18));
-    }
-  }
-
-  function buildRaiderEnemy(group, type) {
-    const s = type.scale || 1;
-    addEnemyBaseShadow(group, s, 0.62);
-    const legs = new THREE.Group();
-    legs.add(makeEnemyBox(0.17, 0.5, 0.2, actorMats.pants, -0.15, 0.3, 0.02, s, 0.04, 0, -0.05));
-    legs.add(makeEnemyBox(0.17, 0.5, 0.2, actorMats.pants, 0.15, 0.3, 0.02, s, -0.04, 0, 0.05));
-    legs.add(makeEnemyBox(0.24, 0.13, 0.3, actorMats.boot, -0.15, 0.07, -0.05, s));
-    legs.add(makeEnemyBox(0.24, 0.13, 0.3, actorMats.boot, 0.15, 0.07, -0.05, s));
-    group.add(legs);
-
-    const body = makeEnemyCylinder(0.28, 0.38, 0.78, enemyVisualMats.raiderCloth, 0, 0.86, 0.02, s, 9);
-    const chest = makeEnemyBox(0.66, 0.42, 0.28, enemyVisualMats.raiderArmor, 0, 1.02, -0.05, s, 0.02, 0, 0.04);
-    const head = makeEnemySphere(0.22, mats.skin, 0, 1.43, -0.02, s, 12);
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.245 * s, 12, 7, 0, Math.PI * 2, 0, Math.PI * 0.55), actorMats.rustPlate);
-    helmet.position.set(0, 1.51 * s, -0.02 * s);
-    helmet.castShadow = !IS_MOBILE_DEVICE;
-    const armL = makeEnemyBox(0.13, 0.52, 0.15, enemyVisualMats.raiderCloth, -0.43, 0.96, -0.02, s, 0, 0, -0.28);
-    const armR = makeEnemyBox(0.13, 0.52, 0.15, enemyVisualMats.raiderCloth, 0.43, 0.96, -0.02, s, 0, 0, 0.28);
-    const gun = makeEnemyBox(0.1, 0.1, 0.78, mats.darkMetal, 0.52, 0.92, -0.34, s, 0, 0.04, 0.0);
-    const pack = makeEnemyBox(0.46, 0.46, 0.18, actorMats.pack, 0, 0.95, 0.31, s);
-    group.add(body, chest, head, helmet, armL, armR, gun, pack);
-    addEnemyHumanoidDetailPass(group, s, 'raider');
-    group.userData.actorParts = {
-      kind: 'raider',
-      legs, body, chest, head, helmet, armL, armR,
-      backpack: pack,
-      weaponStatic: gun,
-      baseMaterials: { body: enemyVisualMats.raiderCloth, chest: enemyVisualMats.raiderArmor, arm: enemyVisualMats.raiderCloth, helmet: actorMats.rustPlate }
-    };
-  }
-
-  function buildGhoulEnemy(group, type) {
-    const s = type.scale || 1;
-    addEnemyBaseShadow(group, s, 0.54);
-    const legs = new THREE.Group();
-    legs.add(makeEnemyBox(0.12, 0.52, 0.14, enemyVisualMats.ghoulSkin, -0.12, 0.31, 0.02, s, 0.12, 0, -0.12));
-    legs.add(makeEnemyBox(0.12, 0.5, 0.14, enemyVisualMats.ghoulSkin, 0.14, 0.31, -0.02, s, -0.1, 0, 0.1));
-    group.add(legs);
-    const body = makeEnemyCylinder(0.2, 0.27, 0.82, enemyVisualMats.ghoulSkin, 0, 0.83, 0.06, s, 8, -0.16, 0, 0);
-    const ribs = makeEnemyBox(0.42, 0.26, 0.08, enemyVisualMats.bone, 0, 0.94, -0.18, s, -0.14, 0, 0);
-    const head = makeEnemySphere(0.22, enemyVisualMats.ghoulSkin, 0.01, 1.34, -0.16, s, 10);
-    const armL = makeEnemyBox(0.1, 0.68, 0.12, enemyVisualMats.ghoulSkin, -0.36, 0.84, -0.11, s, 0.2, 0, -0.54);
-    const armR = makeEnemyBox(0.1, 0.68, 0.12, enemyVisualMats.ghoulSkin, 0.36, 0.84, -0.11, s, 0.2, 0, 0.54);
-    const glow1 = makeEnemySphere(0.045, enemyVisualMats.toxic, -0.12, 1.04, -0.23, s, 8);
-    const glow2 = makeEnemySphere(0.035, enemyVisualMats.toxic, 0.16, 0.78, -0.2, s, 8);
-    group.add(body, ribs, head, armL, armR, glow1, glow2);
-    addGhoulDetailPass(group, s);
-    group.userData.actorParts = { kind: 'ghoul', legs, body, head, armL, armR };
-  }
-
-  function buildMutantEnemy(group, type) {
-    const s = type.scale || 1;
-    addEnemyBaseShadow(group, s, 0.78);
-    const legs = new THREE.Group();
-    legs.add(makeEnemyBox(0.23, 0.56, 0.28, enemyVisualMats.mutantSkin, -0.22, 0.34, 0.04, s, 0.04, 0, -0.04));
-    legs.add(makeEnemyBox(0.23, 0.56, 0.28, enemyVisualMats.mutantSkin, 0.22, 0.34, 0.04, s, -0.04, 0, 0.04));
-    legs.add(makeEnemyBox(0.34, 0.16, 0.38, actorMats.boot, -0.22, 0.07, -0.05, s));
-    legs.add(makeEnemyBox(0.34, 0.16, 0.38, actorMats.boot, 0.22, 0.07, -0.05, s));
-    group.add(legs);
-    const body = makeEnemyCylinder(0.42, 0.58, 1.02, enemyVisualMats.mutantSkin, 0, 0.98, 0.03, s, 11);
-    const chest = makeEnemyBox(0.92, 0.48, 0.38, enemyVisualMats.raiderArmor, 0, 1.17, -0.08, s, 0.02, 0, 0);
-    const head = makeEnemySphere(0.27, enemyVisualMats.mutantSkin, 0, 1.62, -0.02, s, 12);
-    const jaw = makeEnemyBox(0.36, 0.14, 0.12, enemyVisualMats.bone, 0, 1.49, -0.2, s);
-    const shoulderL = makeEnemyBox(0.34, 0.2, 0.34, enemyVisualMats.raiderArmor, -0.62, 1.29, -0.01, s, 0, 0, -0.18);
-    const shoulderR = makeEnemyBox(0.34, 0.2, 0.34, actorMats.rustPlate, 0.62, 1.29, -0.01, s, 0, 0, 0.18);
-    const armL = makeEnemyBox(0.19, 0.72, 0.22, enemyVisualMats.mutantSkin, -0.67, 0.93, -0.02, s, 0.02, 0, -0.22);
-    const armR = makeEnemyBox(0.19, 0.72, 0.22, enemyVisualMats.mutantSkin, 0.67, 0.93, -0.02, s, 0.02, 0, 0.22);
-    const weapon = makeEnemyBox(0.16, 0.16, 0.86, mats.darkMetal, 0.74, 0.87, -0.32, s, 0, 0, 0.1);
-    group.add(body, chest, head, jaw, shoulderL, shoulderR, armL, armR, weapon);
-    addEnemyHumanoidDetailPass(group, s, 'mutant');
-    group.userData.actorParts = {
-      kind: 'mutant',
-      legs, body, chest, head, armL, armR,
-      shoulderL, shoulderR,
-      weaponStatic: weapon,
-      baseMaterials: { body: enemyVisualMats.mutantSkin, chest: enemyVisualMats.raiderArmor, arm: enemyVisualMats.mutantSkin }
-    };
-  }
-
-  function buildWolfEnemy(group, type) {
-    const s = type.scale || 1;
-    addEnemyBaseShadow(group, s, 0.72);
-    const body = makeEnemyBox(0.52, 0.34, 0.92, enemyVisualMats.wolfHide, 0, 0.48, 0.02, s, -0.02, 0, 0);
-    const chest = makeEnemyBox(0.42, 0.42, 0.36, enemyVisualMats.wolfHide, 0, 0.57, -0.38, s, -0.12, 0, 0);
-    const head = makeEnemySphere(0.22, enemyVisualMats.wolfHide, 0, 0.69, -0.68, s, 10);
-    const muzzle = makeEnemyBox(0.18, 0.12, 0.22, enemyVisualMats.bone, 0, 0.64, -0.86, s, -0.08, 0, 0);
-    const tail = makeEnemyBox(0.12, 0.12, 0.44, enemyVisualMats.wolfHide, 0, 0.56, 0.68, s, 0.32, 0, 0);
-    const legs = new THREE.Group();
-    [[-0.21,0.31,-0.3], [0.21,0.31,-0.3], [-0.21,0.28,0.34], [0.21,0.28,0.34]].forEach((p, i) => {
-      legs.add(makeEnemyBox(0.12, 0.42, 0.12, enemyVisualMats.wolfHide, p[0], p[1], p[2], s, i < 2 ? -0.18 : 0.12, 0, i % 2 ? 0.12 : -0.12));
-    });
-    const spines = new THREE.Group();
-    for (let i = 0; i < 4; i++) {
-      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.055 * s, 0.22 * s, 5), enemyVisualMats.bone);
-      spike.position.set(0, (0.78 - i * 0.035) * s, (-0.28 + i * 0.2) * s);
-      spike.rotation.x = -0.35;
-      spike.castShadow = !IS_MOBILE_DEVICE;
-      spines.add(spike);
-    }
-    group.add(body, chest, head, muzzle, tail, legs, spines);
-    addCreatureDetailPass(group, s, 'wolf');
-    group.userData.actorParts = { kind: 'wolf', legs, body, chest, head, tail };
-  }
-
-  function buildRadscorpionEnemy(group, type) {
-    const s = type.scale || 1;
-    addEnemyBaseShadow(group, s, 0.9);
-    const mat = enemyVisualMats.scorpionCarapace;
-    const body = makeEnemySphere(0.43, mat, 0, 0.34, 0.06, s, 14);
-    body.scale.set(1.45, 0.48, 1.0);
-    const head = makeEnemySphere(0.27, mat, 0, 0.31, -0.65, s, 12);
-    head.scale.set(1.1, 0.62, 0.85);
-    const mask = makeEnemyBox(0.34, 0.08, 0.12, enemyVisualMats.bone, 0, 0.31, -0.88, s);
-    const legs = new THREE.Group();
-    [-0.42, -0.18, 0.1, 0.36].forEach((z, row) => {
-      [-1, 1].forEach(side => {
-        legs.add(makeEnemyBox(0.62, 0.07, 0.08, mat, side * 0.48, 0.2, z, s, 0.04, side * 0.12, side * (0.34 + row * 0.04)));
-        legs.add(makeEnemyBox(0.38, 0.06, 0.07, mat, side * 0.86, 0.13, z + 0.06, s, 0.03, side * 0.06, side * -0.24));
-      });
-    });
-    const claws = new THREE.Group();
-    [-1, 1].forEach(side => {
-      claws.add(makeEnemyBox(0.5, 0.08, 0.1, mat, side * 0.45, 0.28, -0.82, s, 0, side * -0.16, side * 0.46));
-      const claw = makeEnemySphere(0.16, mat, side * 0.78, 0.29, -1.05, s, 10);
-      claw.scale.set(1.2, 0.5, 0.85);
-      claws.add(claw);
-      claws.add(makeEnemyBox(0.08, 0.07, 0.22, enemyVisualMats.bone, side * 0.9, 0.29, -1.14, s, 0, side * 0.45, side * 0.2));
-    });
-    const tail = new THREE.Group();
-    [
-      [0, 0.42, 0.58, 0.17],
-      [0, 0.56, 0.82, 0.14],
-      [0, 0.68, 1.02, 0.12],
-      [0, 0.76, 1.18, 0.1]
-    ].forEach(([x, y, z, r]) => tail.add(makeEnemySphere(r, mat, x, y, z, s, 10)));
-    const stinger = new THREE.Mesh(new THREE.ConeGeometry(0.1 * s, 0.34 * s, 8), enemyVisualMats.toxic);
-    stinger.position.set(0, 0.74 * s, 1.36 * s);
-    stinger.rotation.x = Math.PI * 0.62;
-    stinger.castShadow = !IS_MOBILE_DEVICE;
-    tail.add(stinger);
-    const eyes = new THREE.Group();
-    eyes.add(makeEnemySphere(0.035, enemyVisualMats.toxic, -0.1, 0.42, -0.84, s, 8));
-    eyes.add(makeEnemySphere(0.035, enemyVisualMats.toxic, 0.1, 0.42, -0.84, s, 8));
-    group.add(body, head, mask, legs, claws, tail, eyes);
-    addCreatureDetailPass(group, s, 'scorpion');
-    group.userData.actorParts = { kind: 'scorpion', body, head, legs, tail, claws };
-  }
-
-  function buildMutantAntEnemy(group, type) {
-    const s = type.scale || 1;
-    addEnemyBaseShadow(group, s, 0.74);
-    const mat = enemyVisualMats.antCarapace;
-    const abdomen = makeEnemySphere(0.34, mat, 0, 0.34, 0.48, s, 12);
-    abdomen.scale.set(1.0, 0.78, 1.24);
-    const thorax = makeEnemySphere(0.3, mat, 0, 0.36, -0.02, s, 12);
-    thorax.scale.set(1.05, 0.72, 0.92);
-    const head = makeEnemySphere(0.24, mat, 0, 0.33, -0.48, s, 10);
-    head.scale.set(1.05, 0.7, 0.88);
-    const legs = new THREE.Group();
-    [-0.3, -0.02, 0.28].forEach((z, row) => {
-      [-1, 1].forEach(side => {
-        legs.add(makeEnemyBox(0.52, 0.06, 0.07, mat, side * 0.45, 0.22, z, s, 0.03, side * 0.08, side * (0.36 + row * 0.08)));
-        legs.add(makeEnemyBox(0.34, 0.055, 0.06, mat, side * 0.78, 0.13, z + 0.06, s, 0.02, side * 0.05, side * -0.26));
-      });
-    });
-    const mandibles = new THREE.Group();
-    mandibles.add(makeEnemyBox(0.08, 0.06, 0.25, enemyVisualMats.bone, -0.12, 0.31, -0.72, s, 0, -0.32, -0.12));
-    mandibles.add(makeEnemyBox(0.08, 0.06, 0.25, enemyVisualMats.bone, 0.12, 0.31, -0.72, s, 0, 0.32, 0.12));
-    mandibles.add(makeEnemySphere(0.035, enemyVisualMats.ember, -0.09, 0.43, -0.62, s, 8));
-    mandibles.add(makeEnemySphere(0.035, enemyVisualMats.ember, 0.09, 0.43, -0.62, s, 8));
-    const antennae = new THREE.Group();
-    antennae.add(makeEnemyBox(0.04, 0.04, 0.42, mat, -0.12, 0.51, -0.68, s, -0.2, -0.36, -0.22));
-    antennae.add(makeEnemyBox(0.04, 0.04, 0.42, mat, 0.12, 0.51, -0.68, s, -0.2, 0.36, 0.22));
-    group.add(abdomen, thorax, head, legs, mandibles, antennae);
-    addCreatureDetailPass(group, s, 'ant');
-    group.userData.actorParts = { kind: 'mutantAnt', body: thorax, abdomen, head, legs, antennae };
-  }
-
-  function buildGeckoEnemy(group, type, fire = false) {
-    const s = type.scale || 1;
-    addEnemyBaseShadow(group, s, fire ? 0.84 : 0.78);
-    const mat = fire ? enemyVisualMats.fireGeckoHide : enemyVisualMats.geckoHide;
-    const body = makeEnemySphere(0.36, mat, 0, 0.36, 0.0, s, 14);
-    body.scale.set(1.15, 0.58, 1.48);
-    const head = makeEnemySphere(0.25, mat, 0, 0.38, -0.68, s, 12);
-    head.scale.set(1.0, 0.72, 0.95);
-    const snout = makeEnemyBox(0.28, 0.11, 0.26, mat, 0, 0.34, -0.9, s, -0.04, 0, 0);
-    const tail = makeEnemyBox(0.16, 0.12, 0.86, mat, 0, 0.32, 0.88, s, 0.12, 0, 0);
-    const legs = new THREE.Group();
-    [[-0.28,-0.36], [0.28,-0.36], [-0.28,0.34], [0.28,0.34]].forEach(([x, z], i) => {
-      const side = x < 0 ? -1 : 1;
-      legs.add(makeEnemyBox(0.34, 0.07, 0.1, mat, x, 0.22, z, s, 0.03, side * 0.14, side * (i < 2 ? 0.42 : -0.34)));
-      legs.add(makeEnemyBox(0.22, 0.055, 0.08, mat, x + side * 0.25, 0.12, z + (i < 2 ? -0.08 : 0.1), s, 0.02, side * 0.08, side * -0.2));
-    });
-    const eyes = new THREE.Group();
-    eyes.add(makeEnemySphere(0.04, fire ? enemyVisualMats.ember : enemyVisualMats.toxic, -0.1, 0.5, -0.83, s, 8));
-    eyes.add(makeEnemySphere(0.04, fire ? enemyVisualMats.ember : enemyVisualMats.toxic, 0.1, 0.5, -0.83, s, 8));
-    if (fire) {
-      for (let i = 0; i < 4; i++) {
-        const ember = makeEnemySphere(0.04, enemyVisualMats.ember, (i % 2 ? 0.16 : -0.16), 0.54 - i * 0.03, -0.18 + i * 0.22, s, 8);
-        group.add(ember);
-      }
-    }
-    group.add(body, head, snout, tail, legs, eyes);
-    addCreatureDetailPass(group, s, fire ? 'fireGecko' : 'gecko');
-    group.userData.actorParts = { kind: 'gecko', body, head, tail, legs, fire };
-  }
-
-  function buildBrahminEnemy(group, type) {
-    const s = type.scale || 1;
-    addEnemyBaseShadow(group, s, 1.08);
-    const modelKey = type.modelKey || 'friendlyBrahmin';
-    if (typeof makeStaticModelGroup === 'function') {
-      const model = makeStaticModelGroup(modelKey, 0, 0, 0, 'enemy-brahmin', {
-        scale: s,
-        cloneMaterials: true,
-        castShadow: !IS_MOBILE_DEVICE,
-        receiveShadow: false,
-        afterApply: (_holder, instance, appliedKey) => {
-          configureEnemyStaticGlbAnimation(group, instance, appliedKey || modelKey);
-        }
-      });
-      model.position.set(0, 0, 0);
-      group.add(model);
-      group.userData.actorParts = { kind: 'brahmin' };
-      return;
-    }
-    const hide = enemyVisualMats.wolfHide;
-    const body = makeEnemyBox(1.25, 0.58, 0.62, hide, 0, 0.55, 0, s);
-    const hump = makeEnemySphere(0.34, hide, 0, 0.92, 0.04, s, 12);
-    hump.scale.set(1.35, 0.74, 0.92);
-    const headL = makeEnemySphere(0.18, hide, -0.24, 0.72, -0.48, s, 10);
-    const headR = makeEnemySphere(0.18, hide, 0.24, 0.72, -0.48, s, 10);
-    const legs = new THREE.Group();
-    [-0.38, 0.38].forEach(x => [-0.22, 0.26].forEach(z => legs.add(makeEnemyBox(0.13, 0.42, 0.13, hide, x, 0.24, z, s))));
-    group.add(body, hump, headL, headR, legs);
-    group.userData.actorParts = { kind: 'brahmin', body, head: headL, legs };
   }
 
   function enemyActorKindForStaticVisual(visual = '', modelKey = '') {
@@ -736,7 +389,10 @@
   }
 
   function tryBuildStaticEnemyModel(group, type, visual) {
-    const rawKey = String(type.modelKey || '').replace(/[^a-zA-Z0-9_-]/g, '');
+    const resolvedKey = typeof enemyGlbModelKeyFromSnapshot === 'function'
+      ? enemyGlbModelKeyFromSnapshot(type, visual)
+      : type.modelKey;
+    const rawKey = String(resolvedKey || '').replace(/[^a-zA-Z0-9_-]/g, '');
     if (!rawKey || typeof makeStaticModelGroup !== 'function') return false;
     if (typeof STATIC_MODEL_URLS === 'undefined' || !STATIC_MODEL_URLS[rawKey]) return false;
     const s = Number(type.scale || 1) || 1;
@@ -821,10 +477,8 @@
   function buildUnifiedHumanoidNpc(group, type = {}, visual = 'raider') {
     const parts = {};
     const modelScale = Math.max(0.75, Math.min(1.35, Number(type.scale || 1) || 1));
-    buildModernWastelandHumanoid(group, parts, { castShadow: !IS_MOBILE_DEVICE, isPlayer: false });
-    if (parts.motionRoot) parts.motionRoot.scale.setScalar(modelScale);
-    if (typeof captureCharacterProceduralBaseMeshes === 'function') {
-      captureCharacterProceduralBaseMeshes(group, parts);
+    if (typeof buildGlbOnlyHumanoidAnchors === 'function') {
+      buildGlbOnlyHumanoidAnchors(group, parts);
     }
     parts.kind = 'humanoidNpc';
     parts.unifiedHumanoidNpc = true;
@@ -848,28 +502,30 @@
     const group = new THREE.Group();
     const name = String(type.name || '').toLowerCase();
     const visual = type.visual || (name.includes('скорпион') ? 'radscorpion' : name.includes('мурав') ? 'mutantAnt' : name.includes('огненный геккон') ? 'fireGecko' : name.includes('геккон') ? 'gecko' : name.includes('волк') ? 'wolf' : name.includes('супер') ? 'mutant' : name.includes('гул') ? 'ghoul' : 'raider');
-    if (isUnifiedHumanoidNpcType(type, visual)) {
-      buildUnifiedHumanoidNpc(group, type, visual);
-    } else if (!tryBuildStaticEnemyModel(group, type, visual)) {
-      if (visual === 'brahmin') buildBrahminEnemy(group, type);
-      else if (visual === 'radscorpion') buildRadscorpionEnemy(group, type);
-      else if (visual === 'mutantAnt') buildMutantAntEnemy(group, type);
-      else if (visual === 'gecko' || visual === 'fireGecko') buildGeckoEnemy(group, type, visual === 'fireGecko');
-      else if (visual === 'wolf') buildWolfEnemy(group, type);
-      else if (visual === 'mutant') buildMutantEnemy(group, type);
-      else if (visual === 'ghoul') buildGhoulEnemy(group, type);
-      else buildRaiderEnemy(group, type);
+    const modelKey = typeof enemyGlbModelKeyFromSnapshot === 'function'
+      ? enemyGlbModelKeyFromSnapshot(type, visual)
+      : String(type.modelKey || '');
+    const renderType = modelKey === type.modelKey ? type : { ...type, modelKey };
+    if (isUnifiedHumanoidNpcType(renderType, visual)) {
+      buildUnifiedHumanoidNpc(group, renderType, visual);
+    } else if (!tryBuildStaticEnemyModel(group, renderType, visual)) {
+      group.userData.glbModelUnavailable = true;
+      console.error('Approved enemy GLB model is unavailable:', {
+        name: renderType.name || '',
+        visual,
+        modelKey: renderType.modelKey || ''
+      });
     }
     const ringRadius = visual === 'brahmin' ? 1.12 : (visual === 'radscorpion' ? 0.92 : (visual === 'mutantAnt' ? 0.76 : (visual === 'gecko' || visual === 'fireGecko' || visual === 'wolf' ? 0.78 : 0.82)));
-    addEnemyTargetRing(group, type.scale || 1, ringRadius);
+    addEnemyTargetRing(group, renderType.scale || 1, ringRadius);
     if (typeof attachActorInteractionProxy === 'function') {
       const interactionHeight = visual === 'brahmin' ? 2.0 : (visual === 'radscorpion' || visual === 'mutantAnt' ? 1.15 : (visual === 'gecko' || visual === 'fireGecko' || visual === 'wolf' ? 1.25 : 2.15));
       attachActorInteractionProxy(group, {
-        radius: Math.max(0.48, ringRadius * Number(type.scale || 1)),
-        height: interactionHeight * Number(type.scale || 1)
+        radius: Math.max(0.48, ringRadius * Number(renderType.scale || 1)),
+        height: interactionHeight * Number(renderType.scale || 1)
       });
     }
-    addEnemyVariantAccent(group, type, visual);
+    addEnemyVariantAccent(group, renderType, visual);
     group.userData.enemyVisual = visual;
     group.traverse(m => {
       if (m.isMesh) {
@@ -952,12 +608,14 @@
   function enemyAnimWeaponVisible(mesh, visible = true) {
     const weaponGroup = mesh?.userData?.enemyWeaponGroup;
     if (!weaponGroup) return;
-    const nextVisible = !!visible && weaponGroup.children.length > 0;
+    const nextVisible = !!visible
+      && weaponGroup.children.length > 0
+      && (!mesh.userData.glbOnlyCharacterVisual || !!mesh.userData.characterGlbRuntime);
     if (weaponGroup.visible === nextVisible) return;
     weaponGroup.visible = nextVisible;
-    // Visibility participates in the cached decision that skips the fallback
-    // procedural rig. Смена состояния должна его сбрасывать, иначе оружие
-    // to that rig resumes animating immediately after the NPC wakes up.
+    // Visibility participates in the cached decision that skips inactive rigs.
+    // Смена состояния должна его сбрасывать, иначе оружие начинает обновляться
+    // с устаревшей привязкой сразу после пробуждения NPC.
     if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
       invalidateModernProceduralRigAnimationCache(
         mesh,
@@ -1164,7 +822,7 @@
       }
       if (animationDt <= 0) return;
     }
-    // Keep the last skeletal/procedural pose intact between LOD ticks. Restoring
+    // Keep the last skeletal pose intact between LOD ticks. Restoring
     // actor parts on skipped frames would pull them toward the base pose before
     // the next mixer/IK update and make distant actors visibly pulse.
     const animationRestoreK = Math.min(1, Math.max(0, Number(animationDt || 0.016)) * 10);
@@ -1193,15 +851,6 @@
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;
       const npcWeaponGroup = mesh.userData.enemyWeaponGroup;
-      if (npcWeaponGroup?.userData?.weaponMeshLegacy && typeof makeWeaponModelMesh === 'function') {
-        const upgraded = makeWeaponModelMesh(mesh.userData.weaponId || enemy.weapon || '');
-        if (upgraded) {
-          disposeGroupChildren(npcWeaponGroup);
-          initWeaponVisualState(npcWeaponGroup);
-          npcWeaponGroup.add(upgraded);
-          npcWeaponGroup.userData.weaponMeshLegacy = false;
-        }
-      }
       if (npcWeaponGroup) {
         updateWeaponVisualAnimation(npcWeaponGroup, animationDt, enemy);
       }
@@ -1243,35 +892,6 @@
     if (accent && accent.material) {
       const baseOpacity = Number(accent.userData.baseOpacity || 0.4);
       accent.material.opacity = baseOpacity + Math.sin(t * 0.7) * 0.045;
-    }
-    const amp = moving ? Math.min(0.28, Math.max(moved * 11, visualSpeed * 0.09)) : 0.035;
-    if (parts.kind === 'wolf') {
-      if (parts.body) parts.body.rotation.z = Math.sin(t) * amp * 0.18;
-      if (parts.chest) parts.chest.position.y = ((0.57 * (enemy.scale || 1)) + Math.sin(t * 1.2) * amp * 0.06);
-      if (parts.tail) parts.tail.rotation.z = Math.sin(t * 1.4) * 0.18;
-      if (parts.head) parts.head.rotation.x = -0.08 + Math.sin(t * 1.1) * 0.04;
-    } else if (parts.kind === 'scorpion' || parts.kind === 'mutantAnt' || parts.kind === 'gecko') {
-      const bodyBaseY = Number.isFinite(parts.body?.userData?.baseY) ? parts.body.userData.baseY : parts.body?.position?.y;
-      if (parts.body && Number.isFinite(bodyBaseY)) {
-        parts.body.userData.baseY = bodyBaseY;
-        parts.body.position.y = bodyBaseY + Math.sin(t * 1.3) * (moving ? 0.025 : 0.008);
-      }
-      if (parts.legs) parts.legs.rotation.y = moving ? Math.sin(t * 1.9) * amp * 0.45 : Math.sin(t * 0.45) * 0.025;
-      if (parts.tail) {
-        parts.tail.rotation.y = Math.sin(t * 1.1) * (parts.kind === 'scorpion' ? 0.1 : 0.16);
-        parts.tail.rotation.z = Math.sin(t * 0.9) * 0.045;
-      }
-      if (parts.claws) parts.claws.rotation.y = Math.sin(t * 1.35) * 0.06;
-      if (parts.head) parts.head.rotation.x = Math.sin(t * 0.95) * 0.025;
-    } else {
-      if (parts.legs) parts.legs.rotation.z = moving ? Math.sin(t * 1.4) * amp : 0;
-      if (parts.armL) parts.armL.rotation.z = -0.22 - Math.sin(t * 1.2) * amp;
-      if (parts.armR) parts.armR.rotation.z = 0.22 + Math.sin(t * 1.2) * amp;
-      if (parts.body) {
-        if (!Number.isFinite(parts.body.userData.baseY)) parts.body.userData.baseY = parts.body.position.y;
-        parts.body.position.y = parts.body.userData.baseY + Math.sin(t * 1.1) * (moving ? 0.035 : 0.012);
-      }
-      if (parts.head) parts.head.rotation.z = Math.sin(t * 0.75) * 0.035;
     }
     if (inDialogue) enemyAnimApplyDialoguePose(enemy, mesh, parts, animationDt, t);
     if (typeof updateCharacterMeleeAnimation === 'function') updateCharacterMeleeAnimation(mesh, animationDt);

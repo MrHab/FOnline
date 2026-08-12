@@ -95,26 +95,12 @@
 
   function makeRemoteWeaponMesh(weaponId = 'pistol') {
     weaponId = networkEquipmentBaseId(weaponId, 'pistol');
-    const model = typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(weaponId) : null;
-    if (model) return model;
-    if (weaponId === 'pistol') return makePistolMesh();
-    if (weaponId === 'rifle') return makeRifleMesh();
-    if (weaponId === 'assaultRifle') return makeAssaultRifleMesh();
-    if (weaponId === 'machineGun') return makeMachineGunMesh();
-    if (weaponId === 'laserPistol') return makeLaserPistolMesh();
-    if (weaponId === 'flamethrower') return makeFlamethrowerMesh();
-    if (weaponId === 'plasmaRifle') return makePlasmaRifleMesh();
-    if (weaponId === 'shotgun') return makeShotgunMesh();
-    if (weaponId === 'rocketLauncher') return makeRocketLauncherMesh();
-    if (weaponId === 'knife') return makeKnifeMesh();
-    if (weaponId === 'pickaxe') return makePickaxeMesh();
-    if (weaponId === 'axe') return makeAxeMesh();
-    if (weaponId === 'handPump' && typeof makeHandPumpMesh === 'function') return makeHandPumpMesh();
-    return null;
+    return typeof makeWeaponModelMesh === 'function' ? makeWeaponModelMesh(weaponId) : null;
   }
 
   function disposeGroupChildren(group) {
     if (!group) return;
+    if (typeof cancelWeaponGlbForGroup === 'function') cancelWeaponGlbForGroup(group);
     group.children.forEach(child => {
       child.traverse(obj => {
         if (!obj.userData?.weaponSharedAsset && obj.geometry && obj.geometry.dispose) obj.geometry.dispose();
@@ -142,11 +128,24 @@
     ].forEach(([weaponGroup, weaponId, handSlot]) => {
       if (!weaponGroup) return;
       disposeGroupChildren(weaponGroup);
+      weaponGroup.userData.weaponGlbRequestId = Number(weaponGroup.userData.weaponGlbRequestId || 0) + 1;
       initWeaponVisualState(weaponGroup);
       weaponGroup.userData.handSlot = handSlot;
       weaponGroup.userData.weaponId = weaponId || 'fists';
       const mesh = weaponId && weaponId !== 'fists' ? makeRemoteWeaponMesh(weaponId) : null;
+      if (typeof setWeaponGlbGroupVisibility === 'function') {
+        setWeaponGlbGroupVisibility(weaponGroup, !!mesh);
+      } else weaponGroup.visible = !!mesh;
       if (mesh) weaponGroup.add(mesh);
+      else if (weaponId && weaponId !== 'fists' && typeof requestWeaponGlbForGroup === 'function') {
+        requestWeaponGlbForGroup(weaponGroup, weaponId, {
+          onReady() {
+            if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+              invalidateModernProceduralRigAnimationCache(group, parts);
+            }
+          }
+        });
+      }
     });
     if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
       invalidateModernProceduralRigAnimationCache(group, parts);
@@ -286,7 +285,7 @@
     // применение по живому снимку повторится при подключении рантайма.
     if (typeof applyApprovedEquipmentVisuals === 'function') applyApprovedEquipmentVisuals(group, eq);
     const weaponGroup = ensureEnemyWeaponGroup(enemy);
-    if (parts.weaponStatic) parts.weaponStatic.visible = !eq.weapon || eq.weapon === 'fists';
+    if (parts.weaponStatic) parts.weaponStatic.visible = false;
     if (!weaponGroup) {
       if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
         invalidateModernProceduralRigAnimationCache(group, parts);
@@ -294,13 +293,23 @@
       return;
     }
     disposeGroupChildren(weaponGroup);
+    weaponGroup.userData.weaponGlbRequestId = Number(weaponGroup.userData.weaponGlbRequestId || 0) + 1;
     initWeaponVisualState(weaponGroup);
     const mesh = eq.weapon && eq.weapon !== 'fists' ? makeRemoteWeaponMesh(eq.weapon) : null;
-    weaponGroup.visible = !!mesh;
+    if (typeof setWeaponGlbGroupVisibility === 'function') {
+      setWeaponGlbGroupVisibility(weaponGroup, !!mesh);
+    } else weaponGroup.visible = !!mesh;
     if (mesh) weaponGroup.add(mesh);
-    // GLB-шаблон ствола мог ещё не загрузиться — тогда встал старый меш без
-    // сокетов хвата. Помечаем, чтобы кадровый цикл заменил его на GLB.
-    weaponGroup.userData.weaponMeshLegacy = !!mesh && !mesh.userData?.weaponSharedAsset;
+    else if (eq.weapon && eq.weapon !== 'fists' && typeof requestWeaponGlbForGroup === 'function') {
+      requestWeaponGlbForGroup(weaponGroup, eq.weapon, {
+        onReady() {
+          if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+            invalidateModernProceduralRigAnimationCache(group, parts);
+          }
+        }
+      });
+    }
+    weaponGroup.userData.weaponMeshLegacy = false;
     if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
       invalidateModernProceduralRigAnimationCache(group, parts);
     }
@@ -328,6 +337,7 @@
     const x = Number(enemy.visualX ?? enemy.x ?? oldMesh?.position?.x ?? 0);
     const z = Number(enemy.visualZ ?? enemy.z ?? oldMesh?.position?.z ?? 0);
     if (oldMesh) {
+      if (typeof cancelActorGlbVisualRequests === 'function') cancelActorGlbVisualRequests(oldMesh);
       forgetNetworkRevealObject(oldMesh);
       try { scene.remove(oldMesh); } catch (_) {}
     }

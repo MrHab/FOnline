@@ -11,6 +11,7 @@ const runtimePath = path.join(root, 'public', 'js', 'game', '04c_weapon_glb_runt
 const visualsPath = path.join(root, 'public', 'js', 'game', '04_player_model_visuals.js');
 const modernRuntimePath = path.join(root, 'public', 'js', 'game', '04a_player_model_modern_runtime.js');
 const remotePath = path.join(root, 'public', 'js', 'game', '05a_remote_actor_equipment.js');
+const globalMapPath = path.join(root, 'public', 'js', 'game', '11a_global_map_player_models.js');
 const loaderPath = path.join(root, 'public', 'js', 'game.js');
 const loadingPath = path.join(root, 'public', 'js', 'game', '13_minimap_hud_loop.js');
 
@@ -209,6 +210,10 @@ for (const [id, config] of expected) {
   'function preloadWeaponModels(',
   'function preloadWeaponModelLibrary()',
   'function makeWeaponModelMesh(',
+  'function requestWeaponGlbForGroup(',
+  'WEAPON_GLB_FLIGHT_RETRY_DELAYS_MS',
+  'WEAPON_GLB_GROUP_RETRY_MAX_DELAY_MS',
+  'function cancelWeaponGlbForGroup(',
   'function triggerWeaponModelAction(',
   'function updateWeaponModelAnimation(',
   "const WEAPON_MODEL_ASSET_VERSION = '7.93.0-deterministic-weapons-v1-b13d09c0';",
@@ -216,17 +221,33 @@ for (const [id, config] of expected) {
   'Number(clip.duration) / requestedDuration',
   "action.setLoop(THREE.LoopOnce, 1)"
 ].forEach(marker => assert(runtime.includes(marker), `weapon runtime integration is missing: ${marker}`));
+assert(!runtime.includes('WEAPON_GLB_GROUP_RETRY_ROUNDS'),
+  'live weapon slots still stop retrying after a finite number of failures');
 
 const visuals = fs.readFileSync(visualsPath, 'utf8');
 assert(visuals.includes("triggerWeaponModelAction(weaponGroup, 'attack')"));
 assert(visuals.includes('updateWeaponModelAnimation(weaponGroup, dt)'));
 assert(visuals.includes('makeWeaponModelMesh(weaponId)'));
+assert(!visuals.includes("if (!mesh && weaponId === 'pistol')"),
+  'player weapon rendering still falls back to a generated mesh');
 const modernRuntime = fs.readFileSync(modernRuntimePath, 'utf8');
 assert(modernRuntime.includes("triggerWeaponModelAction(weaponGroup, 'reload', { duration: reloadDuration })"));
 assert(modernRuntime.includes('applyApprovedWeaponGrip(actor, weaponId)'));
 const remote = fs.readFileSync(remotePath, 'utf8');
 assert(remote.includes('makeWeaponModelMesh(weaponId)'));
 assert(remote.includes('!obj.userData?.weaponSharedAsset'));
+assert(!remote.includes("if (weaponId === 'pistol') return makePistolMesh()"),
+  'remote/NPC weapon rendering still falls back to a generated mesh');
+assert(remote.includes('requestWeaponGlbForGroup(weaponGroup, weaponId')
+  && remote.includes('requestWeaponGlbForGroup(weaponGroup, eq.weapon'),
+  'remote players or NPCs do not attach a delayed GLB weapon after preload');
+const globalMap = fs.readFileSync(globalMapPath, 'utf8');
+assert(!globalMap.includes('buildGlobalMapFallbackPlayerModel'),
+  'global-map marker still contains the generated humanoid fallback');
+assert(!globalMap.includes("return makePistolMesh()"),
+  'global-map marker still contains generated weapon fallbacks');
+assert(globalMap.includes('requestWeaponGlbForGroup(weaponGroup, slotWeaponId'),
+  'global-map marker does not attach delayed GLB weapons');
 const loader = fs.readFileSync(loaderPath, 'utf8');
 assert(loader.includes("'/js/game/04c_weapon_glb_runtime.js'"));
 const loading = fs.readFileSync(loadingPath, 'utf8');

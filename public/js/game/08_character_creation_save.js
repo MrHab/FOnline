@@ -242,8 +242,8 @@
       );
     }
     if (hairOptions) {
-      const options = typeof CHARACTER_HAIR_OPTIONS !== 'undefined' && Array.isArray(CHARACTER_HAIR_OPTIONS)
-        ? CHARACTER_HAIR_OPTIONS
+      const options = typeof characterHairOptionsForSex === 'function'
+        ? characterHairOptionsForSex(creatorAppearance.sex)
         : [];
       renderCharacterAppearanceStepper(
         hairOptions,

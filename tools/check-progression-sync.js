@@ -664,10 +664,14 @@ const interactionHintBody = functionSlice(creator, 'function interactionHintForT
 if (!interactionHintBody.includes('isSilentCreatureActor(actor)')) {
   fail('Interaction hints must avoid generic NPC dialogue hints for silent creatures');
 }
-const enemyTypeFromSnapshotBody = functionSlice(network, 'function enemyVisualFromNetworkSnapshot', '\n  function enemyTypeFromNetworkSnapshot');
+const enemyTypeFromSnapshotBody = functionSlice(network, 'function enemyGlbIdentityFromText', '\n  function enemyGlbModelKeyFromSnapshot');
 ['saved.profile', 'saved.statProfile', 'saved.equipmentProfile', 'saved.lootProfile'].forEach(token => {
-  if (!enemyTypeFromSnapshotBody.includes(token)) fail(`Client enemy visual fallback must inspect ${token}`);
+  if (!enemyTypeFromSnapshotBody.includes(token)) fail(`Client enemy GLB identity fallback must inspect ${token}`);
 });
+const enemySnapshotModelBody = functionSlice(network, 'function enemyTypeFromNetworkSnapshot', '\n  function enemyAttackProfile');
+if (!enemySnapshotModelBody.includes('enemyGlbModelKeyFromSnapshot(saved, visual || base.visual)')) {
+  fail('Client enemy snapshots must recover an approved GLB modelKey before rendering');
+}
 const createEnemySnapshotBody = functionSlice(network, 'function createEnemyFromNetworkSnapshot', '\n  function applyNetworkEnemies');
 const applyEnemySnapshotBody = functionSlice(network, 'function applyNetworkEnemies', '\n  function ');
 ['profile', 'statProfile', 'equipmentProfile', 'lootProfile', 'role'].forEach(field => {

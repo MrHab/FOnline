@@ -231,6 +231,7 @@
     if (idx >= 0) enemies.splice(idx, 1);
     const midx = enemyMeshes.indexOf(enemy.mesh);
     if (midx >= 0) enemyMeshes.splice(midx, 1);
+    if (typeof cancelActorGlbVisualRequests === 'function') cancelActorGlbVisualRequests(enemy.mesh);
     scene.remove(enemy.mesh);
     const canMutateLocalEnemies = typeof clientEnemyStateMayUseLocalFallback === 'function'
       ? clientEnemyStateMayUseLocalFallback()

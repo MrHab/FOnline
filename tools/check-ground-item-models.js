@@ -105,12 +105,21 @@ const runtime = fs.readFileSync(RUNTIME_SOURCE, 'utf8');
 [
   "const GROUND_ITEM_MODEL_ASSET_VERSION = '7.76.7-ground-items-bc-v1'",
   'loadGroundItemLibrary()',
+  'function pendingGroundItemGlbAssetSnapshot()',
+  'groundItemModelRetryTimer',
   'loadWeaponModelTemplate(entry)',
   "loadApprovedEquipmentTemplate(itemId, 'male_medium')",
   'fitGroundItemPhysicalModel(model, itemId, kind)',
-  'group.userData.groundItemModelRequestId !== requestId',
-  'group.userData.groundItemFallback = body'
+  'group.userData.groundItemModelRequestId !== requestId'
 ].forEach(marker => assert(runtime.includes(marker), `Нет runtime-маркера: ${marker}`));
+
+[
+  'groundItemFallback',
+  'new THREE.BoxGeometry(0.54, 0.18, 0.42)',
+  'new THREE.CylinderGeometry(0.58, 0.58, 0.12, 16)'
+].forEach(marker => assert(!runtime.includes(marker), `Вернулся процедурный fallback предмета: ${marker}`));
+assert(runtime.includes("makeStaticModelGroup('campfireRest', -2.6, 2.2"),
+  'Неавторская локация снова подменяет GLB-костёр процедурной моделью');
 
 console.log(
   `Физические предметы OK: ${EXPECTED_LIBRARY_IDS.length} собственных + `

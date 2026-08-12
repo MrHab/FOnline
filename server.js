@@ -40,6 +40,7 @@ const {
   routineInterruptBlocksService,
   selectRoutinePackage
 } = require('./src/server/npc-routines');
+const { mergeAuthoredGlobalMap } = require('./src/server/global-map-merge');
 const {
   buildActivitySlotCatalog,
   buildActivitySlotIndexes,
@@ -392,6 +393,15 @@ function readAuthoredDataJson(file, fallback) {
   return readJson(file, bundledValue);
 }
 
+function readAuthoredGlobalMapJson(file, fallback) {
+  const bundledFile = path.join(BUNDLED_DATA_DIR, path.basename(file));
+  const bundledValue = readJson(bundledFile, fallback);
+  if (sameFilePath(file, bundledFile)) return bundledValue;
+  const storedValue = readJson(file, null);
+  if (!storedValue) return bundledValue;
+  return mergeAuthoredGlobalMap(storedValue, bundledValue);
+}
+
 function writeJsonAtomic(file, data, options = {}) {
   const tmp = `${file}.tmp`;
   const json = options.pretty === true
@@ -738,6 +748,12 @@ function normalizeGlobalMapConfig(raw = {}) {
       y: point.y,
       kind: String(node?.kind || 'settlement').slice(0, 32),
       locationCount: 1,
+      // Эти поля описывают узел, а не его вид, и раньше молча терялись при
+      // нормализации: клиент получал столицу без принадлежности фракции.
+      locationId: safeLocationFileId(node?.locationId || node?.id || ''),
+      capital: node?.capital === true,
+      capitalFaction: String(node?.capitalFaction || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32),
+      danger: clamp(Number(node?.danger || 0), 0, 10),
       model: String(node?.model || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
       modelScale: clamp(Number(node?.modelScale || 1), 0.4, 4),
       rotationY: clamp(Number(node?.rotationY || 0), 0, 360),
@@ -2954,9 +2970,12 @@ const FILE_GLOBAL_MAP_FALLBACK = {
   cells: {}
 };
 const LOCATIONS = loadAuthoredLocationDefinitions();
-let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredDataJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
-if (!fs.existsSync(GLOBAL_MAP_FILE)) {
-  try { writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true }); } catch (err) { console.error('Failed to create global map file:', err); }
+let GLOBAL_MAP = normalizeGlobalMapConfig(readAuthoredGlobalMapJson(GLOBAL_MAP_FILE, FILE_GLOBAL_MAP_FALLBACK));
+// Файл в DATA_DIR переписывается и когда подмешалось новое содержимое, иначе
+// оператор увидит на карте то, чего нет в его файле, и следующая правка через
+// редактор снова это потеряет.
+try { writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true }); } catch (err) {
+  console.error('Failed to persist global map file:', err);
 }
 const SERVER_ENEMY_TYPES = [
   // v7.36: у каждого типа свои чувства. Значения в world units: TILE=2,

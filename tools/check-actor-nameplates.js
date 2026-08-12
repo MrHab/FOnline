@@ -51,10 +51,35 @@ assert(targets.includes("const cls = 'hit-chance'"),
 assert(!/function updateHpBars\(\) \{\s*\/\/[^\n]*\n\s*\/\/[^\n]*\n\s*\}/.test(loop),
   'подписи над моделями снова заглушены');
 assert(loop.includes('function collectNameplateActors('), 'нет сбора актёров для подписей');
-assert(loop.includes("enemy.canDialogue !== true"),
-  'подписи вешаются не только на именных персонажей');
 assert(loop.includes('multiplayer?.remotePlayers') || loop.includes('multiplayer.remotePlayers'),
   'другие игроки не получают подписей');
+
+// --- Подписи только у важных НПС ---
+// Охрана и рабочие ходят толпами: подписи для всех превращают лагерь в стену
+// текста, поэтому отбор идёт по торговле и собственному разговору.
+const npcFilter = /function isNameplateNpc\([\s\S]*?\n  \}/.exec(loop);
+assert(npcFilter, 'нет отбора важных НПС для подписей');
+assert(/enemy\.traderId \|\| enemy\.traderProfile/.test(npcFilter[0]),
+  'торговцы перестали попадать в подписи');
+assert(npcFilter[0].includes('NAMEPLATE_ROLES.has('), 'отбор по роли пропал');
+const roleSet = /const NAMEPLATE_ROLES = new Set\(\[([^\]]*)\]\)/.exec(loop);
+assert(roleSet, 'нет списка ролей для подписей');
+for (const crowd of ['guard', 'worker', 'civilian', 'scavenger', 'hauler']) {
+  assert(!roleSet[1].includes(`'${crowd}'`),
+    `роль ${crowd} — это массовка, её подписывать нельзя`);
+}
+const collect = /function collectNameplateActors\([\s\S]*?\n  \}/.exec(loop);
+assert(collect && /!isNameplateNpc\(enemy\)/.test(collect[0]),
+  'отбор важных НПС не подключён к сбору подписей');
+
+// --- Свой персонаж тоже подписан ---
+assert(/kind: 'plate-player',\s*\n\s*self: true/.test(collect[0]),
+  'над своим персонажем нет подписи');
+assert(collect[0].includes("characterProfile?.name || player.name"),
+  'своя подпись берёт имя не из профиля персонажа');
+const healthSelf = /function nameplateHealthText\([\s\S]*?\n  \}/.exec(loop);
+assert(healthSelf && /actor\?\.self === true/.test(healthSelf[0]),
+  'своё точное здоровье не должно требовать перка «Осведомлённость»');
 
 // --- Раскладка не должна зависеть только от таблицы стилей ---
 const acquire = /function acquireNameplate\([\s\S]*?\n  \}/.exec(loop);
@@ -94,7 +119,19 @@ for (const field of ['name', 'hp', 'maxHp', 'x', 'z', 'hostileToPlayer']) {
 // --- Подсказка без мыши не должна уезжать в угол ---
 const hintFn = /function showTargetHint\([\s\S]*?\n  \}/.exec(targets);
 assert(hintFn, 'нет вывода подсказки');
-assert(/Number\.isFinite\(Number\(clientX\)\)/.test(hintFn[0]) && /window\.innerWidth \* 0\.5/.test(hintFn[0]),
-  'при осмотре с клавиатуры подсказка снова прыгнет в левый верхний угол');
+// Проверять надо сам аргумент: Number(null) — это ноль, а не NaN, поэтому
+// Number.isFinite(Number(clientX)) пропускает отсутствующий курсор и подсказка
+// снова встаёт в углу экрана.
+assert(!/Number\.isFinite\(Number\(client[XY]\)\)/.test(hintFn[0]),
+  'проверка курсора через Number() принимает null за ноль и вернёт подсказку в угол');
+assert(/Number\.isFinite\(clientX\) && Number\.isFinite\(clientY\)/.test(hintFn[0]),
+  'подсказка не проверяет, есть ли вообще координаты курсора');
+assert(hintFn[0].includes('targetHintScreenAnchor(enemy)'),
+  'без курсора подсказка должна вставать у самой цели');
+const anchorFn = /function targetHintScreenAnchor\([\s\S]*?\n  \}/.exec(targets);
+assert(anchorFn && anchorFn[0].includes('.project(camera)'),
+  'нет проекции цели на экран для подсказки');
+assert(/window\.innerWidth \* 0\.5/.test(anchorFn[0]),
+  'у подсказки нет запасной точки, если цель не проецируется');
 
 console.log('Actor nameplates OK: слой и стиль с версией, раскладка не зависит от кэша, точное HP по перку, игроки видны курсору, шанс попадания ярко-красный.');

@@ -90,13 +90,20 @@ for (const fileName of fs.readdirSync(locationsDir).filter(name => name.endsWith
     const modelFile = String(row.url || row.file || '').replace(/\\/g, '/').split('/').pop().toLowerCase()
       || modelFilesByKey.get(String(row.model || ''));
     assert(modelFile && catalog[modelFile], `${fileName}/${row.id || row.model}: blocking GLB has no generated collider`);
-    assert(transformedModelBlockers(catalog, modelFile, {
+    const transformed = transformedModelBlockers(catalog, modelFile, {
       x: Number(row.position?.x || row.x || 0),
       z: Number(row.position?.z || row.z || 0),
       rotationY: Number(row.rotation?.y ?? row.rotationY ?? 0),
       scaleX: Number(row.scale?.x ?? row.scale ?? 1),
       scaleZ: Number(row.scale?.z ?? row.scale ?? 1)
-    }).length > 0, `${fileName}/${row.id || row.model}: collider transform failed`);
+    });
+    const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
+    const exactWidth = Number(exact.width || exact.x || 0);
+    const exactDepth = Number(exact.depth || exact.z || 0);
+    const hasAuthoredFallback = Number.isFinite(exactWidth) && exactWidth > 0
+      && Number.isFinite(exactDepth) && exactDepth > 0;
+    assert(transformed.length > 0 || hasAuthoredFallback,
+      `${fileName}/${row.id || row.model}: collider transform and authored fallback both failed`);
     authoredColliderCount += 1;
   }
 }
@@ -129,10 +136,25 @@ const rubble = transformedModelBlocker(catalog, 'rubble_rock.glb', {
 });
 assert(rubble, 'offset model did not produce a collider');
 const rubbleBounds = modelColliderBounds(catalog, 'rubble_rock.glb');
-const expectedX = 10 - Number(rubbleBounds.center.z) * 0.5;
-const expectedZ = 20 + Number(rubbleBounds.center.x) * 2;
+const expectedX = 10 + Number(rubbleBounds.center.z) * 0.5;
+const expectedZ = 20 - Number(rubbleBounds.center.x) * 2;
 assert(Math.abs(rubble.x - expectedX) < 1e-9 && Math.abs(rubble.z - expectedZ) < 1e-9,
   'model origin offset is not rotated and scaled with the visual');
+assert(Math.abs(rubble.rotationY + Math.PI / 2) < 1e-9,
+  'model collider yaw does not match the THREE visual yaw convention');
+
+const clientTransformRuntime = new Function([
+  functionSource(clientModels, 'staticBoundsCollisionTransform'),
+  'return staticBoundsCollisionTransform;'
+].join('\n'))();
+const clientRubble = clientTransformRuntime(rubbleBounds, 10, 20, Math.PI / 2, {
+  scaleX: 2,
+  scaleZ: 0.5
+});
+assert(clientRubble && Math.abs(clientRubble.x - rubble.x) < 1e-9
+  && Math.abs(clientRubble.z - rubble.z) < 1e-9
+  && Math.abs(clientRubble.rotationY - rubble.rotationY) < 1e-9,
+'client and server disagree about the transformed GLB collider yaw');
 
 const scorpionRadius = modelColliderRadius(catalog, 'npc_radscorpion.glb', 1.05);
 const scorpionBounds = modelColliderBounds(catalog, 'npc_radscorpion.glb');
@@ -165,12 +187,101 @@ assert(functionBody(clientCollision, 'staticCollisionBoxPenaltyAt').includes('lo
   'client collision still tests only an axis-aligned bounding box');
 assert(functionBody(clientCollision, 'staticCollisionRayHitDistance').includes('localDx'),
   'client line collision ignores model rotation');
+const authoredMapMarking = functionBody(clientCollision, 'markAuthoredLocationObjectOnClientMap');
+assert(authoredMapMarking.includes('staticModelCollisionTransforms')
+  && authoredMapMarking.includes('authoredTileIntersectsStaticCollisionBox'),
+  'client authored movement/vision tiles do not follow multipart rotated GLB colliders');
+assert(authoredMapMarking.includes('authoredObjectCollisionSize(row)'),
+  'client authored tile marking lost the footprint fallback for models without collider parts');
+const exactVisionBranch = authoredMapMarking.slice(authoredMapMarking.indexOf('if (collisionBoxes.length)'));
+assert(exactVisionBranch.includes('authoredExactVisionBoxes.push')
+  && !exactVisionBranch.includes("markAuthoredTileLayer(tx, tz, 'vision-block')"),
+  'multipart GLB vision must keep sub-tile doorways instead of filling touched tiles');
+assert(functionBody(clientCollision, 'isAuthoredExactVisionBlockingWorldLine').includes('authoredExactVisionBoxes'),
+  'client authored vision has no exact multipart OBB line test');
+assert(functionBody(clientMovement, 'markVisibilityRay').includes('isAuthoredExactVisionBlockingWorldLine'),
+  'RTS fog rays ignore exact authored GLB vision blockers');
+assert(functionBody(clientMovement, 'markVisibilityRay').includes('visibilityTileWorldPoint'),
+  'RTS fog rays lose the player sub-tile offset and can seal narrow GLB doorways');
+assert(functionBody(clientMovement, 'isCrouchedTargetHiddenByLowCover').includes('isAuthoredExactLowCoverHidingCrouchedTargetWorldLine'),
+  'crouched targets are not hidden by exact authored GLB low cover');
+assert(functionBody(clientMovement, 'updateEntityRtsFogVisibility').includes('targetSubTileX')
+  && functionBody(clientMovement, 'updateEntityRtsFogVisibility').includes('targetSubTileZ'),
+  'entity visibility cache ignores target sub-tile movement around exact GLB cover');
+assert(functionBody(clientMovement, 'updateOccludedEntityVisibility').includes('subTileX')
+  && functionBody(clientMovement, 'updateOccludedEntityVisibility').includes('subTileZ'),
+  'fog state cache ignores player sub-tile movement through narrow GLB doorways');
+const visibilityUpdateBody = functionBody(clientMovement, 'updateOccludedEntityVisibility');
+assert(visibilityUpdateBody.includes('fogStateChanged && visibilityRefreshTimer <= 0')
+  && !visibilityUpdateBody.includes('fogStateChanged || visibilityRefreshTimer <= 0'),
+  'sub-tile player movement bypasses the fog refresh budget');
+assert(visibilityUpdateBody.includes('visibilitySafetyRefreshTimer <= 0')
+  && visibilityUpdateBody.includes('visibilitySafetyRefreshTimer = 2.40'),
+  'idle fog safety refresh is not independent from the sub-tile movement cooldown');
+assert(visibilityUpdateBody.includes('rtsFogObserverEpoch++')
+  && functionBody(clientMovement, 'updateEntityRtsFogVisibility').includes('rtsFogObserverEpoch'),
+  'observer sub-tile movement does not invalidate exact entity LOS caches');
+const hallVisionBoxes = transformedModelBlockers(catalog, 'old_klim_trade_hall.glb', {
+  x: -8,
+  z: 11,
+  rotationY: Math.PI / 2,
+  scaleX: 1,
+  scaleZ: 1
+}).map(box => ({ ...box, kind: 'block' }));
+const exactVisionRuntime = new Function('boxes', [
+  'const TILE = 2;',
+  'const authoredExactVisionBoxes = boxes;',
+  functionSource(clientCollision, 'authoredExactVisionBoxHitInterval'),
+  functionSource(clientCollision, 'isAuthoredExactVisionBlockingWorldLine'),
+  functionSource(clientCollision, 'isAuthoredExactLowCoverHidingCrouchedTargetWorldLine'),
+  'return { isAuthoredExactVisionBlockingWorldLine, isAuthoredExactLowCoverHidingCrouchedTargetWorldLine };'
+].join('\n'))(hallVisionBoxes);
+assert.strictEqual(exactVisionRuntime.isAuthoredExactVisionBlockingWorldLine(-5, 12.4, -7.2, 12.4, false), false,
+  'trade hall doorway is sealed along the real player-offset fog ray');
+assert.strictEqual(exactVisionRuntime.isAuthoredExactVisionBlockingWorldLine(-5, 13, -7, 13, false), true,
+  'trade hall regression fixture no longer demonstrates the blocked tile-center ray');
+const exactCoverRuntime = new Function('boxes', [
+  'const TILE = 2;',
+  'const authoredExactVisionBoxes = boxes;',
+  functionSource(clientCollision, 'authoredExactVisionBoxHitInterval'),
+  functionSource(clientCollision, 'isAuthoredExactVisionBlockingWorldLine'),
+  functionSource(clientCollision, 'isAuthoredExactLowCoverHidingCrouchedTargetWorldLine'),
+  'return { isAuthoredExactVisionBlockingWorldLine, isAuthoredExactLowCoverHidingCrouchedTargetWorldLine };'
+].join('\n'))([{ kind: 'cover', x: 0, z: 0, halfX: 1, halfZ: 0.2, rotationY: 0 }]);
+assert.strictEqual(exactCoverRuntime.isAuthoredExactVisionBlockingWorldLine(0, -3, 0, 1, false), false,
+  'low cover incorrectly blocks a standing observer');
+assert.strictEqual(exactCoverRuntime.isAuthoredExactVisionBlockingWorldLine(0, -3, 0, 1, true), true,
+  'low cover does not block a crouching observer');
+assert.strictEqual(exactCoverRuntime.isAuthoredExactLowCoverHidingCrouchedTargetWorldLine(0, -3, 0, 1, true), true,
+  'exact low cover does not hide a crouched target directly behind it');
+assert.strictEqual(exactCoverRuntime.isAuthoredExactLowCoverHidingCrouchedTargetWorldLine(0, -3, 0, 5, true), false,
+  'exact low cover hides crouched targets that are not directly behind it');
+const authoredTileSatRuntime = new Function([
+  'const TILE = 2;',
+  'function inBounds() { return true; }',
+  'function tileToWorld(tx, tz) { return { x: tx * TILE, z: tz * TILE }; }',
+  functionSource(clientCollision, 'authoredTileIntersectsStaticCollisionBox'),
+  'return authoredTileIntersectsStaticCollisionBox;'
+].join('\n'))();
+const diagonalWall = { x: 0, z: 0, halfX: 3, halfZ: 0.15, rotationY: Math.PI / 4 };
+assert.strictEqual(authoredTileSatRuntime(1, 1, diagonalWall), true,
+  'rotation-aware authored tile SAT missed a tile crossed by a diagonal wall');
+assert.strictEqual(authoredTileSatRuntime(1, -1, diagonalWall), false,
+  'rotation-aware authored tile SAT collapsed a diagonal wall to its broad AABB');
 assert(functionBody(clientModels, 'createStaticObstacleModel').includes('addStaticModelCollision'),
   'procedural GLB obstacles do not register generated bounds');
 assert(functionBody(clientModels, 'addAuthoredObjectCollision').includes('addStaticModelCollision'),
   'authored objects do not use generated model bounds');
 assert(functionBody(server, 'roomStaticCollisionBlockersFromObject').includes('transformedModelBlockers'),
   'server authored objects do not use generated model bounds');
+assert(functionBody(server, 'roomStaticCollisionBlockersFromObject').includes('row.collisionSize'),
+  'server authored objects do not support explicit collision fallbacks');
+assert(functionBody(clientModels, 'addAuthoredObjectCollision').includes('row.collisionSize'),
+  'client authored objects do not support explicit collision fallbacks');
+assert(functionBody(server, 'roomStaticCollisionBlockersFromObject').includes('rotationY: -rotationY'),
+  'server authored fallback collider does not convert THREE visual yaw');
+assert(functionBody(clientModels, 'addAuthoredObjectCollision').includes("'authored-object', -angle"),
+  'client authored fallback collider does not convert THREE visual yaw');
 assert(functionBody(server, 'roomProceduralModelSpec').includes('serverModelHash01'),
   'server procedural model selection is not synchronized with the client');
 

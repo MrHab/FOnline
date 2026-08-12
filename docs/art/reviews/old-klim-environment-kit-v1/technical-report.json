@@ -1,0 +1,471 @@
+{
+  "schema": "realm.old-klim-environment-report.v1",
+  "assetVersion": "old-klim-caravan-yard-v1",
+  "style": "geometry_b_material_colours",
+  "buildSeed": "realm-of-ashes:old-klim-caravan-yard:v1",
+  "generator": "tools/blender/build_old_klim_environment_kit.py",
+  "generatorSha256": "E6DA1EBD61DB4A70E44D33BBA90B45B77641AF2F9C33007BFAF87314F9320B49",
+  "rasterTextureDependencies": 0,
+  "models": {
+    "old_klim_trade_hall": {
+      "file": "old_klim_trade_hall.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_trade_hall.glb",
+      "sha256": "5D243344607A51F5E0FB3C4C4840169CF3ADEB7B72DA921822E7113C9A5EF4A7",
+      "bytes": 156236,
+      "kind": "hero_structure",
+      "instancing": "unique",
+      "shadowPolicy": "realtime",
+      "meshes": 5,
+      "primitives": 5,
+      "materials": 3,
+      "materialNames": [
+        "old_klim_amber_lamp",
+        "old_klim_weathered_charcoal_steel",
+        "old_klim_weathered_verdigris"
+      ],
+      "images": 0,
+      "vertices": 5584,
+      "triangles": 2776,
+      "minimumMetres": [
+        -6.605,
+        -2.425,
+        0.01067
+      ],
+      "maximumMetres": [
+        3.95,
+        1.99557,
+        3.49
+      ],
+      "sizeMetres": [
+        10.555,
+        4.42057,
+        3.47933
+      ],
+      "sourceVertices": 1472,
+      "cutawayGroup": "old_klim_trade_hall_roof"
+    },
+    "old_klim_trade_hall_roof": {
+      "file": "old_klim_trade_hall_roof.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_trade_hall_roof.glb",
+      "sha256": "04888FB63A8F889D081C24D60060C59EE47F3F632CD32F58B2499C562025A696",
+      "bytes": 59708,
+      "kind": "cutaway_roof",
+      "instancing": "unique",
+      "shadowPolicy": "realtime",
+      "meshes": 2,
+      "primitives": 2,
+      "materials": 2,
+      "materialNames": [
+        "old_klim_weathered_charcoal_steel",
+        "old_klim_weathered_verdigris"
+      ],
+      "images": 0,
+      "vertices": 2120,
+      "triangles": 1008,
+      "minimumMetres": [
+        -6.61059,
+        -1.81,
+        3.09052
+      ],
+      "maximumMetres": [
+        3.62545,
+        1.81,
+        4.92
+      ],
+      "sizeMetres": [
+        10.23604,
+        3.62,
+        1.82948
+      ],
+      "sourceVertices": 544,
+      "cutawayFor": "old_klim_trade_hall"
+    },
+    "old_klim_cliff_straight": {
+      "file": "old_klim_cliff_straight.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_cliff_straight.glb",
+      "sha256": "ABEF03D8DCBFFCD756425E3A0E03C64433E9630BC411D972BA835622DC357576",
+      "bytes": 14900,
+      "kind": "cliff_module_straight",
+      "instancing": "required",
+      "shadowPolicy": "baked_or_disabled",
+      "meshes": 2,
+      "primitives": 2,
+      "materials": 2,
+      "materialNames": [
+        "old_klim_ash_dusted_slate",
+        "old_klim_charcoal_slate"
+      ],
+      "images": 0,
+      "vertices": 450,
+      "triangles": 246,
+      "minimumMetres": [
+        -3.06659,
+        -1.17947,
+        0.04
+      ],
+      "maximumMetres": [
+        3.08512,
+        1.1384,
+        4.36387
+      ],
+      "sizeMetres": [
+        6.1517,
+        2.31787,
+        4.32387
+      ],
+      "sourceVertices": 150
+    },
+    "old_klim_cliff_corner": {
+      "file": "old_klim_cliff_corner.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_cliff_corner.glb",
+      "sha256": "F20322B994C066582903553308AA5822F87BADB587F633082D5178A30C75B904",
+      "bytes": 17756,
+      "kind": "cliff_module_corner",
+      "instancing": "required",
+      "shadowPolicy": "baked_or_disabled",
+      "meshes": 2,
+      "primitives": 2,
+      "materials": 2,
+      "materialNames": [
+        "old_klim_ash_dusted_slate",
+        "old_klim_charcoal_slate"
+      ],
+      "images": 0,
+      "vertices": 555,
+      "triangles": 303,
+      "minimumMetres": [
+        -2.78963,
+        -0.99994,
+        0.04
+      ],
+      "maximumMetres": [
+        2.278,
+        3.60429,
+        4.22368
+      ],
+      "sizeMetres": [
+        5.06763,
+        4.60422,
+        4.18368
+      ],
+      "sourceVertices": 185
+    },
+    "old_klim_cliff_end": {
+      "file": "old_klim_cliff_end.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_cliff_end.glb",
+      "sha256": "7B3DEF25F2E27026B6E80210352F76B833F7BAA5E3E1FA6BA2D6F7CE766F7FB9",
+      "bytes": 14880,
+      "kind": "cliff_module_end",
+      "instancing": "required",
+      "shadowPolicy": "baked_or_disabled",
+      "meshes": 2,
+      "primitives": 2,
+      "materials": 2,
+      "materialNames": [
+        "old_klim_ash_dusted_slate",
+        "old_klim_charcoal_slate"
+      ],
+      "images": 0,
+      "vertices": 450,
+      "triangles": 246,
+      "minimumMetres": [
+        -2.53283,
+        -1.107,
+        0.04
+      ],
+      "maximumMetres": [
+        2.5873,
+        1.22145,
+        4.15665
+      ],
+      "sizeMetres": [
+        5.12013,
+        2.32845,
+        4.11665
+      ],
+      "sourceVertices": 150
+    },
+    "old_klim_loading_canopy": {
+      "file": "old_klim_loading_canopy.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_loading_canopy.glb",
+      "sha256": "EC82A0206BE94617809994E93F3AE619173D2016961A7EC8DE4EDA15FF5B2B89",
+      "bytes": 36780,
+      "kind": "loading_yard_canopy",
+      "instancing": "limited",
+      "shadowPolicy": "major_prop",
+      "meshes": 2,
+      "primitives": 2,
+      "materials": 2,
+      "materialNames": [
+        "old_klim_oxidised_canvas",
+        "old_klim_weathered_charcoal_steel"
+      ],
+      "images": 0,
+      "vertices": 1276,
+      "triangles": 588,
+      "minimumMetres": [
+        -2.36,
+        -1.59,
+        0.02
+      ],
+      "maximumMetres": [
+        2.36,
+        1.59,
+        3.2
+      ],
+      "sizeMetres": [
+        4.72,
+        3.18,
+        3.18
+      ],
+      "sourceVertices": 320
+    },
+    "old_klim_caravan": {
+      "file": "old_klim_caravan.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_caravan.glb",
+      "sha256": "5295AEED8F31696F3AE9908EB32B2F2E6601BD32907E382534E49E1715D88E89",
+      "bytes": 80352,
+      "kind": "caravan_prop",
+      "instancing": "limited",
+      "shadowPolicy": "major_prop",
+      "meshes": 3,
+      "primitives": 3,
+      "materials": 3,
+      "materialNames": [
+        "old_klim_oxidised_canvas",
+        "old_klim_weathered_charcoal_steel",
+        "old_klim_weathered_verdigris"
+      ],
+      "images": 0,
+      "vertices": 2828,
+      "triangles": 1492,
+      "minimumMetres": [
+        -2.695,
+        -1.19258,
+        0.03404
+      ],
+      "maximumMetres": [
+        2.87,
+        1.19258,
+        2.55
+      ],
+      "sizeMetres": [
+        5.565,
+        2.38517,
+        2.51596
+      ],
+      "sourceVertices": 784
+    },
+    "old_klim_scrub_blue_a": {
+      "file": "old_klim_scrub_blue_a.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_scrub_blue_a.glb",
+      "sha256": "C6C00441E70718A89AC62F652AAEEADB58B3329E7361FF1E1BA41E928C699CAA",
+      "bytes": 25260,
+      "kind": "scrub_scatter",
+      "instancing": "required",
+      "shadowPolicy": "disabled",
+      "meshes": 1,
+      "primitives": 1,
+      "materials": 1,
+      "materialNames": [
+        "old_klim_oxidised_blue_scrub"
+      ],
+      "images": 0,
+      "vertices": 864,
+      "triangles": 468,
+      "minimumMetres": [
+        -0.65547,
+        -0.54444,
+        0.01337
+      ],
+      "maximumMetres": [
+        0.58078,
+        0.60875,
+        0.95132
+      ],
+      "sizeMetres": [
+        1.23625,
+        1.15319,
+        0.93795
+      ],
+      "sourceVertices": 288
+    },
+    "old_klim_scrub_blue_b": {
+      "file": "old_klim_scrub_blue_b.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_scrub_blue_b.glb",
+      "sha256": "6C5FF95F173A166FA4BBF26F4CFDF3C552D1AC3855E39D2C791DA8AD474AA812",
+      "bytes": 25260,
+      "kind": "scrub_scatter",
+      "instancing": "required",
+      "shadowPolicy": "disabled",
+      "meshes": 1,
+      "primitives": 1,
+      "materials": 1,
+      "materialNames": [
+        "old_klim_oxidised_blue_scrub"
+      ],
+      "images": 0,
+      "vertices": 864,
+      "triangles": 468,
+      "minimumMetres": [
+        -0.83027,
+        -0.93564,
+        0.00831
+      ],
+      "maximumMetres": [
+        0.88716,
+        0.78499,
+        0.72881
+      ],
+      "sizeMetres": [
+        1.71743,
+        1.72063,
+        0.72051
+      ],
+      "sourceVertices": 288
+    },
+    "old_klim_scrub_amber": {
+      "file": "old_klim_scrub_amber.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_scrub_amber.glb",
+      "sha256": "18C35A9FF43B69CD57FE1FCDEEAFF0B734BBC9CEE44AA4CBAEED4C9E1E3BC8E5",
+      "bytes": 25248,
+      "kind": "scrub_scatter",
+      "instancing": "required",
+      "shadowPolicy": "disabled",
+      "meshes": 1,
+      "primitives": 1,
+      "materials": 1,
+      "materialNames": [
+        "old_klim_dry_amber_scrub"
+      ],
+      "images": 0,
+      "vertices": 864,
+      "triangles": 468,
+      "minimumMetres": [
+        -0.55611,
+        -0.51652,
+        0.01566
+      ],
+      "maximumMetres": [
+        0.59069,
+        0.52607,
+        1.04208
+      ],
+      "sizeMetres": [
+        1.1468,
+        1.04259,
+        1.02642
+      ],
+      "sourceVertices": 288
+    },
+    "old_klim_rock_scatter_a": {
+      "file": "old_klim_rock_scatter_a.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_rock_scatter_a.glb",
+      "sha256": "95E82EA631AA1429B4023119A857C4CA4E379FDA0149451CB726D72BFE7614E0",
+      "bytes": 6432,
+      "kind": "rock_scatter",
+      "instancing": "required",
+      "shadowPolicy": "disabled",
+      "meshes": 1,
+      "primitives": 1,
+      "materials": 1,
+      "materialNames": [
+        "old_klim_ash_beige_rock"
+      ],
+      "images": 0,
+      "vertices": 180,
+      "triangles": 60,
+      "minimumMetres": [
+        -0.86426,
+        -0.38812,
+        0.02757
+      ],
+      "maximumMetres": [
+        0.92638,
+        0.48768,
+        0.65876
+      ],
+      "sizeMetres": [
+        1.79064,
+        0.8758,
+        0.63119
+      ],
+      "sourceVertices": 36
+    },
+    "old_klim_rock_scatter_b": {
+      "file": "old_klim_rock_scatter_b.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_rock_scatter_b.glb",
+      "sha256": "68F95CC92FB363D9C7E573BAF37D82677E19C0ED22747197DE6592E9369DDE8F",
+      "bytes": 7988,
+      "kind": "rock_scatter",
+      "instancing": "required",
+      "shadowPolicy": "disabled",
+      "meshes": 1,
+      "primitives": 1,
+      "materials": 1,
+      "materialNames": [
+        "old_klim_ash_beige_rock"
+      ],
+      "images": 0,
+      "vertices": 240,
+      "triangles": 80,
+      "minimumMetres": [
+        -0.81778,
+        -0.45729,
+        -0.01211
+      ],
+      "maximumMetres": [
+        0.68052,
+        0.48036,
+        0.49543
+      ],
+      "sizeMetres": [
+        1.4983,
+        0.93765,
+        0.50754
+      ],
+      "sourceVertices": 48
+    },
+    "old_klim_rock_scatter_c": {
+      "file": "old_klim_rock_scatter_c.glb",
+      "runtimeFile": "/assets/models/wasteland/old_klim_rock_scatter_c.glb",
+      "sha256": "D1E4BE072BAC776FA44A4C910DA4BD8FFC8648B1EB77BCB144692188DA15F4FB",
+      "bytes": 6428,
+      "kind": "rock_scatter",
+      "instancing": "required",
+      "shadowPolicy": "disabled",
+      "meshes": 1,
+      "primitives": 1,
+      "materials": 1,
+      "materialNames": [
+        "old_klim_ash_beige_rock"
+      ],
+      "images": 0,
+      "vertices": 180,
+      "triangles": 60,
+      "minimumMetres": [
+        -0.79365,
+        -0.4424,
+        -0.04474
+      ],
+      "maximumMetres": [
+        0.85948,
+        0.44726,
+        0.78772
+      ],
+      "sizeMetres": [
+        1.65313,
+        0.88966,
+        0.83246
+      ],
+      "sourceVertices": 36
+    }
+  },
+  "totals": {
+    "bytes": 477228,
+    "meshes": 24,
+    "primitives": 24,
+    "vertices": 16455,
+    "triangles": 8263
+  }
+}

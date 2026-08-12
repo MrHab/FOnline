@@ -52,8 +52,11 @@
   }
 
   let visibilityRefreshTimer = 0;
+  let visibilitySafetyRefreshTimer = 0;
   let entityVisibilityRefreshTimer = 0;
   let lastRtsFogStateKey = '';
+  let lastRtsFogHardStateKey = '';
+  let rtsFogObserverEpoch = 0;
   // v7.74.92: rtsFog/rtsFogVisibilityVersion are declared during bootstrap so
   // createTraderRoofAlphaMask()/isPointVisibleForGameplay() can be called while
   // the client chunks are still initializing. Here we only validate/reuse the
@@ -84,7 +87,10 @@
     rtsFog.radius = 0;
     rtsFogVisibilityVersion++;
     lastRtsFogStateKey = '';
+    lastRtsFogHardStateKey = '';
+    rtsFogObserverEpoch++;
     visibilityRefreshTimer = 0;
+    visibilitySafetyRefreshTimer = 0;
     entityVisibilityRefreshTimer = 0;
     if (typeof invalidateStaticRenderCulling === 'function') invalidateStaticRenderCulling(`fog-reset:${reason || 'world'}`);
   }
@@ -120,8 +126,38 @@
     }
   }
 
-  function isCrouchedTargetHiddenByLowCover(startTx, startTz, targetTx, targetTz) {
+  function visibilityTileWorldPoint(tx, tz, startTx, startTz) {
+    const center = tileToWorld(tx, tz);
+    if (!player || !Number.isFinite(Number(player.x)) || !Number.isFinite(Number(player.z))) return center;
+    const playerTile = worldToTile(Number(player.x), Number(player.z));
+    if (playerTile.tx !== startTx || playerTile.tz !== startTz) return center;
+    const startCenter = tileToWorld(startTx, startTz);
+    const maxOffset = TILE * 0.48;
+    const offsetX = Math.max(-maxOffset, Math.min(maxOffset, Number(player.x) - startCenter.x));
+    const offsetZ = Math.max(-maxOffset, Math.min(maxOffset, Number(player.z) - startCenter.z));
+    return { x: center.x + offsetX, z: center.z + offsetZ };
+  }
+
+  function isCrouchedTargetHiddenByLowCover(startTx, startTz, targetTx, targetTz, options = {}) {
     if (startTx === targetTx && startTz === targetTz) return false;
+    if (typeof isAuthoredExactLowCoverHidingCrouchedTargetWorldLine === 'function') {
+      const startWorld = visibilityTileWorldPoint(startTx, startTz, startTx, startTz);
+      const targetWorld = {
+        x: Number.isFinite(Number(options.targetWorldX))
+          ? Number(options.targetWorldX)
+          : visibilityTileWorldPoint(targetTx, targetTz, startTx, startTz).x,
+        z: Number.isFinite(Number(options.targetWorldZ))
+          ? Number(options.targetWorldZ)
+          : visibilityTileWorldPoint(targetTx, targetTz, startTx, startTz).z
+      };
+      if (isAuthoredExactLowCoverHidingCrouchedTargetWorldLine(
+        startWorld.x,
+        startWorld.z,
+        targetWorld.x,
+        targetWorld.z,
+        true
+      )) return true;
+    }
     const line = lineTilesBetween(startTx, startTz, targetTx, targetTz);
     // Низкое укрытие не скрывает карту и не режет обзор. Оно скрывает только
     // присевшего персонажа, если этот персонаж находится в первой клетке сразу
@@ -457,9 +493,18 @@
     return Math.max(3, Math.min(9, Math.round(radius / 2)));
   }
 
-  function hasStrictTileLineOfSight(startTx, startTz, endTx, endTz) {
+  function hasStrictTileLineOfSight(startTx, startTz, endTx, endTz, options = {}) {
     if (isTraderBuildingWallBlockingTileLine(startTx, startTz, endTx, endTz)) return false;
     if (isTraderBuildingLowCoverBlockingTileLine(startTx, startTz, endTx, endTz, !!player?.crouching)) return false;
+    if (typeof isAuthoredExactVisionBlockingWorldLine === 'function') {
+      const startWorld = visibilityTileWorldPoint(startTx, startTz, startTx, startTz);
+      const defaultEndWorld = visibilityTileWorldPoint(endTx, endTz, startTx, startTz);
+      const endWorld = {
+        x: Number.isFinite(Number(options.targetWorldX)) ? Number(options.targetWorldX) : defaultEndWorld.x,
+        z: Number.isFinite(Number(options.targetWorldZ)) ? Number(options.targetWorldZ) : defaultEndWorld.z
+      };
+      if (isAuthoredExactVisionBlockingWorldLine(startWorld.x, startWorld.z, endWorld.x, endWorld.z, !!player?.crouching)) return false;
+    }
     let x0 = startTx;
     let z0 = startTz;
     const x1 = endTx;
@@ -508,9 +553,32 @@
       if (x0 === x1 && z0 === z1) return;
       if (!(x0 === startTx && z0 === startTz) && isVisionBlockingTile(x0, z0)) return;
 
+      const previousTx = x0;
+      const previousTz = z0;
       const e2 = err * 2;
       if (e2 > -dz) { err -= dz; x0 += sx; }
       if (e2 < dx) { err += dx; z0 += sz; }
+      if (typeof isAuthoredExactVisionBlockingWorldLine === 'function') {
+        // Preserve the player's sub-tile offset along the whole ray. Thin GLB
+        // doorways can be genuinely open even when a tile-center ray clips a
+        // jamb; snapping fog rays to centers would seal those entrances.
+        const previousWorld = visibilityTileWorldPoint(previousTx, previousTz, startTx, startTz);
+        const nextWorld = visibilityTileWorldPoint(x0, z0, startTx, startTz);
+        if (isAuthoredExactVisionBlockingWorldLine(
+          previousWorld.x,
+          previousWorld.z,
+          nextWorld.x,
+          nextWorld.z,
+          !!player?.crouching
+        )) {
+          if (inBounds(x0, z0)) {
+            const wallTileKey = tileKey(x0, z0);
+            rtsFog.visibleTiles.add(wallTileKey);
+            rtsFog.exploredTiles.add(wallTileKey);
+          }
+          return;
+        }
+      }
     }
   }
 
@@ -676,7 +744,8 @@
     staticCullObjects.forEach(row => {
       if (!row || !row.object) return;
       // Пол не скрываем графическим culling, иначе низкий/средний пресет на ПК выглядит как ночь.
-      if (row.kind === 'floor' || row.kind === 'floor-detail' || row.object.userData?.noRuntimeCull) {
+      if (row.kind === 'floor' || row.kind === 'floor-detail'
+          || row.object.userData?.noRuntimeCull || row.object.userData?.noDistanceCull) {
         row.object.visible = true;
         return;
       }
@@ -707,9 +776,15 @@
     // already included in hasStrictTileLineOfSight()/markVisibilityRay(), so
     // there is no separate indoor visibility system anymore.
     const baseVisible = rtsFog.visibleTiles.has(tileKey(tt.tx, tt.tz)) &&
-      hasStrictTileLineOfSight(pt.tx, pt.tz, tt.tx, tt.tz);
+      hasStrictTileLineOfSight(pt.tx, pt.tz, tt.tx, tt.tz, {
+        targetWorldX: Number(worldX || 0),
+        targetWorldZ: Number(worldZ || 0)
+      });
     if (!baseVisible) return false;
-    if (options.crouching && isCrouchedTargetHiddenByLowCover(pt.tx, pt.tz, tt.tx, tt.tz)) return false;
+    if (options.crouching && isCrouchedTargetHiddenByLowCover(pt.tx, pt.tz, tt.tx, tt.tz, {
+      targetWorldX: Number(worldX || 0),
+      targetWorldZ: Number(worldZ || 0)
+    })) return false;
     return true;
   }
 
@@ -719,9 +794,16 @@
 
   function updateEntityRtsFogVisibility(obj3d, worldX, worldZ, options = {}) {
     if (!obj3d) return;
-    const tt = worldToTile(Number(worldX || 0), Number(worldZ || 0));
+    const targetX = Number(worldX || 0);
+    const targetZ = Number(worldZ || 0);
+    const tt = worldToTile(targetX, targetZ);
     const crouchBit = options.crouching ? 1 : 0;
-    const cacheKey = `${rtsFogVisibilityVersion}|${tt.tx},${tt.tz}|${crouchBit}`;
+    // Exact OBB cover can change visibility inside one tile. A small 0.1 m
+    // quantization keeps the cache useful without making a target remain
+    // hidden after it steps sideways from behind GLB low cover.
+    const targetSubTileX = Math.round(targetX * 10);
+    const targetSubTileZ = Math.round(targetZ * 10);
+    const cacheKey = `${rtsFogVisibilityVersion}:${rtsFogObserverEpoch}|${tt.tx},${tt.tz}|${targetSubTileX},${targetSubTileZ}|${crouchBit}`;
     if (obj3d.userData && obj3d.userData.rtsFogCacheKey === cacheKey) {
       if (typeof obj3d.userData.rtsFogVisible === 'boolean') {
         if (typeof setNetworkRevealVisibility === 'function') setNetworkRevealVisibility(obj3d, obj3d.userData.rtsFogVisible);
@@ -746,20 +828,37 @@
     // movement hitches. Rebuild the visibility field only when gameplay state
     // actually changes: tile, crouch state, radius, or a slow safety refresh.
     visibilityRefreshTimer -= dt;
+    visibilitySafetyRefreshTimer -= dt;
     entityVisibilityRefreshTimer -= dt;
     const pt = worldToTile(player.x, player.z);
     const radius = perceptionTileVisionRadius();
-    const stateKey = `${pt.tx},${pt.tz}|${radius}|${player.crouching ? 1 : 0}`;
+    const tileCenter = tileToWorld(pt.tx, pt.tz);
+    // Rebuild only after a meaningful 0.1 m sub-tile move. This preserves the
+    // event-driven fog budget while keeping narrow GLB doorways responsive.
+    const subTileX = Math.round((Number(player.x) - tileCenter.x) * 10);
+    const subTileZ = Math.round((Number(player.z) - tileCenter.z) * 10);
+    const hardStateKey = `${pt.tx},${pt.tz}|${radius}|${player.crouching ? 1 : 0}`;
+    const stateKey = `${pt.tx},${pt.tz}|${subTileX},${subTileZ}|${radius}|${player.crouching ? 1 : 0}`;
+    const hardFogStateChanged = hardStateKey !== lastRtsFogHardStateKey;
     const fogStateChanged = stateKey !== lastRtsFogStateKey;
-    const needFogRefresh = fogStateChanged || visibilityRefreshTimer <= 0;
+    // Tile/crouch/radius changes apply immediately. Sub-tile doorway changes
+    // are rate-limited by the existing vision budget instead of rebuilding
+    // every 0.1 m (which would turn ordinary running into ~40 full fog passes/s).
+    const needFogRefresh = hardFogStateChanged
+      || (fogStateChanged && visibilityRefreshTimer <= 0)
+      || visibilitySafetyRefreshTimer <= 0;
 
     if (needFogRefresh) {
+      lastRtsFogHardStateKey = hardStateKey;
       lastRtsFogStateKey = stateKey;
-      // Safety refresh is intentionally slower than entity visibility. It keeps
-      // dynamic world changes correct without turning movement into periodic CPU spikes.
-      visibilityRefreshTimer = fogStateChanged
-        ? Math.max(0.12, Number(graphicsSettings?.visionRefresh || 0.14))
-        : 2.40;
+      // Entity LOS also depends on the observer's exact position. Advance an
+      // independent epoch even if the resulting visible tile set is unchanged.
+      rtsFogObserverEpoch++;
+      // Doorway/sub-tile motion has its own short cooldown; an independent slow
+      // timer still repairs dynamic world changes while idle. This avoids both
+      // per-frame rebuilds and a 2.4 s wake-from-idle visibility delay.
+      visibilityRefreshTimer = Math.max(0.12, Number(graphicsSettings?.visionRefresh || 0.14));
+      visibilitySafetyRefreshTimer = 2.40;
       rebuildRtsFogOfWar();
     }
 

@@ -467,6 +467,54 @@
     return material;
   }
 
+  // The current authored Old Klim settlement uses GLB material colours and no
+  // legacy procedural building surfaces. Keep the old editor/module materials
+  // available, but do not download their 64 texture maps during every startup.
+  // A factory is resolved and cached only when an actual legacy block asks for
+  // that material through the `mats` proxy.
+  const LEGACY_WORLD_MATERIAL_FACTORIES = Object.freeze({
+    traderBuildingWallMetal: () => matPsxBuilding('trader_wall_metal_blue', { repeat: 1.1, normalAmount: 0.92, roughness: 0.88, metalness: 0.18 }),
+    traderBuildingCorrugatedRust: () => matPsxBuilding('trader_wall_corrugated_rust', { repeat: 1.2, normalAmount: 1.05, roughness: 0.94, metalness: 0.30 }),
+    traderBuildingCorrugatedWhite: () => matPsxBuilding('trader_wall_corrugated_white', { repeat: 1.1, normalAmount: 0.84, roughness: 0.92, metalness: 0.14 }),
+    traderBuildingBrickWindow: () => matPsxBuilding('trader_wall_brick_window', { repeat: 1.0, normalAmount: 0.76, roughness: 0.96, metalness: 0.0 }),
+    traderBuildingConcreteWindow: () => matPsxBuilding('trader_wall_concrete_window', { repeat: 1.0, normalAmount: 0.72, roughness: 0.98, metalness: 0.0 }),
+    traderBuildingDoorGrey: () => matPsxBuilding('trader_door_grey', { repeat: 1.0, normalAmount: 0.68, roughness: 0.82, metalness: 0.18 }),
+    traderBuildingRollupDoor: () => matPsxBuilding('trader_rollup_door', { repeat: 1.0, normalAmount: 0.90, roughness: 0.78, metalness: 0.32 }),
+    traderBuildingFloorConcrete: () => matPsxBuilding('trader_floor_concrete', { repeat: 2.2, normalAmount: 0.58, roughness: 0.98, metalness: 0.0 }),
+    traderBuildingRoofRedWhite: () => matPsxBuilding('trader_roof_red_white', { repeat: 1.15, normalAmount: 0.92, roughness: 0.90, metalness: 0.22 }),
+    traderRoofCleanCorrugated: () => matStandard({
+      color: 0xffffff,
+      map: loadWorldImageTexture('trader-roof-clean-corrugated-v77487', 'assets/textures/psx_buildings/trader_roof_clean_corrugated_v77487.webp', 2.65),
+      roughness: 0.92,
+      metalness: 0.04,
+      emissive: 0x24170f,
+      emissiveIntensity: 0.06
+    }),
+    traderBuildingWindowDark: () => matStandard({
+      map: loadWorldImageTexture('psx-trader-window-dark-v769', 'assets/textures/psx_buildings/trader_window_dark_v769.webp', 1),
+      color: 0x9fb1b1,
+      transparent: true,
+      opacity: 0.66,
+      roughness: 0.42,
+      metalness: 0.02,
+      emissive: 0x111c1d,
+      emissiveIntensity: 0.10
+    }),
+    realScaleOldBrickWall: () => matWoodBricksMaterial('oldbricks', { repeat: 2.7, normalAmount: 0.92, bumpScale: 0.038, roughness: 0.98 }),
+    realScaleBrokenConcrete: () => matWoodBricksMaterial('destroyed_concrete', { repeat: 2.15, normalAmount: 1.05, bumpScale: 0.050, roughness: 0.99 }),
+    realScaleWoodFloor: () => matWoodBricksMaterial('wood_floor_02', { repeat: 2.6, normalAmount: 0.72, bumpScale: 0.035, roughness: 0.86 }),
+    realScaleRoofWood: () => matWoodBricksMaterial('wood_floor_04', { repeat: 2.3, normalAmount: 0.86, bumpScale: 0.040, roughness: 0.90 }),
+    traderRoofRenderFast: () => matStandard({
+      color: 0xffffff,
+      map: loadWorldImageTexture('trader-roof-wood-planks-v77490', 'assets/textures/psx_buildings/trader_roof_wood_planks_v77490.webp', 3.45),
+      roughness: 0.92,
+      metalness: 0.0,
+      emissive: 0x000000,
+      emissiveIntensity: 0.0
+    }),
+    realScaleMixedFloor: () => matWoodBricksMaterial('wood_bricks_floor', { repeat: 2.2, normalAmount: 0.78, bumpScale: 0.034, roughness: 0.93 })
+  });
+
   const groundTextureRepeat = 1.15;
   const nextGenGroundTextureRepeat = IS_MOBILE_DEVICE ? 10.5 : 14.0;
   const archiveGroundTextureRepeat = IS_MOBILE_DEVICE ? 7.25 : 10.75;
@@ -570,42 +618,6 @@
     traderLayerShadow: new THREE.MeshBasicMaterial({ map: loadWorldImageTexture('trader-layer-shadow-v758', 'assets/textures/wasteland/layers/soft_shadow_blob_v758.webp', 1), color: 0xffffff, transparent: true, opacity: 0.58, depthWrite: false, depthTest: true, side: THREE.DoubleSide }),
     traderContactAO: new THREE.MeshBasicMaterial({ map: loadWorldImageTexture('baked-contact-ao-v761', 'assets/textures/wasteland/layers/baked_contact_ao_blob_v761.webp', 1), color: 0xffffff, transparent: true, opacity: 0.82, depthWrite: false, depthTest: true, side: THREE.DoubleSide }),
     traderWarmGlow: new THREE.MeshBasicMaterial({ map: loadWorldImageTexture('warm-bloom-blob-v761', 'assets/textures/wasteland/layers/warm_bloom_blob_v761.webp', 1), color: 0xffb45d, transparent: true, opacity: 0.52, depthWrite: false, depthTest: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }),
-    traderBuildingWallMetal: matPsxBuilding('trader_wall_metal_blue', { repeat: 1.1, normalAmount: 0.92, roughness: 0.88, metalness: 0.18 }),
-    traderBuildingCorrugatedRust: matPsxBuilding('trader_wall_corrugated_rust', { repeat: 1.2, normalAmount: 1.05, roughness: 0.94, metalness: 0.30 }),
-    traderBuildingCorrugatedWhite: matPsxBuilding('trader_wall_corrugated_white', { repeat: 1.1, normalAmount: 0.84, roughness: 0.92, metalness: 0.14 }),
-    traderBuildingBrickWindow: matPsxBuilding('trader_wall_brick_window', { repeat: 1.0, normalAmount: 0.76, roughness: 0.96, metalness: 0.0 }),
-    traderBuildingConcreteWindow: matPsxBuilding('trader_wall_concrete_window', { repeat: 1.0, normalAmount: 0.72, roughness: 0.98, metalness: 0.0 }),
-    traderBuildingDoorGrey: matPsxBuilding('trader_door_grey', { repeat: 1.0, normalAmount: 0.68, roughness: 0.82, metalness: 0.18 }),
-    traderBuildingRollupDoor: matPsxBuilding('trader_rollup_door', { repeat: 1.0, normalAmount: 0.90, roughness: 0.78, metalness: 0.32 }),
-    traderBuildingFloorConcrete: matPsxBuilding('trader_floor_concrete', { repeat: 2.2, normalAmount: 0.58, roughness: 0.98, metalness: 0.0 }),
-    traderBuildingRoofRedWhite: matPsxBuilding('trader_roof_red_white', { repeat: 1.15, normalAmount: 0.92, roughness: 0.90, metalness: 0.22 }),
-    traderRoofCleanCorrugated: matStandard({
-      color: 0xffffff,
-      map: loadWorldImageTexture('trader-roof-clean-corrugated-v77487', 'assets/textures/psx_buildings/trader_roof_clean_corrugated_v77487.webp', 2.65),
-      roughness: 0.92,
-      metalness: 0.04,
-      emissive: 0x24170f,
-      emissiveIntensity: 0.06
-    }),
-    traderBuildingWindowDark: matStandard({ map: loadWorldImageTexture('psx-trader-window-dark-v769', 'assets/textures/psx_buildings/trader_window_dark_v769.webp', 1), color: 0x9fb1b1, transparent: true, opacity: 0.66, roughness: 0.42, metalness: 0.02, emissive: 0x111c1d, emissiveIntensity: 0.10 }),
-    // v7.70: real-scale caravan-town construction no longer stretches a ready-made building atlas.
-    // Walls, floors and roofs use separate uploaded PBR materials with normal/roughness/AO/height.
-    realScaleOldBrickWall: matWoodBricksMaterial('oldbricks', { repeat: 2.7, normalAmount: 0.92, bumpScale: 0.038, roughness: 0.98 }),
-    realScaleBrokenConcrete: matWoodBricksMaterial('destroyed_concrete', { repeat: 2.15, normalAmount: 1.05, bumpScale: 0.050, roughness: 0.99 }),
-    realScaleWoodFloor: matWoodBricksMaterial('wood_floor_02', { repeat: 2.6, normalAmount: 0.72, bumpScale: 0.035, roughness: 0.86 }),
-    realScaleRoofWood: matWoodBricksMaterial('wood_floor_04', { repeat: 2.3, normalAmount: 0.86, bumpScale: 0.040, roughness: 0.90 }),
-    // v7.74.24: the cutaway roof is frequently toggled when entering the trader building.
-    // Keep that mesh on a cheap shader: map + light response only, no normal/roughness/AO/bump.
-    // Detailed PBR wood still remains for counters, shelves and other close interior parts.
-    traderRoofRenderFast: matStandard({
-      color: 0xffffff,
-      map: loadWorldImageTexture('trader-roof-wood-planks-v77490', 'assets/textures/psx_buildings/trader_roof_wood_planks_v77490.webp', 3.45),
-      roughness: 0.92,
-      metalness: 0.0,
-      emissive: 0x000000,
-      emissiveIntensity: 0.0
-    }),
-    realScaleMixedFloor: matWoodBricksMaterial('wood_bricks_floor', { repeat: 2.2, normalAmount: 0.78, bumpScale: 0.034, roughness: 0.93 }),
     red: new THREE.MeshBasicMaterial({ color: 0xd64a35 }),
     green: new THREE.MeshBasicMaterial({ color: 0x74bf47 }),
     black: new THREE.MeshBasicMaterial({ color: 0x090909 })
@@ -624,23 +636,38 @@
     return worldMaterialSet;
   }
 
+  function resolveWorldMaterial(key) {
+    const materialSet = ensureWorldMaterials();
+    if (Object.prototype.hasOwnProperty.call(materialSet, key)) return materialSet[key];
+    if (!Object.prototype.hasOwnProperty.call(LEGACY_WORLD_MATERIAL_FACTORIES, key)) return materialSet[key];
+    const factory = LEGACY_WORLD_MATERIAL_FACTORIES[key];
+    const material = markSharedMaterial(factory());
+    materialSet[key] = material;
+    return material;
+  }
+
   const mats = new Proxy(Object.create(null), {
     get(_target, key) {
-      return ensureWorldMaterials()[key];
+      return resolveWorldMaterial(key);
     },
     has(_target, key) {
-      return key in ensureWorldMaterials();
+      return key in ensureWorldMaterials()
+        || Object.prototype.hasOwnProperty.call(LEGACY_WORLD_MATERIAL_FACTORIES, key);
     },
     ownKeys() {
-      return Reflect.ownKeys(ensureWorldMaterials());
+      return Array.from(new Set([
+        ...Reflect.ownKeys(ensureWorldMaterials()),
+        ...Reflect.ownKeys(LEGACY_WORLD_MATERIAL_FACTORIES)
+      ]));
     },
     getOwnPropertyDescriptor(_target, key) {
       const materialSet = ensureWorldMaterials();
-      if (!(key in materialSet)) return undefined;
+      const hasLazyFactory = Object.prototype.hasOwnProperty.call(LEGACY_WORLD_MATERIAL_FACTORIES, key);
+      if (!(key in materialSet) && !hasLazyFactory) return undefined;
       return {
         configurable: true,
         enumerable: true,
-        value: materialSet[key],
+        value: hasLazyFactory ? resolveWorldMaterial(key) : materialSet[key],
         writable: false
       };
     }
@@ -653,7 +680,7 @@
   // Fingerprint of all canonical wasteland GLBs. Specific authored libraries
   // keep their own version above; this value protects every remaining model
   // from a stale immutable response after an in-place asset rebuild.
-  const STATIC_MODEL_GLB_ASSET_VERSION = '65a947da938a3e7f';
+  const STATIC_MODEL_GLB_ASSET_VERSION = '41b8f46d026123af';
   const PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS = new Set([
     'carWreck', 'deadTreeA', 'deadTreeB', 'deadTreeC',
     'dryBush', 'rubbleRock', 'scrapHeap', 'wastelandShack'
@@ -749,8 +776,45 @@
     utilityPole: '/assets/models/wasteland/utility_pole.glb',
     roadblockBarricade: '/assets/models/wasteland/roadblock_barricade.glb',
     dryBush: '/assets/models/wasteland/dry_bush.glb',
-    asphaltSlab: '/assets/models/wasteland/asphalt_slab.glb'
+    asphaltSlab: '/assets/models/wasteland/asphalt_slab.glb',
+    oldKlimTradeHall: '/assets/models/wasteland/old_klim_trade_hall.glb',
+    oldKlimTradeHallRoof: '/assets/models/wasteland/old_klim_trade_hall_roof.glb',
+    oldKlimCliffStraight: '/assets/models/wasteland/old_klim_cliff_straight.glb',
+    oldKlimCliffCorner: '/assets/models/wasteland/old_klim_cliff_corner.glb',
+    oldKlimCliffEnd: '/assets/models/wasteland/old_klim_cliff_end.glb',
+    oldKlimLoadingCanopy: '/assets/models/wasteland/old_klim_loading_canopy.glb',
+    oldKlimCaravan: '/assets/models/wasteland/old_klim_caravan.glb',
+    oldKlimScrubBlueA: '/assets/models/wasteland/old_klim_scrub_blue_a.glb',
+    oldKlimScrubBlueB: '/assets/models/wasteland/old_klim_scrub_blue_b.glb',
+    oldKlimScrubAmber: '/assets/models/wasteland/old_klim_scrub_amber.glb',
+    oldKlimRockScatterA: '/assets/models/wasteland/old_klim_rock_scatter_a.glb',
+    oldKlimRockScatterB: '/assets/models/wasteland/old_klim_rock_scatter_b.glb',
+    oldKlimRockScatterC: '/assets/models/wasteland/old_klim_rock_scatter_c.glb'
   };
+
+  const OLD_KLIM_AUTHORED_PALETTE_MODEL_KEYS = new Set([
+    'oldKlimTradeHall', 'oldKlimTradeHallRoof',
+    'oldKlimCliffStraight', 'oldKlimCliffCorner', 'oldKlimCliffEnd',
+    'oldKlimLoadingCanopy', 'oldKlimCaravan',
+    'oldKlimScrubBlueA', 'oldKlimScrubBlueB', 'oldKlimScrubAmber',
+    'oldKlimRockScatterA', 'oldKlimRockScatterB', 'oldKlimRockScatterC'
+  ]);
+  const OLD_KLIM_INSTANCED_MODEL_KEYS = new Set([
+    'oldKlimCliffStraight', 'oldKlimCliffCorner', 'oldKlimCliffEnd',
+    'oldKlimScrubBlueA', 'oldKlimScrubBlueB', 'oldKlimScrubAmber',
+    'oldKlimRockScatterA', 'oldKlimRockScatterB', 'oldKlimRockScatterC'
+  ]);
+  const AUTHORED_STATIC_INSTANCED_MODEL_KEYS = new Set([
+    ...OLD_KLIM_INSTANCED_MODEL_KEYS,
+    // The caravan yard repeats this multi-primitive GLB five times. Keeping the
+    // model available everywhere while batching it only in Old Klim removes
+    // dozens of draws without changing authored collision or LOS semantics.
+    'cargoStack'
+  ]);
+  const OLD_KLIM_CLIFF_MODEL_KEYS = new Set([
+    'oldKlimCliffStraight', 'oldKlimCliffCorner', 'oldKlimCliffEnd'
+  ]);
+  const OLD_KLIM_STATIC_MODEL_KEYS = new Set(OLD_KLIM_AUTHORED_PALETTE_MODEL_KEYS);
 
   function staticModelFileName(value = '') {
     const normalized = String(value || '').replace(/\\/g, '/').split('?')[0].split('#')[0];
@@ -782,7 +846,10 @@
     const uniformScale = Number.isFinite(Number(opts.scale)) ? Number(opts.scale) : 1;
     const scaleX = Number.isFinite(Number(opts.scaleX)) ? Number(opts.scaleX) : uniformScale;
     const scaleZ = Number.isFinite(Number(opts.scaleZ)) ? Number(opts.scaleZ) : uniformScale;
-    const rotationY = Number(angle || 0);
+    // THREE.Object3D.rotation.y uses the opposite X/Z yaw convention from the
+    // 2D collision helpers. Convert the authored visual yaw before rotating
+    // offset collider parts so their centers and OBB axes stay on the GLB.
+    const rotationY = -Number(angle || 0);
     const localCenterX = Number(bounds.center.x) * scaleX;
     const localCenterZ = Number(bounds.center.z) * scaleZ;
     const cos = Math.cos(rotationY);
@@ -990,6 +1057,12 @@
 
   function enhanceStaticModelMaterial(material, geometry) {
     if (!material) return material;
+    if (material.userData?.realmPreserveAuthoredPalette) {
+      material.depthWrite = !(material.transparent && Number(material.opacity ?? 1) < 0.98);
+      material.dithering = true;
+      material.needsUpdate = true;
+      return material;
+    }
     const useRichMaps = !IS_MOBILE_DEVICE && (graphicsQuality === 'high' || graphicsQuality === 'ultra');
     const visualTier = useRichMaps ? 'v7.76-rich' : 'v7.76-lite';
     if (material.userData?.realmVisualUpgrade === visualTier) return material;
@@ -1024,8 +1097,9 @@
     return material;
   }
 
-  function prepareStaticModelObject(object) {
+  function prepareStaticModelObject(object, key = '') {
     if (!object || !object.traverse) return object;
+    const preserveAuthoredPalette = OLD_KLIM_AUTHORED_PALETTE_MODEL_KEYS.has(key);
     object.traverse(part => {
       if (!part || !part.isMesh) return;
       part.castShadow = true;
@@ -1033,7 +1107,13 @@
       if (part.geometry && !getGeometryAttributeCompat(part.geometry, 'normal') && typeof part.geometry.computeVertexNormals === 'function') part.geometry.computeVertexNormals();
       if (part.geometry && typeof part.geometry.computeBoundingSphere === 'function') part.geometry.computeBoundingSphere();
       const materials = Array.isArray(part.material) ? part.material : [part.material];
-      materials.forEach(material => enhanceStaticModelMaterial(material, part.geometry));
+      materials.forEach(material => {
+        if (material && preserveAuthoredPalette) {
+          material.userData = material.userData || {};
+          material.userData.realmPreserveAuthoredPalette = true;
+        }
+        enhanceStaticModelMaterial(material, part.geometry);
+      });
     });
     return object;
   }
@@ -1079,8 +1159,13 @@
     const clone = cloneStaticModelSource(state.source);
     clone.traverse(part => {
       if (!part || !part.isMesh) return;
-      part.castShadow = true;
+      const repeatedAuthoredDetail = OLD_KLIM_INSTANCED_MODEL_KEYS.has(key);
+      part.castShadow = !repeatedAuthoredDetail;
       part.receiveShadow = true;
+      if (repeatedAuthoredDetail) {
+        part.userData = part.userData || {};
+        part.userData.forceNoShadow = true;
+      }
     });
     return clone;
   }
@@ -1397,7 +1482,7 @@ varying float vInstanceOpacity;`
     state.promise = new Promise(resolve => {
       loader.load(url, gltf => {
         const source = gltf && (gltf.scene || (gltf.scenes && gltf.scenes[0]));
-        state.source = prepareStaticModelObject(source || null);
+        state.source = prepareStaticModelObject(source || null, key);
         state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];
         state.loading = false;
         state.failed = false;
@@ -1580,14 +1665,6 @@ varying float vInstanceOpacity;`
 
   function authoredObjectCollisionSize(row = {}) {
     const key = staticModelKeyFromLocationObject(row);
-    const bounds = key ? staticModelColliderBounds(key) : null;
-    if (bounds) {
-      const scale = authoredObjectScale(row);
-      return {
-        width: Number(bounds.size.x) * Math.abs(scale.x),
-        depth: Number(bounds.size.z) * Math.abs(scale.z)
-      };
-    }
     const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
     const exactWidth = Number(exact.width || exact.x || 0);
     const exactDepth = Number(exact.depth || exact.z || 0);
@@ -1595,6 +1672,14 @@ varying float vInstanceOpacity;`
       return {
         width: Math.max(0.4, exactWidth),
         depth: Math.max(0.4, exactDepth)
+      };
+    }
+    const bounds = key ? staticModelColliderBounds(key) : null;
+    if (bounds) {
+      const scale = authoredObjectScale(row);
+      return {
+        width: Number(bounds.size.x) * Math.abs(scale.x),
+        depth: Number(bounds.size.z) * Math.abs(scale.z)
       };
     }
     const placement = row.placement && typeof row.placement === 'object' ? row.placement : {};
@@ -1858,9 +1943,17 @@ varying float vInstanceOpacity;`
       scaleX: scale.x,
       scaleZ: scale.z
     }, row.id || row.model || 'authored-object');
-    if (modelEntry) return colliders;
+    if (modelEntry && Array.isArray(colliders) && colliders.length) return colliders;
+    if (modelEntry) {
+      const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
+      const exactWidth = Number(exact.width || exact.x || 0);
+      const exactDepth = Number(exact.depth || exact.z || 0);
+      if (!(Number.isFinite(exactWidth) && exactWidth > 0 && Number.isFinite(exactDepth) && exactDepth > 0)) {
+        return [];
+      }
+    }
     const size = authoredObjectCollisionSize(row);
-    return addStaticCollisionBox(x, z, size.width, size.depth, row.id || row.model || 'authored-object', angle);
+    return addStaticCollisionBox(x, z, size.width, size.depth, row.id || row.model || 'authored-object', -angle);
   }
 
   function registerAuthoredTraderCutawayBlock(group, row = {}, key = '', x = 0, y = 0, z = 0, angle = 0) {
@@ -1935,6 +2028,112 @@ varying float vInstanceOpacity;`
     if (!batches || !key) return;
     if (!batches.has(key)) batches.set(key, []);
     batches.get(key).push(row);
+  }
+
+  function authoredStaticGlbObjectCanBeBatched(row = {}, key = '') {
+    if (!key || !AUTHORED_STATIC_INSTANCED_MODEL_KEYS.has(key) || !THREE.InstancedMesh) return false;
+    if (key === 'cargoStack' && currentLocation?.id !== 'settlement') return false;
+    if (locationObjectIsEntity(row)) return false;
+    if (authoredObjectIsJobBoard(row) || authoredObjectIsTradeMachine(row) || authoredObjectIsCraftingStation(row)) return false;
+    return true;
+  }
+
+  function queueAuthoredStaticGlbBatch(batches, row = {}, key = '') {
+    if (!batches || !key) return;
+    if (!batches.has(key)) batches.set(key, []);
+    batches.get(key).push(row);
+  }
+
+  function flushAuthoredStaticGlbBatches(batches) {
+    if (!batches || !batches.size || !THREE.InstancedMesh) return;
+    batches.forEach((batchRows, key) => {
+      const rows = Array.isArray(batchRows) ? batchRows.filter(Boolean) : [];
+      if (!rows.length) return;
+      const state = staticModelState(key);
+      const source = state?.source;
+      rows.forEach(row => {
+        const pos = row.position && typeof row.position === 'object' ? row.position : row;
+        const rot = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
+        addAuthoredObjectCollision(
+          row,
+          Number(pos.x || 0),
+          Number(pos.z || 0),
+          Number(rot.y ?? row.rotationY ?? 0)
+        );
+      });
+      // Target-location assets are preloaded under the reveal overlay. If a
+      // request is still late, fall back to normal shared-source clones so the
+      // perimeter never disappears on a slow network. The next location entry
+      // uses the cheaper instanced path once the source is cached.
+      if (!source) {
+        rows.forEach(row => {
+          const pos = row.position && typeof row.position === 'object' ? row.position : row;
+          const rot = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
+          const scale = authoredObjectScale(row);
+          const x = Number(pos.x || 0);
+          const z = Number(pos.z || 0);
+          const fallback = createStaticSetDressing(
+            key,
+            x,
+            z,
+            Number(rot.y ?? row.rotationY ?? 0),
+            row.id || key,
+            { y: Number(pos.y || 0), scaleX: scale.x, scaleY: scale.y, scaleZ: scale.z, cloneMaterials: false }
+          );
+          markNoDistanceCull(fallback, 'old-klim-late-glb-fallback');
+        });
+        return;
+      }
+      const sourceMeshes = [];
+      source.updateMatrixWorld?.(true);
+      source.traverse(part => {
+        if (part?.isMesh && part.geometry && part.material) sourceMeshes.push(part);
+      });
+      const sourcePosition = new THREE.Vector3();
+      const sourceQuaternion = new THREE.Quaternion();
+      const sourceScale = new THREE.Vector3();
+      const rowPosition = new THREE.Vector3();
+      const rowQuaternion = new THREE.Quaternion();
+      const rowScale = new THREE.Vector3();
+      const rowMatrix = new THREE.Matrix4();
+      const sourceMatrix = new THREE.Matrix4();
+      const finalMatrix = new THREE.Matrix4();
+      const up = new THREE.Vector3(0, 1, 0);
+      sourceMeshes.forEach((sourceMesh, primitiveIndex) => {
+        sourceMesh.matrixWorld.decompose(sourcePosition, sourceQuaternion, sourceScale);
+        sourceMatrix.compose(sourcePosition, sourceQuaternion, sourceScale);
+        const material = sourceMesh.material;
+        const mesh = new THREE.InstancedMesh(sourceMesh.geometry, material, rows.length);
+        mesh.name = `authored_glb_batch_${key}_${primitiveIndex}_${currentLocation?.id || 'location'}`;
+        mesh.castShadow = false;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+        mesh.userData.kind = `authored-static-instanced-${key}`;
+        mesh.userData.staticModelKey = key;
+        mesh.userData.authoredStaticGlbBatch = true;
+        mesh.userData.forceNoShadow = true;
+        rows.forEach((row, index) => {
+          const pos = row.position && typeof row.position === 'object' ? row.position : row;
+          const rot = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
+          const scale = authoredObjectScale(row);
+          rowPosition.set(Number(pos.x || 0), Number(pos.y || 0), Number(pos.z || 0));
+          rowQuaternion.setFromAxisAngle(up, Number(rot.y ?? row.rotationY ?? 0));
+          rowScale.set(scale.x, scale.y, scale.z);
+          rowMatrix.compose(rowPosition, rowQuaternion, rowScale);
+          finalMatrix.multiplyMatrices(rowMatrix, sourceMatrix);
+          mesh.setMatrixAt(index, finalMatrix);
+        });
+        if (mesh.instanceMatrix) mesh.instanceMatrix.needsUpdate = true;
+        markNoRuntimeCull(mesh, 'old-klim-instanced-perimeter');
+        worldGroup.add(mesh);
+        staticCullObjects.push({
+          object: mesh,
+          tx: Math.floor(MAP_W / 2),
+          tz: Math.floor(MAP_H / 2),
+          kind: 'authored-location-object'
+        });
+      });
+    });
   }
 
   function createAuthoredModuleBatchProxy(row = {}, key = '', batchData = {}) {
@@ -2043,6 +2242,7 @@ varying float vInstanceOpacity;`
     if (!locationUsesAuthoredLayout(currentLocation)) return false;
     const rows = Array.isArray(currentLocation.objects) ? currentLocation.objects : [];
     const moduleBatches = new Map();
+    const staticGlbBatches = new Map();
     rows.forEach(row => {
       if (!row || typeof row !== 'object' || locationObjectIsEntity(row)) return;
       if (!authoredResourceObjectIsVisible(row)) return;
@@ -2053,6 +2253,10 @@ varying float vInstanceOpacity;`
         queueAuthoredModuleBatch(moduleBatches, row, key);
         return;
       }
+      if (authoredStaticGlbObjectCanBeBatched(row, key)) {
+        queueAuthoredStaticGlbBatch(staticGlbBatches, row, key);
+        return;
+      }
       const pos = row.position && typeof row.position === 'object' ? row.position : row;
       const rot = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
       const scale = authoredObjectScale(row);
@@ -2060,19 +2264,37 @@ varying float vInstanceOpacity;`
       const y = Number(pos.y || 0);
       const z = Number(pos.z || 0);
       const angle = Number(rot.y ?? row.rotationY ?? 0);
+      const configureOldKlimRoofModel = (holder, model) => {
+        if (key !== 'oldKlimTradeHallRoof' || !model?.traverse) return;
+        model.traverse(part => {
+          if (!part?.isMesh) return;
+          part.castShadow = false;
+          part.receiveShadow = false;
+          part.userData = part.userData || {};
+          part.userData.forceNoShadow = true;
+        });
+        const roofGroup = holder?.parent;
+        const opacity = Number(roofGroup?.userData?.traderOccluderOpacity ?? 1.0);
+        if (roofGroup && typeof applyTraderOccluderOpacity === 'function') {
+          delete roofGroup.userData.traderOccluderOpacity;
+          applyTraderOccluderOpacity(roofGroup, opacity);
+        }
+      };
       const opts = {
         y,
         scaleX: scale.x,
         scaleY: scale.y,
         scaleZ: scale.z,
         cloneMaterials: true,
-        registerCollision: false
+        registerCollision: false,
+        afterApply: configureOldKlimRoofModel
       };
       const visionKind = authoredObjectVisionKind(row);
       const modelVision = authoredObjectModelVisionRule(row);
       const group = authoredObjectBlocksMovement(row)
         ? createStaticObstacleModel(key, x, z, angle, row.id || key, 'authored-location-object', opts)
         : createStaticSetDressing(key, x, z, angle, row.id || key, opts);
+      if (OLD_KLIM_STATIC_MODEL_KEYS.has(key)) markNoDistanceCull(group, 'old-klim-authored-glb');
       group.userData.locationObjectId = row.id || '';
       group.userData.locationObject = row;
       group.userData.collision = row.collision || '';
@@ -2163,9 +2385,34 @@ varying float vInstanceOpacity;`
         locationTradeMachines.push(machine);
       }
       registerAuthoredTraderCutawayBlock(group, row, key, x, y, z, angle);
+      if (key === 'oldKlimTradeHallRoof') {
+        const roofBounds = staticModelCatalogEntry(key);
+        const roofCenter = roofBounds?.center || { x: -1.492574, y: 4.005261, z: 0 };
+        const roofSize = roofBounds?.size || { x: 10.236039, y: 1.829478, z: 3.62 };
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const localCenterX = Number(roofCenter.x || 0) * scale.x;
+        const localCenterZ = Number(roofCenter.z || 0) * scale.z;
+        group.userData.traderAuthoredRoofBlock = true;
+        group.userData.traderWorldTileSized = true;
+        group.userData.traderRoofWorldX = x + localCenterX * cos + localCenterZ * sin;
+        group.userData.traderRoofWorldZ = z - localCenterX * sin + localCenterZ * cos;
+        const localSizeX = Math.max(0.1, Number(roofSize.x || row.footprint?.x || 10.24) * Math.abs(scale.x));
+        const localSizeZ = Math.max(0.1, Number(roofSize.z || row.footprint?.z || 3.62) * Math.abs(scale.z));
+        group.userData.traderRoofSizeX = Math.abs(cos) * localSizeX + Math.abs(sin) * localSizeZ;
+        group.userData.traderRoofSizeZ = Math.abs(sin) * localSizeX + Math.abs(cos) * localSizeZ;
+        group.userData.traderRoofSizeY = Math.max(0.04, Number(roofSize.y || row.footprint?.y || 1.83) * Math.abs(scale.y));
+        group.userData.traderRoofWorldY = y + Number(roofCenter.y || 4.005) * scale.y;
+        group.userData.traderRoofOpacity = 1.0;
+        group.userData.forceNoShadow = true;
+        traderBuildingAuthoredRoofBlocks.push(group);
+        invalidateTraderShellBoundsCache();
+        requestTraderRoofCutawayRefresh('old-klim-roof-registered');
+      }
       group.userData.staticCollisionBox = addAuthoredObjectCollision(row, x, z, angle);
     });
     flushAuthoredModuleBatches(moduleBatches);
+    flushAuthoredStaticGlbBatches(staticGlbBatches);
     return true;
   }
 

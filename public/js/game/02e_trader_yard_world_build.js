@@ -148,7 +148,6 @@
     mesh.renderOrder = 1;
     mesh.receiveShadow = true;
     mesh.userData.kind = kind;
-    if (isTraderYardLocation()) markNoRuntimeCull(mesh, 'trader-yard-layer');
     worldGroup.add(mesh);
     const tt = worldToTile(x, z);
     staticCullObjects.push({ object: mesh, tx: tt.tx, tz: tt.tz, kind: 'floor-detail' });
@@ -158,6 +157,65 @@
   function createGroundLayerTile(tx, tz, material, sx = 4, sz = 4, rot = 0, opacity = null, y = 0.010) {
     const p = tileToWorld(tx, tz);
     return createGroundLayerWorld(p.x, p.z, material, sx, sz, rot, opacity, y);
+  }
+
+  function createGroundLayerBatchWorld(material, spots = [], kind = 'trader-ground-layer-batch') {
+    const rows = Array.isArray(spots) ? spots.filter(row => Array.isArray(row) && row.length >= 2) : [];
+    if (!material || !rows.length) return null;
+    if (!THREE.InstancedMesh || typeof enableInstanceOpacityMaterial !== 'function') {
+      rows.forEach(([x, z, sx = 4, sz = 4, rot = 0, opacity = null, y = 0.010]) => {
+        createGroundLayerWorld(x, z, material, sx, sz, rot, opacity, y, kind);
+      });
+      return null;
+    }
+
+    // The authored yard used to clone one transparent material and submit one draw
+    // call for every ground patch. Keep the same transforms and per-patch opacity,
+    // but submit every patch sharing a material as one instanced draw call.
+    const geometry = detailPlaneGeom.clone ? markDisposableGeometry(detailPlaneGeom.clone()) : detailPlaneGeom;
+    // Share shader programs across batches with the same material feature set;
+    // textures stay separate uniforms and do not need separate compilations.
+    const batchMaterial = enableInstanceOpacityMaterial(material, 'trader-ground-layer-batch');
+    const baseOpacity = Math.max(0, Math.min(1, Number(material.opacity ?? 1)));
+    batchMaterial.opacity = 1;
+
+    const mesh = new THREE.InstancedMesh(geometry, batchMaterial, rows.length);
+    const opacityArray = new Float32Array(rows.length);
+    const InstancedAttribute = THREE.InstancedBufferAttribute || THREE.BufferAttribute;
+    const opacityAttribute = new InstancedAttribute(opacityArray, 1);
+    if (geometry && typeof geometry.setAttribute === 'function') {
+      geometry.setAttribute('instanceOpacity', opacityAttribute);
+    } else if (typeof setGeometryAttributeCompat === 'function') {
+      setGeometryAttributeCompat(geometry, 'instanceOpacity', opacityAttribute);
+    }
+
+    const dummy = new THREE.Object3D();
+    rows.forEach(([x, z, sx = 4, sz = 4, rot = 0, opacity = null, y = 0.010], index) => {
+      dummy.position.set(Number(x || 0), Number(y || 0), Number(z || 0));
+      dummy.rotation.set(-Math.PI / 2, 0, Number(rot || 0));
+      dummy.scale.set(Number(sx || 4), Number(sz || 4), 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+      opacityArray[index] = opacity === null ? baseOpacity : Math.max(0, Math.min(1, Number(opacity || 0)));
+    });
+
+    if (mesh.instanceMatrix) mesh.instanceMatrix.needsUpdate = true;
+    opacityAttribute.needsUpdate = true;
+    mesh.name = `${kind}_${currentLocation?.id || 'location'}`;
+    mesh.renderOrder = 1;
+    mesh.castShadow = false;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    mesh.userData.kind = kind;
+    mesh.userData.groundLayerInstanceCount = rows.length;
+    worldGroup.add(mesh);
+    staticCullObjects.push({
+      object: mesh,
+      tx: Math.floor(MAP_W / 2),
+      tz: Math.floor(MAP_H / 2),
+      kind: 'floor-detail'
+    });
+    return mesh;
   }
 
   function createTraderReliefPebbleField() {
@@ -225,19 +283,20 @@
     const ao = mats.traderContactAO;
     if (!ao) return;
     const spots = [
-      [15.0, 20.0, 5.0, 2.9, -0.08, 0.72], // trader_shop / лавка Старого Клима
-      [24.0, 20.0, 5.2, 3.0, 0.10, 0.68], // player_storage + storage lean-to
-      [24.0, 16.5, 6.2, 3.4, 0.18, 0.70], // main_storage / склад
-      [19.0, 8.2, 10.4, 2.3, 0.02, 0.58], // main_gate
-      [16.0, 10.2, 3.2, 2.4, 0.20, 0.56], // gate_tower_left
-      [22.0, 10.2, 3.2, 2.4, -0.20, 0.56], // gate_tower_right
-      [28.0, 13.4, 6.4, 3.8, 0.02, 0.48], // brahmin_pen
-      [10.0, 28.0, 6.6, 3.7, -0.10, 0.38], // armory + gardens
-      [24.0, 26.0, 5.4, 2.8, 0.25, 0.42], // workshop
-      [17.0, 19.0, 3.2, 2.0, 0.0, 0.46], // well/water tank
-      [7.0, 12.0, 2.6, 2.0, -0.08, 0.42]  // latrine
+      [-14.3, 3.2, 11.6, 5.4, 0.00, 0.72], // GLB trade hall
+      [-12.0, -5.0, 12.0, 6.6, 0.00, 0.58], // six-station workshop
+      [-5.0, 11.0, 4.2, 3.0, 0.08, 0.56], // capital storage
+      [2.0, 1.0, 4.0, 3.0, 0.12, 0.42], // plaza fire
+      [13.0, 1.0, 6.0, 3.3, 0.26, 0.48], // caravan
+      [18.0, 18.0, 5.3, 3.7, 0.00, 0.48], // loading canopy
+      [15.0, 11.0, 8.0, 5.5, -0.08, 0.42], // cargo/loading stacks
+      [1.0, -21.0, 11.0, 2.8, 0.00, 0.44] // southern gate
     ];
-    spots.forEach(([tx, tz, sx, sz, rot, op]) => createGroundLayerTile(tx, tz, ao, sx, sz, rot, op, 0.026));
+    createGroundLayerBatchWorld(
+      ao,
+      spots.map(([x, z, sx, sz, rot, op]) => [x, z, sx, sz, rot, op, 0.026]),
+      'trader-contact-ao-batch'
+    );
   }
 
   function createTraderInstancedDryGrassField() {
@@ -338,32 +397,43 @@
     const detail = graphicsDetailLevel();
     const extra = detail >= 0.64;
 
-    // Чистая база двора без хаотичного мусора.
-    createGroundLayerTile(19, 20, mats.traderLayerSand, 28, 21.0, 0.01, 0.76, 0.011);
-    createGroundLayerTile(19, 20, mats.traderLayerCracks, 24, 16.8, -0.04, 0.28, 0.014);
+    // Each material is one draw call. Individual patches retain the exact authored
+    // position, scale, rotation, height and alpha through instance attributes.
+    createGroundLayerBatchWorld(mats.traderLayerSand, [
+      [0, 2, 28, 22, 0.01, 0.76, 0.011],
+      [0, 22, 28, 4.0, 0.02, 0.42, 0.012],
+      [-25, 2, 4.0, 21.0, Math.PI / 2, 0.18, 0.010],
+      [25, 2, 4.0, 21.0, Math.PI / 2, 0.18, 0.010]
+    ], 'trader-ground-sand-batch');
+    createGroundLayerBatchWorld(mats.traderLayerCracks, [
+      [0, 1, 24, 17, -0.04, 0.28, 0.014]
+    ], 'trader-ground-cracks-batch');
 
-    // Главный караванный путь: северные ворота -> двор -> торговец/склад.
-    createGroundLayerTile(19, 18, mats.traderLayerRoad, 8.8, 24.5, 0.015, 0.80, 0.012);
-    createGroundLayerTile(19, 13, mats.traderLayerTire, 7.4, 10.2, 0.02, 0.52, 0.016);
-    createGroundLayerTile(17, 15, mats.traderLayerTire, 5.6, 5.4, -0.18, 0.30, 0.016);
+    // Главный караванный путь и функциональные зоны двора.
+    createGroundLayerBatchWorld(mats.traderLayerRoad, [
+      [1, -10, 9.5, 29.0, 0.015, 0.80, 0.012],
+      [-13.0, 3.0, 13.5, 7.2, -0.02, 0.58, 0.014], // trade hall
+      [2.0, 1.0, 12.0, 9.0, 0.04, 0.44, 0.014] // plaza
+    ], 'trader-ground-road-batch');
+    createGroundLayerBatchWorld(mats.traderLayerTire, [
+      [3, -8, 7.4, 16.0, 0.02, 0.52, 0.016],
+      [11, 4, 15.0, 6.0, -0.18, 0.30, 0.016]
+    ], 'trader-ground-tire-batch');
+    createGroundLayerBatchWorld(mats.traderLayerOil, [
+      [-12.0, -5.0, 13.0, 8.0, -0.02, 0.40, 0.018], // workshop
+      [13.0, 1.0, 7.0, 4.0, 0.18, 0.28, 0.018] // caravan service patch
+    ], 'trader-ground-oil-batch');
+    createGroundLayerBatchWorld(mats.traderLayerGravel, [
+      [15.0, 10.0, 15.0, 15.0, 0.10, 0.50, 0.018], // loading yard
+      [-5.0, 11.0, 5.0, 4.0, -0.08, 0.38, 0.018] // storage
+    ], 'trader-ground-gravel-batch');
 
-    // Функциональные зоны: лавка, склад, брамины, жильё, мастерская, огород.
-    createGroundLayerTile(15, 20, mats.traderLayerRoad, 5.8, 3.8, -0.12, 0.58, 0.014); // trader_shop
-    createGroundLayerTile(24, 19, mats.traderLayerGravel, 6.6, 5.2, 0.10, 0.50, 0.018); // storage
-    createGroundLayerTile(28, 13, mats.traderLayerRoad, 6.0, 3.8, 0.04, 0.46, 0.014); // brahmin_pen
-    createGroundLayerTile(10, 28, mats.traderLayerSand, 6.8, 4.0, 0.02, 0.40, 0.012); // gardens/armory
-    createGroundLayerTile(24, 26, mats.traderLayerOil, 5.4, 2.6, -0.02, 0.34, 0.018); // workshop
-    createGroundLayerTile(12, 16, mats.traderLayerOil, 3.6, 2.5, 0.18, 0.28, 0.018); // campfire
-    createGroundLayerTile(7, 12, mats.traderLayerShadow, 2.8, 2.2, -0.12, 0.26, 0.016); // latrine
+    if (extra) {
+      createGroundLayerBatchWorld(mats.traderLayerShadow, [
+        [0, 1, 18, 11, 0.00, 0.13, 0.017]
+      ], 'trader-ground-shadow-batch');
+    }
 
-    // Края двора и фоновая пустошь за стенами.
-    createGroundLayerTile(19, 31, mats.traderLayerSand, 28, 7.4, 0.02, 0.42, 0.012);
-    createGroundLayerTile(9, 20, mats.traderLayerSand, 8.2, 22.0, Math.PI / 2, 0.18, 0.010);
-    createGroundLayerTile(30, 20, mats.traderLayerSand, 8.2, 22.0, Math.PI / 2, 0.18, 0.010);
-
-    if (extra) createGroundLayerTile(19, 20, mats.traderLayerShadow, 18, 10.6, 0.00, 0.13, 0.017);
-
-    createTraderReliefCrackRidges();
     createTraderBakedContactAO();
   }
 
@@ -566,6 +636,13 @@
       }
     }
 
+    // The authored Old Klim yard already has a lightweight PBR ground pass:
+    // coherent caravan lanes, gravel/service zones and baked contact AO. It was
+    // previously never attached to the scene, leaving only the noisy base tile.
+    // Keep it location-specific and build it before GLBs so all props sit on the
+    // same readable ground composition.
+    if (isTraderYardLocation()) createTraderYardTerrainLayers();
+
     const authoredLayout = locationUsesAuthoredLayout(currentLocation);
     if (authoredLayout) {
       createAuthoredLocationObjects();
@@ -582,6 +659,7 @@
     createWorldMapExitZoneVisuals();
     createLocationExit();
     freezeStaticWorldTransforms();
+    if (typeof applyDayNightLighting === 'function') applyDayNightLighting(true);
     if (typeof requestDynamicShadowRefresh === 'function') requestDynamicShadowRefresh();
     scheduleTraderRoofCutawayWarmup('world-built-idle');
   }

@@ -352,6 +352,23 @@ body.graphics-ultra #game-container::after {
 body.graphics-ultra #webgl {
   filter: saturate(1.10) contrast(1.11) brightness(1.055) sepia(0.055);
 }
+/* Old Klim owns a cooler slate/rust palette. Avoid re-browning its authored
+   GLB materials and keep the subtle overlay as atmosphere, not fake bloom. */
+body.visual-profile-old-klim #webgl,
+body.visual-profile-old-klim.graphics-ultra #webgl,
+body.visual-profile-old-klim-caravan-yard-v1 #webgl,
+body.visual-profile-old-klim-caravan-yard-v1.graphics-ultra #webgl {
+  filter: saturate(1.055) contrast(1.075) brightness(1.025) sepia(0.008);
+}
+body.visual-profile-old-klim #game-container::after,
+body.visual-profile-old-klim-caravan-yard-v1 #game-container::after {
+  opacity: 0.026;
+  background-image:
+    radial-gradient(circle at 48% 45%, rgba(255, 190, 108, 0.055) 0%, rgba(255, 190, 108, 0.014) 25%, transparent 49%),
+    radial-gradient(circle at 18% 30%, rgba(177, 201, 220, 0.15) 0 1px, transparent 1.35px),
+    radial-gradient(circle at 76% 72%, rgba(0, 0, 0, 0.24) 0 1px, transparent 1.45px);
+  background-size: 100% 100%, 64px 64px, 79px 79px;
+}
 body.device-mobile #game-container::before {
   opacity: 0.74;
 }

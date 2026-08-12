@@ -46,7 +46,10 @@ function transformedBounds(bounds, transform = {}) {
   if (!bounds?.size || !bounds?.center) return null;
   const x = Number(transform.x || 0);
   const z = Number(transform.z || 0);
-  const rotationY = Number(transform.rotationY || 0);
+  // Authored yaw is applied by THREE.Object3D.rotation.y on the client. Its
+  // X/Z convention is the inverse of the server's 2D OBB math, so convert the
+  // visual angle before transforming an offset collider or exposing its yaw.
+  const rotationY = -Number(transform.rotationY || 0);
   const scaleX = Number.isFinite(Number(transform.scaleX)) ? Number(transform.scaleX) : 1;
   const scaleZ = Number.isFinite(Number(transform.scaleZ)) ? Number(transform.scaleZ) : 1;
   if (![x, z, rotationY, scaleX, scaleZ].every(Number.isFinite)) return null;

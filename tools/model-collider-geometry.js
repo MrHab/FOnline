@@ -16,7 +16,14 @@ const NON_BLOCKING_MODEL_FILES = new Set([
   'mod_floor_tile.glb',
   'mod_floor_wood.glb',
   'mod_roof_metal.glb',
-  'mod_roof_wood.glb'
+  'mod_roof_wood.glb',
+  'old_klim_trade_hall_roof.glb',
+  'old_klim_scrub_blue_a.glb',
+  'old_klim_scrub_blue_b.glb',
+  'old_klim_scrub_amber.glb',
+  'old_klim_rock_scatter_a.glb',
+  'old_klim_rock_scatter_b.glb',
+  'old_klim_rock_scatter_c.glb'
 ]);
 
 const NON_COLLIDING_MESH_NAME = /(?:painted_contact_shadow|ground_pebble_detail|ground_detail|loose_scrap_flake|discarded_bolt_detail)/i;
@@ -202,6 +209,38 @@ function boundsRecord(minX, maxX, minY, maxY, minZ, maxZ) {
   };
 }
 
+function authoredWalkProjectionRects(scene) {
+  const rects = [];
+  scene.traverse(node => {
+    if (rects.length) return;
+    const schema = String(node?.userData?.realm_collision_parts_schema || '');
+    const values = node?.userData?.realm_collision_parts_xz;
+    if (schema !== 'center_x_center_z_size_x_size_z_v1' || !Array.isArray(values)) return;
+    if (!values.length || values.length % 4 !== 0 || values.length / 4 > MAX_COLLIDER_PARTS) return;
+    for (let index = 0; index < values.length; index += 4) {
+      const centerX = finite(values[index], NaN);
+      const centerZ = finite(values[index + 1], NaN);
+      const sizeX = finite(values[index + 2], NaN);
+      const sizeZ = finite(values[index + 3], NaN);
+      if (![centerX, centerZ, sizeX, sizeZ].every(Number.isFinite) || sizeX <= 0 || sizeZ <= 0) {
+        rects.length = 0;
+        return;
+      }
+      const halfX = Math.max(MIN_PART_SIZE * 0.5, sizeX * 0.5);
+      const halfZ = Math.max(MIN_PART_SIZE * 0.5, sizeZ * 0.5);
+      rects.push({
+        minX: centerX - halfX,
+        maxX: centerX + halfX,
+        minZ: centerZ - halfZ,
+        maxZ: centerZ + halfZ,
+        sourceMeshes: 0,
+        sourceTriangles: 0
+      });
+    }
+  });
+  return rects;
+}
+
 function computeWalkCollision(THREE, scene, fileName = '', options = {}) {
   const minY = finite(options.minY, WALK_COLLISION_MIN_Y);
   const maxY = finite(options.maxY, WALK_COLLISION_MAX_Y);
@@ -210,6 +249,26 @@ function computeWalkCollision(THREE, scene, fileName = '', options = {}) {
   }
 
   scene.updateMatrixWorld(true);
+  const authoredRects = authoredWalkProjectionRects(scene);
+  if (authoredRects.length) {
+    const aggregate = authoredRects.reduce(
+      (result, rect) => result ? rectUnion(result, rect) : { ...rect },
+      null
+    );
+    return {
+      mode: 'solid',
+      method: 'authored-glb-walk-parts-v1',
+      slab: { minY, maxY },
+      candidateMeshes: 0,
+      sourcePartCount: authoredRects.length,
+      ...boundsRecord(aggregate.minX, aggregate.maxX, minY, maxY, aggregate.minZ, aggregate.maxZ),
+      parts: authoredRects.map(rect => ({
+        ...boundsRecord(rect.minX, rect.maxX, minY, maxY, rect.minZ, rect.maxZ),
+        sourceMeshes: 0,
+        sourceTriangles: 0
+      }))
+    };
+  }
   const meshRects = [];
   let candidateMeshes = 0;
   scene.traverse(mesh => {

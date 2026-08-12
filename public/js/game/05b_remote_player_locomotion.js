@@ -115,7 +115,6 @@
     actorAnimationCrowdMovingInterval: 1 / 30,
     actorAnimationCrowdIdleInterval: 0.0667,
     actorFootIkDistance: 6,
-    actorFacialDistance: 10
   });
   const ACTOR_ANIMATION_VIEW_PADDING = 3.2;
   const actorAnimationViewProjection = new THREE.Matrix4();
@@ -171,12 +170,11 @@
     return Math.max(base, Math.max(0, floor));
   }
 
+  // Лицевой анимации в игре нет, поэтому по расстоянию отсекается только IK стоп.
   function actorAnimationDetailEnabled(detail = '', distance = 0, important = false, settings = null) {
     if (important) return true;
     const budget = actorAnimationQualityBudget(settings);
-    const key = detail === 'facial' ? 'actorFacialDistance' : 'actorFootIkDistance';
-    const fallback = detail === 'facial' ? 10 : 6;
-    return Math.max(0, Number(distance || 0)) <= Math.max(0, Number(budget[key] ?? fallback));
+    return Math.max(0, Number(distance || 0)) <= Math.max(0, Number(budget.actorFootIkDistance ?? 6));
   }
 
   function refreshActorAnimationViewFrustum() {
@@ -1804,8 +1802,7 @@
         moveX: visualMoveX,
         moveZ: visualMoveZ,
         facingAngle: Number(g.rotation.y || 0) - Math.PI,
-        footIk: actorAnimationDetailEnabled('footIk', distance, important, animationBudget),
-        facial: actorAnimationDetailEnabled('facial', distance, important, animationBudget)
+        footIk: actorAnimationDetailEnabled('footIk', distance, important, animationBudget)
       });
       applyCharacterInjuryVisual(g, injuries, animationDt);
       const remoteWeaponOwner = {

@@ -843,10 +843,7 @@
         talking: inDialogue,
         footIk: typeof actorAnimationDetailEnabled === 'function'
           ? actorAnimationDetailEnabled('footIk', distanceToPlayer, heavyImportant, animationBudget)
-          : heavyImportant || distanceToPlayer <= 6,
-        facial: typeof actorAnimationDetailEnabled === 'function'
-          ? actorAnimationDetailEnabled('facial', distanceToPlayer, heavyImportant, animationBudget)
-          : true
+          : heavyImportant || distanceToPlayer <= 6
       });
       enemy.prevUnifiedAnimX = visualX;
       enemy.prevUnifiedAnimZ = visualZ;

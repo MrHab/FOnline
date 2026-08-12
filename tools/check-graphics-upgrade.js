@@ -228,18 +228,20 @@ requireText(characterRuntime, 'function configureCharacterGlbScene(root, options
 requireText(characterRuntime, 'enableConservativeCharacterFrustumCulling(obj);', 'authored GLB body, hair and face meshes bypass actor frustum culling');
 requireText(characterRuntime, 'state.footIk !== false', 'distant character foot IK cannot be suspended');
 requireText(characterRuntime, 'setCharacterFootIkEnabled(runtime, footIkEnabled)', 'foot IK suspension does not reset stale locks');
-requireText(characterRuntime, 'state.facial !== false', 'distant character facial animation cannot be suspended');
-requireText(characterRuntime, 'setCharacterFacialAnimationEnabled(runtime.root, facialEnabled)', 'facial suspension does not restore a neutral pose');
 requireText(characterRuntime, 'function characterLegIkSolveScratch', 'character leg IK does not reuse solve scratch');
 requireText(characterRuntime, 'directionalPoseOffsetCount', 'character directional pose still allocates offsets per frame');
 requireText(characterRuntime, 'characterFaceShapeHead', 'character face bone lookup is not cached');
+// Лицевая анимация удалена из игры: форма лица — часть внешности и остаётся,
+// а моргание и гримасы возвращаться не должны.
+for (const forbidden of ['updateCharacterFacialAnimation', 'ensureCharacterFacialRuntime', 'characterFacialRuntime']) {
+  if (characterRuntime.includes(forbidden)) {
+    fail(`facial animation is back in the character runtime: ${forbidden}`);
+  }
+}
 requireText(renderer, 'actorAnimationNearInterval: 1 / 30', 'Low/Medium presets do not reduce nearby actor CPU cost');
 requireText(renderer, 'actorAnimationCrowdIdleInterval: 0.10', 'Low preset lacks a crowded idle animation budget');
-requireText(renderer, 'actorFacialDistance: 5', 'Low preset lacks facial-animation distance budgeting');
 requireText(enemyFlow, "actorAnimationDetailEnabled('footIk', distanceToPlayer, heavyImportant, animationBudget)", 'distant enemy foot IK is not quality-budgeted');
-requireText(enemyFlow, "actorAnimationDetailEnabled('facial', distanceToPlayer, heavyImportant, animationBudget)", 'distant enemy facial animation is not quality-budgeted');
 requireText(remoteLocomotion, "actorAnimationDetailEnabled('footIk', distance, important, animationBudget)", 'distant remote-player foot IK is not quality-budgeted');
-requireText(remoteLocomotion, "actorAnimationDetailEnabled('facial', distance, important, animationBudget)", 'distant remote-player facial animation is not quality-budgeted');
 requireText(remoteLocomotion, 'function actorAnimationInView', 'actor animation lacks camera-frustum budgeting');
 requireText(weaponRuntime, 'enableConservativeCharacterFrustumCulling(part, 2.4)', 'runtime weapons bypass actor frustum culling');
 requireText(approvedHumanoidRuntime, 'enableConservativeCharacterFrustumCulling(mesh, 2.4)', 'approved equipment bypasses actor frustum culling');

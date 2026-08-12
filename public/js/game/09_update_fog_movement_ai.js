@@ -1490,10 +1490,7 @@
           talking: traderTalking,
           footIk: typeof actorAnimationDetailEnabled === 'function'
             ? actorAnimationDetailEnabled('footIk', traderDistance, traderImportant, animationBudget)
-            : traderImportant || traderDistance <= 6,
-          facial: typeof actorAnimationDetailEnabled === 'function'
-            ? actorAnimationDetailEnabled('facial', traderDistance, traderImportant, animationBudget)
-            : true
+            : traderImportant || traderDistance <= 6
         });
         if (traderNpc.mesh.userData.enemyWeaponGroup) {
           updateWeaponVisualAnimation(traderNpc.mesh.userData.enemyWeaponGroup, traderAnimationDt, traderNpc);

@@ -14,6 +14,7 @@
   const authoredMovementBlockers = new Set();
   const authoredVisionBlockers = new Set();
   const authoredLowVisionCover = new Set();
+  const authoredExactVisionBoxes = [];
   const floorMeshes = [];
   const PLAYER_COLLISION_RADIUS = 0.48;
   const WORLD_ENVIRONMENT_VERSION = 'unique-world-site-layouts-v780';
@@ -646,6 +647,78 @@
     return out;
   }
 
+  const LEGACY_TRADER_BLOCK_MODEL_KEYS = new Set([
+    'traderWallBlock', 'traderWindowBlock', 'traderFloorSlab', 'traderRoofBlock',
+    'wallWoodBlock', 'wallBrickBlock', 'wallMetalBlock',
+    'roofWoodBlock', 'roofMetalBlock', 'floorWoodBlock', 'floorTileBlock'
+  ]);
+  const LEGACY_TRADER_SURFACE_TEXTURE_URLS = Object.freeze([
+    'assets/textures/psx_buildings/trader_wall_metal_blue_base_v769.webp',
+    'assets/textures/psx_buildings/trader_wall_metal_blue_normal_v769.webp',
+    'assets/textures/psx_buildings/trader_wall_metal_blue_roughness_v769.webp',
+    'assets/textures/psx_buildings/trader_wall_metal_blue_ao_v769.webp',
+    'assets/textures/psx_buildings/trader_wall_corrugated_rust_base_v769.webp',
+    'assets/textures/psx_buildings/trader_wall_corrugated_rust_normal_v769.webp',
+    'assets/textures/psx_buildings/trader_wall_corrugated_rust_roughness_v769.webp',
+    'assets/textures/psx_buildings/trader_wall_corrugated_rust_ao_v769.webp',
+    'assets/textures/psx_buildings/trader_floor_concrete_base_v769.webp',
+    'assets/textures/psx_buildings/trader_floor_concrete_normal_v769.webp',
+    'assets/textures/psx_buildings/trader_floor_concrete_roughness_v769.webp',
+    'assets/textures/psx_buildings/trader_floor_concrete_ao_v769.webp',
+    'assets/textures/psx_buildings/trader_roof_red_white_base_v769.webp',
+    'assets/textures/psx_buildings/trader_roof_red_white_normal_v769.webp',
+    'assets/textures/psx_buildings/trader_roof_red_white_roughness_v769.webp',
+    'assets/textures/psx_buildings/trader_roof_red_white_ao_v769.webp',
+    'assets/textures/psx_buildings/trader_window_dark_v769.webp',
+    'assets/textures/materials_wood_bricks_01/oldbricks_base_v770.webp',
+    'assets/textures/materials_wood_bricks_01/oldbricks_normal_v770.webp',
+    'assets/textures/materials_wood_bricks_01/oldbricks_roughness_v770.webp',
+    'assets/textures/materials_wood_bricks_01/oldbricks_ao_v770.webp',
+    'assets/textures/materials_wood_bricks_01/oldbricks_height_v770.webp',
+    'assets/textures/materials_wood_bricks_01/destroyed_concrete_base_v770.webp',
+    'assets/textures/materials_wood_bricks_01/destroyed_concrete_normal_v770.webp',
+    'assets/textures/materials_wood_bricks_01/destroyed_concrete_roughness_v770.webp',
+    'assets/textures/materials_wood_bricks_01/destroyed_concrete_ao_v770.webp',
+    'assets/textures/materials_wood_bricks_01/destroyed_concrete_height_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_02_base_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_02_normal_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_02_roughness_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_02_ao_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_02_height_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_04_base_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_04_normal_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_04_roughness_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_04_ao_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_floor_04_height_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_bricks_floor_base_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_bricks_floor_normal_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_bricks_floor_roughness_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_bricks_floor_ao_v770.webp',
+    'assets/textures/materials_wood_bricks_01/wood_bricks_floor_height_v770.webp'
+  ]);
+  const LEGACY_TRADER_CRITICAL_TEXTURE_URLS = Object.freeze([
+    'assets/textures/psx_buildings/trader_wall_metal_blue_base_v769.webp',
+    'assets/textures/psx_buildings/trader_wall_corrugated_rust_base_v769.webp',
+    'assets/textures/psx_buildings/trader_floor_concrete_base_v769.webp',
+    'assets/textures/psx_buildings/trader_roof_red_white_base_v769.webp',
+    'assets/textures/psx_buildings/trader_window_dark_v769.webp'
+  ]);
+
+  function locationNeedsLegacyTraderSurfaceTextures(locationId) {
+    if (locationId !== 'settlement') return false;
+    let location = null;
+    try {
+      location = LOCATIONS && typeof LOCATIONS === 'object' ? LOCATIONS[locationId] : null;
+    } catch (_) {}
+    // Missing/unloaded data and every procedural path retain the old preload.
+    if (!location || typeof location !== 'object') return true;
+    if (location.runtimeMode === 'procedural' || location.legacyProcedural === true) return true;
+    if (typeof locationUsesAuthoredLayout !== 'function' || !locationUsesAuthoredLayout(location)) return true;
+    if (String(location.visualProfile?.id || '') !== 'old-klim-caravan-yard-v1') return true;
+    if (!Array.isArray(location.objects)) return true;
+    return location.objects.some(row => LEGACY_TRADER_BLOCK_MODEL_KEYS.has(String(row?.model || '')));
+  }
+
   function getLocationPreloadTextureUrls(locationId) {
     const budget = graphicsTextureBudget();
     const urls = [
@@ -669,50 +742,11 @@
         'assets/textures/materials_ground_dirt_01/layer_straw_dry_grass_from_archive_v759.webp',
         'assets/textures/wasteland/layers/soft_shadow_blob_v758.webp',
         'assets/textures/wasteland/layers/baked_contact_ao_blob_v761.webp',
-        'assets/textures/wasteland/layers/warm_bloom_blob_v761.webp',
-        'assets/textures/psx_buildings/trader_wall_metal_blue_base_v769.webp',
-        'assets/textures/psx_buildings/trader_wall_metal_blue_normal_v769.webp',
-        'assets/textures/psx_buildings/trader_wall_metal_blue_roughness_v769.webp',
-        'assets/textures/psx_buildings/trader_wall_metal_blue_ao_v769.webp',
-        'assets/textures/psx_buildings/trader_wall_corrugated_rust_base_v769.webp',
-        'assets/textures/psx_buildings/trader_wall_corrugated_rust_normal_v769.webp',
-        'assets/textures/psx_buildings/trader_wall_corrugated_rust_roughness_v769.webp',
-        'assets/textures/psx_buildings/trader_wall_corrugated_rust_ao_v769.webp',
-        'assets/textures/psx_buildings/trader_floor_concrete_base_v769.webp',
-        'assets/textures/psx_buildings/trader_floor_concrete_normal_v769.webp',
-        'assets/textures/psx_buildings/trader_floor_concrete_roughness_v769.webp',
-        'assets/textures/psx_buildings/trader_floor_concrete_ao_v769.webp',
-        'assets/textures/psx_buildings/trader_roof_red_white_base_v769.webp',
-        'assets/textures/psx_buildings/trader_roof_red_white_normal_v769.webp',
-        'assets/textures/psx_buildings/trader_roof_red_white_roughness_v769.webp',
-        'assets/textures/psx_buildings/trader_roof_red_white_ao_v769.webp',
-        'assets/textures/psx_buildings/trader_window_dark_v769.webp',
-        'assets/textures/materials_wood_bricks_01/oldbricks_base_v770.webp',
-        'assets/textures/materials_wood_bricks_01/oldbricks_normal_v770.webp',
-        'assets/textures/materials_wood_bricks_01/oldbricks_roughness_v770.webp',
-        'assets/textures/materials_wood_bricks_01/oldbricks_ao_v770.webp',
-        'assets/textures/materials_wood_bricks_01/oldbricks_height_v770.webp',
-        'assets/textures/materials_wood_bricks_01/destroyed_concrete_base_v770.webp',
-        'assets/textures/materials_wood_bricks_01/destroyed_concrete_normal_v770.webp',
-        'assets/textures/materials_wood_bricks_01/destroyed_concrete_roughness_v770.webp',
-        'assets/textures/materials_wood_bricks_01/destroyed_concrete_ao_v770.webp',
-        'assets/textures/materials_wood_bricks_01/destroyed_concrete_height_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_02_base_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_02_normal_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_02_roughness_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_02_ao_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_02_height_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_04_base_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_04_normal_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_04_roughness_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_04_ao_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_floor_04_height_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_bricks_floor_base_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_bricks_floor_normal_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_bricks_floor_roughness_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_bricks_floor_ao_v770.webp',
-        'assets/textures/materials_wood_bricks_01/wood_bricks_floor_height_v770.webp'
+        'assets/textures/wasteland/layers/warm_bloom_blob_v761.webp'
       );
+      if (locationNeedsLegacyTraderSurfaceTextures(locationId)) {
+        urls.push(...LEGACY_TRADER_SURFACE_TEXTURE_URLS);
+      }
       if (budget.layerNormals) {
         urls.push(
           'assets/textures/materials_ground_dirt_01/layer_sand_micro_normal_v761.webp',
@@ -744,14 +778,10 @@
       'assets/textures/materials_ground_dirt_01/stone_wall_base_v759.webp'
     ];
     if (locationId === 'settlement') {
-      urls.push(
-        'assets/textures/materials_ground_dirt_01/layer_sand_from_archive_v759.webp',
-        'assets/textures/psx_buildings/trader_wall_metal_blue_base_v769.webp',
-        'assets/textures/psx_buildings/trader_wall_corrugated_rust_base_v769.webp',
-        'assets/textures/psx_buildings/trader_floor_concrete_base_v769.webp',
-        'assets/textures/psx_buildings/trader_roof_red_white_base_v769.webp',
-        'assets/textures/psx_buildings/trader_window_dark_v769.webp'
-      );
+      urls.push('assets/textures/materials_ground_dirt_01/layer_sand_from_archive_v759.webp');
+      if (locationNeedsLegacyTraderSurfaceTextures(locationId)) {
+        urls.push(...LEGACY_TRADER_CRITICAL_TEXTURE_URLS);
+      }
     } else {
       urls.push('assets/textures/cc0/cc0_style_desert_cracked_ground.png');
     }
@@ -1067,6 +1097,7 @@
     authoredMovementBlockers.clear();
     authoredVisionBlockers.clear();
     authoredLowVisionCover.clear();
+    authoredExactVisionBoxes.length = 0;
   }
 
   function clearAuthoredTileMarks(tx, tz) {
@@ -1227,6 +1258,65 @@
     if (!Number.isFinite(maxRange) || maxRange <= 0.001) return false;
     const hit = staticCollisionRayHitDistance(x1, z1, dx, dz, maxRange, radius, { startPad: 0.16 });
     return hit !== null && hit < maxRange - 0.08;
+  }
+
+  function authoredExactVisionBoxHitInterval(box, x1, z1, x2, z2) {
+    const dx = Number(x2 || 0) - Number(x1 || 0);
+    const dz = Number(z2 || 0) - Number(z1 || 0);
+    const maxRange = Math.hypot(dx, dz);
+    if (!box || !Number.isFinite(maxRange) || maxRange <= 0.001) return null;
+    const unitX = dx / maxRange;
+    const unitZ = dz / maxRange;
+    const relX = Number(x1 || 0) - Number(box.x || 0);
+    const relZ = Number(z1 || 0) - Number(box.z || 0);
+    const cos = Math.cos(Number(box.rotationY || 0));
+    const sin = Math.sin(Number(box.rotationY || 0));
+    const localX = relX * cos + relZ * sin;
+    const localZ = -relX * sin + relZ * cos;
+    const localDx = unitX * cos + unitZ * sin;
+    const localDz = -unitX * sin + unitZ * cos;
+    let tMin = 0.02;
+    let tMax = maxRange - 0.02;
+    for (const axis of [
+      [localX, localDx, -Number(box.halfX || 0), Number(box.halfX || 0)],
+      [localZ, localDz, -Number(box.halfZ || 0), Number(box.halfZ || 0)]
+    ]) {
+      const [origin, direction, minimum, maximum] = axis;
+      if (Math.abs(direction) < 0.00001) {
+        if (origin < minimum || origin > maximum) return null;
+        continue;
+      }
+      let near = (minimum - origin) / direction;
+      let far = (maximum - origin) / direction;
+      if (near > far) { const swap = near; near = far; far = swap; }
+      tMin = Math.max(tMin, near);
+      tMax = Math.min(tMax, far);
+      if (tMin > tMax) return null;
+    }
+    if (tMax < 0.02 || tMin >= maxRange - 0.02) return null;
+    return { near: tMin, far: tMax, maxRange };
+  }
+
+  function isAuthoredExactVisionBlockingWorldLine(x1, z1, x2, z2, observerCrouching = false) {
+    if (!authoredExactVisionBoxes.length) return false;
+    for (const box of authoredExactVisionBoxes) {
+      if (box.kind === 'cover' && !observerCrouching) continue;
+      if (authoredExactVisionBoxHitInterval(box, x1, z1, x2, z2)) return true;
+    }
+    return false;
+  }
+
+  function isAuthoredExactLowCoverHidingCrouchedTargetWorldLine(x1, z1, x2, z2, targetCrouching = false) {
+    if (!targetCrouching || !authoredExactVisionBoxes.length) return false;
+    for (const box of authoredExactVisionBoxes) {
+      if (box.kind !== 'cover') continue;
+      const hit = authoredExactVisionBoxHitInterval(box, x1, z1, x2, z2);
+      if (!hit) continue;
+      // Match the legacy tile rule: low cover hides a crouched target only
+      // when the target is directly behind it, not anywhere across the map.
+      if (hit.maxRange - hit.far <= TILE * 1.25) return true;
+    }
+    return false;
   }
 
   function tileTypeAt(tx, tz) {
@@ -1392,6 +1482,37 @@
     recoverPlayerIfBlocked();
   }
 
+  function authoredTileIntersectsStaticCollisionBox(tx, tz, box = {}) {
+    if (!inBounds(tx, tz) || !box) return false;
+    const boxX = Number(box.x);
+    const boxZ = Number(box.z);
+    const halfX = Number(box.halfX);
+    const halfZ = Number(box.halfZ);
+    const rotationY = Number(box.rotationY || 0);
+    if (![boxX, boxZ, halfX, halfZ, rotationY].every(Number.isFinite) || halfX <= 0 || halfZ <= 0) return false;
+
+    const tileCenter = tileToWorld(tx, tz);
+    const tileHalf = TILE * 0.5;
+    const dx = Number(tileCenter.x) - boxX;
+    const dz = Number(tileCenter.z) - boxZ;
+    const cos = Math.cos(rotationY);
+    const sin = Math.sin(rotationY);
+    const absCos = Math.abs(cos);
+    const absSin = Math.abs(sin);
+    const epsilon = 0.000001;
+
+    // Exact SAT for an axis-aligned tile square against the model-aligned OBB.
+    // Testing all four rectangle axes avoids turning a rotated wall into its
+    // broad AABB while remaining conservative for boundary-touching tiles.
+    if (Math.abs(dx) > tileHalf + halfX * absCos + halfZ * absSin + epsilon) return false;
+    if (Math.abs(dz) > tileHalf + halfX * absSin + halfZ * absCos + epsilon) return false;
+    const localX = dx * cos + dz * sin;
+    const localZ = -dx * sin + dz * cos;
+    const tileProjectionOnLocalAxis = tileHalf * (absCos + absSin);
+    return Math.abs(localX) <= halfX + tileProjectionOnLocalAxis + epsilon
+      && Math.abs(localZ) <= halfZ + tileProjectionOnLocalAxis + epsilon;
+  }
+
   function markAuthoredLocationObjectOnClientMap(row = {}) {
     if (locationObjectIsEntity(row)) return;
     const collision = String(row.collision || '').toLowerCase();
@@ -1427,21 +1548,87 @@
     const visionKind = authoredObjectVisionKind(row);
     if (!blocksMovement && !resourceType && !visionKind) return;
     const pos = row.position && typeof row.position === 'object' ? row.position : row;
-    const center = worldToTile(Number(pos.x || 0), Number(pos.z || 0));
-    const size = authoredObjectCollisionSize(row);
-    const cellsX = Math.max(1, Math.round(size.width / TILE));
-    const cellsZ = Math.max(1, Math.round(size.depth / TILE));
-    for (let dz = -Math.floor((cellsZ - 1) / 2); dz <= Math.ceil((cellsZ - 1) / 2); dz++) {
-      for (let dx = -Math.floor((cellsX - 1) / 2); dx <= Math.ceil((cellsX - 1) / 2); dx++) {
-        const tx = center.tx + dx;
-        const tz = center.tz + dz;
-        if (!inBounds(tx, tz)) continue;
-        // Authored resources keep their own GLB and collider. The tile mark is
-        // only a coarse pathfinding hint; drawing a procedural node here would
-        // duplicate the model and restore a full-cell collision volume.
-        if (blocksMovement) markAuthoredTileLayer(tx, tz, 'movement');
-        if (visionKind === 'block') markAuthoredTileLayer(tx, tz, 'vision-block');
-        else if (visionKind === 'cover') markAuthoredTileLayer(tx, tz, 'vision-cover');
+    const worldX = Number(pos.x || 0);
+    const worldZ = Number(pos.z || 0);
+    const center = worldToTile(worldX, worldZ);
+    const markedTiles = new Set();
+    const markLayers = (tx, tz) => {
+      if (!inBounds(tx, tz)) return;
+      const key = authoredTileKey(tx, tz);
+      if (markedTiles.has(key)) return;
+      markedTiles.add(key);
+      // Authored resources keep their own GLB and collider. The tile mark is
+      // only a coarse pathfinding hint; drawing a procedural node here would
+      // duplicate the model and restore a full-cell collision volume.
+      if (blocksMovement) markAuthoredTileLayer(tx, tz, 'movement');
+      if (visionKind === 'block') markAuthoredTileLayer(tx, tz, 'vision-block');
+      else if (visionKind === 'cover') markAuthoredTileLayer(tx, tz, 'vision-cover');
+    };
+
+    if (blocksMovement || visionKind) {
+      const key = typeof staticModelKeyFromLocationObject === 'function'
+        ? staticModelKeyFromLocationObject(row)
+        : '';
+      const modelRef = key || row.url || row.file || row.model || '';
+      const scale = typeof authoredObjectScale === 'function'
+        ? authoredObjectScale(row)
+        : { x: 1, z: 1 };
+      const rot = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
+      const angle = Number(rot.y ?? row.rotationY ?? 0);
+      let collisionBoxes = [];
+      if (modelRef && typeof staticModelCollisionTransforms === 'function') {
+        try {
+          collisionBoxes = staticModelCollisionTransforms(modelRef, worldX, worldZ, angle, {
+            scaleX: Number(scale.x || 1),
+            scaleZ: Number(scale.z || 1)
+          }).filter(box => box
+            && Number.isFinite(Number(box.x))
+            && Number.isFinite(Number(box.z))
+            && Number(box.halfX) > 0
+            && Number(box.halfZ) > 0);
+        } catch (_) {
+          collisionBoxes = [];
+        }
+      }
+
+      if (collisionBoxes.length) {
+        // Thin multipart walls often leave real doorways narrower than TILE.
+        // A full-tile vision mark would seal those openings. Keep movement as
+        // a coarse path hint, but evaluate authored GLB vision against the
+        // exact OBB parts during fog/LOS rays.
+        if (visionKind) {
+          collisionBoxes.forEach(box => authoredExactVisionBoxes.push({ ...box, kind: visionKind }));
+        }
+        collisionBoxes.forEach(box => {
+          const rotationY = Number(box.rotationY || 0);
+          const absCos = Math.abs(Math.cos(rotationY));
+          const absSin = Math.abs(Math.sin(rotationY));
+          const broadHalfX = Number(box.halfX) * absCos + Number(box.halfZ) * absSin;
+          const broadHalfZ = Number(box.halfX) * absSin + Number(box.halfZ) * absCos;
+          const minTile = worldToTile(Number(box.x) - broadHalfX, Number(box.z) - broadHalfZ);
+          const maxTile = worldToTile(Number(box.x) + broadHalfX, Number(box.z) + broadHalfZ);
+          const minTx = Math.max(0, Number(minTile.tx));
+          const maxTx = Math.min(MAP_W - 1, Number(maxTile.tx));
+          const minTz = Math.max(0, Number(minTile.tz));
+          const maxTz = Math.min(MAP_H - 1, Number(maxTile.tz));
+          for (let tz = minTz; tz <= maxTz; tz++) {
+            for (let tx = minTx; tx <= maxTx; tx++) {
+              if (!authoredTileIntersectsStaticCollisionBox(tx, tz, box)) continue;
+              if (blocksMovement) markAuthoredTileLayer(tx, tz, 'movement');
+            }
+          }
+        });
+      } else {
+        // Models without generated collider parts retain the authored footprint
+        // behavior, including explicit collisionSize and resource definitions.
+        const size = authoredObjectCollisionSize(row);
+        const cellsX = Math.max(1, Math.round(size.width / TILE));
+        const cellsZ = Math.max(1, Math.round(size.depth / TILE));
+        for (let dz = -Math.floor((cellsZ - 1) / 2); dz <= Math.ceil((cellsZ - 1) / 2); dz++) {
+          for (let dx = -Math.floor((cellsX - 1) / 2); dx <= Math.ceil((cellsX - 1) / 2); dx++) {
+            markLayers(center.tx + dx, center.tz + dz);
+          }
+        }
       }
     }
     if (resourceType && inBounds(center.tx, center.tz)) {

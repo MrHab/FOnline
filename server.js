@@ -12370,11 +12370,19 @@ function roomStaticCollisionBlockersFromObject(row = {}) {
     scaleX: scale.x,
     scaleZ: scale.z
   });
-  if (modelEntry) return modelBlockers.map((modelBlocker, partIndex) => ({
+  if (modelEntry && modelBlockers.length) return modelBlockers.map((modelBlocker, partIndex) => ({
     id: `${String(row.id || row.model || '').slice(0, 56)}:${partIndex}`,
     ...modelBlocker,
     modelRef
   }));
+  if (modelEntry) {
+    const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
+    const exactWidth = Number(exact.width || exact.x || 0);
+    const exactDepth = Number(exact.depth || exact.z || 0);
+    if (!(Number.isFinite(exactWidth) && exactWidth > 0 && Number.isFinite(exactDepth) && exactDepth > 0)) {
+      return [];
+    }
+  }
   const size = locationObjectCollisionSize(row);
   return [{
     id: String(row.id || row.model || '').slice(0, 64),
@@ -12382,7 +12390,7 @@ function roomStaticCollisionBlockersFromObject(row = {}) {
     z: pos.z,
     halfX: Math.max(0.2, size.width * 0.5),
     halfZ: Math.max(0.2, size.depth * 0.5),
-    rotationY
+    rotationY: -rotationY
   }];
 }
 

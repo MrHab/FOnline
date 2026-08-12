@@ -523,6 +523,14 @@
     return root;
   }
 
+  function markNoDistanceCull(root, reason = 'stable-distance-render') {
+    if (!root) return root;
+    root.userData = root.userData || {};
+    root.userData.noDistanceCull = true;
+    root.userData.noDistanceCullReason = reason;
+    return root;
+  }
+
   // v7.4: экранное затенение окружения вместо скрытия объектов.
   // Объекты остаются в мире и синхронизации, а дальняя зона просто становится темнее.
   const visionShade = document.getElementById('vision-shade') || (() => {

@@ -36,6 +36,51 @@
   const ULTRA_SHADOW_PRESSURE_FPS = 48;
   const ULTRA_SHADOW_RECOVERY_FPS = 58;
   const ULTRA_SHADOW_RECOVERY_SECONDS = 3;
+  const LOCATION_VISUAL_PROFILE_CLASS_PREFIX = 'visual-profile-';
+  const locationVisualProfileColorCache = new Map();
+  let activeLocationVisualProfileClass = '';
+
+  function currentLocationVisualProfile() {
+    // This file is evaluated before 02c_map_locations_collision.js declares
+    // currentLocation. Keep boot safe, then resolve the authored profile as soon
+    // as the location dictionary has loaded.
+    try {
+      const profile = (typeof currentLocation !== 'undefined') ? currentLocation?.visualProfile : null;
+      return profile && typeof profile === 'object' ? profile : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function locationVisualProfileNumber(profile, key, fallback, min = -Infinity, max = Infinity) {
+    const value = Number(profile?.[key]);
+    return Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
+  }
+
+  function locationVisualProfileColor(profile, key, fallback) {
+    const raw = profile?.[key];
+    if (raw === undefined || raw === null || raw === '') return fallback;
+    const cacheKey = `${String(profile?.id || 'location')}:${key}:${String(raw)}`;
+    if (locationVisualProfileColorCache.has(cacheKey)) return locationVisualProfileColorCache.get(cacheKey);
+    const color = new THREE.Color();
+    try { color.set(raw); }
+    catch (_) { color.copy(fallback); }
+    locationVisualProfileColorCache.set(cacheKey, color);
+    return color;
+  }
+
+  function syncLocationVisualProfileClass(profile = null) {
+    if (!document?.body) return;
+    const rawId = String(profile?.colorGrade || profile?.id || '').toLowerCase();
+    const safeId = rawId.replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
+    const nextClass = safeId ? `${LOCATION_VISUAL_PROFILE_CLASS_PREFIX}${safeId}` : '';
+    if (nextClass === activeLocationVisualProfileClass) return;
+    if (activeLocationVisualProfileClass) document.body.classList.remove(activeLocationVisualProfileClass);
+    if (nextClass) document.body.classList.add(nextClass);
+    activeLocationVisualProfileClass = nextClass;
+    if (nextClass) document.body.dataset.visualProfile = safeId;
+    else delete document.body.dataset.visualProfile;
+  }
 
   function ultraShadowLoadPressure(actorRosterSize = 0, measuredFps = 0) {
     const actors = Math.max(0, Number(actorRosterSize || 0));
@@ -45,25 +90,27 @@
       && fps < ULTRA_SHADOW_PRESSURE_FPS;
   }
 
-  function shadowMapSizeForSceneLoad(preset, actorRosterSize = 0, measuredFps = 0, currentSize = 0, recoveryReady = false) {
+  function shadowMapSizeForSceneLoad(preset, actorRosterSize = 0, measuredFps = 0, currentSize = 0, recoveryReady = false, visualProfile = null) {
     const baseSize = Math.max(256, Number(
       IS_MOBILE_DEVICE
         ? (preset.mobileShadowMap || Math.min(Number(preset.shadowMap || 1024), 768))
         : (preset.shadowMap || 1024)
     ));
-    if (IS_MOBILE_DEVICE || preset.id !== 'ultra' || baseSize <= 3072) return baseSize;
+    const authoredMax = Math.max(256, Number(visualProfile?.shadowMapMax || baseSize));
+    const capToLocationBudget = value => Math.min(value, authoredMax);
+    if (IS_MOBILE_DEVICE || preset.id !== 'ultra' || baseSize <= 3072) return capToLocationBudget(baseSize);
     // 3072² remains above the High preset's 2048² map and keeps PCFSoftShadowMap,
     // but removes 44% of the shadow texel work while a crowded Ultra scene is
     // already below the smooth frame band. Hysteresis prevents resize churn.
     const loadedSize = Math.max(2048, Math.round((baseSize * 0.75) / 256) * 256);
-    if (ultraShadowLoadPressure(actorRosterSize, measuredFps)) return loadedSize;
+    if (ultraShadowLoadPressure(actorRosterSize, measuredFps)) return capToLocationBudget(loadedSize);
     const recovered = Number(actorRosterSize || 0) <= 3
       || Number(measuredFps || 0) <= 0
       || (recoveryReady
         && Number(actorRosterSize || 0) < ULTRA_SHADOW_PRESSURE_ACTORS
         && Number(measuredFps || 0) >= ULTRA_SHADOW_RECOVERY_FPS);
-    if (Number(currentSize || 0) === loadedSize && !recovered) return loadedSize;
-    return baseSize;
+    if (Number(currentSize || 0) === loadedSize && !recovered) return capToLocationBudget(loadedSize);
+    return capToLocationBudget(baseSize);
   }
 
   function configureShadowQuality(forceMapReset = false) {
@@ -89,13 +136,22 @@
       preset,
       typeof shadowActorRosterSize === 'function' ? shadowActorRosterSize() : 0,
       typeof fpsValue !== 'undefined' ? fpsValue : 0,
-      currentW
+      currentW,
+      false,
+      currentLocationVisualProfile()
     );
     if (sun.shadow.mapSize && (currentW !== size || currentH !== size)) {
       sun.shadow.mapSize.set(size, size);
       forceMapReset = true;
     }
-    const span = Math.max(18, Number(preset.shadowCameraSpan || 60));
+    const visualProfile = currentLocationVisualProfile();
+    const span = Math.max(18, locationVisualProfileNumber(
+      visualProfile,
+      'shadowCameraSpan',
+      Number(preset.shadowCameraSpan || 60),
+      18,
+      120
+    ));
     const cam = sun.shadow.camera;
     if (cam) {
       cam.left = -span;
@@ -152,7 +208,11 @@
     // Following the player made the whole shadow projection crawl/jump and forced
     // expensive shadow-map refreshes while walking. The playable maps are centred
     // around world 0,0 and the preset shadow spans cover the whole active yard.
-    return { x: 0, z: 0 };
+    const visualProfile = currentLocationVisualProfile();
+    return {
+      x: locationVisualProfileNumber(visualProfile, 'shadowFocusX', 0, -80, 80),
+      z: locationVisualProfileNumber(visualProfile, 'shadowFocusZ', 0, -80, 80)
+    };
   }
 
   function dynamicShadowMotionChanged() {
@@ -392,7 +452,14 @@
       ? adaptiveShadowBudget.ultraRecoveryElapsed + Math.max(0, Number(dt || 0))
       : 0;
     const recoveryReady = adaptiveShadowBudget.ultraRecoveryElapsed >= ULTRA_SHADOW_RECOVERY_SECONDS;
-    const size = shadowMapSizeForSceneLoad(preset, actorRosterSize, fpsValue, currentW, recoveryReady);
+    const size = shadowMapSizeForSceneLoad(
+      preset,
+      actorRosterSize,
+      fpsValue,
+      currentW,
+      recoveryReady,
+      currentLocationVisualProfile()
+    );
     if (currentW === size && currentH === size) return false;
     adaptiveShadowBudget.ultraRecoveryElapsed = 0;
     sun.shadow.mapSize.set(size, size);
@@ -623,7 +690,8 @@
     skyMaterial: null,
     groundMaterial: null,
     target: null,
-    daylightStep: null
+    daylightStep: null,
+    profileKey: ''
   };
 
   function ensureEnvironmentSourceScene() {
@@ -640,13 +708,16 @@
     return source;
   }
 
-  function refreshSceneEnvironment(skyColor, groundColor, skyIntensity, daylight) {
+  function refreshSceneEnvironment(skyColor, groundColor, skyIntensity, daylight, profileKey = '') {
     if (!renderer || !scene || !THREE.PMREMGenerator || !skyColor || !groundColor) return;
     // Пересборка идёт через GPU-проход, поэтому обновляемся шагами по светлоте,
     // а не каждый кадр: за сутки выходит несколько десятков перестроений.
     const step = Math.round(clampLighting01(daylight) * 40);
-    if (step === sceneEnvironmentState.daylightStep && scene.environment) return;
+    if (step === sceneEnvironmentState.daylightStep
+      && profileKey === sceneEnvironmentState.profileKey
+      && scene.environment) return;
     sceneEnvironmentState.daylightStep = step;
+    sceneEnvironmentState.profileKey = profileKey;
     const source = ensureEnvironmentSourceScene();
     // Берём яркость полусферического источника, а не scene.background: фон — это
     // цвет тумана, днём он почти чёрный (0x3b2a1a), и металл честно отражал
@@ -680,29 +751,40 @@
     const twilight = smooth01(1 - Math.abs(info.hourFloat - 6) / 2.2) + smooth01(1 - Math.abs(info.hourFloat - 18) / 2.2);
     const twilightClamped = clampLighting01(twilight);
     const night = 1 - daylight;
+    const visualProfile = currentLocationVisualProfile();
+    syncLocationVisualProfileClass(visualProfile);
 
-    _timeColorA.copy(dayNightColors.skyNight).lerp(dayNightColors.skyDay, daylight);
-    _timeColorA.lerp(dayNightColors.skyDawn, twilightClamped * 0.28);
+    _timeColorA.copy(locationVisualProfileColor(visualProfile, 'skyNight', dayNightColors.skyNight))
+      .lerp(locationVisualProfileColor(visualProfile, 'skyDay', dayNightColors.skyDay), daylight);
+    _timeColorA.lerp(locationVisualProfileColor(visualProfile, 'skyDawn', dayNightColors.skyDawn), twilightClamped * 0.28);
     scene.background.copy(_timeColorA);
 
-    _timeColorB.copy(dayNightColors.fogNight).lerp(dayNightColors.fogDay, daylight);
-    _timeColorB.lerp(dayNightColors.fogDawn, twilightClamped * 0.24);
+    _timeColorB.copy(locationVisualProfileColor(visualProfile, 'fogNight', dayNightColors.fogNight))
+      .lerp(locationVisualProfileColor(visualProfile, 'fogDay', dayNightColors.fogDay), daylight);
+    _timeColorB.lerp(locationVisualProfileColor(visualProfile, 'fogDawn', dayNightColors.fogDawn), twilightClamped * 0.24);
     if (scene.fog) {
       scene.fog.color.copy(_timeColorB);
       // Time controls atmosphere; graphics quality controls resolution/shadows/effects only.
       // Mobile screens crushed the old night into near-black. Night fog is now
       // thinner and cooler, while daytime density remains almost unchanged.
-      scene.fog.density = lerpNumber(IS_MOBILE_DEVICE ? 0.00175 : 0.00205, 0.0026, daylight) + twilightClamped * 0.00010;
+      const fogNight = locationVisualProfileNumber(visualProfile, 'fogDensityNight', IS_MOBILE_DEVICE ? 0.00175 : 0.00205, 0, 0.02);
+      const fogDay = locationVisualProfileNumber(visualProfile, 'fogDensityDay', 0.0026, 0, 0.02);
+      scene.fog.density = lerpNumber(fogNight, fogDay, daylight) + twilightClamped * 0.00010;
     }
 
-    hemi.color.copy(dayNightColors.hemiSkyNight).lerp(dayNightColors.hemiSkyDay, daylight);
-    hemi.color.lerp(dayNightColors.hemiSkyDawn, twilightClamped * 0.35);
-    hemi.groundColor.copy(dayNightColors.hemiGroundNight).lerp(dayNightColors.hemiGroundDay, daylight);
-    hemi.intensity = lerpNumber(IS_MOBILE_DEVICE ? 1.22 : 1.08, 0.92, daylight) + twilightClamped * 0.04;
+    hemi.color.copy(locationVisualProfileColor(visualProfile, 'hemiSkyNight', dayNightColors.hemiSkyNight))
+      .lerp(locationVisualProfileColor(visualProfile, 'hemiSkyDay', dayNightColors.hemiSkyDay), daylight);
+    hemi.color.lerp(locationVisualProfileColor(visualProfile, 'hemiSkyDawn', dayNightColors.hemiSkyDawn), twilightClamped * 0.35);
+    hemi.groundColor.copy(locationVisualProfileColor(visualProfile, 'hemiGroundNight', dayNightColors.hemiGroundNight))
+      .lerp(locationVisualProfileColor(visualProfile, 'hemiGroundDay', dayNightColors.hemiGroundDay), daylight);
+    hemi.intensity = (lerpNumber(IS_MOBILE_DEVICE ? 1.22 : 1.08, 0.92, daylight) + twilightClamped * 0.04)
+      * locationVisualProfileNumber(visualProfile, 'hemiIntensityScale', 1, 0.2, 2);
 
-    worldFill.color.copy(dayNightColors.fillNight).lerp(dayNightColors.fillDay, daylight);
-    worldFill.color.lerp(dayNightColors.fillDawn, twilightClamped * 0.22);
-    worldFill.intensity = lerpNumber(IS_MOBILE_DEVICE ? 0.72 : 0.58, 0.26, daylight) + twilightClamped * 0.025;
+    worldFill.color.copy(locationVisualProfileColor(visualProfile, 'fillNight', dayNightColors.fillNight))
+      .lerp(locationVisualProfileColor(visualProfile, 'fillDay', dayNightColors.fillDay), daylight);
+    worldFill.color.lerp(locationVisualProfileColor(visualProfile, 'fillDawn', dayNightColors.fillDawn), twilightClamped * 0.22);
+    worldFill.intensity = (lerpNumber(IS_MOBILE_DEVICE ? 0.72 : 0.58, 0.26, daylight) + twilightClamped * 0.025)
+      * locationVisualProfileNumber(visualProfile, 'fillIntensityScale', 1, 0.15, 2);
 
     const moonAmount = smooth01((0.16 - sunAltitude) / 0.46);
     const sunlightAmount = smooth01(daylight);
@@ -710,27 +792,33 @@
     const shadowTimeChanged = sunShadowsAllowedByTime !== sunShadowActive;
     sunShadowsAllowedByTime = sunShadowActive;
 
-    sun.color.copy(dayNightColors.sunNight).lerp(dayNightColors.sunDay, daylight);
-    sun.color.lerp(dayNightColors.sunDawn, twilightClamped * 0.55);
+    sun.color.copy(locationVisualProfileColor(visualProfile, 'sunNight', dayNightColors.sunNight))
+      .lerp(locationVisualProfileColor(visualProfile, 'sunDay', dayNightColors.sunDay), daylight);
+    sun.color.lerp(locationVisualProfileColor(visualProfile, 'sunDawn', dayNightColors.sunDawn), twilightClamped * 0.55);
     // No fake sun at night: when the sun is below the horizon, it stops lighting
     // and stops casting shadows. Twilight still has a little warm light.
-    sun.intensity = lerpNumber(0.0, 1.68, daylight) + twilightClamped * 0.10;
+    sun.intensity = (lerpNumber(0.0, 1.68, daylight) + twilightClamped * 0.10)
+      * locationVisualProfileNumber(visualProfile, 'sunIntensityScale', 1, 0.2, 2);
     sun.castShadow = !REAL_SHADOWS_TEMP_DISABLED && sunShadowsAllowedByTime;
 
-    moon.color.copy(dayNightColors.moonNight);
+    moon.color.copy(locationVisualProfileColor(visualProfile, 'moonNight', dayNightColors.moonNight));
     moon.intensity = lerpNumber(0.0, IS_MOBILE_DEVICE ? 0.92 : 0.72, moonAmount);
     moon.visible = moon.intensity > 0.01;
     moon.castShadow = false;
 
     if (typeof reliefRim !== 'undefined' && reliefRim) {
-      reliefRim.intensity = lerpNumber(IS_MOBILE_DEVICE ? 0.28 : 0.22, 0.50, daylight) + twilightClamped * 0.03;
-      reliefRim.color.copy(dayNightColors.moonNight).lerp(sun.color, Math.max(0.18, daylight));
+      reliefRim.intensity = (lerpNumber(IS_MOBILE_DEVICE ? 0.28 : 0.22, 0.50, daylight) + twilightClamped * 0.03)
+        * locationVisualProfileNumber(visualProfile, 'rimIntensityScale', 1, 0.15, 2);
+      reliefRim.color.copy(locationVisualProfileColor(visualProfile, 'moonNight', dayNightColors.moonNight))
+        .lerp(locationVisualProfileColor(visualProfile, 'rimDay', sun.color), Math.max(0.18, daylight));
     }
 
     // v7.74.40: mobile night needs readability, not a black filter. Exposure is
     // raised at night and the CSS overlay is reduced separately in the stylesheet.
-    renderer.toneMappingExposure = lerpNumber(IS_MOBILE_DEVICE ? 1.28 : 1.18, IS_MOBILE_DEVICE ? 1.10 : 1.16, daylight) + twilightClamped * 0.015;
-    refreshSceneEnvironment(hemi.color, hemi.groundColor, hemi.intensity, daylight);
+    const exposureNight = locationVisualProfileNumber(visualProfile, 'exposureNight', IS_MOBILE_DEVICE ? 1.28 : 1.18, 0.5, 2);
+    const exposureDay = locationVisualProfileNumber(visualProfile, 'exposureDay', IS_MOBILE_DEVICE ? 1.10 : 1.16, 0.5, 2);
+    renderer.toneMappingExposure = lerpNumber(exposureNight, exposureDay, daylight) + twilightClamped * 0.015;
+    refreshSceneEnvironment(hemi.color, hemi.groundColor, hemi.intensity, daylight, String(visualProfile?.id || 'default'));
     applyTerrainNightTint(night, twilightClamped);
     updateTraderInteriorLightLevels(force);
 

@@ -38,9 +38,7 @@ const {
   createLegacyRoutine,
   normalizeAuthoredRoutine,
   routineInterruptBlocksService,
-  selectRoutinePackage,
-  resolveAuthoritativeClock,
-  hourInsideWindow
+  selectRoutinePackage
 } = require('./src/server/npc-routines');
 const {
   buildActivitySlotCatalog,
@@ -2495,42 +2493,15 @@ function expireLegacyPlayerInput(p, now = Date.now()) {
   p.vz = 0;
   return true;
 }
-let serverGameClockStateProvider = null;
-// Времени суток в игре нет: освещение зафиксировано на послеполуденном часе,
-// солнце стоит на западе, тень падает на восток. Клиент держит ту же
-// константу (FIXED_WORLD_HOUR в 02b_lighting_time.js).
-//
-// «День» здесь — не время суток, а такт восстановления мира: по нему
-// пополняются контейнеры и товары. Он считается от реального времени, иначе
-// при неподвижных часах мир перестал бы восстанавливаться.
-//
-// Часы мировой симуляции (WASTELAND_SIM.state().worldHour) это не затрагивает:
-// экономика, задания и переходы по глобальной карте идут своим ходом.
-const FIXED_GAME_HOUR = 16.2;
+// Времени суток в игре нет. Остался только такт восстановления мира: по нему
+// пополняются контейнеры и товары торговцев. Считается от реального времени
+// с прежним шагом. Часы мировой симуляции (WASTELAND_SIM.state().worldHour)
+// это не затрагивает — экономика и глобальная карта идут своим ходом.
+const WORLD_RESTOCK_TICK_MS = GAME_DAY_REAL_MS;
 
-function currentGameClock(now = Date.now()) {
-  const sampledNow = Number(now || Date.now());
-  const worldDay = Math.floor(sampledNow / GAME_DAY_REAL_MS);
-  // Форма ответа совпадает с resolveAuthoritativeClock: у неё есть
-  // потребители помимо распорядков, и урезанный объект молча ломал их
-  // арифметику (кэш выбора пакета переставал попадать и пересчитывался
-  // каждый тик для каждого НПС).
-  return {
-    worldHour: FIXED_GAME_HOUR,
-    absoluteWorldHour: FIXED_GAME_HOUR,
-    gameHour: FIXED_GAME_HOUR,
-    worldDay,
-    gameDay: worldDay,
-    elapsedMs: 0,
-    sampledAt: sampledNow,
-    now: sampledNow,
-    gameDayRealMs: GAME_DAY_REAL_MS,
-    millisecondsPerGameHour: GAME_DAY_REAL_MS / 24
-  };
+function currentGameDayIndex(now = Date.now()) {
+  return Math.floor(Number(now || Date.now()) / WORLD_RESTOCK_TICK_MS);
 }
-
-function currentGameDayIndex(now = Date.now()) { return currentGameClock(now).worldDay; }
-function currentGameHour(now = Date.now()) { return currentGameClock(now).gameHour; }
 function safeName(name) { return String(name || 'Wanderer').slice(0, 24).replace(/[<>]/g, ''); }
 
 const VALID_HAND_EQUIPMENT = new Set(['pistol', 'rifle', 'assaultRifle', 'machineGun', 'laserPistol', 'flamethrower', 'plasmaRifle', 'shotgun', 'rocketLauncher', 'knife', 'fists', 'medkit', 'stim', 'doctorBag', 'antibiotics', 'pickaxe', 'axe', 'handPump']);
@@ -3471,7 +3442,6 @@ const WASTELAND_SIM = createWastelandSimulation({
   itemIds: SERVER_ITEM_IDS,
   traderProfiles: SERVER_TRADER_PROFILES
 });
-serverGameClockStateProvider = () => (typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null);
 
 function reconcileSavedWorldPartyMembers() {
   if (typeof WASTELAND_SIM.reconcileWorldPartyMembers !== 'function') return { removed: 0, kept: 0 };
@@ -3736,17 +3706,8 @@ function createNpcSchedule(seed = '', role = '', faction = '') {
   return createLegacyRoutine({ seed, role, faction, stableRoll: npcStableRoll });
 }
 
-function hourInsideSegment(hour = 0, start = 0, end = 0) {
-  return hourInsideWindow(hour, start, end);
-}
-
 function npcSchedulePackageAt(schedule = {}, now = Date.now(), context = {}) {
-  const clock = currentGameClock(now);
-  return selectRoutinePackage({
-    routine: schedule,
-    gameHour: clock.gameHour,
-    context: { ...context, now, gameHour: clock.gameHour, worldDay: clock.worldDay }
-  });
+  return selectRoutinePackage({ routine: schedule, context: { ...context, now } });
 }
 
 function npcScheduleStateAt(schedule = {}, now = Date.now()) {
@@ -13655,7 +13616,6 @@ function npcRoutineInterruptContext(room, enemy, now = Date.now()) {
 function npcRoutinePackageForActor(room, enemy, now = Date.now(), options = {}) {
   const schedule = enemy?.npcProfile?.schedule;
   if (!schedule) return null;
-  const clock = currentGameClock(now);
   const context = options.context || npcRoutineInterruptContext(room, enemy, now);
   const interruptSignature = context.combat ? 'combat'
     : context.alarm ? 'alarm'
@@ -13667,25 +13627,14 @@ function npcRoutinePackageForActor(room, enemy, now = Date.now(), options = {}) 
     && !enemy.npcRoutineInvalidated
     && cached
     && cached.schedule === schedule
-    && cached.interruptSignature === interruptSignature
-    && clock.absoluteWorldHour < Number(cached.nextBoundaryWorldHour || 0);
+    && cached.interruptSignature === interruptSignature;
   if (canReuse) return cached.package || null;
 
   const routinePackage = selectRoutinePackage({
     routine: schedule,
-    gameHour: clock.gameHour,
-    context: { ...context, now, gameHour: clock.gameHour, worldDay: clock.worldDay }
+    context: { ...context, now }
   });
-  // Час зафиксирован, поэтому окно распорядка никогда не сменится: выбранный
-  // пакет держится в кэше до сброса по флагу или смене причины прерывания.
-  const nextBoundaryWorldHour = Infinity;
-  enemy.npcRoutineSelectionCache = {
-    schedule,
-    interruptSignature,
-    package: routinePackage,
-    nextBoundaryWorldHour
-  };
-  enemy.npcRoutineNextBoundaryWorldHour = nextBoundaryWorldHour;
+  enemy.npcRoutineSelectionCache = { schedule, interruptSignature, package: routinePackage };
   enemy.npcRoutineInvalidated = false;
   return routinePackage;
 }
@@ -13712,11 +13661,9 @@ function npcRoutineFallbackTarget(room, loc = {}, enemy = {}, routinePackage = {
 
 function npcRoutineUnderlyingServiceAvailable(enemy = {}, now = Date.now()) {
   if (!enemy?.npcProfile?.schedule) return false;
-  const clock = currentGameClock(now);
   const routinePackage = selectRoutinePackage({
     routine: enemy.npcProfile.schedule,
-    gameHour: clock.gameHour,
-    context: { now, gameHour: clock.gameHour, worldDay: clock.worldDay }
+    context: { now }
   });
   return !!routinePackage?.serviceAvailable;
 }
@@ -15411,7 +15358,6 @@ function spawnServerEnemy(room, opts = {}) {
     npcScheduleLabel: initialScheduleState ? npcScheduleLabel(initialScheduleState) : '',
     npcScheduleUpdatedAt: Date.now(),
     npcRoutinePackageId: String(initialRoutinePackage?.id || '').slice(0, 96),
-    npcRoutineNextBoundaryWorldHour: 0,
     npcActivityRevision: initialRoutinePackage ? 1 : 0,
     npcActivityType: String(initialRoutinePackage?.type || '').slice(0, 32),
     npcActivityPhase: initialRoutinePackage ? 'travel' : '',

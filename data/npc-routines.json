@@ -4,82 +4,18 @@
   "routines": {
     "caravan_sayla": {
       "id": "caravan_sayla",
-      "label": "Распорядок караванщицы Сайлы",
+      "label": "Роль караванщицы Сайлы",
       "packages": [
         {
-          "id": "caravan_sayla_night_rest",
-          "type": "rest",
-          "startHour": 22,
-          "endHour": 7,
-          "priority": 40,
-          "interruptPolicy": "immediate",
-          "resumePolicy": "reevaluate",
-          "serviceAvailable": false
-        },
-        {
-          "id": "caravan_sayla_morning_rest",
-          "type": "rest",
-          "startHour": 7,
-          "endHour": 8,
-          "priority": 20,
-          "target": {
-            "slotType": "social"
-          },
-          "interruptPolicy": "immediate",
-          "resumePolicy": "reevaluate",
-          "serviceAvailable": false
-        },
-        {
-          "id": "caravan_sayla_morning_shop",
+          "id": "caravan_sayla_shop",
           "type": "shop",
-          "startHour": 8,
-          "endHour": 13,
-          "priority": 60,
+          "priority": 100,
           "target": {
             "slotId": "caravan_sayla_shop"
           },
-          "interruptPolicy": "immediate",
-          "resumePolicy": "resume",
-          "serviceAvailable": true
-        },
-        {
-          "id": "caravan_sayla_midday_rest",
-          "type": "rest",
-          "startHour": 13,
-          "endHour": 14,
-          "priority": 20,
-          "target": {
-            "slotType": "social"
-          },
-          "interruptPolicy": "immediate",
+          "interruptPolicy": "interruptible",
           "resumePolicy": "reevaluate",
-          "serviceAvailable": false
-        },
-        {
-          "id": "caravan_sayla_afternoon_shop",
-          "type": "shop",
-          "startHour": 14,
-          "endHour": 20,
-          "priority": 60,
-          "target": {
-            "slotId": "caravan_sayla_shop"
-          },
-          "interruptPolicy": "immediate",
-          "resumePolicy": "resume",
           "serviceAvailable": true
-        },
-        {
-          "id": "caravan_sayla_evening_social",
-          "type": "social",
-          "startHour": 20,
-          "endHour": 22,
-          "priority": 20,
-          "target": {
-            "slotType": "social"
-          },
-          "interruptPolicy": "immediate",
-          "resumePolicy": "reevaluate",
-          "serviceAvailable": false
         }
       ]
     }

@@ -1,0 +1,44 @@
+/* ===== Подписи над моделями и шанс попадания =====
+   Отдельный файл, потому что подключается с версией в адресе. Правила,
+   дописанные в старые безверсионные файлы, у игроков остаются в кэше:
+   скрипт обновляется, стиль нет, и плашки сыпятся в угол экрана. */
+
+/* Слой подписей лежит поверх канваса и не перехватывает указатель. */
+#actor-nameplates {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  overflow: hidden;
+}
+
+.actor-nameplate {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  padding: 1px 6px 2px;
+  border-radius: 5px;
+  background: rgba(9, 14, 10, 0.52);
+  border: 1px solid rgba(126, 158, 108, 0.34);
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.actor-nameplate .plate-name { color: #dbe7c8; font-weight: 700; }
+.actor-nameplate .plate-health { color: #9fd7a0; }
+.actor-nameplate.plate-player .plate-name { color: #8fd3ff; }
+.actor-nameplate.plate-hostile .plate-name { color: #f3b58a; }
+.actor-nameplate.plate-hurt .plate-health { color: #f0c65b; }
+.actor-nameplate.plate-critical .plate-health { color: #ff6a52; }
+
+/* Шанс попадания выделен ярко-красным: это главное число подсказки. */
+#target-hint .hit-chance,
+#target-hint .hit-good,
+#target-hint .hit-mid,
+#target-hint .hit-bad {
+  color: #ff2d1f;
+  font-weight: 900;
+  text-shadow: 0 0 6px rgba(255, 45, 31, 0.55);
+}

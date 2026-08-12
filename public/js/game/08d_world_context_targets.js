@@ -182,8 +182,13 @@
       el.dataset.targetHintHtml = targetHintRenderCache.html;
     }
     const pad = 14;
-    const x = Math.min(window.innerWidth - 190, Math.max(8, (clientX || 0) + pad));
-    const y = Math.min(window.innerHeight - 92, Math.max(8, (clientY || 0) + pad));
+    // Осмотр можно запустить и с клавиатуры, когда мышь ещё ни разу не двигали.
+    // Без запасных координат подсказка уезжала в левый верхний угол под панель
+    // персонажа, поэтому в этом случае ставим её у центра экрана.
+    const anchorX = Number.isFinite(Number(clientX)) ? Number(clientX) : window.innerWidth * 0.5;
+    const anchorY = Number.isFinite(Number(clientY)) ? Number(clientY) : window.innerHeight * 0.45;
+    const x = Math.min(window.innerWidth - 190, Math.max(8, anchorX + pad));
+    const y = Math.min(window.innerHeight - 92, Math.max(8, anchorY + pad));
     if (Math.abs(x - targetHintRenderCache.left) > 0.5) {
       el.style.left = x + 'px';
       targetHintRenderCache.left = x;

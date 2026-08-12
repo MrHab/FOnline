@@ -923,9 +923,18 @@ function assertServerPersistenceFaultRecovery() {
   let persistenceShouldThrow = true;
   const persistenceApi = evaluateServerFunctions(
     serverSource,
-    [['function persistActivePlayerState(', 'function publicTravelPartyMember(']],
-    ['persistActivePlayerState'],
+    [['function persistActivePlayerStates(', 'function publicTravelPartyMember(']],
+    ['persistActivePlayerState', 'persistActivePlayerStates'],
     {
+      performance: { now: () => 1 },
+      activePlayerPersistenceMetrics: {
+        writeAttempts: 0,
+        writeFailures: 0,
+        rowsStaged: 0,
+        coalescedWritesAvoided: 0,
+        writeTotalMs: 0,
+        writeMaxMs: 0
+      },
       normalizeCharacterId: value => String(value || ''),
       ensureUserCharacterStore: () => ({ character_player: row }),
       mergeAuthoritativeCharacterState: () => ({ marker: 'next' }),
@@ -1064,9 +1073,9 @@ function assertGlobalTravelLeaderDisconnectRecovery() {
       globalTravelSessions,
       players,
       serverGlobalTravelCurrentPoint: () => ({ x: 33, y: 44 }),
-      persistActivePlayerState: member => {
-        persisted.push(member.id);
-        if (member.id === failingPersistId) throw new Error('injected global travel write failure');
+      persistActivePlayerStates: members => {
+        persisted.push(...members.map(member => member.id));
+        if (members.some(member => member.id === failingPersistId)) throw new Error('injected global travel write failure');
         return true;
       },
       console: { error: (...args) => persistenceErrors.push(args) },
@@ -1443,17 +1452,17 @@ function assertSocketAndClientContract() {
   assert(travelDescriptor.includes('session.terminating'),
     'terminal global travel can still be serialized as an active route');
   assert(arrivalHandler.indexOf('session.terminating = true') >= 0
-    && arrivalHandler.indexOf('session.terminating = true') < arrivalHandler.indexOf('persistActivePlayerState(member)'),
+    && arrivalHandler.indexOf('session.terminating = true') < arrivalHandler.indexOf('persistActivePlayerStates(arrivingMembers)'),
   'global travel arrival persists players before suppressing the completed route descriptor');
   const travelCleanup = serverSource.slice(
     serverSource.indexOf('function cleanupGlobalTravelSessionsForSocket('),
     serverSource.indexOf('function publicPlayerMovement(', serverSource.indexOf('function cleanupGlobalTravelSessionsForSocket('))
   );
   assert(travelCleanup.indexOf('session.terminating = true') >= 0
-    && travelCleanup.indexOf('session.terminating = true') < travelCleanup.indexOf('persistActivePlayerState(member)'),
+    && travelCleanup.indexOf('session.terminating = true') < travelCleanup.indexOf('persistActivePlayerStates(membersToPersist)'),
   'leader disconnect persists players before suppressing the cancelled route descriptor');
   assert(travelCleanup.indexOf('globalTravelSessions.delete(leaderId)') >= 0
-    && travelCleanup.indexOf('globalTravelSessions.delete(leaderId)') < travelCleanup.indexOf('persistActivePlayerState(member)')
+    && travelCleanup.indexOf('globalTravelSessions.delete(leaderId)') < travelCleanup.indexOf('persistActivePlayerStates(membersToPersist)')
     && travelCleanup.includes("console.error('Global travel release persistence failed:'"),
   'leader disconnect can leave a follower locked when one release save fails');
   const travelCancel = serverSource.slice(
@@ -1461,7 +1470,7 @@ function assertSocketAndClientContract() {
     serverSource.indexOf("socket.on('globalMapCreateAmbush'", serverSource.indexOf("socket.on('globalTravelCancel'"))
   );
   assert(travelCancel.indexOf('session.terminating = true') >= 0
-    && travelCancel.indexOf('session.terminating = true') < travelCancel.indexOf('persistActivePlayerState(member)'),
+    && travelCancel.indexOf('session.terminating = true') < travelCancel.indexOf('persistActivePlayerStates(cancellingMembers)'),
   'global travel cancellation persists players before suppressing the cancelled route descriptor');
   assert(serverSource.includes('syncWorldPartyPlayerAttachments(simState);'),
     'world-party attachment is not reconciled on the server tick');

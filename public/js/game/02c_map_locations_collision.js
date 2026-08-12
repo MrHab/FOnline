@@ -284,11 +284,15 @@
     return true;
   }
 
-  async function loadLocationConfig() {
+  function fetchLocationConfig() {
+    return typeof serverApi === 'function'
+      ? serverApi('/api/locations', { method: 'GET' })
+      : fetch('/api/locations', { cache: 'no-store' }).then(res => res.json());
+  }
+
+  async function loadLocationConfig(options = {}) {
     try {
-      const data = typeof serverApi === 'function'
-        ? await serverApi('/api/locations', { method: 'GET' })
-        : await fetch('/api/locations', { cache: 'no-store' }).then(res => res.json());
+      const data = options.data || await fetchLocationConfig();
       if (data?.ok && data.locations && applyClientLocationConfig(data.locations)) {
         return true;
       }
@@ -364,8 +368,7 @@
   let locationTransitionActive = false;
   let locationTransitionToken = 0;
   const LOCATION_LOADING_MIN_VISIBLE_MS = 360;
-  const STARTUP_REVEAL_FRAME_COUNT = 4;
-  const STARTUP_REVEAL_EXTRA_HOLD_MS = 260;
+  const STARTUP_REVEAL_FRAME_COUNT = 2;
 
   function locationLoadingElements() {
     const screen = document.getElementById('location-loading-screen');
@@ -496,9 +499,9 @@
   }
 
   async function waitForStartupVisualRevealSettle() {
-    if (typeof waitForStartupNetworkQuiet === 'function') {
-      setLocationLoadingProgress('Жду стартовую синхронизацию сервера...', 94);
-      await waitForStartupNetworkQuiet({ quietMs: 240, timeoutMs: 1800 });
+    if (typeof waitForStartupInitialSnapshots === 'function') {
+      setLocationLoadingProgress('Принимаю начальное состояние локации...', 94);
+      await waitForStartupInitialSnapshots({ timeoutMs: 700 });
     }
     setLocationLoadingProgress('Готовлю первый кадр мира...', 97);
     renderStartupRevealFrame('startup-reveal:pre');
@@ -506,7 +509,6 @@
       await nextPaintForLocationLoading();
       renderStartupRevealFrame(`startup-reveal:frame-${i + 1}`);
     }
-    await new Promise(resolve => setTimeout(resolve, STARTUP_REVEAL_EXTRA_HOLD_MS));
     renderStartupRevealFrame('startup-reveal:final');
   }
 
@@ -632,8 +634,32 @@
     return uniqueLocationUrls(urls);
   }
 
-  async function preloadLocationAssets(locationId, onProgress) {
-    const urls = getLocationPreloadTextureUrls(locationId);
+  function getCriticalLocationPreloadTextureUrls(locationId) {
+    const urls = [
+      getReliefTexturePath('base'),
+      'assets/textures/cc0/cc0_style_dry_wood.png',
+      'assets/textures/cc0/cc0_style_rusty_metal.png',
+      'assets/textures/materials_ground_dirt_01/stone_wall_base_v759.webp'
+    ];
+    if (locationId === 'settlement') {
+      urls.push(
+        'assets/textures/materials_ground_dirt_01/layer_sand_from_archive_v759.webp',
+        'assets/textures/psx_buildings/trader_wall_metal_blue_base_v769.webp',
+        'assets/textures/psx_buildings/trader_wall_corrugated_rust_base_v769.webp',
+        'assets/textures/psx_buildings/trader_floor_concrete_base_v769.webp',
+        'assets/textures/psx_buildings/trader_roof_red_white_base_v769.webp',
+        'assets/textures/psx_buildings/trader_window_dark_v769.webp'
+      );
+    } else {
+      urls.push('assets/textures/cc0/cc0_style_desert_cracked_ground.png');
+    }
+    return uniqueLocationUrls(urls);
+  }
+
+  async function preloadLocationAssets(locationId, onProgress, options = {}) {
+    const urls = options.criticalOnly
+      ? getCriticalLocationPreloadTextureUrls(locationId)
+      : getLocationPreloadTextureUrls(locationId);
     if (!urls.length) return;
     let done = 0;
     await Promise.all(urls.map(async url => {
@@ -649,6 +675,11 @@
     const token = ++locationTransitionToken;
     const startedAt = performance.now();
     const targetLocation = options.location || currentLocation || LOCATIONS.settlement;
+    const targetLocationId = String(options.locationId || targetLocation?.id || 'settlement');
+    const startupTrace = options.startupTrace || null;
+    const markStartup = (phase, details = {}) => typeof markClientStartupPhase === 'function'
+      ? markClientStartupPhase(startupTrace, phase, details)
+      : null;
     showLocationLoading(title, options.subtitle || 'Подготавливаю персонажа и окружение...', {
       mode: 'startup',
       kicker: options.kicker || 'Вход в игру',
@@ -659,26 +690,34 @@
 
     try {
       await nextPaintForLocationLoading();
+      markStartup('loading-screen-painted');
       if (token !== locationTransitionToken) return false;
 
       const characterScreen = document.getElementById('character-screen');
       if (characterScreen) characterScreen.classList.remove('visible');
 
       setLocationLoadingProgress('Подготавливаю графику и модели мира...', 12);
-      await ensureWorldRuntimeReady();
+      const worldRuntimeState = await ensureWorldRuntimeReady({
+        location: targetLocation,
+        locationId: targetLocationId,
+        ...(options.criticalAssets || {})
+      });
+      markStartup('critical-models-ready', { fallback: !!worldRuntimeState?.assetTimeout });
       if (token !== locationTransitionToken) return false;
 
       setLocationLoadingProgress('Загружаю текстуры и материалы...', 18);
-      await preloadLocationAssets(targetLocation.id, (done, total) => {
+      await preloadLocationAssets(targetLocationId, (done, total) => {
         const p = 18 + (done / Math.max(1, total)) * 34;
         setLocationLoadingProgress(`Загружаю ассеты ${done}/${total}...`, p);
-      });
+      }, { criticalOnly: true });
+      markStartup('critical-textures-ready');
       if (token !== locationTransitionToken) return false;
 
       await nextPaintForLocationLoading();
       setLocationLoadingProgress('Собираю карту, персонажа и окружение...', 58);
       const result = work();
       if (result === false) throw new Error(options.errorMessage || 'Не удалось подготовить мир.');
+      markStartup('world-built');
 
       if (typeof scheduleCameraViewportSync === 'function') scheduleCameraViewportSync('startup-loading');
       if (typeof updateCamera === 'function') {
@@ -693,6 +732,7 @@
       if (renderer && scene && camera) {
         try { renderer.render(scene, camera); } catch (_) {}
       }
+      markStartup('first-frame-compiled');
 
       if (typeof options.beforeReveal === 'function') {
         setLocationLoadingProgress(options.beforeRevealStep || 'Синхронизирую локацию с сервером...', options.beforeRevealProgress || 90);
@@ -707,11 +747,13 @@
         if (renderer && scene && camera) {
           try { renderer.render(scene, camera); } catch (_) {}
         }
+        markStartup('authoritative-session-ready');
       }
 
       await nextPaintForLocationLoading();
       if (typeof scheduleCameraViewportSync === 'function') scheduleCameraViewportSync('startup-loading-final');
       await waitForStartupVisualRevealSettle();
+      markStartup('first-interactive-frame-ready');
       setLocationLoadingProgress('Мир готов.', 100);
       const elapsed = performance.now() - startedAt;
       if (elapsed < LOCATION_LOADING_MIN_VISIBLE_MS) {

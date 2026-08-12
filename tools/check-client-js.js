@@ -585,6 +585,171 @@ async function checkCharacterSelectionSingleFlight() {
     'a token change must invalidate an outstanding character load');
 }
 
+async function checkServerApiRetryPolicy() {
+  const bootstrapSource = fs.readFileSync(path.join(partsDir, '01_bootstrap_online_save.js'), 'utf8');
+  const runtime = new Function([
+    'let SERVER_API_BASE = "";',
+    'const location = { origin: "http://127.0.0.1:3000" };',
+    'const serverSession = { token: "token-a" };',
+    'let activeCharacterLeaseId = "";',
+    'const calls = [];',
+    'let plan = [];',
+    'let candidates = [""];',
+    'function getDeviceId() { return "device-a"; }',
+    'function getClientInstanceId() { return "tab-a"; }',
+    'function getDeviceType() { return "desktop"; }',
+    'function serverApiBaseCandidates() { return candidates.slice(); }',
+    'function setServerSession() {}',
+    'function setOnlineStatus() {}',
+    'function setAuthStep() {}',
+    'function setServerAuthStatus() {}',
+    'const document = { getElementById() { return null; } };',
+    'async function fetch(url, options) {',
+    '  calls.push({ url, options });',
+    '  const next = plan.shift();',
+    '  if (next === "reject") throw new Error("network down");',
+    '  if (next === "not-found") return { ok: false, status: 404, statusText: "Not Found", async json() { return { ok: false }; } };',
+    '  if (next === "invalid-json") return { ok: true, status: 200, statusText: "Invalid JSON", async json() { throw new Error("invalid json"); } };',
+    '  if (next === "body-hang") return { ok: true, status: 200, statusText: "OK", json() { return new Promise(() => {}); } };',
+    '  return { ok: true, status: 200, statusText: "OK", async json() { return { ok: true, value: 7 }; } };',
+    '}',
+    `async ${namedFunctionSource(bootstrapSource, 'fetchServerApiWithTimeout')}`,
+    `async ${namedFunctionSource(bootstrapSource, 'serverApi')}`,
+    'return {',
+    '  serverApi, calls,',
+    '  setPlan(value) { plan = value.slice(); },',
+    '  setCandidates(value) { candidates = value.slice(); },',
+    '  clearCalls() { calls.length = 0; }',
+    '};'
+  ].join('\n'))();
+
+  runtime.setPlan(['reject', 'success']);
+  const getResult = await runtime.serverApi('/api/test', { method: 'GET', timeoutMs: 1200 });
+  assert.strictEqual(getResult.value, 7);
+  assert.strictEqual(runtime.calls.length, 2, 'idempotent GET did not retry one transient network failure');
+  assert(runtime.calls.every(call => !('timeoutMs' in call.options) && !('retryCount' in call.options)),
+    'client-only retry options leaked into fetch');
+
+  runtime.clearCalls();
+  runtime.setPlan(['reject', 'success']);
+  await assert.rejects(() => runtime.serverApi('/api/test', {
+    method: 'POST',
+    body: '{}',
+    retryCount: 2
+  }), /Нет соединения/);
+  assert.strictEqual(runtime.calls.length, 1, 'non-idempotent POST was retried automatically');
+
+  runtime.clearCalls();
+  runtime.setCandidates(['', 'http://127.0.0.1:3000']);
+  runtime.setPlan(['reject', 'success']);
+  await assert.rejects(() => runtime.serverApi('/api/test', {
+    method: 'POST',
+    body: '{}'
+  }), /Нет соединения/);
+  assert.strictEqual(runtime.calls.length, 1,
+    'non-idempotent POST was repeated against a fallback origin after an ambiguous network failure');
+
+  runtime.clearCalls();
+  runtime.setPlan(['not-found', 'success']);
+  const fallbackPost = await runtime.serverApi('/api/test', { method: 'POST', body: '{}' });
+  assert.strictEqual(fallbackPost.value, 7);
+  assert.strictEqual(runtime.calls.length, 2,
+    'deterministic same-origin 404 no longer selects the local API fallback');
+
+  runtime.clearCalls();
+  runtime.setCandidates(['', 'http://127.0.0.1:3000']);
+  runtime.setPlan(['invalid-json', 'success']);
+  await assert.rejects(() => runtime.serverApi('/api/test', {
+    method: 'POST',
+    body: '{}'
+  }), /Invalid JSON/);
+  assert.strictEqual(runtime.calls.length, 1,
+    'malformed successful POST response repeated the mutation against a fallback origin');
+
+  runtime.clearCalls();
+  runtime.setPlan(['body-hang', 'success']);
+  await assert.rejects(() => runtime.serverApi('/api/test', {
+    method: 'POST',
+    body: '{}',
+    timeoutMs: 1000
+  }), /не ответил/);
+  assert.strictEqual(runtime.calls.length, 1,
+    'a POST with response headers but a stalled body was retried or left unbounded');
+}
+
+function checkCharacterGlbTemplateClone() {
+  const THREE = require('three');
+  const characterSource = fs.readFileSync(path.join(partsDir, '04b_character_glb_runtime.js'), 'utf8');
+  const runtime = new Function('THREE', [
+    namedFunctionSource(characterSource, 'markCharacterGlbMaterialTexturesShared'),
+    namedFunctionSource(characterSource, 'markCharacterGlbTemplateMaterial'),
+    namedFunctionSource(characterSource, 'markCharacterGlbTemplateShared'),
+    namedFunctionSource(characterSource, 'cloneCharacterGlbInstanceMaterial'),
+    namedFunctionSource(characterSource, 'cloneCharacterGlbTemplateScene'),
+    namedFunctionSource(characterSource, 'disposeCharacterGlbObject'),
+    'return { markCharacterGlbTemplateShared, cloneCharacterGlbTemplateScene, disposeCharacterGlbObject };'
+  ].join('\n'))(THREE);
+
+  const source = new THREE.Group();
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 1, 0, 1, 0, 0], 3));
+  const sharedTexture = new THREE.Texture();
+  const material = new THREE.MeshBasicMaterial({ map: sharedTexture });
+  const mesh = new THREE.SkinnedMesh(geometry, material);
+  const rootBone = new THREE.Bone();
+  rootBone.name = 'pelvis';
+  const childBone = new THREE.Bone();
+  childBone.name = 'spine_01';
+  rootBone.add(childBone);
+  mesh.add(rootBone);
+  mesh.bind(new THREE.Skeleton([rootBone, childBone]));
+  source.add(mesh);
+  runtime.markCharacterGlbTemplateShared(source);
+
+  const clone = runtime.cloneCharacterGlbTemplateScene(source);
+  const secondClone = runtime.cloneCharacterGlbTemplateScene(source);
+  const cloneMesh = clone.children[0];
+  const secondCloneMesh = secondClone.children[0];
+  assert(clone && cloneMesh.isSkinnedMesh, 'cached character template did not produce a skinned clone');
+  assert.notStrictEqual(cloneMesh.skeleton, mesh.skeleton, 'cached character clone reused the template skeleton object');
+  assert.notStrictEqual(cloneMesh.skeleton.bones[0], mesh.skeleton.bones[0], 'cached character clone reused template bones');
+  assert.strictEqual(cloneMesh.geometry, geometry, 'cached character clone stopped sharing immutable geometry');
+  assert.notStrictEqual(cloneMesh.material, material, 'cached character clone reused the mutable template material wrapper');
+  assert.notStrictEqual(cloneMesh.material, secondCloneMesh.material, 'two cached character clones share a mutable material wrapper');
+  assert.strictEqual(cloneMesh.material.map, sharedTexture, 'cached character clone stopped sharing immutable textures');
+  assert.strictEqual(secondCloneMesh.material.map, sharedTexture, 'second cached character clone stopped sharing immutable textures');
+  assert.strictEqual(cloneMesh.material.userData.characterGlbInstanceMaterial, true,
+    'cached character clone lacks instance material ownership');
+  assert.strictEqual(cloneMesh.userData.characterGlbSharedAsset, false,
+    'cached character clone retains an aggregate shared-material marker');
+  cloneMesh.material.color.setHex(0xff0000);
+  assert.notStrictEqual(material.color.getHex(), 0xff0000, 'character hit material mutation reached the template');
+  assert.notStrictEqual(secondCloneMesh.material.color.getHex(), 0xff0000, 'character hit material mutation reached another clone');
+
+  let geometryDisposals = 0;
+  let textureDisposals = 0;
+  let instanceMaterialDisposals = 0;
+  let sourceMaterialDisposals = 0;
+  geometry.addEventListener('dispose', () => { geometryDisposals += 1; });
+  sharedTexture.addEventListener('dispose', () => { textureDisposals += 1; });
+  material.addEventListener('dispose', () => { sourceMaterialDisposals += 1; });
+  cloneMesh.material.addEventListener('dispose', () => { instanceMaterialDisposals += 1; });
+  runtime.disposeCharacterGlbObject(clone);
+  assert.strictEqual(geometryDisposals, 0, 'disposing an actor destroyed shared character geometry');
+  assert.strictEqual(textureDisposals, 0, 'disposing an instance material destroyed shared template textures');
+  assert.strictEqual(sourceMaterialDisposals, 0, 'disposing an actor destroyed the template material');
+  assert.strictEqual(instanceMaterialDisposals, 1, 'per-instance character material was not disposed');
+
+  const invalid = new THREE.Group();
+  const invalidMesh = new THREE.SkinnedMesh(geometry, material);
+  const externalBone = new THREE.Bone();
+  invalidMesh.bind(new THREE.Skeleton([externalBone]));
+  invalid.add(invalidMesh);
+  runtime.markCharacterGlbTemplateShared(invalid);
+  assert.strictEqual(runtime.cloneCharacterGlbTemplateScene(invalid), null,
+    'a template with an unmapped skeleton bone produced a clone tied to the template');
+}
+
 function checkSessionInvalidationPolicy() {
   const bootstrapSource = fs.readFileSync(path.join(partsDir, '01_bootstrap_online_save.js'), 'utf8');
   const sessionSource = namedFunctionSource(bootstrapSource, 'setServerSession');
@@ -646,6 +811,8 @@ Promise.all([
   checkSaveGenerationDrain(),
   checkContextTransitionAbort(),
   checkCharacterSelectionSingleFlight(),
+  checkServerApiRetryPolicy(),
+  checkCharacterGlbTemplateClone(),
   checkSessionInvalidationPolicy()
 ])
   .then(() => {
@@ -657,6 +824,8 @@ Promise.all([
     console.log('Client save generation drain OK');
     console.log('Client save transition abort policy OK');
     console.log('Client character selection single-flight OK');
+    console.log('Client bounded GET retry policy OK');
+    console.log('Client shared character GLB clone/disposal OK');
     console.log('Client session invalidation policy OK');
   })
   .catch(error => {

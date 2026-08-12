@@ -1369,12 +1369,28 @@ varying float vInstanceOpacity;`
     return state.promise;
   }
 
-  function preloadStaticWorldModels() {
-    return Promise.all(
-      Object.keys(STATIC_MODEL_URLS)
-        .filter(key => !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))
-        .map(requestStaticModel)
-    );
+  function staticModelKeysForLocation(location = currentLocation) {
+    const keys = new Set();
+    const visit = row => {
+      if (!row || typeof row !== 'object') return;
+      const key = staticModelKeyFromLocationObject(row);
+      if (key && !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key)) keys.add(key);
+      if (Array.isArray(row.children)) row.children.forEach(visit);
+      if (Array.isArray(row.objects)) row.objects.forEach(visit);
+    };
+    (Array.isArray(location?.objects) ? location.objects : []).forEach(visit);
+    if (location?.storage) keys.add('storageChest');
+    if (location?.trader && !location?.trader?.model) keys.add('traderNpc');
+    return Array.from(keys).filter(key => STATIC_MODEL_URLS[key]);
+  }
+
+  function preloadStaticWorldModels(options = {}) {
+    const requestedKeys = Array.isArray(options.keys)
+      ? options.keys
+      : (options.location ? staticModelKeysForLocation(options.location) : Object.keys(STATIC_MODEL_URLS));
+    const keys = Array.from(new Set(requestedKeys))
+      .filter(key => STATIC_MODEL_URLS[key] && !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key));
+    return Promise.all(keys.map(requestStaticModel));
   }
 
   function makeStaticModelGroup(key, x, z, angle = 0, kind = key, opts = {}) {

@@ -384,7 +384,7 @@ function joinFsmRuntime() {
     '}',
     'const initialSocket = makeSocket("socket-a");',
     'const multiplayer = {',
-    '  socket: initialSocket, socketGeneration: 7, joinAttemptId: 0, joinInFlight: false,',
+    '  socket: initialSocket, socketGeneration: 7, joinAttemptId: 0, joinInFlight: false, joinRequested: true,',
     '  joinPromise: null, joinAttemptResolve: null, joinSocketId: "", joinSessionToken: "",',
     '  joinCharacterId: "", joinClientInstanceId: "", joinTimer: null, transportState: "connected",',
     '  joined: false, joinedSocketId: "", joinedSessionToken: "", joinedCharacterId: "",',
@@ -447,6 +447,66 @@ function joinFsmRuntime() {
     '    clearMultiplayerJoinedContext();',
     '    return next;',
     '  }',
+    '};'
+  ].join('\n'))();
+}
+
+function contextReconnectRuntime() {
+  return new Function([
+    'let selectedServerCharacterId = "character-b";',
+    'let activeCharacterLeaseId = "lease-a";',
+    'const serverSession = { token: "token-a" };',
+    'const characterProfile = { name: "Character B" };',
+    'const globalMapState = {};',
+    'const SERVER_API_BASE = "http://local.test";',
+    'const location = { origin: SERVER_API_BASE };',
+    'let gameStarted = true;',
+    'let joinCalls = 0;',
+    'const oldSocket = {',
+    '  id: "socket-a", connected: true, active: true, disconnects: 0,',
+    '  disconnect() { this.disconnects += 1; this.connected = false; }',
+    '};',
+    'const replacementSocket = {',
+    '  id: "socket-b", connected: false, active: true, handlers: {}, disconnects: 0,',
+    '  on(eventName, handler) { this.handlers[eventName] = handler; },',
+    '  emit() {}, connect() { this.connected = true; },',
+    '  disconnect() { this.disconnects += 1; this.connected = false; this.active = false; }',
+    '};',
+    'const window = { io() { replacementSocket.active = true; replacementSocket.connected = false; return replacementSocket; } };',
+    'const multiplayer = {',
+    '  socket: oldSocket, socketGeneration: 7, connected: true, joinRequested: false,',
+    '  joined: true, joinedSocketId: "socket-a", joinedSessionToken: "token-a",',
+    '  joinedCharacterId: "character-a", joinedClientInstanceId: "tab-a",',
+    '  characterLeaseId: "lease-a", roomId: "settlement", joinInFlight: false,',
+    '  joinSocketId: "", joinSessionToken: "", joinCharacterId: "",',
+    '  joinClientInstanceId: "", joinAttemptId: 0, joinPromise: null,',
+    '  joinAttemptResolve: null, joinTimer: null, joinWaiters: [],',
+    '  pendingEquipmentSlots: new Set(), serverAuthoritativeEnemies: true,',
+    '  transportState: "joined"',
+    '};',
+    'function getDeviceId() { return "device-a"; }',
+    'function getClientInstanceId() { return "tab-a"; }',
+    'function getDeviceType() { return "desktop"; }',
+    'function getDeviceControlType() { return "keyboard"; }',
+    'function cancelMultiplayerJoinAttempt() { multiplayer.joinInFlight = false; }',
+    'function resolveMultiplayerJoinWaiters() {}',
+    'function resetNetworkPingMeasurement() {}',
+    'function setClientAuthorityMode() {}',
+    'function setOnlineStatus() {}',
+    'function setReadout() {}',
+    'function waitForMultiplayerJoin() { return Promise.resolve(false); }',
+    'function joinMultiplayerRoom() { joinCalls += 1; }',
+    functionSource(core, 'currentMultiplayerJoinContext'),
+    functionSource(core, 'multiplayerJoinContextIsCurrent'),
+    functionSource(core, 'multiplayerJoinedContextMatchesCurrent'),
+    functionSource(core, 'clearMultiplayerJoinedContext'),
+    functionSource(core, 'invalidateMultiplayerSessionContext'),
+    functionSource(socketRoom, 'multiplayerSocketGenerationMatches'),
+    functionSource(socketRoom, 'connectMultiplayer'),
+    'return {',
+    '  multiplayer, oldSocket, replacementSocket, connect: connectMultiplayer,',
+    '  invalidate: invalidateMultiplayerSessionContext,',
+    '  joinCalls: () => joinCalls',
     '};'
   ].join('\n'))();
 }
@@ -561,6 +621,8 @@ async function assertJoinAndCorrectionContracts() {
   assert.strictEqual(inconsistentRuntime.selectedCharacter(), 'char-a',
     'an inconsistent remap ACK must not alter the selected character');
   assert.strictEqual(inconsistentRuntime.initialSocket.disconnects, 1);
+  assert.strictEqual(inconsistentRuntime.multiplayer.joinRequested, false,
+    'a terminal rejected join ACK must clear stale automatic join intent');
 
   const staleRuntime = joinFsmRuntime();
   const staleJoin = staleRuntime.join();
@@ -585,6 +647,33 @@ async function assertJoinAndCorrectionContracts() {
   assert.strictEqual(timeoutRuntime.initialSocket.connects, 1,
     'a current join timeout must perform one controlled reconnect');
   assert(timeoutRuntime.authorityCalls.some(call => call.mode === 'blocked' && call.reason === 'join-timeout'));
+
+  const contextReconnect = contextReconnectRuntime();
+  contextReconnect.connect();
+  assert.strictEqual(contextReconnect.oldSocket.disconnects, 1,
+    'switching characters must disconnect the socket joined as the previous character');
+  assert.strictEqual(contextReconnect.multiplayer.socket, contextReconnect.replacementSocket);
+  assert.strictEqual(contextReconnect.multiplayer.joinRequested, true,
+    'context invalidation must preserve the replacement socket join intent');
+  contextReconnect.replacementSocket.connected = true;
+  contextReconnect.replacementSocket.handlers.connect();
+  assert.strictEqual(contextReconnect.joinCalls(), 1,
+    'the replacement socket must join the newly selected character after connect');
+  contextReconnect.invalidate('character-creation-join-failed', { disconnect: true, clearWorld: true });
+  assert.strictEqual(contextReconnect.multiplayer.joinRequested, false);
+  contextReconnect.connect({ prepareOnly: true });
+  contextReconnect.replacementSocket.connected = true;
+  contextReconnect.replacementSocket.handlers.connect();
+  assert.strictEqual(contextReconnect.joinCalls(), 1,
+    'a prepare-only retry after failed join must not auto-join stale character state');
+  contextReconnect.connect();
+  assert.strictEqual(contextReconnect.joinCalls(), 2,
+    'an explicit non-prepare retry must restore join intent after failed join');
+  contextReconnect.replacementSocket.handlers.sessionRejected({ error: 'test rejection' });
+  assert.strictEqual(contextReconnect.multiplayer.joinRequested, false,
+    'a terminal session rejection must clear stale automatic join intent');
+  assert.strictEqual(contextReconnect.replacementSocket.disconnects, 2,
+    'a rejected replacement socket must be disconnected');
 
   const joinBody = functionBody(socketRoom, 'joinMultiplayerRoom');
   assertContainsAll('join single-flight contract', joinBody, [
@@ -1362,29 +1451,256 @@ function assertBlockedGameplayGates() {
   ]);
 }
 
+function assertSharedCharacterGlbMaterialIsolation() {
+  const runtime = new Function([
+    'function isSharedWorldGeometry(geometry) { return geometry?.shared === true; }',
+    'function isSharedWorldMaterial(material) { return material?.shared === true; }',
+    functionSource(characterGlbRuntime, 'markCharacterGlbMaterialTexturesShared'),
+    functionSource(characterGlbRuntime, 'markCharacterGlbTemplateMaterial'),
+    functionSource(characterGlbRuntime, 'markCharacterGlbTemplateShared'),
+    functionSource(characterGlbRuntime, 'cloneCharacterGlbInstanceMaterial'),
+    functionSource(characterGlbRuntime, 'cloneCharacterGlbTemplateScene'),
+    functionSource(characterGlbRuntime, 'disposeCharacterGlbObject'),
+    'return { mark: markCharacterGlbTemplateShared, clone: cloneCharacterGlbTemplateScene, dispose: disposeCharacterGlbObject };'
+  ].join('\n'))();
+
+  class FakeColor {
+    constructor(value) { this.value = value; }
+    clone() { return new FakeColor(this.value); }
+    setHex(value) { this.value = value; }
+    getHex() { return this.value; }
+  }
+  class FakeMaterial {
+    constructor(name, texture) {
+      this.name = name;
+      this.map = texture;
+      this.color = new FakeColor(name === 'body' ? 0x887766 : 0x554433);
+      this.userData = {};
+      this.disposeCount = 0;
+    }
+    clone() {
+      const clone = new FakeMaterial(this.name, this.map);
+      clone.color = this.color.clone();
+      clone.userData = { ...this.userData };
+      return clone;
+    }
+    dispose() { this.disposeCount += 1; }
+  }
+  function makeRoot(mesh) {
+    return {
+      mesh,
+      clone() {
+        return makeRoot({
+          isMesh: true,
+          isSkinnedMesh: false,
+          geometry: mesh.geometry,
+          material: mesh.material,
+          userData: { ...mesh.userData }
+        });
+      },
+      traverse(callback) {
+        callback(this);
+        callback(this.mesh);
+      }
+    };
+  }
+
+  const sharedTexture = {
+    isTexture: true,
+    userData: {},
+    disposeCount: 0,
+    dispose() { this.disposeCount += 1; }
+  };
+  const sharedGeometry = {
+    shared: true,
+    disposeCount: 0,
+    dispose() { this.disposeCount += 1; }
+  };
+  const sourceBody = new FakeMaterial('body', sharedTexture);
+  const sourceHair = new FakeMaterial('hair', sharedTexture);
+  const source = makeRoot({
+    isMesh: true,
+    isSkinnedMesh: false,
+    geometry: sharedGeometry,
+    material: [sourceBody, sourceHair],
+    userData: {}
+  });
+  runtime.mark(source);
+  const first = runtime.clone(source);
+  const second = runtime.clone(source);
+  assert(first && second, 'shared character template clone failed');
+  assert(Array.isArray(first.mesh.material) && Array.isArray(second.mesh.material),
+    'multi-material character mesh lost its material array');
+  assert.notStrictEqual(first.mesh.material, source.mesh.material,
+    'character clone reuses the template material array');
+  assert.notStrictEqual(first.mesh.material[0], sourceBody,
+    'character clone reuses the mutable template material wrapper');
+  assert.notStrictEqual(first.mesh.material[0], second.mesh.material[0],
+    'two character instances share a mutable material wrapper');
+  assert.strictEqual(first.mesh.material[0].map, sharedTexture,
+    'character instance duplicated or replaced the shared template texture');
+  assert.strictEqual(second.mesh.material[1].map, sharedTexture,
+    'character material-array clone lost shared texture ownership');
+  assert.strictEqual(first.mesh.geometry, sharedGeometry,
+    'character instance stopped sharing immutable geometry');
+  assert.strictEqual(first.mesh.userData.characterGlbSharedAsset, false,
+    'aggregate shared-asset marker incorrectly marks an instance material as shared');
+  assert.strictEqual(first.mesh.material[0].userData.characterGlbInstanceMaterial, true,
+    'character instance material wrapper lacks explicit ownership');
+  assert.strictEqual(sharedTexture.userData.characterGlbSharedTexture, true,
+    'template texture lacks explicit shared ownership');
+
+  first.mesh.material[0].color.setHex(0xff0000);
+  assert.strictEqual(sourceBody.color.getHex(), 0x887766,
+    'mutating one character instance changed the template material');
+  assert.strictEqual(second.mesh.material[0].color.getHex(), 0x887766,
+    'mutating one character instance changed another actor material');
+
+  const firstBodyWrapper = first.mesh.material[0];
+  const firstHairWrapper = first.mesh.material[1];
+  runtime.dispose(first);
+  assert.strictEqual(firstBodyWrapper.disposeCount, 1,
+    'character instance body material wrapper leaked');
+  assert.strictEqual(firstHairWrapper.disposeCount, 1,
+    'character instance material-array wrapper leaked');
+  assert.strictEqual(sharedGeometry.disposeCount, 0,
+    'disposing a character instance destroyed shared geometry');
+  assert.strictEqual(sharedTexture.disposeCount, 0,
+    'disposing a character instance destroyed shared template textures');
+  assert.strictEqual(sourceBody.disposeCount, 0,
+    'disposing a character instance destroyed the source material');
+  assert.strictEqual(second.mesh.material[0].disposeCount, 0,
+    'disposing one character instance destroyed another material wrapper');
+
+  const ensureRevealMaterial = new Function([
+    functionSource(remoteLocomotion, 'ensureNetworkRevealMaterial'),
+    'return ensureNetworkRevealMaterial;'
+  ].join('\n'))();
+  let instanceCloneCalls = 0;
+  const actorLocalMaterial = {
+    opacity: 0.82,
+    transparent: false,
+    depthWrite: true,
+    userData: { characterGlbInstanceMaterial: true },
+    clone() { instanceCloneCalls += 1; return {}; }
+  };
+  assert.strictEqual(ensureRevealMaterial(actorLocalMaterial), actorLocalMaterial,
+    'network reveal replaced an already actor-local character material');
+  assert.strictEqual(instanceCloneCalls, 0,
+    'network reveal cloned and leaked an actor-local character material wrapper');
+  assert.strictEqual(actorLocalMaterial.userData.networkRevealManaged, true,
+    'actor-local material was not initialized for reveal fading in place');
+}
+
 function assertDeferredWorldRuntime() {
+  assertContainsAll('bounded idempotent server GET requests', functionBody(authBootstrap, 'serverApi'), [
+    "method === 'GET' ? 8000 : 10000",
+    "const retryCount = method === 'GET'",
+    'delete requestOptions.timeoutMs',
+    'delete requestOptions.retryCount',
+    'fetchServerApiWithTimeout(',
+    'async (fetchedResponse, responseSignal)',
+    'await fetchedResponse.json()',
+    "if (method !== 'GET') break",
+    'if (requestOptions.signal?.aborted) throw err'
+  ]);
+  assertContainsAll('bounded server response body', functionBody(authBootstrap, 'fetchServerApiWithTimeout'), [
+    'consumeResponse(response, responseSignal)',
+    'return await Promise.race([',
+    'timeoutPromise'
+  ]);
+  assertContainsAll('early multiplayer transport preparation', functionBody(socketRoom, 'connectMultiplayer'), [
+    'const prepareOnly = !!(options && options.prepareOnly)',
+    'if (!prepareOnly) multiplayer.joinRequested = true',
+    'if (prepareOnly)',
+    'if (multiplayer.joinRequested) joinMultiplayerRoom()'
+  ]);
+  assertContainsAll('new-character failed join invalidation', functionBody(characterCreation, 'createCharacterFromForm'), [
+    "invalidateMultiplayerSessionContext('character-creation-join-failed'",
+    'multiplayer.joinRequested = false'
+  ]);
+  assertContainsAll('event-driven startup snapshot readiness', core, [
+    'function startupInitialSnapshotsReady()',
+    'function waitForStartupInitialSnapshots(',
+    'multiplayer.lastEnemySnapshotAt = 0',
+    'multiplayer.lastGroundItemsSnapshotAt = 0',
+    'multiplayer.lastWorldContainersSnapshotAt = 0'
+  ]);
   const runtimeBody = functionBody(hudLoop, 'ensureWorldRuntimeReady');
   assertContainsAll('deferred world runtime bootstrap', runtimeBody, [
     'ensureWorldDataReady()',
+    'const requestedLocationId',
+    'LOCATIONS[requestedLocationId]',
     'ensureWorldMaterials()',
     'createPlayerModel()',
-    'await preloadStaticWorldModels()',
+    'preloadStaticWorldModels({ location })',
+    'preloadCharacterAppearanceAsset(appearance)',
+    'preloadWeaponModels(weaponIds)',
+    'preloadApprovedHumanoidAssets({',
+    'waitForCriticalWorldAssets([',
+    "document.body.dataset.worldRuntimeAssets = assetGate.timedOut ? 'background' : 'ready'",
     "document.body.dataset.worldRuntime = 'ready'"
   ]);
+  assert(!runtimeBody.includes('preloadWeaponModelLibrary()')
+    && !runtimeBody.includes('preloadServiceScoutBootModel()'),
+  'startup still blocks on the complete weapon/legacy boot libraries');
 
   const startupBody = functionBody(locationLoading, 'runGameStartupLoading');
   assert(
-    startupBody.indexOf('await ensureWorldRuntimeReady()') >= 0
-      && startupBody.indexOf('await ensureWorldRuntimeReady()') < startupBody.indexOf('await preloadLocationAssets('),
+    startupBody.indexOf('await ensureWorldRuntimeReady({') >= 0
+      && startupBody.indexOf('await ensureWorldRuntimeReady({') < startupBody.indexOf('await preloadLocationAssets('),
     'startup loading does not initialize the deferred world runtime before location assets'
   );
+  assertContainsAll('parallel character startup', functionBody(authBootstrap, 'selectServerCharacter'), [
+    'connectMultiplayer({ prepareOnly: true })',
+    'const characterRequest = serverApi(',
+    'const worldDataRequest = typeof ensureWorldDataReady',
+    'await Promise.all([characterRequest, worldDataRequest])',
+    'startupCriticalAssetsFromSave(data.save)'
+  ]);
+  const worldDataBody = functionBody(globalMapState, 'loadWorldDataConfig');
+  assertContainsAll('parallel authored world fetch', worldDataBody, [
+    'fetchLocationConfig()',
+    'fetchGlobalMapConfig()',
+    'fetchWastelandSimState()',
+    'await Promise.allSettled(criticalRequests)',
+    'void wastelandRequest.then(async result =>',
+    "console.warn('[global-map] failed to apply wasteland simulation'"
+  ]);
   assert(
-    functionBody(authBootstrap, 'selectServerCharacter').includes('await ensureWorldDataReady()'),
-    'existing characters can resolve their saved location before world data is ready'
+    worldDataBody.indexOf("loadLocationConfig({ data: locationResult.value })")
+      < worldDataBody.indexOf("loadGlobalMapConfig({ data: globalMapResult.value })"),
+    'parallel critical world payloads are not applied in location -> global map order'
   );
+  assertContainsAll('critical startup texture gate', functionBody(locationLoading, 'preloadLocationAssets'), [
+    'options.criticalOnly',
+    'getCriticalLocationPreloadTextureUrls(locationId)'
+  ]);
+  assert(!locationLoading.includes('STARTUP_REVEAL_EXTRA_HOLD_MS')
+    && functionBody(locationLoading, 'waitForStartupVisualRevealSettle').includes('waitForStartupInitialSnapshots'),
+  'startup reveal still uses an arbitrary fixed post-join hold');
+
+  assertContainsAll('shared character GLB template cache', characterGlbRuntime, [
+    'const characterGlbTemplateCache = new Map()',
+    'function loadCharacterGlbTemplate(',
+    'function cloneCharacterGlbTemplateScene(',
+    'characterGlbSharedGeometry = true',
+    'characterGlbInstanceMaterial = true',
+    'characterGlbSharedAsset = false',
+    'characterGlbSharedTexture = true',
+    'return cloneFailed ? null : clone',
+    'material.userData?.characterGlbInstanceMaterial'
+  ]);
+  assertSharedCharacterGlbMaterialIsolation();
   const characterCreationBody = functionBody(characterCreation, 'createCharacterFromForm');
   const startupLoadingIndex = characterCreationBody.indexOf('await runGameStartupLoading(');
   assert(startupLoadingIndex >= 0, 'new character creation does not use the startup loading screen');
+  assertContainsAll('new-character critical startup path', characterCreationBody, [
+    'connectMultiplayer({ prepareOnly: true })',
+    "beginClientStartupTrace('new-character'",
+    'appearance: profile.appearance',
+    'startupTrace'
+  ]);
   assert(
     !characterCreationBody.slice(0, startupLoadingIndex).includes('await ensureWorldDataReady()'),
     'new character creation waits for world data before showing the startup loading screen'
@@ -1392,7 +1708,7 @@ function assertDeferredWorldRuntime() {
 
   assert(worldMaterials.includes('function createWorldMaterialSet()'),
     'world materials are not isolated behind a lazy factory');
-  assert(worldMaterials.includes('function preloadStaticWorldModels()'),
+  assert(worldMaterials.includes('function preloadStaticWorldModels(options = {})'),
     'static GLB preloading is not controlled by the world runtime bootstrap');
   assert(worldMaterials.includes('const stateKey = STATIC_MODEL_URLS[key] || key;'),
     'static model aliases do not share state by their resolved GLB URL');
@@ -1411,6 +1727,51 @@ function assertDeferredWorldRuntime() {
     'the lightweight auth profile bootstrap is missing');
   assert(!authShellTail.includes('buildWorld();') && !authShellTail.includes('loadWorldDataConfig();'),
     'the auth shell still builds or fetches world state before character selection');
+}
+
+async function assertOptionalWastelandDoesNotBlockStartup() {
+  const runtime = new Function([
+    'let wastelandSimFetchPending = false;',
+    'let wastelandSimLastFetchAt = 0;',
+    'let resolveWasteland;',
+    'const applied = [];',
+    'const performance = { now() { return 123; } };',
+    'function fetchLocationConfig() { return Promise.resolve({ ok: true, locations: {} }); }',
+    'function fetchGlobalMapConfig() { return Promise.resolve({ ok: true, map: {} }); }',
+    'function fetchWastelandSimState() { return new Promise(resolve => { resolveWasteland = resolve; }); }',
+    'async function loadLocationConfig() { applied.push("locations"); return true; }',
+    'async function loadGlobalMapConfig() { applied.push("global-map"); }',
+    'function applyFetchedWastelandSimState() { applied.push("wasteland"); return true; }',
+    `async ${functionSource(globalMapState, 'loadWorldDataConfig')}`,
+    'return {',
+    '  load: loadWorldDataConfig, applied,',
+    '  resolveWasteland: value => resolveWasteland(value),',
+    '  pending: () => wastelandSimFetchPending',
+    '};'
+  ].join('\n'))();
+  await Promise.race([
+    runtime.load(),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('critical world-data gate waited for optional wasteland')), 500))
+  ]);
+  assert.deepStrictEqual(runtime.applied, ['locations', 'global-map']);
+  assert.strictEqual(runtime.pending(), true,
+    'optional wasteland request was not kept single-flight in the background');
+  runtime.resolveWasteland({ ok: true, sim: {} });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepStrictEqual(runtime.applied, ['locations', 'global-map', 'wasteland'],
+    'background wasteland state was not applied after critical map definitions');
+  assert.strictEqual(runtime.pending(), false);
+
+  const boundedAssetGate = new Function('setTimeout', 'clearTimeout', [
+    functionSource(hudLoop, 'waitForCriticalWorldAssets'),
+    'return waitForCriticalWorldAssets;'
+  ].join('\n'))(
+    callback => { queueMicrotask(callback); return 1; },
+    () => {}
+  );
+  const assetTimeout = await boundedAssetGate([new Promise(() => {})], 9000);
+  assert.strictEqual(assetTimeout.timedOut, true,
+    'a half-open critical model request can still hold the startup overlay forever');
 }
 
 function assertServerAuthoritativeWorldStateRequests() {
@@ -2451,26 +2812,73 @@ function assertEventDrivenMobilePanelState() {
 }
 
 function assertActorAnimationLod() {
+  const sharedAnimationBudgetSource = [
+    statementSource(remoteLocomotion, 'const ACTOR_ANIMATION_DEFAULT_BUDGET'),
+    functionSource(remoteLocomotion, 'actorAnimationQualityBudget'),
+    functionSource(remoteLocomotion, 'actorAnimationBudgetTier'),
+    functionSource(remoteLocomotion, 'actorAnimationBudgetInterval'),
+    functionSource(remoteLocomotion, 'actorAnimationCrowdInterval'),
+    functionSource(remoteLocomotion, 'actorAnimationDetailEnabled')
+  ].join('\n');
   const remoteRuntime = new Function([
+    sharedAnimationBudgetSource,
     statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_NEAR_DISTANCE'),
     statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_MID_DISTANCE'),
     statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_MID_INTERVAL'),
     statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_FAR_INTERVAL'),
     statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_MAX_DT'),
+    statementSource(remoteLocomotion, 'const REMOTE_ANIMATION_LOD_STAGGER_BUCKETS'),
     functionSource(remoteLocomotion, 'remoteAnimationLodInterval'),
+    functionSource(remoteLocomotion, 'remoteAnimationStableStaggerUnit'),
     functionSource(remoteLocomotion, 'consumeRemoteAnimationLodDt'),
-    'return { interval: remoteAnimationLodInterval, consume: consumeRemoteAnimationLodDt };'
+    'return { interval: remoteAnimationLodInterval, tier: actorAnimationBudgetTier, crowd: actorAnimationCrowdInterval, detail: actorAnimationDetailEnabled, stagger: remoteAnimationStableStaggerUnit, consume: consumeRemoteAnimationLodDt };'
   ].join('\n'))();
   assert.strictEqual(remoteRuntime.interval(2, false, true), Infinity,
     'hidden remote players must not run heavy animation work');
   assert.strictEqual(remoteRuntime.interval(40, true, true), 0,
     'important remote-player animation must stay full-rate');
-  assert.strictEqual(remoteRuntime.interval(8, true, false), 0,
-    'near remote-player animation must stay full-rate');
+  assert.strictEqual(remoteRuntime.interval(4, true, false), 0,
+    'near High remote-player animation must stay full-rate');
+  assert.strictEqual(remoteRuntime.interval(8, true, false), 1 / 30,
+    'close High remote-player animation must be capped near 30 Hz');
   assert.strictEqual(remoteRuntime.interval(14, true, false), 0.05,
     'mid-distance remote-player animation must run near 20 Hz');
   assert.strictEqual(remoteRuntime.interval(24, true, false), 0.08,
     'far remote-player animation must run near 12.5 Hz');
+  const lowBudget = {
+    id: 'low',
+    actorAnimationNearDistance: 3.5,
+    actorAnimationCloseDistance: 8,
+    actorAnimationMidDistance: 15,
+    actorAnimationNearInterval: 1 / 30,
+    actorAnimationCloseInterval: 0.05,
+    actorAnimationMidInterval: 0.08,
+    actorAnimationFarInterval: 0.12,
+    actorAnimationCrowdMovingInterval: 0.05,
+    actorAnimationCrowdIdleInterval: 0.10,
+    actorFootIkDistance: 3,
+    actorFacialDistance: 5
+  };
+  assert.strictEqual(remoteRuntime.interval(2, true, false, lowBudget), 1 / 30,
+    'Low quality still runs an ordinary nearby actor mixer every frame');
+  assert.strictEqual(remoteRuntime.interval(30, true, false, lowBudget), 0.12,
+    'Low quality does not expose the reduced far animation tier');
+  assert.strictEqual(remoteRuntime.interval(30, false, true, lowBudget), Infinity,
+    'offscreen importance bypasses the animation freeze');
+  assert.strictEqual(remoteRuntime.crowd(0, true, false, true, lowBudget), 0.05,
+    'Low crowded moving actors are not capped at 20 Hz');
+  assert.strictEqual(remoteRuntime.crowd(0, true, false, false, lowBudget), 0.10,
+    'Low crowded idle actors are not capped at 10 Hz');
+  assert.strictEqual(remoteRuntime.detail('footIk', 4, false, lowBudget), false,
+    'Low quality keeps distant foot IK enabled');
+  assert.strictEqual(remoteRuntime.detail('facial', 6, false, lowBudget), false,
+    'Low quality keeps distant facial animation enabled');
+  assert.strictEqual(remoteRuntime.detail('facial', 40, true, lowBudget), true,
+    'important facial reactions were disabled by distance');
+  assert.strictEqual(remoteRuntime.stagger({ id: 'remote-alpha' }), remoteRuntime.stagger({ id: 'remote-alpha' }),
+    'remote animation staggering is not stable for an actor id');
+  assert(new Set(Array.from({ length: 16 }, (_, index) => remoteRuntime.stagger({ id: `remote-${index}` }))).size > 1,
+    'remote animation actors collapse into one update phase');
 
   const farRemote = {};
   assert.strictEqual(remoteRuntime.consume(farRemote, 0.016, 0.08, 'idle'), 0.016,
@@ -2494,8 +2902,34 @@ function assertActorAnimationLod() {
   }
   assert(Math.abs(remoteRuntime.consume(hiddenRemote, 0.016, 0.08, 'visible') - 0.08) < 1e-8,
     'remote animation catch-up exceeded or lost the bounded accumulated time');
+  for (const [interval, framesPerCadence] of [[0.10, 5], [0.12, 6]]) {
+    const longIntervalRemote = {};
+    assert(remoteRuntime.consume(longIntervalRemote, 0.02, interval, 'idle') > 0,
+      `remote ${interval}s tier did not apply its initial state immediately`);
+    const updates = [];
+    for (let frame = 1; frame <= framesPerCadence * 2; frame += 1) {
+      const animationDt = remoteRuntime.consume(longIntervalRemote, 0.02, interval, 'idle');
+      if (animationDt > 0) updates.push({ frame, animationDt });
+    }
+    assert.deepStrictEqual(updates.map(row => row.frame), [framesPerCadence, framesPerCadence * 2],
+      `remote ${interval}s tier lost its repeated cadence`);
+    assert(updates.every(row => Math.abs(row.animationDt - 0.08) < 1e-8),
+      `remote ${interval}s tier passed an unbounded dt to its mixer`);
+    remoteRuntime.consume(longIntervalRemote, 0.02, interval, 'idle');
+    assert(remoteRuntime.consume(longIntervalRemote, 0.02, 0, 'attack') > 0,
+      `remote important action waited for the ${interval}s tier`);
+  }
+  const overshootRemote = {};
+  remoteRuntime.consume(overshootRemote, 0.05, 0.12, 'idle');
+  const remoteOvershootFrames = [];
+  for (let frame = 1; frame <= 5; frame += 1) {
+    if (remoteRuntime.consume(overshootRemote, 0.05, 0.12, 'idle') > 0) remoteOvershootFrames.push(frame);
+  }
+  assert.deepStrictEqual(remoteOvershootFrames, [3, 5],
+    'remote 0.12s cadence discarded overshoot instead of carrying its remainder');
 
   const enemyRuntime = new Function([
+    sharedAnimationBudgetSource,
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_NEAR_DISTANCE'),
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_CLOSE_DISTANCE'),
     statementSource(enemyModels, 'const ENEMY_ANIMATION_LOD_MID_DISTANCE'),
@@ -2538,13 +2972,13 @@ function assertActorAnimationLod() {
     'animation pressure does not recover at the upper FPS threshold');
   assert.strictEqual(enemyRuntime.crowdInterval(0, {
     crowdPressure: true, heavy: true, idle: true, important: false
-  }), 0.05, 'crowd pressure does not cap idle heavy NPC animation at 20 Hz');
+  }), 0.0667, 'crowd pressure does not cap idle High NPC animation near 15 Hz');
   assert.strictEqual(enemyRuntime.crowdInterval(0, {
     crowdPressure: true, heavy: true, idle: true, important: true
   }), 0, 'important enemy animation was throttled by crowd pressure');
   assert.strictEqual(enemyRuntime.crowdInterval(0, {
     crowdPressure: true, heavy: true, idle: false, important: false
-  }), 0, 'moving enemy animation was throttled by the idle crowd budget');
+  }), 1 / 30, 'crowded moving enemy bones are not capped independently from smooth root transforms');
   assert.strictEqual(enemyRuntime.crowdInterval(0.08, {
     crowdPressure: true, heavy: true, idle: true, important: false
   }), 0.08, 'crowd pressure sped up an already slower far animation tier');
@@ -2563,6 +2997,31 @@ function assertActorAnimationLod() {
   }
   assert(Math.abs(enemyRuntime.consume(hiddenEnemy, 0.016, 0.08, 'visible') - 0.08) < 1e-8,
     'enemy animation catch-up exceeded or lost the bounded accumulated time');
+  for (const [interval, framesPerCadence] of [[0.10, 5], [0.12, 6]]) {
+    const longIntervalEnemy = {};
+    assert(enemyRuntime.consume(longIntervalEnemy, 0.02, interval, 'idle') > 0,
+      `enemy ${interval}s tier did not apply its initial state immediately`);
+    const updates = [];
+    for (let frame = 1; frame <= framesPerCadence * 2; frame += 1) {
+      const animationDt = enemyRuntime.consume(longIntervalEnemy, 0.02, interval, 'idle');
+      if (animationDt > 0) updates.push({ frame, animationDt });
+    }
+    assert.deepStrictEqual(updates.map(row => row.frame), [framesPerCadence, framesPerCadence * 2],
+      `enemy ${interval}s tier lost its repeated cadence`);
+    assert(updates.every(row => Math.abs(row.animationDt - 0.08) < 1e-8),
+      `enemy ${interval}s tier passed an unbounded dt to its mixer`);
+    enemyRuntime.consume(longIntervalEnemy, 0.02, interval, 'idle');
+    assert(enemyRuntime.consume(longIntervalEnemy, 0.02, 0, 'attack') > 0,
+      `enemy important action waited for the ${interval}s tier`);
+  }
+  const overshootEnemy = {};
+  enemyRuntime.consume(overshootEnemy, 0.05, 0.12, 'idle');
+  const enemyOvershootFrames = [];
+  for (let frame = 1; frame <= 5; frame += 1) {
+    if (enemyRuntime.consume(overshootEnemy, 0.05, 0.12, 'idle') > 0) enemyOvershootFrames.push(frame);
+  }
+  assert.deepStrictEqual(enemyOvershootFrames, [3, 5],
+    'enemy 0.12s cadence discarded overshoot instead of carrying its remainder');
   const importantEnemy = { id: 'important-target' };
   enemyRuntime.consume(importantEnemy, 0.016, 0.05, 'idle');
   assert(enemyRuntime.consume(importantEnemy, 0.016, 0, 'attack') > 0,
@@ -2572,6 +3031,7 @@ function assertActorAnimationLod() {
   assertContainsAll('fog-hidden remote fast path', remoteUpdate, [
     'if (g.visible === false)',
     'g.position.set(netX, 0, netZ)',
+    "consumeRemoteAnimationLodDt(row, dt, Infinity, 'fog-hidden')",
     'row.visualVelX = 0',
     'row.visualVelZ = 0'
   ]);
@@ -2581,6 +3041,10 @@ function assertActorAnimationLod() {
   assert(movementIndex >= 0 && movementIndex < lodGateIndex && lodGateIndex < animationIndex,
     'remote root interpolation is no longer independent from heavy animation LOD');
   assertContainsAll('remote animation LOD bundle', remoteUpdate, [
+    'refreshActorAnimationViewFrustum()',
+    'actorAnimationInView(g)',
+    'actorAnimationCrowdInterval(',
+    "recordActorAnimationDiagnostic(",
     'applyCharacterCrouchVisual(g, !!g.userData.crouching, animationDt)',
     'applyCharacterInjuryVisual(g, injuries, animationDt)',
     'updateWeaponVisualAnimation(g.userData.parts?.weaponGroup, animationDt, remoteWeaponOwner)',
@@ -2613,7 +3077,9 @@ function assertActorAnimationLod() {
   assertContainsAll('enemy heavy animation LOD bundle', enemyUpdate, [
     'const heavyActor = !!(',
     'enemyAnimationCrowdAdjustedInterval(',
-    'enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant)',
+    'enemyAnimationLodInterval(distanceToPlayer, visible, heavyImportant, animationBudget)',
+    'actorAnimationInView(mesh)',
+    "recordActorAnimationDiagnostic('enemy'",
     'if (animationDt <= 0) return',
     'updateCharacterLocomotionAnimation(mesh, animationDt',
     'updateEnemyStaticGlbAnimation(enemy, animationDt',
@@ -2642,9 +3108,16 @@ function assertActorAnimationLod() {
   assertContainsAll('fog-hidden enemy fast path', updateEnemies, [
     'if (e.mesh.visible === false)',
     'e.mesh.position.set(tx, 0, tz)',
+    "consumeEnemyAnimationLodDt(e, dt, Infinity, 'fog-hidden')",
     'applyEnemyFlashVisual(e, dt)'
   ]);
+  const enemyRootMoveIndex = updateEnemies.indexOf('e.mesh.position.set(nx, 0, nz)');
+  const enemyAnimationIndex = updateEnemies.indexOf('animateEnemyVisual(e, dt, animationFrameContext)', enemyRootMoveIndex);
+  assert(enemyRootMoveIndex >= 0 && enemyAnimationIndex > enemyRootMoveIndex,
+    'enemy root interpolation is no longer independent from heavy animation LOD');
   assertContainsAll('crowded idle trader animation scheduler', updateEnemies, [
+    'refreshActorAnimationViewFrustum()',
+    'beginActorAnimationDiagnostics(',
     'createEnemyAnimationFrameContext(',
     'const traderImportant = traderTalking',
     'traderAttack.active',
@@ -2656,6 +3129,91 @@ function assertActorAnimationLod() {
     'if (traderAnimationDt > 0)',
     'animateEnemyVisual(e, dt, animationFrameContext)'
   ]);
+
+  assertContainsAll('bounded actor-animation diagnostic snapshot', remoteLocomotion, [
+    'const actorAnimationDiagnosticState = {',
+    'function actorAnimationDiagnosticsSnapshot()',
+    'window.__realmActorAnimationStats = actorAnimationDiagnosticsSnapshot'
+  ]);
+
+  const remoteDisposal = new Function([
+    'function isSharedWorldGeometry(geometry) { return geometry?.shared === true; }',
+    'function isSharedWorldMaterial(material) { return material?.shared === true; }',
+    functionSource(remoteLocomotion, 'remoteObjectUsesSharedGeometry'),
+    functionSource(remoteLocomotion, 'remoteObjectUsesSharedMaterial'),
+    functionSource(remoteLocomotion, 'disposeRemotePlayerVisual'),
+    'return { geometry: remoteObjectUsesSharedGeometry, material: remoteObjectUsesSharedMaterial, dispose: disposeRemotePlayerVisual };'
+  ].join('\n'))();
+  assert.strictEqual(remoteDisposal.geometry({ userData: { characterGlbSharedGeometry: true } }), true,
+    'cached character geometry is not protected during remote cleanup');
+  assert.strictEqual(remoteDisposal.geometry({ userData: { approvedEquipmentSharedAsset: true } }), true,
+    'cached approved-equipment geometry is not protected during remote cleanup');
+  assert.strictEqual(remoteDisposal.geometry({ userData: { weaponSharedAsset: true } }), true,
+    'cached weapon geometry is not protected during remote cleanup');
+  assert.strictEqual(remoteDisposal.geometry({ geometry: { shared: true }, userData: {} }), true,
+    'shared procedural geometry is not protected during remote cleanup');
+  assert.strictEqual(remoteDisposal.material({ userData: {} }, { shared: true, userData: {} }), true,
+    'shared procedural material is not protected during remote cleanup');
+  assert.strictEqual(remoteDisposal.material(
+    { userData: { characterGlbSharedMaterial: true } },
+    { userData: { networkRevealManaged: true } }
+  ), false, 'a per-instance reveal material is mistaken for a shared cached material');
+  assert.strictEqual(remoteDisposal.material(
+    { userData: { characterGlbSharedAsset: true, characterGlbInstanceMaterial: true } },
+    { userData: { characterGlbInstanceMaterial: true } }
+  ), false, 'aggregate character shared marker hides an instance-owned material wrapper');
+  assert.strictEqual(remoteDisposal.material(
+    { userData: { characterGlbSharedAsset: true } },
+    { userData: {} }
+  ), false, 'aggregate character shared marker still claims material-wrapper ownership');
+  let sharedGeometryDisposals = 0;
+  let uniqueGeometryDisposals = 0;
+  let sharedMaterialDisposals = 0;
+  let revealMaterialDisposals = 0;
+  let characterInstanceMaterialDisposals = 0;
+  let sharedTextureDisposals = 0;
+  let spriteTextureDisposals = 0;
+  const sharedGeometry = { shared: true, dispose() { sharedGeometryDisposals += 1; } };
+  const uniqueGeometry = { dispose() { uniqueGeometryDisposals += 1; } };
+  const sharedTexture = { dispose() { sharedTextureDisposals += 1; } };
+  const sharedMaterial = { shared: true, userData: {}, dispose() { sharedMaterialDisposals += 1; } };
+  const revealMaterial = {
+    shared: true,
+    map: sharedTexture,
+    userData: { networkRevealManaged: true },
+    dispose() { revealMaterialDisposals += 1; }
+  };
+  const characterInstanceMaterial = {
+    map: sharedTexture,
+    userData: { characterGlbInstanceMaterial: true, characterGlbSharedTextures: true },
+    dispose() { characterInstanceMaterialDisposals += 1; }
+  };
+  const spriteTexture = { dispose() { spriteTextureDisposals += 1; } };
+  const disposableNodes = [
+    { geometry: sharedGeometry, material: sharedMaterial, userData: {} },
+    { geometry: sharedGeometry, material: revealMaterial, userData: { characterGlbSharedAsset: true } },
+    {
+      geometry: sharedGeometry,
+      material: characterInstanceMaterial,
+      userData: { characterGlbSharedAsset: true, characterGlbInstanceMaterial: true }
+    },
+    { geometry: uniqueGeometry, material: null, userData: { texture: spriteTexture } }
+  ];
+  remoteDisposal.dispose({ traverse(callback) { disposableNodes.forEach(callback); } });
+  assert.strictEqual(sharedGeometryDisposals, 0,
+    'remote cleanup disposed cached/shared geometry');
+  assert.strictEqual(uniqueGeometryDisposals, 1,
+    'remote cleanup leaked unique procedural geometry');
+  assert.strictEqual(sharedMaterialDisposals, 0,
+    'remote cleanup disposed a shared source material');
+  assert.strictEqual(revealMaterialDisposals, 1,
+    'remote cleanup leaked a per-instance reveal material');
+  assert.strictEqual(characterInstanceMaterialDisposals, 1,
+    'remote cleanup leaked a character instance material wrapper');
+  assert.strictEqual(sharedTextureDisposals, 0,
+    'remote cleanup disposed a texture shared by a reveal material clone');
+  assert.strictEqual(spriteTextureDisposals, 1,
+    'remote cleanup leaked the unique name-sprite texture');
 
   const proceduralRuntime = new Function([
     functionSource(modernActorRuntime, 'modernAnimationHasVisibleMesh'),
@@ -2883,6 +3441,7 @@ async function main() {
   assertGlobalMapSnapshotPerformance();
   assertBlockedGameplayGates();
   assertDeferredWorldRuntime();
+  await assertOptionalWastelandDoesNotBlockStartup();
   assertServerAuthoritativeWorldStateRequests();
   assertServerNetworkHotPath();
   assertEnemySnapshotFanout();

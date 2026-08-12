@@ -206,6 +206,7 @@ for (const [id, config] of expected) {
     `${id}: runtime catalog entry is missing`);
 }
 [
+  'function preloadWeaponModels(',
   'function preloadWeaponModelLibrary()',
   'function makeWeaponModelMesh(',
   'function triggerWeaponModelAction(',
@@ -229,7 +230,9 @@ assert(remote.includes('!obj.userData?.weaponSharedAsset'));
 const loader = fs.readFileSync(loaderPath, 'utf8');
 assert(loader.includes("'/js/game/04c_weapon_glb_runtime.js'"));
 const loading = fs.readFileSync(loadingPath, 'utf8');
-assert(loading.includes('await preloadWeaponModelLibrary();'));
+assert(loading.includes('preloadWeaponModels(weaponIds)'));
+assert(!loading.includes('await preloadWeaponModelLibrary();'),
+  'character startup still blocks on every weapon model instead of equipped weapon IDs');
 
 // Nginx отдаёт модели с max-age 30 дней и immutable, а URL версионируется
 // только строкой WEAPON_MODEL_ASSET_VERSION. Пересборка GLB без её подъёма

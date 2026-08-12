@@ -157,6 +157,150 @@
     return THREE.GLTFLoader ? new THREE.GLTFLoader() : null;
   }
 
+  // Parsed character bases are immutable templates. Loading the same 4-5 MiB
+  // body once per NPC/player made crowded joins spend most of their time
+  // repeatedly parsing identical GLB data. Instances keep their own scene and
+  // skeleton, while geometry, textures and animation clips are shared. Material
+  // wrappers stay per-instance because hit flashes and reveal fading mutate them.
+  const characterGlbTemplateCache = new Map();
+
+  function markCharacterGlbMaterialTexturesShared(material) {
+    if (!material || typeof material !== 'object') return;
+    Object.values(material).forEach(value => {
+      if (!value?.isTexture) return;
+      value.userData = value.userData || {};
+      value.userData.characterGlbSharedTexture = true;
+    });
+  }
+
+  function markCharacterGlbTemplateMaterial(material) {
+    if (!material) return material;
+    material.userData = material.userData || {};
+    material.userData.characterGlbTemplateMaterial = true;
+    material.userData.characterGlbInstanceMaterial = false;
+    material.userData.characterGlbSharedTextures = true;
+    markCharacterGlbMaterialTexturesShared(material);
+    return material;
+  }
+
+  function markCharacterGlbTemplateShared(root) {
+    root?.traverse?.(node => {
+      if (!node?.isMesh) return;
+      node.userData.characterGlbSharedGeometry = true;
+      node.userData.characterGlbSharedMaterial = true;
+      node.userData.characterGlbSharedAsset = true;
+      node.userData.characterGlbTemplateSource = true;
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+      materials.filter(Boolean).forEach(markCharacterGlbTemplateMaterial);
+    });
+    return root;
+  }
+
+  function cloneCharacterGlbInstanceMaterial(material) {
+    if (!material?.clone) return null;
+    const instance = material.clone();
+    instance.userData = instance.userData || {};
+    instance.userData.characterGlbTemplateMaterial = false;
+    instance.userData.characterGlbInstanceMaterial = true;
+    instance.userData.characterGlbSharedTextures = true;
+    return instance;
+  }
+
+  function cloneCharacterGlbTemplateScene(source) {
+    if (!source?.clone) return null;
+    const clone = source.clone(true);
+    const sourceNodes = [];
+    const cloneNodes = [];
+    source.traverse(node => sourceNodes.push(node));
+    clone.traverse(node => cloneNodes.push(node));
+    const clonedNodeBySource = new Map(
+      sourceNodes.map((node, index) => [node, cloneNodes[index]])
+    );
+    const instanceMaterials = new Set();
+    let cloneFailed = false;
+    sourceNodes.forEach((sourceNode, index) => {
+      if (sourceNode?.isMesh) {
+        const cloneNode = cloneNodes[index];
+        const sourceMaterials = Array.isArray(sourceNode.material)
+          ? sourceNode.material
+          : [sourceNode.material];
+        const clonedMaterials = sourceMaterials.map(material => cloneCharacterGlbInstanceMaterial(material));
+        clonedMaterials.filter(Boolean).forEach(material => instanceMaterials.add(material));
+        if (clonedMaterials.some(material => !material)) {
+          cloneFailed = true;
+        } else if (cloneNode?.isMesh) {
+          cloneNode.material = Array.isArray(sourceNode.material) ? clonedMaterials : clonedMaterials[0];
+          cloneNode.userData = cloneNode.userData || {};
+          cloneNode.userData.characterGlbSharedGeometry = true;
+          cloneNode.userData.characterGlbSharedMaterial = false;
+          cloneNode.userData.characterGlbSharedAsset = false;
+          cloneNode.userData.characterGlbTemplateSource = false;
+          cloneNode.userData.characterGlbInstanceMaterial = true;
+        } else {
+          cloneFailed = true;
+        }
+      }
+      if (!sourceNode?.isSkinnedMesh || !sourceNode.skeleton) return;
+      const cloneNode = cloneNodes[index];
+      if (!cloneNode?.isSkinnedMesh) {
+        cloneFailed = true;
+        return;
+      }
+      const bones = sourceNode.skeleton.bones.map(bone => clonedNodeBySource.get(bone));
+      if (bones.some(bone => !bone)) {
+        cloneFailed = true;
+        return;
+      }
+      cloneNode.bind(
+        new THREE.Skeleton(
+          bones,
+          sourceNode.skeleton.boneInverses.map(matrix => matrix.clone())
+        ),
+        sourceNode.bindMatrix.clone()
+      );
+    });
+    if (cloneFailed) instanceMaterials.forEach(material => material.dispose?.());
+    return cloneFailed ? null : clone;
+  }
+
+  function loadCharacterGlbTemplate(input = {}) {
+    const appearance = normalizeCharacterAppearance(input);
+    const key = characterAppearanceKey(appearance);
+    let state = characterGlbTemplateCache.get(key);
+    if (!state) {
+      state = { key, source: null, animations: [], promise: null, failed: false };
+      characterGlbTemplateCache.set(key, state);
+    }
+    if (state.source) return Promise.resolve(state);
+    if (state.promise) return state.promise;
+    const loader = characterGlbLoader();
+    if (!loader || state.failed) return Promise.resolve(null);
+    state.promise = new Promise(resolve => {
+      loader.load(characterModelUrl(appearance), gltf => {
+        const source = gltf?.scene || gltf?.scenes?.[0] || null;
+        if (!source) {
+          state.failed = true;
+          resolve(null);
+          return;
+        }
+        state.source = markCharacterGlbTemplateShared(source);
+        state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];
+        resolve(state);
+      }, undefined, error => {
+        state.failed = true;
+        console.warn(`Character model failed to load (${key}):`, error);
+        resolve(null);
+      });
+    }).finally(() => {
+      state.promise = null;
+    });
+    return state.promise;
+  }
+
+  function preloadCharacterAppearanceAsset(input = {}) {
+    return loadCharacterGlbTemplate(input).then(template => !!template?.source);
+  }
+
   function characterModelMaterials(root, callback) {
     if (!root?.traverse || typeof callback !== 'function') return;
     root.traverse(obj => {
@@ -169,13 +313,40 @@
   function disposeCharacterGlbObject(root) {
     if (!root?.traverse) return;
     const disposedTextures = new Set();
+    const disposedMaterials = new Set();
     root.traverse(obj => {
       if (!obj?.isMesh) return;
-      const sharedApprovedAsset = !!obj.userData?.approvedEquipmentSharedAsset;
-      if (!sharedApprovedAsset) obj.geometry?.dispose?.();
+      const sharedGeometry = !!(
+        (typeof isSharedWorldGeometry === 'function' && isSharedWorldGeometry(obj.geometry))
+        || obj.userData?.approvedEquipmentSharedAsset
+        || obj.userData?.weaponSharedAsset
+        || obj.userData?.characterGlbSharedGeometry
+        || obj.userData?.characterGlbSharedAsset
+      );
+      if (!sharedGeometry) obj.geometry?.dispose?.();
       const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
       materials.filter(Boolean).forEach(material => {
-        if (sharedApprovedAsset) return;
+        if (disposedMaterials.has(material)) return;
+        disposedMaterials.add(material);
+        const instanceMaterial = !!(
+          material.userData?.characterGlbInstanceMaterial
+          || material.userData?.networkRevealManaged
+          || obj.userData?.characterGlbInstanceMaterial
+        );
+        if (instanceMaterial) {
+          // Material.clone() retains the immutable template textures. Release
+          // only the mutable wrapper; maps remain owned by the template cache.
+          material.dispose?.();
+          return;
+        }
+        const sharedMaterial = !!(
+          (typeof isSharedWorldMaterial === 'function' && isSharedWorldMaterial(material))
+          || material.userData?.characterGlbTemplateMaterial
+          || obj.userData?.approvedEquipmentSharedAsset
+          || obj.userData?.weaponSharedAsset
+          || (obj.userData?.characterGlbTemplateSource && obj.userData?.characterGlbSharedMaterial)
+        );
+        if (sharedMaterial) return;
         Object.values(material).forEach(value => {
           if (value?.isTexture && !disposedTextures.has(value)) {
             disposedTextures.add(value);
@@ -633,6 +804,7 @@
   function updateCharacterFacialAnimation(root, dt = 0.016, state = {}) {
     const runtime = ensureCharacterFacialRuntime(root);
     if (!runtime) return false;
+    runtime.suspended = false;
     const frameDt = Math.max(0, Math.min(0.08, Number(dt || 0.016)));
     runtime.elapsed += frameDt;
     const hurt = !!state.hurt;
@@ -679,6 +851,28 @@
       ? 'dead'
       : (hurtReaction ? 'hurt' : (attacking ? 'attack' : (talking ? 'talk' : (closed ? 'blink' : 'neutral'))));
     return true;
+  }
+
+  function setCharacterFacialAnimationEnabled(root, enabled = true) {
+    const runtime = root?.userData?.characterFacialRuntime;
+    if (!runtime) return;
+    if (enabled !== false) {
+      runtime.suspended = false;
+      return;
+    }
+    if (runtime.suspended) return;
+    runtime.suspended = true;
+    runtime.hurtSignal = false;
+    runtime.hurtUntil = 0;
+    runtime.blinkUntil = 0;
+    if (runtime.eyes) {
+      runtime.eyes.visible = true;
+      if (runtime.eyesBasePosition) runtime.eyes.position.copy(runtime.eyesBasePosition);
+    }
+    if (runtime.brows && runtime.browsBasePosition) {
+      runtime.brows.position.copy(runtime.browsBasePosition);
+    }
+    if (root?.userData) root.userData.characterFacialState = 'suspended';
   }
 
   function applyCharacterGlbVisualVariants(root, input = {}, options = {}) {
@@ -1570,8 +1764,7 @@
       }
       return Promise.resolve(true);
     }
-    const loader = characterGlbLoader();
-    if (!loader) {
+    if (!characterGlbLoader()) {
       setCharacterProceduralBaseVisible(actor, true);
       return Promise.resolve(false);
     }
@@ -1581,14 +1774,21 @@
     if (typeof hideApprovedEquipmentFallbacksEarly === 'function') {
       hideApprovedEquipmentFallbacksEarly(actor, options.equipment || {});
     }
-    return new Promise(resolve => {
-      loader.load(characterModelUrl(appearance), gltf => {
-        if (actor.userData.characterGlbRequestId !== requestId) {
-          disposeCharacterGlbObject(gltf?.scene);
-          resolve(false);
-          return;
+    return loadCharacterGlbTemplate(appearance).then(template => {
+        if (actor.userData.characterGlbRequestId !== requestId) return false;
+        const templateRoot = template?.source || null;
+        const instanceRoot = cloneCharacterGlbTemplateScene(templateRoot);
+        if (!instanceRoot) {
+          setCharacterProceduralBaseVisible(actor, true);
+          if (typeof approvedEquipmentFallbackMeshes === 'function') {
+            const parts = actor.userData.parts || actor.userData.actorParts || {};
+            for (const slot of ['armor', 'helmet', 'boots', 'backpack']) {
+              approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = true; });
+            }
+          }
+          return false;
         }
-        const root = configureCharacterGlbScene(gltf.scene, {
+        const root = configureCharacterGlbScene(instanceRoot, {
           castShadow: options.castShadow !== false
         });
         // Исходная GLB смотрит вдоль +Z, а actor-контейнер исторически ориентирован вдоль -Z.
@@ -1607,7 +1807,7 @@
           appearance,
           root,
           mixer,
-          actions: characterGlbActions(mixer, gltf.animations || []),
+          actions: characterGlbActions(mixer, template.animations || []),
           approvedAssaultRifleRestPose: typeof captureApprovedAssaultRifleRestPose === 'function'
             ? captureApprovedAssaultRifleRestPose(root)
             : null,
@@ -1649,21 +1849,8 @@
           previous.root.parent?.remove(previous.root);
           disposeCharacterGlbObject(previous.root);
         }
-        resolve(true);
-      }, undefined, error => {
-        console.warn(`Character model failed to load (${key}):`, error);
-        if (actor.userData.characterGlbRequestId === requestId) {
-          setCharacterProceduralBaseVisible(actor, true);
-          if (typeof approvedEquipmentFallbackMeshes === 'function') {
-            const parts = actor.userData.parts || actor.userData.actorParts || {};
-            for (const slot of ['armor', 'helmet', 'boots', 'backpack']) {
-              approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = true; });
-            }
-          }
-        }
-        resolve(false);
+        return true;
       });
-    });
   }
 
   function updateCharacterGlbAnimation(actor, dt = 0.016, state = {}) {
@@ -1769,11 +1956,15 @@
       && now < Number(hitReaction.startedAt || 0) + Math.max(0, Number(hitReaction.duration || 0)) * 1000;
     const facialAttackActive = !!state.attacking
       || actorAttackAnimationPulseState(actor, false).active;
-    updateCharacterFacialAnimation(runtime.root, frameDt, {
-      ...state,
-      hurt: !!state.hurt || hitReactionActive,
-      attacking: facialAttackActive
-    });
+    const facialEnabled = state.facial !== false;
+    setCharacterFacialAnimationEnabled(runtime.root, facialEnabled);
+    if (facialEnabled) {
+      updateCharacterFacialAnimation(runtime.root, frameDt, {
+        ...state,
+        hurt: !!state.hurt || hitReactionActive,
+        attacking: facialAttackActive
+      });
+    }
     actor.userData.characterLocomotionDirection = locomotion.direction;
     actor.userData.characterLocomotionForwardAmount = locomotion.forwardAmount;
     actor.userData.characterLocomotionSideAmount = locomotion.sideAmount;
@@ -1915,17 +2106,18 @@
     const requestId = characterPreviewState.requestId + 1;
     characterPreviewState.requestId = requestId;
     setCharacterPreviewStatus(`Загрузка: ${characterAppearanceLabel(appearance)}…`, 'loading');
-    const loader = characterGlbLoader();
-    if (!loader) {
+    if (!THREE.GLTFLoader) {
       setCharacterPreviewStatus('Предпросмотр GLB недоступен.', 'error');
       return;
     }
-    loader.load(characterModelUrl(appearance), gltf => {
-      if (characterPreviewState.requestId !== requestId) {
-        disposeCharacterGlbObject(gltf?.scene);
+    loadCharacterGlbTemplate(appearance).then(template => {
+      if (characterPreviewState.requestId !== requestId) return;
+      const instanceRoot = cloneCharacterGlbTemplateScene(template?.source);
+      if (!instanceRoot) {
+        setCharacterPreviewStatus('Не удалось загрузить модель.', 'error');
         return;
       }
-      const model = configureCharacterGlbScene(gltf.scene, { castShadow: false });
+      const model = configureCharacterGlbScene(instanceRoot, { castShadow: false });
       const requestedAppearance = normalizeCharacterAppearance(
         characterPreviewState.requestedAppearance || appearance
       );
@@ -1939,15 +2131,15 @@
       }
       characterPreviewState.model = model;
       characterPreviewState.mixer = new THREE.AnimationMixer(model);
-      const actions = characterGlbActions(characterPreviewState.mixer, gltf.animations || []);
+      const actions = characterGlbActions(characterPreviewState.mixer, template.animations || []);
       if (actions.idle) actions.idle.play();
       characterPreviewState.scene.add(model);
       characterPreviewState.loadedKey = key;
       characterPreviewState.loadedAppearanceKey = requestedAppearanceKey;
       setCharacterPreviewStatus(characterAppearanceLabel(requestedAppearance), 'ready');
       resizeCharacterPreview();
-    }, undefined, error => {
-      console.warn(`Character preview failed to load (${key}):`, error);
+    }).catch(error => {
+      console.warn(`Character preview failed to prepare (${key}):`, error);
       if (characterPreviewState.requestId === requestId) {
         setCharacterPreviewStatus('Не удалось загрузить модель.', 'error');
       }

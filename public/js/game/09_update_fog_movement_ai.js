@@ -1390,6 +1390,10 @@
   }
 
   function updateEnemies(dt) {
+    if (typeof refreshActorAnimationViewFrustum === 'function') refreshActorAnimationViewFrustum();
+    const animationBudget = typeof actorAnimationQualityBudget === 'function'
+      ? actorAnimationQualityBudget()
+      : null;
     const animationFrameContext = typeof createEnemyAnimationFrameContext === 'function'
       ? createEnemyAnimationFrameContext(
           enemies,
@@ -1397,6 +1401,12 @@
           typeof fpsValue === 'number' ? fpsValue : 0
         )
       : null;
+    if (typeof beginActorAnimationDiagnostics === 'function') {
+      beginActorAnimationDiagnostics(
+        animationFrameContext?.heavyActorCount || 0,
+        animationFrameContext?.crowdPressure === true
+      );
+    }
     if (traderNpc?.mesh?.userData?.actorParts?.unifiedHumanoidNpc) {
       const traderTalking = !!String(traderNpc.speechText || '').trim();
       const traderDistance = player
@@ -1425,13 +1435,20 @@
         || Number(traderNpc.flash || 0) > 0.02
         || traderSelected
         || traderHovered;
-      const traderVisible = traderNpc.mesh.visible !== false;
-      const traderBaseInterval = enemyAnimationLodInterval(traderDistance, traderVisible, traderImportant);
+      const traderVisible = traderNpc.mesh.visible !== false
+        && (typeof actorAnimationInView !== 'function' || actorAnimationInView(traderNpc.mesh));
+      const traderBaseInterval = enemyAnimationLodInterval(
+        traderDistance,
+        traderVisible,
+        traderImportant,
+        animationBudget
+      );
       const traderAnimationInterval = enemyAnimationCrowdAdjustedInterval(traderBaseInterval, {
         crowdPressure: animationFrameContext?.crowdPressure === true,
         heavy: true,
         idle: !traderImportant,
-        important: traderImportant
+        important: traderImportant,
+        settings: animationBudget
       });
       const traderAnimationDt = consumeEnemyAnimationLodDt(
         traderNpc,
@@ -1439,6 +1456,7 @@
         traderAnimationInterval,
         [
           traderVisible ? 1 : 0,
+          String(animationBudget?.id || ''),
           traderTalking ? 1 : 0,
           traderWindowOpen ? 1 : 0,
           traderAttack.active ? 1 : 0,
@@ -1450,6 +1468,17 @@
           traderHovered ? 1 : 0
         ].join('|')
       );
+      if (typeof recordActorAnimationDiagnostic === 'function') {
+        const traderTier = typeof actorAnimationBudgetTier === 'function'
+          ? actorAnimationBudgetTier(traderDistance, traderVisible, traderImportant, animationBudget)
+          : (traderVisible ? 'near' : 'offscreen');
+        recordActorAnimationDiagnostic(
+          'enemy',
+          traderTier,
+          traderAnimationDt > 0,
+          animationFrameContext?.crowdPressure === true
+        );
+      }
       if (traderAnimationDt > 0) {
         updateCharacterLocomotionAnimation(traderNpc.mesh, traderAnimationDt, {
           moving: false,
@@ -1459,7 +1488,12 @@
           attackToken: traderAttack.token,
           hurt: Number(traderNpc.flash || 0) > 0.02 || traderHitReactionActive,
           talking: traderTalking,
-          footIk: traderImportant || traderDistance <= 6
+          footIk: typeof actorAnimationDetailEnabled === 'function'
+            ? actorAnimationDetailEnabled('footIk', traderDistance, traderImportant, animationBudget)
+            : traderImportant || traderDistance <= 6,
+          facial: typeof actorAnimationDetailEnabled === 'function'
+            ? actorAnimationDetailEnabled('facial', traderDistance, traderImportant, animationBudget)
+            : true
         });
         if (traderNpc.mesh.userData.enemyWeaponGroup) {
           updateWeaponVisualAnimation(traderNpc.mesh.userData.enemyWeaponGroup, traderAnimationDt, traderNpc);
@@ -1482,6 +1516,21 @@
             e.prevVisualX = tx;
             e.prevVisualZ = tz;
             e.mesh.position.set(tx, 0, tz);
+            const hiddenHeavyActor = typeof enemyActorUsesHeavyAnimation === 'function'
+              && enemyActorUsesHeavyAnimation(e, false);
+            if (hiddenHeavyActor) {
+              if (typeof consumeEnemyAnimationLodDt === 'function') {
+                consumeEnemyAnimationLodDt(e, dt, Infinity, 'fog-hidden');
+              }
+              if (typeof recordActorAnimationDiagnostic === 'function') {
+                recordActorAnimationDiagnostic(
+                  'enemy',
+                  'offscreen',
+                  false,
+                  animationFrameContext?.crowdPressure === true
+                );
+              }
+            }
             applyEnemyFlashVisual(e, dt);
             return;
           }

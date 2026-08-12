@@ -692,6 +692,86 @@
     return size;
   }
 
+  // v7.4: камера ближе к игроку, но без смены угла управления.
+  //
+  // Высота кадра подобрана по эталонному скриншоту: камера наклонена на
+  // 45.7 градуса, поэтому человек ростом 1.8 м проецируется в кадр длиной
+  // 1.26 единицы. При высоте кадра 15 фигура занимает 8.4% высоты экрана.
+  // Мобильные значения сохраняют прежние пропорции к десктопному.
+  function baseCameraViewHeight() {
+    const size = getGameViewportSize();
+    const portrait = size.h > size.w;
+    const compactLandscape = deviceInfo.type === 'mobile' && !portrait && size.h < 560;
+    if (deviceInfo.type !== 'mobile') return 15;
+    return portrait ? 19.5 : (compactLandscape ? 12 : 13.5);
+  }
+
+  // Колесо приближает камеру к модели. Единица — базовая высота кадра,
+  // нижняя граница подобрана по второму эталонному скриншоту: при высоте
+  // кадра около 7 фигура занимает 18% высоты экрана. Отдалять дальше базовой
+  // высоты нельзя, иначе появится туман по краям экрана.
+  const CAMERA_ZOOM_MIN_SCALE = 7 / 15;
+  const CAMERA_ZOOM_MAX_SCALE = 1;
+  const CAMERA_ZOOM_STEP = 1.12;
+  const CAMERA_ZOOM_STORAGE_KEY = 'realm.cameraZoomScale';
+  let cameraZoomScale = readStoredCameraZoomScale();
+
+  function clampCameraZoomScale(value) {
+    const scale = Number(value);
+    if (!Number.isFinite(scale)) return CAMERA_ZOOM_MAX_SCALE;
+    return Math.max(CAMERA_ZOOM_MIN_SCALE, Math.min(CAMERA_ZOOM_MAX_SCALE, scale));
+  }
+
+  function readStoredCameraZoomScale() {
+    try {
+      const raw = localStorage.getItem('realm.cameraZoomScale');
+      if (raw === null) return 1;
+      const scale = Number(raw);
+      if (!Number.isFinite(scale)) return 1;
+      return Math.max(7 / 15, Math.min(1, scale));
+    } catch (_) {
+      return 1;
+    }
+  }
+
+  function applyCameraViewport() {
+    const size = getGameViewportSize();
+    const aspect = size.w / Math.max(1, size.h);
+    const viewHeight = baseCameraViewHeight() * cameraZoomScale;
+    camera.zoom = 1;
+    camera.left = -viewHeight * aspect / 2;
+    camera.right = viewHeight * aspect / 2;
+    camera.top = viewHeight / 2;
+    camera.bottom = -viewHeight / 2;
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld(true);
+  }
+
+  function setCameraZoomScale(value, options = {}) {
+    const next = clampCameraZoomScale(value);
+    if (Math.abs(next - cameraZoomScale) < 1e-4) return false;
+    cameraZoomScale = next;
+    applyCameraViewport();
+    if (typeof updateCamera === 'function' && gameStarted) updateCamera(0, true);
+    if (options.persist !== false) {
+      try { localStorage.setItem(CAMERA_ZOOM_STORAGE_KEY, String(cameraZoomScale)); } catch (_) {}
+    }
+    return true;
+  }
+
+  function handleCameraZoomWheel(event) {
+    if (!gameStarted) return;
+    if (event.ctrlKey || event.metaKey) return;
+    // Колесо над открытой панелью прокручивает её содержимое, а не камеру.
+    if (event.target && event.target !== canvas) return;
+    const delta = Number(event.deltaY || 0);
+    if (!delta) return;
+    event.preventDefault();
+    setCameraZoomScale(delta < 0 ? cameraZoomScale / CAMERA_ZOOM_STEP : cameraZoomScale * CAMERA_ZOOM_STEP);
+  }
+
+  canvas.addEventListener('wheel', handleCameraZoomWheel, { passive: false });
+
   function resize() {
     const size = setAppViewportHeight();
     const w = size.w;
@@ -700,25 +780,9 @@
     canvas.style.height = `${h}px`;
     applyMainRendererPixelRatio(true);
     renderer.setSize(w, h, false);
-    const aspect = w / Math.max(1, h);
     const portrait = h > w;
     if (deviceInfo.type === 'mobile') document.body.classList.toggle('landscape-mode', !portrait);
-    const compactLandscape = deviceInfo.type === 'mobile' && !portrait && h < 560;
-    // v7.4: камера ближе к игроку, но без смены угла управления.
-    //
-    // Высота кадра подобрана по эталонному скриншоту: камера наклонена на
-    // 45.7 градуса, поэтому человек ростом 1.8 м проецируется в кадр длиной
-    // 1.26 единицы. При высоте кадра 15 фигура занимает 8.4% высоты экрана —
-    // столько же, сколько на эталоне. Мобильные значения сохраняют прежние
-    // пропорции к десктопному.
-    const viewHeight = deviceInfo.type === 'mobile' ? (portrait ? 19.5 : (compactLandscape ? 12 : 13.5)) : 15;
-    camera.zoom = 1;
-    camera.left = -viewHeight * aspect / 2;
-    camera.right = viewHeight * aspect / 2;
-    camera.top = viewHeight / 2;
-    camera.bottom = -viewHeight / 2;
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld(true);
+    applyCameraViewport();
     if (typeof updateCamera === 'function' && gameStarted) updateCamera(0);
     if (window.__virtualMoveReady && typeof resetVirtualMove === 'function') resetVirtualMove();
   }

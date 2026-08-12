@@ -40,7 +40,6 @@ const {
   routineInterruptBlocksService,
   selectRoutinePackage,
   resolveAuthoritativeClock,
-  nextRoutineBoundary,
   hourInsideWindow
 } = require('./src/server/npc-routines');
 const {
@@ -2511,11 +2510,22 @@ const FIXED_GAME_HOUR = 16.2;
 
 function currentGameClock(now = Date.now()) {
   const sampledNow = Number(now || Date.now());
+  const worldDay = Math.floor(sampledNow / GAME_DAY_REAL_MS);
+  // Форма ответа совпадает с resolveAuthoritativeClock: у неё есть
+  // потребители помимо распорядков, и урезанный объект молча ломал их
+  // арифметику (кэш выбора пакета переставал попадать и пересчитывался
+  // каждый тик для каждого НПС).
   return {
     worldHour: FIXED_GAME_HOUR,
+    absoluteWorldHour: FIXED_GAME_HOUR,
     gameHour: FIXED_GAME_HOUR,
-    worldDay: Math.floor(sampledNow / GAME_DAY_REAL_MS),
-    sampledAt: sampledNow
+    worldDay,
+    gameDay: worldDay,
+    elapsedMs: 0,
+    sampledAt: sampledNow,
+    now: sampledNow,
+    gameDayRealMs: GAME_DAY_REAL_MS,
+    millisecondsPerGameHour: GAME_DAY_REAL_MS / 24
   };
 }
 
@@ -13666,13 +13676,9 @@ function npcRoutinePackageForActor(room, enemy, now = Date.now(), options = {}) 
     gameHour: clock.gameHour,
     context: { ...context, now, gameHour: clock.gameHour, worldDay: clock.worldDay }
   });
-  const boundary = nextRoutineBoundary({
-    routine: schedule,
-    gameHour: clock.gameHour,
-    worldDay: clock.worldDay,
-    gameDayRealMs: GAME_DAY_REAL_MS
-  });
-  const nextBoundaryWorldHour = Number(boundary?.absoluteWorldHour || (clock.absoluteWorldHour + 1));
+  // Час зафиксирован, поэтому окно распорядка никогда не сменится: выбранный
+  // пакет держится в кэше до сброса по флагу или смене причины прерывания.
+  const nextBoundaryWorldHour = Infinity;
   enemy.npcRoutineSelectionCache = {
     schedule,
     interruptSignature,

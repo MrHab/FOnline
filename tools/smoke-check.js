@@ -89,8 +89,9 @@ function assertRequiredFiles() {
     fail('wasteland simulation save interval is not configurable');
   }
   if (!nginxSource.includes('gzip on;')
-    || !nginxSource.includes('gzip_types application/json')) {
-    fail('production Nginx does not compress large JSON world snapshots');
+    || !nginxSource.includes('gzip_types application/json')
+    || !nginxSource.includes('model/gltf-binary')) {
+    fail('production Nginx does not compress large JSON snapshots and GLB models');
   }
   if (!serverSource.includes('function shouldTickEmptyRoomAi(')
     || !serverSource.includes('room.emptyRoomAiUntil = Math.max(')

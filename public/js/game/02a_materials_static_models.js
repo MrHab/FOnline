@@ -294,11 +294,33 @@
     });
   }
 
+  function staticModelHolderAttached(holder) {
+    let node = holder || null;
+    while (node) {
+      if (node === worldGroup || (typeof scene !== 'undefined' && node === scene)) return true;
+      node = node.parent || null;
+    }
+    return false;
+  }
+
+  function purgeDetachedStaticModelRequests() {
+    Object.values(staticModelStates).forEach(state => {
+      if (!state) return;
+      state.pending = (Array.isArray(state.pending) ? state.pending : [])
+        .filter(entry => staticModelHolderAttached(entry?.holder));
+      if (!state.pending.length && state.retryTimer) {
+        clearTimeout(state.retryTimer);
+        state.retryTimer = null;
+      }
+    });
+  }
+
   function clearWorldGroupWithDispose() {
     worldGroup.children.slice().forEach(child => {
       disposeWorldObjectTree(child);
       worldGroup.remove(child);
     });
+    purgeDetachedStaticModelRequests();
   }
 
 
@@ -628,6 +650,10 @@
   const APPROVED_CREATURE_GLB_ASSET_VERSION = '7.77.0-approved-creatures-bc';
   const NPC_SUPER_MUTANT_GLB_ASSET_VERSION = '7.78.0-super-mutant-bc-v1';
   const PRIORITY_ENVIRONMENT_GLB_ASSET_VERSION = '7.79.0-priority-environment-bc-v1';
+  // Fingerprint of all canonical wasteland GLBs. Specific authored libraries
+  // keep their own version above; this value protects every remaining model
+  // from a stale immutable response after an in-place asset rebuild.
+  const STATIC_MODEL_GLB_ASSET_VERSION = '65a947da938a3e7f';
   const PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS = new Set([
     'carWreck', 'deadTreeA', 'deadTreeB', 'deadTreeC',
     'dryBush', 'rubbleRock', 'scrapHeap', 'wastelandShack'
@@ -887,6 +913,9 @@
     brahminPen: { mode: 'cover' }
   };
   const staticModelStates = {};
+  const STATIC_MODEL_RETRY_BASE_MS = 700;
+  const STATIC_MODEL_RETRY_MAX_MS = 30000;
+  let staticGlbLoadRevision = 0;
 
   function clearObjectChildren(object) {
     while (object.children && object.children.length) object.remove(object.children[0]);
@@ -900,6 +929,9 @@
         animations: [],
         loading: false,
         failed: false,
+        retryCount: 0,
+        retryTimer: null,
+        lastErrorAt: 0,
         pending: [],
         promise: null
       };
@@ -1318,6 +1350,19 @@ varying float vInstanceOpacity;`
     requestStaticModel(key);
   }
 
+  function scheduleStaticModelRetry(key, state) {
+    if (!state || state.source || state.promise || state.retryTimer) return;
+    state.pending = state.pending.filter(entry => staticModelHolderAttached(entry?.holder));
+    if (!state.pending.length) return;
+    const exponent = Math.max(0, Math.min(6, Number(state.retryCount || 1) - 1));
+    const delay = Math.min(STATIC_MODEL_RETRY_MAX_MS, STATIC_MODEL_RETRY_BASE_MS * Math.pow(2, exponent));
+    state.retryTimer = setTimeout(() => {
+      state.retryTimer = null;
+      state.pending = state.pending.filter(entry => staticModelHolderAttached(entry?.holder));
+      if (!state.source && state.pending.length) requestStaticModel(key);
+    }, delay);
+  }
+
   function requestStaticModel(key) {
     if (usesFastModuleBlockRenderer(key)) return Promise.resolve(null);
     const sourceUrl = STATIC_MODEL_URLS[key];
@@ -1330,20 +1375,24 @@ varying float vInstanceOpacity;`
           ? APPROVED_CREATURE_GLB_ASSET_VERSION
           : (PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS.has(key)
               ? PRIORITY_ENVIRONMENT_GLB_ASSET_VERSION
-              : '')));
+              : STATIC_MODEL_GLB_ASSET_VERSION)));
     const url = assetVersion
       ? `${sourceUrl}?v=${encodeURIComponent(assetVersion)}`
       : sourceUrl;
     const state = staticModelState(key);
     if (state.source) return Promise.resolve(state.source);
     if (state.promise) return state.promise;
-    if (state.failed) return Promise.resolve(null);
+    if (state.retryTimer) return Promise.resolve(null);
     if (!THREE.GLTFLoader) {
       state.failed = true;
+      state.lastErrorAt = Date.now();
+      state.retryCount += 1;
       console.warn('GLTFLoader is unavailable; static GLB models cannot be loaded.');
+      scheduleStaticModelRetry(key, state);
       return Promise.resolve(null);
     }
     state.loading = true;
+    staticGlbLoadRevision += 1;
     const loader = new THREE.GLTFLoader();
     state.promise = new Promise(resolve => {
       loader.load(url, gltf => {
@@ -1351,9 +1400,18 @@ varying float vInstanceOpacity;`
         state.source = prepareStaticModelObject(source || null);
         state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];
         state.loading = false;
+        state.failed = false;
+        state.retryCount = 0;
+        state.lastErrorAt = 0;
+        state.promise = null;
+        staticGlbLoadRevision += 1;
+        if (state.retryTimer) {
+          clearTimeout(state.retryTimer);
+          state.retryTimer = null;
+        }
         const pending = state.pending.splice(0);
         pending.forEach(entry => {
-          if (entry && entry.holder && entry.holder.parent) {
+          if (entry && staticModelHolderAttached(entry.holder)) {
             applyStaticModel(entry.holder, entry.key || key, entry.opts || {});
           }
         });
@@ -1361,20 +1419,25 @@ varying float vInstanceOpacity;`
       }, undefined, err => {
         state.loading = false;
         state.failed = true;
-        state.pending.length = 0;
+        state.lastErrorAt = Date.now();
+        state.retryCount += 1;
+        state.promise = null;
+        staticGlbLoadRevision += 1;
         console.warn('Failed to load static GLB model:', key, err);
+        scheduleStaticModelRetry(key, state);
         resolve(null);
       });
     });
     return state.promise;
   }
 
-  function staticModelKeysForLocation(location = currentLocation) {
+  function staticModelKeysForLocation(location = currentLocation, options = {}) {
+    const includeSkinned = !!options.includeSkinned;
     const keys = new Set();
     const visit = row => {
       if (!row || typeof row !== 'object') return;
       const key = staticModelKeyFromLocationObject(row);
-      if (key && !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key)) keys.add(key);
+      if (key && (includeSkinned || !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))) keys.add(key);
       if (Array.isArray(row.children)) row.children.forEach(visit);
       if (Array.isArray(row.objects)) row.objects.forEach(visit);
     };
@@ -1387,10 +1450,44 @@ varying float vInstanceOpacity;`
   function preloadStaticWorldModels(options = {}) {
     const requestedKeys = Array.isArray(options.keys)
       ? options.keys
-      : (options.location ? staticModelKeysForLocation(options.location) : Object.keys(STATIC_MODEL_URLS));
+      : (options.location ? staticModelKeysForLocation(options.location, options) : Object.keys(STATIC_MODEL_URLS));
     const keys = Array.from(new Set(requestedKeys))
-      .filter(key => STATIC_MODEL_URLS[key] && !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key));
+      .filter(key => STATIC_MODEL_URLS[key]
+        && (options.includeSkinned || !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key)));
     return Promise.all(keys.map(requestStaticModel));
+  }
+
+  function pendingStaticGlbAssetSnapshot() {
+    const states = Object.values(staticModelStates);
+    const activeStates = states.filter(state => !!(state?.promise || state?.loading));
+    const promises = Array.from(new Set(activeStates.map(state => state?.promise).filter(Boolean)));
+    // A scheduled retry describes a missing requested model, but it is passive:
+    // while offline it must not keep the loading overlay open until its deadline.
+    // The reveal gate reports the unresolved asset as false after its quiet window,
+    // while the existing retry continues in the background.
+    const retryScheduledStates = states.filter(state => (
+      !state?.source
+      && !!state?.retryTimer
+      && Array.isArray(state.pending)
+      && state.pending.some(entry => staticModelHolderAttached(entry?.holder))
+    ));
+    return {
+      revision: staticGlbLoadRevision,
+      promises,
+      activeCount: activeStates.length,
+      unresolvedCount: activeStates.length + retryScheduledStates.length,
+      retryScheduledCount: retryScheduledStates.length
+    };
+  }
+
+  function waitForPendingStaticGlbAssets(options = {}) {
+    if (typeof waitForGlbAssetQuiescence === 'function') {
+      return waitForGlbAssetQuiescence(pendingStaticGlbAssetSnapshot, options);
+    }
+    const snapshot = pendingStaticGlbAssetSnapshot();
+    if (!snapshot.promises.length) return Promise.resolve(snapshot.unresolvedCount === 0);
+    return Promise.allSettled(snapshot.promises)
+      .then(() => pendingStaticGlbAssetSnapshot().unresolvedCount === 0);
   }
 
   function makeStaticModelGroup(key, x, z, angle = 0, kind = key, opts = {}) {

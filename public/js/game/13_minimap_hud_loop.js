@@ -396,7 +396,7 @@
 
   function waitForCriticalWorldAssets(tasks = [], timeoutMs = CRITICAL_WORLD_ASSET_TIMEOUT_MS) {
     let timer = 0;
-    const work = Promise.all(tasks).then(() => ({ timedOut: false }));
+    const work = Promise.all(tasks).then(results => ({ timedOut: false, results }));
     const timeout = new Promise(resolve => {
       timer = setTimeout(() => resolve({ timedOut: true }), Math.max(1000, Number(timeoutMs) || CRITICAL_WORLD_ASSET_TIMEOUT_MS));
     });
@@ -437,7 +437,10 @@
         ? options.weaponIds
         : [equipmentSnapshot.weapon, equipmentSnapshot.offhand].filter(Boolean);
       const assetGate = await waitForCriticalWorldAssets([
-        preloadStaticWorldModels({ location }),
+        preloadStaticWorldModels({ location, includeSkinned: true }),
+        typeof loadGroundItemLibrary === 'function'
+          ? loadGroundItemLibrary()
+          : Promise.resolve(false),
         typeof preloadCharacterAppearanceAsset === 'function'
           ? preloadCharacterAppearanceAsset(appearance)
           : Promise.resolve(false),

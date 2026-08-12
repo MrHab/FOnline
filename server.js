@@ -3015,6 +3015,8 @@ const SERVER_ENEMY_MODEL_KEY_BY_VISUAL = {
   animal: 'friendlyBrahmin',
   friendlybrahmin: 'friendlyBrahmin',
   friendly_brahmin: 'friendlyBrahmin',
+  tradernpc: 'traderNpc',
+  trader_npc: 'traderNpc',
   caravanmerchant: 'caravanMerchant',
   caravan_merchant: 'caravanMerchant',
   caravanguard: 'caravanGuard',
@@ -3050,6 +3052,31 @@ const SERVER_MODEL_FILE_BY_KEY = Object.freeze({
   enemyGecko: 'npc_gecko.glb',
   enemyFireGecko: 'npc_fire_gecko.glb'
 });
+const SERVER_MODEL_KEY_BY_FILE = Object.freeze(Object.fromEntries(
+  Object.entries(SERVER_MODEL_FILE_BY_KEY)
+    .map(([modelKey, file]) => [String(file || '').toLowerCase(), modelKey])
+));
+const SERVER_APPROVED_ACTOR_MODEL_KEYS = new Set([
+  'traderNpc',
+  'friendlyBrahmin',
+  'caravanMerchant',
+  'caravanGuard',
+  'klimPatrolGuard',
+  'wastelandSettler',
+  'enemyRaider',
+  'enemyGhoul',
+  'enemySuperMutant',
+  'enemyAshWolf',
+  'enemyRadscorpion',
+  'enemyMutantAnt',
+  'enemyGecko',
+  'enemyFireGecko'
+]);
+
+function serverApprovedActorModelKey(modelKey = '') {
+  const key = String(modelKey || '').trim();
+  return SERVER_APPROVED_ACTOR_MODEL_KEYS.has(key) ? key : '';
+}
 
 function serverModelFileForRef(modelRef = '') {
   const key = String(modelRef || '').trim();
@@ -3061,14 +3088,78 @@ function serverEnemyModelKeyForVisual(visual = '') {
   if (!raw) return '';
   const key = raw.replace(/[^a-zA-Z0-9_]+/g, '').toLowerCase();
   const snake = raw.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/[^a-zA-Z0-9_]+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
-  return SERVER_ENEMY_MODEL_KEY_BY_VISUAL[key] || SERVER_ENEMY_MODEL_KEY_BY_VISUAL[snake] || '';
+  return serverApprovedActorModelKey(SERVER_ENEMY_MODEL_KEY_BY_VISUAL[key] || SERVER_ENEMY_MODEL_KEY_BY_VISUAL[snake]);
+}
+
+function serverModelKeyForExplicitRef(modelRef = '') {
+  const raw = String(modelRef || '').trim();
+  if (!raw) return '';
+  const explicit = raw.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
+  const explicitAlias = serverEnemyModelKeyForVisual(explicit);
+  if (explicitAlias) return explicitAlias;
+  const explicitActorKey = serverApprovedActorModelKey(explicit);
+  if (explicitActorKey) return explicitActorKey;
+
+  let decoded = raw;
+  try { decoded = decodeURIComponent(raw); } catch (_) {}
+  const pathOnly = decoded.split(/[?#]/, 1)[0].replace(/\\/g, '/');
+  const filename = String(pathOnly.split('/').pop() || '').toLowerCase();
+  return serverApprovedActorModelKey(SERVER_MODEL_KEY_BY_FILE[filename]);
+}
+
+function serverEnemyModelKeyForIdentity(actor = {}, fallbackVisual = '') {
+  for (const explicitRef of [actor?.modelKey, actor?.model]) {
+    const explicitModelKey = serverModelKeyForExplicitRef(explicitRef);
+    if (explicitModelKey) return explicitModelKey;
+  }
+
+  const candidates = [
+    actor?.visual,
+    actor?.species,
+    actor?.lootTier,
+    actor?.profile,
+    actor?.statProfile,
+    actor?.equipmentProfile,
+    actor?.lootProfile,
+    fallbackVisual
+  ];
+  for (const candidate of candidates) {
+    const modelKey = serverEnemyModelKeyForVisual(candidate);
+    if (modelKey) return modelKey;
+  }
+
+  const text = [
+    actor?.name,
+    actor?.typeName,
+    actor?.visual,
+    actor?.species,
+    actor?.role,
+    actor?.encounterRole,
+    ...candidates
+  ].map(value => String(value || '')).join(' ').toLowerCase();
+  const compact = text.replace(/[^a-z0-9]+/g, '');
+  const role = String(actor?.role || actor?.encounterRole || '').trim().toLowerCase();
+  const faction = String(actor?.faction || '').trim().toLowerCase();
+  if (role === 'merchant' || role === 'trader') return 'caravanMerchant';
+  if (role === 'guard') {
+    if (faction === 'old_klim' || faction === 'klim_patrol' || compact.includes('klim') || text.includes('клим')) return 'klimPatrolGuard';
+    return 'caravanGuard';
+  }
+  if (role === 'civilian' || role === 'settler' || role === 'worker') return 'wastelandSettler';
+  if (compact.includes('firegecko') || (text.includes('огнен') && text.includes('геккон'))) return 'enemyFireGecko';
+  if (compact.includes('radscorpion') || text.includes('скорпион')) return 'enemyRadscorpion';
+  if (compact.includes('mutantant') || text.includes('мурав')) return 'enemyMutantAnt';
+  if (compact.includes('ashwolf') || text.includes('wolf') || text.includes('волк')) return 'enemyAshWolf';
+  if (compact.includes('brahmin') || text.includes('брамин') || role === 'animal') return 'friendlyBrahmin';
+  if (compact.includes('supermutant') || text.includes('супермутант')) return 'enemySuperMutant';
+  if (compact.includes('ghoul') || text.includes('гул')) return 'enemyGhoul';
+  if (compact.includes('gecko') || text.includes('геккон')) return 'enemyGecko';
+  if (compact.includes('raider') || text.includes('рейдер') || role === 'raider') return 'enemyRaider';
+  return '';
 }
 
 function serverEnemyModelKeyForType(type = {}, fallbackVisual = '') {
-  return serverEnemyModelKeyForVisual(fallbackVisual)
-    || serverEnemyModelKeyForVisual(type?.visual)
-    || serverEnemyModelKeyForVisual(type?.lootTier)
-    || '';
+  return serverEnemyModelKeyForIdentity(type, fallbackVisual);
 }
 
 const SERVER_ENEMY_FACTION_BY_LOOT_TIER = {
@@ -4155,6 +4246,8 @@ function normalizeServerEncounterActor(row = {}) {
     if (!SERVER_ITEM_IDS.has(String(itemId || ''))) delete equipment[slot];
   }
   const chance = row.chance === undefined ? 1 : clamp(Number(row.chance || 0), 0, 1);
+  const visual = String(row.visual || '').slice(0, 32);
+  const modelKey = serverEnemyModelKeyForIdentity(row, visual);
   return {
     tx,
     tz,
@@ -4162,9 +4255,9 @@ function normalizeServerEncounterActor(row = {}) {
     typeIndex: Number.isFinite(Number(row.typeIndex)) ? clamp(Math.floor(Number(row.typeIndex)), 0, SERVER_ENEMY_TYPES.length - 1) : undefined,
     typeName: String(row.typeName || '').slice(0, 80),
     name: String(row.name || '').slice(0, 80),
-    visual: String(row.visual || '').slice(0, 32),
-    modelKey: String(row.modelKey || row.model || '').slice(0, 64),
-    model: String(row.model || row.modelKey || '').slice(0, 64),
+    visual: visual,
+    modelKey: modelKey,
+    model: modelKey,
     species: String(row.species || '').slice(0, 32),
     profile: String(row.profile || '').slice(0, 64),
     statProfile: String(row.statProfile || '').slice(0, 64),
@@ -4670,6 +4763,7 @@ function stripServerCreatureInventoryRows(rows = []) {
 
 function normalizeServerNaturalCreatureState(enemy = {}) {
   if (!enemy || !serverNpcIsNaturalCreature(enemy, enemy)) return enemy;
+  enemy.modelKey = serverEnemyModelKeyForIdentity(enemy, enemy.visual || enemy.species || '');
   enemy.equipment = serverNaturalCreatureEquipment();
   enemy.weapon = 'fists';
   enemy.canDialogue = false;
@@ -10024,7 +10118,7 @@ function enemySeparationVector(room, enemy, opts = {}) {
   return { x: sx / len, z: sz / len };
 }
 function enemyBodyRadius(enemy) {
-  const modelKey = String(enemy?.modelKey || serverEnemyModelKeyForVisual(enemy?.visual || '') || '');
+  const modelKey = serverEnemyModelKeyForIdentity(enemy, enemy?.visual || enemy?.species || '');
   const scale = Number(enemy?.scale || 1) || 1;
   const cacheOwner = enemy && typeof enemy === 'object' ? enemy : null;
   const cached = cacheOwner ? ENEMY_BODY_RADIUS_CACHE.get(cacheOwner) : null;
@@ -10053,7 +10147,7 @@ function enemyMovementCollisionRotation(enemy = {}) {
 }
 
 function enemyMovementCollisionBlockers(enemy = {}, x = enemy.x, z = enemy.z) {
-  const modelKey = String(enemy.modelKey || serverEnemyModelKeyForVisual(enemy.visual || '') || '');
+  const modelKey = serverEnemyModelKeyForIdentity(enemy, enemy.visual || enemy.species || '');
   if (!modelKey) return [];
   const positionX = Number(x || 0);
   const positionZ = Number(z || 0);
@@ -14464,12 +14558,14 @@ function publicEnemy(e, viewer = null) {
     && Number(e.npcSpeechUntil || 0) > now
     && String(e.npcSpeechText || '').trim();
   const speechText = speechActive ? String(e.npcSpeechText || '').trim().slice(0, 96) : '';
+  const modelKey = serverEnemyModelKeyForIdentity(e, e.visual || e.species || '');
+  if (e.modelKey !== modelKey) e.modelKey = modelKey;
   return {
     id: e.id,
     typeIndex: e.typeIndex,
     name: e.name,
     visual: String(e.visual || '').slice(0, 32),
-    modelKey: String(e.modelKey || '').slice(0, 64),
+    modelKey,
     species: String(e.species || '').slice(0, 32),
     canDialogue: naturalCreature ? false : e.canDialogue !== false,
     // v7.74.68: keep enemy coordinates precise for client-side visual smoothing.
@@ -15261,7 +15357,10 @@ function spawnServerEnemy(room, opts = {}) {
   if (!chosen) return null;
   const naturalCreature = serverNpcIsNaturalCreature(type, opts);
   const resolvedVisual = String(opts.visual || type.visual || '').slice(0, 32);
-  const resolvedModelKey = String(opts.modelKey || opts.model || serverEnemyModelKeyForType(type, resolvedVisual) || '').slice(0, 64);
+  const resolvedModelKey = String(
+    serverEnemyModelKeyForIdentity({ ...type, ...opts, visual: resolvedVisual }, resolvedVisual)
+    || ''
+  ).slice(0, 64);
   const faction = serverDefaultFactionForEnemyType(type, opts);
   const role = String(opts.role || '').slice(0, 32);
   const npcSeed = String(opts.npcSeed || `${loc.id || room.locationId || 'room'}:${opts.name || type.name || 'npc'}:${role}:${faction}:${Math.round(chosen.x * 10)}:${Math.round(chosen.z * 10)}`).slice(0, 160);

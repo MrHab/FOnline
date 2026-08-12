@@ -764,13 +764,9 @@
     const g = new THREE.Group();
     const remoteCastShadow = !IS_MOBILE_DEVICE;
     const parts = {};
-    buildModernWastelandHumanoid(g, parts, { castShadow: remoteCastShadow, isPlayer: false });
-    if (typeof attachActorInteractionProxy === 'function') {
-      attachActorInteractionProxy(g, { radius: 0.68, height: 2.1 });
-    }
-    if (typeof captureCharacterProceduralBaseMeshes === 'function') {
-      captureCharacterProceduralBaseMeshes(g, parts);
-    }
+    buildGlbOnlyHumanoidAnchors(g, parts, {
+      interactionProxy: { radius: 0.68, height: 2.1 }
+    });
     initWeaponVisualState(parts.weaponGroup);
     initWeaponVisualState(parts.offhandWeaponGroup);
 
@@ -993,6 +989,7 @@
   function removeRemotePlayer(id) {
     const row = multiplayer.remotePlayers.get(id);
     if (!row) return;
+    if (typeof cancelActorGlbVisualRequests === 'function') cancelActorGlbVisualRequests(row.group);
     forgetNetworkRevealObject(row.group);
     try { if (row.group) scene.remove(row.group); } catch (_) {}
     try { disposeRemotePlayerVisual(row.group); } catch (_) {}

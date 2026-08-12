@@ -8,7 +8,6 @@ const {
   normalizeAuthoredRoutine,
   routineInterruptBlocksService,
   selectRoutinePackage,
-  resolveAuthoritativeClock
 } = require('../src/server/npc-routines');
 const { buildActivitySlotCatalog } = require('../src/server/npc-smart-objects');
 
@@ -145,27 +144,24 @@ try {
     mechanic: 'craftsman',
     worker: 'worker'
   };
-  for (const [role, template] of Object.entries(expectedTemplates)) {
+  // Расписание свёрнуто: у роли ровно одно постоянное поведение.
+  for (const [role, expectedRole] of Object.entries(expectedTemplates)) {
     const routine = createLegacyRoutine({ seed: `check:${role}`, role, stableRoll });
-    if (routine.template !== template) errors.push(`legacy routine role ${role} resolved to ${routine.template}, expected ${template}`);
-    if (!Array.isArray(routine.packages) || !routine.packages.length) errors.push(`legacy routine ${role} has no executable packages`);
+    if (routine.role !== expectedRole) errors.push(`npc role ${role} resolved to ${routine.role}, expected ${expectedRole}`);
+    if (routine.packages?.length !== 1) errors.push(`npc role ${role} must expose exactly one behaviour`);
   }
-  const guard = createLegacyRoutine({ seed: 'midnight', role: 'guard', stableRoll });
-  // Сна в игре нет: ночные окна распорядка отыгрываются отдыхом.
-  if (selectRoutinePackage({ routine: guard, gameHour: 23.5 })?.state !== 'rest') errors.push('guard routine does not rest before midnight');
-  if (selectRoutinePackage({ routine: guard, gameHour: 0.5 })?.state !== 'rest') errors.push('guard routine does not preserve rest across midnight');
-  if (selectRoutinePackage({ routine: guard, gameHour: 10, context: { investigate: true } })?.type !== 'investigate') {
-    errors.push('investigate interrupt does not outrank the daily routine');
+  const guard = createLegacyRoutine({ seed: 'guard-role', role: 'guard', stableRoll });
+  if (selectRoutinePackage({ routine: guard })?.type !== 'guard') errors.push('guard role does not stand its post');
+  if (selectRoutinePackage({ routine: guard, context: { investigate: true } })?.type !== 'investigate') {
+    errors.push('investigate interrupt does not outrank the role behaviour');
   }
-  if (selectRoutinePackage({ routine: guard, gameHour: 10, context: { combat: true, investigate: true } })?.type !== 'combat') {
+  if (selectRoutinePackage({ routine: guard, context: { combat: true, investigate: true } })?.type !== 'combat') {
     errors.push('combat interrupt does not outrank investigate');
   }
   for (const type of ['combat', 'alarm', 'investigate']) {
     if (!routineInterruptBlocksService({ [type]: true })) errors.push(`${type} interrupt does not close NPC services`);
   }
   if (routineInterruptBlocksService({ dialogue: true })) errors.push('dialogue alone incorrectly closes NPC services');
-  const clock = resolveAuthoritativeClock({ worldHour: 47, sampledAt: 1000, now: 151000, gameDayRealMs: 3600000 });
-  if (Math.abs(clock.gameHour - 0) > 0.001 || clock.worldDay !== 2) errors.push('authoritative clock did not cross the persisted day boundary');
 } catch (error) {
   errors.push(`executable routine checks failed: ${error?.message || String(error)}`);
 }
@@ -382,20 +378,14 @@ for (const file of locationFiles) {
 try {
   const routineCatalog = readJson('data/npc-routines.json', { routines: {} });
   const saylaRoutine = normalizeAuthoredRoutine(routineCatalog?.routines?.caravan_sayla || {}, { id: 'caravan_sayla' });
-  if (saylaRoutine.packages.length !== 6) errors.push(`caravan_sayla routine has ${saylaRoutine.packages.length} packages; expected 6`);
-  for (let hour = 0; hour < 24; hour += 0.25) {
-    const selected = selectRoutinePackage({ routine: saylaRoutine, gameHour: hour, fallback: false });
-    if (!selected) {
-      errors.push(`caravan_sayla routine has an uncovered time at ${hour.toFixed(2)}`);
-      break;
-    }
+  // У авторской роли тоже ровно одно поведение и никаких часовых окон.
+  if (saylaRoutine.packages.length !== 1) errors.push(`caravan_sayla role has ${saylaRoutine.packages.length} behaviours; expected 1`);
+  const shop = selectRoutinePackage({ routine: saylaRoutine, fallback: false });
+  if (shop?.type !== 'shop' || shop?.serviceAvailable !== true) errors.push('Sayla shop service is not open');
+  for (const row of saylaRoutine.packages) {
+    if (row.startHour != null || row.endHour != null) errors.push('authored roles still carry hour windows');
+    if (String(row.type || '').toLowerCase() === 'sleep') errors.push('authored roles still schedule sleep');
   }
-  const morningShop = selectRoutinePackage({ routine: saylaRoutine, gameHour: 10, fallback: false });
-  const night = selectRoutinePackage({ routine: saylaRoutine, gameHour: 2, fallback: false });
-  if (morningShop?.type !== 'shop' || morningShop?.serviceAvailable !== true) errors.push('Sayla shop service is not open at 10:00');
-  if (night?.type !== 'rest' || night?.serviceAvailable !== false) errors.push('Sayla does not rest with service closed at 02:00');
-  const sleepPackages = saylaRoutine.packages.filter(row => String(row.type || '').toLowerCase() === 'sleep');
-  if (sleepPackages.length) errors.push('authored routines still schedule sleep');
 
   const caravanCamp = readJson('data/locations/caravanCamp.json', {});
   const slots = buildActivitySlotCatalog(caravanCamp);

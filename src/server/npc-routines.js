@@ -1,53 +1,13 @@
 'use strict';
 
-const DEFAULT_GAME_DAY_REAL_MS = 60 * 60 * 1000;
-const FULL_DAY_HOURS = 24;
-const HOUR_EPSILON = 1e-9;
-
-const LEGACY_ROUTINE_TEMPLATES = Object.freeze({
-  guard: freezeTemplate([
-    [0, 5, 'rest'],
-    [5, 7, 'rest'],
-    [7, 13, 'work'],
-    [13, 14, 'rest'],
-    [14, 20, 'work'],
-    [20, 22, 'social'],
-    [22, 24, 'rest']
-  ]),
-  night_guard: freezeTemplate([
-    [0, 6, 'work'],
-    [6, 8, 'social'],
-    [8, 15, 'rest'],
-    [15, 17, 'rest'],
-    [17, 24, 'work']
-  ]),
-  merchant: freezeTemplate([
-    [0, 7, 'rest'],
-    [7, 8, 'rest'],
-    [8, 13, 'work'],
-    [13, 14, 'rest'],
-    [14, 20, 'work'],
-    [20, 22, 'social'],
-    [22, 24, 'rest']
-  ]),
-  craftsman: freezeTemplate([
-    [0, 6, 'rest'],
-    [6, 8, 'rest'],
-    [8, 12, 'work'],
-    [12, 13, 'social'],
-    [13, 18, 'work'],
-    [18, 21, 'social'],
-    [21, 24, 'rest']
-  ]),
-  worker: freezeTemplate([
-    [0, 6, 'rest'],
-    [6, 7, 'rest'],
-    [7, 12, 'work'],
-    [12, 13, 'rest'],
-    [13, 18, 'work'],
-    [18, 21, 'social'],
-    [21, 24, 'rest']
-  ])
+// Времени суток в игре нет, поэтому распорядок свёрнут: у роли ровно одно
+// постоянное поведение вместо набора окон по часам. Разнообразие даёт не
+// расписание, а сама роль и её место работы.
+const ROLE_BEHAVIOURS = Object.freeze({
+  guard: Object.freeze({ type: 'guard', state: 'work', target: 'guard_post', serviceAvailable: false }),
+  merchant: Object.freeze({ type: 'shop', state: 'work', target: 'shop_counter', serviceAvailable: true }),
+  craftsman: Object.freeze({ type: 'craft', state: 'work', target: 'workstation', serviceAvailable: false }),
+  worker: Object.freeze({ type: 'work', state: 'work', target: 'worksite', serviceAvailable: false })
 });
 
 const INTERRUPT_DEFINITIONS = Object.freeze({
@@ -82,14 +42,6 @@ const ROUTINE_TYPE_DEFAULT_STATES = Object.freeze({
   wait: 'idle'
 });
 
-function freezeTemplate(rows = []) {
-  return Object.freeze(rows.map(row => Object.freeze({
-    startHour: row[0],
-    endHour: row[1],
-    state: row[2]
-  })));
-}
-
 function hasOwn(value, key) {
   return Boolean(value && Object.prototype.hasOwnProperty.call(value, key));
 }
@@ -97,34 +49,6 @@ function hasOwn(value, key) {
 function finiteNumber(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
-}
-
-function normalizeGameHour(value = 0) {
-  const hour = finiteNumber(value, 0);
-  return ((hour % FULL_DAY_HOURS) + FULL_DAY_HOURS) % FULL_DAY_HOURS;
-}
-
-function parseGameHour(value) {
-  if (typeof value === 'string' && value.includes(':')) {
-    const match = value.trim().match(/^(\d{1,2}):([0-5]\d)(?::[0-5]\d(?:\.\d+)?)?$/);
-    if (!match) return null;
-    const hours = Number(match[1]);
-    const minutes = Number(match[2]);
-    if (hours > 24 || (hours === 24 && minutes !== 0)) return null;
-    return normalizeGameHour(hours + minutes / 60);
-  }
-  const number = Number(value);
-  return Number.isFinite(number) ? normalizeGameHour(number) : null;
-}
-
-function hourInsideWindow(gameHour = 0, startHour = 0, endHour = 0) {
-  const hour = normalizeGameHour(gameHour);
-  const start = normalizeGameHour(startHour);
-  const end = normalizeGameHour(endHour);
-  if (Math.abs(start - end) < HOUR_EPSILON) return true;
-  return start < end
-    ? hour >= start && hour < end
-    : hour >= start || hour < end;
 }
 
 function stableRoutineRoll(seed = '', salt = '') {
@@ -148,77 +72,37 @@ function routineRoll(options = {}, seed = '', salt = '') {
   return Math.max(0, Math.min(0.999999999999, Number(value)));
 }
 
-function normalizeLegacyTemplateName(value = '') {
+function normalizeRoleName(value = '') {
   const raw = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
-  if (hasOwn(LEGACY_ROUTINE_TEMPLATES, raw)) return raw;
-  if (raw === 'patrol') return 'guard';
+  if (hasOwn(ROLE_BEHAVIOURS, raw)) return raw;
+  if (raw === 'patrol' || raw === 'guardpost' || raw === 'night_guard') return 'guard';
   if (raw === 'trader' || raw === 'quartermaster') return 'merchant';
   if (raw === 'mechanic') return 'craftsman';
   return '';
 }
 
-function legacyTemplateForRole(role = '', options = {}, seed = '') {
-  const explicit = normalizeLegacyTemplateName(options.template);
-  if (explicit) return explicit;
-  const normalizedRole = normalizeLegacyTemplateName(role);
-  if (normalizedRole === 'guard' && String(role || '').trim().toLowerCase() === 'guard') {
-    return routineRoll(options, seed, 'night-guard') > 0.72 ? 'night_guard' : 'guard';
-  }
-  return normalizedRole || 'worker';
-}
-
-function legacyActionType(template = 'worker', state = 'work') {
-  if (state !== 'work') return state === 'social' ? 'socialize' : state;
-  if (template === 'guard' || template === 'night_guard') return 'guard';
-  if (template === 'merchant') return 'shop';
-  if (template === 'craftsman') return 'craft';
-  return 'work';
-}
-
-function legacyTarget(template = 'worker', state = 'work') {
-  if (state === 'rest') return 'rest';
-  if (state === 'social') return 'social';
-  if (template === 'guard' || template === 'night_guard') return 'guard_post';
-  if (template === 'merchant') return 'shop_counter';
-  if (template === 'craftsman') return 'workstation';
-  return 'worksite';
+function roleBehaviourFor(role = '', options = {}) {
+  const explicit = normalizeRoleName(options.template || options.role);
+  return ROLE_BEHAVIOURS[explicit || normalizeRoleName(role) || 'worker'] || ROLE_BEHAVIOURS.worker;
 }
 
 function createLegacyRoutine(options = {}) {
-  const seed = String(options.seed || '');
-  const role = String(options.role || options.template || 'worker');
-  const template = legacyTemplateForRole(role, options, seed);
-  const shift = Math.floor(routineRoll(options, seed, 'schedule-shift') * 3) - 1;
-  const sourceRows = LEGACY_ROUTINE_TEMPLATES[template] || LEGACY_ROUTINE_TEMPLATES.worker;
-  const packages = sourceRows.map((row, index) => {
-    const state = row.state;
-    return {
-      id: `legacy:${template}:${index + 1}:${state}`,
-      type: legacyActionType(template, state),
-      state,
-      target: legacyTarget(template, state),
-      priority: 100,
-      interruptPolicy: 'interruptible',
-      resumePolicy: 'reevaluate',
-      serviceAvailable: template === 'merchant' && state === 'work',
-      startHour: normalizeGameHour(row.startHour + shift),
-      endHour: normalizeGameHour(row.endHour + shift),
-      conditions: {},
-      order: index,
-      source: 'legacy'
-    };
-  });
-  return {
-    id: `legacy:${template}`,
-    template,
-    shift,
-    packages,
-    segments: packages.map(row => ({
-      start: row.startHour,
-      end: row.endHour,
-      state: row.state
-    }))
-  };
+  const role = normalizeRoleName(options.template || options.role) || 'worker';
+  const behaviour = roleBehaviourFor(options.role, options);
+  const packages = [{
+    id: `role:${role}`,
+    type: behaviour.type,
+    state: behaviour.state,
+    target: behaviour.target,
+    priority: 100,
+    interruptPolicy: 'interruptible',
+    resumePolicy: 'reevaluate',
+    serviceAvailable: behaviour.serviceAvailable,
+    conditions: {},
+    order: 0,
+    source: 'role'
+  }];
+  return { id: `role:${role}`, role, packages };
 }
 
 function extractPackageRows(source) {
@@ -269,30 +153,6 @@ function defaultStateForType(type = '') {
   return ROUTINE_TYPE_DEFAULT_STATES[type] || type || 'idle';
 }
 
-function packageWindow(row = {}) {
-  const time = row.time && typeof row.time === 'object' ? row.time : {};
-  const hours = row.hours && typeof row.hours === 'object' ? row.hours : {};
-  const window = row.window && typeof row.window === 'object' ? row.window : {};
-  const startRaw = hasOwn(row, 'startHour') ? row.startHour
-    : hasOwn(row, 'start') ? row.start
-      : hasOwn(time, 'start') ? time.start
-        : hasOwn(hours, 'start') ? hours.start
-          : window.start;
-  let endRaw = hasOwn(row, 'endHour') ? row.endHour
-    : hasOwn(row, 'end') ? row.end
-      : hasOwn(time, 'end') ? time.end
-        : hasOwn(hours, 'end') ? hours.end
-          : window.end;
-  const startHour = parseGameHour(startRaw);
-  if (endRaw == null && startHour != null && Number.isFinite(Number(row.durationHours))) {
-    endRaw = startHour + Number(row.durationHours);
-  }
-  const endHour = parseGameHour(endRaw);
-  return startHour == null || endHour == null
-    ? { startHour: null, endHour: null }
-    : { startHour, endHour };
-}
-
 function packageConditions(row = {}) {
   const when = row.when && typeof row.when === 'object' && !Array.isArray(row.when) ? row.when : {};
   const explicit = row.conditions && typeof row.conditions === 'object' && !Array.isArray(row.conditions)
@@ -334,7 +194,6 @@ function normalizePackageRow(row = {}, index = 0, options = {}) {
     interruptPolicy: String(row.interruptPolicy || 'interruptible'),
     resumePolicy: String(row.resumePolicy || 'reevaluate'),
     serviceAvailable: serviceExplicit === undefined ? serviceType && state === 'work' : Boolean(serviceExplicit),
-    ...packageWindow(row),
     conditions: packageConditions(row),
     order: Number.isFinite(Number(row.order)) ? Number(row.order) : index,
     source: String(row.source || options.source || 'authored')
@@ -392,8 +251,6 @@ function isNormalizedRoutinePackage(row) {
     && hasOwn(row, 'interruptPolicy')
     && hasOwn(row, 'resumePolicy')
     && hasOwn(row, 'serviceAvailable')
-    && hasOwn(row, 'startHour')
-    && hasOwn(row, 'endHour')
     && row.conditions
     && typeof row.conditions === 'object');
 }
@@ -465,12 +322,11 @@ function conditionsMatch(conditions = {}, context = {}) {
     .every(([path, expected]) => conditionValueMatches(contextValue(context, path), expected));
 }
 
-function routinePackageMatches(row = {}, gameHour = 0, context = {}) {
+function routinePackageMatches(row = {}, context = {}) {
   if (!row || row.enabled === false) return false;
-  if (row.startHour != null && row.endHour != null && !hourInsideWindow(gameHour, row.startHour, row.endHour)) return false;
   const disabled = Array.isArray(context.disabledPackageIds) ? context.disabledPackageIds : [];
   if (disabled.includes(row.id)) return false;
-  return conditionsMatch(row.conditions, { ...context, gameHour: normalizeGameHour(gameHour) });
+  return conditionsMatch(row.conditions, context);
 }
 
 function interruptIsActive(value) {
@@ -511,8 +367,6 @@ function interruptCandidate(type = '', value = true, context = {}) {
     interruptPolicy: String(details.interruptPolicy || 'immediate'),
     resumePolicy: String(details.resumePolicy || definition.resumePolicy),
     serviceAvailable: false,
-    startHour: null,
-    endHour: null,
     conditions: {},
     order: Object.keys(INTERRUPT_DEFINITIONS).indexOf(normalizedType),
     source: 'interrupt'
@@ -585,8 +439,6 @@ function defaultFallbackPackage() {
     interruptPolicy: 'interruptible',
     resumePolicy: 'reevaluate',
     serviceAvailable: false,
-    startHour: null,
-    endHour: null,
     conditions: {},
     order: Number.MAX_SAFE_INTEGER,
     source: 'fallback'
@@ -598,9 +450,8 @@ function selectRoutinePackage(options = {}) {
   const interrupts = collectInterrupts(context);
   if (interrupts.length) return interrupts[0];
 
-  const gameHour = normalizeGameHour(options.gameHour ?? context.gameHour ?? 0);
   const active = preparedPackages(options.packages || options.routine || [])
-    .filter(row => routinePackageMatches(row, gameHour, context))
+    .filter(row => routinePackageMatches(row, context))
     .sort((a, b) => Number(b.priority) - Number(a.priority)
       || Number(a.order || 0) - Number(b.order || 0)
       || String(a.id).localeCompare(String(b.id)));
@@ -612,87 +463,9 @@ function selectRoutinePackage(options = {}) {
   return defaultFallbackPackage();
 }
 
-function resolveAuthoritativeClock(options = {}) {
-  const now = finiteNumber(options.now, Date.now());
-  const sampledAt = finiteNumber(options.sampledAt, now);
-  const gameDayRealMs = finiteNumber(options.gameDayRealMs, DEFAULT_GAME_DAY_REAL_MS);
-  if (!(gameDayRealMs > 0)) throw new RangeError('gameDayRealMs must be greater than zero');
-  const persistedWorldHour = Math.max(0, finiteNumber(options.worldHour, 0));
-  const elapsedMs = Math.max(0, now - sampledAt);
-  const absoluteWorldHour = persistedWorldHour + elapsedMs * FULL_DAY_HOURS / gameDayRealMs;
-  const worldDay = Math.floor(absoluteWorldHour / FULL_DAY_HOURS);
-  const gameHour = normalizeGameHour(absoluteWorldHour);
-  return {
-    worldHour: absoluteWorldHour,
-    absoluteWorldHour,
-    gameHour,
-    worldDay,
-    gameDay: worldDay,
-    elapsedMs,
-    sampledAt,
-    now,
-    gameDayRealMs,
-    millisecondsPerGameHour: gameDayRealMs / FULL_DAY_HOURS
-  };
-}
-
-function nextRoutineBoundary(options = {}) {
-  const gameHour = normalizeGameHour(options.gameHour ?? 0);
-  const boundaries = new Set();
-  for (const row of preparedPackages(options.packages || options.routine || [])) {
-    if (routineConditionsDependOnDay(row.conditions)) boundaries.add(0);
-    if (row.startHour == null || row.endHour == null) continue;
-    const start = normalizeGameHour(row.startHour);
-    const end = normalizeGameHour(row.endHour);
-    if (Math.abs(start - end) < HOUR_EPSILON) continue;
-    boundaries.add(start);
-    boundaries.add(end);
-  }
-  if (!boundaries.size) return null;
-
-  let nextHour = null;
-  let hoursUntil = Infinity;
-  for (const boundary of boundaries) {
-    let delta = normalizeGameHour(boundary - gameHour);
-    if (delta < HOUR_EPSILON) delta = FULL_DAY_HOURS;
-    if (delta < hoursUntil) {
-      nextHour = boundary;
-      hoursUntil = delta;
-    }
-  }
-  const worldDay = Math.floor(finiteNumber(options.worldDay ?? options.gameDay, 0));
-  const dayOffset = gameHour + hoursUntil >= FULL_DAY_HOURS - HOUR_EPSILON ? 1 : 0;
-  const gameDayRealMs = finiteNumber(options.gameDayRealMs, DEFAULT_GAME_DAY_REAL_MS);
-  return {
-    gameHour: nextHour,
-    hoursUntil,
-    dayOffset,
-    worldDay: worldDay + dayOffset,
-    absoluteWorldHour: (worldDay + dayOffset) * FULL_DAY_HOURS + nextHour,
-    millisecondsUntil: gameDayRealMs > 0 ? hoursUntil * gameDayRealMs / FULL_DAY_HOURS : null
-  };
-}
-
-function routineConditionsDependOnDay(conditions = {}) {
-  if (!conditions || typeof conditions !== 'object') return false;
-  if (hasOwn(conditions, 'days') || hasOwn(conditions, 'dayOfWeek')) return true;
-  if (conditions.require && (hasOwn(conditions.require, 'gameDay')
-    || hasOwn(conditions.require, 'worldDay')
-    || hasOwn(conditions.require, 'dayOfWeek'))) return true;
-  if (conditions.context && (hasOwn(conditions.context, 'gameDay')
-    || hasOwn(conditions.context, 'worldDay')
-    || hasOwn(conditions.context, 'dayOfWeek'))) return true;
-  if (Array.isArray(conditions.all) && conditions.all.some(routineConditionsDependOnDay)) return true;
-  if (Array.isArray(conditions.any) && conditions.any.some(routineConditionsDependOnDay)) return true;
-  return Boolean(conditions.not && routineConditionsDependOnDay(conditions.not));
-}
-
 module.exports = {
-  DEFAULT_GAME_DAY_REAL_MS,
-  LEGACY_ROUTINE_TEMPLATES,
+  ROLE_BEHAVIOURS,
   INTERRUPT_PRIORITIES,
-  normalizeGameHour,
-  hourInsideWindow,
   stableRoutineRoll,
   createLegacyRoutine,
   normalizeRoutinePackages,
@@ -700,7 +473,5 @@ module.exports = {
   normalizeAuthoredRoutineCatalog,
   routinePackageMatches,
   routineInterruptBlocksService,
-  selectRoutinePackage,
-  resolveAuthoritativeClock,
-  nextRoutineBoundary
+  selectRoutinePackage
 };

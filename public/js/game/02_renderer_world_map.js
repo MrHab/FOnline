@@ -489,8 +489,8 @@
   renderer.shadowMap.needsUpdate = true;
 
   // Камера ортографическая: приближение задают границы кадра, а не
-  // расстояние до модели. Границы вдвое уже прежних (-22..22, -14..14).
-  const camera = new THREE.OrthographicCamera(-11, 11, 7, -7, 0.1, 300);
+  // расстояние до модели.
+  const camera = new THREE.OrthographicCamera(-15, 15, 9.5, -9.5, 0.1, 300);
   camera.rotation.order = 'YXZ';
 
   const raycaster = new THREE.Raycaster();
@@ -705,9 +705,13 @@
     if (deviceInfo.type === 'mobile') document.body.classList.toggle('landscape-mode', !portrait);
     const compactLandscape = deviceInfo.type === 'mobile' && !portrait && h < 560;
     // v7.4: камера ближе к игроку, но без смены угла управления.
-    // Высоты вдвое меньше прежних (29 / 18 / 20 / 22): модель крупнее ровно
-    // в два раза, угол обзора и управление не меняются.
-    const viewHeight = deviceInfo.type === 'mobile' ? (portrait ? 14.5 : (compactLandscape ? 9 : 10)) : 11;
+    //
+    // Высота кадра подобрана по эталонному скриншоту: камера наклонена на
+    // 45.7 градуса, поэтому человек ростом 1.8 м проецируется в кадр длиной
+    // 1.26 единицы. При высоте кадра 15 фигура занимает 8.4% высоты экрана —
+    // столько же, сколько на эталоне. Мобильные значения сохраняют прежние
+    // пропорции к десктопному.
+    const viewHeight = deviceInfo.type === 'mobile' ? (portrait ? 19.5 : (compactLandscape ? 12 : 13.5)) : 15;
     camera.zoom = 1;
     camera.left = -viewHeight * aspect / 2;
     camera.right = viewHeight * aspect / 2;

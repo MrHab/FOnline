@@ -271,10 +271,28 @@
     return nearestGlobalMapLandPoint(point, fallback || safeCircle);
   }
 
+  // Пауза между попытками выхода: сервер согласится только после того, как
+  // получит свежую позицию игрока, а она уходит обычным потоком движения.
+  const GLOBAL_MAP_EXIT_RETRY_DELAY = 0.75;
+  let globalMapExitRequestPending = false;
+  let globalMapExitRetryAt = 0;
+
+  function nowSeconds() {
+    return (typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now()) / 1000;
+  }
+
+  function announceGlobalMapEntry() {
+    addLog('Вы вышли на глобальную карту. Выберите пункт назначения.', null, 'system');
+  }
+
   function openGlobalMapFromLocationExit() {
     if (typeof rejectBlockedGameplayAction === 'function'
       && rejectBlockedGameplayAction('Связь с сервером восстанавливается. Выход в пустошь временно недоступен.')) return false;
     if (globalMapState.onWorldMap || globalMapState.travel || locationTransitionActive) return false;
+    if (globalMapExitRequestPending || nowSeconds() < globalMapExitRetryAt) return false;
+    const online = !!(multiplayer?.socket?.connected && multiplayer.joined);
     const exitLocationId = currentLocation?.id || 'settlement';
     const settlementNode = GLOBAL_MAP_NODES.find(node => node.id === exitLocationId && node.kind === 'settlement');
     const exitCircle = sanitizeGlobalMapEntryCircle(globalMapState.lastEntryCircle);
@@ -318,14 +336,20 @@
     if (typeof stopTouchAim === 'function') stopTouchAim();
     if (typeof closeAllWindows === 'function') closeAllWindows(false);
     setGlobalMapMiniGameActive(true);
-    addLog('Вы вышли на глобальную карту. Выберите пункт назначения.', null, 'system');
-    if (multiplayer?.socket?.connected && multiplayer.joined) {
+    if (!online) announceGlobalMapEntry();
+    if (online) {
+      globalMapExitRequestPending = true;
       multiplayer.socket.emit('globalTravelEnterWorld', {
         fromLocationId: globalMapState.fromLocationId,
         exitDirection,
         worldPoint: globalMapPlayerPoint()
       }, ack => {
+        globalMapExitRequestPending = false;
         if (ack?.ok === false) {
+          // Отказ откатывает локальное состояние, поэтому следующий кадр
+          // снова увидит игрока в полосе выхода. Без паузы это превращается
+          // в бесконечный цикл запросов и записей в журнал.
+          globalMapExitRetryAt = nowSeconds() + GLOBAL_MAP_EXIT_RETRY_DELAY;
           globalMapSetTravelLeader(ack.leaderId || 'group-leader', ack.leaderName || '');
           globalMapState.onWorldMap = false;
           globalMapState.travel = null;
@@ -334,6 +358,7 @@
           setReadout(ack.error || 'Маршрут выбирает лидер группы.');
           return;
         }
+        announceGlobalMapEntry();
         if (ack?.worldPoint) {
           const point = globalMapSavedPoint(ack.worldPoint);
           globalMapState.playerX = point.x;

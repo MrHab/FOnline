@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 const crypto = require('crypto');
 const os = require('os');
 const { monitorEventLoopDelay, performance } = require('perf_hooks');
@@ -1577,13 +1578,55 @@ app.get('/api/quests', (_, res) => {
   });
 });
 
-app.get('/api/global-map', (_, res) => {
-  res.json({ ok: true, map: GLOBAL_MAP });
+let globalMapResponseCache = null;
+
+function invalidateGlobalMapResponseCache() {
+  globalMapResponseCache = null;
+}
+
+app.get('/api/global-map', (req, res) => {
+  if (!globalMapResponseCache) {
+    const body = Buffer.from(JSON.stringify({ ok: true, map: GLOBAL_MAP }), 'utf8');
+    globalMapResponseCache = { body, gzip: gzipJsonBuffer(body) };
+  }
+  sendJsonBuffer(res, globalMapResponseCache.body, globalMapResponseCache.gzip);
 });
 
 let wastelandPublicCache = null;
 let wastelandPublicCacheHits = 0;
 let wastelandPublicCacheMisses = 0;
+
+// Крупные JSON-ответы уходят сжатыми: без этого симуляция пустоши весила
+// около 925 КБ и при опросе раз в 5 секунд забивала канал, из-за чего по
+// таймауту отваливались ассеты и сохранение персонажа.
+const JSON_GZIP_MIN_BYTES = 4096;
+
+function gzipJsonBuffer(body) {
+  if (!Buffer.isBuffer(body) || body.length < JSON_GZIP_MIN_BYTES) return null;
+  try {
+    return zlib.gzipSync(body, { level: zlib.constants.Z_BEST_SPEED });
+  } catch (err) {
+    console.error('Failed to gzip JSON response:', err);
+    return null;
+  }
+}
+
+function clientAcceptsGzip(req) {
+  return /\bgzip\b/i.test(String(req?.headers?.['accept-encoding'] || ''));
+}
+
+function sendJsonBuffer(res, body, gzipped = null) {
+  const useGzip = gzipped && clientAcceptsGzip(res.req);
+  const payload = useGzip ? gzipped : body;
+  res.status(200);
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  if (useGzip) {
+    res.setHeader('Content-Encoding', 'gzip');
+    res.setHeader('Vary', 'Accept-Encoding');
+  }
+  res.setHeader('Content-Length', String(payload.length));
+  res.end(payload);
+}
 
 function invalidateWastelandPublicCache() {
   wastelandPublicCache = null;
@@ -1595,9 +1638,11 @@ function cachedWastelandPublicResponse(now = Date.now()) {
     return { ...wastelandPublicCache, hit: true };
   }
   const body = Buffer.from(JSON.stringify({ ok: true, sim: WASTELAND_SIM.publicState() }), 'utf8');
+  // Сжатая копия считается один раз на срок жизни кэша, а не на каждый запрос.
   wastelandPublicCache = {
     body,
     bytes: body.length,
+    gzip: gzipJsonBuffer(body),
     expiresAt: now + WASTELAND_PUBLIC_CACHE_MS
   };
   wastelandPublicCacheMisses += 1;
@@ -1606,12 +1651,9 @@ function cachedWastelandPublicResponse(now = Date.now()) {
 
 app.get('/api/wasteland', (_, res) => {
   const snapshot = cachedWastelandPublicResponse();
-  res.status(200);
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Content-Length', String(snapshot.bytes));
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Realm-Wasteland-Cache', snapshot.hit ? 'HIT' : 'MISS');
-  res.end(snapshot.body);
+  sendJsonBuffer(res, snapshot.body, snapshot.gzip);
 });
 
 app.post('/api/wasteland/tasks/:id/deliver', requireAuth, (req, res) => {
@@ -1642,6 +1684,7 @@ app.post('/api/dev/global-map', (req, res) => {
   const incoming = req.body && typeof req.body === 'object' && req.body.map ? req.body.map : req.body;
   if (!incoming || typeof incoming !== 'object') return res.status(400).json({ ok: false, error: 'Нужен JSON глобальной карты.' });
   GLOBAL_MAP = normalizeGlobalMapConfig(incoming);
+  invalidateGlobalMapResponseCache();
   WASTELAND_SIM.syncGlobalMap(GLOBAL_MAP);
   syncWorldSiteLocationDefinitions();
   writeJsonAtomic(GLOBAL_MAP_FILE, GLOBAL_MAP, { pretty: true });

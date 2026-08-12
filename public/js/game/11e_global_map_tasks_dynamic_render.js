@@ -266,6 +266,7 @@
     dynamic.playerMarker.position.copy(playerPos);
     dynamic.playerMarker.visible = true;
     updateGlobalMapPlayerModelVisuals(dynamic.playerMarker);
+    updateGlobalMapPlayerModelAnimation(dynamic.playerMarker, dt);
     updateGlobalMapPlayerModelDirection(dynamic.playerMarker, playerPoint, destinationPoint);
     if (dynamic.settlementStatus) {
       if (heavyUpdate || !dynamic.settlementStatusSignature) {

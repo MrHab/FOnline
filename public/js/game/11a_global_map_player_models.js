@@ -115,6 +115,29 @@
     return Math.atan2(-vx, -vz) + Number(facingOffsetY || 0);
   }
 
+  // Модель на глобальной карте стояла в T-позе: её загружали, но миксер
+  // никто не крутил. Гоняем тот же рантайм, что и в локации, но без IK стоп:
+  // маркер уменьшен и приподнят над рельефом, привязывать стопы не к чему.
+  const GLOBAL_MAP_PLAYER_WALK_SPEED = 1.6;
+
+  function updateGlobalMapPlayerModelAnimation(marker = null, dt = 0.016) {
+    const modelRoot = marker?.userData?.modelRoot;
+    if (!modelRoot?.userData?.characterGlbRuntime) return false;
+    if (typeof updateCharacterGlbAnimation !== 'function') return false;
+    const frameDt = Math.max(0, Math.min(0.08, Number(dt) || 0));
+    const travelling = !!(typeof globalMapState !== 'undefined' && globalMapState?.travel);
+    return updateCharacterGlbAnimation(modelRoot, frameDt, {
+      moving: travelling,
+      speed: travelling ? GLOBAL_MAP_PLAYER_WALK_SPEED : 0,
+      moveX: 0,
+      moveZ: travelling ? GLOBAL_MAP_PLAYER_WALK_SPEED * frameDt : 0,
+      facingAngle: 0,
+      footIk: false,
+      turning: false,
+      turnAmount: 0
+    }) === true;
+  }
+
   function updateGlobalMapPlayerModelDirection(marker = null, playerPoint = null, destinationPoint = null) {
     if (!marker || !playerPoint) return;
     const from = globalMapWorldFromPoint(playerPoint);

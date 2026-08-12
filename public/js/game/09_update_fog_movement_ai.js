@@ -1943,7 +1943,9 @@
   }
 
   function nameplateHealthText(actor) {
-    const aware = typeof talentLevel === 'function' && talentLevel('awareness') > 0;
+    // Своё здоровье игрок знает и без перка — он видит его в панели.
+    const aware = actor?.self === true
+      || (typeof talentLevel === 'function' && talentLevel('awareness') > 0);
     const hp = Math.max(0, Math.ceil(Number(actor?.hp || 0)));
     const maxHp = Math.max(1, Math.ceil(Number(actor?.maxHp || hp || 1)));
     if (aware) return `${hp}/${maxHp}`;
@@ -1959,15 +1961,45 @@
     return '';
   }
 
+  // Роли, ради которых игрок вообще подходит к НПС. Охрана, рабочие и прочая
+  // массовка живут толпами: если подписывать и их, над лагерем встаёт стена
+  // текста вместо мира.
+  const NAMEPLATE_ROLES = new Set(['merchant', 'trader', 'quartermaster', 'shopkeeper']);
+
+  function isNameplateNpc(enemy) {
+    if (!enemy || enemy.canDialogue !== true) return false;
+    if (typeof traderNpc !== 'undefined' && traderNpc && enemy === traderNpc) return true;
+    if (enemy.traderId || enemy.traderProfile || enemy.tradeProfile || enemy.dialogueProfile) return true;
+    if (Array.isArray(enemy.traderQuests) && enemy.traderQuests.length) return true;
+    // Торговец самой локации: у него может не быть ни роли, ни профиля, но
+    // именно к нему игрок и приходит.
+    if (typeof isLocationTraderActor === 'function' && isLocationTraderActor(enemy)) return true;
+    return NAMEPLATE_ROLES.has(String(enemy.role || enemy.encounterRole || '').toLowerCase());
+  }
+
   function collectNameplateActors() {
     const rows = [];
     const px = Number(player?.x || 0);
     const pz = Number(player?.z || 0);
+    // Свой персонаж подписан наравне с остальными: игрок должен видеть, где он
+    // в толпе и что с его здоровьем, не отводя взгляд на панель.
+    if (player) {
+      rows.push({
+        name: String(characterProfile?.name || player.name || 'Странник'),
+        hp: player.hp,
+        maxHp: player.maxHp,
+        x: px,
+        z: pz,
+        scale: 1,
+        kind: 'plate-player',
+        self: true
+      });
+    }
     if (Array.isArray(enemies)) {
       for (const enemy of enemies) {
-        // Именные персонажи — те, с кем можно заговорить. Зверьё и рядовые
-        // враги подписей не получают, иначе экран превращается в список.
-        if (!enemy || enemy.dead || enemy._removed || enemy.canDialogue !== true) continue;
+        // Подписываем важных персонажей: торговцев и тех, у кого есть свой
+        // разговор. Зверьё, охрана и рядовые враги подписей не получают.
+        if (!enemy || enemy.dead || enemy._removed || !isNameplateNpc(enemy)) continue;
         if (!enemy.mesh || enemy.mesh.visible === false) continue;
         if (Math.hypot(Number(enemy.x || 0) - px, Number(enemy.z || 0) - pz) > NAMEPLATE_MAX_DISTANCE) continue;
         rows.push({

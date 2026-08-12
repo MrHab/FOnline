@@ -170,20 +170,20 @@ assert(!runtime.includes('function addCharacterHairVariant(')
 assert(runtime.includes("obj.visible = !helmetOn && appearance.hairId !== 'shaved'")
   && runtime.includes('material.userData.characterGlbHairTintId ='),
   'authored GLB hair visibility or per-instance tint is missing');
-assert(runtime.includes('function ensureCharacterFacialRuntime(')
-  && runtime.includes('function updateCharacterFacialAnimation(')
-  && runtime.includes("root.userData.characterFacialState = dead"),
-  'character faces do not expose blink and reaction animation states');
-assert(runtime.includes('runtime.blinkUntil = runtime.elapsed + 0.105;')
-  && runtime.includes("hurt: !!state.hurt || hitReactionActive")
-  && runtime.includes('attacking: facialAttackActive'),
-  'natural blink, hit or attack facial reactions are missing');
-assert(runtime.includes('applyCharacterFaceShapeFrame(runtime.root);'));
-assert(runtime.includes('updateCharacterFacialAnimation(runtime.root, frameDt,'),
-  'in-game GLB faces are not animated each frame');
-assert(runtime.includes('applyCharacterFaceShapeFrame(characterPreviewState.model);'));
-assert(runtime.includes('updateCharacterFacialAnimation(characterPreviewState.model, dt, { preview: true });'),
-  'character creator preview does not animate the face');
+// Лицевая анимация удалена из игры. Форма лица — часть внешности персонажа
+// и остаётся: она применяется и в кадре, и в предпросмотре.
+for (const forbidden of [
+  'ensureCharacterFacialRuntime',
+  'updateCharacterFacialAnimation',
+  'characterFacialRuntime',
+  'characterFacialState'
+]) {
+  assert(!runtime.includes(forbidden), `facial animation is back: ${forbidden}`);
+}
+assert(runtime.includes('applyCharacterFaceShapeFrame(runtime.root);'),
+  'in-game faces lost their appearance shape');
+assert(runtime.includes('applyCharacterFaceShapeFrame(characterPreviewState.model);'),
+  'character creator preview lost the face shape');
 assert(runtime.includes('function characterTurnInPlaceState(')
   && modernRuntime.includes('characterTurnInPlaceState(actor, state.facingAngle, moving, dt)'),
   'stationary cursor turns do not enter turn-in-place locomotion');
@@ -298,8 +298,6 @@ this.__characterAppearanceFitApi = {
   applyCharacterGlbVisualVariants,
   characterFaceFitProfile,
   applyCharacterFaceShape,
-  ensureCharacterFacialRuntime,
-  updateCharacterFacialAnimation,
   characterDirectionalLocomotionState,
   characterTurnInPlaceState,
   triggerActorAttackAnimationPulse,
@@ -357,45 +355,6 @@ assert.deepStrictEqual(actionCalls, { reset: 0, play: 0 },
 fitApi.setCharacterGlbAction(repeatedAttackRuntime, 'attack', 0, { restart: true });
 assert.deepStrictEqual(actionCalls, { reset: 1, play: 1 },
   'a new event does not reset and replay the current attack clip');
-
-const facialRoot = new THREE.Group();
-facialRoot.name = 'character_glb_test_face';
-const facialEyes = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.01));
-facialEyes.name = 'face_eyes';
-facialEyes.userData.realm_character_layer = 'eyes';
-facialEyes.position.set(0, 1.72, -0.08);
-const facialBrows = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.015, 0.01));
-facialBrows.name = 'face_eyebrows';
-facialBrows.userData.realm_character_layer = 'eyebrows';
-facialBrows.position.set(0, 1.76, -0.085);
-facialRoot.add(facialEyes, facialBrows);
-assert.strictEqual(fitApi.updateCharacterFacialAnimation(facialRoot, 0.016, {}), true,
-  'facial runtime did not initialize from the separate face meshes');
-const facialRuntime = fitApi.ensureCharacterFacialRuntime(facialRoot);
-const baseBrowY = facialRuntime.browsBasePosition.y;
-facialRuntime.nextBlink = facialRuntime.elapsed + 0.01;
-fitApi.updateCharacterFacialAnimation(facialRoot, 0.02, {});
-assert.strictEqual(facialEyes.visible, false, 'natural blink did not close the eyes');
-assert.strictEqual(facialRoot.userData.characterFacialState, 'blink');
-fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, {});
-fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, {});
-assert.strictEqual(facialEyes.visible, true, 'eyes stayed closed after a natural blink');
-fitApi.updateCharacterFacialAnimation(facialRoot, 0.016, { hurt: true });
-assert.strictEqual(facialEyes.visible, false, 'hit reaction did not close the eyes');
-assert.strictEqual(facialRoot.userData.characterFacialState, 'hurt');
-assert(facialBrows.position.y < baseBrowY, 'hit reaction did not lower the brows');
-for (let frame = 0; frame < 4; frame += 1) {
-  fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, { hurt: false });
-}
-assert.strictEqual(facialEyes.visible, true, 'hit reaction left the eyes permanently closed');
-fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, { attacking: true });
-assert.strictEqual(facialRoot.userData.characterFacialState, 'attack');
-assert(facialBrows.position.y < baseBrowY, 'attack reaction did not focus the brows');
-fitApi.updateCharacterFacialAnimation(facialRoot, 0.08, { talking: true });
-assert.strictEqual(facialRoot.userData.characterFacialState, 'talk');
-fitApi.updateCharacterFacialAnimation(facialRoot, 0.016, { dead: true });
-assert.strictEqual(facialEyes.visible, false, 'death reaction did not close the eyes');
-assert.strictEqual(facialRoot.userData.characterFacialState, 'dead');
 
 function closeTo(actual, expected, tolerance, label) {
   assert(Math.abs(actual - expected) <= tolerance,
@@ -948,5 +907,5 @@ sharedTemplateHairMaterial.dispose();
 console.log(
   'Character models OK: 6 GLB bases, 8 faces, 2 sex-compatible hairstyles each, 8 hair colors, '
   + '384 normalized appearance combinations, authored GLB hair visibility/tinting, 8-way cursor-relative locomotion and turn-in-place steps, '
-  + 'blink/hurt/attack/talk/death facial reactions, rig/animations and hashes checked'
+  + 'rig/animations and hashes checked'
 );

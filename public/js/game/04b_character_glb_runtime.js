@@ -580,136 +580,6 @@
     );
   }
 
-  function characterFacialPart(root, layer = '') {
-    if (!root?.traverse) return null;
-    const expected = String(layer || '').toLowerCase();
-    let match = null;
-    root.traverse(obj => {
-      if (match || !obj?.isMesh) return;
-      const characterLayer = String(obj.userData?.realm_character_layer || '').toLowerCase();
-      const name = String(obj.name || '').toLowerCase();
-      if (characterLayer === expected || name === `face_${expected}` || name.includes(`face_${expected}`)) {
-        match = obj;
-      }
-    });
-    return match;
-  }
-
-  function characterFacialSeed(root) {
-    const value = String(root?.name || root?.uuid || 'realm-character-face');
-    let hash = 17;
-    for (let index = 0; index < value.length; index += 1) {
-      hash = (hash * 31 + value.charCodeAt(index)) % 104729;
-    }
-    return hash / 104729;
-  }
-
-  function characterFacialBlinkDelay(runtime) {
-    const wave = Math.sin(Number(runtime.seed || 0) * 19.7 + Number(runtime.blinkCount || 0) * 2.37);
-    return 2.45 + (wave + 1) * 1.15;
-  }
-
-  function ensureCharacterFacialRuntime(root) {
-    if (!root?.userData) return null;
-    const cached = root.userData.characterFacialRuntime;
-    if (cached?.eyes || cached?.brows) return cached;
-    const eyes = characterFacialPart(root, 'eyes');
-    const brows = characterFacialPart(root, 'eyebrows');
-    if (!eyes && !brows) return null;
-    const seed = characterFacialSeed(root);
-    const runtime = {
-      eyes,
-      brows,
-      eyesBasePosition: eyes?.position?.clone?.() || null,
-      browsBasePosition: brows?.position?.clone?.() || null,
-      elapsed: 0,
-      seed,
-      blinkCount: 0,
-      blinkUntil: 0,
-      nextBlink: 1.25 + seed * 1.45,
-      hurtUntil: 0,
-      hurtSignal: false,
-      browOffset: 0,
-      gazeOffset: 0
-    };
-    root.userData.characterFacialRuntime = runtime;
-    return runtime;
-  }
-
-  function updateCharacterFacialAnimation(root, dt = 0.016, state = {}) {
-    const runtime = ensureCharacterFacialRuntime(root);
-    if (!runtime) return false;
-    runtime.suspended = false;
-    const frameDt = Math.max(0, Math.min(0.08, Number(dt || 0.016)));
-    runtime.elapsed += frameDt;
-    const hurt = !!state.hurt;
-    const dead = !!state.dead;
-    const attacking = !!state.attacking;
-    const talking = !!state.talking;
-    if (hurt && !runtime.hurtSignal) runtime.hurtUntil = runtime.elapsed + 0.24;
-    runtime.hurtSignal = hurt;
-    if (!dead && runtime.elapsed >= runtime.nextBlink) {
-      runtime.blinkUntil = runtime.elapsed + 0.105;
-      runtime.blinkCount += 1;
-      runtime.nextBlink = runtime.blinkUntil + characterFacialBlinkDelay(runtime);
-    }
-    const hurtReaction = runtime.elapsed < runtime.hurtUntil;
-    const closed = dead || hurtReaction || runtime.elapsed < runtime.blinkUntil;
-    if (runtime.eyes) {
-      runtime.eyes.visible = !closed;
-      const gazeTarget = dead || hurtReaction
-        ? 0
-        : Math.sin(runtime.elapsed * 0.72 + runtime.seed * 7) * (attacking ? 0.001 : 0.0025);
-      runtime.gazeOffset = characterLocomotionBlend(runtime.gazeOffset, gazeTarget, 7, frameDt);
-      if (runtime.eyesBasePosition) {
-        runtime.eyes.position.copy(runtime.eyesBasePosition);
-        runtime.eyes.position.x += runtime.gazeOffset;
-      }
-    }
-    if (runtime.brows) {
-      const talkingOffset = talking ? Math.sin(runtime.elapsed * 10.5 + runtime.seed * 4) * 0.002 : 0;
-      const targetOffset = dead
-        ? -0.004
-        : (hurtReaction ? -0.012 : (attacking ? -0.007 : talkingOffset));
-      runtime.browOffset = characterLocomotionBlend(
-        runtime.browOffset,
-        targetOffset,
-        hurtReaction ? 18 : 8,
-        frameDt
-      );
-      if (runtime.browsBasePosition) {
-        runtime.brows.position.copy(runtime.browsBasePosition);
-        runtime.brows.position.y += runtime.browOffset;
-      }
-    }
-    root.userData.characterFacialState = dead
-      ? 'dead'
-      : (hurtReaction ? 'hurt' : (attacking ? 'attack' : (talking ? 'talk' : (closed ? 'blink' : 'neutral'))));
-    return true;
-  }
-
-  function setCharacterFacialAnimationEnabled(root, enabled = true) {
-    const runtime = root?.userData?.characterFacialRuntime;
-    if (!runtime) return;
-    if (enabled !== false) {
-      runtime.suspended = false;
-      return;
-    }
-    if (runtime.suspended) return;
-    runtime.suspended = true;
-    runtime.hurtSignal = false;
-    runtime.hurtUntil = 0;
-    runtime.blinkUntil = 0;
-    if (runtime.eyes) {
-      runtime.eyes.visible = true;
-      if (runtime.eyesBasePosition) runtime.eyes.position.copy(runtime.eyesBasePosition);
-    }
-    if (runtime.brows && runtime.browsBasePosition) {
-      runtime.brows.position.copy(runtime.browsBasePosition);
-    }
-    if (root?.userData) root.userData.characterFacialState = 'suspended';
-  }
-
   function applyCharacterGlbVisualVariants(root, input = {}, options = {}) {
     if (!root?.traverse) return;
     const appearance = normalizeCharacterAppearance(input);
@@ -1831,20 +1701,6 @@
     const now = typeof performance !== 'undefined' && typeof performance.now === 'function'
       ? performance.now()
       : Date.now();
-    const hitReaction = actor?.userData?.hitReactionAnim;
-    const hitReactionActive = !!hitReaction
-      && now < Number(hitReaction.startedAt || 0) + Math.max(0, Number(hitReaction.duration || 0)) * 1000;
-    const facialAttackActive = !!state.attacking
-      || actorAttackAnimationPulseState(actor, false).active;
-    const facialEnabled = state.facial !== false;
-    setCharacterFacialAnimationEnabled(runtime.root, facialEnabled);
-    if (facialEnabled) {
-      updateCharacterFacialAnimation(runtime.root, frameDt, {
-        ...state,
-        hurt: !!state.hurt || hitReactionActive,
-        attacking: facialAttackActive
-      });
-    }
     actor.userData.characterLocomotionDirection = locomotion.direction;
     actor.userData.characterLocomotionForwardAmount = locomotion.forwardAmount;
     actor.userData.characterLocomotionSideAmount = locomotion.sideAmount;
@@ -1944,7 +1800,6 @@
       characterPreviewState.mixer?.update(dt);
       if (characterPreviewState.model) {
         applyCharacterFaceShapeFrame(characterPreviewState.model);
-        updateCharacterFacialAnimation(characterPreviewState.model, dt, { preview: true });
         characterPreviewState.model.updateMatrixWorld(true);
         const faceCameraYaw = Math.atan2(camera.position.x, camera.position.z);
         const pointerOffset = characterPreviewState.pointerActive

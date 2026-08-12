@@ -8,71 +8,18 @@
     multiplayer.worldContainers.clear();
   }
 
-  function worldContainerPalette(container = {}) {
-    if (container.terminalLocked) return { body: 0x2e5c63, edge: 0x10282d };
-    if (container.locked) return { body: 0x5b4b64, edge: 0x241b2a };
-    const tier = String(container.tier || 'basic');
-    const palettes = {
-      survival: { body: 0x6b5b35, edge: 0x2f2a18 },
-      settlement: { body: 0x6b5b35, edge: 0x2f2a18 },
-      tools: { body: 0x6c4a2e, edge: 0x2d2418 },
-      medical: { body: 0x6a3432, edge: 0x2f1515 },
-      ammo: { body: 0x4f5b60, edge: 0x20282b },
-      wasteland: { body: 0x584d3b, edge: 0x29241a },
-      rare: { body: 0x6c5d2f, edge: 0x2f2911 },
-      basic: { body: 0x5a4930, edge: 0x2d2418 }
-    };
-    const palette = palettes[tier] || palettes.basic;
-    if (!container.empty) return palette;
-    return { body: 0x373229, edge: 0x191713 };
-  }
-
   function createWorldContainerMesh(container = {}) {
-    const group = new THREE.Group();
-    const palette = worldContainerPalette(container);
-    const baseMat = new THREE.MeshStandardMaterial({ color: palette.body, roughness: 0.88, metalness: 0.08 });
-    const edgeMat = new THREE.MeshStandardMaterial({ color: palette.edge, roughness: 0.9, metalness: 0.12 });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.68, 0.82), baseMat);
-    body.position.y = 0.36;
-    body.castShadow = true;
-    body.receiveShadow = true;
-    group.add(body);
-
-    const lid = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.16, 0.92), edgeMat);
-    lid.position.y = 0.78;
-    lid.castShadow = true;
-    group.add(lid);
-
-    const band1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.78, 0.96), edgeMat);
-    band1.position.set(-0.34, 0.42, 0);
-    group.add(band1);
-    const band2 = band1.clone();
-    band2.position.x = 0.34;
-    group.add(band2);
-
-    if (container.locked) {
-      const lockMat = new THREE.MeshStandardMaterial({ color: 0xc7a35a, roughness: 0.52, metalness: 0.55 });
-      const lock = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 0.1), lockMat);
-      lock.position.set(0, 0.58, -0.47);
-      group.add(lock);
-    }
-
-    if (container.terminalLocked || Number(container.terminalDifficulty || 0) > 0) {
-      const screenMat = new THREE.MeshStandardMaterial({
-        color: 0x1f8a8a,
-        emissive: 0x0d4c4c,
-        emissiveIntensity: container.terminalLocked ? 0.45 : 0.12,
-        roughness: 0.46,
-        metalness: 0.2
-      });
-      const screen = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.32, 0.08), screenMat);
-      screen.position.set(0, 0.86, -0.5);
-      group.add(screen);
-      const postMat = new THREE.MeshStandardMaterial({ color: 0x233033, roughness: 0.78, metalness: 0.32 });
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.08), postMat);
-      post.position.set(0, 0.68, -0.49);
-      group.add(post);
-    }
+    const modelKey = container.terminalLocked || Number(container.terminalDifficulty || 0) > 0
+      ? 'tradeMachine'
+      : (String(container.tier || '').toLowerCase() === 'basic' ? 'crate' : 'storageChest');
+    const group = typeof makeStaticModelGroup === 'function'
+      ? makeStaticModelGroup(modelKey, 0, 0, 0, 'worldContainer', {
+          castShadow: true,
+          receiveShadow: true
+        })
+      : new THREE.Group();
+    group.name = `world_container_glb_${modelKey}`;
+    group.userData.worldContainerModelKey = modelKey;
 
     // Лутовые контейнеры не получают надписей над моделью.
     // Игрок понимает доступность по форме объекта и подсказке взаимодействия рядом,
@@ -174,7 +121,9 @@
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(multiplayer.worldContainerMeshes, true);
     for (const h of hits) {
-      if (h.object.userData.worldContainer) return h.object.userData.worldContainer;
+      let node = h.object;
+      while (node && !node.userData?.worldContainer) node = node.parent;
+      if (node?.userData?.worldContainer) return node.userData.worldContainer;
     }
     return null;
   }

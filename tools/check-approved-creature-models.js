@@ -4,6 +4,7 @@ const assert = require('assert');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 const {
   APPROVED_CREATURES,
   MANIFEST_NAME,
@@ -15,9 +16,11 @@ const MODEL_DIRECTORY = path.join(ROOT, 'public', 'assets', 'models', 'wasteland
 const MANIFEST_FILE = path.join(MODEL_DIRECTORY, MANIFEST_NAME);
 const COLLIDER_FILE = path.join(MODEL_DIRECTORY, 'model-colliders.json');
 const STATIC_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '02a_materials_static_models.js');
+const WORLD_SYNC_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05e_ground_items_world_sync.js');
 const ENEMY_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05f_enemy_models_location_flow.js');
 const EQUIPMENT_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '05a_remote_actor_equipment.js');
 const HUMANOID_RUNTIME_FILE = path.join(ROOT, 'public', 'js', 'game', '04d_approved_humanoid_assets_runtime.js');
+const SERVER_RUNTIME_FILE = path.join(ROOT, 'server.js');
 const REQUIRED_ACTIONS = ['attack', 'death', 'hurt', 'idle', 'run', 'walk'];
 const EXPECTED_BOUNDS = {
   brahmin: {
@@ -230,20 +233,63 @@ const staticRuntime = fs.readFileSync(STATIC_RUNTIME_FILE, 'utf8');
   "const NPC_SUPER_MUTANT_GLB_ASSET_VERSION = '7.78.0-super-mutant-bc-v1';",
   '? APPROVED_CREATURE_GLB_ASSET_VERSION',
   'function staticModelKeysForLocation(',
-  '.filter(key => STATIC_MODEL_URLS[key] && !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))',
+  '&& (options.includeSkinned || !LAZY_SKINNED_STATIC_MODEL_KEYS.has(key))',
   'function cloneStaticModelSource(source)',
   'new THREE.Skeleton(bones, inverses)',
   'state.animations = Array.isArray(gltf?.animations) ? gltf.animations : [];'
 ].forEach(marker => {
   assert(staticRuntime.includes(marker), `approved creature loader integration is missing: ${marker}`);
 });
+[
+  'function scheduleStaticModelRetry(key, state)',
+  'state.pending = state.pending.filter(entry => staticModelHolderAttached(entry?.holder));',
+  'state.promise = null;',
+  'scheduleStaticModelRetry(key, state);'
+].forEach(marker => {
+  assert(staticRuntime.includes(marker), `retryable creature GLB loading is missing: ${marker}`);
+});
+assert(
+  !staticRuntime.includes('if (state.failed) return Promise.resolve(null);'),
+  'a transient creature GLB failure still permanently poisons the shared loader state'
+);
+assert(
+  !staticRuntime.includes('state.pending.length = 0;'),
+  'failed creature GLB loading still discards holders that need the eventual model'
+);
+
+const worldSyncRuntime = fs.readFileSync(WORLD_SYNC_RUNTIME_FILE, 'utf8');
+const identityBlockStart = worldSyncRuntime.indexOf('const ENEMY_GLB_IDENTITY_BY_TOKEN');
+const identityBlockEnd = worldSyncRuntime.indexOf('\n  function enemyVisualFromNetworkSnapshot', identityBlockStart);
+assert(identityBlockStart >= 0 && identityBlockEnd > identityBlockStart, 'enemy GLB identity recovery block is missing');
+const identitySandbox = {
+  STATIC_MODEL_URLS: {
+    enemyRaider: '/enemy-raider.glb',
+    enemyGhoul: '/enemy-ghoul.glb',
+    enemySuperMutant: '/enemy-super-mutant.glb',
+    enemyAshWolf: '/enemy-ash-wolf.glb',
+    enemyRadscorpion: '/enemy-radscorpion.glb',
+    enemyMutantAnt: '/enemy-mutant-ant.glb',
+    enemyGecko: '/enemy-gecko.glb',
+    enemyFireGecko: '/enemy-fire-gecko.glb',
+    friendlyBrahmin: '/brahmin.glb'
+  }
+};
+vm.runInNewContext(
+  `${worldSyncRuntime.slice(identityBlockStart, identityBlockEnd)}\n`
+    + 'this.resolveEnemyGlbModel = enemyGlbModelKeyFromSnapshot;',
+  identitySandbox
+);
+assert.strictEqual(identitySandbox.resolveEnemyGlbModel({ name: 'Пепельный волк' }, 'raider'), 'enemyAshWolf');
+assert.strictEqual(identitySandbox.resolveEnemyGlbModel({ species: 'fire_gecko' }, 'raider'), 'enemyFireGecko');
+assert.strictEqual(identitySandbox.resolveEnemyGlbModel({ modelKey: 'enemy_radscorpion' }, 'raider'), 'enemyRadscorpion');
+assert.strictEqual(identitySandbox.resolveEnemyGlbModel({ role: 'animal' }, 'raider'), 'friendlyBrahmin');
 
 const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
 [
   "modelKey !== 'enemyGhoul'",
   "typeof APPROVED_CREATURE_STATIC_MODEL_KEYS === 'undefined'",
   '!APPROVED_CREATURE_STATIC_MODEL_KEYS.has(modelKey)',
-  'configureEnemyStaticGlbAnimation(group, instance, appliedKey || modelKey);',
+  'configureEnemyStaticGlbAnimation(group, instance, appliedKey || rawKey);',
   "function setEnemyStaticGlbAction(runtime, requested = 'idle'",
   'characterOneShotRestart(runtime, action, state.attackToken)',
   'attackActive: attackAnimation.active',
@@ -260,6 +306,103 @@ const enemyRuntime = fs.readFileSync(ENEMY_RUNTIME_FILE, 'utf8');
 ].forEach(marker => {
   assert(enemyRuntime.includes(marker), `approved creature animation integration is missing: ${marker}`);
 });
+const createEnemyModelStart = enemyRuntime.indexOf('function createEnemyModel(type)');
+const createEnemyModelEnd = enemyRuntime.indexOf('\n  function enemyAnimCaptureBase', createEnemyModelStart);
+assert(createEnemyModelStart >= 0 && createEnemyModelEnd > createEnemyModelStart, 'enemy model factory is missing');
+const createEnemyModelBody = enemyRuntime.slice(createEnemyModelStart, createEnemyModelEnd);
+[
+  'buildBrahminEnemy(',
+  'buildRadscorpionEnemy(',
+  'buildMutantAntEnemy(',
+  'buildGeckoEnemy(',
+  'buildWolfEnemy(',
+  'buildMutantEnemy(',
+  'buildGhoulEnemy(',
+  'buildRaiderEnemy('
+].forEach(marker => {
+  assert(!createEnemyModelBody.includes(marker), `enemy factory still renders procedural fallback: ${marker}`);
+});
+[
+  'function buildBrahminEnemy(',
+  'function buildRadscorpionEnemy(',
+  'function buildMutantAntEnemy(',
+  'function buildGeckoEnemy(',
+  'function buildWolfEnemy(',
+  'function buildMutantEnemy(',
+  'function buildGhoulEnemy(',
+  'function buildRaiderEnemy(',
+  'function makeEnemyBox(',
+  'function makeEnemyCylinder(',
+  'function makeEnemySphere(',
+  'const enemyVisualMats =',
+  "parts.kind === 'wolf'",
+  "parts.kind === 'scorpion'"
+].forEach(marker => {
+  assert(!enemyRuntime.includes(marker), `procedural creature runtime must be physically removed: ${marker}`);
+});
+assert(createEnemyModelBody.includes('group.userData.glbModelUnavailable = true;'), 'missing GLB identity is not surfaced without a procedural fallback');
+
+const serverRuntime = fs.readFileSync(SERVER_RUNTIME_FILE, 'utf8');
+const serverIdentityStart = serverRuntime.indexOf('const SERVER_ENEMY_MODEL_KEY_BY_VISUAL');
+const serverIdentityEnd = serverRuntime.indexOf('\nconst SERVER_ENEMY_FACTION_BY_LOOT_TIER', serverIdentityStart);
+assert(serverIdentityStart >= 0 && serverIdentityEnd > serverIdentityStart, 'server enemy GLB identity block is missing');
+const serverIdentitySandbox = {};
+vm.runInNewContext(
+  `${serverRuntime.slice(serverIdentityStart, serverIdentityEnd)}\n`
+    + 'this.resolveServerEnemyGlbModel = serverEnemyModelKeyForIdentity;\n'
+    + 'this.resolveServerExplicitActorGlbModel = serverModelKeyForExplicitRef;',
+  serverIdentitySandbox
+);
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ name: 'Радскорпион' }), 'enemyRadscorpion');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ species: 'ash_wolf' }), 'enemyAshWolf');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 'enemy_fire_gecko' }), 'enemyFireGecko');
+assert.strictEqual(
+  serverIdentitySandbox.resolveServerEnemyGlbModel({
+    model: '/assets/models/wasteland/npc_ash_wolf.glb?v=7.99.23#runtime'
+  }),
+  'enemyAshWolf'
+);
+assert.strictEqual(
+  serverIdentitySandbox.resolveServerEnemyGlbModel({
+    modelKey: 'C:\\realm\\public\\assets\\models\\wasteland\\npc_radscorpion.glb?cache=1'
+  }),
+  'enemyRadscorpion'
+);
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ role: 'animal' }), 'friendlyBrahmin');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ role: 'merchant' }), 'caravanMerchant');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ role: 'guard', faction: 'old_klim' }), 'klimPatrolGuard');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ role: 'civilian' }), 'wastelandSettler');
+assert.strictEqual(serverIdentitySandbox.resolveServerExplicitActorGlbModel('trader_npc.glb?v=7'), 'traderNpc');
+assert.strictEqual(serverIdentitySandbox.resolveServerExplicitActorGlbModel('crate'), '');
+assert.strictEqual(serverIdentitySandbox.resolveServerExplicitActorGlbModel('/assets/models/wasteland/crate.glb'), '');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 'legacy_generated_raider_body' }), '');
+assert.strictEqual(serverIdentitySandbox.resolveServerEnemyGlbModel({ modelKey: 'crate' }), '');
+
+const encounterNormalizerSource = serverRuntime.slice(
+  serverRuntime.indexOf('function normalizeServerEncounterActor'),
+  serverRuntime.indexOf('\nfunction normalizeServerEncounterDefinitions', serverRuntime.indexOf('function normalizeServerEncounterActor'))
+);
+const naturalCreatureNormalizerSource = serverRuntime.slice(
+  serverRuntime.indexOf('function normalizeServerNaturalCreatureState'),
+  serverRuntime.indexOf('\nfunction persistedNaturalCreatureArrayChanged', serverRuntime.indexOf('function normalizeServerNaturalCreatureState'))
+);
+const collisionIdentitySource = serverRuntime.slice(
+  serverRuntime.indexOf('function enemyBodyRadius'),
+  serverRuntime.indexOf('\nfunction roomEnemyCollisionPenalty', serverRuntime.indexOf('function enemyBodyRadius'))
+);
+const publicEnemySource = serverRuntime.slice(
+  serverRuntime.indexOf('function publicEnemy(e, viewer = null)'),
+  serverRuntime.indexOf('\nfunction publicEnemySnapshotForViewer', serverRuntime.indexOf('function publicEnemy(e, viewer = null)'))
+);
+const spawnEnemySource = serverRuntime.slice(
+  serverRuntime.indexOf('function spawnServerEnemy(room, opts = {})'),
+  serverRuntime.indexOf('\nfunction spawnEncounterActor', serverRuntime.indexOf('function spawnServerEnemy(room, opts = {})'))
+);
+assert(!encounterNormalizerSource.includes('authoredModelKey'), 'encounter normalization must not retain an arbitrary authored actor model key');
+assert(!naturalCreatureNormalizerSource.includes('|| enemy.modelKey'), 'natural creature normalization must not retain a rejected actor model key');
+assert(!collisionIdentitySource.includes('|| enemy?.modelKey') && !collisionIdentitySource.includes('|| enemy.modelKey'), 'enemy collision must not use a rejected actor model key');
+assert(!publicEnemySource.includes("String(e.modelKey || '')"), 'public enemy payload must not publish a rejected actor model key');
+assert(!spawnEnemySource.includes('|| opts.modelKey') && !spawnEnemySource.includes('|| opts.model'), 'enemy spawning must not retain a rejected actor model key');
 
 const equipmentRuntime = fs.readFileSync(EQUIPMENT_RUNTIME_FILE, 'utf8');
 [

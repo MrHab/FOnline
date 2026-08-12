@@ -501,8 +501,9 @@
   async function waitForStartupVisualRevealSettle() {
     if (typeof waitForStartupInitialSnapshots === 'function') {
       setLocationLoadingProgress('Принимаю начальное состояние локации...', 94);
-      await waitForStartupInitialSnapshots({ timeoutMs: 700 });
+      await waitForStartupInitialSnapshots({ timeoutMs: 1600 });
     }
+    await waitForPendingWorldGlbAssets({ timeoutMs: 8500, progress: 96 });
     setLocationLoadingProgress('Готовлю первый кадр мира...', 97);
     renderStartupRevealFrame('startup-reveal:pre');
     for (let i = 0; i < STARTUP_REVEAL_FRAME_COUNT; i++) {
@@ -510,6 +511,107 @@
       renderStartupRevealFrame(`startup-reveal:frame-${i + 1}`);
     }
     renderStartupRevealFrame('startup-reveal:final');
+  }
+
+  const WORLD_GLB_REVEAL_QUIET_MS = 150;
+  const WORLD_GLB_REVEAL_TIMEOUT_MS = 8_500;
+
+  async function waitForGlbAssetQuiescence(readSnapshot, options = {}) {
+    if (typeof readSnapshot !== 'function') return true;
+    const requestedTimeoutMs = Number(options.timeoutMs);
+    const requestedQuietMs = Number(options.quietMs);
+    const requestedPollMs = Number(options.pollMs);
+    const timeoutMs = Math.max(250, Number.isFinite(requestedTimeoutMs) ? requestedTimeoutMs : 8_500);
+    const quietMs = Math.max(150, Number.isFinite(requestedQuietMs) ? requestedQuietMs : 150);
+    const pollMs = Math.max(10, Math.min(50, Number.isFinite(requestedPollMs) ? requestedPollMs : 35));
+    const now = typeof options.now === 'function'
+      ? options.now
+      : () => performance.now();
+    const sleep = typeof options.sleep === 'function'
+      ? options.sleep
+      : delay => new Promise(resolve => setTimeout(resolve, delay));
+    const startedAt = now();
+    const deadlineAt = startedAt + timeoutMs;
+    let quietSince = null;
+    let observedRevision = null;
+
+    while (true) {
+      const checkedAt = now();
+      if (checkedAt >= deadlineAt) return false;
+      const snapshot = readSnapshot() || {};
+      const promises = Array.from(new Set(
+        (Array.isArray(snapshot.promises) ? snapshot.promises : []).filter(Boolean)
+      ));
+      const activeCount = Math.max(0, Number(snapshot.activeCount || 0), promises.length);
+      const unresolvedCount = Math.max(activeCount, Number(snapshot.unresolvedCount || 0));
+      const revision = String(snapshot.revision ?? '');
+      const revisionChanged = observedRevision !== null && revision !== observedRevision;
+      observedRevision = revision;
+
+      if (activeCount > 0 || revisionChanged) {
+        quietSince = null;
+      } else if (quietSince === null) {
+        quietSince = checkedAt;
+      } else if (checkedAt - quietSince >= quietMs) {
+        return unresolvedCount === 0;
+      }
+
+      const remainingMs = deadlineAt - now();
+      if (remainingMs <= 0) return false;
+      await sleep(Math.min(pollMs, Math.max(1, remainingMs)));
+    }
+  }
+
+  function worldGlbPendingSnapshot() {
+    const snapshots = [];
+    if (typeof pendingCharacterGlbAssetSnapshot === 'function') {
+      snapshots.push(pendingCharacterGlbAssetSnapshot());
+    }
+    if (typeof pendingStaticGlbAssetSnapshot === 'function') {
+      snapshots.push(pendingStaticGlbAssetSnapshot());
+    }
+    if (typeof pendingWeaponGlbAssetSnapshot === 'function') {
+      snapshots.push(pendingWeaponGlbAssetSnapshot());
+    }
+    if (typeof pendingApprovedHumanoidGlbAssetSnapshot === 'function') {
+      snapshots.push(pendingApprovedHumanoidGlbAssetSnapshot());
+    }
+    if (typeof pendingGroundItemGlbAssetSnapshot === 'function') {
+      snapshots.push(pendingGroundItemGlbAssetSnapshot());
+    }
+    return {
+      revision: snapshots.map(snapshot => String(snapshot?.revision ?? '')).join(':'),
+      promises: Array.from(new Set(snapshots.flatMap(snapshot => (
+        Array.isArray(snapshot?.promises) ? snapshot.promises : []
+      )).filter(Boolean))),
+      activeCount: snapshots.reduce((total, snapshot) => (
+        total + Math.max(0, Number(snapshot?.activeCount || 0))
+      ), 0),
+      unresolvedCount: snapshots.reduce((total, snapshot) => (
+        total + Math.max(0, Number(snapshot?.unresolvedCount || 0))
+      ), 0),
+      retryScheduledCount: snapshots.reduce((total, snapshot) => (
+        total + Math.max(0, Number(snapshot?.retryScheduledCount || 0))
+      ), 0)
+    };
+  }
+
+  async function waitForPendingWorldGlbAssets(options = {}) {
+    setLocationLoadingProgress(
+      options.step || 'Загружаю GLB-модели персонажей и НПС...',
+      Number(options.progress || 96)
+    );
+    const completed = await waitForGlbAssetQuiescence(worldGlbPendingSnapshot, {
+      timeoutMs: Number(options.timeoutMs || WORLD_GLB_REVEAL_TIMEOUT_MS),
+      quietMs: WORLD_GLB_REVEAL_QUIET_MS
+    });
+    if (!completed) {
+      document.body.dataset.glbRevealAssets = 'retrying';
+      console.warn('[models] GLB reveal gate did not finish cleanly; loaders remain retryable in the background.');
+      return false;
+    }
+    document.body.dataset.glbRevealAssets = 'ready';
+    return true;
   }
 
   function preloadImageForLocation(url) {
@@ -788,11 +890,20 @@
       await nextPaintForLocationLoading();
       if (token !== locationTransitionToken) return false;
 
-      setLocationLoadingProgress('Загружаю текстуры земли и декали...', 18);
-      await preloadLocationAssets(targetLocation.id, (done, total) => {
+      setLocationLoadingProgress('Загружаю GLB, текстуры земли и декали...', 18);
+      const targetGlbGate = typeof preloadStaticWorldModels === 'function'
+        ? waitForCriticalWorldAssets([
+            preloadStaticWorldModels({ location: targetLocation, includeSkinned: true })
+          ], 8500)
+        : Promise.resolve({ timedOut: false });
+      const textureAssets = preloadLocationAssets(targetLocation.id, (done, total) => {
         const p = 18 + (done / Math.max(1, total)) * 44;
         setLocationLoadingProgress(`Загружаю ассеты ${done}/${total}...`, p);
       });
+      const [, targetGlbState] = await Promise.all([textureAssets, targetGlbGate]);
+      if (targetGlbState.timedOut) {
+        console.warn('[models] target-location GLB preload timed out; requests continue under the transition overlay.');
+      }
       if (token !== locationTransitionToken) return false;
 
       await nextPaintForLocationLoading();
@@ -803,6 +914,12 @@
         : workResult;
       if (resolvedWorkResult === false) throw new Error(options.errorMessage || 'Не удалось подготовить локацию.');
       if (token !== locationTransitionToken) return false;
+
+      if (typeof waitForStartupInitialSnapshots === 'function') {
+        setLocationLoadingProgress('Принимаю состав НПС и игроков...', 80);
+        await waitForStartupInitialSnapshots({ timeoutMs: 1600 });
+      }
+      await waitForPendingWorldGlbAssets({ timeoutMs: 8500, progress: 81 });
 
       // Changing location to the trader yard can rebuild the DOM/canvas overlay
       // and the heavy roof scene in the same frame. Force the same camera/canvas

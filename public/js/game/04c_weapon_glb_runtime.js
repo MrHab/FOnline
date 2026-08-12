@@ -23,8 +23,24 @@
     promise: null,
     templates: new Map(),
     promises: new Map(),
-    failed: new Set()
+    failures: new Map(),
+    nextRetryAt: new Map()
   };
+  const WEAPON_GLB_FLIGHT_RETRY_DELAYS_MS = Object.freeze([350, 900, 2_200]);
+  const WEAPON_GLB_RETRY_COOLDOWN_MS = 7_000;
+  const WEAPON_GLB_GROUP_RETRY_MAX_DELAY_MS = 30_000;
+  const weaponGlbActiveLoadKeys = new Set();
+  let weaponGlbLoadRevision = 0;
+
+  function markWeaponGlbLoadStarted(key = '') {
+    weaponGlbActiveLoadKeys.add(String(key || ''));
+    weaponGlbLoadRevision += 1;
+  }
+
+  function markWeaponGlbLoadSettled(key = '') {
+    weaponGlbActiveLoadKeys.delete(String(key || ''));
+    weaponGlbLoadRevision += 1;
+  }
 
   function weaponModelCatalogEntry(weaponId = '') {
     const id = typeof equipmentVisualBaseId === 'function'
@@ -66,29 +82,78 @@
     if (weaponModelLibraryState.promises.has(entry.id)) {
       return weaponModelLibraryState.promises.get(entry.id);
     }
-    if (weaponModelLibraryState.failed.has(entry.id) || !THREE.GLTFLoader) return Promise.resolve(null);
+    if (!THREE.GLTFLoader) return Promise.resolve(null);
     const promise = new Promise(resolve => {
-      const loader = new THREE.GLTFLoader();
-      loader.load(`${entry.file}?v=${encodeURIComponent(WEAPON_MODEL_ASSET_VERSION)}`, gltf => {
-        const template = prepareWeaponModelTemplate(entry, gltf);
-        if (!template) {
-          weaponModelLibraryState.failed.add(entry.id);
-          console.warn(`GLB-оружие ${entry.id} не содержит пригодной runtime-сцены.`);
-          resolve(null);
+      let flightAttempt = 0;
+      const finishFailure = error => {
+        markWeaponGlbLoadSettled(entry.id);
+        weaponModelLibraryState.failures.set(
+          entry.id,
+          Math.max(0, Number(weaponModelLibraryState.failures.get(entry.id) || 0)) + 1
+        );
+        const retryIndex = Math.min(flightAttempt, WEAPON_GLB_FLIGHT_RETRY_DELAYS_MS.length - 1);
+        const retryDelay = WEAPON_GLB_FLIGHT_RETRY_DELAYS_MS[retryIndex];
+        weaponModelLibraryState.nextRetryAt.set(entry.id, Date.now() + retryDelay);
+        if (flightAttempt < WEAPON_GLB_FLIGHT_RETRY_DELAYS_MS.length - 1) {
+          flightAttempt += 1;
+          setTimeout(runAttempt, retryDelay);
           return;
         }
-        weaponModelLibraryState.templates.set(entry.id, template);
-        resolve(template);
-      }, undefined, error => {
-        weaponModelLibraryState.failed.add(entry.id);
-        console.warn(`Не удалось загрузить GLB-оружие ${entry.id}.`, error);
+        weaponModelLibraryState.nextRetryAt.set(entry.id, Date.now() + WEAPON_GLB_RETRY_COOLDOWN_MS);
+        console.warn(`Не удалось загрузить GLB-оружие ${entry.id}; процедурная замена отключена.`, error);
         resolve(null);
-      });
+      };
+      const runAttempt = () => {
+        markWeaponGlbLoadStarted(entry.id);
+        if (!THREE.GLTFLoader) {
+          finishFailure(new Error('THREE.GLTFLoader is unavailable'));
+          return;
+        }
+        const loader = new THREE.GLTFLoader();
+        loader.load(`${entry.file}?v=${encodeURIComponent(WEAPON_MODEL_ASSET_VERSION)}`, gltf => {
+          const template = prepareWeaponModelTemplate(entry, gltf);
+          if (!template) {
+            finishFailure(new Error('GLB has no usable runtime scene'));
+            return;
+          }
+          weaponModelLibraryState.templates.set(entry.id, template);
+          weaponModelLibraryState.failures.delete(entry.id);
+          weaponModelLibraryState.nextRetryAt.delete(entry.id);
+          markWeaponGlbLoadSettled(entry.id);
+          resolve(template);
+        }, undefined, finishFailure);
+      };
+      const initialDelay = Math.max(
+        0,
+        Number(weaponModelLibraryState.nextRetryAt.get(entry.id) || 0) - Date.now()
+      );
+      if (initialDelay > 0) setTimeout(runAttempt, initialDelay);
+      else runAttempt();
     }).finally(() => {
       weaponModelLibraryState.promises.delete(entry.id);
     });
     weaponModelLibraryState.promises.set(entry.id, promise);
     return promise;
+  }
+
+  function pendingWeaponGlbAssetSnapshot() {
+    const activeKeys = Array.from(weaponGlbActiveLoadKeys).filter(Boolean);
+    const failedKeys = Array.from(weaponModelLibraryState.failures.keys())
+      .filter(key => !weaponModelLibraryState.templates.has(key));
+    const unresolvedKeys = new Set([...activeKeys, ...failedKeys]);
+    const passiveRetryKeys = failedKeys.filter(key => (
+      !weaponGlbActiveLoadKeys.has(key)
+      && weaponModelLibraryState.nextRetryAt.has(key)
+    ));
+    return {
+      revision: weaponGlbLoadRevision,
+      promises: Array.from(new Set(activeKeys
+        .map(key => weaponModelLibraryState.promises.get(key))
+        .filter(Boolean))),
+      activeCount: activeKeys.length,
+      unresolvedCount: unresolvedKeys.size,
+      retryScheduledCount: passiveRetryKeys.length
+    };
   }
 
   function preloadWeaponModels(weaponIds = []) {
@@ -150,7 +215,10 @@
   function makeWeaponModelMesh(weaponId = '') {
     const entry = weaponModelCatalogEntry(weaponId);
     const template = entry ? weaponModelLibraryState.templates.get(entry.id) : null;
-    if (!template?.scene) return null;
+    if (!template?.scene) {
+      if (entry) void loadWeaponModelTemplate(entry);
+      return null;
+    }
     const root = template.scene.clone(true);
     root.name = `weapon_runtime_${entry.id}`;
     root.userData.weaponId = entry.id;
@@ -169,6 +237,122 @@
       }
     });
     return root;
+  }
+
+  function weaponGroupGlbOnlyOwner(weaponGroup) {
+    let owner = weaponGroup || null;
+    while (owner?.parent && !owner.userData?.glbOnlyCharacterVisual) owner = owner.parent;
+    return owner?.userData?.glbOnlyCharacterVisual ? owner : null;
+  }
+
+  function setWeaponGlbGroupVisibility(weaponGroup, hasMesh = true) {
+    if (!weaponGroup) return false;
+    const characterOwner = weaponGroupGlbOnlyOwner(weaponGroup);
+    const visible = !!hasMesh && (!characterOwner || !!characterOwner.userData.characterGlbRuntime);
+    weaponGroup.visible = visible;
+    return visible;
+  }
+
+  function weaponGlbGroupAttached(weaponGroup) {
+    if (!weaponGroup) return false;
+    let root = weaponGroup;
+    while (root.parent) root = root.parent;
+    if (typeof scene !== 'undefined' && scene) return root === scene;
+    return !!weaponGroupGlbOnlyOwner(weaponGroup)?.parent;
+  }
+
+  function cancelWeaponGlbForGroup(weaponGroup) {
+    if (!weaponGroup?.userData) return;
+    clearTimeout(weaponGroup.userData.weaponGlbRetryTimer || 0);
+    weaponGroup.userData.weaponGlbRetryTimer = 0;
+    weaponGroup.userData.weaponGlbRequestId = Number(weaponGroup.userData.weaponGlbRequestId || 0) + 1;
+  }
+
+  function cancelActorGlbVisualRequests(actor) {
+    if (!actor?.userData) return;
+    if (typeof cancelPendingCharacterGlbAppearance === 'function') {
+      cancelPendingCharacterGlbAppearance(actor);
+    }
+    if (typeof cancelApprovedEquipmentRetries === 'function') {
+      cancelApprovedEquipmentRetries(actor);
+    }
+    const parts = actor.userData.parts || actor.userData.actorParts || {};
+    [parts.weaponGroup, parts.offhandWeaponGroup, actor.userData.enemyWeaponGroup]
+      .filter(Boolean)
+      .forEach(cancelWeaponGlbForGroup);
+  }
+
+  // Keeps a weapon slot empty until its approved GLB is ready, then attaches
+  // it to the same live group. This avoids a generated gun flash on cache miss
+  // and lets crowded actors share one in-flight download per weapon type.
+  function requestWeaponGlbForGroup(weaponGroup, weaponId = '', options = {}) {
+    if (!weaponGroup?.userData) return null;
+    const entry = weaponModelCatalogEntry(weaponId);
+    const expectedId = entry?.id || '';
+    clearTimeout(weaponGroup.userData.weaponGlbRetryTimer || 0);
+    weaponGroup.userData.weaponGlbRetryTimer = 0;
+    const requestId = Number(weaponGroup.userData.weaponGlbRequestId || 0) + 1;
+    weaponGroup.userData.weaponGlbRequestId = requestId;
+    weaponGroup.userData.weaponId = expectedId || 'fists';
+    weaponGroup.visible = false;
+    if (!entry) return null;
+
+    const attachTemplate = template => {
+      if (
+        !template?.scene
+        || weaponGroup.userData.weaponGlbRequestId !== requestId
+        || weaponGroup.userData.weaponId !== expectedId
+      ) return null;
+      const root = makeWeaponModelMesh(expectedId);
+      if (!root) return null;
+      clearTimeout(weaponGroup.userData.weaponGlbRetryTimer || 0);
+      weaponGroup.userData.weaponGlbRetryTimer = 0;
+      weaponGroup.clear();
+      weaponGroup.add(root);
+      setWeaponGlbGroupVisibility(weaponGroup, true);
+      weaponGroup.userData.weaponMeshLegacy = false;
+      if (typeof options.onReady === 'function') options.onReady(root, weaponGroup);
+      return root;
+    };
+
+    const ready = weaponModelLibraryState.templates.get(expectedId);
+    if (ready?.scene) return attachTemplate(ready);
+
+    const requestWasAttached = weaponGlbGroupAttached(weaponGroup);
+    const tryLoad = retryRound => {
+      loadWeaponModelTemplate(entry).then(template => {
+        if (
+          weaponGroup.userData.weaponGlbRequestId !== requestId
+          || weaponGroup.userData.weaponId !== expectedId
+          || (requestWasAttached && !weaponGlbGroupAttached(weaponGroup))
+        ) return;
+        if (template?.scene) {
+          attachTemplate(template);
+          return;
+        }
+        const cooldown = Math.min(
+          WEAPON_GLB_GROUP_RETRY_MAX_DELAY_MS,
+          Math.max(
+            300,
+            Number(weaponModelLibraryState.nextRetryAt.get(expectedId) || 0) - Date.now(),
+            Math.min(
+              WEAPON_GLB_GROUP_RETRY_MAX_DELAY_MS,
+              900 * (2 ** Math.min(5, retryRound))
+            )
+          )
+        );
+        clearTimeout(weaponGroup.userData.weaponGlbRetryTimer || 0);
+        weaponGroup.userData.weaponGlbRetryTimer = setTimeout(() => {
+          if (
+            weaponGroup.userData.weaponGlbRequestId === requestId
+            && weaponGroup.userData.weaponId === expectedId
+            && weaponGlbGroupAttached(weaponGroup)
+          ) tryLoad(retryRound + 1);
+        }, cooldown);
+      });
+    };
+    tryLoad(0);
+    return null;
   }
 
   function weaponModelRootFromGroup(weaponGroup) {

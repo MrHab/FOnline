@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 global.ProgressEvent = global.ProgressEvent || class ProgressEvent {};
 global.self = global.self || global;
@@ -54,6 +55,23 @@ async function main() {
   const loader = new GLTFLoader();
   const files = fs.readdirSync(modelsDir).filter(file => file.endsWith('.glb')).sort();
   const issues = [];
+  const assetDigest = crypto.createHash('sha256');
+  for (const file of files) {
+    const data = fs.readFileSync(path.join(modelsDir, file));
+    assetDigest.update(`${file}\0`);
+    assetDigest.update(crypto.createHash('sha256').update(data).digest('hex'));
+  }
+  const expectedAssetVersion = assetDigest.digest('hex').slice(0, 16);
+  const staticRuntime = fs.readFileSync(
+    path.join(root, 'public', 'js', 'game', '02a_materials_static_models.js'),
+    'utf8'
+  );
+  const declaredAssetVersion = staticRuntime.match(/STATIC_MODEL_GLB_ASSET_VERSION\s*=\s*'([^']+)'/)?.[1] || '';
+  if (declaredAssetVersion !== expectedAssetVersion) {
+    issues.push(
+      `STATIC_MODEL_GLB_ASSET_VERSION must match the wasteland GLB fingerprint ${expectedAssetVersion}`
+    );
+  }
   let solidCollisionCount = 0;
   let nonBlockingCollisionCount = 0;
   let compoundCollisionCount = 0;

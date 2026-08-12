@@ -939,6 +939,10 @@ function assertCollisionCacheInvalidation() {
   const context = vm.createContext({
     SERVER_MODEL_COLLIDERS: {},
     serverEnemyModelKeyForVisual: visual => String(visual || ''),
+    // The isolated cache harness deliberately uses synthetic model keys that are
+    // not present in the production catalog. Preserve them here so the test keeps
+    // exercising cache invalidation when an actor switches GLB identity.
+    serverEnemyModelKeyForIdentity: actor => String(actor?.modelKey || actor?.model || actor?.visual || ''),
     serverModelFileForRef: modelKey => `${modelKey}.glb`,
     modelColliderRadius: (_catalog, file, scale) => {
       counters.radius++;

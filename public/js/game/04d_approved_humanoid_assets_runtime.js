@@ -18,7 +18,7 @@
     'thumb_01_r', 'thumb_02_r', 'thumb_03_r'
   ]);
   const APPROVED_FIREARM_GRIP_PROFILES = Object.freeze({
-    pistol: Object.freeze({ reloadNodes: ['magazine', 'socket_reload'], reloadRotation: [0.05, -0.25, -1.0], fallbackReload: [0, -0.13, 0.015] }),
+    pistol: Object.freeze({ reloadNodes: ['breech_cap', 'socket_reload'], reloadRotation: [0.05, -0.25, -1.0], fallbackReload: [0, -0.13, 0.015] }),
     rifle: Object.freeze({ reloadNodes: ['cartridge_clip', 'bolt', 'socket_reload'], reloadRotation: [-0.55, 0.05, -0.25], fallbackReload: [0, 0.02, -0.11] }),
     assaultRifle: Object.freeze({ reloadNodes: ['magazine', 'socket_reload'], reloadRotation: [0.05, -0.25, -0.9], fallbackReload: [0, -0.16, -0.07] }),
     machineGun: Object.freeze({ reloadNodes: ['ammo_box', 'socket_reload'], reloadRotation: [-0.15, -0.35, -0.55], fallbackReload: [0.1, -0.13, -0.08] }),
@@ -192,9 +192,41 @@
     energySuit: 0.04
   });
 
-  const approvedNpcAnimationState = { promise: null, clips: null, failed: false };
-  const approvedEquipmentState = { templates: new Map(), promises: new Map(), failed: new Set() };
-  const approvedAssaultGripState = { promise: null, pose: null, failed: false };
+  const approvedNpcAnimationState = {
+    promise: null,
+    clips: null,
+    failureCount: 0,
+    nextRetryAt: 0
+  };
+  const approvedEquipmentState = {
+    templates: new Map(),
+    promises: new Map(),
+    failures: new Map(),
+    nextRetryAt: new Map()
+  };
+  const APPROVED_EQUIPMENT_FLIGHT_RETRY_DELAYS_MS = Object.freeze([450, 1_200, 2_800]);
+  const APPROVED_EQUIPMENT_RETRY_COOLDOWN_MS = 8_000;
+  const APPROVED_EQUIPMENT_ACTOR_RETRY_MAX_DELAY_MS = 30_000;
+  const approvedAssaultGripState = {
+    promise: null,
+    pose: null,
+    failureCount: 0,
+    nextRetryAt: 0
+  };
+  const APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS = Object.freeze([450, 1_200, 2_800]);
+  const APPROVED_AUXILIARY_RETRY_COOLDOWN_MS = 8_000;
+  const approvedHumanoidGlbActiveLoadKeys = new Set();
+  let approvedHumanoidGlbLoadRevision = 0;
+
+  function markApprovedHumanoidGlbLoadStarted(key = '') {
+    approvedHumanoidGlbActiveLoadKeys.add(String(key || ''));
+    approvedHumanoidGlbLoadRevision += 1;
+  }
+
+  function markApprovedHumanoidGlbLoadSettled(key = '') {
+    approvedHumanoidGlbActiveLoadKeys.delete(String(key || ''));
+    approvedHumanoidGlbLoadRevision += 1;
+  }
 
   function approvedHumanoidLoader() {
     return THREE.GLTFLoader ? new THREE.GLTFLoader() : null;
@@ -208,30 +240,60 @@
     if (approvedNpcAnimationState.clips) return Promise.resolve(approvedNpcAnimationState.clips);
     if (approvedNpcAnimationState.promise) return approvedNpcAnimationState.promise;
     const loader = approvedHumanoidLoader();
-    if (!loader || approvedNpcAnimationState.failed) return Promise.resolve([]);
+    if (!loader) return Promise.resolve([]);
     approvedNpcAnimationState.promise = new Promise(resolve => {
-      loader.load(approvedAssetUrl(APPROVED_NPC_ANIMATION_URL), gltf => {
-        const clips = (gltf?.animations || []).filter(clip => (
-          ['attack', 'hurt', 'death', 'turn'].includes(String(clip?.name || '').toLowerCase())
-        ));
-        const names = new Set(clips.map(clip => String(clip?.name || '').toLowerCase()));
-        // turn необязателен: устаревший кэш без него не должен ломать боевые клипы.
-        if (!['attack', 'hurt', 'death'].every(name => names.has(name))) {
-          approvedNpcAnimationState.failed = true;
-          console.warn('Утверждённый набор анимаций НПС не содержит attack/hurt/death.');
-          resolve([]);
+      let flightAttempt = 0;
+      const finishFailure = error => {
+        markApprovedHumanoidGlbLoadSettled('npcAnimations');
+        approvedNpcAnimationState.failureCount += 1;
+        const retryIndex = Math.min(
+          flightAttempt,
+          APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS.length - 1
+        );
+        const retryDelay = APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS[retryIndex];
+        approvedNpcAnimationState.nextRetryAt = Date.now() + retryDelay;
+        if (flightAttempt < APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS.length - 1) {
+          flightAttempt += 1;
+          setTimeout(runAttempt, retryDelay);
           return;
         }
-        approvedNpcAnimationState.clips = clips;
-        if (gltf?.scene && typeof disposeCharacterGlbObject === 'function') {
-          disposeCharacterGlbObject(gltf.scene);
-        }
-        resolve(clips);
-      }, undefined, error => {
-        approvedNpcAnimationState.failed = true;
-        console.warn('Не удалось загрузить утверждённые анимации НПС.', error);
+        approvedNpcAnimationState.nextRetryAt = Date.now() + APPROVED_AUXILIARY_RETRY_COOLDOWN_MS;
+        console.warn('Не удалось загрузить утверждённые анимации НПС; повторю после cooldown.', error);
         resolve([]);
-      });
+      };
+      const runAttempt = () => {
+        markApprovedHumanoidGlbLoadStarted('npcAnimations');
+        const activeLoader = approvedHumanoidLoader();
+        if (!activeLoader) {
+          finishFailure(new Error('THREE.GLTFLoader is unavailable'));
+          return;
+        }
+        activeLoader.load(approvedAssetUrl(APPROVED_NPC_ANIMATION_URL), gltf => {
+          const clips = (gltf?.animations || []).filter(clip => (
+            [
+              'attack', 'hurt', 'death', 'turn',
+              'walk_back', 'run_back', 'crouch_walk', 'crouch_walk_back'
+            ].includes(String(clip?.name || '').toLowerCase())
+          ));
+          const names = new Set(clips.map(clip => String(clip?.name || '').toLowerCase()));
+          if (gltf?.scene && typeof disposeCharacterGlbObject === 'function') {
+            disposeCharacterGlbObject(gltf.scene);
+          }
+          // turn необязателен: устаревший кэш без него не должен ломать боевые клипы.
+          if (!['attack', 'hurt', 'death'].every(name => names.has(name))) {
+            finishFailure(new Error('GLB does not contain attack/hurt/death'));
+            return;
+          }
+          approvedNpcAnimationState.clips = clips;
+          approvedNpcAnimationState.failureCount = 0;
+          approvedNpcAnimationState.nextRetryAt = 0;
+          markApprovedHumanoidGlbLoadSettled('npcAnimations');
+          resolve(clips);
+        }, undefined, finishFailure);
+      };
+      const initialDelay = Math.max(0, approvedNpcAnimationState.nextRetryAt - Date.now());
+      if (initialDelay > 0) setTimeout(runAttempt, initialDelay);
+      else runAttempt();
     }).finally(() => {
       approvedNpcAnimationState.promise = null;
     });
@@ -264,10 +326,37 @@
     'turn', 'walk_back', 'run_back', 'crouch_walk', 'crouch_walk_back'
   ]);
 
+  function approvedAnimationRuntimeAttached(runtime) {
+    if (!runtime?.root) return false;
+    let root = runtime.root;
+    while (root.parent) root = root.parent;
+    if (typeof scene !== 'undefined' && scene) return root === scene;
+    return !!runtime.root.parent;
+  }
+
+  function scheduleApprovedNpcAnimationRuntimeRetry(runtime, mode = 'turn') {
+    if (!runtime?.root) return;
+    clearTimeout(runtime.approvedNpcAnimationRetryTimer || 0);
+    const delay = Math.max(
+      350,
+      Number(approvedNpcAnimationState.nextRetryAt || 0) - Date.now()
+    );
+    runtime.approvedNpcAnimationRetryTimer = setTimeout(() => {
+      runtime.approvedNpcAnimationRetryTimer = 0;
+      if (!approvedAnimationRuntimeAttached(runtime)) return;
+      if (mode === 'npc') void attachApprovedNpcAnimations(runtime);
+      else void attachApprovedTurnAnimation(runtime);
+    }, delay);
+  }
+
   function attachApprovedTurnAnimation(runtime) {
     if (!runtime?.mixer) return Promise.resolve(false);
     const missing = () => APPROVED_LOOP_LOCOMOTION_CLIPS.filter(name => !runtime.actions?.[name]);
-    if (!missing().length) return Promise.resolve(true);
+    if (!missing().length) {
+      clearTimeout(runtime.approvedNpcAnimationRetryTimer || 0);
+      runtime.approvedNpcAnimationRetryTimer = 0;
+      return Promise.resolve(true);
+    }
     return loadApprovedNpcAnimationClips().then(clips => {
       for (const name of missing()) {
         const clip = clips.find(row => String(row?.name || '').toLowerCase() === name);
@@ -277,15 +366,35 @@
         action.setLoop(THREE.LoopRepeat, Infinity);
         runtime.actions[name] = action;
       }
-      return !missing().length;
+      const installed = !missing().length;
+      if (installed) {
+        clearTimeout(runtime.approvedNpcAnimationRetryTimer || 0);
+        runtime.approvedNpcAnimationRetryTimer = 0;
+      } else {
+        scheduleApprovedNpcAnimationRuntimeRetry(runtime, 'turn');
+      }
+      return installed;
     });
   }
 
   function attachApprovedNpcAnimations(runtime) {
     if (!runtime) return Promise.resolve(false);
     runtime.usesApprovedNpcAnimations = true;
-    if (runtime.approvedNpcAnimationsInstalled) return Promise.resolve(true);
-    return loadApprovedNpcAnimationClips().then(clips => installApprovedNpcAnimationClips(runtime, clips));
+    if (runtime.approvedNpcAnimationsInstalled) {
+      clearTimeout(runtime.approvedNpcAnimationRetryTimer || 0);
+      runtime.approvedNpcAnimationRetryTimer = 0;
+      return Promise.resolve(true);
+    }
+    return loadApprovedNpcAnimationClips().then(clips => {
+      const installed = installApprovedNpcAnimationClips(runtime, clips);
+      if (installed) {
+        clearTimeout(runtime.approvedNpcAnimationRetryTimer || 0);
+        runtime.approvedNpcAnimationRetryTimer = 0;
+      } else {
+        scheduleApprovedNpcAnimationRuntimeRetry(runtime, 'npc');
+      }
+      return installed;
+    });
   }
 
   function approvedActorCharacterRuntime(actor) {
@@ -329,23 +438,62 @@
     if (approvedEquipmentState.promises.has(cacheKey)) return approvedEquipmentState.promises.get(cacheKey);
     const url = definition?.urls?.[bodyKey];
     const loader = approvedHumanoidLoader();
-    if (!url || !loader || approvedEquipmentState.failed.has(cacheKey)) return Promise.resolve(null);
+    if (!url || !loader) return Promise.resolve(null);
     const promise = new Promise(resolve => {
-      loader.load(approvedAssetUrl(url), gltf => {
-        const template = configureApprovedEquipmentTemplate(gltf?.scene || gltf?.scenes?.[0] || null);
-        if (!template) {
-          approvedEquipmentState.failed.add(cacheKey);
-          console.warn(`Утверждённая экипировка ${itemId} (${bodyKey}) не содержит skinned mesh.`);
-          resolve(null);
+      let flightAttempt = 0;
+      const finishFailure = error => {
+        markApprovedHumanoidGlbLoadSettled(`equipment:${cacheKey}`);
+        approvedEquipmentState.failures.set(
+          cacheKey,
+          Math.max(0, Number(approvedEquipmentState.failures.get(cacheKey) || 0)) + 1
+        );
+        const retryIndex = Math.min(
+          flightAttempt,
+          APPROVED_EQUIPMENT_FLIGHT_RETRY_DELAYS_MS.length - 1
+        );
+        const retryDelay = APPROVED_EQUIPMENT_FLIGHT_RETRY_DELAYS_MS[retryIndex];
+        approvedEquipmentState.nextRetryAt.set(cacheKey, Date.now() + retryDelay);
+        if (flightAttempt < APPROVED_EQUIPMENT_FLIGHT_RETRY_DELAYS_MS.length - 1) {
+          flightAttempt += 1;
+          setTimeout(runAttempt, retryDelay);
           return;
         }
-        approvedEquipmentState.templates.set(cacheKey, template);
-        resolve(template);
-      }, undefined, error => {
-        approvedEquipmentState.failed.add(cacheKey);
-        console.warn(`Не удалось загрузить утверждённую экипировку ${itemId} (${bodyKey}).`, error);
+        approvedEquipmentState.nextRetryAt.set(
+          cacheKey,
+          Date.now() + APPROVED_EQUIPMENT_RETRY_COOLDOWN_MS
+        );
+        console.warn(
+          `Не удалось загрузить утверждённую экипировку ${itemId} (${bodyKey}); слот останется пустым до retry.`,
+          error
+        );
         resolve(null);
-      });
+      };
+      const runAttempt = () => {
+        markApprovedHumanoidGlbLoadStarted(`equipment:${cacheKey}`);
+        const activeLoader = approvedHumanoidLoader();
+        if (!activeLoader) {
+          finishFailure(new Error('THREE.GLTFLoader is unavailable'));
+          return;
+        }
+        activeLoader.load(approvedAssetUrl(url), gltf => {
+          const template = configureApprovedEquipmentTemplate(gltf?.scene || gltf?.scenes?.[0] || null);
+          if (!template) {
+            finishFailure(new Error('GLB has no skinned runtime mesh'));
+            return;
+          }
+          approvedEquipmentState.templates.set(cacheKey, template);
+          approvedEquipmentState.failures.delete(cacheKey);
+          approvedEquipmentState.nextRetryAt.delete(cacheKey);
+          markApprovedHumanoidGlbLoadSettled(`equipment:${cacheKey}`);
+          resolve(template);
+        }, undefined, finishFailure);
+      };
+      const initialDelay = Math.max(
+        0,
+        Number(approvedEquipmentState.nextRetryAt.get(cacheKey) || 0) - Date.now()
+      );
+      if (initialDelay > 0) setTimeout(runAttempt, initialDelay);
+      else runAttempt();
     }).finally(() => {
       approvedEquipmentState.promises.delete(cacheKey);
     });
@@ -391,6 +539,7 @@
     const state = runtimes?.[slot];
     if (!state) return;
     state.requestId = Number(state.requestId || 0) + 1;
+    clearTimeout(state.retryTimer || 0);
     state.mesh?.parent?.remove?.(state.mesh);
     delete runtimes[slot];
     if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
@@ -401,6 +550,16 @@
   function removeApprovedEquipmentRuntimes(actor) {
     ['armor', 'helmet', 'boots', 'backpack'].forEach(slot => removeApprovedEquipmentRuntime(actor, slot));
     if (actor?.userData) delete actor.userData.approvedEquipmentRuntimes;
+  }
+
+  function cancelApprovedEquipmentRetries(actor) {
+    const runtimes = actor?.userData?.approvedEquipmentRuntimes;
+    if (!runtimes) return;
+    Object.values(runtimes).filter(Boolean).forEach(runtime => {
+      clearTimeout(runtime.retryTimer || 0);
+      runtime.retryTimer = 0;
+      runtime.requestId = Number(runtime.requestId || 0) + 1;
+    });
   }
 
   function removeApprovedBootRuntime(actor) {
@@ -493,6 +652,113 @@
     });
   }
 
+  function approvedEquipmentActorAttached(actor) {
+    if (!actor) return false;
+    let root = actor;
+    while (root.parent) root = root.parent;
+    if (typeof scene !== 'undefined' && scene) return root === scene;
+    return !!actor.parent;
+  }
+
+  function scheduleApprovedEquipmentActorRetry(actor, eq, slot, itemId, bodyKey, requestId, retryRound = 0) {
+    if (!actor?.userData) return;
+    const runtime = actor.userData.approvedEquipmentRuntimes?.[slot];
+    if (runtime?.requestId !== requestId || runtime?.itemId !== itemId || runtime?.bodyKey !== bodyKey) return;
+    const cacheKey = approvedEquipmentCacheKey(itemId, bodyKey);
+    const retryDelay = Math.min(
+      APPROVED_EQUIPMENT_ACTOR_RETRY_MAX_DELAY_MS,
+      Math.max(
+        300,
+        Number(approvedEquipmentState.nextRetryAt.get(cacheKey) || 0) - Date.now(),
+        Math.min(
+          APPROVED_EQUIPMENT_ACTOR_RETRY_MAX_DELAY_MS,
+          1_000 * (2 ** Math.min(5, retryRound))
+        )
+      )
+    );
+    clearTimeout(runtime.retryTimer || 0);
+    runtime.retryTimer = setTimeout(() => {
+      const activeRuntime = actor.userData?.approvedEquipmentRuntimes?.[slot];
+      const activeEquipment = actor.userData?.enemyEquipment || actor.userData?.equipment || eq;
+      if (activeRuntime) activeRuntime.retryTimer = 0;
+      if (
+        activeRuntime?.requestId !== requestId
+        || activeRuntime?.itemId !== itemId
+        || activeRuntime?.bodyKey !== bodyKey
+        || String(equipmentVisualBaseId(activeEquipment?.[slot] || '') || '') !== itemId
+        || !approvedActorCharacterRuntime(actor)?.root
+        || !approvedEquipmentActorAttached(actor)
+      ) return;
+      void attachApprovedEquipmentTemplate(
+        actor,
+        activeEquipment,
+        slot,
+        itemId,
+        bodyKey,
+        requestId,
+        retryRound + 1
+      );
+    }, retryDelay);
+  }
+
+  function attachApprovedEquipmentTemplate(actor, eq, slot, itemId, bodyKey, requestId, retryRound = 0) {
+    const parts = actor?.userData?.parts || actor?.userData?.actorParts || {};
+    const requestedCharacterRuntime = approvedActorCharacterRuntime(actor);
+    const requestParent = actor?.parent || null;
+    approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
+    return loadApprovedEquipmentTemplate(itemId, bodyKey).then(template => {
+      const runtime = actor?.userData?.approvedEquipmentRuntimes?.[slot];
+      const activeCharacter = approvedActorCharacterRuntime(actor);
+      const activeEquipment = actor?.userData?.enemyEquipment || actor?.userData?.equipment || eq;
+      if (
+        runtime?.requestId !== requestId
+        || runtime?.itemId !== itemId
+        || runtime?.bodyKey !== bodyKey
+        || activeCharacter !== requestedCharacterRuntime
+        || (requestParent && !actor.parent)
+        || String(equipmentVisualBaseId(activeEquipment?.[slot] || '') || '') !== itemId
+      ) return false;
+      if (!template) {
+        scheduleApprovedEquipmentActorRetry(
+          actor,
+          activeEquipment,
+          slot,
+          itemId,
+          bodyKey,
+          requestId,
+          retryRound
+        );
+        return false;
+      }
+      const mesh = makeApprovedEquipmentInstance(template, activeCharacter.root, itemId);
+      if (!mesh) {
+        console.warn(`Не удалось привязать утверждённую экипировку ${itemId} (${bodyKey}) к персонажу.`);
+        scheduleApprovedEquipmentActorRetry(
+          actor,
+          activeEquipment,
+          slot,
+          itemId,
+          bodyKey,
+          requestId,
+          retryRound
+        );
+        return false;
+      }
+      clearTimeout(runtime.retryTimer || 0);
+      runtime.retryTimer = 0;
+      runtime.mesh?.parent?.remove?.(runtime.mesh);
+      placeApprovedEquipmentRuntime(mesh, slot, activeEquipment);
+      activeCharacter.root.add(mesh);
+      runtime.mesh = mesh;
+      approvedEquipmentFallbackMeshes(parts, slot).forEach(fallback => { fallback.visible = false; });
+      syncApprovedHazmatHoodVisibility(actor, activeEquipment);
+      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
+        invalidateModernProceduralRigAnimationCache(actor, parts);
+      }
+      return true;
+    });
+  }
+
   function applyApprovedEquipmentSlot(actor, eq = {}, slot = '') {
     if (!actor?.userData) return false;
     const parts = actor.userData.parts || actor.userData.actorParts || {};
@@ -531,49 +797,13 @@
     const requestId = Number(actor.userData.approvedEquipmentRequestIds[slot] || 0) + 1;
     actor.userData.approvedEquipmentRequestIds[slot] = requestId;
     actor.userData.approvedEquipmentRuntimes[slot] = { itemId, bodyKey, requestId, mesh: null };
-    // Утверждённая модель уже выбрана — старый процедурный вариант не должен
-    // мелькать, пока GLB грузится. Если загрузка сорвётся, вернём его.
+    // Утверждённая модель уже выбрана — процедурный вариант больше никогда
+    // не показываем, включая сетевую ошибку. Слот остаётся пустым до GLB retry.
     approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = false; });
     if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
       invalidateModernProceduralRigAnimationCache(actor, parts);
     }
-    const restoreFallback = () => {
-      if (actor.userData.approvedEquipmentRuntimes?.[slot]?.requestId !== requestId) return;
-      approvedEquipmentFallbackMeshes(parts, slot).forEach(mesh => { mesh.visible = true; });
-      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
-        invalidateModernProceduralRigAnimationCache(actor, parts);
-      }
-    };
-    loadApprovedEquipmentTemplate(itemId, bodyKey).then(template => {
-      const runtime = actor.userData.approvedEquipmentRuntimes?.[slot];
-      const activeCharacter = approvedActorCharacterRuntime(actor);
-      const activeEquipment = actor.userData.enemyEquipment || actor.userData.equipment || eq;
-      if (!template) {
-        restoreFallback();
-        return;
-      }
-      if (
-        runtime?.requestId !== requestId
-        || runtime?.itemId !== itemId
-        || runtime?.bodyKey !== bodyKey
-        || activeCharacter !== characterRuntime
-        || String(equipmentVisualBaseId(activeEquipment?.[slot] || '') || '') !== itemId
-      ) return;
-      const mesh = makeApprovedEquipmentInstance(template, activeCharacter.root, itemId);
-      if (!mesh) {
-        console.warn(`Не удалось привязать утверждённую экипировку ${itemId} (${bodyKey}) к персонажу.`);
-        restoreFallback();
-        return;
-      }
-      placeApprovedEquipmentRuntime(mesh, slot, activeEquipment);
-      activeCharacter.root.add(mesh);
-      runtime.mesh = mesh;
-      approvedEquipmentFallbackMeshes(parts, slot).forEach(fallback => { fallback.visible = false; });
-      syncApprovedHazmatHoodVisibility(actor, activeEquipment);
-      if (typeof invalidateModernProceduralRigAnimationCache === 'function') {
-        invalidateModernProceduralRigAnimationCache(actor, parts);
-      }
-    });
+    void attachApprovedEquipmentTemplate(actor, eq, slot, itemId, bodyKey, requestId, 0);
     return false;
   }
 
@@ -750,30 +980,98 @@
     if (approvedAssaultGripState.pose) return Promise.resolve(approvedAssaultGripState.pose);
     if (approvedAssaultGripState.promise) return approvedAssaultGripState.promise;
     const loader = approvedHumanoidLoader();
-    if (!loader || approvedAssaultGripState.failed) return Promise.resolve(null);
+    if (!loader) return Promise.resolve(null);
     approvedAssaultGripState.promise = new Promise(resolve => {
-      loader.load(approvedAssetUrl(APPROVED_ASSAULT_RIFLE_GRIP_URL), gltf => {
-        const pose = compileApprovedGripPose(gltf);
-        if (gltf?.scene && typeof disposeCharacterGlbObject === 'function') {
-          disposeCharacterGlbObject(gltf.scene);
-        }
-        if (!pose) {
-          approvedAssaultGripState.failed = true;
-          console.warn('Утверждённая поза хвата автомата повреждена.');
-          resolve(null);
+      let flightAttempt = 0;
+      const finishFailure = error => {
+        markApprovedHumanoidGlbLoadSettled('assaultGrip');
+        approvedAssaultGripState.failureCount += 1;
+        const retryIndex = Math.min(
+          flightAttempt,
+          APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS.length - 1
+        );
+        const retryDelay = APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS[retryIndex];
+        approvedAssaultGripState.nextRetryAt = Date.now() + retryDelay;
+        if (flightAttempt < APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS.length - 1) {
+          flightAttempt += 1;
+          setTimeout(runAttempt, retryDelay);
           return;
         }
-        approvedAssaultGripState.pose = pose;
-        resolve(pose);
-      }, undefined, error => {
-        approvedAssaultGripState.failed = true;
-        console.warn('Не удалось загрузить утверждённую позу хвата автомата.', error);
+        approvedAssaultGripState.nextRetryAt = Date.now() + APPROVED_AUXILIARY_RETRY_COOLDOWN_MS;
+        console.warn('Не удалось загрузить утверждённую позу хвата; повторю после cooldown.', error);
         resolve(null);
-      });
+      };
+      const runAttempt = () => {
+        markApprovedHumanoidGlbLoadStarted('assaultGrip');
+        const activeLoader = approvedHumanoidLoader();
+        if (!activeLoader) {
+          finishFailure(new Error('THREE.GLTFLoader is unavailable'));
+          return;
+        }
+        activeLoader.load(approvedAssetUrl(APPROVED_ASSAULT_RIFLE_GRIP_URL), gltf => {
+          const pose = compileApprovedGripPose(gltf);
+          if (gltf?.scene && typeof disposeCharacterGlbObject === 'function') {
+            disposeCharacterGlbObject(gltf.scene);
+          }
+          if (!pose) {
+            finishFailure(new Error('GLB does not contain a valid grip pose'));
+            return;
+          }
+          approvedAssaultGripState.pose = pose;
+          approvedAssaultGripState.failureCount = 0;
+          approvedAssaultGripState.nextRetryAt = 0;
+          markApprovedHumanoidGlbLoadSettled('assaultGrip');
+          resolve(pose);
+        }, undefined, finishFailure);
+      };
+      const initialDelay = Math.max(0, approvedAssaultGripState.nextRetryAt - Date.now());
+      if (initialDelay > 0) setTimeout(runAttempt, initialDelay);
+      else runAttempt();
     }).finally(() => {
       approvedAssaultGripState.promise = null;
     });
     return approvedAssaultGripState.promise;
+  }
+
+  function pendingApprovedHumanoidGlbAssetSnapshot() {
+    const activeKeys = Array.from(approvedHumanoidGlbActiveLoadKeys).filter(Boolean);
+    const failedKeys = new Set(
+      Array.from(approvedEquipmentState.failures.keys())
+        .filter(cacheKey => !approvedEquipmentState.templates.has(cacheKey))
+        .map(cacheKey => `equipment:${cacheKey}`)
+    );
+    if (approvedNpcAnimationState.failureCount > 0 && !approvedNpcAnimationState.clips) {
+      failedKeys.add('npcAnimations');
+    }
+    if (approvedAssaultGripState.failureCount > 0 && !approvedAssaultGripState.pose) {
+      failedKeys.add('assaultGrip');
+    }
+    const unresolvedKeys = new Set([...activeKeys, ...failedKeys]);
+    const promises = [];
+    for (const activeKey of activeKeys) {
+      if (activeKey === 'npcAnimations') promises.push(approvedNpcAnimationState.promise);
+      else if (activeKey === 'assaultGrip') promises.push(approvedAssaultGripState.promise);
+      else if (activeKey.startsWith('equipment:')) {
+        promises.push(approvedEquipmentState.promises.get(activeKey.slice('equipment:'.length)));
+      }
+    }
+    const passiveRetryKeys = Array.from(failedKeys).filter(key => (
+      !approvedHumanoidGlbActiveLoadKeys.has(key)
+      && (
+        (key.startsWith('equipment:')
+          && approvedEquipmentState.nextRetryAt.has(key.slice('equipment:'.length)))
+        || (key === 'npcAnimations' && approvedNpcAnimationState.nextRetryAt > Date.now())
+        || (key === 'assaultGrip' && approvedAssaultGripState.nextRetryAt > Date.now())
+      )
+    ));
+    return {
+      revision: approvedHumanoidGlbLoadRevision,
+      promises: Array.from(new Set(promises.filter(Boolean))),
+      activeCount: activeKeys.length,
+      unresolvedCount: unresolvedKeys.size,
+      retryScheduledCount: passiveRetryKeys.length,
+      failedCount: failedKeys.size
+    };
   }
 
   function approvedActorWeaponGroup(actor) {

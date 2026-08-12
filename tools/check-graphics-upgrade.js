@@ -224,7 +224,8 @@ if (!adaptiveShadowResize.includes('adaptiveShadowBudget.ultraRecoveryElapsed')
 }
 requireText(characterRuntime, 'function enableConservativeCharacterFrustumCulling', 'conservative character frustum culling is missing');
 requireText(characterRuntime, 'geometry.userData.realmCharacterCullBaseRadius', 'shared character bounds can grow on every instance');
-requireText(characterRuntime, 'enableConservativeCharacterFrustumCulling(obj, 1.2)', 'hair and face variants bypass actor frustum culling');
+requireText(characterRuntime, 'function configureCharacterGlbScene(root, options = {})', 'authored GLB scene preparation is missing');
+requireText(characterRuntime, 'enableConservativeCharacterFrustumCulling(obj);', 'authored GLB body, hair and face meshes bypass actor frustum culling');
 requireText(characterRuntime, 'state.footIk !== false', 'distant character foot IK cannot be suspended');
 requireText(characterRuntime, 'setCharacterFootIkEnabled(runtime, footIkEnabled)', 'foot IK suspension does not reset stale locks');
 requireText(characterRuntime, 'state.facial !== false', 'distant character facial animation cannot be suspended');

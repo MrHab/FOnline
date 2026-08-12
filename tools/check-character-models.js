@@ -30,13 +30,16 @@ const expectedFaces = {
   female: ['female_01', 'female_02', 'female_03', 'female_04'],
   male: ['male_01', 'male_02', 'male_03', 'male_04']
 };
-const expectedHair = [
-  'shaved',
-  'short_crop',
+const expectedHair = {
+  female: ['shaved', 'tied_back'],
+  male: ['shaved', 'short_crop']
+};
+const expectedHairCatalog = ['shaved', 'short_crop', 'tied_back'];
+const legacyServerHair = [
+  ...expectedHairCatalog,
   'side_swept',
   'mohawk',
   'braids',
-  'tied_back',
   'long',
   'buns'
 ];
@@ -106,6 +109,15 @@ for (const row of manifest.files) {
   const nodeNames = new Set((json.nodes || []).map(node => String(node.name || '').toLowerCase()));
   assert(nodeNames.has('face_eyes'), `${fileName}: separate animated eye mesh is missing`);
   assert(nodeNames.has('face_eyebrows'), `${fileName}: separate animated eyebrow mesh is missing`);
+  const authoredHairNodes = (json.nodes || []).filter(node => (
+    String(node.extras?.realm_character_layer || '').toLowerCase() === 'hair'
+  ));
+  const expectedHairNode = row.sex === 'female' ? 'hair_tied_back' : 'hair_short_crop';
+  assert.deepStrictEqual(
+    authoredHairNodes.map(node => String(node.name || '').toLowerCase()),
+    [expectedHairNode],
+    `${fileName}: authored hair node drifted`
+  );
   const animations = new Set((json.animations || []).map(animation => String(animation.name || '').toLowerCase()));
   for (const animation of ['idle', 'walk', 'run']) {
     assert(animations.has(animation), `${fileName}: missing ${animation} animation`);
@@ -122,20 +134,42 @@ const enemyRuntime = fs.readFileSync(enemyRuntimePath, 'utf8');
 const creator = fs.readFileSync(creatorPath, 'utf8');
 const update = fs.readFileSync(updatePath, 'utf8');
 const index = fs.readFileSync(indexPath, 'utf8');
-assert(runtime.includes('/assets/models/characters/base/character_${characterAppearanceKey(input)}.glb'));
+assert(runtime.includes('/assets/models/characters/base/character_${key}.glb'));
+assert(runtime.includes('CHARACTER_GLB_ASSET_VERSIONS[key]'));
+assert(runtime.includes('return `${baseUrl}?v=${encodeURIComponent(version)}`'));
+for (const row of manifest.files) {
+  const key = `${row.sex}_${row.bodyType}`;
+  assert(
+    runtime.includes(`${key}: '${row.sha256.slice(0, 16)}'`),
+    `${key}: runtime GLB cache fingerprint is stale`
+  );
+}
 assert(runtime.includes('setCharacterCreationPreviewAppearance'));
 assert(runtime.includes('applyCharacterGlbAppearance'));
+assert(runtime.includes('CHARACTER_GLB_ACTOR_RETRY_MAX_DELAY_MS')
+  && runtime.includes('function cancelPendingCharacterGlbAppearance('),
+  'live GLB-only actors do not keep retrying safely after transient body-load failures');
+assert(!runtime.includes('CHARACTER_GLB_ACTOR_RETRY_ROUNDS'),
+  'live GLB-only actors still stop retrying after a finite number of failures');
 for (const id of [
   ...expectedFaces.female,
   ...expectedFaces.male,
-  ...expectedHair,
+  ...expectedHairCatalog,
   ...expectedHairColors.map(([id]) => id)
 ]) {
   assert(runtime.includes(`'${id}'`), `character appearance option is missing: ${id}`);
 }
 assert(runtime.includes('function applyCharacterGlbVisualVariants('));
+assert(runtime.includes('function characterHairOptionsForSex('));
 assert(runtime.includes('function applyCharacterFaceShape('));
-assert(runtime.includes('function addCharacterHairVariant('));
+assert(!runtime.includes('function addCharacterHairVariant(')
+  && !runtime.includes('function addCharacterHairPiece(')
+  && !runtime.includes('new THREE.IcosahedronGeometry(')
+  && !runtime.includes('new THREE.BufferGeometry()'),
+'character runtime restored generated hairstyle geometry');
+assert(runtime.includes("obj.visible = !helmetOn && appearance.hairId !== 'shaved'")
+  && runtime.includes('material.userData.characterGlbHairTintId ='),
+  'authored GLB hair visibility or per-instance tint is missing');
 assert(runtime.includes('function ensureCharacterFacialRuntime(')
   && runtime.includes('function updateCharacterFacialAnimation(')
   && runtime.includes("root.userData.characterFacialState = dead"),
@@ -218,10 +252,11 @@ assert(glbRuntime.includes('const height = animated.y - groundY - rest + flex;')
   'foot IK does not reason in real-ground space');
 assert(glbRuntime.includes('CHARACTER_KNEE_FLEX_CROUCH = 0.26'),
   'deepened crouch knee flex is missing');
-assert(modernRuntime.includes("typeof characterDirectionalLocomotionState === 'function'")
-  && modernRuntime.includes('parts.motionRoot.rotation.y = lowerBodyYaw;')
-  && modernRuntime.includes('dt * phaseSpeed * actor.userData.modernPlaybackRate'),
-  'procedural equipment rig does not follow directional locomotion');
+assert(modernRuntime.includes('updateCharacterGlbAnimation(actor, dt, animationState) === true')
+  && modernRuntime.includes('updateModernApprovedWeaponGrip(actor, modernAnimationWeaponId(actor))')
+  && !modernRuntime.includes('parts.motionRoot')
+  && !modernRuntime.includes('parts.torsoRig'),
+  'authored GLB locomotion bridge or weapon-grip update is missing');
 assert(index.includes('id="creator-face-options"')
   && index.includes('id="creator-hair-options"')
   && index.includes('id="creator-hair-color-options"'),
@@ -229,6 +264,8 @@ assert(index.includes('id="creator-face-options"')
 assert(creator.includes('creatorAppearance = { ...creatorAppearance, faceId: option.id }'));
 assert(creator.includes('creatorAppearance = { ...creatorAppearance, hairId: option.id }'));
 assert(creator.includes('creatorAppearance = { ...creatorAppearance, hairColorId: option.id }'));
+assert(creator.includes('characterHairOptionsForSex(creatorAppearance.sex)'),
+  'character creator exposes hairstyles from the opposite sex');
 assert(creator.includes('function renderCharacterAppearanceStepper('));
 assert(creator.includes("previous.textContent = '←'") && creator.includes("next.textContent = '→'"),
   'character appearance choices are not rendered as arrow steppers');
@@ -239,7 +276,7 @@ assert(server.includes("const SERVER_CHARACTER_BODY_TYPES = new Set(['slim', 'me
 for (const id of [
   ...expectedFaces.female,
   ...expectedFaces.male,
-  ...expectedHair,
+  ...legacyServerHair,
   ...expectedHairColors.map(([id]) => id)
 ]) {
   assert(server.includes(`'${id}'`), `server appearance allowlist is missing: ${id}`);
@@ -256,15 +293,13 @@ this.__characterAppearanceFitApi = {
   CHARACTER_FACE_OPTIONS,
   CHARACTER_HAIR_OPTIONS,
   CHARACTER_HAIR_COLOR_OPTIONS,
+  characterHairOptionsForSex,
   normalizeCharacterAppearance,
+  applyCharacterGlbVisualVariants,
   characterFaceFitProfile,
-  characterVariantMaterial,
-  addCharacterHairVariant,
   applyCharacterFaceShape,
   ensureCharacterFacialRuntime,
   updateCharacterFacialAnimation,
-  characterHeadRestMatrix,
-  attachCharacterVariantToHead,
   characterDirectionalLocomotionState,
   characterTurnInPlaceState,
   triggerActorAttackAnimationPulse,
@@ -795,22 +830,12 @@ assert(candidateSkinAfterShare.distanceTo(candidateSkinBeforeShare) < 1e-7,
     'an incompatible primitive skeleton was shared');
 });
 
-function finiteBox(box, label) {
-  for (const value of [
-    box.min.x, box.min.y, box.min.z,
-    box.max.x, box.max.y, box.max.z
-  ]) {
-    assert(Number.isFinite(value), `${label}: non-finite geometry bound`);
-  }
-}
-
-function disposeGroup(group) {
-  group.traverse(object => {
-    object.geometry?.dispose?.();
-  });
-}
-
 let compatibilityCount = 0;
+assert.deepStrictEqual(
+  Array.from(fitApi.CHARACTER_HAIR_OPTIONS, option => option.id),
+  expectedHairCatalog,
+  'authored hairstyle catalog drifted'
+);
 for (const sex of ['female', 'male']) {
   assert.deepStrictEqual(
     Array.from(fitApi.CHARACTER_FACE_OPTIONS[sex], option => option.id),
@@ -818,9 +843,9 @@ for (const sex of ['female', 'male']) {
     `${sex}: face catalog drifted`
   );
   assert.deepStrictEqual(
-    Array.from(fitApi.CHARACTER_HAIR_OPTIONS, option => option.id),
-    expectedHair,
-    'hairstyle catalog drifted'
+    Array.from(fitApi.characterHairOptionsForSex(sex), option => option.id),
+    expectedHair[sex],
+    `${sex}: sex-compatible hairstyle catalog drifted`
   );
   assert.deepStrictEqual(
     Array.from(fitApi.CHARACTER_HAIR_COLOR_OPTIONS, option => [option.id, option.hex]),
@@ -829,8 +854,8 @@ for (const sex of ['female', 'male']) {
   );
   for (const bodyType of ['slim', 'medium', 'large']) {
     for (const faceId of expectedFaces[sex]) {
-      for (const hairId of expectedHair) {
-        for (const [hairColorId, hairHex] of expectedHairColors) {
+      for (const hairId of expectedHair[sex]) {
+        for (const [hairColorId] of expectedHairColors) {
           const appearance = fitApi.normalizeCharacterAppearance({
             sex,
             bodyType,
@@ -846,97 +871,82 @@ for (const sex of ['female', 'male']) {
           assert(Array.isArray(fit.scalpScale) && fit.scalpScale.length === 2, `${faceId}: invalid scalp fit`);
           assert(fit.headScale.every(Number.isFinite), `${faceId}: non-finite head scale`);
           assert(fit.scalpScale.every(Number.isFinite), `${faceId}: non-finite scalp scale`);
-
-          const group = new THREE.Group();
-          const material = fitApi.characterVariantMaterial(hairHex);
-          const expectedColor = new THREE.Color(hairHex);
-          expectedColor.convertSRGBToLinear();
-          assert(Math.max(
-            Math.abs(material.color.r - expectedColor.r),
-            Math.abs(material.color.g - expectedColor.g),
-            Math.abs(material.color.b - expectedColor.b)
-          ) < 1e-7,
-            `${hairColorId}: hair palette was not converted from sRGB to linear light`);
-          const built = fitApi.addCharacterHairVariant(group, material, appearance);
-          if (hairId === 'shaved') {
-            assert.strictEqual(built, false, `${hairId}: shaved style unexpectedly built geometry`);
-            assert.strictEqual(group.children.length, 0, `${hairId}: shaved style contains geometry`);
-            material.dispose();
-          } else {
-            assert.strictEqual(built, true, `${hairId}: hairstyle builder did not run`);
-            assert(group.children.length > 0, `${hairId}: hairstyle has no geometry`);
-            group.updateMatrixWorld(true);
-            const bounds = new THREE.Box3().setFromObject(group);
-            finiteBox(bounds, `${sex}/${bodyType}/${faceId}/${hairId}/${hairColorId}`);
-            assert(bounds.min.y >= 1.25, `${hairId}: hairstyle falls through the upper torso`);
-            assert(bounds.max.y <= 2.05, `${hairId}: hairstyle exceeds the character height budget`);
-            assert(Math.max(Math.abs(bounds.min.x), Math.abs(bounds.max.x)) <= 0.2,
-              `${hairId}: hairstyle exceeds the head width budget`);
-            assert(Math.max(Math.abs(bounds.min.z), Math.abs(bounds.max.z)) <= 0.25,
-              `${hairId}: hairstyle exceeds the head depth budget`);
-
-            const cap = group.getObjectByName('hair_variant_scalp');
-            if (hairId === 'mohawk') {
-              assert(!cap, 'mohawk must keep shaved sides instead of a scalp cap');
-            } else {
-              assert(cap?.isMesh, `${hairId}: scalp contact cap is missing`);
-              cap.updateMatrixWorld(true);
-              const capBounds = new THREE.Box3().setFromObject(cap);
-              finiteBox(capBounds, `${sex}/${bodyType}/${faceId}/${hairId}/${hairColorId}/scalp`);
-              assert(capBounds.max.y >= fit.top + 0.02 && capBounds.max.y <= fit.top + 0.03,
-                `${hairId}: scalp cap floats above or sinks into the head`);
-              assert(capBounds.min.y <= fit.top - 0.065,
-                `${hairId}: scalp cap does not cover the hairline`);
-              assert(capBounds.min.x <= -0.08 * fit.scalpScale[0]
-                && capBounds.max.x >= 0.08 * fit.scalpScale[0],
-              `${hairId}: scalp cap does not cover the face profile width`);
-              const capNormals = cap.geometry?.attributes?.normal;
-              assert(capNormals && capNormals.getY(0) > 0.9,
-                `${hairId}: scalp cap normals face inward`);
-            }
-          }
-          disposeGroup(group);
           compatibilityCount += 1;
         }
       }
     }
   }
-}
-assert.strictEqual(compatibilityCount, 1536, 'appearance compatibility matrix is incomplete');
 
-const attachmentRoot = new THREE.Group();
-const attachmentNeck = new THREE.Group();
-const attachmentHead = new THREE.Group();
-attachmentHead.name = 'head';
-attachmentNeck.position.set(0.02, 1.42, -0.01);
-attachmentHead.position.set(-0.02, 0.34, 0.015);
-attachmentNeck.add(attachmentHead);
-attachmentRoot.add(attachmentNeck);
-const attachmentAppearance = fitApi.normalizeCharacterAppearance({
-  sex: 'female',
-  bodyType: 'large',
-  faceId: 'female_03',
-  hairId: 'buns',
+  const unsupportedHair = legacyServerHair.filter(hairId => !expectedHair[sex].includes(hairId));
+  const authoredDefault = sex === 'female' ? 'tied_back' : 'short_crop';
+  unsupportedHair.forEach(hairId => {
+    assert.strictEqual(
+      fitApi.normalizeCharacterAppearance({ sex, hairId }).hairId,
+      authoredDefault,
+      `${sex}/${hairId}: unsupported legacy hairstyle did not normalize to the authored default`
+    );
+  });
+
+  const hairRoot = new THREE.Group();
+  const hairMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff' });
+  hairMaterial.userData.characterGlbInstanceMaterial = true;
+  const hairMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), hairMaterial);
+  hairMesh.name = sex === 'female' ? 'hair_tied_back' : 'hair_short_crop';
+  hairMesh.userData.realm_character_layer = 'hair';
+  hairRoot.add(hairMesh);
+  for (const hairId of expectedHair[sex]) {
+    for (const [hairColorId, hairHex] of expectedHairColors) {
+      fitApi.applyCharacterGlbVisualVariants(hairRoot, { sex, hairId, hairColorId });
+      assert.strictEqual(hairMesh.visible, hairId !== 'shaved',
+        `${sex}/${hairId}: authored hair visibility is wrong`);
+      assert.strictEqual(hairMaterial.userData.characterGlbHairTintId, hairColorId,
+        `${sex}/${hairId}/${hairColorId}: per-instance tint marker is missing`);
+      const expectedColor = new THREE.Color(hairHex);
+      expectedColor.convertSRGBToLinear?.();
+      assert(Math.max(
+        Math.abs(hairMaterial.color.r - expectedColor.r),
+        Math.abs(hairMaterial.color.g - expectedColor.g),
+        Math.abs(hairMaterial.color.b - expectedColor.b)
+      ) < 1e-7,
+        `${sex}/${hairId}/${hairColorId}: authored hair material was not tinted`);
+    }
+  }
+  const visibleAppearance = { sex, hairId: authoredDefault, hairColorId: 'hair_03' };
+  fitApi.applyCharacterGlbVisualVariants(hairRoot, visibleAppearance, { helmetOn: true });
+  assert.strictEqual(hairMesh.visible, false, `${sex}: helmet did not hide authored hair`);
+  fitApi.applyCharacterGlbVisualVariants(hairRoot, visibleAppearance, { helmetOn: false });
+  assert.strictEqual(hairMesh.visible, true, `${sex}: removing a helmet did not restore authored hair`);
+  hairMesh.geometry.dispose();
+  hairMaterial.dispose();
+}
+assert.strictEqual(compatibilityCount, 384, 'appearance compatibility matrix is incomplete');
+
+const sharedTemplateHairRoot = new THREE.Group();
+const sharedTemplateHairMaterial = new THREE.MeshStandardMaterial({ color: '#ffffff' });
+sharedTemplateHairMaterial.userData.characterGlbTemplateMaterial = true;
+sharedTemplateHairMaterial.userData.characterGlbInstanceMaterial = false;
+const sharedTemplateHairMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(0.1, 0.1, 0.1),
+  sharedTemplateHairMaterial
+);
+sharedTemplateHairMesh.name = 'hair_short_crop';
+sharedTemplateHairMesh.userData.realm_character_layer = 'hair';
+sharedTemplateHairRoot.add(sharedTemplateHairMesh);
+const sharedTemplateColor = sharedTemplateHairMaterial.color.clone();
+fitApi.applyCharacterGlbVisualVariants(sharedTemplateHairRoot, {
+  sex: 'male',
+  hairId: 'short_crop',
   hairColorId: 'hair_08'
 });
-fitApi.characterHeadRestMatrix(attachmentRoot);
-fitApi.applyCharacterFaceShape(attachmentRoot, attachmentAppearance);
-const firstAttachment = new THREE.Group();
-fitApi.attachCharacterVariantToHead(attachmentRoot, firstAttachment, attachmentAppearance);
-attachmentNeck.rotation.x = 0.19;
-attachmentHead.rotation.z = -0.13;
-attachmentRoot.updateMatrixWorld(true);
-const changedDuringAnimation = new THREE.Group();
-fitApi.attachCharacterVariantToHead(attachmentRoot, changedDuringAnimation, attachmentAppearance);
-firstAttachment.updateMatrix();
-changedDuringAnimation.updateMatrix();
-firstAttachment.matrix.elements.forEach((value, index) => {
-  assert(Math.abs(value - changedDuringAnimation.matrix.elements[index]) < 1e-7,
-    'hairstyle attachment drifted when changed during animation');
-});
+assert(sharedTemplateHairMaterial.color.equals(sharedTemplateColor),
+  'appearance tint mutated an immutable shared GLB template material');
+assert.strictEqual(sharedTemplateHairMaterial.userData.characterGlbHairTintId, undefined,
+  'shared GLB template material received an instance tint marker');
+sharedTemplateHairMesh.geometry.dispose();
+sharedTemplateHairMaterial.dispose();
 
 console.log(
-  'Character models OK: 6 GLB bases, 8 faces, 8 hairstyles, 8 hair colors, '
-  + '1536 fit combinations, stable rest-pose attachment, 8-way cursor-relative locomotion and turn-in-place steps, '
+  'Character models OK: 6 GLB bases, 8 faces, 2 sex-compatible hairstyles each, 8 hair colors, '
+  + '384 normalized appearance combinations, authored GLB hair visibility/tinting, 8-way cursor-relative locomotion and turn-in-place steps, '
   + 'blink/hurt/attack/talk/death facial reactions, rig/animations and hashes checked'
 );

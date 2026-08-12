@@ -251,6 +251,14 @@ const runtimeSource = fs.readFileSync(
   "if (typeof shareCompatibleCharacterSkeletons === 'function')",
   'shareCompatibleCharacterSkeletons(group);',
   'function applyApprovedEquipmentVisuals(actor, eq = {})',
+  'const APPROVED_EQUIPMENT_FLIGHT_RETRY_DELAYS_MS = Object.freeze([450, 1_200, 2_800])',
+  'const APPROVED_EQUIPMENT_RETRY_COOLDOWN_MS = 8_000',
+  'const APPROVED_EQUIPMENT_ACTOR_RETRY_MAX_DELAY_MS = 30_000',
+  'const APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS = Object.freeze([450, 1_200, 2_800])',
+  'const APPROVED_AUXILIARY_RETRY_COOLDOWN_MS = 8_000',
+  'function scheduleApprovedNpcAnimationRuntimeRetry(',
+  'function scheduleApprovedEquipmentActorRetry(',
+  'function attachApprovedEquipmentTemplate(',
   'const APPROVED_BACKPACK_ARMOR_OFFSETS = Object.freeze({',
   'function approvedBackpackArmorOffset(eq = {})',
   'function placeApprovedEquipmentRuntime(group, slot = \'\', eq = {})',
@@ -273,6 +281,22 @@ const runtimeSource = fs.readFileSync(
   'weaponGroup.parent !== runtime.root',
   'bone.quaternion.copy(target.quaternion)'
 ].forEach(marker => assert(runtimeSource.includes(marker), `approved humanoid runtime marker is missing: ${marker}`));
+assert(!runtimeSource.includes('approvedEquipmentState.failed'),
+  'approved equipment loader still permanently poisons a GLB after one transient failure');
+assert(!runtimeSource.includes('approvedNpcAnimationState.failed')
+  && !runtimeSource.includes('approvedAssaultGripState.failed'),
+'approved NPC animation or grip loader still permanently poisons a GLB after one transient failure');
+for (const loaderName of ['loadApprovedNpcAnimationClips', 'loadApprovedAssaultRifleGrip']) {
+  const loaderBody = functionSource(runtimeSource, loaderName);
+  assert(loaderBody.includes('APPROVED_AUXILIARY_FLIGHT_RETRY_DELAYS_MS')
+    && loaderBody.includes('APPROVED_AUXILIARY_RETRY_COOLDOWN_MS')
+    && loaderBody.includes('setTimeout(runAttempt, retryDelay)'),
+  `${loaderName}: finite flight retries and cooldown are missing`);
+}
+assert(!runtimeSource.includes('APPROVED_EQUIPMENT_ACTOR_RETRY_ROUNDS'),
+  'approved equipment actor retries still stop after a finite number of failures');
+assert(!/approvedEquipmentFallbackMeshes\([^\n]+\)\.forEach\([^\n]+visible = true/.test(runtimeSource),
+  'approved equipment can restore a generated fallback after a GLB failure');
 
 const characterSource = fs.readFileSync(path.join(ROOT, 'public', 'js', 'game', '04b_character_glb_runtime.js'), 'utf8');
 assert(characterSource.includes("state.dead && runtime.actions?.death"));
@@ -311,6 +335,15 @@ async function verifyThreeRuntime() {
     functionSource(characterSource, 'compatibleCharacterSkeletonMeshes'),
     functionSource(characterSource, 'shareCompatibleCharacterSkeletons'),
     'return { shareCompatibleCharacterSkeletons };'
+  ].join('\n'))(THREE);
+  const equipmentAttachApi = new Function('THREE', [
+    'function enableConservativeCharacterFrustumCulling(mesh) { if (mesh) mesh.frustumCulled = true; }',
+    functionSource(characterSource, 'characterSkinMatrixEquals'),
+    functionSource(characterSource, 'compatibleCharacterSkeletonMeshes'),
+    functionSource(characterSource, 'shareCompatibleCharacterSkeletons'),
+    functionSource(runtimeSource, 'configureApprovedEquipmentTemplate'),
+    functionSource(runtimeSource, 'makeApprovedEquipmentInstance'),
+    'return { configure: configureApprovedEquipmentTemplate, make: makeApprovedEquipmentInstance };'
   ].join('\n'))(THREE);
   const armRoot = new THREE.Group();
   const clavicle = new THREE.Bone();
@@ -407,6 +440,26 @@ async function verifyThreeRuntime() {
   };
 
   const sharedHelmet = await load(runtimeFile(byId.get('helmet_male_medium').file));
+  const equippedBody = await load(path.join(
+    ROOT,
+    'public',
+    'assets',
+    'models',
+    'characters',
+    'base',
+    'character_male_medium.glb'
+  ));
+  const equippedTemplate = equipmentAttachApi.configure(sharedHelmet.scene);
+  const equippedInstance = equipmentAttachApi.make(
+    equippedTemplate,
+    equippedBody.scene,
+    'helmet'
+  );
+  assert(equippedInstance?.children?.length > 0,
+    'an equipped approved GLB cannot bind to an already loaded GLB-only character');
+  equippedBody.scene.add(equippedInstance);
+  assert.strictEqual(equippedInstance.parent, equippedBody.scene,
+    'approved GLB did not attach after the equip flow completed');
   const sharedHelmetMeshes = [];
   sharedHelmet.scene.traverse(node => {
     if (node?.isSkinnedMesh && node.skeleton) sharedHelmetMeshes.push(node);

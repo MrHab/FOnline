@@ -18,6 +18,10 @@ const TMP_ROOT = path.resolve(process.env.COMBAT_RUNTIME_TMPDIR || os.tmpdir());
 // таймеру. Боевой таймер — четверть часа, поэтому проверка просит короткий.
 const RESOURCE_RESPAWN_MS = 1000;
 const TMP_PREFIX = 'realm-of-ashes-combat-runtime-';
+const COMBAT_LOCATION_ID = 'combatRuntimeArena';
+const NPC_LOCATION_TAGS = new Set([
+  'npc', 'enemy', 'monster', 'living', 'friendly', 'guard', 'merchant', 'trader'
+]);
 
 fs.mkdirSync(TMP_ROOT, { recursive: true });
 const DATA_DIR = fs.mkdtempSync(path.join(TMP_ROOT, TMP_PREFIX));
@@ -216,6 +220,17 @@ function socketAck(socket, event, payload = {}, timeoutMs = 3500) {
   });
 }
 
+async function reloadWhenApReady(socket, payload, timeoutMs = 2500) {
+  const deadline = Date.now() + Math.max(0, Number(timeoutMs || 0));
+  let result = {};
+  do {
+    result = await socketAck(socket, 'reloadWeapon', payload);
+    if (result.ok || !String(result.error || '').includes('не хватает ОД')) return result;
+    await delay(200);
+  } while (Date.now() < deadline);
+  return result;
+}
+
 function authHeaders(account, leaseId = '') {
   const headers = {
     Authorization: `Bearer ${account.token}`,
@@ -307,6 +322,16 @@ function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function authoredLocationObjectIsNpc(row = {}) {
+  const entityKind = String(row?.entity?.kind || row?.entity || '').trim().toLowerCase();
+  const tags = (Array.isArray(row?.tags) ? row.tags : [])
+    .map(tag => String(tag || '').trim().toLowerCase());
+  return ['npc', 'enemy', 'monster'].includes(entityKind)
+    || tags.some(tag => NPC_LOCATION_TAGS.has(tag))
+    || /^(enemy|npc|tradernpc|caravanmerchant|caravanguard|klimpatrolguard|wastelandsettler|friendlybrahmin)/i
+      .test(String(row?.model || ''));
+}
+
 function computedMaxHp(level, endurance) {
   return 55 + endurance * 9 + Math.max(0, level - 1) * 12;
 }
@@ -322,8 +347,8 @@ function seedCharacterState(account, options, usersDb, savesDb) {
   const special = cloneJson(options.special);
   const maxHp = computedMaxHp(level, Number(special.end || 5));
   const maxAp = Math.max(5, 5 + Math.floor(Number(special.agi || 5) / 2));
-  const locationId = String(options.locationId || 'oldDepot');
-  // oldDepot's authored spawn is tile (19, 25), or world (1, 13). Individual
+  const locationId = String(options.locationId || COMBAT_LOCATION_ID);
+  // The arena's authored spawn is tile (19, 25), or world (1, 13). Individual
   // feature probes can override both the location and a known-walkable point.
   const spawnX = Number.isFinite(Number(options.spawnX)) ? Number(options.spawnX) : 1;
   const spawnZ = Number.isFinite(Number(options.spawnZ)) ? Number(options.spawnZ) : 13;
@@ -422,6 +447,26 @@ function seedCombatFixtures(accounts) {
   const wastelandFile = path.join(DATA_DIR, 'wasteland-sim.json');
   const usersDb = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
   const savesDb = JSON.parse(fs.readFileSync(savesFile, 'utf8'));
+
+  const sourceLocation = JSON.parse(fs.readFileSync(
+    path.join(PROJECT_ROOT, 'data', 'locations', 'oldDepot.json'),
+    'utf8'
+  ));
+  const arenaLocation = {
+    ...sourceLocation,
+    id: COMBAT_LOCATION_ID,
+    name: 'Combat runtime arena',
+    objects: (Array.isArray(sourceLocation.objects) ? sourceLocation.objects : [])
+      .filter(row => !authoredLocationObjectIsNpc(row))
+  };
+  delete arenaLocation.worldSiteId;
+  delete arenaLocation.siteId;
+  const locationsDir = path.join(DATA_DIR, 'locations');
+  fs.mkdirSync(locationsDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(locationsDir, `${COMBAT_LOCATION_ID}.json`),
+    JSON.stringify(arenaLocation, null, 2)
+  );
 
   seedCharacterState(accounts.target, {
     level: 50,
@@ -572,8 +617,8 @@ function saveStateAfterCombat(account, self, combat, position) {
   );
   if (account.weaponRuntimeId) equipment.weapon = account.weaponRuntimeId;
   const weaponRuntimeId = String(account.weaponRuntimeId || 'pistol');
-  state.currentLocationId = 'oldDepot';
-  state.serverLocationContext = { locationId: 'oldDepot' };
+  state.currentLocationId = COMBAT_LOCATION_ID;
+  state.serverLocationContext = { locationId: COMBAT_LOCATION_ID };
   state.equipment = cloneJson(equipment);
   state.inventory = inventoryRowsToSavedObject(self?.inventory || [], equipment);
   state.player = {
@@ -698,8 +743,8 @@ function attackPayload(attackerJoin, targetSocket, mode = 'single', weaponRuntim
 }
 
 function assertSameCombatRoom(attacker, target, label) {
-  invariant(attacker.join.roomId === 'oldDepot' && target.join.roomId === 'oldDepot',
-    `${label}: fixtures did not join oldDepot`, {
+  invariant(attacker.join.roomId === COMBAT_LOCATION_ID && target.join.roomId === COMBAT_LOCATION_ID,
+    `${label}: fixtures did not join the combat arena`, {
       attacker: attacker.join.roomId,
       target: target.join.roomId
     });
@@ -1072,13 +1117,14 @@ async function assertMagazineAfterReconnect(accounts) {
     'Reconnect changed A + B + reserve ammunition', joinedCombat);
 
   // A reconnect restores the exact persisted AP balance. Wait for enough
-  // authoritative regeneration to cover both the 1 AP switch and 3 AP reload,
-  // even when the previous phase disconnected at zero AP.
+  // authoritative regeneration to cover the 1 AP switch and most of the
+  // reload, even when the previous phase disconnected at zero AP. The bounded
+  // retry below absorbs tick jitter and any persisted injury penalty.
   await delay(2600);
   const switchToA = await sendEquipmentAction(accounts.persistence, pistolA);
   invariant(switchToA.ack.ok && switchToA.ack.changed && Number(switchToA.ack.apCost) === 1,
     'Explicit B -> A switch failed after reconnect', switchToA.ack);
-  const topUpA = await socketAck(accounts.persistence.socket, 'reloadWeapon', {
+  const topUpA = await reloadWhenApReady(accounts.persistence.socket, {
     weapon: 'laserPistol',
     equipment: runtimeEquipmentSnapshot(pistolA),
     take: 1,
@@ -1099,7 +1145,7 @@ async function assertMagazineAfterReconnect(accounts) {
   const switchToB = await sendEquipmentAction(accounts.persistence, pistolB);
   invariant(switchToB.ack.ok && switchToB.ack.changed && Number(switchToB.ack.apCost) === 1,
     'Explicit A -> B switch failed after reconnect', switchToB.ack);
-  const topUpB = await socketAck(accounts.persistence.socket, 'reloadWeapon', {
+  const topUpB = await reloadWhenApReady(accounts.persistence.socket, {
     weapon: 'laserPistol',
     equipment: runtimeEquipmentSnapshot(pistolB),
     take: 1,
@@ -1542,8 +1588,8 @@ function waitForResourceRespawn(socket, resourceId, timeoutMs = RESOURCE_RESPAWN
 async function assertHarvestRequiresEquippedTool(accounts) {
   const account = accounts.harvest;
   await connectAndJoin(account);
-  invariant(account.join.roomId === 'oldDepot',
-    'Harvest fixture did not join oldDepot', account.join);
+  invariant(account.join.roomId === COMBAT_LOCATION_ID,
+    'Harvest fixture did not join the combat arena', account.join);
   invariant((Array.isArray(account.join.players) ? account.join.players : []).length === 0,
     'Harvest fixture inherited players from the preceding combat phase', account.join.players);
   invariant(account.join.self?.equipmentRuntime?.weapon === account.weaponRuntimeId,
@@ -2025,7 +2071,7 @@ async function main() {
     await assertEquipmentActionAuthority(accounts);
     await assertLoadedWeaponAutoUnloadsOnTrade(accounts);
     await assertProgressionAllocationAuthority(accounts);
-    // The shooter fixtures intentionally share one oldDepot room so they can
+    // The shooter fixtures intentionally share one combat arena so they can
     // target each other. They must not influence the safe-spawn search for the
     // following single-player harvest contract.
     await closeFixtureSockets(accounts, [

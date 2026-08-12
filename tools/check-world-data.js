@@ -1198,6 +1198,34 @@ if (!globalMap) {
   encounterIds.forEach(id => {
     if (encounterDefs.size && !encounterDefs.has(id)) errors.push(`${rel}: encounter "${id}" has no composition in data/encounters.json`);
   });
+  // Клиент вписывает модель узла так, чтобы её самое длинное ребро было равно
+  // цели (2.1 для одиночной локации), см. fitGlobalMapStaticModelInstance.
+  const GLOBAL_MAP_NODE_FIT_TARGET = 2.1;
+  const CAPITAL_MIN_MAP_HEIGHT = 0.9;
+  const GLOBAL_MAP_NODE_MODEL_FILES = {
+    oldKlimYard: 'trader_awning.glb',
+    traderAwning: 'trader_awning.glb',
+    scrapTown: 'scrap_watch_tower.glb',
+    scrapWatchTower: 'scrap_watch_tower.glb',
+    relayStation: 'relay_antenna.glb',
+    relayAntenna: 'relay_antenna.glb',
+    wastelandShack: 'wasteland_shack.glb',
+    brahminPen: 'brahmin_pen.glb',
+    watchPost: 'watch_post.glb',
+    storageLeanTo: 'storage_lean_to.glb'
+  };
+  function globalMapNodeFittedHeight(node = {}) {
+    const file = GLOBAL_MAP_NODE_MODEL_FILES[String(node.model || '')];
+    if (!file) return null;
+    const entry = readJson(path.join('public', 'assets', 'models', 'wasteland', 'model-colliders.json'), { models: {} })?.models?.[file];
+    const size = entry?.size;
+    if (!size) return null;
+    const longest = Math.max(Number(size.x || 0), Number(size.y || 0), Number(size.z || 0));
+    if (!(longest > 0)) return null;
+    const target = GLOBAL_MAP_NODE_FIT_TARGET * Math.max(0.45, Math.min(4, Number(node.modelScale || 1)));
+    return Number(size.y || 0) * target / longest;
+  }
+
   const randomLocationRows = Array.isArray(globalMap.randomLocations) ? globalMap.randomLocations : [];
   randomLocationRows.forEach((row, index) => {
     const id = safeId(row && row.id);
@@ -1210,6 +1238,16 @@ if (!globalMap) {
       ? ({ settlement: 'oldKlimYard', scrapTown: 'scrapTown', relayStation: 'relayStation' }[safeId(node.id)] || '')
       : '';
     checkGlobalMapModelKey(node?.model || defaultNodeModel, `node "${node?.id || index}"`, rel);
+    // Столица обязана читаться на карте. Модели узлов вписываются по самому
+    // длинному ребру, поэтому плоская модель (загон, навес плашмя) даёт
+    // силуэт вдвое-вчетверо ниже соседей и теряется на рельефе.
+    if (node?.capital === true) {
+      const height = globalMapNodeFittedHeight(node);
+      if (height !== null && height < CAPITAL_MIN_MAP_HEIGHT) {
+        errors.push(`${rel}: capital "${node.id || index}" renders only ${height.toFixed(2)} tall on the map `
+          + `(minimum ${CAPITAL_MIN_MAP_HEIGHT}); its model is too flat to read as a settlement`);
+      }
+    }
     if (finiteNumber(node?.x) && finiteNumber(node?.y) && globalMapPointIsWaterForMap(globalMap, node.x, node.y)) {
       errors.push(`${rel}: node "${node.id || index}" is placed on water`);
     }

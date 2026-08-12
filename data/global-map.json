@@ -60,7 +60,7 @@
       "kind": "settlement",
       "locationId": "caravanCamp",
       "locationCount": 1,
-      "model": "brahminPen",
+      "model": "wastelandShack",
       "modelScale": 1,
       "rotationY": 0,
       "note": "Караван-сарай «Перекрёсток». Столица вольных караванов в сердце пустоши: стоянка обозов, торговля и наём охраны.",

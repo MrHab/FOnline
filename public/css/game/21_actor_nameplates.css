@@ -37,6 +37,30 @@
 .actor-nameplate.plate-hurt .plate-health { color: #f0c65b; }
 .actor-nameplate.plate-critical .plate-health { color: #ff6a52; }
 
+/* Подсказка прицела: имя цели и шанс попадания у самого курсора, без подложки.
+   Свойства старой панели гасятся явно — её описание лежит у игрока в кэше
+   безверсионного файла и иначе всплыло бы обратно. */
+#target-hint {
+  min-width: 0;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #e6ddc4;
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 1px 2px rgba(0, 0, 0, 0.95),
+    1px 0 1px rgba(0, 0, 0, 0.8),
+    -1px 0 1px rgba(0, 0, 0, 0.8);
+}
+
+#target-hint b { color: #f0d28a; font-weight: 700; }
+
 /* Шанс попадания выделен ярко-красным: это главное число подсказки. */
 #target-hint .hit-chance,
 #target-hint .hit-good,

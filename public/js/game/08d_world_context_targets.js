@@ -132,35 +132,16 @@
     ].join('|');
   }
 
+  // Подсказка у прицела: имя цели и шанс попадания, больше ничего. Здоровье и
+  // состояние теперь видны над самой моделью, отношение читается по цвету
+  // плашки, а длинный список у курсора закрывал то, во что целишься.
   function buildTargetHintHtml(enemy) {
     const info = getTargetHitInfo(enemy);
-    // Шанс попадания всегда ярко-красный: игрок читает его первым.
-    const cls = 'hit-chance';
-    const aware = talentLevel('awareness') > 0;
-    const state = enemyHealthStateText(enemy);
-    const attitude = enemy.isRemotePlayer
-      ? (enemy.hostileToPlayer === false ? 'Игрок · мирная зона' : 'Игрок')
-      : (enemy.hostileToPlayer === false ? '\u041d\u0435\u0439\u0442\u0440\u0430\u043b\u044c\u043d\u044b\u0439' : '\u0412\u0440\u0430\u0436\u0434\u0435\u0431\u043d\u044b\u0439');
-    const hpLine = aware
-      ? `HP ${Math.max(0, Math.ceil(enemy.hp))}/${enemy.maxHp}<br>\u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435: ${state}`
-      : `\u0421\u043e\u0441\u0442\u043e\u044f\u043d\u0438\u0435: ${state}`;
-    const damageLine = aware ? `<br>\u041f\u0440\u0435\u0434\u043f. \u0443\u0440\u043e\u043d: <span class="target-note">${estimatedWeaponDamageText(enemy, info)}</span>` : '';
     const safe = typeof escapeHtml === 'function'
       ? escapeHtml
       : (value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])));
-    const scheduleLine = enemy.scheduleLabel
-      ? `<br>\u0417\u0430\u043d\u044f\u0442: <span class="target-note">${safe(enemy.scheduleLabel)}</span>`
-      : '';
-    const ownerLabel = String(enemy.wastelandOwnerLabel
-      || (enemy.wastelandOwnerFaction && typeof globalMapFactionLabel === 'function' ? globalMapFactionLabel(enemy.wastelandOwnerFaction) : '')
-      || '').trim();
-    const factionLine = ownerLabel
-      ? `<br>\u0424\u0440\u0430\u043a\u0446\u0438\u044f: <span class="target-note">${safe(ownerLabel)}</span>`
-      : '';
-    const specialLine = aware && enemy.special
-      ? `<br><span class="target-note">SPECIAL ${['ST', 'PE', 'EN', 'CH', 'IN', 'AG', 'LK'].map(key => `${key}${Math.max(1, Math.min(10, Math.round(Number(enemy.special[key] || 0))))}`).join(' ')}</span>`
-      : '';
-    return `<b>${safe(enemy.name)}</b><br>${attitude}${factionLine}${scheduleLine}<br>${hpLine}${specialLine}<br>\u0428\u0430\u043d\u0441 \u043f\u043e\u043f\u0430\u0434\u0430\u043d\u0438\u044f: <span class="${cls}">${info.chance}%</span>${damageLine}<br><span class="target-note">${info.note}</span>`;
+    // Шанс попадания всегда ярко-красный: игрок читает его первым.
+    return `<b>${safe(enemy.name)}</b> <span class="hit-chance">${info.chance}%</span>`;
   }
 
   // Подсказка привязана к самой цели, а не к курсору. Осмотр запускают
@@ -169,6 +150,13 @@
   // Позиция цели известна всегда, при наведении она и так под курсором.
   const targetHintProjected = new THREE.Vector3();
   function targetHintScreenAnchor(enemy, clientX, clientY) {
+    // Прицел — это курсор, и подсказка нужна прямо у него: игрок читает шанс
+    // попадания не отводя глаз от точки, куда целится. Проверять надо сам
+    // аргумент: Number(null) — это ноль, а не NaN, и подсказка уехала бы в
+    // левый верхний угол экрана.
+    if (Number.isFinite(clientX) && Number.isFinite(clientY)) return { x: clientX, y: clientY };
+    // Курсора нет вовсе — осмотр запустили клавишей или пунктом меню. Тогда
+    // ведём подсказку от самой цели на экране.
     if (enemy && typeof camera !== 'undefined' && camera && canvas) {
       const x = Number(enemy.x ?? enemy.visualX);
       const z = Number(enemy.z ?? enemy.visualZ);
@@ -183,10 +171,6 @@
         }
       }
     }
-    // Цель не проецируется — тогда курсор, если он вообще есть. Проверять надо
-    // сам аргумент: Number(null) — это ноль, а не NaN, и подсказка снова
-    // встала бы в углу экрана.
-    if (Number.isFinite(clientX) && Number.isFinite(clientY)) return { x: clientX, y: clientY };
     return { x: window.innerWidth * 0.5, y: window.innerHeight * 0.42 };
   }
 
@@ -212,8 +196,12 @@
     const anchor = targetHintScreenAnchor(enemy, clientX, clientY);
     const anchorX = anchor.x;
     const anchorY = anchor.y;
-    const x = Math.min(window.innerWidth - 190, Math.max(8, anchorX + pad));
-    const y = Math.min(window.innerHeight - 92, Math.max(8, anchorY + pad));
+    // Держим подсказку в экране по её настоящему размеру: он теперь зависит от
+    // длины имени, а прежние фиксированные 190×92 были от старой панели.
+    const width = Math.max(40, el.offsetWidth || 0);
+    const height = Math.max(16, el.offsetHeight || 0);
+    const x = Math.min(window.innerWidth - width - 8, Math.max(8, anchorX + pad));
+    const y = Math.min(window.innerHeight - height - 8, Math.max(8, anchorY + pad));
     // Записываем, пока позиция не подтверждена числом: любое сравнение с
     // «ещё не записано» должно приводить к записи, а не пропускать её.
     if (!Number.isFinite(targetHintRenderCache.left) || Math.abs(x - targetHintRenderCache.left) > 0.5) {

@@ -19055,9 +19055,15 @@ function releaseSocketLocks(socket) {
   }
 }
 
-function rejectJoin(socket, ack, error) {
-  if (typeof ack === 'function') ack({ ok: false, error });
-  socket.emit('sessionRejected', { error });
+// Код отказа нужен клиенту, чтобы отличать временную занятость персонажа от
+// окончательного отказа: после обрыва связи блокировка держится до тех пор,
+// пока socket.io не заметит смерть прошлого сокета, и повторный вход имеет
+// смысл подождать, а не показывать ошибку.
+function rejectJoin(socket, ack, error, code = '') {
+  const payload = { ok: false, error };
+  if (code) payload.code = String(code).slice(0, 40);
+  if (typeof ack === 'function') ack(payload);
+  socket.emit('sessionRejected', payload);
 }
 
 function currentJoinedSocketAck(p, options = {}) {
@@ -19150,7 +19156,10 @@ io.on('connection', (socket) => {
 
     const currentSocketId = activeAccountSockets.get(auth.login);
     if (currentSocketId && currentSocketId !== socket.id && socketIsLive(currentSocketId)) {
-      return rejectJoin(socket, ack, 'Этот аккаунт уже находится в игре на другом устройстве.');
+      // После обрыва связи прошлый сокет считается живым, пока socket.io не
+      // словит ping-таймаут. Возвращающийся игрок упирается именно сюда, и
+      // отказ здесь временный — клиенту стоит подождать и повторить.
+      return rejectJoin(socket, ack, 'Этот аккаунт уже находится в игре на другом устройстве.', 'session-busy');
     }
 
     let characterId = normalizeCharacterId(data.characterId || data.serverCharacterId || '');
@@ -19161,7 +19170,7 @@ io.on('connection', (socket) => {
     }
     const activeCharLock = getActiveCharacterLock(characterId);
     if (activeCharLock && activeCharLock.socketId !== socket.id) {
-      return rejectJoin(socket, ack, 'Этот персонаж уже находится в игре в другой вкладке или на другом устройстве.');
+      return rejectJoin(socket, ack, 'Этот персонаж уже находится в игре в другой вкладке или на другом устройстве.', 'character-busy');
     }
 
     if (!characterStore[characterId]) {

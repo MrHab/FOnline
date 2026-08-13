@@ -207,14 +207,65 @@
     try {
       if (typeof resetNetworkPingMeasurement === 'function') resetNetworkPingMeasurement('offline');
     } catch (_) {}
-    resolveMultiplayerJoinWaiters(false);
+    resolveMultiplayerJoinWaiters(false, { reason: 'session' });
     if (socket && options.disconnect !== false) {
       try { socket.disconnect(); } catch (_) {}
     }
     return !!socket;
   }
 
-  function resolveMultiplayerJoinWaiters(ok) {
+  // Почему не удалось войти в сетевую сессию. Без этого любая неудача
+  // выглядела одинаково, и потеря связи объявлялась запретом сервера —
+  // игрок шёл искать вторую вкладку вместо того, чтобы чинить сеть.
+  //   offline   — соединение не установилось или оборвалось;
+  //   timeout   — соединение есть, но сервер не подтвердил вход;
+  //   busy      — сервер отказал: персонаж ещё числится в другой сессии;
+  //   rejected  — сервер отказал по другой причине;
+  //   session   — нет токена или персонажа, входить нечем.
+  // Коды отказов, которые сервер снимает сам. После обрыва связи прошлый сокет
+  // числится живым до ping-таймаута, и возвращающийся игрок упирается сначала в
+  // блокировку аккаунта, потом в блокировку персонажа. Ждать тут разумнее, чем
+  // показывать ошибку.
+  const TEMPORARY_JOIN_REJECTIONS = new Set(['session-busy', 'character-busy']);
+
+  function joinRejectionIsTemporary(code) {
+    return TEMPORARY_JOIN_REJECTIONS.has(String(code || ''));
+  }
+
+  function setMultiplayerJoinFailure(reason, message = '') {
+    multiplayer.joinFailure = {
+      reason: String(reason || 'offline'),
+      message: String(message || ''),
+      at: Date.now()
+    };
+  }
+
+  function multiplayerJoinFailureReason() {
+    return String(multiplayer.joinFailure?.reason || '');
+  }
+
+  function multiplayerJoinFailureIsRetryable() {
+    return ['offline', 'timeout', 'busy'].includes(multiplayerJoinFailureReason());
+  }
+
+  function multiplayerJoinFailureText() {
+    const failure = multiplayer.joinFailure || null;
+    if (failure?.message) return failure.message;
+    switch (failure?.reason) {
+      case 'busy':
+        return 'Прошлая игровая сессия ещё не закрыта на сервере. Подождите около минуты и попробуйте снова.';
+      case 'timeout':
+        return 'Сервер не подтвердил вход в игру: соединение есть, но ответа нет.';
+      case 'session':
+        return 'Сессия недействительна. Войдите в аккаунт заново.';
+      default:
+        return 'Не удалось связаться с сервером: соединение не установилось.';
+    }
+  }
+
+  function resolveMultiplayerJoinWaiters(ok, failure = null) {
+    if (ok) multiplayer.joinFailure = null;
+    else if (failure) setMultiplayerJoinFailure(failure.reason, failure.message);
     const waiters = Array.isArray(multiplayer.joinWaiters) ? multiplayer.joinWaiters.splice(0) : [];
     waiters.forEach(waiter => {
       try { if (waiter.timer) clearTimeout(waiter.timer); } catch (_) {}
@@ -235,6 +286,9 @@
       waiter.timer = setTimeout(() => {
         const idx = multiplayer.joinWaiters.indexOf(waiter);
         if (idx >= 0) multiplayer.joinWaiters.splice(idx, 1);
+        // Ждали ответа и не дождались. Причину не перетираем, если сокет уже
+        // назвал её точнее — например, сервер успел отказать.
+        if (!multiplayer.joinFailure) setMultiplayerJoinFailure(multiplayer.connected ? 'timeout' : 'offline');
         resolve(false);
       }, Math.max(800, Number(timeoutMs) || 4500));
       multiplayer.joinWaiters.push(waiter);

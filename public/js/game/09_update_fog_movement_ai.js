@@ -1933,11 +1933,14 @@
     name.className = 'plate-name';
     const health = document.createElement('span');
     health.className = 'plate-health';
+    // Перенос строки живёт вместе с именем: у зверья и рядовых врагов имени
+    // нет, и пустая строка над здоровьем поднимала бы плашку над пустотой.
+    const nameBreak = document.createElement('br');
     node.appendChild(name);
-    node.appendChild(document.createElement('br'));
+    node.appendChild(nameBreak);
     node.appendChild(health);
     layer.appendChild(node);
-    const entry = { node, name, health, nameText: '', healthText: '', tone: '', kind: '' };
+    const entry = { node, name, nameBreak, health, nameText: '', healthText: '', tone: '', kind: '' };
     nameplatePool[index] = entry;
     return entry;
   }
@@ -1995,13 +1998,14 @@
     }
     if (Array.isArray(enemies)) {
       for (const enemy of enemies) {
-        // Подписываем важных персонажей: торговцев и тех, у кого есть свой
-        // разговор. Зверьё, охрана и рядовые враги подписей не получают.
-        if (!enemy || enemy.dead || enemy._removed || !isNameplateNpc(enemy)) continue;
+        if (!enemy || enemy.dead || enemy._removed) continue;
         if (!enemy.mesh || enemy.mesh.visible === false) continue;
         if (Math.hypot(Number(enemy.x || 0) - px, Number(enemy.z || 0) - pz) > NAMEPLATE_MAX_DISTANCE) continue;
+        // Здоровье показываем у всех — и у зверья, и у рядовых врагов. Имя
+        // получают только важные персонажи: у массовки имена вида «Караванный
+        // двор Старого Клима: охрана», и стена такого текста закрывает игру.
         rows.push({
-          name: String(enemy.name || ''),
+          name: isNameplateNpc(enemy) ? String(enemy.name || '') : '',
           hp: enemy.hp,
           maxHp: enemy.maxHp,
           x: Number(enemy.x || 0),
@@ -2056,6 +2060,10 @@
       if (entry.nameText !== row.name) {
         entry.name.textContent = row.name;
         entry.nameText = row.name;
+        // Без имени плашка сжимается до одной строки со здоровьем.
+        const nameDisplay = row.name ? 'inline' : 'none';
+        entry.name.style.display = nameDisplay;
+        entry.nameBreak.style.display = nameDisplay;
       }
       if (entry.healthText !== healthText) {
         entry.health.textContent = healthText;

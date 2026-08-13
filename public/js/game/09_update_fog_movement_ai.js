@@ -1969,11 +1969,9 @@
   function isNameplateNpc(enemy) {
     if (!enemy || enemy.canDialogue !== true) return false;
     if (typeof traderNpc !== 'undefined' && traderNpc && enemy === traderNpc) return true;
-    if (enemy.traderId || enemy.traderProfile || enemy.tradeProfile || enemy.dialogueProfile) return true;
-    if (Array.isArray(enemy.traderQuests) && enemy.traderQuests.length) return true;
-    // Торговец самой локации: у него может не быть ни роли, ни профиля, но
-    // именно к нему игрок и приходит.
-    if (typeof isLocationTraderActor === 'function' && isLocationTraderActor(enemy)) return true;
+    // Отбор идёт строго по роли. Торговые поля тут не годятся: у охраны и
+    // рабочих стоянки тоже есть traderId, traderProfile и dialogueProfile —
+    // у них можно покупать патроны, — поэтому по ним подписывалась вся толпа.
     return NAMEPLATE_ROLES.has(String(enemy.role || enemy.encounterRole || '').toLowerCase());
   }
 

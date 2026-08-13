@@ -163,22 +163,31 @@
     return `<b>${safe(enemy.name)}</b><br>${attitude}${factionLine}${personalityLine}${scheduleLine}<br>${hpLine}${specialLine}<br>\u0428\u0430\u043d\u0441 \u043f\u043e\u043f\u0430\u0434\u0430\u043d\u0438\u044f: <span class="${cls}">${info.chance}%</span>${damageLine}<br><span class="target-note">${info.note}</span>`;
   }
 
-  // Точка на экране, где стоит сама цель. Нужна, когда осмотр запустили без
-  // курсора: подсказка должна появиться рядом с тем, кого осматривают.
+  // Подсказка привязана к самой цели, а не к курсору. Осмотр запускают
+  // по-разному — наведением, клавишей, пунктом меню, — и координат мыши в
+  // половине этих случаев нет вовсе: подсказка уезжала в левый верхний угол.
+  // Позиция цели известна всегда, при наведении она и так под курсором.
   const targetHintProjected = new THREE.Vector3();
-  function targetHintScreenAnchor(enemy) {
-    const fallback = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.42 };
-    if (!enemy || typeof camera === 'undefined' || !camera || !canvas) return fallback;
-    const x = Number(enemy.x ?? enemy.visualX);
-    const z = Number(enemy.z ?? enemy.visualZ);
-    if (!Number.isFinite(x) || !Number.isFinite(z)) return fallback;
-    targetHintProjected.set(x, 1.7 * Math.max(0.5, Number(enemy.scale || 1)), z).project(camera);
-    if (targetHintProjected.z > 1) return fallback;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: rect.left + (targetHintProjected.x + 1) * rect.width * 0.5,
-      y: rect.top + (1 - targetHintProjected.y) * rect.height * 0.5
-    };
+  function targetHintScreenAnchor(enemy, clientX, clientY) {
+    if (enemy && typeof camera !== 'undefined' && camera && canvas) {
+      const x = Number(enemy.x ?? enemy.visualX);
+      const z = Number(enemy.z ?? enemy.visualZ);
+      if (Number.isFinite(x) && Number.isFinite(z)) {
+        targetHintProjected.set(x, 1.7 * Math.max(0.5, Number(enemy.scale || 1)), z).project(camera);
+        if (targetHintProjected.z <= 1) {
+          const rect = canvas.getBoundingClientRect();
+          return {
+            x: rect.left + (targetHintProjected.x + 1) * rect.width * 0.5,
+            y: rect.top + (1 - targetHintProjected.y) * rect.height * 0.5
+          };
+        }
+      }
+    }
+    // Цель не проецируется — тогда курсор, если он вообще есть. Проверять надо
+    // сам аргумент: Number(null) — это ноль, а не NaN, и подсказка снова
+    // встала бы в углу экрана.
+    if (Number.isFinite(clientX) && Number.isFinite(clientY)) return { x: clientX, y: clientY };
+    return { x: window.innerWidth * 0.5, y: window.innerHeight * 0.42 };
   }
 
   function showTargetHint(enemy, clientX = lastPointerClientX, clientY = lastPointerClientY) {
@@ -200,14 +209,7 @@
       el.dataset.targetHintHtml = targetHintRenderCache.html;
     }
     const pad = 14;
-    // Осмотр запускают и с клавиатуры, и из меню — тогда координат курсора нет
-    // вовсе. Раньше подсказка в этом случае вставала в левый верхний угол под
-    // панель персонажа, поэтому без курсора ведём её от самой цели на экране.
-    // Проверять приходится сам аргумент: Number(null) — это ноль, а не NaN,
-    // и подсказка снова уезжала бы в тот же угол.
-    const anchor = (Number.isFinite(clientX) && Number.isFinite(clientY))
-      ? { x: clientX, y: clientY }
-      : targetHintScreenAnchor(enemy);
+    const anchor = targetHintScreenAnchor(enemy, clientX, clientY);
     const anchorX = anchor.x;
     const anchorY = anchor.y;
     const x = Math.min(window.innerWidth - 190, Math.max(8, anchorX + pad));

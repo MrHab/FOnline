@@ -54,10 +54,11 @@ assert(loop.includes('function collectNameplateActors('), 'нет сбора а�
 assert(loop.includes('multiplayer?.remotePlayers') || loop.includes('multiplayer.remotePlayers'),
   'другие игроки не получают подписей');
 
-// --- Подписи только у важных НПС ---
-// Охрана и рабочие стоянки ходят толпами. Отбор идёт строго по роли: торговые
-// поля для этого не годятся, потому что у охраны тоже есть traderId,
-// traderProfile и dialogueProfile — у неё можно покупать патроны.
+// --- Имена только у важных НПС, здоровье у всех ---
+// Охрана и рабочие стоянки ходят толпами, и имена у них вида «Караванный двор
+// Старого Клима: охрана» — стена такого текста закрывает игру. Отбор имён идёт
+// строго по роли: торговые поля для этого не годятся, потому что у охраны тоже
+// есть traderId, traderProfile и dialogueProfile — у неё можно покупать патроны.
 const npcFilter = /function isNameplateNpc\([\s\S]*?\n  \}/.exec(loop);
 assert(npcFilter, 'нет отбора важных НПС для подписей');
 assert(npcFilter[0].includes('NAMEPLATE_ROLES.has('), 'отбор по роли пропал');
@@ -73,8 +74,18 @@ for (const crowd of ['guard', 'worker', 'civilian', 'scavenger', 'hauler', 'medi
     `роль ${crowd} — это массовка, её подписывать нельзя`);
 }
 const collect = /function collectNameplateActors\([\s\S]*?\n  \}/.exec(loop);
-assert(collect && /!isNameplateNpc\(enemy\)/.test(collect[0]),
-  'отбор важных НПС не подключён к сбору подписей');
+assert(collect, 'нет сбора актёров для подписей');
+// Здоровье видно у всех живых, включая зверьё и рядовых врагов: отбор важности
+// решает только, будет ли над плашкой имя.
+assert(!/\|\| !isNameplateNpc\(enemy\)\) continue/.test(collect[0]),
+  'важность снова решает, показывать ли здоровье, — у зверья и рядовых врагов плашки пропадут');
+assert(/name: isNameplateNpc\(enemy\) \? String\(enemy\.name \|\| ''\) : ''/.test(collect[0]),
+  'имя больше не ограничено важными персонажами — над массовкой встанет стена текста');
+const plateNode = /function acquireNameplate\([\s\S]*?\n  \}/.exec(loop);
+assert(plateNode && plateNode[0].includes('nameBreak'),
+  'нет управления переносом строки: без имени плашка повиснет над пустой строкой');
+assert(/const nameDisplay = row\.name \? 'inline' : 'none'/.test(loop),
+  'пустое имя не скрывается, и плашка со здоровьем поднимется над пустотой');
 
 // --- Свой персонаж тоже подписан ---
 assert(/kind: 'plate-player',\s*\n\s*self: true/.test(collect[0]),

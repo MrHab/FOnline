@@ -87,7 +87,9 @@
     { id: 'rocketammocraft', name: 'Ракета', icon: '🚀', out: { id: 'rocketAmmo', qty: 2 }, cost: { ore: 5, wood: 1, oil: 1, silver: 4 }, desc: 'Боеприпасы для ракетницы.' },
     { id: 'pickaxecraft', name: 'Кирка', icon: '⛏️', out: { id: 'pickaxe', qty: 1 }, cost: { ore: 2, wood: 2 }, desc: 'Инструмент для добычи руды.' },
     { id: 'axecraft', name: 'Топор', icon: '🪓', out: { id: 'axe', qty: 1 }, cost: { ore: 1, wood: 3 }, desc: 'Инструмент для заготовки древесины.' },
-    { id: 'handpumpcraft', name: 'Ручной насос', icon: 'P', out: { id: 'handPump', qty: 1 }, cost: { ore: 3, wood: 1, scrap: 2 }, desc: 'Инструмент для откачки воды и нефти.' }
+    { id: 'handpumpcraft', name: 'Ручной насос', icon: 'P', out: { id: 'handPump', qty: 1 }, cost: { ore: 3, wood: 1, scrap: 2 }, desc: 'Инструмент для откачки воды и нефти.' },
+    { id: 'weaponpartscraft', name: 'Оружейные детали', icon: '⚙️', out: { id: 'weaponParts', qty: 2 }, cost: { ore: 6, scrap: 5 }, desc: 'Пружины, штифты и заготовки стволов. Нужны почти для любой модификации оружия.' },
+    { id: 'electronicscraft', name: 'Электроника', icon: '📟', out: { id: 'electronics', qty: 2 }, cost: { scrap: 3, chemicals: 1 }, desc: 'Платы и датчики. Нужны для прицелов и энергетических модификаций.' }
   ];
 
   const CRAFT_STATION_DEFS = {
@@ -117,7 +119,9 @@
     energycellcraft: 'energy_bench',
     pickaxecraft: 'tool_bench',
     axecraft: 'tool_bench',
-    handpumpcraft: 'tool_bench'
+    handpumpcraft: 'tool_bench',
+    weaponpartscraft: 'weapon_bench',
+    electronicscraft: 'energy_bench'
   };
 
   CRAFT_RECIPES.forEach(recipe => {

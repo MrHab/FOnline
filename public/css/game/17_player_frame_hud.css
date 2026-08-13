@@ -1,4 +1,7 @@
 /* Player identity HUD frame */
+/* Фон панели весит 1.7 МБ. На экране входа панель не видна, но браузер всё
+   равно тянул картинку и занимал ею соединение, за которым ждал запрос входа.
+   Поэтому фон подключается только после старта игры. */
 #player-info.player-frame-hud {
   position: absolute !important;
   top: calc(8px + var(--safe-top)) !important;
@@ -12,7 +15,6 @@
   border: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background-image: url("/assets/ui/hud/player-name-panel-transparent.png") !important;
   background-position: center !important;
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
@@ -201,7 +203,6 @@ body.device-mobile.landscape-mode #player-info.player-frame-hud {
   padding: 0 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-  background-image: url("/assets/ui/hud/player-name-panel-transparent.png") !important;
   background-position: center !important;
   background-size: 100% 100% !important;
   background-repeat: no-repeat !important;
@@ -211,4 +212,11 @@ body.device-mobile.landscape-mode #player-info.player-frame-hud {
   #player-info.player-frame-hud {
     width: min(94vw, 560px) !important;
   }
+}
+
+/* Картинка панели подключается только когда игра запущена: до этого она лишь
+   занимала соединение, за которым стоял в очереди запрос входа. */
+body.game-running #player-info.player-frame-hud,
+body.game-running.device-mobile.landscape-mode #player-info.player-frame-hud {
+  background-image: url("/assets/ui/hud/player-name-panel-transparent.png") !important;
 }

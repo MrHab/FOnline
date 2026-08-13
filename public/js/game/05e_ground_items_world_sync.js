@@ -823,7 +823,6 @@
       equipmentProfile: saved.equipmentProfile || '',
       lootProfile: saved.lootProfile || '',
       tradeProfile: saved.tradeProfile || '',
-      personality: saved.personality || null,
       special: saved.special || null,
       scheduleState: saved.scheduleState || '',
       scheduleLabel: saved.scheduleLabel || '',
@@ -1144,7 +1143,6 @@
       enemy.equipmentProfile = saved.equipmentProfile || enemy.equipmentProfile || '';
       enemy.lootProfile = saved.lootProfile || enemy.lootProfile || '';
       enemy.tradeProfile = saved.tradeProfile || enemy.tradeProfile || '';
-      enemy.personality = saved.personality || enemy.personality || null;
       enemy.special = saved.special || enemy.special || null;
       if (Object.prototype.hasOwnProperty.call(saved, 'scheduleState')) {
         enemy.scheduleState = String(saved.scheduleState ?? '');
@@ -1176,7 +1174,6 @@
         enemy.traderProfile = '';
         enemy.dialogueProfile = '';
         enemy.traderQuests = [];
-        enemy.personality = null;
         enemy.special = null;
         enemy.scheduleState = '';
         enemy.scheduleLabel = '';

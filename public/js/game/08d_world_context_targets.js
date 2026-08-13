@@ -128,7 +128,6 @@
       Math.round(Number(enemy?.z || 0) * 5),
       String(enemy?.scheduleState || ''),
       String(enemy?.scheduleLabel || ''),
-      String(enemy?.personality?.id || ''),
       talentLevel('awareness')
     ].join('|');
   }
@@ -149,9 +148,6 @@
     const safe = typeof escapeHtml === 'function'
       ? escapeHtml
       : (value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])));
-    const personalityLine = enemy.personality?.label
-      ? `<br>\u0425\u0430\u0440\u0430\u043a\u0442\u0435\u0440: <span class="target-note">${safe(enemy.personality.label)}</span>`
-      : '';
     const scheduleLine = enemy.scheduleLabel
       ? `<br>\u0417\u0430\u043d\u044f\u0442: <span class="target-note">${safe(enemy.scheduleLabel)}</span>`
       : '';
@@ -164,7 +160,7 @@
     const specialLine = aware && enemy.special
       ? `<br><span class="target-note">SPECIAL ${['ST', 'PE', 'EN', 'CH', 'IN', 'AG', 'LK'].map(key => `${key}${Math.max(1, Math.min(10, Math.round(Number(enemy.special[key] || 0))))}`).join(' ')}</span>`
       : '';
-    return `<b>${safe(enemy.name)}</b><br>${attitude}${factionLine}${personalityLine}${scheduleLine}<br>${hpLine}${specialLine}<br>\u0428\u0430\u043d\u0441 \u043f\u043e\u043f\u0430\u0434\u0430\u043d\u0438\u044f: <span class="${cls}">${info.chance}%</span>${damageLine}<br><span class="target-note">${info.note}</span>`;
+    return `<b>${safe(enemy.name)}</b><br>${attitude}${factionLine}${scheduleLine}<br>${hpLine}${specialLine}<br>\u0428\u0430\u043d\u0441 \u043f\u043e\u043f\u0430\u0434\u0430\u043d\u0438\u044f: <span class="${cls}">${info.chance}%</span>${damageLine}<br><span class="target-note">${info.note}</span>`;
   }
 
   // Подсказка привязана к самой цели, а не к курсору. Осмотр запускают

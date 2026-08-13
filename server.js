@@ -3808,15 +3808,6 @@ function serverTraderProfileById(...ids) {
   return null;
 }
 
-const NPC_PERSONALITY_ARCHETYPES = [
-  { id: 'steady', label: 'Сдержанный', traits: ['дисциплина', 'осторожность'], bravery: 62, sociability: 34, discipline: 76 },
-  { id: 'talker', label: 'Разговорчивый', traits: ['общительность', 'любопытство'], bravery: 44, sociability: 82, discipline: 48 },
-  { id: 'hardy', label: 'Упрямый', traits: ['выносливость', 'прямота'], bravery: 72, sociability: 38, discipline: 58 },
-  { id: 'nervous', label: 'Настороженный', traits: ['подозрительность', 'быстрая реакция'], bravery: 36, sociability: 42, discipline: 54 },
-  { id: 'kind', label: 'Добродушный', traits: ['забота', 'миролюбие'], bravery: 48, sociability: 70, discipline: 52 },
-  { id: 'greedy', label: 'Расчетливый', traits: ['выгода', 'торг'], bravery: 50, sociability: 58, discipline: 66 }
-];
-
 function npcStableRoll(seed = '', salt = '') {
   return stableEnemyUnit(`${seed}:${salt}`);
 }
@@ -3951,15 +3942,6 @@ const NPC_SOCIAL_LINES = {
     'День будет долгим.',
     'Главное, без лишней стрельбы.'
   ]
-};
-
-const NPC_PERSONALITY_LINES = {
-  steady: ['Без суеты.', 'Порядок спасает жизнь.'],
-  talker: ['Надо будет всё это рассказать.', 'Ты слышал последнюю байку?'],
-  hardy: ['Переживём.', 'Работа сама себя не сделает.'],
-  nervous: ['Ты тоже это слышал?', 'Не нравится мне этот ветер.'],
-  kind: ['Если нужна помощь, скажи.', 'Береги себя.'],
-  greedy: ['За риск должны платить.', 'Выгода есть даже в пыли.']
 };
 
 const SERVER_CONTEXT_ITEM_LABELS = {
@@ -4120,11 +4102,7 @@ function npcSocialSpeechLine(enemy = {}, friend = {}, now = Date.now(), room = n
     return String(context[index] || context[0] || '').slice(0, 96);
   }
   const roleKey = npcSpeechRoleKey(enemy);
-  const personalityId = String(enemy.npcProfile?.personality?.id || '').toLowerCase();
-  const pool = [
-    ...(NPC_SOCIAL_LINES[roleKey] || NPC_SOCIAL_LINES.default),
-    ...(NPC_PERSONALITY_LINES[personalityId] || [])
-  ];
+  const pool = NPC_SOCIAL_LINES[roleKey] || NPC_SOCIAL_LINES.default;
   const bucket = Math.floor(now / 9000);
   const index = Math.floor(npcStableRoll(seed, `speech:${bucket}:${friend?.id || ''}`) * pool.length) % pool.length;
   return String(pool[index] || pool[0] || '').slice(0, 96);
@@ -4152,21 +4130,10 @@ function createServerNpcProfile(seed = '', opts = {}, loc = {}) {
   const requestedRoutineId = String(opts.routineId || opts.npcRoutineId || '').replace(/[^a-zA-Z0-9_:-]/g, '_').slice(0, 96);
   const authoredRoutine = requestedRoutineId ? SERVER_NPC_ROUTINES[requestedRoutineId] : null;
   const schedule = authoredRoutine || createNpcSchedule(seed, role, faction);
-  const personality = NPC_PERSONALITY_ARCHETYPES[
-    Math.floor(npcStableRoll(seed, 'personality') * NPC_PERSONALITY_ARCHETYPES.length) % NPC_PERSONALITY_ARCHETYPES.length
-  ];
   return {
     id: String(seed || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64),
     npcId,
     routineId: String(authoredRoutine?.id || schedule?.id || requestedRoutineId || '').slice(0, 96),
-    personality: {
-      id: personality.id,
-      label: personality.label,
-      traits: personality.traits.slice(),
-      bravery: clamp(Math.round(personality.bravery + (npcStableRoll(seed, 'bravery') - 0.5) * 18), 5, 100),
-      sociability: clamp(Math.round(personality.sociability + (npcStableRoll(seed, 'sociability') - 0.5) * 18), 5, 100),
-      discipline: clamp(Math.round(personality.discipline + (npcStableRoll(seed, 'discipline') - 0.5) * 18), 5, 100)
-    },
     special: createNpcSpecial(seed, role, faction),
     schedule,
     homeLocationId: String(loc?.id || '').slice(0, 64)
@@ -10580,10 +10547,10 @@ function updateRangedNpcTacticalMovement(room, enemy, target, weapon, dt, opts =
   return true;
 }
 
-function enemyRetreatHpRatio(enemy = {}) {
-  const bravery = clamp(Number(enemy.npcProfile?.personality?.bravery || 50), 5, 100);
-  const discipline = clamp(Number(enemy.npcProfile?.personality?.discipline || 50), 5, 100);
-  return clamp(0.12 + (55 - bravery) * 0.0032 - (discipline - 50) * 0.0012, 0.055, 0.24);
+const ENEMY_RETREAT_HP_RATIO = 0.136;
+
+function enemyRetreatHpRatio() {
+  return ENEMY_RETREAT_HP_RATIO;
 }
 
 function updateEnemyCombatRetreat(room, enemy, target, dt, now = Date.now()) {
@@ -14621,7 +14588,6 @@ function publicEnemy(e, viewer = null) {
   const scheduleStateRaw = String(e.npcScheduleState || (e.npcProfile ? npcScheduleStateAt(e.npcProfile.schedule, now) : '') || '');
   const scheduleState = naturalCreature ? '' : (aiState === 'dialogue' ? 'dialogue' : scheduleStateRaw);
   const scheduleLabel = naturalCreature ? '' : String(e.npcScheduleLabel || npcScheduleLabel(scheduleState) || '');
-  const npcPersonality = !naturalCreature && e.npcProfile?.personality ? e.npcProfile.personality : null;
   const npcSpecial = !naturalCreature && e.npcProfile?.special ? e.npcProfile.special : null;
   const speechActive = !naturalCreature
     && !e.dead
@@ -14667,14 +14633,6 @@ function publicEnemy(e, viewer = null) {
     equipmentProfile: String(e.equipmentProfile || '').slice(0, 64),
     lootProfile: String(e.lootProfile || '').slice(0, 64),
     tradeProfile: String(e.tradeProfile || '').slice(0, 64),
-    personality: npcPersonality ? {
-      id: String(npcPersonality.id || '').slice(0, 32),
-      label: String(npcPersonality.label || '').slice(0, 48),
-      traits: Array.isArray(npcPersonality.traits) ? npcPersonality.traits.map(x => String(x || '').slice(0, 32)).slice(0, 4) : [],
-      bravery: clamp(Math.round(Number(npcPersonality.bravery || 0)), 0, 100),
-      sociability: clamp(Math.round(Number(npcPersonality.sociability || 0)), 0, 100),
-      discipline: clamp(Math.round(Number(npcPersonality.discipline || 0)), 0, 100)
-    } : null,
     special: npcSpecial ? {
       ST: clamp(Math.round(Number(npcSpecial.ST || 0)), 1, 10),
       PE: clamp(Math.round(Number(npcSpecial.PE || 0)), 1, 10),

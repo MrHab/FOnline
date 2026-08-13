@@ -2314,7 +2314,6 @@ function assertEnemySnapshotFanout() {
       name: enemy.name,
       hostileToPlayer: viewer ? viewer.hostileEnemyIds.has(enemy.id) : false,
       inventory: [{ id: 'water', qty: enemy.qty }],
-      personality: { label: 'calm', traits: ['patient'] },
       aiState: 'idle',
       dead: false
     };

@@ -587,6 +587,9 @@
     }
     const screen = document.getElementById('character-screen');
     if (screen) screen.classList.remove('visible');
+    // Отсюда начинается собственно игра: только теперь имеет смысл грузить
+    // тяжёлые картинки HUD, до этого они занимали очередь запросов.
+    document.body.classList.add('game-running');
     gameStarted = true;
     paused = false;
     const pauseScreen = document.getElementById('pause-screen');

@@ -700,7 +700,11 @@
   });
 
   if (!openPasswordResetFromUrl()) setAuthStep('login');
-  renderCharacterCreator();
+  // Создание персонажа рисуется, когда его открывают: setAuthStep('create')
+  // зовёт renderCharacterCreator сам. На старте этот вызов заводил превью
+  // персонажа и тянул тело на 3.9 МБ ещё до экрана входа. По HTTP/1.1 браузер
+  // держит шесть соединений на хост, и запрос входа вставал в очередь за этой
+  // загрузкой — нажатие «Войти» выглядело зависанием на несколько секунд.
   renderInventory();
   renderQuickbar();
   updateCamera(1);

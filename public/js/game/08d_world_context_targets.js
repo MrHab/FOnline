@@ -140,8 +140,9 @@
     const safe = typeof escapeHtml === 'function'
       ? escapeHtml
       : (value => String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch])));
-    // Шанс попадания всегда ярко-красный: игрок читает его первым.
-    return `<b>${safe(enemy.name)}</b> <span class="hit-chance">${info.chance}%</span>`;
+    // Шанс попадания идёт первой строкой, имя под ним: шанс читают первым, и
+    // держать его надо ближе к прицелу, чем имя.
+    return `<span class="hit-chance">${info.chance}%</span><br><b>${safe(enemy.name)}</b>`;
   }
 
   // Подсказка привязана к самой цели, а не к курсору. Осмотр запускают
@@ -192,7 +193,6 @@
       el.innerHTML = targetHintRenderCache.html;
       el.dataset.targetHintHtml = targetHintRenderCache.html;
     }
-    const pad = 14;
     const anchor = targetHintScreenAnchor(enemy, clientX, clientY);
     const anchorX = anchor.x;
     const anchorY = anchor.y;
@@ -200,8 +200,11 @@
     // длины имени, а прежние фиксированные 190×92 были от старой панели.
     const width = Math.max(40, el.offsetWidth || 0);
     const height = Math.max(16, el.offsetHeight || 0);
-    const x = Math.min(window.innerWidth - width - 8, Math.max(8, anchorX + pad));
-    const y = Math.min(window.innerHeight - height - 8, Math.max(8, anchorY + pad));
+    // Справа от прицела и по центру относительно него: шанс попадания встаёт
+    // над остриём курсора, имя — под ним. Отступ вправо чуть больше самого
+    // курсора, чтобы текст не оказался под его иконкой.
+    const x = Math.min(window.innerWidth - width - 8, Math.max(8, anchorX + 18));
+    const y = Math.min(window.innerHeight - height - 8, Math.max(8, anchorY - height * 0.5));
     // Записываем, пока позиция не подтверждена числом: любое сравнение с
     // «ещё не записано» должно приводить к записи, а не пропускать её.
     if (!Number.isFinite(targetHintRenderCache.left) || Math.abs(x - targetHintRenderCache.left) > 0.5) {

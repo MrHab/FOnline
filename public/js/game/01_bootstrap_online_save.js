@@ -778,6 +778,49 @@
     };
   }
 
+  // Вход в сетевую сессию с повтором. Обрыв связи и занятость персонажа —
+  // состояния временные: после разрыва сервер держит блокировку персонажа,
+  // пока socket.io не заметит смерть прошлого сокета, а потерянное соединение
+  // со следующей попытки обычно устанавливается сразу. Одна попытка на 4.5 с
+  // выдавала ошибку там, где достаточно было подождать.
+  const SERVER_JOIN_RETRY_DELAYS = [1500, 4000, 9000, 15000];
+
+  function serverJoinFailureText() {
+    return typeof multiplayerJoinFailureText === 'function'
+      ? multiplayerJoinFailureText()
+      : 'Не удалось войти в игру.';
+  }
+
+  function serverJoinRetryStatus(attempt, total, reason) {
+    if (reason === 'busy') return `Прошлая сессия ещё не закрыта на сервере, жду освобождения (${attempt} из ${total})...`;
+    return `Сервер не ответил, пробую подключиться снова (${attempt} из ${total})...`;
+  }
+
+  async function joinServerWithRetry(options = {}) {
+    const cancelled = typeof options.cancelled === 'function' ? options.cancelled : () => false;
+    const mark = typeof options.markStartup === 'function' ? options.markStartup : () => {};
+    const total = SERVER_JOIN_RETRY_DELAYS.length + 1;
+    for (let attempt = 1; attempt <= total; attempt += 1) {
+      if (cancelled()) return false;
+      const ok = await connectMultiplayer({ waitForJoin: true, timeoutMs: 4500 });
+      if (ok !== false) return ok;
+      if (cancelled()) return false;
+      const retryable = typeof multiplayerJoinFailureIsRetryable === 'function'
+        && multiplayerJoinFailureIsRetryable();
+      if (!retryable || attempt === total) {
+        mark('network-join-gave-up', { attempts: attempt, reason: multiplayerJoinFailureReason?.() || '' });
+        return false;
+      }
+      const reason = typeof multiplayerJoinFailureReason === 'function' ? multiplayerJoinFailureReason() : '';
+      mark('network-join-retry', { attempt, reason });
+      if (typeof setLocationLoadingProgress === 'function') {
+        setLocationLoadingProgress(serverJoinRetryStatus(attempt, total, reason), 90);
+      }
+      await new Promise(resolve => setTimeout(resolve, SERVER_JOIN_RETRY_DELAYS[attempt - 1]));
+    }
+    return false;
+  }
+
   async function selectServerCharacter(characterId) {
     if (characterDeletePendingId) {
       setCharacterSelectStatus('Дождитесь завершения удаления персонажа.', '');
@@ -851,10 +894,16 @@
             if (characterProfile) characterProfile.serverCharacterId = characterId;
             localStorage.setItem(SERVER_CHARACTER_KEY, selectedServerCharacterId);
             markStartup('network-join-started');
-            const networkReady = await connectMultiplayer({ waitForJoin: true, timeoutMs: 4500 });
+            const networkReady = await joinServerWithRetry({
+              cancelled: () => !selectionIsCurrent(),
+              markStartup
+            });
             markStartup('network-join-finished', { ok: networkReady !== false });
             if (!selectionIsCurrent()) throw new Error('Загрузка персонажа была отменена.');
             if (networkReady === false) {
+              // Причину надо забрать до сброса сессии: сброс сам записывает
+              // свою причину и затирает настоящую.
+              const failureText = serverJoinFailureText();
               gameStarted = false;
               activeCharacterLeaseId = '';
               if (typeof invalidateMultiplayerSessionContext === 'function') {
@@ -866,7 +915,7 @@
                 try { multiplayer.socket.disconnect(); } catch (_) {}
                 multiplayer.socket = null;
               }
-              throw new Error('Сервер не разрешил открыть этого персонажа. Возможно, он уже открыт в другой вкладке.');
+              throw new Error(failureText);
             }
             // v7.74.67: do not reveal/start the world until the server has
             // granted the active character lease. A rejected duplicate tab must

@@ -104,8 +104,12 @@
     enemyKey: '',
     html: '',
     until: 0,
-    left: NaN,
-    top: NaN
+    // Позиция ещё ни разу не записана. Здесь нельзя держать NaN: сравнение
+    // «сдвинулась ли подсказка» пропускало бы первую запись — Math.abs(x - NaN)
+    // это NaN, а NaN > 0.5 всегда ложь, — и подсказка навсегда оставалась бы в
+    // левом верхнем углу, где её и рисует position: absolute без координат.
+    left: null,
+    top: null
   };
 
   function targetHintCacheKey(enemy) {
@@ -214,11 +218,13 @@
     const anchorY = anchor.y;
     const x = Math.min(window.innerWidth - 190, Math.max(8, anchorX + pad));
     const y = Math.min(window.innerHeight - 92, Math.max(8, anchorY + pad));
-    if (Math.abs(x - targetHintRenderCache.left) > 0.5) {
+    // Записываем, пока позиция не подтверждена числом: любое сравнение с
+    // «ещё не записано» должно приводить к записи, а не пропускать её.
+    if (!Number.isFinite(targetHintRenderCache.left) || Math.abs(x - targetHintRenderCache.left) > 0.5) {
       el.style.left = x + 'px';
       targetHintRenderCache.left = x;
     }
-    if (Math.abs(y - targetHintRenderCache.top) > 0.5) {
+    if (!Number.isFinite(targetHintRenderCache.top) || Math.abs(y - targetHintRenderCache.top) > 0.5) {
       el.style.top = y + 'px';
       targetHintRenderCache.top = y;
     }

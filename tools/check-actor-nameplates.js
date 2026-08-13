@@ -182,13 +182,28 @@ const pointerIndex = anchorFn[0].indexOf('Number.isFinite(clientX)');
 assert(pointerIndex < projectIndex,
   'подсказка должна вставать у прицела, а позиция цели — только запасной вариант');
 
+// --- Подсказка стоит справа от прицела, шанс — над именем ---
+assert(/anchorX \+ 18/.test(hintFn[0]),
+  'подсказка больше не отступает вправо от курсора и попадёт под иконку прицела');
+assert(/anchorY - height \* 0\.5/.test(hintFn[0]),
+  'подсказка не центрируется по прицелу: шанс попадания должен вставать над остриём курсора');
+
+// --- Чёрный контур у шанса попадания ---
+// Одно красное свечение размывало цифры на песке и на крови.
+const chanceOutline = /#target-hint \.hit-chance,[\s\S]*?\{([^}]*)\}/.exec(css);
+assert(chanceOutline, 'нет стиля шанса попадания');
+assert(/-webkit-text-stroke:\s*[\d.]+px\s*#000/.test(chanceOutline[1]),
+  'у шанса попадания нет чёрного контура');
+assert(/text-shadow:[^;]*#000/.test(chanceOutline[1]),
+  'контур шанса попадания держится только на обводке текста и поплывёт на пёстром фоне');
+
 // --- В подсказке только имя и шанс попадания ---
 // Всё остальное закрывало то, во что целишься: здоровье и состояние теперь
 // видны над самой моделью, отношение читается по цвету плашки.
 const hintHtml = /function buildTargetHintHtml\([\s\S]*?\n  \}/.exec(targets);
 assert(hintHtml, 'нет сборки подсказки');
-assert(/return `<b>\$\{safe\(enemy\.name\)\}<\/b> <span class="hit-chance">\$\{info\.chance\}%<\/span>`/.test(hintHtml[0]),
-  'подсказка прицела должна показывать только имя и шанс попадания');
+assert(/return `<span class="hit-chance">\$\{info\.chance\}%<\/span><br><b>\$\{safe\(enemy\.name\)\}<\/b>`/.test(hintHtml[0]),
+  'подсказка прицела должна показывать шанс попадания первой строкой и имя под ним');
 for (const [needle, what] of [
   ['Состояние', 'состояние здоровья'],
   ['SPECIAL', 'SPECIAL'],

@@ -23,15 +23,19 @@
   line-height: 1.25;
   text-align: center;
   white-space: nowrap;
+  /* Контур такой же, как у шанса попадания: обводка даёт ровный край, тени —
+     плотность. Одних полупрозрачных теней на светлом песке не хватало. */
+  -webkit-text-stroke: 0.6px #000;
   text-shadow:
-    0 0 3px rgba(0, 0, 0, 0.95),
-    0 1px 2px rgba(0, 0, 0, 0.95),
-    1px 0 1px rgba(0, 0, 0, 0.8),
-    -1px 0 1px rgba(0, 0, 0, 0.8);
+    0 0 2px #000,
+    1px 0 1px #000,
+    -1px 0 1px #000,
+    0 1px 1px #000,
+    0 -1px 1px #000;
 }
 
 .actor-nameplate .plate-name { color: #dbe7c8; font-weight: 700; }
-.actor-nameplate .plate-health { color: #9fd7a0; }
+.actor-nameplate .plate-health { color: #9fd7a0; font-weight: 700; }
 .actor-nameplate.plate-player .plate-name { color: #8fd3ff; }
 .actor-nameplate.plate-hostile .plate-name { color: #f3b58a; }
 .actor-nameplate.plate-hurt .plate-health { color: #f0c65b; }

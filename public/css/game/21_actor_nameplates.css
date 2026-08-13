@@ -14,32 +14,32 @@
 
 /* Подложки нет: плашки висят над каждым живым актёром, и полтора десятка
    тёмных прямоугольников закрывали бы поле боя сильнее, чем помогали. Вместо
-   неё текст держится на обводке — она читается и на светлом песке, и в тени. */
+   неё текст держится на чёрном ореоле из теней.
+
+   Обводки тут быть не должно: -webkit-text-stroke рисуется по центру контура
+   глифа и половиной уходит внутрь буквы. На тексте такого размера от тела
+   буквы оставался один процент исходного цвета — надписи выглядели тонкими,
+   тусклыми и мыльными. Тени рисуются позади глифа и его не трогают. */
 .actor-nameplate {
   position: absolute;
   left: 0;
   top: 0;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.25;
   text-align: center;
   white-space: nowrap;
-  /* Контур такой же, как у шанса попадания: обводка даёт ровный край, тени —
-     плотность. Одних полупрозрачных теней на светлом песке не хватало. */
-  -webkit-text-stroke: 0.6px #000;
   text-shadow:
-    0 0 2px #000,
-    1px 0 1px #000,
-    -1px 0 1px #000,
-    0 1px 1px #000,
-    0 -1px 1px #000;
+    1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000,
+    1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000,
+    0 0 4px rgba(0, 0, 0, 0.9);
 }
 
-.actor-nameplate .plate-name { color: #dbe7c8; font-weight: 700; }
-.actor-nameplate .plate-health { color: #9fd7a0; font-weight: 700; }
-.actor-nameplate.plate-player .plate-name { color: #8fd3ff; }
-.actor-nameplate.plate-hostile .plate-name { color: #f3b58a; }
-.actor-nameplate.plate-hurt .plate-health { color: #f0c65b; }
-.actor-nameplate.plate-critical .plate-health { color: #ff6a52; }
+.actor-nameplate .plate-name { color: #f4f8ea; font-weight: 700; }
+.actor-nameplate .plate-health { color: #b8f2b9; font-weight: 700; }
+.actor-nameplate.plate-player .plate-name { color: #a9e2ff; }
+.actor-nameplate.plate-hostile .plate-name { color: #ffc9a3; }
+.actor-nameplate.plate-hurt .plate-health { color: #ffd76c; }
+.actor-nameplate.plate-critical .plate-health { color: #ff8069; }
 
 /* Подсказка прицела: имя цели и шанс попадания у самого курсора, без подложки.
    Свойства старой панели гасятся явно — её описание лежит у игрока в кэше
@@ -55,12 +55,11 @@
   white-space: nowrap;
   font-size: 12px;
   line-height: 1.2;
-  color: #e6ddc4;
+  color: #f3ecd8;
   text-shadow:
-    0 0 3px rgba(0, 0, 0, 0.95),
-    0 1px 2px rgba(0, 0, 0, 0.95),
-    1px 0 1px rgba(0, 0, 0, 0.8),
-    -1px 0 1px rgba(0, 0, 0, 0.8);
+    1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000,
+    1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000,
+    0 0 4px rgba(0, 0, 0, 0.9);
 }
 
 #target-hint b { color: #f0d28a; font-weight: 700; }
@@ -73,14 +72,10 @@
 #target-hint .hit-good,
 #target-hint .hit-mid,
 #target-hint .hit-bad {
-  color: #ff2d1f;
+  color: #ff3b2c;
   font-weight: 900;
-  -webkit-text-stroke: 0.7px #000;
   text-shadow:
-    0 0 2px #000,
-    1px 0 1px #000,
-    -1px 0 1px #000,
-    0 1px 1px #000,
-    0 -1px 1px #000,
-    0 0 7px rgba(255, 45, 31, 0.45);
+    1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000,
+    1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000,
+    0 0 5px rgba(0, 0, 0, 0.9);
 }

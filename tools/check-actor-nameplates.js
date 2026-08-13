@@ -142,4 +142,19 @@ assert(!/Number\.isFinite\(Number\(client[XY]\)\)/.test(anchorFn[0]),
 assert(/window\.innerWidth \* 0\.5/.test(anchorFn[0]),
   'у подсказки нет запасной точки, если нет ни цели на экране, ни курсора');
 
+// --- Посчитанная позиция обязана доходить до элемента ---
+// Кэш «где подсказка стоит сейчас» сравнивается с новой позицией, чтобы не
+// трогать стиль зря. Если завести его как NaN, Math.abs(x - NaN) даёт NaN,
+// любое сравнение с числом ложно, и left/top не запишутся ни разу: подсказка
+// навсегда останется в левом верхнем углу, что бы код ни посчитал.
+const hintCache = /var targetHintRenderCache = \{[\s\S]*?\n  \};/.exec(targets);
+assert(hintCache, 'нет кэша позиции подсказки');
+assert(!/left:\s*NaN/.test(hintCache[0]) && !/top:\s*NaN/.test(hintCache[0]),
+  'кэш позиции подсказки заведён как NaN — первая запись позиции будет пропущена');
+assert(/left:\s*null/.test(hintCache[0]) && /top:\s*null/.test(hintCache[0]),
+  'непонятно, чем обозначено «позиция ещё не записана»');
+assert(/!Number\.isFinite\(targetHintRenderCache\.left\) \|\| Math\.abs/.test(hintFn[0])
+  && /!Number\.isFinite\(targetHintRenderCache\.top\) \|\| Math\.abs/.test(hintFn[0]),
+  'подсказка не записывает позицию, пока она не подтверждена числом');
+
 console.log('Actor nameplates OK: подписи только у важных ролей, своя подпись, подсказка привязана к цели, шанс попадания ярко-красный.');

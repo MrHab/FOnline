@@ -1894,10 +1894,8 @@
   // только с перком «Осведомлённость», иначе — словесное состояние.
   const NAMEPLATE_MAX_DISTANCE = 26;
   const NAMEPLATE_HEIGHT = 2.05;
-  const NAMEPLATE_UPDATE_MS = 60;
   const nameplatePool = [];
   let nameplateLayer = null;
-  let nameplateNextUpdateAt = 0;
   const nameplateProjected = new THREE.Vector3();
 
   function nameplateLayerElement() {
@@ -1926,7 +1924,9 @@
     const node = document.createElement('div');
     node.className = 'actor-nameplate';
     node.style.position = 'absolute';
-    node.style.transform = 'translate(-50%, -100%)';
+    node.style.left = '0';
+    node.style.top = '0';
+    node.style.willChange = 'transform';
     node.style.whiteSpace = 'nowrap';
     node.style.textAlign = 'center';
     const name = document.createElement('span');
@@ -1985,12 +1985,13 @@
     // Свой персонаж подписан наравне с остальными: игрок должен видеть, где он
     // в толпе и что с его здоровьем, не отводя взгляд на панель.
     if (player) {
+      const drawnSelf = player.mesh?.position;
       rows.push({
         name: String(characterProfile?.name || player.name || 'Странник'),
         hp: player.hp,
         maxHp: player.maxHp,
-        x: px,
-        z: pz,
+        x: Number(drawnSelf?.x ?? px),
+        z: Number(drawnSelf?.z ?? pz),
         scale: 1,
         kind: 'plate-player',
         self: true
@@ -2004,12 +2005,13 @@
         // Здоровье показываем у всех — и у зверья, и у рядовых врагов. Имя
         // получают только важные персонажи: у массовки имена вида «Караванный
         // двор Старого Клима: охрана», и стена такого текста закрывает игру.
+        const drawn = enemy.mesh.position;
         rows.push({
           name: isNameplateNpc(enemy) ? String(enemy.name || '') : '',
           hp: enemy.hp,
           maxHp: enemy.maxHp,
-          x: Number(enemy.x || 0),
-          z: Number(enemy.z || 0),
+          x: Number(drawn?.x ?? enemy.visualX ?? enemy.x ?? 0),
+          z: Number(drawn?.z ?? enemy.visualZ ?? enemy.z ?? 0),
           scale: Number(enemy.scale || 1),
           kind: enemy.hostileToPlayer === false ? '' : 'plate-hostile'
         });
@@ -2020,8 +2022,9 @@
       remote.forEach(row => {
         const data = row?.data || {};
         if (!row?.group || row.group.visible === false) return;
-        const x = Number(row.visualX ?? data.x ?? 0);
-        const z = Number(row.visualZ ?? data.z ?? 0);
+        const drawn = row.group.position;
+        const x = Number(drawn?.x ?? row.visualX ?? data.x ?? 0);
+        const z = Number(drawn?.z ?? row.visualZ ?? data.z ?? 0);
         if (Math.hypot(x - px, z - pz) > NAMEPLATE_MAX_DISTANCE) return;
         rows.push({
           name: String(data.name || 'Игрок'),
@@ -2040,10 +2043,6 @@
   function updateHpBars() {
     const layer = nameplateLayerElement();
     if (!layer || typeof camera === 'undefined' || !camera) return;
-    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    if (now < nameplateNextUpdateAt) return;
-    nameplateNextUpdateAt = now + NAMEPLATE_UPDATE_MS;
-
     const rows = collectNameplateActors();
     const rect = canvas.getBoundingClientRect();
     let used = 0;
@@ -2072,8 +2071,7 @@
       const tone = nameplateTone(row);
       const className = `actor-nameplate ${row.kind} ${tone}`.replace(/\s+/g, ' ').trim();
       if (entry.node.className !== className) entry.node.className = className;
-      entry.node.style.left = `${Math.round(left)}px`;
-      entry.node.style.top = `${Math.round(top)}px`;
+      entry.node.style.transform = `translate3d(${left.toFixed(2)}px, ${top.toFixed(2)}px, 0) translate(-50%, -100%)`;
       if (entry.node.style.display !== 'block') entry.node.style.display = 'block';
     }
     for (let index = used; index < nameplatePool.length; index += 1) {

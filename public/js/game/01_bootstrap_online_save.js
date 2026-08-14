@@ -1025,6 +1025,39 @@
     return true;
   }
 
+  // Возврат к выбору персонажа, когда связь восстановить не удалось. Аккаунт
+  // остаётся, гасится только игровая сессия: иначе игрок сидит в мире, где
+  // любое действие отвечает «связь восстанавливается», и выйти оттуда нечем.
+  async function dropToCharacterSelect(message = 'Связь с сервером потеряна.') {
+    if (!gameStarted && !selectedServerCharacterId) return false;
+    if (typeof stopMultiplayerRecovery === 'function') stopMultiplayerRecovery('drop-to-menu');
+    if (multiplayer?.socket) {
+      try { multiplayer.socket.disconnect(); } catch (_) {}
+      multiplayer.socket = null;
+    }
+    multiplayer.joinRequested = false;
+    activeCharacterLeaseId = '';
+    if (multiplayer) multiplayer.characterLeaseId = '';
+    try { if (typeof clearRemotePlayers === 'function') clearRemotePlayers(); } catch (_) {}
+    try { if (typeof closeAllWindows === 'function') closeAllWindows(false); } catch (_) {}
+    try { if (typeof closeLootWindow === 'function') closeLootWindow(); } catch (_) {}
+    try { if (typeof closeTraderWindow === 'function') closeTraderWindow(); } catch (_) {}
+    try { if (typeof closeStorageWindow === 'function') closeStorageWindow(); } catch (_) {}
+    try { if (typeof closeGameMenu === 'function') closeGameMenu(false); } catch (_) {}
+    gameStarted = false;
+    clientContextTransitionInFlight = false;
+    document.body.classList.remove('game-running');
+    const screen = document.getElementById('character-screen');
+    if (screen) screen.classList.add('visible');
+    setOnlineStatus('Сеть: связь потеряна');
+    // Список персонажей тянется с сервера и может не ответить — тогда экран
+    // покажет свою ошибку, но игрок всё равно уже не заперт в мире.
+    await showCharacterSelect(message);
+    setCharacterSelectStatus(message, 'err');
+    if (typeof updateMobilePanelState === 'function') updateMobilePanelState();
+    return true;
+  }
+
   async function serverLogout() {
     if (characterDeletePendingId) {
       setCharacterSelectStatus('Дождитесь завершения удаления персонажа.', '');
@@ -1242,7 +1275,15 @@
           advanceClientSaveContextEpoch();
           activeCharacterLeaseId = '';
           if (multiplayer) multiplayer.characterLeaseId = '';
-          setReadout('Сессия персонажа недействительна. Откройте персонажа заново.');
+          // Раньше здесь только писали игроку, что делать. Без права на
+          // сохранение играть уже нельзя, поэтому пробуем вернуть сессию, а
+          // если не выйдет — надзор сам выведет к выбору персонажа.
+          setReadout('Сессия персонажа недействительна. Восстанавливаю сессию…');
+          if (typeof beginMultiplayerRecovery === 'function' && beginMultiplayerRecovery()) {
+            // Восстановление пошло, дальше решает надзор.
+          } else if (typeof dropToCharacterSelect === 'function') {
+            dropToCharacterSelect('Сессия персонажа недействительна. Откройте персонажа заново.');
+          }
         }
       }
       return { ok: false, error: err, contextCurrent };

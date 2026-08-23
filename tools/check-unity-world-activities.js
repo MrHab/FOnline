@@ -37,6 +37,9 @@ requirePattern(simulation,
 requirePattern(simulation,
   /function ensureOutpostDefenseTasks\([\s\S]{0,4000}createWorldTask\('outpost_defense'/,
   'the world simulation no longer seeds outpost defenses');
+requirePattern(simulation,
+  /function ensureDistressSignalTasks\([\s\S]{0,4500}createWorldTask\('distress_signal'/,
+  'the world simulation no longer seeds distress signals');
 requirePattern(server,
   /function publicWorldState\([\s\S]{0,900}activity: publicWorldActivity\(room\.worldActivity\)/,
   'activity is no longer part of the authoritative room snapshot');
@@ -76,6 +79,8 @@ requireText(canvas, 'new GameObject("WorldActivityMarkers")',
   'Unity recon world markers are missing');
 requireText(canvas, 'kind == "outpost_defense"',
   'Unity HUD has no outpost defense presentation');
+requireText(canvas, 'kind == "distress_signal"',
+  'Unity HUD has no distress signal presentation');
 requireText(canvas, 'Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap',
   'activity HUD is not hidden outside a local gameplay location');
 requireText(bootstrap, 'WorldActivityCanvas.Configure(Socket, this);',

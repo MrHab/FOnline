@@ -2272,6 +2272,7 @@ function createWastelandSimulation(options = {}) {
     if (type === 'resource_expedition') return { xp: 70 + Math.round(danger * 14 + p * 9), caps: 38 + Math.round(danger * 9 + p * 7), reputation: 1 };
     if (type === 'recon_expedition') return { xp: 75 + Math.round(danger * 16 + p * 10), caps: 40 + Math.round(danger * 8 + p * 8), reputation: 1 };
     if (type === 'outpost_defense') return { xp: 95 + Math.round(danger * 20 + p * 12), caps: 52 + Math.round(danger * 11 + p * 9), reputation: 2 };
+    if (type === 'distress_signal') return { xp: 90 + Math.round(danger * 18 + p * 11), caps: 48 + Math.round(danger * 10 + p * 8), reputation: 2 };
     if (type === 'deliver_supplies') return { xp: 55 + Math.round(p * 10), caps: 28 + Math.round(p * 7), reputation: 1 };
     if (type === 'escort_caravan') return { xp: 90 + Math.round(p * 12), caps: 55 + Math.round(danger * 10 + p * 14), reputation: 2 };
     if (type === 'join_patrol') return { xp: 80 + Math.round(p * 14), caps: 42 + Math.round(p * 10), reputation: 2 };
@@ -2600,6 +2601,57 @@ function createWastelandSimulation(options = {}) {
         reward: rewardForWorldTask('outpost_defense', site, priority),
         details: {
           activityKind: 'outpost_defense',
+          x: Number(site.x || 0),
+          y: Number(site.y || 0),
+          locationId: worldSiteLocationId(site),
+          targetKills,
+          bonusKills,
+          maxKills,
+          durationSeconds: 360
+        }
+      });
+      if (task) created.push(task);
+    }
+    return [...active, ...created];
+  }
+
+  function ensureDistressSignalTasks() {
+    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'distress_signal');
+    const totalActive = state.worldTasks.filter(task => task?.status === 'active').length;
+    const openSlots = Math.max(0, Math.min(1 - active.length, MAX_WORLD_TASK_COUNT - totalActive));
+    if (openSlots <= 0) return active;
+    const activityTypes = new Set(['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal']);
+    const occupiedSiteIds = new Set(state.worldTasks
+      .filter(task => task?.status === 'active' && activityTypes.has(task.type))
+      .map(task => String(task.siteId || ''))
+      .filter(Boolean));
+    const sites = Object.values(state.sites || {})
+      .filter(site => site
+        && siteTypeKey(site) === 'pointofinterest'
+        && worldSiteLocationId(site)
+        && !occupiedSiteIds.has(String(site.id || '')))
+      .sort((left, right) => (
+        Number(right.danger || 0) - Number(left.danger || 0)
+        || Number(left.security || siteDefaultSecurity(left)) - Number(right.security || siteDefaultSecurity(right))
+        || String(left.id || '').localeCompare(String(right.id || ''))
+      ));
+    const created = [];
+    for (const site of sites.slice(0, openSlots)) {
+      const targetKills = 4;
+      const bonusKills = 6;
+      const maxKills = 9;
+      const priority = clamp(2 + Math.round(Number(site.danger || 0) / 2), 2, 4);
+      const task = createWorldTask('distress_signal', {
+        key: `distress_signal:${site.id}`,
+        title: `Сигнал бедствия: ${site.name}`,
+        text: `Найдите источник сигнала у ${site.name}, активируйте маяк и зачистите засаду. После ${targetKills} поверженных врагов помощь засчитывается; ${bonusKills} дают повышенную награду.`,
+        siteId: site.id,
+        objective: 'distress_signal',
+        durationHours: 18,
+        priority,
+        reward: rewardForWorldTask('distress_signal', site, priority),
+        details: {
+          activityKind: 'distress_signal',
           x: Number(site.x || 0),
           y: Number(site.y || 0),
           locationId: worldSiteLocationId(site),
@@ -4959,7 +5011,7 @@ function createWastelandSimulation(options = {}) {
     const id = String(taskId || '').trim();
     const task = state.worldTasks.find(row => row && String(row.id || '') === id);
     if (!task || task.status !== 'active') return { ok: false, error: 'Задание уже недоступно.' };
-    const supportedTypes = new Set(['resource_expedition', 'recon_expedition', 'outpost_defense']);
+    const supportedTypes = new Set(['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal']);
     if (!supportedTypes.has(task.type)) return { ok: false, error: 'Это задание нельзя закрыть эвакуацией.' };
     const site = task.siteId ? state.sites[task.siteId] : null;
     if (!site) return { ok: false, error: 'Точка вылазки больше не найдена.' };
@@ -4990,6 +5042,10 @@ function createWastelandSimulation(options = {}) {
       site.security = clamp(Number(site.security || siteDefaultSecurity(site)) + 4 + (grade === 'mastered' ? 3 : grade === 'bonus' ? 2 : 0), 0, 100);
       site.defenseBoostUntil = Math.max(Number(site.defenseBoostUntil || 0), Number(state.worldHour || 0) + 24);
       site.lastDefenseHour = Number(state.worldHour || 0);
+    } else if (activityKind === 'distress_signal') {
+      site.security = clamp(Number(site.security || siteDefaultSecurity(site)) + 3 + (grade === 'mastered' ? 2 : grade === 'bonus' ? 1 : 0), 0, 100);
+      site.distressResolvedUntil = Math.max(Number(site.distressResolvedUntil || 0), Number(state.worldHour || 0) + 24);
+      site.lastRescueHour = Number(state.worldHour || 0);
     }
     const finished = finishWorldTask(task, 'completed', 'player_activity_extraction', {
       activityKind,
@@ -5000,6 +5056,7 @@ function createWastelandSimulation(options = {}) {
     });
     const activityLabel = activityKind === 'recon_expedition'
       ? 'разведка завершена'
+      : activityKind === 'distress_signal' ? 'сигнал бедствия обработан'
       : activityKind === 'outpost_defense' ? 'нападение отражено' : 'вылазка завершена';
     addEvent(`${activityKind}_completed`, `${site.name}: ${activityLabel} (${grade}).`, {
       taskId: id,
@@ -9403,6 +9460,7 @@ function createWastelandSimulation(options = {}) {
     ensureResourceExpeditionTasks();
     ensureReconExpeditionTasks();
     ensureOutpostDefenseTasks();
+    ensureDistressSignalTasks();
     createResourceExportCaravans(hours);
     advanceFactionProduction(hours);
     produceAtSettlements(hours);
@@ -11315,6 +11373,7 @@ function createWastelandSimulation(options = {}) {
   ensureResourceExpeditionTasks();
   ensureReconExpeditionTasks();
   ensureOutpostDefenseTasks();
+  ensureDistressSignalTasks();
   save(true);
 
   return {

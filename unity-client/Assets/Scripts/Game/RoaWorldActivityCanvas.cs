@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
 using RealmOfAshes.World;
@@ -152,13 +153,23 @@ namespace RealmOfAshes.Game
             float seconds = Mathf.Max(0f, (endsAt - now) / 1000f);
             _timer.text = status == "completed" ? "ГОТОВО" : Countdown(seconds);
 
-            JObject objective = (_activity?["objectives"] as JArray)?[0] as JObject;
+            JArray objectives = _activity?["objectives"] as JArray;
+            JObject objective = objectives?[0] as JObject;
+            if (kind == "distress_signal" && objectives != null)
+            {
+                JObject signal = objectives.FirstOrDefault(token => token?["id"]?.ToString() == "distress_signal") as JObject;
+                JObject attackers = objectives.FirstOrDefault(token => token?["id"]?.ToString() == "attackers") as JObject;
+                objective = (signal?["current"]?.ToObject<int>() ?? 0) < (signal?["target"]?.ToObject<int>() ?? 1)
+                    ? signal : attackers;
+            }
             int current = Mathf.Max(0, objective?["current"]?.ToObject<int>() ?? 0);
             int target = Mathf.Max(1, objective?["target"]?.ToObject<int>() ?? 1);
             int bonus = Mathf.Max(target, objective?["bonusTarget"]?.ToObject<int>() ?? target);
             int maximum = Mathf.Max(bonus, objective?["maxTarget"]?.ToObject<int>() ?? bonus);
             string objectivePrefix = kind == "recon_expedition" ? "Разведано: "
                 : kind == "outpost_defense" ? "Нападающие: "
+                : kind == "distress_signal" && objective?["id"]?.ToString() == "distress_signal" ? "Источник сигнала: "
+                : kind == "distress_signal" ? "Засада: "
                 : "Собрано: ";
             _objective.text = objectivePrefix + current + " / " + target
                 + (current >= target ? "   ·   бонус " + bonus + "   ·   максимум " + maximum : string.Empty);
@@ -166,7 +177,10 @@ namespace RealmOfAshes.Game
             float threat = Mathf.Clamp(_activity?["threat"]?.ToObject<float>() ?? 0f, 0f, 100f);
             _threatFill.fillAmount = threat / 100f;
             _threatFill.color = Color.Lerp(Safe, Danger, threat / 100f);
-            _threatText.text = (kind == "outpost_defense" ? "НАТИСК " : "УГРОЗА ")
+            string threatPrefix = kind == "outpost_defense" ? "НАТИСК "
+                : kind == "distress_signal" ? "ЗАСАДА "
+                : "УГРОЗА ";
+            _threatText.text = threatPrefix
                 + Mathf.RoundToInt(threat) + "%";
             _threatText.color = threat >= 50f ? Danger : Muted;
 
@@ -175,15 +189,17 @@ namespace RealmOfAshes.Game
 
             bool extractionOpen = _activity?["extractionOpen"]?.ToObject<bool>() == true;
             float nearestDistance = float.MaxValue;
-            JObject nearestPoint = kind == "recon_expedition" ? NearestPendingPoint(out nearestDistance) : null;
+            bool usesPoint = kind == "recon_expedition" || kind == "distress_signal";
+            JObject nearestPoint = usesPoint ? NearestPendingPoint(out nearestDistance) : null;
             bool pointInReach = nearestPoint != null && nearestDistance <= 3f;
             _actionPointId = pointInReach ? nearestPoint?["id"]?.ToString() ?? string.Empty : string.Empty;
-            bool showReconAction = kind == "recon_expedition" && nearestPoint != null && !pointInReach && !extractionOpen;
+            bool showReconAction = usesPoint && nearestPoint != null && !pointInReach && !extractionOpen;
             bool showAction = status != "completed" && (pointInReach || extractionOpen || showReconAction);
             _action.gameObject.SetActive(showAction);
             _action.interactable = !_pending && (pointInReach || extractionOpen);
             if (_pending) _actionLabel.text = "ОБРАБОТКА…";
-            else if (pointInReach) _actionLabel.text = "СОБРАТЬ РАЗВЕДДАННЫЕ";
+            else if (pointInReach) _actionLabel.text = kind == "distress_signal"
+                ? "АКТИВИРОВАТЬ МАЯК" : "СОБРАТЬ РАЗВЕДДАННЫЕ";
             else if (extractionOpen) _actionLabel.text = kind == "outpost_defense"
                 ? "ЗАВЕРШИТЬ ОБОРОНУ" : "ЭВАКУИРОВАТЬСЯ У ВЫХОДА";
             else _actionLabel.text = "ТОЧКА НАБЛЮДЕНИЯ · " + Mathf.CeilToInt(nearestDistance) + " М";
@@ -211,6 +227,8 @@ namespace RealmOfAshes.Game
             {
                 _message.text = kind == "outpost_defense"
                     ? "Отразите три волны. Каждая потеря нападающих ускоряет следующий штурм."
+                    : kind == "distress_signal"
+                    ? "Найдите маяк. После активации будьте готовы к засаде."
                     : kind == "recon_expedition"
                     ? "Найдите отмеченные точки. Каждое наблюдение повышает риск обнаружения."
                     : "Добыча создаёт шум и повышает угрозу.";
@@ -250,8 +268,9 @@ namespace RealmOfAshes.Game
             if (_pending || Socket == null || _activity == null || string.IsNullOrEmpty(pointId)) return;
             string taskId = _activity["taskId"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(taskId)) return;
+            bool distress = _activity["kind"]?.ToString() == "distress_signal";
             _pending = true;
-            _message.text = "Собираем данные наблюдения…";
+            _message.text = distress ? "Активируем аварийный маяк…" : "Собираем данные наблюдения…";
             _message.color = Accent;
             Socket.EmitWithAck("worldTaskAction", new Dictionary<string, object>
             {
@@ -269,7 +288,7 @@ namespace RealmOfAshes.Game
                 }
                 if (ack?["activity"] is JObject activity) _activity = activity;
                 _markerRevision = string.Empty;
-                _message.text = "Разведданные получены.";
+                _message.text = distress ? "Маяк активирован. Засада раскрыта." : "Разведданные получены.";
                 _message.color = Safe;
                 _refreshAt = 0f;
             });
@@ -375,8 +394,10 @@ namespace RealmOfAshes.Game
             if (status == "completed") return "АКТИВНОСТЬ ЗАВЕРШЕНА";
             if (status == "failed" || status == "expired") return "АКТИВНОСТЬ ПРОВАЛЕНА";
             if (phase == "extraction") return kind == "outpost_defense"
-                ? "ОСНОВНАЯ АТАКА ОТБИТА" : "ЭВАКУАЦИЯ ОТКРЫТА";
+                ? "ОСНОВНАЯ АТАКА ОТБИТА"
+                : kind == "distress_signal" ? "РАЙОН ЗАЧИЩЕН" : "ЭВАКУАЦИЯ ОТКРЫТА";
             return kind == "outpost_defense" ? "ОТРАЖЕНИЕ ШТУРМА"
+                : kind == "distress_signal" ? "ПОИСК И СПАСЕНИЕ"
                 : kind == "recon_expedition" ? "РАЗВЕДКА И РИСК"
                 : "ДОБЫЧА И РИСК";
         }
@@ -392,7 +413,7 @@ namespace RealmOfAshes.Game
             _markerRevision = key;
             string kind = _activity?["kind"]?.ToString() ?? string.Empty;
             string status = _activity?["status"]?.ToString() ?? string.Empty;
-            if (kind != "recon_expedition" || (status != "active" && status != "extracting")
+            if (!new[] { "recon_expedition", "distress_signal" }.Contains(kind) || (status != "active" && status != "extracting")
                 || !(_activity?["interactionPoints"] is JArray points)) return;
 
             _markerRoot = new GameObject("WorldActivityMarkers");
@@ -405,7 +426,7 @@ namespace RealmOfAshes.Game
                 float x = point["x"]?.ToObject<float>() ?? 0f;
                 float z = point["z"]?.ToObject<float>() ?? 0f;
                 var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                marker.name = "ReconPoint:" + (point["id"]?.ToString() ?? "point");
+                marker.name = (kind == "distress_signal" ? "DistressSignal:" : "ReconPoint:") + (point["id"]?.ToString() ?? "point");
                 marker.transform.SetParent(_markerRoot.transform, false);
                 marker.transform.position = RoaCoords.ToUnity(x, 0.08f, z);
                 marker.transform.localScale = new Vector3(0.62f, 0.035f, 0.62f);

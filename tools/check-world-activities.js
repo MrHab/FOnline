@@ -11,6 +11,7 @@ const {
   createResourceExpedition,
   createReconExpedition,
   createOutpostDefense,
+  createDistressSignal,
   publicWorldActivity,
   applyWorldActivityHarvest,
   applyWorldActivityInteraction,
@@ -162,6 +163,38 @@ function checkOutpostDefenseRuntime() {
   const extracted = extractWorldActivity(activity, { characterId: 'defender_character', now: startedAt + 5000 });
   assert.strictEqual(extracted.grade, 'bonus');
 }
+
+function checkDistressSignalRuntime() {
+  const startedAt = 4_000_000;
+  const activity = createDistressSignal({
+    taskId: 'task_distress_a',
+    interactionPoints: [{ id: 'distress_signal_1', label: 'Маяк', x: 3, z: 7 }],
+    target: 2, bonusTarget: 3, maxTarget: 4, durationMs: 180000, now: startedAt
+  });
+  assert.strictEqual(activity.threatTier, 0);
+  const signal = applyWorldActivityInteraction(activity, {
+    pointId: 'distress_signal_1', characterId: 'rescuer_character', name: 'Спасатель', now: startedAt + 1000
+  });
+  assert.strictEqual(signal.changed, true);
+  assert.strictEqual(activity.threatTier, 1);
+  assert.strictEqual(activity.extractionOpen, false, 'finding the beacon alone must not complete the rescue');
+  applyWorldActivityEnemyKill(activity, {
+    enemyId: 'ambusher_1', characterId: 'rescuer_character', name: 'Спасатель', now: startedAt + 2000
+  });
+  const cleared = applyWorldActivityEnemyKill(activity, {
+    enemyId: 'ambusher_2', characterId: 'rescuer_character', name: 'Спасатель', now: startedAt + 3000
+  });
+  assert.strictEqual(cleared.extractionOpened, true);
+  applyWorldActivityEnemyKill(activity, {
+    enemyId: 'ambusher_3', characterId: 'rescuer_character', name: 'Спасатель', now: startedAt + 4000
+  });
+  assert.strictEqual(activity.objectives[1].status, 'bonus');
+  const extracted = extractWorldActivity(activity, { characterId: 'rescuer_character', now: startedAt + 5000 });
+  assert.strictEqual(extracted.grade, 'bonus', 'multi-objective grading must use the attackers objective');
+  assert.strictEqual(extracted.result.objectiveCurrent, 4);
+  const publicJson = JSON.stringify(publicWorldActivity(activity));
+  assert(!publicJson.includes('rescuer_character'), 'public distress activity leaked a character id');
+}
 function checkSimulationContract() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-world-activities-'));
   try {
@@ -203,6 +236,13 @@ function checkSimulationContract() {
     assert.strictEqual(defenseResult?.ok, true, defenseResult?.error || 'outpost defense completion failed');
     assert.strictEqual(defenseResult.task.details.activityKind, 'outpost_defense');
     assert.strictEqual(defenseResult.task.details.activityGrade, 'completed');
+    const distressTask = sim.state().worldTasks.find(row => row?.status === 'active' && row.type === 'distress_signal');
+    assert(distressTask, 'simulation did not seed a distress signal');
+    const distressResult = sim.completeWorldActivityTask(distressTask.id, {
+      grade: 'bonus', objectiveCurrent: 7, rewardCharacterIds: ['rescuer_character']
+    });
+    assert.strictEqual(distressResult?.ok, true, distressResult?.error || 'distress signal completion failed');
+    assert.strictEqual(distressResult.task.details.activityKind, 'distress_signal');
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -211,5 +251,6 @@ function checkSimulationContract() {
 checkRuntime();
 checkReconRuntime();
 checkOutpostDefenseRuntime();
+checkDistressSignalRuntime();
 checkSimulationContract();
 console.log('World activities OK: collection, recon, defense waves, extraction, rewards and redaction');

@@ -4,6 +4,7 @@ const WORLD_ACTIVITY_SCHEMA = 'realm.worldActivity.v1';
 const WORLD_ACTIVITY_KIND_RESOURCE_EXPEDITION = 'resource_expedition';
 const WORLD_ACTIVITY_KIND_RECON_EXPEDITION = 'recon_expedition';
 const WORLD_ACTIVITY_KIND_OUTPOST_DEFENSE = 'outpost_defense';
+const WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL = 'distress_signal';
 const WORLD_ACTIVITY_ACTIVE_STATUSES = new Set(['active', 'extracting']);
 
 function clamp(value, min, max) {
@@ -245,6 +246,55 @@ function createOutpostDefense(options = {}) {
   return activity;
 }
 
+function createDistressSignal(options = {}) {
+  const now = Math.max(0, Number(options.now || Date.now()));
+  const points = (Array.isArray(options.interactionPoints) ? options.interactionPoints : [])
+    .slice(0, 1)
+    .map(normalizeInteractionPoint);
+  const target = Math.max(2, Math.floor(Number(options.target || 4)));
+  const bonusTarget = Math.max(target, Math.floor(Number(options.bonusTarget || 6)));
+  const maxTarget = Math.max(bonusTarget, Math.floor(Number(options.maxTarget || 9)));
+  const taskId = safeId(options.taskId, `distress_task_${now}`);
+  const activity = normalizeWorldActivity({
+    id: safeId(options.id, `activity_${taskId}`),
+    kind: WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL,
+    taskId,
+    roomId: options.roomId,
+    locationId: options.locationId,
+    siteId: options.siteId,
+    title: options.title || 'Сигнал бедствия',
+    status: 'active',
+    startedAt: now,
+    durationMs: Math.max(3 * 60 * 1000, Number(options.durationMs || 6 * 60 * 1000)),
+    threat: 0,
+    interactionPoints: points,
+    creditedEntityIds: [],
+    objectives: [{
+      id: 'distress_signal',
+      type: 'interact',
+      label: 'Найти источник сигнала',
+      current: 0,
+      target: 1,
+      bonusTarget: 1,
+      maxTarget: 1,
+      required: true
+    }, {
+      id: 'attackers',
+      type: 'defend',
+      label: 'Зачистить засаду',
+      current: 0,
+      target,
+      bonusTarget,
+      maxTarget,
+      required: true
+    }],
+    participants: [],
+    revision: 1
+  }, now);
+  activity.phase = 'searching';
+  return activity;
+}
+
 function recordWorldActivityParticipant(activity, data = {}) {
   if (!activity || !WORLD_ACTIVITY_ACTIVE_STATUSES.has(activity.status)) return false;
   const participant = normalizeParticipant(data, activity.participants.length);
@@ -316,11 +366,13 @@ function applyWorldActivityHarvest(activity, data = {}) {
 
 function applyWorldActivityInteraction(activity, data = {}) {
   if (!activity || !WORLD_ACTIVITY_ACTIVE_STATUSES.has(activity.status)) return { changed: false, reason: 'inactive' };
-  if (activity.kind !== WORLD_ACTIVITY_KIND_RECON_EXPEDITION) return { changed: false, reason: 'wrong_kind' };
+  const recon = activity.kind === WORLD_ACTIVITY_KIND_RECON_EXPEDITION;
+  const distress = activity.kind === WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL;
+  if (!recon && !distress) return { changed: false, reason: 'wrong_kind' };
   const pointId = safeId(data.pointId || data.objectivePointId);
   const point = activity.interactionPoints.find(row => row.id === pointId);
   if (!point || point.status === 'completed') return { changed: false, reason: 'point_unavailable' };
-  const objective = activity.objectives.find(row => row.id === 'recon_points');
+  const objective = activity.objectives.find(row => row.id === (distress ? 'distress_signal' : 'recon_points'));
   if (!objective || objective.current >= objective.maxTarget) return { changed: false, reason: 'no_progress' };
   const previousTier = activity.threatTier;
   const now = Math.max(activity.startedAt, Number(data.now || Date.now()));
@@ -334,7 +386,7 @@ function applyWorldActivityInteraction(activity, data = {}) {
       : objective.current >= objective.target
         ? 'completed'
         : 'active';
-  activity.threat = clamp(activity.threat + 10, 0, 100);
+  activity.threat = clamp(activity.threat + (distress ? 25 : 10), 0, 100);
   activity.threatTier = worldActivityThreatTier(activity.threat);
   recordWorldActivityParticipant(activity, {
     ...data,
@@ -345,7 +397,10 @@ function applyWorldActivityInteraction(activity, data = {}) {
   const participantKey = String(data.characterId || data.userId || data.socketId || '');
   const participant = activity.participants.find(row => row.key === participantKey);
   if (participant) participant.contributed += 1;
-  if (objective.current >= objective.target) {
+  const requiredComplete = activity.objectives
+    .filter(row => row.required)
+    .every(row => row.current >= row.target);
+  if (requiredComplete) {
     activity.status = 'extracting';
     activity.phase = 'extraction';
     activity.extractionOpen = true;
@@ -364,7 +419,9 @@ function applyWorldActivityInteraction(activity, data = {}) {
 
 function applyWorldActivityEnemyKill(activity, data = {}) {
   if (!activity || !WORLD_ACTIVITY_ACTIVE_STATUSES.has(activity.status)) return { changed: false, reason: 'inactive' };
-  if (activity.kind !== WORLD_ACTIVITY_KIND_OUTPOST_DEFENSE) return { changed: false, reason: 'wrong_kind' };
+  if (![WORLD_ACTIVITY_KIND_OUTPOST_DEFENSE, WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL].includes(activity.kind)) {
+    return { changed: false, reason: 'wrong_kind' };
+  }
   const enemyId = safeId(data.enemyId || data.entityId);
   if (!enemyId || activity.creditedEntityIds.includes(enemyId)) return { changed: false, reason: 'already_credited' };
   const objective = activity.objectives.find(row => row.id === 'attackers');
@@ -394,7 +451,10 @@ function applyWorldActivityEnemyKill(activity, data = {}) {
     const participant = activity.participants.find(row => row.key === participantKey);
     if (participant) participant.contributed += 1;
   }
-  if (objective.current >= objective.target) {
+  const requiredComplete = activity.objectives
+    .filter(row => row.required)
+    .every(row => row.current >= row.target);
+  if (requiredComplete) {
     activity.status = 'extracting';
     activity.phase = 'extraction';
     activity.extractionOpen = true;
@@ -438,17 +498,18 @@ function tickWorldActivity(activity, now = Date.now()) {
 
 function extractWorldActivity(activity, data = {}) {
   if (!activity || !WORLD_ACTIVITY_ACTIVE_STATUSES.has(activity.status)) return { ok: false, error: 'Активность уже завершена.' };
-  const objective = activity.objectives.find(row => row.required) || activity.objectives[0];
-  if (!activity.extractionOpen || !objective || objective.current < objective.target) {
+  const objectives = activity.objectives.filter(row => row.required);
+  if (!activity.extractionOpen || !objectives.length || objectives.some(row => row.current < row.target)) {
     return { ok: false, error: 'Сначала выполните основную цель.' };
   }
   const now = Math.max(activity.startedAt, Number(data.now || Date.now()));
   recordWorldActivityParticipant(activity, { ...data, joinedAt: now, lastActiveAt: now });
-  const grade = objective.current >= objective.maxTarget
+  const grade = objectives.every(row => row.current >= row.maxTarget)
     ? 'mastered'
-    : objective.current >= objective.bonusTarget
+    : objectives.every(row => row.current >= row.bonusTarget)
       ? 'bonus'
       : 'completed';
+  const objectiveCurrent = objectives.reduce((sum, row) => sum + row.current, 0);
   activity.status = 'completed';
   activity.phase = 'completed';
   activity.extractionOpen = false;
@@ -456,7 +517,7 @@ function extractWorldActivity(activity, data = {}) {
   activity.result = {
     grade,
     extractedBy: String(data.characterId || data.userId || '').slice(0, 180),
-    objectiveCurrent: objective.current,
+    objectiveCurrent,
     threat: Math.round(activity.threat)
   };
   activity.revision += 1;
@@ -486,7 +547,12 @@ function publicWorldActivity(activity) {
     participantNames: uniqueStrings(activity.participants.map(row => row.name), 8, 48),
     interactionPoints: activity.interactionPoints.map(point => ({ id: point.id, label: point.label, x: point.x, z: point.z, status: point.status })),
     revision: activity.revision,
-    result: activity.result ? { ...activity.result } : null,
+    result: activity.result ? {
+      grade: String(activity.result.grade || '').slice(0, 24),
+      objectiveCurrent: Math.max(0, Math.floor(Number(activity.result.objectiveCurrent || 0))),
+      threat: clamp(Math.round(Number(activity.result.threat || 0)), 0, 100),
+      reason: String(activity.result.reason || '').slice(0, 48)
+    } : null,
     completedAt: activity.completedAt
   };
 }
@@ -500,9 +566,11 @@ module.exports = {
   WORLD_ACTIVITY_KIND_RESOURCE_EXPEDITION,
   WORLD_ACTIVITY_KIND_RECON_EXPEDITION,
   WORLD_ACTIVITY_KIND_OUTPOST_DEFENSE,
+  WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL,
   createResourceExpedition,
   createReconExpedition,
   createOutpostDefense,
+  createDistressSignal,
   normalizeWorldActivity,
   publicWorldActivity,
   recordWorldActivityParticipant,

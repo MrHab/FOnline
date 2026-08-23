@@ -22,6 +22,12 @@ const {
   createPasswordHasher,
   normalizePasswordHashConfig
 } = require('../src/server/password-hashing');
+const {
+  guestDeviceHash,
+  guestDisplayNameForDevice,
+  guestLoginForDevice,
+  guestUserMatchesDevice
+} = require('../src/server/guest-auth');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -216,6 +222,21 @@ async function assertPasswordHashQueueBound() {
   );
 }
 
+function assertGuestIdentity() {
+  const deviceId = 'd_0123456789abcdef0123456789abcdef';
+  const otherDeviceId = 'd_fedcba9876543210fedcba9876543210';
+  const hash = guestDeviceHash(deviceId);
+  const login = guestLoginForDevice(deviceId);
+  assert.match(hash, /^[a-f0-9]{64}$/);
+  assert.match(login, /^guest_[a-f0-9]{24}$/);
+  assert.strictEqual(login, guestLoginForDevice(deviceId), 'guest login must be stable for one browser');
+  assert.notStrictEqual(login, guestLoginForDevice(otherDeviceId), 'different browsers shared one guest login');
+  assert.match(guestDisplayNameForDevice(deviceId), /^Странник-[A-F0-9]{4}$/u);
+  assert.strictEqual(guestUserMatchesDevice({ isGuest: true, guestDeviceHash: hash }, deviceId), true);
+  assert.strictEqual(guestUserMatchesDevice({ isGuest: true, guestDeviceHash: hash }, otherDeviceId), false);
+  assert.strictEqual(guestUserMatchesDevice({ isGuest: false, guestDeviceHash: hash }, deviceId), false);
+}
+
 function assertServerIntegration() {
   const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
   const required = [
@@ -225,7 +246,10 @@ function assertServerIntegration() {
     'await passwordHasher.hashPassword(password)',
     'await passwordHasher.verifyPassword(password, passwordSnapshot)',
     'usersDb.users[login] !== user',
-    'currentReset === reset'
+    'currentReset === reset',
+    "app.post('/api/auth/guest', authRateLimit",
+    'guestUserMatchesDevice(user, deviceId)',
+    'guestDeviceHash: deviceHash'
   ];
   for (const marker of required) {
     assert(server.includes(marker), `server auth security integration is missing: ${marker}`);
@@ -243,8 +267,9 @@ async function main() {
   assertRateLimitCapacity();
   await assertPasswordHashing();
   await assertPasswordHashQueueBound();
+  assertGuestIdentity();
   assertServerIntegration();
-  console.log('Auth security checks passed: trusted proxy IPs, dual bounded limits, async password hashing and race guards.');
+  console.log('Auth security checks passed: trusted proxy IPs, bounded limits, async password hashing, race guards and device-bound guest identities.');
 }
 
 main().catch(error => {

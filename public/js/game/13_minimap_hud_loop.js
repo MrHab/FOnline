@@ -652,6 +652,7 @@
   document.getElementById('storage-take-all')?.addEventListener('click', takeAllFromStorage);
   document.getElementById('char-start-btn').addEventListener('click', startCharacterCreationSafe);
   document.getElementById('char-auth-btn').addEventListener('click', requestYandexAuth);
+  document.getElementById('quick-start-btn')?.addEventListener('click', handleQuickStart);
   document.getElementById('server-login-btn').addEventListener('click', handleServerAuth);
   document.getElementById('server-login-form')?.addEventListener('submit', e => {
     e.preventDefault();
@@ -709,7 +710,7 @@
   renderQuickbar();
   updateCamera(1);
   addLog('Добро пожаловать в Realm of Ashes v7.76.6.', null, 'system');
-  addLog('Войдите или зарегистрируйтесь на сервере: персонаж, карта, локации, инвентарь и хранилище привязаны к логину.', null, 'system');
+  addLog('Начните сразу в гостевом профиле или войдите в постоянный аккаунт. Прогресс гостя сохраняется в этом браузере.', null, 'system');
   addLog('Стартовая локация: Поселение. Рядом есть торговец и выход в Пепельный лес.', null, 'system');
   addLog('TAB — Пип-бой/статус, I — инвентарь, B — навыки/перки, P — крафт, X — режим стрельбы, C — присесть/встать, M — карта, F — обыск тела, G/E — поднять предмет с земли, E — торговля/переход, Space — забрать весь лут, F1 — подсказки.', null, 'system');
   addLog('Быстрые слоты: перетащите предмет из инвентаря, перенесите между кнопками или вытащите за границы кнопки, чтобы очистить.', null, 'system');

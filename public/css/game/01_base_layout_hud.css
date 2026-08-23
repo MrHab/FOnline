@@ -677,6 +677,35 @@
     border: 1px solid rgba(137, 112, 67, 0.42);
     border-radius: 9px;
   }
+  .quick-start-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin: 0 0 12px;
+    padding: 16px;
+    border: 1px solid rgba(199, 154, 70, 0.78);
+    border-radius: 9px;
+    background: linear-gradient(135deg, rgba(63, 50, 24, 0.96), rgba(19, 28, 22, 0.96));
+    box-shadow: inset 0 0 0 1px rgba(255, 221, 139, 0.08), 0 10px 30px rgba(0, 0, 0, 0.22);
+  }
+  .quick-start-copy { display: grid; gap: 3px; min-width: 0; }
+  .quick-start-copy strong { color: #f2d287; font-size: 19px; letter-spacing: 0.02em; }
+  .quick-start-copy small { color: #b8c0a3; line-height: 1.4; }
+  .quick-start-kicker { color: #d9ad58; font-size: 10px; font-weight: 900; letter-spacing: 0.18em; text-transform: uppercase; }
+  .quick-start-btn {
+    flex: 0 0 auto;
+    min-width: 170px;
+    min-height: 46px;
+    border-color: #d8aa53;
+    background: linear-gradient(180deg, #7b5b26, #493619);
+    color: #fff1c6;
+    box-shadow: 0 0 20px rgba(205, 155, 64, 0.16);
+  }
+  .quick-start-btn:hover { border-color: #f0cf80; background: linear-gradient(180deg, #916d30, #59431f); }
+  .auth-divider { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; color: #77826f; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: rgba(137, 112, 67, 0.34); }
+  .auth-divider span { flex: 0 1 auto; text-align: center; }
   .auth-form { margin: 0; }
   .auth-form-grid { display: grid; grid-template-columns: 1fr; gap: 8px; max-width: 460px; }
   .auth-form-grid .char-input { margin-bottom: 0; }
@@ -949,6 +978,9 @@
     .char-title { margin-bottom: 9px; }
   }
   @media (max-width: 520px) {
+    .quick-start-panel { align-items: stretch; flex-direction: column; gap: 12px; padding: 13px; }
+    .quick-start-btn { width: 100%; min-width: 0; }
+    .auth-divider span { max-width: 190px; }
     .character-card-row { grid-template-columns: 1fr; }
     .character-card-actions { justify-content: stretch; }
     .character-card-actions .char-action-btn { flex: 1; }

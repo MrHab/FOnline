@@ -63,3 +63,4 @@ public/unity/
 
 # Облегчённые копии GLB (npm run build:models-lite), генерируются при деплое.
 public/assets/models-lite/
+unity-client/Data/

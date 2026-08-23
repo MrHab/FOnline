@@ -2,6 +2,7 @@
 
 const WORLD_ACTIVITY_SCHEMA = 'realm.worldActivity.v1';
 const WORLD_ACTIVITY_KIND_RESOURCE_EXPEDITION = 'resource_expedition';
+const WORLD_ACTIVITY_KIND_RECON_EXPEDITION = 'recon_expedition';
 const WORLD_ACTIVITY_ACTIVE_STATUSES = new Set(['active', 'extracting']);
 
 function clamp(value, min, max) {
@@ -43,6 +44,18 @@ function normalizeObjective(row = {}, index = 0) {
         : current >= target
           ? 'completed'
           : 'active'
+  };
+}
+
+function normalizeInteractionPoint(row = {}, index = 0) {
+  const status = String(row.status || '').toLowerCase() === 'completed' ? 'completed' : 'pending';
+  return {
+    id: safeId(row.id, `point_${index + 1}`),
+    label: String(row.label || `Точка наблюдения ${index + 1}`).slice(0, 80),
+    x: Number(Number(row.x || 0).toFixed(2)),
+    z: Number(Number(row.z || 0).toFixed(2)),
+    status,
+    completedAt: status === 'completed' ? Math.max(0, Number(row.completedAt || 0)) : 0
   };
 }
 
@@ -113,6 +126,7 @@ function normalizeWorldActivity(row = {}, now = Date.now()) {
     objectives,
     extractionOpen: status === 'extracting',
     allowedItemIds: uniqueStrings(row.allowedItemIds),
+    interactionPoints: (Array.isArray(row.interactionPoints) ? row.interactionPoints : []).slice(0, 8).map(normalizeInteractionPoint),
     participants,
     revision: Math.max(1, Math.floor(Number(row.revision || 1))),
     result: row.result && typeof row.result === 'object' ? { ...row.result } : null,
@@ -152,6 +166,45 @@ function createResourceExpedition(options = {}) {
     participants: [],
     revision: 1
   }, now);
+}
+
+function createReconExpedition(options = {}) {
+  const now = Math.max(0, Number(options.now || Date.now()));
+  const points = (Array.isArray(options.interactionPoints) ? options.interactionPoints : [])
+    .slice(0, 8)
+    .map(normalizeInteractionPoint);
+  const maxTarget = Math.max(1, points.length);
+  const target = Math.min(maxTarget, Math.max(1, Math.floor(Number(options.target || Math.min(3, maxTarget)))));
+  const bonusTarget = Math.min(maxTarget, Math.max(target, Math.floor(Number(options.bonusTarget || Math.min(4, maxTarget)))));
+  const taskId = safeId(options.taskId, `recon_task_${now}`);
+  const activity = normalizeWorldActivity({
+    id: safeId(options.id, `activity_${taskId}`),
+    kind: WORLD_ACTIVITY_KIND_RECON_EXPEDITION,
+    taskId,
+    roomId: options.roomId,
+    locationId: options.locationId,
+    siteId: options.siteId,
+    title: options.title || 'Разведка местности',
+    status: 'active',
+    startedAt: now,
+    durationMs: Math.max(3 * 60 * 1000, Number(options.durationMs || 6 * 60 * 1000)),
+    threat: clamp(options.threat || 0, 0, 100),
+    interactionPoints: points,
+    objectives: [{
+      id: 'recon_points',
+      type: 'interact',
+      label: options.objectiveLabel || 'Проверить точки наблюдения',
+      current: 0,
+      target,
+      bonusTarget,
+      maxTarget,
+      required: true
+    }],
+    participants: [],
+    revision: 1
+  }, now);
+  activity.phase = 'surveying';
+  return activity;
 }
 
 function recordWorldActivityParticipant(activity, data = {}) {
@@ -215,6 +268,54 @@ function applyWorldActivityHarvest(activity, data = {}) {
   return {
     changed: true,
     credited,
+    threatTierAdvanced: activity.threatTier > previousTier,
+    previousThreatTier: previousTier,
+    threatTier: activity.threatTier,
+    extractionOpened: activity.extractionOpen,
+    objective: { ...objective }
+  };
+}
+
+function applyWorldActivityInteraction(activity, data = {}) {
+  if (!activity || !WORLD_ACTIVITY_ACTIVE_STATUSES.has(activity.status)) return { changed: false, reason: 'inactive' };
+  if (activity.kind !== WORLD_ACTIVITY_KIND_RECON_EXPEDITION) return { changed: false, reason: 'wrong_kind' };
+  const pointId = safeId(data.pointId || data.objectivePointId);
+  const point = activity.interactionPoints.find(row => row.id === pointId);
+  if (!point || point.status === 'completed') return { changed: false, reason: 'point_unavailable' };
+  const objective = activity.objectives.find(row => row.id === 'recon_points');
+  if (!objective || objective.current >= objective.maxTarget) return { changed: false, reason: 'no_progress' };
+  const previousTier = activity.threatTier;
+  const now = Math.max(activity.startedAt, Number(data.now || Date.now()));
+  point.status = 'completed';
+  point.completedAt = now;
+  objective.current = Math.min(objective.maxTarget, objective.current + 1);
+  objective.status = objective.current >= objective.maxTarget
+    ? 'mastered'
+    : objective.current >= objective.bonusTarget
+      ? 'bonus'
+      : objective.current >= objective.target
+        ? 'completed'
+        : 'active';
+  activity.threat = clamp(activity.threat + 10, 0, 100);
+  activity.threatTier = worldActivityThreatTier(activity.threat);
+  recordWorldActivityParticipant(activity, {
+    ...data,
+    contributed: 0,
+    joinedAt: now,
+    lastActiveAt: now
+  });
+  const participantKey = String(data.characterId || data.userId || data.socketId || '');
+  const participant = activity.participants.find(row => row.key === participantKey);
+  if (participant) participant.contributed += 1;
+  if (objective.current >= objective.target) {
+    activity.status = 'extracting';
+    activity.phase = 'extraction';
+    activity.extractionOpen = true;
+  }
+  activity.revision += 1;
+  return {
+    changed: true,
+    pointId,
     threatTierAdvanced: activity.threatTier > previousTier,
     previousThreatTier: previousTier,
     threatTier: activity.threatTier,
@@ -296,6 +397,7 @@ function publicWorldActivity(activity) {
     extractionOpen: activity.extractionOpen,
     participantCount: activity.participants.length,
     participantNames: uniqueStrings(activity.participants.map(row => row.name), 8, 48),
+    interactionPoints: activity.interactionPoints.map(point => ({ id: point.id, label: point.label, x: point.x, z: point.z, status: point.status })),
     revision: activity.revision,
     result: activity.result ? { ...activity.result } : null,
     completedAt: activity.completedAt
@@ -309,11 +411,14 @@ function worldActivityRewardCharacterIds(activity) {
 module.exports = {
   WORLD_ACTIVITY_SCHEMA,
   WORLD_ACTIVITY_KIND_RESOURCE_EXPEDITION,
+  WORLD_ACTIVITY_KIND_RECON_EXPEDITION,
   createResourceExpedition,
+  createReconExpedition,
   normalizeWorldActivity,
   publicWorldActivity,
   recordWorldActivityParticipant,
   applyWorldActivityHarvest,
+  applyWorldActivityInteraction,
   tickWorldActivity,
   extractWorldActivity,
   worldActivityThreatTier,

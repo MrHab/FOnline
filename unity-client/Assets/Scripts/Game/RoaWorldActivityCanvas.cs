@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
+using RealmOfAshes.World;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -41,6 +42,9 @@ namespace RealmOfAshes.Game
         private bool _subscribed;
         private bool _pending;
         private float _refreshAt;
+        private GameObject _markerRoot;
+        private string _markerRevision = string.Empty;
+        private string _actionPointId = string.Empty;
 
         public bool IsOpen { get { return _root != null && _root.activeSelf; } }
 
@@ -61,6 +65,11 @@ namespace RealmOfAshes.Game
         private void OnDisable()
         {
             Unsubscribe();
+        }
+
+        private void OnDestroy()
+        {
+            ClearWorldMarkers();
         }
 
         private void Subscribe()
@@ -91,6 +100,7 @@ namespace RealmOfAshes.Game
             _activity = null;
             _pending = false;
             if (_root != null) _root.SetActive(false);
+            ClearWorldMarkers();
         }
 
         private void ApplyWorldState(JObject state)
@@ -105,6 +115,7 @@ namespace RealmOfAshes.Game
             {
                 _pending = false;
                 if (_message != null) _message.text = string.Empty;
+                _markerRevision = string.Empty;
             }
             _refreshAt = 0f;
             if (_activity == null && _root != null) _root.SetActive(false);
@@ -116,10 +127,13 @@ namespace RealmOfAshes.Game
             if (_activity == null || hiddenByScreen)
             {
                 if (_root != null && _root.activeSelf) _root.SetActive(false);
+                if (_markerRoot != null) _markerRoot.SetActive(false);
                 return;
             }
             EnsureBuilt();
             if (!_root.activeSelf) _root.SetActive(true);
+            RebuildWorldMarkers();
+            if (_markerRoot != null) _markerRoot.SetActive(true);
             if (Time.unscaledTime < _refreshAt) return;
             _refreshAt = Time.unscaledTime + 0.2f;
             Refresh();
@@ -128,9 +142,10 @@ namespace RealmOfAshes.Game
         private void Refresh()
         {
             string status = _activity?["status"]?.ToString() ?? "active";
+            string kind = _activity?["kind"]?.ToString() ?? string.Empty;
             string phase = _activity?["phase"]?.ToString() ?? "scavenging";
             _title.text = (_activity?["title"]?.ToString() ?? "Вылазка за ресурсами").ToUpperInvariant();
-            _phase.text = PhaseLabel(status, phase);
+            _phase.text = PhaseLabel(status, phase, kind);
 
             long endsAt = _activity?["endsAt"]?.ToObject<long>() ?? 0L;
             long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -142,7 +157,8 @@ namespace RealmOfAshes.Game
             int target = Mathf.Max(1, objective?["target"]?.ToObject<int>() ?? 1);
             int bonus = Mathf.Max(target, objective?["bonusTarget"]?.ToObject<int>() ?? target);
             int maximum = Mathf.Max(bonus, objective?["maxTarget"]?.ToObject<int>() ?? bonus);
-            _objective.text = "Собрано: " + current + " / " + target
+            string objectivePrefix = kind == "recon_expedition" ? "Разведано: " : "Собрано: ";
+            _objective.text = objectivePrefix + current + " / " + target
                 + (current >= target ? "   ·   бонус " + bonus + "   ·   максимум " + maximum : string.Empty);
 
             float threat = Mathf.Clamp(_activity?["threat"]?.ToObject<float>() ?? 0f, 0f, 100f);
@@ -155,15 +171,24 @@ namespace RealmOfAshes.Game
             _participants.text = count <= 1 ? "Участник: " + count : "Участников: " + count;
 
             bool extractionOpen = _activity?["extractionOpen"]?.ToObject<bool>() == true;
-            _action.gameObject.SetActive(extractionOpen && status != "completed");
-            _action.interactable = extractionOpen && !_pending;
-            _actionLabel.text = _pending ? "ЭВАКУАЦИЯ…" : "ЭВАКУИРОВАТЬСЯ У ВЫХОДА";
+            float nearestDistance = float.MaxValue;
+            JObject nearestPoint = kind == "recon_expedition" ? NearestPendingPoint(out nearestDistance) : null;
+            bool pointInReach = nearestPoint != null && nearestDistance <= 3f;
+            _actionPointId = pointInReach ? nearestPoint?["id"]?.ToString() ?? string.Empty : string.Empty;
+            bool showReconAction = kind == "recon_expedition" && nearestPoint != null && !pointInReach && !extractionOpen;
+            bool showAction = status != "completed" && (pointInReach || extractionOpen || showReconAction);
+            _action.gameObject.SetActive(showAction);
+            _action.interactable = !_pending && (pointInReach || extractionOpen);
+            if (_pending) _actionLabel.text = "ОБРАБОТКА…";
+            else if (pointInReach) _actionLabel.text = "СОБРАТЬ РАЗВЕДДАННЫЕ";
+            else if (extractionOpen) _actionLabel.text = "ЭВАКУИРОВАТЬСЯ У ВЫХОДА";
+            else _actionLabel.text = "ТОЧКА НАБЛЮДЕНИЯ · " + Mathf.CeilToInt(nearestDistance) + " М";
             if (status == "completed")
             {
                 string grade = _activity?["result"]?["grade"]?.ToString() ?? "completed";
-                _message.text = grade == "mastered" ? "Максимальная добыча. Заберите награду на карте."
+                _message.text = grade == "mastered" ? "Максимальная цель выполнена. Заберите награду на карте."
                     : grade == "bonus" ? "Бонусная цель выполнена. Заберите награду на карте."
-                    : "Вылазка завершена. Заберите награду на карте.";
+                    : "Активность завершена. Заберите награду на карте.";
                 _message.color = Safe;
             }
             else if (status == "failed" || status == "expired")
@@ -178,9 +203,68 @@ namespace RealmOfAshes.Game
             }
             else if (!extractionOpen && !_pending)
             {
-                _message.text = "Добыча создаёт шум и повышает угрозу.";
+                _message.text = kind == "recon_expedition"
+                    ? "Найдите отмеченные точки. Каждое наблюдение повышает риск обнаружения."
+                    : "Добыча создаёт шум и повышает угрозу.";
                 _message.color = Muted;
             }
+        }
+
+
+        private JObject NearestPendingPoint(out float distance)
+        {
+            distance = float.MaxValue;
+            if (Bootstrap?.PlayerView == null || !(_activity?["interactionPoints"] is JArray points)) return null;
+            RoaCoords.ToServer(Bootstrap.PlayerView.transform.position, out float playerX, out float playerZ);
+            JObject nearest = null;
+            foreach (JToken token in points)
+            {
+                JObject point = token as JObject;
+                if (point == null || point["status"]?.ToString() == "completed") continue;
+                float pointX = point["x"]?.ToObject<float>() ?? 0f;
+                float pointZ = point["z"]?.ToObject<float>() ?? 0f;
+                float candidate = Mathf.Sqrt((playerX - pointX) * (playerX - pointX) + (playerZ - pointZ) * (playerZ - pointZ));
+                if (candidate >= distance) continue;
+                distance = candidate;
+                nearest = point;
+            }
+            return nearest;
+        }
+
+        private void PerformPrimaryAction()
+        {
+            if (!string.IsNullOrEmpty(_actionPointId)) Interact(_actionPointId);
+            else Extract();
+        }
+
+        private void Interact(string pointId)
+        {
+            if (_pending || Socket == null || _activity == null || string.IsNullOrEmpty(pointId)) return;
+            string taskId = _activity["taskId"]?.ToString() ?? string.Empty;
+            if (string.IsNullOrEmpty(taskId)) return;
+            _pending = true;
+            _message.text = "Собираем данные наблюдения…";
+            _message.color = Accent;
+            Socket.EmitWithAck("worldTaskAction", new Dictionary<string, object>
+            {
+                ["taskId"] = taskId,
+                ["action"] = "activity_interact",
+                ["pointId"] = pointId
+            }, ack =>
+            {
+                _pending = false;
+                if (ack?["ok"]?.ToObject<bool>() != true)
+                {
+                    _message.text = ack?["error"]?.ToString() ?? "Точка наблюдения недоступна.";
+                    _message.color = Danger;
+                    return;
+                }
+                if (ack?["activity"] is JObject activity) _activity = activity;
+                _markerRevision = string.Empty;
+                _message.text = "Разведданные получены.";
+                _message.color = Safe;
+                _refreshAt = 0f;
+            });
         }
 
         private void Extract()
@@ -205,6 +289,7 @@ namespace RealmOfAshes.Game
                     return;
                 }
                 if (ack?["activity"] is JObject activity) _activity = activity;
+                _markerRevision = string.Empty;
                 _message.text = "Эвакуация подтверждена сервером.";
                 _message.color = Safe;
                 _refreshAt = 0f;
@@ -271,17 +356,64 @@ namespace RealmOfAshes.Game
             actionBorder.effectDistance = new Vector2(1f, -1f);
             _action = actionGo.GetComponent<Button>();
             _action.targetGraphic = actionGo.GetComponent<Image>();
-            _action.onClick.AddListener(Extract);
+            _action.onClick.AddListener(PerformPrimaryAction);
             _actionLabel = Label("Label", actionRect, 11, TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
             Stretch(_actionLabel.rectTransform, 2f);
         }
 
-        private static string PhaseLabel(string status, string phase)
+        private static string PhaseLabel(string status, string phase, string kind)
         {
             if (status == "completed") return "АКТИВНОСТЬ ЗАВЕРШЕНА";
             if (status == "failed" || status == "expired") return "АКТИВНОСТЬ ПРОВАЛЕНА";
             if (phase == "extraction") return "ЭВАКУАЦИЯ ОТКРЫТА";
-            return "ДОБЫЧА И РИСК";
+            return kind == "recon_expedition" ? "РАЗВЕДКА И РИСК" : "ДОБЫЧА И РИСК";
+        }
+
+
+        private void RebuildWorldMarkers()
+        {
+            string key = (_activity?["id"]?.ToString() ?? string.Empty) + ":"
+                + (_activity?["revision"]?.ToString() ?? string.Empty) + ":"
+                + (_activity?["status"]?.ToString() ?? string.Empty);
+            if (key == _markerRevision) return;
+            ClearWorldMarkers();
+            _markerRevision = key;
+            string kind = _activity?["kind"]?.ToString() ?? string.Empty;
+            string status = _activity?["status"]?.ToString() ?? string.Empty;
+            if (kind != "recon_expedition" || (status != "active" && status != "extracting")
+                || !(_activity?["interactionPoints"] is JArray points)) return;
+
+            _markerRoot = new GameObject("WorldActivityMarkers");
+            _markerRoot.transform.SetParent(transform, false);
+            foreach (JToken token in points)
+            {
+                JObject point = token as JObject;
+                if (point == null) continue;
+                bool completed = point["status"]?.ToString() == "completed";
+                float x = point["x"]?.ToObject<float>() ?? 0f;
+                float z = point["z"]?.ToObject<float>() ?? 0f;
+                var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                marker.name = "ReconPoint:" + (point["id"]?.ToString() ?? "point");
+                marker.transform.SetParent(_markerRoot.transform, false);
+                marker.transform.position = RoaCoords.ToUnity(x, 0.08f, z);
+                marker.transform.localScale = new Vector3(0.62f, 0.035f, 0.62f);
+                Renderer renderer = marker.GetComponent<Renderer>();
+                if (renderer != null) renderer.material.color = completed ? Safe : Accent;
+                Collider collider = marker.GetComponent<Collider>();
+                if (collider != null) Destroy(collider);
+            }
+        }
+
+        private void ClearWorldMarkers()
+        {
+            if (_markerRoot != null)
+            {
+                foreach (Renderer renderer in _markerRoot.GetComponentsInChildren<Renderer>())
+                    if (renderer != null && renderer.material != null) Destroy(renderer.material);
+                Destroy(_markerRoot);
+                _markerRoot = null;
+            }
+            _markerRevision = string.Empty;
         }
 
         private static string Countdown(float seconds)

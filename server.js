@@ -112,9 +112,11 @@ const {
 } = require('./src/server/world-party-integrity');
 const {
   createResourceExpedition,
+  createReconExpedition,
   publicWorldActivity,
   recordWorldActivityParticipant,
   applyWorldActivityHarvest,
+  applyWorldActivityInteraction,
   tickWorldActivity,
   extractWorldActivity,
   worldActivityRewardCharacterIds
@@ -6353,6 +6355,10 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     return { ok: true, action, taskId: id, trackedId: player.worldTaskTrackedId, self: publicAuthoritativePlayerState(player) };
   }
 
+
+  if (action === 'activity_interact') {
+    return performServerWorldActivityInteraction(player, task, id, accepted, data);
+  }
 
   if (action === 'activity_extract') {
     return performServerWorldActivityExtraction(player, task, id, accepted);
@@ -15284,7 +15290,7 @@ function currentRoomWorldState(room) {
   return room.worldState;
 }
 function serverWorldActivityTaskMatchesRoom(task = {}, room = null) {
-  if (!task || !room || task.status !== 'active' || task.type !== 'resource_expedition') return false;
+  if (!task || !room || task.status !== 'active' || !['resource_expedition', 'recon_expedition'].includes(task.type)) return false;
   const siteId = String(task.siteId || '');
   if (siteId && siteId === String(room.worldSiteId || '')) return true;
   const locationId = normalizeLocationId(task.details?.locationId || '');
@@ -15298,6 +15304,45 @@ function serverWorldActivityAcceptedPlayers(room, taskId = '') {
   ));
 }
 
+
+function serverWorldActivityReconPoints(room, count = 5) {
+  if (!room) return [];
+  ensureRoomWorld(room);
+  const bounds = normalizedLocationPlayableBounds(roomLocation(room));
+  const margin = 4;
+  const minX = bounds.minX + margin;
+  const maxX = bounds.maxX - margin;
+  const minZ = bounds.minZ + margin;
+  const maxZ = bounds.maxZ - margin;
+  const patterns = [[0.18, 0.22], [0.82, 0.2], [0.5, 0.5], [0.2, 0.82], [0.82, 0.78], [0.5, 0.16], [0.5, 0.84]];
+  const points = [];
+  const used = new Set();
+  const addPoint = (tx, tz) => {
+    const safe = findRoomSafeSpawnTile(room, tx, tz, {
+      maxRadius: 8,
+      radius: 0.42,
+      resourceClearance: 1.4,
+      containerClearance: 1.6,
+      minEnemyDistance: 3
+    });
+    if (!safe) return false;
+    const key = `${safe.tx}:${safe.tz}`;
+    if (used.has(key)) return false;
+    const position = tileToWorld(safe.tx, safe.tz);
+    if (points.some(point => Math.hypot(point.x - position.x, point.z - position.z) < 9)) return false;
+    used.add(key);
+    points.push({ id: `recon_${points.length + 1}`, label: `Точка наблюдения ${points.length + 1}`, x: position.x, z: position.z });
+    return true;
+  };
+  for (const [fx, fz] of patterns) {
+    if (points.length >= count) break;
+    addPoint(Math.round(minX + (maxX - minX) * fx), Math.round(minZ + (maxZ - minZ) * fz));
+  }
+  for (let tz = minZ; points.length < count && tz <= maxZ; tz += 5) {
+    for (let tx = minX; points.length < count && tx <= maxX; tx += 5) addPoint(tx, tz);
+  }
+  return points.slice(0, count);
+}
 function ensureServerWorldActivityForRoom(room, now = Date.now()) {
   if (!room) return null;
   const current = room.worldActivity;
@@ -15323,19 +15368,35 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
     && roomPlayers.some(player => sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(String(row.id || '')))
   ));
   if (!task) return null;
-  room.worldActivity = createResourceExpedition({
+  const common = {
     taskId: task.id,
     roomId: room.id,
     locationId: room.locationId,
     siteId: task.siteId,
-    title: task.title || 'Вылазка за ресурсами',
-    target: task.details?.targetUnits,
-    bonusTarget: task.details?.bonusUnits,
-    maxTarget: task.details?.maxUnits,
-    durationMs: Math.max(180000, Number(task.details?.durationSeconds || 480) * 1000),
-    allowedItemIds: task.details?.resourceTypes,
+    title: task.title,
+    durationMs: Math.max(180000, Number(task.details?.durationSeconds || (task.type === 'recon_expedition' ? 360 : 480)) * 1000),
     now
-  });
+  };
+  if (task.type === 'recon_expedition') {
+    const interactionPoints = serverWorldActivityReconPoints(room, Math.max(3, Number(task.details?.maxPoints || 5)));
+    if (interactionPoints.length < Math.max(1, Number(task.details?.targetPoints || 3))) return null;
+    room.worldActivity = createReconExpedition({
+      ...common,
+      title: task.title || 'Разведка местности',
+      target: task.details?.targetPoints,
+      bonusTarget: task.details?.bonusPoints,
+      interactionPoints
+    });
+  } else {
+    room.worldActivity = createResourceExpedition({
+      ...common,
+      title: task.title || 'Вылазка за ресурсами',
+      target: task.details?.targetUnits,
+      bonusTarget: task.details?.bonusUnits,
+      maxTarget: task.details?.maxUnits,
+      allowedItemIds: task.details?.resourceTypes
+    });
+  }
   room.lastWorldActivitySpawnedTier = 0;
   for (const player of serverWorldActivityAcceptedPlayers(room, task.id)) {
     recordWorldActivityParticipant(room.worldActivity, {
@@ -15421,8 +15482,42 @@ function recordServerWorldActivityHarvest(room, player, item = null, now = Date.
   return { ...progress, activity: publicWorldActivity(activity) };
 }
 
+
+function performServerWorldActivityInteraction(player = {}, task = {}, taskId = '', accepted = false, data = {}) {
+  if (!accepted || task.status !== 'active' || task.type !== 'recon_expedition') {
+    return { ok: false, error: 'Эта точка разведки сейчас недоступна.' };
+  }
+  const room = rooms.get(String(player.roomId || '')) || null;
+  if (!room || !serverWorldActivityTaskMatchesRoom(task, room)) return { ok: false, error: 'Нужно прибыть в район разведки.' };
+  const activity = ensureServerWorldActivityForRoom(room, Date.now());
+  if (!activity || String(activity.taskId || '') !== String(taskId || '')) return { ok: false, error: 'Разведка в этой локации не найдена.' };
+  const pointId = String(data.pointId || data.objectivePointId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96);
+  const point = activity.interactionPoints.find(row => row.id === pointId && row.status !== 'completed');
+  if (!point) return { ok: false, error: 'Точка уже проверена или не найдена.' };
+  const distance = Math.hypot(Number(player.x || 0) - Number(point.x || 0), Number(player.z || 0) - Number(point.z || 0));
+  if (distance > 3) return { ok: false, error: 'Подойдите ближе к точке наблюдения.' };
+  const progress = applyWorldActivityInteraction(activity, {
+    pointId,
+    socketId: player.id,
+    userId: player.userId || '',
+    characterId: player.characterId || '',
+    name: player.name || '',
+    now: Date.now()
+  });
+  if (!progress.changed) return { ok: false, error: 'Разведданные из этой точки уже получены.' };
+  spawnServerWorldActivityWave(room, activity.threatTier);
+  emitServerWorldActivityState(room, progress.extractionOpened ? 'worldActivityExtractionOpen' : 'worldActivityProgress');
+  return {
+    ok: true,
+    action: 'activity_interact',
+    taskId,
+    pointId,
+    activity: publicWorldActivity(activity),
+    self: publicAuthoritativePlayerState(player)
+  };
+}
 function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '', accepted = false) {
-  if (!accepted || task.status !== 'active' || task.type !== 'resource_expedition') {
+  if (!accepted || task.status !== 'active' || !['resource_expedition', 'recon_expedition'].includes(task.type)) {
     return { ok: false, error: 'Эта вылазка сейчас недоступна.' };
   }
   const room = rooms.get(String(player.roomId || '')) || null;
@@ -15438,7 +15533,7 @@ function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '
     now: Date.now()
   });
   if (!extracted.ok) return extracted;
-  const objective = activity.objectives.find(row => row.id === 'resources') || activity.objectives[0] || {};
+  const objective = activity.objectives.find(row => row.required) || activity.objectives[0] || {};
   const completed = WASTELAND_SIM.completeWorldActivityTask(taskId, {
     grade: extracted.grade,
     objectiveCurrent: objective.current,

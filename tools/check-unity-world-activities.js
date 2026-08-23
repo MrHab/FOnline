@@ -31,6 +31,9 @@ requireText(runtime, "const WORLD_ACTIVITY_SCHEMA = 'realm.worldActivity.v1';",
 requirePattern(simulation,
   /function ensureResourceExpeditionTasks\([\s\S]{0,3500}createWorldTask\('resource_expedition'/,
   'the world simulation no longer seeds resource expeditions');
+requirePattern(simulation,
+  /function ensureReconExpeditionTasks\([\s\S]{0,3500}createWorldTask\('recon_expedition'/,
+  'the world simulation no longer seeds recon expeditions');
 requirePattern(server,
   /function publicWorldState\([\s\S]{0,900}activity: publicWorldActivity\(room\.worldActivity\)/,
   'activity is no longer part of the authoritative room snapshot');
@@ -43,6 +46,12 @@ requirePattern(server,
 requirePattern(server,
   /performServerWorldActivityExtraction\([\s\S]{0,1500}serverPlayerAtGlobalMapExit\(player\)[\s\S]{0,1600}completeWorldActivityTask/,
   'extraction is not validated at a real exit and completed by the simulation');
+requirePattern(server,
+  /action === 'activity_interact'[\s\S]{0,220}performServerWorldActivityInteraction/,
+  'the existing worldTaskAction route no longer handles recon points');
+requirePattern(server,
+  /performServerWorldActivityInteraction\([\s\S]{0,1500}distance > 3[\s\S]{0,900}applyWorldActivityInteraction/,
+  'recon interaction is not distance-validated by the authoritative server');
 
 requireText(canvas, 'Socket.OnWorldState += ApplyWorldState;',
   'Unity HUD no longer subscribes to authoritative worldState');
@@ -51,6 +60,11 @@ requireText(canvas, 'JObject next = state?["activity"] as JObject;',
 requirePattern(canvas,
   /EmitWithAck\("worldTaskAction"[\s\S]{0,300}\["action"\] = "activity_extract"/,
   'Unity extraction no longer uses the acknowledged world task action');
+requirePattern(canvas,
+  /\["action"\] = "activity_interact"[\s\S]{0,160}\["pointId"\] = pointId/,
+  'Unity recon no longer sends an acknowledged point interaction');
+requireText(canvas, 'new GameObject("WorldActivityMarkers")',
+  'Unity recon world markers are missing');
 requireText(canvas, 'Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap',
   'activity HUD is not hidden outside a local gameplay location');
 requireText(bootstrap, 'WorldActivityCanvas.Configure(Socket, this);',

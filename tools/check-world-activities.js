@@ -9,8 +9,10 @@ const { createWastelandSimulation } = require('../src/server/wasteland-sim');
 const {
   WORLD_ACTIVITY_SCHEMA,
   createResourceExpedition,
+  createReconExpedition,
   publicWorldActivity,
   applyWorldActivityHarvest,
+  applyWorldActivityInteraction,
   tickWorldActivity,
   extractWorldActivity,
   worldActivityRewardCharacterIds
@@ -80,6 +82,50 @@ function checkRuntime() {
   assert.strictEqual(timed.status, 'failed');
 }
 
+
+function checkReconRuntime() {
+  const startedAt = 2_000_000;
+  const interactionPoints = Array.from({ length: 5 }, (_, index) => ({
+    id: `recon_${index + 1}`,
+    label: `Точка ${index + 1}`,
+    x: index * 8,
+    z: index * -5
+  }));
+  const activity = createReconExpedition({
+    taskId: 'task_recon_a',
+    interactionPoints,
+    target: 3,
+    bonusTarget: 4,
+    durationMs: 180000,
+    now: startedAt
+  });
+  assert.strictEqual(activity.kind, 'recon_expedition');
+  assert.strictEqual(activity.interactionPoints.length, 5);
+  assert.strictEqual(applyWorldActivityInteraction(activity, { pointId: 'missing' }).changed, false);
+  for (let index = 1; index <= 3; index += 1) {
+    const progress = applyWorldActivityInteraction(activity, {
+      pointId: `recon_${index}`,
+      characterId: 'recon_character',
+      name: 'Разведчик',
+      now: startedAt + index * 1000
+    });
+    assert.strictEqual(progress.changed, true);
+  }
+  assert.strictEqual(activity.status, 'extracting');
+  assert.strictEqual(activity.extractionOpen, true);
+  const bonus = applyWorldActivityInteraction(activity, {
+    pointId: 'recon_4',
+    characterId: 'recon_character',
+    name: 'Разведчик',
+    now: startedAt + 5000
+  });
+  assert.strictEqual(bonus.objective.status, 'bonus');
+  assert.strictEqual(activity.interactionPoints[3].status, 'completed');
+  const publicJson = JSON.stringify(publicWorldActivity(activity));
+  assert(!publicJson.includes('recon_character'), 'public recon activity leaked a character id');
+  const extracted = extractWorldActivity(activity, { characterId: 'recon_character', now: startedAt + 6000 });
+  assert.strictEqual(extracted.grade, 'bonus');
+}
 function checkSimulationContract() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-world-activities-'));
   try {
@@ -101,11 +147,23 @@ function checkSimulationContract() {
     assert.strictEqual(result.task.status, 'completed');
     assert.strictEqual(result.task.details.activityGrade, 'bonus');
     assert.deepStrictEqual(result.task.details.rewardCharacterIds, ['character_a', 'character_b']);
+    const reconTask = sim.state().worldTasks.find(row => row?.status === 'active' && row.type === 'recon_expedition');
+    assert(reconTask, 'simulation did not seed a recon expedition');
+    assert(reconTask.details?.locationId, 'recon expedition has no target location');
+    const reconResult = sim.completeWorldActivityTask(reconTask.id, {
+      grade: 'mastered',
+      objectiveCurrent: 5,
+      rewardCharacterIds: ['recon_character']
+    });
+    assert.strictEqual(reconResult?.ok, true, reconResult?.error || 'recon completion failed');
+    assert.strictEqual(reconResult.task.details.activityKind, 'recon_expedition');
+    assert.strictEqual(reconResult.task.details.activityGrade, 'mastered');
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
 }
 
 checkRuntime();
+checkReconRuntime();
 checkSimulationContract();
 console.log('World activities OK: objective, threat, extraction, reward eligibility and redaction');

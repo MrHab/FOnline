@@ -513,6 +513,8 @@ namespace RealmOfAshes.Game
 
         /// <summary>Принятая работа «сопровождение каравана» на стоянке (acceptedStagingCaravanTask web).</summary>
         public JObject StagingTask { get { return _self != null ? StagingCaravanTask() : null; } }
+        public JObject ActiveEscortTask { get { return _self != null ? AcceptedCaravanTask() : null; } }
+        public JObject WorldParty(string id) { return FindWorldParty(id); }
         public float? StagingSeconds(JObject task) { return StagingSecondsLeft(task); }
         public static string CountdownText(float seconds) { return FormatCountdown(seconds); }
         public string SiteName(string id) { return WorldSiteName(_wasteland?["sites"] as JArray, id); }
@@ -526,6 +528,14 @@ namespace RealmOfAshes.Game
 
         private JObject StagingCaravanTask()
         {
+            JObject task = AcceptedCaravanTask();
+            JObject details = task?["details"] as JObject;
+            return details?["staging"]?.ToObject<bool>() == true
+                && details["joinClosed"]?.ToObject<bool>() != true ? task : null;
+        }
+
+        private JObject AcceptedCaravanTask()
+        {
             foreach (JToken token in _self?["worldTaskRecords"] as JArray ?? new JArray())
             {
                 JObject task = token as JObject;
@@ -533,10 +543,16 @@ namespace RealmOfAshes.Game
                     || task["status"]?.ToString() != "active") continue;
                 string id = task["id"]?.ToString();
                 if (!ArrayContains(_self?["worldTaskAccepted"] as JArray, id)) continue;
-                JObject details = task["details"] as JObject;
-                if (details?["staging"]?.ToObject<bool>() == true
-                    && details["joinClosed"]?.ToObject<bool>() != true) return task;
+                return task;
             }
+            return null;
+        }
+
+        private JObject FindWorldParty(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            foreach (JToken token in _wasteland?["parties"] as JArray ?? new JArray())
+                if (token?["id"]?.ToString() == id) return token as JObject;
             return null;
         }
 

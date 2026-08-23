@@ -21,6 +21,9 @@ const socket = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 const enemies = read('unity-client/Assets/Scripts/Game/RoaEnemies.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 const combat = read('unity-client/Assets/Scripts/Game/RoaCombat.cs');
+const pipboy = read('unity-client/Assets/Scripts/Game/RoaPipboy.cs');
+const staging = read('unity-client/Assets/Scripts/Game/RoaCaravanStagingCanvas.cs');
+const simulation = read('src/server/wasteland-sim.js');
 const server = read('server.js');
 
 requireText(socket, '_connection.On("encounterFactionHostile"',
@@ -65,6 +68,23 @@ requirePattern(interaction,
   /private void Loot\(string itemId, bool all[\s\S]{0,450}"lootEnemy"[\s\S]{0,550}ApplyActionAck\(ack\)/,
   'corpse loot no longer applies the authoritative inventory acknowledgement');
 
+requirePattern(simulation,
+  /function applyCaravanEscortArrivalGrade\([\s\S]{0,1800}guardLosses[\s\S]{0,900}escortRewardAdjusted/,
+  'lossless caravan arrival no longer receives an idempotent quality grade');
+requirePattern(simulation,
+  /escortTasks\.forEach\(task[\s\S]{0,250}applyCaravanEscortArrivalGrade[\s\S]{0,900}finishWorldTask/,
+  'caravan arrival no longer applies its escort grade before completion');
+requireText(pipboy, 'public JObject ActiveEscortTask',
+  'Unity no longer exposes the accepted live caravan task');
+requireText(pipboy, 'public JObject WorldParty(string id)',
+  'Unity no longer resolves the physical caravan party');
+requireText(staging, 'private void RefreshLiveRaid',
+  'Unity caravan canvas no longer switches from staging to the live route');
+requireText(staging, '"\\nРиск " + risk + "%"',
+  'Unity caravan HUD no longer shows the simulation risk');
+requireText(staging, '"Груз: " + cargo + "% · охрана: " + guards + "/" + initial',
+  'Unity caravan HUD no longer shows cargo and guard survival');
+
 if (!process.exitCode) {
-  console.log('Unity caravan OK: robbery broadcast, viewer-specific faction sync, rocket battle and corpse loot routes');
+  console.log('Unity caravan OK: live route HUD, lossless grade, robbery, rocket battle and corpse loot routes');
 }

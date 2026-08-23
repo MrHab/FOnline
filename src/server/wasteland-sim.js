@@ -6003,6 +6003,7 @@ function createWastelandSimulation(options = {}) {
       : [];
     task.details = {
       ...(task.details || {}),
+      initialNpcMembers: Math.max(1, Math.floor(Number(task.details?.initialNpcMembers || party.members || 1))),
       staging: !departed,
       joinOpen: !departed,
       joinClosed: !!departed,
@@ -6048,6 +6049,7 @@ function createWastelandSimulation(options = {}) {
         joinOpen: true,
         stagingSiteId: site.id || '',
         destinationSiteId: destination?.id || party.destinationSiteId || '',
+        initialNpcMembers: Math.max(1, Math.floor(Number(party.members || 1))),
         minPlayers,
         playerLimit: worldPartyPlayerLimit(party),
         waitRealMinutes: CARAVAN_STAGING_REAL_MINUTES,
@@ -6139,6 +6141,30 @@ function createWastelandSimulation(options = {}) {
     });
     dirty = true;
     return false;
+  }
+
+  function applyCaravanEscortArrivalGrade(task = {}, party = {}) {
+    if (!task || task.type !== 'escort_caravan') return { grade: 'completed', initialNpcMembers: 0, survivingNpcMembers: 0, guardLosses: 0 };
+    const initialNpcMembers = Math.max(1, Math.floor(Number(task.details?.initialNpcMembers || party.members || 1)));
+    const survivingNpcMembers = Math.max(0, Math.floor(Number(party.members || 0)));
+    const guardLosses = Math.max(0, initialNpcMembers - survivingNpcMembers);
+    const grade = guardLosses <= 0 ? 'mastered' : 'completed';
+    if (grade === 'mastered' && task.details?.escortRewardAdjusted !== true) {
+      task.reward = {
+        ...(task.reward && typeof task.reward === 'object' ? task.reward : {}),
+        xp: Math.round(Math.max(0, Number(task.reward?.xp || 0)) * 1.25),
+        caps: Math.round(Math.max(0, Number(task.reward?.caps || 0)) * 1.25)
+      };
+    }
+    task.details = {
+      ...(task.details || {}),
+      initialNpcMembers,
+      survivingNpcMembers,
+      guardLosses,
+      escortGrade: grade,
+      escortRewardAdjusted: true
+    };
+    return { grade, initialNpcMembers, survivingNpcMembers, guardLosses };
   }
 
   function partyRewardPlayerDetails(party = {}, taskId = '') {
@@ -6285,6 +6311,7 @@ function createWastelandSimulation(options = {}) {
       const escortTasks = state.worldTasks
         .filter(task => task && task.status === 'active' && task.type === 'escort_caravan' && task.partyId === party.id);
       escortTasks.forEach(task => {
+        const escortGrade = applyCaravanEscortArrivalGrade(task, party);
         const escortReward = partyRewardPlayerDetails(party, task.id);
         const hasPlayerEscorts = Number(escortReward.rewardPlayerCount || 0) > 0;
         if (hasPlayerEscorts) fundWorldTaskCapsRewardFromSite(task, site, escortReward.rewardPlayerCount);
@@ -6294,6 +6321,7 @@ function createWastelandSimulation(options = {}) {
           arrivalSiteId: site.id,
           arrivalLocationId: site.locationId || '',
           cargo: clone(delivered),
+          ...escortGrade,
           ...escortReward
         });
       });

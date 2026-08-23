@@ -32,7 +32,7 @@
         <div class="sub">Unity-клиент в браузере</div>
         <div class="bar"><div class="fill" id="roa-fill"></div></div>
         <div class="step" id="roa-step">Загружаю движок...</div>
-        <div class="hint">Первый запуск скачивает около 20 МБ; дальше файлы берутся из кеша браузера.</div>
+        <div class="hint">Первый запуск скачивает около 13 МБ; дальше файлы берутся из кеша браузера.<br><a href="/legacy/" style="color: rgba(250, 205, 119, 0.72)">Открыть старую версию</a></div>
       </div>
     </div>
     <div id="roa-error"></div>
@@ -44,7 +44,7 @@
         box.style.display = "block";
         if (type !== "error") setTimeout(function () { box.style.display = "none"; }, 5000);
       }
-      var buildUrl = "Build";
+      var buildUrl = "/unity/Build"; // абсолютный путь: страница отдаётся и с корня сайта, и с /unity/
       var config = {
         arguments: [],
         dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
@@ -61,7 +61,7 @@
 #if SYMBOLS_FILENAME
         symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
 #endif
-        streamingAssetsUrl: "StreamingAssets",
+        streamingAssetsUrl: "/unity/StreamingAssets",
         companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
         productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
         productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},

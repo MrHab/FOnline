@@ -1498,6 +1498,21 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: JSON_LIMIT }));
 app.use(express.urlencoded({ extended: false, limit: JSON_LIMIT }));
 
+// Основной клиент — Unity WebGL (public/unity/, собирается при деплое: Realm of Ashes → Build WebGL).
+// Пока сборки нет (dev-окружение, CI), корень отдаёт прежний браузерный клиент; он же
+// всегда доступен по /legacy/ как источник правды для check:unity-parity.
+const UNITY_INDEX_FILE = path.join(__dirname, 'public', 'unity', 'index.html');
+const LEGACY_INDEX_FILE = path.join(__dirname, 'public', 'index.html');
+app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  if (fs.existsSync(UNITY_INDEX_FILE)) return res.sendFile(UNITY_INDEX_FILE);
+  return res.sendFile(LEGACY_INDEX_FILE);
+});
+app.get(['/legacy', '/legacy/', '/legacy/index.html'], (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  return res.sendFile(LEGACY_INDEX_FILE);
+});
+
 // Облегчённые GLB (tools/optimize-glb.js → public/assets/models-lite/): если копии нет,
 // отдаётся оригинал из public/assets/models/. Каталог генерируется при деплое, в git не входит.
 app.use('/assets/models-lite', (req, res, next) => {

@@ -1565,6 +1565,33 @@ rAF до ~1 Гц (`document.hidden = true`) — мерить только в в�
 (рост памяти), ввод с клавиатуры в InputField (в тестах ввод шёл через
 гостевой старт), SDK площадок (vk-bridge/ysdk) — следующий шаг.
 
+## Деплой: Unity — основной клиент
+
+С этого момента игра для игроков — Unity WebGL; прежний Three.js-клиент
+остаётся в репозитории как `/legacy/` (источник правды для `check:unity-parity`
+и запасной вход), но с корня сайта не открывается.
+
+Маршруты (одинаково в `server.js` для dev и в `deploy/nginx/realm-of-ashes.locations.conf`
+для VPS, где статику раздаёт Nginx):
+- `/` → `public/unity/index.html` (если сборки нет — прежний клиент, чтобы dev и CI
+  работали без Unity); `/legacy/` → `public/index.html`;
+- `/unity/Build/*` — immutable (имена-хэши), `.unityweb` без `Content-Encoding`;
+- `/assets/models-lite/*` → облегчённые GLB с фолбэком на `/assets/models/*`.
+
+Шаги выкладки на VPS после `git pull`:
+1. `npm ci && npm run build:models-lite` — генерирует `public/assets/models-lite/`
+   (в git не входит; ~80 МБ, минута-две).
+2. WebGL-сборка: на машине с Unity 6000.5.8f1 (+ модуль WebGL) — меню
+   «Realm of Ashes → Build WebGL» или пакетно:
+   `Unity.exe -batchmode -quit -projectPath unity-client -buildTarget WebGL -executeMethod RealmOfAshes.EditorTools.RoaWebGlBuild.Build`,
+   результат — `unity-client/../public/unity/`; скопировать каталог `public/unity/`
+   на VPS (`rsync -a --delete public/unity/ vps:/opt/realm-of-ashes/public/unity/`).
+   Сборка в git не входит (.gitignore).
+3. Обновить nginx-сниппет (`install … realm-of-ashes.locations.conf`, `nginx -t`,
+   `systemctl reload nginx`) и перезапустить Node.
+4. Проверить: `curl -fsSI https://rangir.ru/` — заголовок `Realm of Ashes — Unity`;
+   `curl -fsSI https://rangir.ru/assets/models-lite/wasteland/brahmin.glb` — 200.
+
 ## Туман войны и линия видимости
 
 `RoaFogOfWar.cs` — единый источник **игровой** видимости, `RoaAuthoredVision.cs` —

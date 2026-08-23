@@ -8,6 +8,10 @@ const legacyModelFile = path.join(root, 'public', 'assets', 'models', 'equipment
 const approvedRuntimeFile = path.join(root, 'public', 'js', 'game', '04d_approved_humanoid_assets_runtime.js');
 const modernRuntimeFile = path.join(root, 'public', 'js', 'game', '04a_player_model_modern_runtime.js');
 const visualsFile = path.join(root, 'public', 'js', 'game', '04_player_model_visuals.js');
+const unityEquipmentFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaEquipmentView.cs');
+const unityCharacterFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCharacterView.cs');
+const unityInventoryFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInventory.cs');
+const unityRemotesFile = path.join(root, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaRemotePlayers.cs');
 const bodyIds = [
   'female_slim', 'female_medium', 'female_large',
   'male_slim', 'male_medium', 'male_large'
@@ -50,6 +54,10 @@ assert(!fs.existsSync(legacyModelFile),
 const approvedRuntimeSource = fs.readFileSync(approvedRuntimeFile, 'utf8');
 const modernRuntimeSource = fs.readFileSync(modernRuntimeFile, 'utf8');
 const visualsSource = fs.readFileSync(visualsFile, 'utf8');
+const unityEquipmentSource = fs.readFileSync(unityEquipmentFile, 'utf8');
+const unityCharacterSource = fs.readFileSync(unityCharacterFile, 'utf8');
+const unityInventorySource = fs.readFileSync(unityInventoryFile, 'utf8');
+const unityRemotesSource = fs.readFileSync(unityRemotesFile, 'utf8');
 [
   'const APPROVED_EQUIPMENT_ASSETS = Object.freeze({',
   'scoutBoots: Object.freeze({',
@@ -72,4 +80,26 @@ assert(
 ].forEach(marker => assert(!modernRuntimeSource.includes(marker) && !visualsSource.includes(marker),
   `legacy one-size scout-boot runtime returned: ${marker}`));
 
-console.log(`Equipment models OK: 6 body-fitted scout-boot GLBs, ${totalBytes} bytes total`);
+[
+  'state.BodyKey == bodyKey && state.CharacterRoot == characterRoot',
+  'private void ScheduleRetry(',
+  'private async Task RetrySlotLater(',
+  'state.CharacterRoot == root'
+].forEach(marker => assert(unityEquipmentSource.includes(marker),
+  `Unity equipment ownership/retry guard is missing: ${marker}`));
+[
+  'public int LoadedEquipmentSlotCount',
+  'public bool AnyHairVisible',
+  'private bool LoadIsCurrent(int request)'
+].forEach(marker => assert(unityCharacterSource.includes(marker),
+  `Unity character/equipment lifecycle integration is missing: ${marker}`));
+assert(unityInventorySource.includes('public bool SubmitEquipmentAction('),
+  'Unity inventory no longer exposes the authoritative equipment action path');
+assert(unityInventorySource.includes('Equip(slot, string.Empty);'),
+  'Unity unequip must clear the runtime id so the server can resolve the built-in fists state');
+assert(!unityInventorySource.includes('Equip(slot, slot == "weapon" ? "fists" : string.Empty);'),
+  'Unity unequip regressed to requesting a physical fists runtime instance');
+assert(unityRemotesSource.includes('public void CollectCharacterViews('),
+  'Unity remote-player equipment inspection path is missing');
+
+console.log(`Equipment models OK: 6 body-fitted scout-boot GLBs, ${totalBytes} bytes total; Unity owner/retry guards present`);

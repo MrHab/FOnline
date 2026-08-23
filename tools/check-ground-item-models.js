@@ -12,6 +12,11 @@ const MODEL_FILE = path.join(RUNTIME_DIR, 'ground_item_library.glb');
 const MANIFEST_FILE = path.join(RUNTIME_DIR, 'manifest.json');
 const ITEMS_SOURCE = path.join(ROOT, 'public', 'js', 'game', '03_items_inventory_core.js');
 const RUNTIME_SOURCE = path.join(ROOT, 'public', 'js', 'game', '05e_ground_items_world_sync.js');
+const UNITY_GROUND_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGroundItems.cs');
+const UNITY_INTERACTION_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInteraction.cs');
+const UNITY_INVENTORY_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInventory.cs');
+const UNITY_MOBILE_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaMobileControls.cs');
+const UNITY_BOOTSTRAP_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGameBootstrap.cs');
 const EXPECTED_LIBRARY_IDS = [
   'ammo9', 'ammo556', 'energyCell', 'napalm', 'shotgunShell', 'rocketAmmo',
   'medkit', 'stim', 'doctorBag', 'antibiotics', 'ore', 'wood', 'scrap',
@@ -120,6 +125,44 @@ const runtime = fs.readFileSync(RUNTIME_SOURCE, 'utf8');
 ].forEach(marker => assert(!runtime.includes(marker), `Вернулся процедурный fallback предмета: ${marker}`));
 assert(runtime.includes("makeStaticModelGroup('campfireRest', -2.6, 2.2"),
   'Неавторская локация снова подменяет GLB-костёр процедурной моделью');
+
+const unityGround = fs.readFileSync(UNITY_GROUND_SOURCE, 'utf8');
+[
+  'private void BeginVisualLoad(GroundItem item)',
+  'private static void ScheduleVisualRetry(GroundItem item)',
+  'ModelCache.Remove(url)',
+  'item.VisualRetryAt = Time.unscaledTime + delay',
+  'VisualRequestIsCurrent(item, itemId, request)',
+  'public bool HasPickupCandidate()',
+  'public void ApplyDropAck(JObject ack)',
+  'if (Interaction == null && Input.GetKeyDown(PickupKey))',
+  'public bool RequestPickupNearest(System.Action<JObject> completed = null)',
+  'public int LoadedVisualCountForItem(string itemId)'
+].forEach(marker => assert(unityGround.includes(marker), `Нет Unity runtime-маркера физического лута: ${marker}`));
+
+const unityInteraction = fs.readFileSync(UNITY_INTERACTION_SOURCE, 'utf8');
+assert(unityInteraction.includes('GetComponent<RoaGroundItems>()')
+  && unityInteraction.includes('private bool TryPickupGroundBeforeInteract()')
+  && (unityInteraction.match(/if \(!TryPickupGroundBeforeInteract\(\)\) Interact\(\);/g) || []).length === 2
+  && unityInteraction.includes('return groundItems.RequestPickupNearest();'),
+  'Общая клавиша E снова отдаёт приоритет NPC и делает предмет у его ног неподбираемым');
+
+const unityInventory = fs.readFileSync(UNITY_INVENTORY_SOURCE, 'utf8');
+assert(unityInventory.includes('public bool SubmitDropItem(string itemRuntimeId, int qty, Action<JObject> completed = null)'),
+  'Unity-инвентарь больше не открывает авторитетный путь drop');
+assert(unityInventory.includes('GetComponent<RoaGroundItems>()')
+  && unityInventory.includes('groundItems?.ApplyDropAck(ack);'),
+  'Клиент, выбросивший предмет, снова ждёт необязательное комнатное событие вместо авторитетного ACK');
+const unityMobile = fs.readFileSync(UNITY_MOBILE_SOURCE, 'utf8');
+assert(unityMobile.includes('_groundItems?.RequestPickupNearest()'),
+  'Мобильное действие Unity больше не подбирает предмет с земли');
+const unityBootstrap = fs.readFileSync(UNITY_BOOTSTRAP_SOURCE, 'utf8');
+assert(unityBootstrap.includes('MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GlobalMap, GroundItems);'),
+  'Bootstrap Unity больше не передаёт GroundItems мобильному управлению');
+assert(unityBootstrap.includes('Interaction.GroundItems = GroundItems;'),
+  'Bootstrap Unity больше не связывает единый приоритет E с наземными предметами');
+assert(unityBootstrap.includes('Inventory.GroundItems = GroundItems;'),
+  'Bootstrap Unity больше не передаёт наземные предметы авторитетному drop-пути инвентаря');
 
 console.log(
   `Физические предметы OK: ${EXPECTED_LIBRARY_IDS.length} собственных + `

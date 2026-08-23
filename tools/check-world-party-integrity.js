@@ -1422,6 +1422,9 @@ function assertSocketAndClientContract() {
     'independent global travel can start without cancelling active world-party work');
   assert(travelStart.includes('members.find(member => serverPlayerActiveWorldPartyTask(member))'),
     'a travel leader can take an attached follower onto an independent route');
+  assert(travelStart.includes('if (candidateExisting?.terminating) globalTravelSessions.delete(socket.id)')
+    && travelStart.includes('candidateExisting && !candidateExisting.terminating'),
+  'a completed route can remain authoritative and reject a new destination');
   const enterWorld = serverSource.slice(
     serverSource.indexOf("socket.on('globalTravelEnterWorld'"),
     serverSource.indexOf("socket.on('globalTravelCancel'", serverSource.indexOf("socket.on('globalTravelEnterWorld'"))

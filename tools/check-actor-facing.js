@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+const UNITY_COORDS_FILE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'World', 'RoaCoords.cs');
+const CHARACTER_FILE = path.join(ROOT, 'public', 'assets', 'models', 'characters', 'base', 'character_male_medium.glb');
 const {
   MODEL_FORWARD_AXIS_BY_KEY,
   actorFacingCorrectionY,
@@ -28,6 +30,62 @@ const EXPECTED_ACTOR_MODELS = Object.freeze({
   brahmin: '+Z',
   friendlyBrahmin: '+Z'
 });
+
+function parseGlb(file) {
+  const data = fs.readFileSync(file);
+  assert.strictEqual(data.toString('ascii', 0, 4), 'glTF', 'character forward-axis source must be a GLB');
+  let offset = 12;
+  let json = null;
+  let binary = null;
+  while (offset + 8 <= data.length) {
+    const length = data.readUInt32LE(offset);
+    const type = data.toString('ascii', offset + 4, offset + 8);
+    const chunk = data.subarray(offset + 8, offset + 8 + length);
+    if (type === 'JSON') json = JSON.parse(chunk.toString('utf8').replace(/\0+$/g, '').trim());
+    if (type === 'BIN\0') binary = chunk;
+    offset += 8 + length;
+  }
+  assert(json && binary, 'character GLB is missing JSON or BIN data');
+  return { json, binary };
+}
+
+function averagePositionZ(glb, meshName) {
+  const mesh = glb.json.meshes.find(row => row.name === meshName);
+  assert(mesh && mesh.primitives?.length, `character mesh is missing: ${meshName}`);
+  const accessor = glb.json.accessors[mesh.primitives[0].attributes.POSITION];
+  const view = glb.json.bufferViews[accessor.bufferView];
+  assert.strictEqual(accessor.componentType, 5126, `${meshName}: POSITION is not float32`);
+  assert.strictEqual(accessor.type, 'VEC3', `${meshName}: POSITION is not VEC3`);
+  const stride = view.byteStride || 12;
+  const base = Number(view.byteOffset || 0) + Number(accessor.byteOffset || 0);
+  let total = 0;
+  for (let index = 0; index < accessor.count; index += 1)
+    total += glb.binary.readFloatLE(base + index * stride + 8);
+  return total / accessor.count;
+}
+
+const characterGlb = parseGlb(CHARACTER_FILE);
+const eyeForwardZ = averagePositionZ(characterGlb, 'mesh_character_male_medium_bc_eyes');
+const eyebrowForwardZ = averagePositionZ(characterGlb, 'mesh_character_male_medium_bc_eyebrows');
+assert(eyeForwardZ > 0.05 && eyebrowForwardZ > 0.05,
+  `character facial geometry no longer proves +Z forward: eyes=${eyeForwardZ}, brows=${eyebrowForwardZ}`);
+
+const unityCoords = fs.readFileSync(UNITY_COORDS_FILE, 'utf8');
+[
+  'public const float ModelYawOffsetDeg = 0f;',
+  '=> 180f - serverAngleRad * Mathf.Rad2Deg + ModelYawOffsetDeg;',
+  '=> (180f - (unityYawDeg - ModelYawOffsetDeg)) * Mathf.Deg2Rad;'
+].forEach(marker => assert(unityCoords.includes(marker), `Unity character facing contract is missing: ${marker}`));
+
+for (const angle of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+  const unityYaw = Math.PI - angle;
+  const renderedForward = { x: Math.sin(unityYaw), z: Math.cos(unityYaw) };
+  const convertedServerForward = { x: Math.sin(angle), z: -Math.cos(angle) };
+  const dot = renderedForward.x * convertedServerForward.x + renderedForward.z * convertedServerForward.z;
+  assert(dot > 0.999999, `Unity player faces backward for server angle ${angle}`);
+  const roundTrip = Math.PI - unityYaw;
+  assert(Math.abs(roundTrip - angle) < 1e-12, `Unity yaw round-trip drifted for ${angle}`);
+}
 
 assert.deepStrictEqual(MODEL_FORWARD_AXIS_BY_KEY, EXPECTED_ACTOR_MODELS, 'actor forward-axis audit changed');
 
@@ -101,4 +159,4 @@ const clientSource = fs.readFileSync(path.join(ROOT, 'public/js/game/09_update_f
   "const fallbackTarget = (e.aiState === 'chase' || e.aiState === 'attack') ? player : null;"
 ].forEach(marker => assert(clientSource.includes(marker), `client facing integration is missing: ${marker}`));
 
-console.log(`Actor facing OK: ${Object.keys(EXPECTED_ACTOR_MODELS).length} model axes, movement and attack priorities.`);
+console.log(`Actor facing OK: ${Object.keys(EXPECTED_ACTOR_MODELS).length} model axes, Unity +Z character face (${eyeForwardZ.toFixed(3)}m eyes), movement and attack priorities.`);

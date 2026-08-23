@@ -438,6 +438,57 @@ function authHeaders(token, deviceId, options = {}) {
   return headers;
 }
 
+async function assertGuestAuthLifecycle() {
+  const firstDeviceId = 'd_smoke_guest_0123456789abcdef';
+  const secondDeviceId = 'd_smoke_guest_fedcba9876543210';
+  const guestRequest = async (deviceId, forwardedFor) => request('/api/auth/guest', {
+    method: 'POST',
+    headers: {
+      'X-Device-Id': deviceId,
+      'X-Client-Instance-Id': `${deviceId}_client`,
+      'X-Device-Type': 'desktop',
+      'X-Control-Type': 'keyboard_mouse',
+      'X-Forwarded-For': forwardedFor
+    }
+  });
+
+  const first = await guestRequest(firstDeviceId, '198.51.100.201');
+  assertStatus(first, 200, 'POST /api/auth/guest');
+  const firstData = parseJsonResponse(first, 'POST /api/auth/guest');
+  if (!firstData.ok || !firstData.token || !firstData.user?.isGuest || !/^guest_[a-f0-9]{24}$/.test(firstData.user?.login || '')) {
+    fail('guest auth response is incomplete', first.body);
+  }
+  if (!Array.isArray(firstData.characters) || firstData.characters.length !== 0) {
+    fail('new guest profile unexpectedly contained characters', first.body);
+  }
+
+  const me = await request('/api/auth/me', {
+    headers: {
+      ...authHeaders(firstData.token, firstDeviceId),
+      'X-Forwarded-For': '198.51.100.202'
+    }
+  });
+  assertStatus(me, 200, 'GET /api/auth/me for guest');
+  const meData = parseJsonResponse(me, 'GET /api/auth/me for guest');
+  if (!meData.user?.isGuest || meData.user?.login !== firstData.user.login) {
+    fail('guest session did not restore the same profile', me.body);
+  }
+
+  const repeated = await guestRequest(firstDeviceId, '198.51.100.203');
+  assertStatus(repeated, 200, 'repeated POST /api/auth/guest');
+  const repeatedData = parseJsonResponse(repeated, 'repeated POST /api/auth/guest');
+  if (repeatedData.user?.login !== firstData.user.login || repeatedData.token === firstData.token) {
+    fail('repeated guest auth did not rotate the token for the same profile', repeated.body);
+  }
+
+  const other = await guestRequest(secondDeviceId, '198.51.100.204');
+  assertStatus(other, 200, 'second-device POST /api/auth/guest');
+  const otherData = parseJsonResponse(other, 'second-device POST /api/auth/guest');
+  if (otherData.user?.login === firstData.user.login) {
+    fail('different browser devices shared one guest profile', other.body);
+  }
+}
+
 async function waitForHealth(proc, logs) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < MAX_WAIT_MS) {
@@ -1749,6 +1800,7 @@ async function main() {
     await assertStaticAssets(health);
     await assertRestCorsPreflight();
     await assertEditorAndWorldDataApis();
+    await assertGuestAuthLifecycle();
     await assertAuthRateLimitLifecycle();
     const resetAccounts = await assertAuthApiLifecycle();
     await assertSocketMultiplayerLifecycle();

@@ -24,6 +24,7 @@
   let creatorStats = Object.fromEntries(STAT_DEFS.map(s => [s.key, 5]));
   let creatorSkills = [];
   let creatorTraits = [];
+  let quickStartCharacterPending = false;
   let creatorAppearance = typeof defaultCharacterAppearance === 'function'
     ? defaultCharacterAppearance('male')
     : {
@@ -413,10 +414,15 @@
     renderWeaponReadout();
   }
 
-  function resetNewGameInventory() {
+  function resetNewGameInventory(profile = null) {
     inventory.clear();
     storageInventory.clear();
     const startItems = { knife: 1, water: 1, silver: 6 };
+    const quickStart = profile?.entryMode === 'quick';
+    if (quickStart) {
+      startItems.pistol = 1;
+      startItems.ammo9 = 18;
+    }
     if (creatorTraits.includes('scavengerStart')) startItems.scrap = 3;
     if (creatorTraits.includes('traderStart')) startItems.silver += 12;
     if (creatorTraits.includes('craftsmanStart')) { startItems.pickaxe = 1; startItems.axe = 1; }
@@ -425,7 +431,7 @@
     traderMarketState = {};
     restockBaseStorage(true, { silent: true, noSave: true, noRender: true });
     Object.keys(equipment).forEach(slot => equipment[slot] = null);
-    equipment.weapon = 'fists';
+    equipment.weapon = quickStart ? 'pistol' : 'fists';
     normalizeUniqueEquipmentState();
     quickbarSlots.fill(null);
   }
@@ -469,6 +475,7 @@
         : { ...creatorAppearance },
       createdAt: Date.now(),
       yandexName: yandexPlayerName || '',
+      entryMode: quickStartCharacterPending ? 'quick' : 'custom',
       lastVisitedSettlementId: 'settlement',
       serverCharacterId: selectedServerCharacterId || makeNewCharacterId()
     };
@@ -488,7 +495,7 @@
       markStartup('socket-transport-started');
     }
     const startNewWorld = () => {
-      resetNewGameInventory();
+      resetNewGameInventory(profile);
       player.level = 1;
       player.xp = 0;
       player.xpNeeded = 100;
@@ -572,6 +579,31 @@
     } catch (err) {
       console.error(err);
       setCharacterNotice('Ошибка при создании персонажа: ' + (err && err.message ? err.message : String(err)));
+    }
+  }
+
+  function prepareQuickStartCharacter(name = '') {
+    setSelectedServerCharacterForSaveContext(makeNewCharacterId());
+    creatorStats = { str: 5, per: 7, end: 6, cha: 5, int: 5, agi: 7, luck: 5 };
+    creatorSkills = ['lightWeapons', 'wanderer'];
+    creatorTraits = ['trainedEye', 'scavengerStart'];
+    creatorAppearance = typeof defaultCharacterAppearance === 'function'
+      ? defaultCharacterAppearance('male')
+      : creatorAppearance;
+    const nameInput = document.getElementById('char-name-input');
+    if (nameInput) nameInput.value = String(name || 'Странник').trim().slice(0, 18) || 'Странник';
+    quickStartCharacterPending = true;
+  }
+
+  async function startQuickCharacterCreationSafe(name = '') {
+    try {
+      prepareQuickStartCharacter(name);
+      await createCharacterFromForm();
+    } catch (err) {
+      console.error(err);
+      setServerAuthStatus('Не удалось подготовить быстрого персонажа: ' + (err && err.message ? err.message : String(err)), 'err');
+    } finally {
+      quickStartCharacterPending = false;
     }
   }
 

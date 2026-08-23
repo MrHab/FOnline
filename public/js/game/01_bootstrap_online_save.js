@@ -262,6 +262,7 @@
   let characterSelectionInFlight = false;
   let characterSelectionEpoch = 0;
   let authScreenStep = 'login';
+  let quickStartInFlight = false;
   let clientSaveContextEpoch = 0;
 
   function advanceClientSaveContextEpoch() {
@@ -398,9 +399,10 @@
     const selectLogin = document.getElementById('character-select-login');
     const loginInput = document.getElementById('server-login-input');
     const passInput = document.getElementById('server-password-input');
-    if (loginText) loginText.textContent = serverSession.token ? `вход: ${serverSession.login}` : 'не выполнен вход';
-    if (selectLogin) selectLogin.textContent = serverSession.token ? `аккаунт: ${serverSession.login}` : 'аккаунт';
-    if (loginInput && serverSession.login && !loginInput.value) loginInput.value = serverSession.login;
+    const guestSession = serverSession.login.startsWith('guest_');
+    if (loginText) loginText.textContent = serverSession.token ? (guestSession ? 'гостевой профиль' : `вход: ${serverSession.login}`) : 'не выполнен вход';
+    if (selectLogin) selectLogin.textContent = serverSession.token ? (guestSession ? 'гостевой профиль этого браузера' : `аккаунт: ${serverSession.login}`) : 'аккаунт';
+    if (loginInput && serverSession.login && !guestSession && !loginInput.value) loginInput.value = serverSession.login;
     if (passInput && serverSession.token) passInput.value = '';
   }
 
@@ -1011,6 +1013,41 @@
     );
     updateMobilePanelState();
     return true;
+  }
+
+  async function handleQuickStart() {
+    if (quickStartInFlight) return;
+    const button = document.getElementById('quick-start-btn');
+    quickStartInFlight = true;
+    if (button) {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      button.textContent = 'Подготовка…';
+    }
+    setServerAuthStatus('Создаю гостевой профиль и готовлю пустошь...');
+    try {
+      const data = await serverApi('/api/auth/guest', { method: 'POST' });
+      setServerSession(data.token, data.user?.login || 'guest');
+      serverCharacters = Array.isArray(data.characters) ? data.characters : [];
+      setOnlineStatus('Гостевой профиль · прогресс сохранён в этом браузере');
+      if (serverCharacters.length) {
+        setAuthStep('select');
+        renderCharacterSelect();
+        setCharacterSelectStatus('Продолжаю последнюю вылазку...', 'ok');
+        await selectServerCharacter(serverCharacters[0].id);
+      } else {
+        await startQuickCharacterCreationSafe(data.user?.displayName || 'Странник');
+      }
+    } catch (err) {
+      setServerAuthStatus(err.message || 'Не удалось начать игру без регистрации.', 'err');
+    } finally {
+      quickStartInFlight = false;
+      if (button) {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.textContent = 'Начать сразу';
+      }
+    }
   }
 
   async function handleServerAuth() {

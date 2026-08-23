@@ -1,0 +1,597 @@
+using Newtonsoft.Json.Linq;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+namespace RealmOfAshes.World
+{
+    /// <summary>
+    /// Visual local-world ground built from the server-authoritative tile snapshot.
+    /// The browser deliberately hides its technical 38x38 planes and paints one
+    /// continuous wasteland backplate with soft road, scorch and water patches.
+    /// Unity follows the same composition, baked into one runtime texture so the
+    /// result stays cheap on desktop and mobile and never exposes a square grid.
+    /// </summary>
+    public sealed class RoaLocalTerrain : MonoBehaviour
+    {
+        private const int Grass = 0;
+        private const int Tree = 1;
+        private const int Water = 3;
+        private const int Dark = 4;
+        private const int Path = 5;
+        private const int Ore = 6;
+        private const int Wood = 7;
+        private const int Oil = 9;
+
+        private LocationDefinition _location;
+        private Mesh _mesh;
+        private Material _material;
+        private Texture2D _albedo;
+        private int _textureSize;
+        private float _visualWidth;
+        private float _visualDepth;
+        private int _mapSignature = int.MinValue;
+        private GameObject _movementRoot;
+
+        public Renderer GroundRenderer { get; private set; }
+        public int AuthoritativeMapWidth { get; private set; }
+        public int AuthoritativeMapDepth { get; private set; }
+
+        public void Initialize(LocationDefinition location, JArray stateMap)
+        {
+            _location = location;
+            name = "Ground";
+
+            float worldWidth = location != null ? location.WorldWidth : 76f;
+            float worldDepth = location != null ? location.WorldDepth : 76f;
+            bool settlement = IsSettlement;
+            float edgeBorder = settlement ? 40f : 32f;
+            _visualWidth = worldWidth + edgeBorder * 2f;
+            _visualDepth = worldDepth + edgeBorder * 2f;
+            _textureSize = Application.isMobilePlatform ? 256 : 512;
+
+            _mesh = BuildReliefMesh(_visualWidth, _visualDepth, settlement ? 48 : 12,
+                location != null ? location.Seed : 1L, settlement);
+            var filter = gameObject.AddComponent<MeshFilter>();
+            filter.sharedMesh = _mesh;
+            var renderer = gameObject.AddComponent<MeshRenderer>();
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = true;
+            GroundRenderer = renderer;
+
+            // The web relief is visual only. A flat authoritative walk surface keeps
+            // movement/raycasting identical to the Node server's XZ simulation.
+            var collider = gameObject.AddComponent<BoxCollider>();
+            collider.center = new Vector3(0f, -0.12f, 0f);
+            collider.size = new Vector3(worldWidth, 0.24f, worldDepth);
+            BuildPlayableBoundary(location);
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            if (shader != null)
+            {
+                _material = new Material(shader) { name = "RuntimeLocalGround:" + (location?.Id ?? "unknown") };
+                SetMaterialColor(_material, Color.white);
+                if (_material.HasProperty("_Smoothness")) _material.SetFloat("_Smoothness", 0.015f);
+                if (_material.HasProperty("_Glossiness")) _material.SetFloat("_Glossiness", 0.015f);
+                renderer.sharedMaterial = _material;
+            }
+
+            ApplyMap(stateMap, true);
+        }
+
+        /// <summary>Repaints the visual surface when the server publishes a new map.</summary>
+        public bool ApplyMap(JArray stateMap, bool force = false)
+        {
+            int signature = MapSignature(stateMap);
+            if (!force && signature == _mapSignature) return false;
+            _mapSignature = signature;
+
+            ReadMapSize(stateMap, out int mapWidth, out int mapDepth);
+            AuthoritativeMapWidth = mapWidth;
+            AuthoritativeMapDepth = mapDepth;
+            BuildTileMovementColliders(stateMap, mapWidth, mapDepth);
+
+            if (_albedo == null || _albedo.width != _textureSize)
+            {
+                DestroyRuntime(_albedo);
+                _albedo = new Texture2D(_textureSize, _textureSize, TextureFormat.RGBA32, true, false)
+                {
+                    name = "RuntimeLocalGroundAlbedo:" + (_location?.Id ?? "unknown"),
+                    filterMode = FilterMode.Bilinear,
+                    wrapMode = TextureWrapMode.Clamp,
+                    anisoLevel = Application.isMobilePlatform ? 2 : 8
+                };
+            }
+
+            Color32[] pixels = BuildBasePixels();
+            if (IsSettlement) PaintSettlementLayers(pixels);
+            else PaintAuthoritativeTiles(pixels, stateMap, mapWidth, mapDepth);
+            PaintAmbientAge(pixels);
+
+            _albedo.SetPixels32(pixels);
+            _albedo.Apply(true, false);
+            if (_material != null)
+            {
+                if (_material.HasProperty("_BaseMap")) _material.SetTexture("_BaseMap", _albedo);
+                if (_material.HasProperty("_MainTex")) _material.SetTexture("_MainTex", _albedo);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The Node simulation treats only water as an ordinary full-tile terrain
+        /// blocker. The legacy settlement additionally blocks its hand-built tree
+        /// cells. Procedural trees, rocks, ruins and resources instead use their
+        /// exact rotated model boxes from RoaLocationLoader, just like the server.
+        /// Merge adjacent terrain-only cells so prediction stays cheap.
+        /// </summary>
+        private void BuildTileMovementColliders(JArray stateMap, int mapWidth, int mapDepth)
+        {
+            if (_movementRoot != null) DestroyRuntime(_movementRoot);
+            _movementRoot = new GameObject("AuthoritativeTileMovement");
+            // Movement-only volumes must not pretend that water or a low resource
+            // tile blocks bullets. Physics.DefaultRaycastLayers excludes layer 2.
+            _movementRoot.layer = 2;
+            _movementRoot.transform.SetParent(transform, false);
+            if (stateMap == null || mapWidth <= 0 || mapDepth <= 0) return;
+
+            var blocked = new bool[mapWidth, mapDepth];
+            var used = new bool[mapWidth, mapDepth];
+            for (int z = 0; z < mapDepth; z++)
+            {
+                JArray row = z < stateMap.Count ? stateMap[z] as JArray : null;
+                for (int x = 0; x < mapWidth; x++)
+                {
+                    int type = row != null && x < row.Count ? row[x]?.ToObject<int>() ?? Grass : Grass;
+                    blocked[x, z] = BlocksTerrainMovement(type);
+                }
+            }
+
+            int boxes = 0;
+            for (int z = 0; z < mapDepth; z++)
+            {
+                for (int x = 0; x < mapWidth; x++)
+                {
+                    if (!blocked[x, z] || used[x, z]) continue;
+
+                    int spanX = 1;
+                    while (x + spanX < mapWidth && blocked[x + spanX, z] && !used[x + spanX, z])
+                        spanX++;
+
+                    int spanZ = 1;
+                    bool extend = true;
+                    while (z + spanZ < mapDepth && extend)
+                    {
+                        for (int sx = 0; sx < spanX; sx++)
+                        {
+                            if (!blocked[x + sx, z + spanZ] || used[x + sx, z + spanZ])
+                            {
+                                extend = false;
+                                break;
+                            }
+                        }
+                        if (extend) spanZ++;
+                    }
+
+                    for (int dz = 0; dz < spanZ; dz++)
+                        for (int dx = 0; dx < spanX; dx++)
+                            used[x + dx, z + dz] = true;
+
+                    Vector3 first = RoaCoords.TileToWorld(x, z, mapWidth, mapDepth);
+                    Vector3 last = RoaCoords.TileToWorld(x + spanX - 1, z + spanZ - 1, mapWidth, mapDepth);
+                    var holder = new GameObject("BlockedTiles:" + x + ":" + z + ":" + spanX + "x" + spanZ);
+                    holder.layer = 2;
+                    holder.transform.SetParent(_movementRoot.transform, false);
+                    var collider = holder.AddComponent<BoxCollider>();
+                    collider.center = new Vector3((first.x + last.x) * 0.5f, 1.6f, (first.z + last.z) * 0.5f);
+                    collider.size = new Vector3(spanX * RoaCoords.Tile, 3.2f, spanZ * RoaCoords.Tile);
+                    boxes++;
+                }
+            }
+
+            _movementRoot.name += ":" + boxes;
+        }
+
+        private bool BlocksTerrainMovement(int type)
+        {
+            return type == Water || (IsSettlement && type == Tree);
+        }
+
+        private bool IsSettlement
+        {
+            get { return string.Equals(_location?.Id, "settlement", System.StringComparison.Ordinal); }
+        }
+
+        private void BuildPlayableBoundary(LocationDefinition location)
+        {
+            if (location == null) return;
+            int mapWidth = location.TileWidth;
+            int mapDepth = location.TileDepth;
+
+            // Стены строятся ВСЕГДА, даже когда играбельная зона совпадает с
+            // картой. Ни одна из 30 авторских локаций не задаёт playableBounds,
+            // и без стен по краю карты персонаж уходил за пределы мира и падал
+            // с обрыва земли (проверено живым прогоном: y улетал к −270).
+            // Web-клиент за границу не пускает всегда:
+            // isWorldTerrainWalkableTile → false вне bounds (02c:1398).
+            PlayableBoundsDefinition bounds = location.PlayableBounds;
+            int minX = 0;
+            int minZ = 0;
+            int maxX = mapWidth - 1;
+            int maxZ = mapDepth - 1;
+
+            if (bounds != null && bounds.Width > 0 && bounds.Height > 0)
+            {
+                minX = bounds.MinX;
+                minZ = bounds.MinZ;
+                maxX = bounds.MaxX;
+                maxZ = bounds.MaxZ;
+            }
+
+            float left = (minX - mapWidth / 2f) * RoaCoords.Tile;
+            float right = (maxX + 1f - mapWidth / 2f) * RoaCoords.Tile;
+            float top = (minZ - mapDepth / 2f) * RoaCoords.Tile;
+            float bottom = (maxZ + 1f - mapDepth / 2f) * RoaCoords.Tile;
+            float width = Mathf.Max(RoaCoords.Tile, right - left);
+            float depth = Mathf.Max(RoaCoords.Tile, bottom - top);
+            const float thickness = 0.24f;
+            const float height = 3.2f;
+
+            AddBoundaryBox("West", new Vector3(left - thickness * 0.5f, height * 0.5f, -(top + bottom) * 0.5f),
+                new Vector3(thickness, height, depth));
+            AddBoundaryBox("East", new Vector3(right + thickness * 0.5f, height * 0.5f, -(top + bottom) * 0.5f),
+                new Vector3(thickness, height, depth));
+            AddBoundaryBox("North", new Vector3((left + right) * 0.5f, height * 0.5f, -(top - thickness * 0.5f)),
+                new Vector3(width, height, thickness));
+            AddBoundaryBox("South", new Vector3((left + right) * 0.5f, height * 0.5f, -(bottom + thickness * 0.5f)),
+                new Vector3(width, height, thickness));
+        }
+
+        private void AddBoundaryBox(string suffix, Vector3 center, Vector3 size)
+        {
+            var wall = new GameObject("PlayableBoundary:" + suffix);
+            wall.transform.SetParent(transform, false);
+            var box = wall.AddComponent<BoxCollider>();
+            box.center = center;
+            box.size = size;
+        }
+
+        private Color32[] BuildBasePixels()
+        {
+            var pixels = new Color32[_textureSize * _textureSize];
+            int seed = unchecked((int)(_location != null ? _location.Seed : 1L));
+            Color32 low = IsSettlement ? Hex(0x9b7546) : Hex(0x8c704b);
+            Color32 high = IsSettlement ? Hex(0xd8b981) : Hex(0xc8aa77);
+            Color32 dust = IsSettlement ? Hex(0xb99561) : Hex(0xb28f5d);
+
+            for (int y = 0; y < _textureSize; y++)
+            {
+                for (int x = 0; x < _textureSize; x++)
+                {
+                    float broad = ValueNoise(x * 0.035f, y * 0.035f, seed + 31);
+                    float grain = ValueNoise(x * 0.19f, y * 0.19f, seed + 73);
+                    Color32 color = Lerp(low, high, 0.28f + broad * 0.58f);
+                    color = Lerp(color, dust, grain * 0.18f);
+                    pixels[y * _textureSize + x] = color;
+                }
+            }
+            return pixels;
+        }
+
+        private void PaintAuthoritativeTiles(Color32[] pixels, JArray stateMap, int mapWidth, int mapDepth)
+        {
+            if (stateMap == null || mapWidth <= 0 || mapDepth <= 0) return;
+            int locationSeed = unchecked((int)(_location != null ? _location.Seed : 1L));
+            for (int tz = 0; tz < mapDepth; tz++)
+            {
+                JArray row = tz < stateMap.Count ? stateMap[tz] as JArray : null;
+                if (row == null) continue;
+                for (int tx = 0; tx < mapWidth && tx < row.Count; tx++)
+                {
+                    int type = row[tx]?.ToObject<int>() ?? Grass;
+                    Vector3 center = RoaCoords.TileToWorld(tx, tz, mapWidth, mapDepth);
+                    float rotation = Hash01(tx, tz, 381) * Mathf.PI * 2f;
+                    float jitterX = (Hash01(tx, tz, 371) - 0.5f) * 0.18f;
+                    float jitterZ = (Hash01(tx, tz, 373) - 0.5f) * 0.18f;
+                    center.x += jitterX;
+                    center.z += jitterZ;
+
+                    if (type == Water)
+                    {
+                        PaintEllipse(pixels, center.x, center.z, 2.36f, 1.84f, rotation + 0.34f,
+                            Hex(0x695334), 0.42f, tx * 97 + tz * 193);
+                        PaintEllipse(pixels, center.x, center.z, 1.88f, 1.48f, rotation,
+                            Hex(0x1c5361), 0.82f, tx * 101 + tz * 197);
+                    }
+                    else if (type == Path)
+                    {
+                        PaintEllipse(pixels, center.x, center.z, 2.32f, 1.56f, rotation,
+                            Hex(0xd4b175), 0.46f, tx * 103 + tz * 199);
+                        if (Hash01(tx, tz, 397) > 0.34f)
+                        {
+                            float length = 1.15f + Hash01(tx, tz, 399) * 0.42f;
+                            PaintTrack(pixels, center.x, center.z, length, rotation, Hex(0x3f2e1d), 0.22f);
+                        }
+                    }
+                    else if (type == Dark)
+                    {
+                        PaintEllipse(pixels, center.x, center.z, 2.12f, 1.72f, rotation,
+                            Hex(0x33261b), 0.38f, tx * 107 + tz * 211);
+                    }
+
+                    float h = Hash01(tx, tz, locationSeed);
+                    float h2 = Hash01(tx, tz, 777);
+                    float h3 = Hash01(tx, tz, 991);
+                    if ((type == Grass || type == Dark) && h < 0.24f)
+                    {
+                        PaintEllipse(pixels, center.x + (h2 - 0.5f) * 0.8f,
+                            center.z + (h3 - 0.5f) * 0.8f, 0.34f, 0.20f,
+                            h3 * Mathf.PI, Hex(0x756640), 0.54f, tx + tz * 43);
+                    }
+                    if (type != Water && h3 < 0.10f)
+                    {
+                        PaintEllipse(pixels, center.x, center.z, 0.60f + h * 0.5f,
+                            0.32f + h2 * 0.26f, rotation, Hex(0xe8c995), 0.18f, tx * 41 + tz);
+                    }
+                }
+            }
+        }
+
+        private void PaintSettlementLayers(Color32[] pixels)
+        {
+            // Same authored zones as createTraderYardTerrainLayers() in the web client.
+            PaintServerPatch(pixels, 0f, 2f, 28f, 22f, 0.01f, 0xc8a36c, 0.62f, 7601);
+            PaintServerPatch(pixels, 0f, 22f, 28f, 4f, 0.02f, 0xc8a36c, 0.34f, 7602);
+            PaintServerPatch(pixels, -25f, 2f, 4f, 21f, Mathf.PI / 2f, 0xc8a36c, 0.20f, 7603);
+            PaintServerPatch(pixels, 25f, 2f, 4f, 21f, Mathf.PI / 2f, 0xc8a36c, 0.20f, 7604);
+            PaintServerPatch(pixels, 0f, 1f, 24f, 17f, -0.04f, 0x4f3c2b, 0.20f, 7610);
+
+            PaintServerPatch(pixels, 1f, -10f, 9.5f, 29f, 0.015f, 0xb89a62, 0.64f, 7620);
+            PaintServerPatch(pixels, -13f, 3f, 13.5f, 7.2f, -0.02f, 0xb89a62, 0.46f, 7621);
+            PaintServerPatch(pixels, 2f, 1f, 12f, 9f, 0.04f, 0xb89a62, 0.36f, 7622);
+
+            PaintServerPatch(pixels, 3f, -8f, 7.4f, 16f, 0.02f, 0x5b4932, 0.32f, 7630);
+            PaintServerPatch(pixels, 11f, 4f, 15f, 6f, -0.18f, 0x5b4932, 0.22f, 7631);
+            PaintServerPatch(pixels, -12f, -5f, 13f, 8f, -0.02f, 0x362923, 0.30f, 7640);
+            PaintServerPatch(pixels, 13f, 1f, 7f, 4f, 0.18f, 0x362923, 0.22f, 7641);
+            PaintServerPatch(pixels, 15f, 10f, 15f, 15f, 0.10f, 0xa39173, 0.44f, 7650);
+            PaintServerPatch(pixels, -5f, 11f, 5f, 4f, -0.08f, 0xa39173, 0.34f, 7651);
+
+            // Cheap baked contact AO under the same important prop clusters.
+            PaintServerPatch(pixels, -14.3f, 3.2f, 11.6f, 5.4f, 0f, 0x30261d, 0.30f, 7660);
+            PaintServerPatch(pixels, -12f, -5f, 12f, 6.6f, 0f, 0x30261d, 0.24f, 7661);
+            PaintServerPatch(pixels, -5f, 11f, 4.2f, 3f, 0.08f, 0x30261d, 0.22f, 7662);
+            PaintServerPatch(pixels, 13f, 1f, 6f, 3.3f, 0.26f, 0x30261d, 0.20f, 7663);
+            PaintServerPatch(pixels, 18f, 18f, 5.3f, 3.7f, 0f, 0x30261d, 0.20f, 7664);
+        }
+
+        private void PaintServerPatch(Color32[] pixels, float serverX, float serverZ,
+            float sizeX, float sizeZ, float serverRotation, int rgb, float opacity, int seed)
+        {
+            PaintEllipse(pixels, serverX, -serverZ, sizeX, sizeZ, -serverRotation,
+                Hex(rgb), opacity, seed);
+        }
+
+        private void PaintAmbientAge(Color32[] pixels)
+        {
+            int count = Application.isMobilePlatform ? 46 : 110;
+            int seed = unchecked((int)(_location != null ? _location.Seed : 1L));
+            for (int i = 0; i < count; i++)
+            {
+                float x = (Hash01(i, seed, 7701) - 0.5f) * _visualWidth * 0.62f;
+                float z = (Hash01(i, seed, 7703) - 0.5f) * _visualDepth * 0.62f;
+                float size = 0.18f + Hash01(i, seed, 7705) * 0.52f;
+                Color32 color = Hash01(i, seed, 7707) > 0.48f ? Hex(0x756640) : Hex(0xa08f75);
+                PaintEllipse(pixels, x, z, size, size * 0.55f,
+                    Hash01(i, seed, 7709) * Mathf.PI, color, 0.34f, seed + i);
+            }
+        }
+
+        private void PaintTrack(Color32[] pixels, float centerX, float centerZ, float length,
+            float rotation, Color32 color, float opacity)
+        {
+            float dx = Mathf.Cos(rotation) * length * 0.5f;
+            float dz = Mathf.Sin(rotation) * length * 0.5f;
+            PaintLine(pixels, centerX - dx, centerZ - dz, centerX + dx, centerZ + dz,
+                0.055f, color, opacity);
+            PaintLine(pixels, centerX - dx - Mathf.Sin(rotation) * 0.16f,
+                centerZ - dz + Mathf.Cos(rotation) * 0.16f,
+                centerX + dx - Mathf.Sin(rotation) * 0.16f,
+                centerZ + dz + Mathf.Cos(rotation) * 0.16f, 0.055f, color, opacity);
+        }
+
+        private void PaintLine(Color32[] pixels, float x1, float z1, float x2, float z2,
+            float width, Color32 color, float opacity)
+        {
+            float distance = Vector2.Distance(new Vector2(x1, z1), new Vector2(x2, z2));
+            int steps = Mathf.Max(2, Mathf.CeilToInt(distance / Mathf.Max(0.04f, width)));
+            for (int i = 0; i <= steps; i++)
+            {
+                float t = i / (float)steps;
+                PaintEllipse(pixels, Mathf.Lerp(x1, x2, t), Mathf.Lerp(z1, z2, t),
+                    width * 2f, width * 2f, 0f, color, opacity, i + steps * 17);
+            }
+        }
+
+        private void PaintEllipse(Color32[] pixels, float centerX, float centerZ,
+            float sizeX, float sizeZ, float rotation, Color32 color, float opacity, int seed)
+        {
+            if (sizeX <= 0.001f || sizeZ <= 0.001f || opacity <= 0.001f) return;
+            float pixelsPerX = (_textureSize - 1f) / _visualWidth;
+            float pixelsPerZ = (_textureSize - 1f) / _visualDepth;
+            int radiusPx = Mathf.CeilToInt(Mathf.Max(sizeX * pixelsPerX, sizeZ * pixelsPerZ) * 0.58f) + 2;
+            int centerPx = Mathf.RoundToInt((centerX / _visualWidth + 0.5f) * (_textureSize - 1));
+            int centerPy = Mathf.RoundToInt((centerZ / _visualDepth + 0.5f) * (_textureSize - 1));
+            float cos = Mathf.Cos(rotation);
+            float sin = Mathf.Sin(rotation);
+            float halfX = Mathf.Max(0.01f, sizeX * 0.5f);
+            float halfZ = Mathf.Max(0.01f, sizeZ * 0.5f);
+
+            int minX = Mathf.Max(0, centerPx - radiusPx);
+            int maxX = Mathf.Min(_textureSize - 1, centerPx + radiusPx);
+            int minY = Mathf.Max(0, centerPy - radiusPx);
+            int maxY = Mathf.Min(_textureSize - 1, centerPy + radiusPx);
+            for (int py = minY; py <= maxY; py++)
+            {
+                float worldZ = (py / (_textureSize - 1f) - 0.5f) * _visualDepth - centerZ;
+                for (int px = minX; px <= maxX; px++)
+                {
+                    float worldX = (px / (_textureSize - 1f) - 0.5f) * _visualWidth - centerX;
+                    float localX = cos * worldX + sin * worldZ;
+                    float localZ = -sin * worldX + cos * worldZ;
+                    float radial = Mathf.Sqrt(localX * localX / (halfX * halfX)
+                        + localZ * localZ / (halfZ * halfZ));
+                    float irregular = (Hash01(px, py, seed) - 0.5f) * 0.12f;
+                    float coverage = Mathf.Clamp01((1.04f + irregular - radial) / 0.28f);
+                    if (coverage <= 0f) continue;
+                    int index = py * _textureSize + px;
+                    pixels[index] = Lerp(pixels[index], color, opacity * coverage);
+                }
+            }
+        }
+
+        private Mesh BuildReliefMesh(float width, float depth, int segments, long seedValue, bool relief)
+        {
+            int side = segments + 1;
+            var vertices = new Vector3[side * side];
+            var uv = new Vector2[vertices.Length];
+            var triangles = new int[segments * segments * 6];
+            int seed = unchecked((int)seedValue);
+            int v = 0;
+            for (int z = 0; z <= segments; z++)
+            {
+                float tz = z / (float)segments;
+                for (int x = 0; x <= segments; x++)
+                {
+                    float tx = x / (float)segments;
+                    float wx = (tx - 0.5f) * width;
+                    float wz = (tz - 0.5f) * depth;
+                    float baseY = relief ? -0.086f : -0.052f;
+                    float lift = relief
+                        ? (ValueNoise(wx * 0.11f, wz * 0.11f, seed + 601) - 0.5f) * 0.075f
+                        : 0f;
+                    vertices[v] = new Vector3(wx, baseY + lift, wz);
+                    uv[v] = new Vector2(tx, tz);
+                    v++;
+                }
+            }
+
+            int t = 0;
+            for (int z = 0; z < segments; z++)
+            {
+                for (int x = 0; x < segments; x++)
+                {
+                    int a = z * side + x;
+                    int b = a + 1;
+                    int c = a + side;
+                    int d = c + 1;
+                    triangles[t++] = a; triangles[t++] = c; triangles[t++] = b;
+                    triangles[t++] = b; triangles[t++] = c; triangles[t++] = d;
+                }
+            }
+
+            var mesh = new Mesh { name = "RuntimeLocalGroundMesh" };
+            mesh.vertices = vertices;
+            mesh.uv = uv;
+            mesh.triangles = triangles;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static void ReadMapSize(JArray stateMap, out int width, out int depth)
+        {
+            depth = stateMap?.Count ?? 0;
+            width = 0;
+            if (stateMap == null) return;
+            for (int z = 0; z < stateMap.Count; z++)
+            {
+                if (stateMap[z] is JArray row && row.Count > width) width = row.Count;
+            }
+        }
+
+        private static int MapSignature(JArray stateMap)
+        {
+            if (stateMap == null) return 0;
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + stateMap.Count;
+                for (int z = 0; z < stateMap.Count; z++)
+                {
+                    JArray row = stateMap[z] as JArray;
+                    hash = hash * 31 + (row?.Count ?? 0);
+                    if (row == null) continue;
+                    for (int x = 0; x < row.Count; x++) hash = hash * 31 + (row[x]?.ToObject<int>() ?? 0);
+                }
+                return hash;
+            }
+        }
+
+        private static float ValueNoise(float x, float y, int seed)
+        {
+            int x0 = Mathf.FloorToInt(x);
+            int y0 = Mathf.FloorToInt(y);
+            float tx = Mathf.SmoothStep(0f, 1f, x - x0);
+            float ty = Mathf.SmoothStep(0f, 1f, y - y0);
+            float a = Hash01(x0, y0, seed);
+            float b = Hash01(x0 + 1, y0, seed);
+            float c = Hash01(x0, y0 + 1, seed);
+            float d = Hash01(x0 + 1, y0 + 1, seed);
+            return Mathf.Lerp(Mathf.Lerp(a, b, tx), Mathf.Lerp(c, d, tx), ty);
+        }
+
+        /// <summary>Exact integer hash used by the browser terrain composer.</summary>
+        private static float Hash01(int a, int b, int c)
+        {
+            unchecked
+            {
+                uint x = (uint)(((a ^ unchecked((int)0x9e3779b9)) * unchecked((int)0x85ebca6b)));
+                x ^= (uint)((b + unchecked((int)0xc2b2ae35)) * unchecked((int)0x27d4eb2d));
+                x ^= (uint)((c + unchecked((int)0x165667b1)) * unchecked((int)0x9e3779b1));
+                x ^= x >> 15;
+                return (x % 100000u) / 100000f;
+            }
+        }
+
+        private static Color32 Hex(int rgb)
+        {
+            return new Color32((byte)((rgb >> 16) & 0xff), (byte)((rgb >> 8) & 0xff),
+                (byte)(rgb & 0xff), 255);
+        }
+
+        private static Color32 Lerp(Color32 a, Color32 b, float t)
+        {
+            t = Mathf.Clamp01(t);
+            return new Color32(
+                (byte)Mathf.RoundToInt(Mathf.Lerp(a.r, b.r, t)),
+                (byte)Mathf.RoundToInt(Mathf.Lerp(a.g, b.g, t)),
+                (byte)Mathf.RoundToInt(Mathf.Lerp(a.b, b.b, t)),
+                255);
+        }
+
+        private static void SetMaterialColor(Material material, Color color)
+        {
+            if (material == null) return;
+            material.color = color;
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+            if (material.HasProperty("_Color")) material.SetColor("_Color", color);
+        }
+
+        private static void DestroyRuntime(Object value)
+        {
+            if (value == null) return;
+            if (Application.isPlaying) Destroy(value);
+            else DestroyImmediate(value);
+        }
+
+        private void OnDestroy()
+        {
+            DestroyRuntime(_albedo);
+            DestroyRuntime(_material);
+            DestroyRuntime(_mesh);
+            _albedo = null;
+            _material = null;
+            _mesh = null;
+        }
+    }
+}

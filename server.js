@@ -97,6 +97,12 @@ const {
   normalizePasswordHashConfig
 } = require('./src/server/password-hashing');
 const {
+  guestDeviceHash,
+  guestDisplayNameForDevice,
+  guestLoginForDevice,
+  guestUserMatchesDevice
+} = require('./src/server/guest-auth');
+const {
   WORLD_TASK_CLAIM_LIMIT: SERVER_WORLD_TASK_CLAIM_LIMIT,
   isWorldPartyTask,
   migrateDuplicateCharacterIds,
@@ -1419,7 +1425,9 @@ function requestAddress(req = {}) {
 }
 
 function authRateIdentity(req = {}) {
-  return normalizeLogin(req.body?.login || '') || normalizeEmail(req.body?.email || '');
+  return normalizeLogin(req.body?.login || '')
+    || normalizeEmail(req.body?.email || '')
+    || getDeviceIdFromRequest(req);
 }
 
 const requireDevAccess = createDevAccessMiddleware(DEV_ACCESS_POLICY);
@@ -1747,6 +1755,56 @@ app.get('/health', (_, res) => {
   });
 });
 
+app.post('/api/auth/guest', authRateLimit, (req, res) => {
+  const deviceId = getDeviceIdFromRequest(req);
+  const deviceType = getDeviceTypeFromRequest(req);
+  const controlType = getControlTypeFromRequest(req);
+  if (!deviceId) {
+    return res.status(400).json({ ok: false, error: 'Браузер не передал идентификатор гостевого профиля.' });
+  }
+
+  const login = guestLoginForDevice(deviceId);
+  const deviceHash = guestDeviceHash(deviceId);
+  let user = usersDb.users[login] || null;
+  if (user && !guestUserMatchesDevice(user, deviceId)) {
+    return res.status(409).json({ ok: false, error: 'Не удалось восстановить гостевой профиль этого браузера.' });
+  }
+  if (!user) {
+    user = {
+      id: makeUserId(),
+      login,
+      email: '',
+      salt: '',
+      passwordHash: '',
+      isGuest: true,
+      guestDeviceHash: deviceHash,
+      createdAt: Date.now(),
+      lastLoginAt: Date.now()
+    };
+    usersDb.users[login] = user;
+  }
+
+  const conflict = sessionConflictForLogin(login, deviceId);
+  if (conflict) {
+    return res.status(409).json({ ok: false, error: 'Гостевой профиль уже открыт в другой вкладке.' });
+  }
+  const token = createSession(login, user, deviceId, deviceType, controlType);
+  clearAuthRateLimit(req);
+  const characters = listUserCharacters(user);
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({
+    ok: true,
+    token,
+    user: {
+      login,
+      isGuest: true,
+      displayName: guestDisplayNameForDevice(deviceId)
+    },
+    hasSave: characters.length > 0,
+    characters
+  });
+});
+
 app.post('/api/auth/register', authRateLimit, async (req, res, next) => {
   const login = normalizeLogin(req.body.login);
   const email = normalizeEmail(req.body.email);
@@ -1899,7 +1957,7 @@ app.post('/api/auth/password-reset/confirm', authRateLimit, async (req, res, nex
 app.get('/api/auth/me', requireAuth, (req, res) => {
   const characters = listUserCharacters(req.auth.user, req.auth.login);
   schedulePersistUsers();
-  res.json({ ok: true, user: { login: req.auth.login }, hasSave: characters.length > 0, characters });
+  res.json({ ok: true, user: { login: req.auth.login, isGuest: !!req.auth.user.isGuest }, hasSave: characters.length > 0, characters });
 });
 
 app.post('/api/auth/heartbeat', requireAuth, (req, res) => {
@@ -19865,7 +19923,9 @@ io.on('connection', (socket) => {
     }
     const targetPoint = sanitizeServerGlobalMapPoint(data.worldPoint || data.targetPoint || null);
     if (!targetPoint) return fail('Не удалось определить точку назначения.');
-    const existing = globalTravelSessions.get(socket.id);
+    const candidateExisting = globalTravelSessions.get(socket.id);
+    if (candidateExisting?.terminating) globalTravelSessions.delete(socket.id);
+    const existing = candidateExisting && !candidateExisting.terminating ? candidateExisting : null;
     const fromPoint = serverGlobalTravelCurrentPoint(existing, Date.now()) || serverGlobalPointForPlayer(leader);
     if (!fromPoint || serverGlobalPointDistance(fromPoint, targetPoint) <= 0.35) return fail('Вы уже находитесь в этой точке.');
     const preferredLocationId = normalizeLocationId(data.targetLocationId || 'wasteland');

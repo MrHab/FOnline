@@ -35,3 +35,25 @@ __pycache__/
 # Личные настройки и локальное состояние Claude Code; конфигурация запуска общая.
 .claude/settings.local.json
 .claude/worktrees/
+
+# Unity-клиент: генерируемое состояние редактора. Library весит больше гигабайта
+# и полностью восстанавливается из Assets, Packages и ProjectSettings.
+# Пути ограничены unity-client/, чтобы не задеть logs/ игрового сервера.
+unity-client/Library/
+unity-client/Temp/
+unity-client/Logs/
+unity-client/UserSettings/
+unity-client/Obj/
+unity-client/Build/
+unity-client/Builds/
+unity-client/MemoryCaptures/
+unity-client/*.csproj
+unity-client/*.sln
+
+# Сборка вспомогательных .NET-утилит (Tools/). Сами исходники нужны:
+# правило выше ограничено корнем unity-client/ и их csproj не задевает.
+unity-client/Tools/*/bin/
+unity-client/Tools/*/obj/
+
+# Локальная конфигурация MCP (пути конкретной машины).
+.mcp.json

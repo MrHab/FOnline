@@ -76,6 +76,7 @@ namespace RealmOfAshes.Game
         public RoaPipboyCanvas PipboyCanvas;
         public RoaWorkbenchCanvas WorkbenchCanvas;
         public RoaMapWindowCanvas MapWindow;
+        public RoaWorldActivityCanvas WorldActivityCanvas;
 
         [Tooltip("NPC, диалоги, торговля, трупы и контейнеры. Если пусто, создаётся автоматически.")]
         public RoaInteraction Interaction;
@@ -353,6 +354,12 @@ namespace RealmOfAshes.Game
             if (staging == null) staging = gameObject.AddComponent<RoaCaravanStagingCanvas>();
             staging.Pipboy = Pipboy;
             staging.Bootstrap = this;
+
+            // HUD сервер-авторитетной активности текущей локации.
+            if (WorldActivityCanvas == null) WorldActivityCanvas = GetComponent<RoaWorldActivityCanvas>();
+            if (WorldActivityCanvas == null) WorldActivityCanvas = gameObject.AddComponent<RoaWorldActivityCanvas>();
+            WorldActivityCanvas.Configure(Socket, this);
+
 
             // Оружейный верстак в web-виде (#weapon-modification-window).
             var workbench = GetComponent<RoaWorkbenchCanvas>();

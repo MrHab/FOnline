@@ -364,6 +364,21 @@ namespace RealmOfAshes.Game
         public bool JobBoardLoading { get { return _worldRequestPending && !(_world?["worldTasks"] is JArray); } }
         public bool JobBoardRefreshing { get { return _worldRequestPending; } }
 
+        public JObject TrackedWorldTask
+        {
+            get
+            {
+                string trackedId = _self?["worldTaskTrackedId"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrEmpty(trackedId)) return null;
+                foreach (JToken token in _world?["worldTasks"] as JArray ?? new JArray())
+                {
+                    JObject task = token as JObject;
+                    if (task?["id"]?.ToString() == trackedId && task?["status"]?.ToString() == "active") return task;
+                }
+                return null;
+            }
+        }
+
         public sealed class JobBoardSiteInfo
         {
             public string Name;

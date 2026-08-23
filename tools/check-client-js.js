@@ -226,7 +226,9 @@ assert.deepStrictEqual(
 const nativeDialogCallPattern = /\b(?:window\s*\.\s*)?(?:confirm|alert|prompt)\s*\(/g;
 const publicUiFiles = walkFiles(publicDir)
   .filter(file => /\.(?:html|js)$/i.test(file))
-  .filter(file => !file.includes(`${path.sep}vendor${path.sep}`));
+  .filter(file => !file.includes(`${path.sep}vendor${path.sep}`))
+  // Unity WebGL loader is generated output, not legacy browser UI source.
+  .filter(file => !file.includes(`${path.sep}unity${path.sep}Build${path.sep}`));
 for (const file of publicUiFiles) {
   const source = fs.readFileSync(file, 'utf8');
   let match;

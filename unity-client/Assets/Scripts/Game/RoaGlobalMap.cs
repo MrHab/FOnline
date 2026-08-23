@@ -782,7 +782,29 @@ namespace RealmOfAshes.Game
                 }
             }
 
+            BuildTrackedWorldTaskMarker();
             ResolveSelectedDynamic();
+        }
+
+        private void BuildTrackedWorldTaskMarker()
+        {
+            JObject task = _bootstrap?.Interaction?.TrackedWorldTask;
+            JObject details = task?["details"] as JObject;
+            JToken x = task?["targetX"] ?? task?["x"] ?? details?["x"];
+            JToken y = task?["targetY"] ?? task?["y"] ?? details?["y"];
+            if (task == null || x == null || y == null || x.Type == JTokenType.Null || y.Type == JTokenType.Null) return;
+            var point = new GlobalMapPoint { X = Float(x, 0f), Y = Float(y, 0f) };
+            string id = task["id"]?.ToString() ?? "tracked";
+            DrawWorldRing("TrackedWorldTask:" + id, point, 9f, new Color(1f, 0.78f, 0.18f, 0.95f), 0.24f, 0.12f);
+
+            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            marker.name = "TrackedWorldTaskMarker:" + id;
+            marker.transform.SetParent(_dynamicRoot.transform, false);
+            marker.transform.localPosition = PointToWorld(point.X, point.Y, 0.32f);
+            marker.transform.localScale = new Vector3(0.3f, 0.18f, 0.3f);
+            ApplyDynamicMaterial(marker, new Color(1f, 0.78f, 0.18f, 1f));
+            Collider markerCollider = marker.GetComponent<Collider>();
+            if (markerCollider != null) Destroy(markerCollider);
         }
 
         private void BuildSettlementStatus(JObject row)

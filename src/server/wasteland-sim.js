@@ -2269,6 +2269,7 @@ function createWastelandSimulation(options = {}) {
     const danger = clamp(site?.danger || 0, 0, 5);
     const p = clamp(priority, 0, 5);
     if (type === 'defend_resource') return { xp: 80 + Math.round(danger * 18 + p * 10), caps: 45 + Math.round(danger * 12 + p * 8), reputation: 2 };
+    if (type === 'resource_expedition') return { xp: 70 + Math.round(danger * 14 + p * 9), caps: 38 + Math.round(danger * 9 + p * 7), reputation: 1 };
     if (type === 'deliver_supplies') return { xp: 55 + Math.round(p * 10), caps: 28 + Math.round(p * 7), reputation: 1 };
     if (type === 'escort_caravan') return { xp: 90 + Math.round(p * 12), caps: 55 + Math.round(danger * 10 + p * 14), reputation: 2 };
     if (type === 'join_patrol') return { xp: 80 + Math.round(p * 14), caps: 42 + Math.round(p * 10), reputation: 2 };
@@ -2464,6 +2465,56 @@ function createWastelandSimulation(options = {}) {
     return task;
   }
 
+
+  function ensureResourceExpeditionTasks() {
+    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'resource_expedition');
+    const totalActive = state.worldTasks.filter(task => task?.status === 'active').length;
+    const openSlots = Math.max(0, Math.min(3 - active.length, MAX_WORLD_TASK_COUNT - totalActive));
+    if (openSlots <= 0) return active;
+    const activeSiteIds = new Set(active.map(task => String(task.siteId || '')).filter(Boolean));
+    const sites = Object.values(state.sites || {})
+      .filter(site => site
+        && !site.districtInterest
+        && siteTypeKey(site) === 'resource'
+        && Object.keys(site.output || {}).length > 0
+        && worldSiteLocationId(site)
+        && !activeSiteIds.has(String(site.id || '')))
+      .sort((left, right) => (
+        Number(right.danger || 0) - Number(left.danger || 0)
+        || Number(left.security || siteDefaultSecurity(left)) - Number(right.security || siteDefaultSecurity(right))
+        || String(left.id || '').localeCompare(String(right.id || ''))
+      ));
+    const created = [];
+    for (const site of sites.slice(0, openSlots)) {
+      const targetUnits = 6;
+      const bonusUnits = 9;
+      const maxUnits = 12;
+      const priority = clamp(1 + Math.round(Number(site.danger || 0) / 2), 1, 4);
+      const task = createWorldTask('resource_expedition', {
+        key: `resource_expedition:${site.id}`,
+        title: `Вылазка: ${site.name}`,
+        text: `Доберитесь до ${site.name}, соберите ${targetUnits} единиц местных ресурсов и эвакуируйтесь. Шум добычи привлекает угрозы; за ${bonusUnits} единиц награда выше.`,
+        siteId: site.id,
+        objective: 'resource_expedition',
+        durationHours: 48,
+        priority,
+        reward: rewardForWorldTask('resource_expedition', site, priority),
+        details: {
+          activityKind: 'resource_expedition',
+          x: Number(site.x || 0),
+          y: Number(site.y || 0),
+          locationId: worldSiteLocationId(site),
+          resourceTypes: Object.keys(site.output || {}).slice(0, 12),
+          targetUnits,
+          bonusUnits,
+          maxUnits,
+          durationSeconds: 480
+        }
+      });
+      if (task) created.push(task);
+    }
+    return [...active, ...created];
+  }
   function finishActiveWorldTasks(filter, status = 'completed', reason = '', details = {}) {
     const finished = [];
     if (typeof filter !== 'function') return finished;
@@ -4805,6 +4856,48 @@ function createWastelandSimulation(options = {}) {
     return { ok: true, task: finished, sim: publicState() };
   }
 
+
+  function completeWorldActivityTask(taskId = '', data = {}) {
+    const id = String(taskId || '').trim();
+    const task = state.worldTasks.find(row => row && String(row.id || '') === id);
+    if (!task || task.status !== 'active') return { ok: false, error: 'Задание уже недоступно.' };
+    if (task.type !== 'resource_expedition') return { ok: false, error: 'Это задание нельзя закрыть эвакуацией.' };
+    const site = task.siteId ? state.sites[task.siteId] : null;
+    if (!site) return { ok: false, error: 'Точка вылазки больше не найдена.' };
+    const grade = ['completed', 'bonus', 'mastered'].includes(String(data.grade || '').toLowerCase())
+      ? String(data.grade).toLowerCase()
+      : 'completed';
+    const rewardMultiplier = grade === 'mastered' ? 1.5 : grade === 'bonus' ? 1.25 : 1;
+    task.reward = {
+      ...(task.reward && typeof task.reward === 'object' ? task.reward : {}),
+      xp: Math.round(Math.max(0, Number(task.reward?.xp || 0)) * rewardMultiplier),
+      caps: Math.round(Math.max(0, Number(task.reward?.caps || 0)) * rewardMultiplier)
+    };
+    fundWorldTaskCapsRewardFromSite(task, worldTaskPayerSite(site), 1);
+    const rewardCharacterIds = [...new Set((Array.isArray(data.rewardCharacterIds) ? data.rewardCharacterIds : [])
+      .map(value => String(value || '').slice(0, 180))
+      .filter(Boolean))]
+      .slice(0, 24);
+    site.security = clamp(Number(site.security || siteDefaultSecurity(site)) + 2 + (grade === 'mastered' ? 2 : grade === 'bonus' ? 1 : 0), 0, 100);
+    site.supportBoostUntil = Math.max(Number(site.supportBoostUntil || 0), Number(state.worldHour || 0) + 12);
+    site.resourceActivity = resourceActivityPercent(site, state.worldHour);
+    const finished = finishWorldTask(task, 'completed', 'player_activity_extraction', {
+      activityKind: 'resource_expedition',
+      activityGrade: grade,
+      rewardCharacterIds,
+      objectiveCurrent: Math.max(0, Math.floor(Number(data.objectiveCurrent || 0))),
+      extractedHour: Number(Number(state.worldHour || 0).toFixed(2))
+    });
+    addEvent('resource_expedition_completed', `${site.name}: вылазка завершена (${grade}).`, {
+      taskId: id,
+      siteId: site.id,
+      grade,
+      participantCount: rewardCharacterIds.length
+    });
+    dirty = true;
+    save(true);
+    return { ok: true, task: finished, sim: publicState() };
+  }
   function applyExpiredWorldTaskConsequences(task = {}) {
     const now = Number(state.worldHour || 0);
     const priority = clamp(Number(task.priority || 1), 1, 5);
@@ -9193,6 +9286,7 @@ function createWastelandSimulation(options = {}) {
     resolveResourceRaids(hours);
     resolveSiteConflicts(hours);
     produceAtResourceSites(hours);
+    ensureResourceExpeditionTasks();
     createResourceExportCaravans(hours);
     advanceFactionProduction(hours);
     produceAtSettlements(hours);
@@ -11102,6 +11196,7 @@ function createWastelandSimulation(options = {}) {
 
   syncGlobalMap(getGlobalMap());
   expireWorldTasks();
+  ensureResourceExpeditionTasks();
   save(true);
 
   return {
@@ -11131,6 +11226,7 @@ function createWastelandSimulation(options = {}) {
     activeBattleZoneForRoom,
     claimClearedSite,
     completeWorldTaskDelivery,
+    completeWorldActivityTask,
     joinWorldParty,
     leaveWorldParty,
     reconcileWorldPartyMembers,

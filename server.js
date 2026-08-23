@@ -111,6 +111,15 @@ const {
   worldTaskClaimEligible
 } = require('./src/server/world-party-integrity');
 const {
+  createResourceExpedition,
+  publicWorldActivity,
+  recordWorldActivityParticipant,
+  applyWorldActivityHarvest,
+  tickWorldActivity,
+  extractWorldActivity,
+  worldActivityRewardCharacterIds
+} = require('./src/server/world-activity-runtime');
+const {
   pruneIdleRooms,
   resolveEphemeralRoomIdleTtlMs,
   temporaryRoomContextIsResumable
@@ -6344,6 +6353,10 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     return { ok: true, action, taskId: id, trackedId: player.worldTaskTrackedId, self: publicAuthoritativePlayerState(player) };
   }
 
+
+  if (action === 'activity_extract') {
+    return performServerWorldActivityExtraction(player, task, id, accepted);
+  }
   if (action === 'deliver') {
     if (!accepted || task.status !== 'active' || task.type !== 'deliver_supplies') return { ok: false, error: 'Эта доставка сейчас недоступна.' };
     const site = serverWorldTaskSite(state, task.siteId || '');
@@ -15238,6 +15251,7 @@ function publicWorldState(room, includeMap = true) {
     pvpLabel: LOCATION_PVP_LABELS[pvpMode] || LOCATION_PVP_LABELS.peaceful,
     pvpEnabled,
     fullDrop: pvpMode === 'pvpFullDrop',
+    activity: publicWorldActivity(room.worldActivity),
     map: includeMap ? room.map.map(row => row.slice()) : undefined,
     resources: [...room.resources.values()].map(r => ({ id: r.id, tx: r.tx, tz: r.tz, type: r.type, hp: r.hp, maxHp: r.maxHp })),
     enemies: [...room.enemies.values()].map(publicEnemy),
@@ -15269,6 +15283,182 @@ function currentRoomWorldState(room) {
   if (!room.worldState || room.worldStateDirty) refreshRoomWorldState(room, { force: true });
   return room.worldState;
 }
+function serverWorldActivityTaskMatchesRoom(task = {}, room = null) {
+  if (!task || !room || task.status !== 'active' || task.type !== 'resource_expedition') return false;
+  const siteId = String(task.siteId || '');
+  if (siteId && siteId === String(room.worldSiteId || '')) return true;
+  const locationId = normalizeLocationId(task.details?.locationId || '');
+  return !!locationId && locationId === normalizeLocationId(room.locationId || '');
+}
+
+function serverWorldActivityAcceptedPlayers(room, taskId = '') {
+  const id = String(taskId || '');
+  return livePlayersInRoom(room).filter(player => (
+    sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(id)
+  ));
+}
+
+function ensureServerWorldActivityForRoom(room, now = Date.now()) {
+  if (!room) return null;
+  const current = room.worldActivity;
+  if (current) {
+    if (['completed', 'partial', 'failed', 'expired'].includes(String(current.status || ''))) {
+      if (now - Number(current.completedAt || now) < 20000) return current;
+      room.worldActivity = null;
+      room.lastWorldActivitySpawnedTier = 0;
+    } else {
+      const state = WASTELAND_SIM.state();
+      const task = (Array.isArray(state?.worldTasks) ? state.worldTasks : [])
+        .find(row => String(row?.id || '') === String(current.taskId || '') && row.status === 'active');
+      if (task) return current;
+      room.worldActivity = null;
+      room.lastWorldActivitySpawnedTier = 0;
+    }
+  }
+  const state = WASTELAND_SIM.state();
+  const tasks = Array.isArray(state?.worldTasks) ? state.worldTasks : [];
+  const roomPlayers = livePlayersInRoom(room);
+  const task = tasks.find(row => (
+    serverWorldActivityTaskMatchesRoom(row, room)
+    && roomPlayers.some(player => sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(String(row.id || '')))
+  ));
+  if (!task) return null;
+  room.worldActivity = createResourceExpedition({
+    taskId: task.id,
+    roomId: room.id,
+    locationId: room.locationId,
+    siteId: task.siteId,
+    title: task.title || 'Вылазка за ресурсами',
+    target: task.details?.targetUnits,
+    bonusTarget: task.details?.bonusUnits,
+    maxTarget: task.details?.maxUnits,
+    durationMs: Math.max(180000, Number(task.details?.durationSeconds || 480) * 1000),
+    allowedItemIds: task.details?.resourceTypes,
+    now
+  });
+  room.lastWorldActivitySpawnedTier = 0;
+  for (const player of serverWorldActivityAcceptedPlayers(room, task.id)) {
+    recordWorldActivityParticipant(room.worldActivity, {
+      socketId: player.id,
+      userId: player.userId || '',
+      characterId: player.characterId || '',
+      name: player.name || '',
+      joinedAt: now,
+      lastActiveAt: now
+    });
+  }
+  return room.worldActivity;
+}
+
+function spawnServerWorldActivityWave(room, threatTier = 0) {
+  const activity = room?.worldActivity;
+  const tier = clamp(Math.floor(Number(threatTier || 0)), 0, 3);
+  if (!room || !activity || tier <= Number(room.lastWorldActivitySpawnedTier || 0)) return 0;
+  const typeName = tier >= 3 ? 'Рейдер' : tier >= 2 ? 'Гекко' : 'Пепельный волк';
+  const count = tier + 1;
+  let spawned = 0;
+  for (let index = 0; index < count; index += 1) {
+    const enemy = spawnServerEnemy(room, {
+      force: true,
+      allowSafeLocation: true,
+      typeName,
+      minPlayerDistance: 9,
+      role: 'world_activity_hostile',
+      hostileToPlayer: true,
+      canDialogue: false,
+      npcSeed: `${activity.id}:tier:${tier}:enemy:${index}`
+    });
+    if (!enemy) continue;
+    enemy.worldActivityId = activity.id;
+    enemy.worldActivityThreatTier = tier;
+    spawned += 1;
+  }
+  room.lastWorldActivitySpawnedTier = tier;
+  return spawned;
+}
+
+function emitServerWorldActivityState(room, reason = 'worldActivity') {
+  if (!room) return null;
+  const state = refreshRoomWorldState(room, { force: true });
+  if (room.sockets?.size) io.to(room.id).emit('worldState', { reason, state });
+  return state;
+}
+
+function updateServerWorldActivity(room, now = Date.now()) {
+  if (!room || now - Number(room.lastWorldActivityTickAt || 0) < 1000) return false;
+  room.lastWorldActivityTickAt = now;
+  const previous = room.worldActivity;
+  const activity = ensureServerWorldActivityForRoom(room, now);
+  if (!activity) {
+    if (previous) emitServerWorldActivityState(room, 'worldActivityCleared');
+    return !!previous;
+  }
+  const tick = tickWorldActivity(activity, now);
+  const spawned = spawnServerWorldActivityWave(room, activity.threatTier);
+  const changed = activity !== previous || tick.expired || tick.threatTierAdvanced || spawned > 0;
+  if (changed) emitServerWorldActivityState(room, tick.expired ? 'worldActivityExpired' : 'worldActivity');
+  return changed;
+}
+
+function recordServerWorldActivityHarvest(room, player, item = null, now = Date.now()) {
+  const activity = ensureServerWorldActivityForRoom(room, now);
+  if (!activity || !player || !item) return { changed: false, activity: publicWorldActivity(activity) };
+  const accepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(String(activity.taskId || ''));
+  if (!accepted) return { changed: false, activity: publicWorldActivity(activity) };
+  const progress = applyWorldActivityHarvest(activity, {
+    itemId: item.id,
+    qty: item.qty,
+    socketId: player.id,
+    userId: player.userId || '',
+    characterId: player.characterId || '',
+    name: player.name || '',
+    now
+  });
+  if (progress.changed) {
+    spawnServerWorldActivityWave(room, activity.threatTier);
+    emitServerWorldActivityState(room, progress.extractionOpened ? 'worldActivityExtractionOpen' : 'worldActivityProgress');
+  }
+  return { ...progress, activity: publicWorldActivity(activity) };
+}
+
+function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '', accepted = false) {
+  if (!accepted || task.status !== 'active' || task.type !== 'resource_expedition') {
+    return { ok: false, error: 'Эта вылазка сейчас недоступна.' };
+  }
+  const room = rooms.get(String(player.roomId || '')) || null;
+  if (!room || !serverWorldActivityTaskMatchesRoom(task, room)) return { ok: false, error: 'Нужно прибыть в точку вылазки.' };
+  const activity = ensureServerWorldActivityForRoom(room, Date.now());
+  if (!activity || String(activity.taskId || '') !== String(taskId || '')) return { ok: false, error: 'Активность в этой локации не найдена.' };
+  if (!serverPlayerAtGlobalMapExit(player)) return { ok: false, error: 'Для эвакуации доберитесь до края локации или выхода на глобальную карту.' };
+  const extracted = extractWorldActivity(activity, {
+    socketId: player.id,
+    userId: player.userId || '',
+    characterId: player.characterId || '',
+    name: player.name || '',
+    now: Date.now()
+  });
+  if (!extracted.ok) return extracted;
+  const objective = activity.objectives.find(row => row.id === 'resources') || activity.objectives[0] || {};
+  const completed = WASTELAND_SIM.completeWorldActivityTask(taskId, {
+    grade: extracted.grade,
+    objectiveCurrent: objective.current,
+    rewardCharacterIds: worldActivityRewardCharacterIds(activity)
+  });
+  if (!completed?.ok) return { ok: false, error: completed?.error || 'Эвакуация не была засчитана.' };
+  invalidateWastelandPublicCache();
+  emitServerWorldActivityState(room, 'worldActivityCompleted');
+  return {
+    ok: true,
+    action: 'activity_extract',
+    taskId,
+    grade: extracted.grade,
+    task: completed.task,
+    sim: completed.sim,
+    activity: publicWorldActivity(activity),
+    self: publicAuthoritativePlayerState(player)
+  };
+}
+
 function livePlayersInRoom(room) { return [...players.values()].filter(p => p.roomId === room.id && socketIsLive(p.id)); }
 function aliveEnemyCount(room) { let n = 0; for (const e of room.enemies.values()) if (!e.dead) n++; return n; }
 function playerWorldClaimFaction(p = {}) {
@@ -17484,6 +17674,9 @@ function getOrCreateRoom(roomId = 'settlement', locationId = '') {
       rng: null,
       worldReady: false,
       worldState: null,
+      worldActivity: null,
+      lastWorldActivityTickAt: 0,
+      lastWorldActivitySpawnedTier: 0,
       enemySpawnTimer: 0,
       enemySpatialIndex: null,
       enemySpatialSourceSize: -1,
@@ -21074,8 +21267,9 @@ io.on('connection', (socket) => {
     serverInventoryAdd(p, item.id, item.qty);
     const xp = serverHarvestXp(qty);
     serverGrantXp(p, xp);
+    const activityUpdate = recordServerWorldActivityHarvest(room, p, item, now);
     const publicRes = publicResource(resource);
-    if (typeof ack === 'function') ack({ ok: true, item, xp, apCost: spend.apCost, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, depleted: Number(resource.hp || 0) <= 0 });
+    if (typeof ack === 'function') ack({ ok: true, item, xp, apCost: spend.apCost, ...serverMedicalApAck(p), inventory: syncServerInventorySnapshot(p), self: publicAuthoritativePlayerState(p), resource: publicRes, activity: activityUpdate.activity, depleted: Number(resource.hp || 0) <= 0 });
     emitResourceUpdate(room, resource, socket.id, item);
   });
 
@@ -21994,6 +22188,7 @@ setInterval(() => {
     for (const sid of [...room.sockets]) if (!socketIsLive(sid)) room.sockets.delete(sid);
     if (beforeCleanupSize > 0 && room.sockets.size === 0) markRoomEmptyIfNeeded(room, 'staleSocketCleanup');
     const roomNow = Date.now();
+    if (room.sockets.size > 0) updateServerWorldActivity(room, roomNow);
     if (room.sockets.size > 0) {
       room.emptyRoomAiUntil = 0;
       room.lastEmptyAiTickAt = roomNow;

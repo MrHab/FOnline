@@ -42,7 +42,10 @@ const knownDynamicRoutes = new Set([
   '/sdk.js',
   '/socket.io/socket.io.js',
   '/vendor/three.min.js',
-  '/vendor/GLTFLoader.js'
+  '/vendor/GLTFLoader.js',
+  '/legacy',
+  '/legacy/',
+  '/legacy/index.html'
 ]);
 
 function walkFiles(dir, out = [], extensionFilter = checkedExtensions) {

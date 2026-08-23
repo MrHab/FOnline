@@ -34,6 +34,9 @@ requirePattern(simulation,
 requirePattern(simulation,
   /function ensureReconExpeditionTasks\([\s\S]{0,3500}createWorldTask\('recon_expedition'/,
   'the world simulation no longer seeds recon expeditions');
+requirePattern(simulation,
+  /function ensureOutpostDefenseTasks\([\s\S]{0,4000}createWorldTask\('outpost_defense'/,
+  'the world simulation no longer seeds outpost defenses');
 requirePattern(server,
   /function publicWorldState\([\s\S]{0,900}activity: publicWorldActivity\(room\.worldActivity\)/,
   'activity is no longer part of the authoritative room snapshot');
@@ -52,6 +55,12 @@ requirePattern(server,
 requirePattern(server,
   /performServerWorldActivityInteraction\([\s\S]{0,1500}distance > 3[\s\S]{0,900}applyWorldActivityInteraction/,
   'recon interaction is not distance-validated by the authoritative server');
+requirePattern(server,
+  /serverFinishEnemyKilledByPlayer\([\s\S]{0,1000}recordServerWorldActivityEnemyKill/,
+  'authoritative enemy deaths no longer advance outpost defense');
+requirePattern(server,
+  /recordServerWorldActivityEnemyKill\([\s\S]{0,1400}applyWorldActivityEnemyKill[\s\S]{0,1000}spawnServerWorldActivityWave/,
+  'outpost defense no longer validates kills and advances waves');
 
 requireText(canvas, 'Socket.OnWorldState += ApplyWorldState;',
   'Unity HUD no longer subscribes to authoritative worldState');
@@ -65,6 +74,8 @@ requirePattern(canvas,
   'Unity recon no longer sends an acknowledged point interaction');
 requireText(canvas, 'new GameObject("WorldActivityMarkers")',
   'Unity recon world markers are missing');
+requireText(canvas, 'kind == "outpost_defense"',
+  'Unity HUD has no outpost defense presentation');
 requireText(canvas, 'Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap',
   'activity HUD is not hidden outside a local gameplay location');
 requireText(bootstrap, 'WorldActivityCanvas.Configure(Socket, this);',

@@ -113,10 +113,12 @@ const {
 const {
   createResourceExpedition,
   createReconExpedition,
+  createOutpostDefense,
   publicWorldActivity,
   recordWorldActivityParticipant,
   applyWorldActivityHarvest,
   applyWorldActivityInteraction,
+  applyWorldActivityEnemyKill,
   tickWorldActivity,
   extractWorldActivity,
   worldActivityRewardCharacterIds
@@ -8887,6 +8889,7 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now()) {
     z: Number(enemy.z.toFixed(2)),
     t: now
   });
+  recordServerWorldActivityEnemyKill(room, enemy, p, now);
   maybeReportEncounterOutcome(room, 'player_kill', enemy, p);
   maybeClaimClearedWastelandSite(room, enemy, p);
   emitAuthoritativePlayerState(p, { reason: 'enemyKill', xpGained: Math.max(0, Number(enemy.xp || 0)) });
@@ -15290,7 +15293,7 @@ function currentRoomWorldState(room) {
   return room.worldState;
 }
 function serverWorldActivityTaskMatchesRoom(task = {}, room = null) {
-  if (!task || !room || task.status !== 'active' || !['resource_expedition', 'recon_expedition'].includes(task.type)) return false;
+  if (!task || !room || task.status !== 'active' || !['resource_expedition', 'recon_expedition', 'outpost_defense'].includes(task.type)) return false;
   const siteId = String(task.siteId || '');
   if (siteId && siteId === String(room.worldSiteId || '')) return true;
   const locationId = normalizeLocationId(task.details?.locationId || '');
@@ -15374,7 +15377,7 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
     locationId: room.locationId,
     siteId: task.siteId,
     title: task.title,
-    durationMs: Math.max(180000, Number(task.details?.durationSeconds || (task.type === 'recon_expedition' ? 360 : 480)) * 1000),
+    durationMs: Math.max(180000, Number(task.details?.durationSeconds || (task.type === 'resource_expedition' ? 480 : 360)) * 1000),
     now
   };
   if (task.type === 'recon_expedition') {
@@ -15386,6 +15389,15 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
       target: task.details?.targetPoints,
       bonusTarget: task.details?.bonusPoints,
       interactionPoints
+    });
+  } else if (task.type === 'outpost_defense') {
+    room.worldActivity = createOutpostDefense({
+      ...common,
+      title: task.title || 'Защита аванпоста',
+      target: task.details?.targetKills,
+      bonusTarget: task.details?.bonusKills,
+      maxTarget: task.details?.maxKills,
+      threat: 25
     });
   } else {
     room.worldActivity = createResourceExpedition({
@@ -15415,7 +15427,7 @@ function spawnServerWorldActivityWave(room, threatTier = 0) {
   const activity = room?.worldActivity;
   const tier = clamp(Math.floor(Number(threatTier || 0)), 0, 3);
   if (!room || !activity || tier <= Number(room.lastWorldActivitySpawnedTier || 0)) return 0;
-  const typeName = tier >= 3 ? 'Рейдер' : tier >= 2 ? 'Гекко' : 'Пепельный волк';
+  const typeName = activity.kind === 'outpost_defense' ? 'Рейдер' : tier >= 3 ? 'Рейдер' : tier >= 2 ? 'Гекко' : 'Пепельный волк';
   const count = tier + 1;
   let spawned = 0;
   for (let index = 0; index < count; index += 1) {
@@ -15482,6 +15494,26 @@ function recordServerWorldActivityHarvest(room, player, item = null, now = Date.
   return { ...progress, activity: publicWorldActivity(activity) };
 }
 
+function recordServerWorldActivityEnemyKill(room, enemy, player = null, now = Date.now()) {
+  const activity = room?.worldActivity;
+  if (!activity || activity.kind !== 'outpost_defense' || !enemy
+    || String(enemy.worldActivityId || '') !== String(activity.id || '')
+    || enemy.worldActivityKillCredited) return { changed: false, activity: publicWorldActivity(activity) };
+  const progress = applyWorldActivityEnemyKill(activity, {
+    enemyId: enemy.id,
+    socketId: player?.id || '',
+    userId: player?.userId || '',
+    characterId: player?.characterId || '',
+    name: player?.name || '',
+    now
+  });
+  if (!progress.changed) return { ...progress, activity: publicWorldActivity(activity) };
+  enemy.worldActivityKillCredited = true;
+  spawnServerWorldActivityWave(room, activity.threatTier);
+  emitServerWorldActivityState(room, progress.extractionOpened ? 'worldActivityExtractionOpen' : 'worldActivityProgress');
+  return { ...progress, activity: publicWorldActivity(activity) };
+}
+
 
 function performServerWorldActivityInteraction(player = {}, task = {}, taskId = '', accepted = false, data = {}) {
   if (!accepted || task.status !== 'active' || task.type !== 'recon_expedition') {
@@ -15517,14 +15549,14 @@ function performServerWorldActivityInteraction(player = {}, task = {}, taskId = 
   };
 }
 function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '', accepted = false) {
-  if (!accepted || task.status !== 'active' || !['resource_expedition', 'recon_expedition'].includes(task.type)) {
+  if (!accepted || task.status !== 'active' || !['resource_expedition', 'recon_expedition', 'outpost_defense'].includes(task.type)) {
     return { ok: false, error: 'Эта вылазка сейчас недоступна.' };
   }
   const room = rooms.get(String(player.roomId || '')) || null;
   if (!room || !serverWorldActivityTaskMatchesRoom(task, room)) return { ok: false, error: 'Нужно прибыть в точку вылазки.' };
   const activity = ensureServerWorldActivityForRoom(room, Date.now());
   if (!activity || String(activity.taskId || '') !== String(taskId || '')) return { ok: false, error: 'Активность в этой локации не найдена.' };
-  if (!serverPlayerAtGlobalMapExit(player)) return { ok: false, error: 'Для эвакуации доберитесь до края локации или выхода на глобальную карту.' };
+  if (task.type !== 'outpost_defense' && !serverPlayerAtGlobalMapExit(player)) return { ok: false, error: 'Для эвакуации доберитесь до края локации или выхода на глобальную карту.' };
   const extracted = extractWorldActivity(activity, {
     socketId: player.id,
     userId: player.userId || '',
@@ -17007,6 +17039,7 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
       foe.vz = 0;
       foe.aiState = 'dead';
       invalidateEnemyPath(foe);
+      recordServerWorldActivityEnemyKill(room, foe, null, now);
       maybeReportEncounterOutcome(room, 'faction_combat', foe, null);
     }
   }

@@ -157,14 +157,17 @@ namespace RealmOfAshes.Game
             int target = Mathf.Max(1, objective?["target"]?.ToObject<int>() ?? 1);
             int bonus = Mathf.Max(target, objective?["bonusTarget"]?.ToObject<int>() ?? target);
             int maximum = Mathf.Max(bonus, objective?["maxTarget"]?.ToObject<int>() ?? bonus);
-            string objectivePrefix = kind == "recon_expedition" ? "Разведано: " : "Собрано: ";
+            string objectivePrefix = kind == "recon_expedition" ? "Разведано: "
+                : kind == "outpost_defense" ? "Нападающие: "
+                : "Собрано: ";
             _objective.text = objectivePrefix + current + " / " + target
                 + (current >= target ? "   ·   бонус " + bonus + "   ·   максимум " + maximum : string.Empty);
 
             float threat = Mathf.Clamp(_activity?["threat"]?.ToObject<float>() ?? 0f, 0f, 100f);
             _threatFill.fillAmount = threat / 100f;
             _threatFill.color = Color.Lerp(Safe, Danger, threat / 100f);
-            _threatText.text = "УГРОЗА " + Mathf.RoundToInt(threat) + "%";
+            _threatText.text = (kind == "outpost_defense" ? "НАТИСК " : "УГРОЗА ")
+                + Mathf.RoundToInt(threat) + "%";
             _threatText.color = threat >= 50f ? Danger : Muted;
 
             int count = Mathf.Max(0, _activity?["participantCount"]?.ToObject<int>() ?? 0);
@@ -181,7 +184,8 @@ namespace RealmOfAshes.Game
             _action.interactable = !_pending && (pointInReach || extractionOpen);
             if (_pending) _actionLabel.text = "ОБРАБОТКА…";
             else if (pointInReach) _actionLabel.text = "СОБРАТЬ РАЗВЕДДАННЫЕ";
-            else if (extractionOpen) _actionLabel.text = "ЭВАКУИРОВАТЬСЯ У ВЫХОДА";
+            else if (extractionOpen) _actionLabel.text = kind == "outpost_defense"
+                ? "ЗАВЕРШИТЬ ОБОРОНУ" : "ЭВАКУИРОВАТЬСЯ У ВЫХОДА";
             else _actionLabel.text = "ТОЧКА НАБЛЮДЕНИЯ · " + Mathf.CeilToInt(nearestDistance) + " М";
             if (status == "completed")
             {
@@ -198,12 +202,16 @@ namespace RealmOfAshes.Game
             }
             else if (extractionOpen && string.IsNullOrEmpty(_message.text))
             {
-                _message.text = "Цель выполнена: идите к выходу или рискните ради бонуса.";
+                _message.text = kind == "outpost_defense"
+                    ? "Основная атака отбита: завершите оборону или добейте оставшихся ради бонуса."
+                    : "Цель выполнена: идите к выходу или рискните ради бонуса.";
                 _message.color = Accent;
             }
             else if (!extractionOpen && !_pending)
             {
-                _message.text = kind == "recon_expedition"
+                _message.text = kind == "outpost_defense"
+                    ? "Отразите три волны. Каждая потеря нападающих ускоряет следующий штурм."
+                    : kind == "recon_expedition"
                     ? "Найдите отмеченные точки. Каждое наблюдение повышает риск обнаружения."
                     : "Добыча создаёт шум и повышает угрозу.";
                 _message.color = Muted;
@@ -272,8 +280,9 @@ namespace RealmOfAshes.Game
             if (_pending || Socket == null || _activity == null) return;
             string taskId = _activity["taskId"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(taskId)) return;
+            bool defense = _activity["kind"]?.ToString() == "outpost_defense";
             _pending = true;
-            _message.text = "Проверяем точку эвакуации…";
+            _message.text = defense ? "Подводим итог обороны…" : "Проверяем точку эвакуации…";
             _message.color = Accent;
             Socket.EmitWithAck("worldTaskAction", new Dictionary<string, object>
             {
@@ -290,7 +299,7 @@ namespace RealmOfAshes.Game
                 }
                 if (ack?["activity"] is JObject activity) _activity = activity;
                 _markerRevision = string.Empty;
-                _message.text = "Эвакуация подтверждена сервером.";
+                _message.text = defense ? "Оборона завершена сервером." : "Эвакуация подтверждена сервером.";
                 _message.color = Safe;
                 _refreshAt = 0f;
             });
@@ -365,8 +374,11 @@ namespace RealmOfAshes.Game
         {
             if (status == "completed") return "АКТИВНОСТЬ ЗАВЕРШЕНА";
             if (status == "failed" || status == "expired") return "АКТИВНОСТЬ ПРОВАЛЕНА";
-            if (phase == "extraction") return "ЭВАКУАЦИЯ ОТКРЫТА";
-            return kind == "recon_expedition" ? "РАЗВЕДКА И РИСК" : "ДОБЫЧА И РИСК";
+            if (phase == "extraction") return kind == "outpost_defense"
+                ? "ОСНОВНАЯ АТАКА ОТБИТА" : "ЭВАКУАЦИЯ ОТКРЫТА";
+            return kind == "outpost_defense" ? "ОТРАЖЕНИЕ ШТУРМА"
+                : kind == "recon_expedition" ? "РАЗВЕДКА И РИСК"
+                : "ДОБЫЧА И РИСК";
         }
 
 

@@ -10,9 +10,11 @@ const {
   WORLD_ACTIVITY_SCHEMA,
   createResourceExpedition,
   createReconExpedition,
+  createOutpostDefense,
   publicWorldActivity,
   applyWorldActivityHarvest,
   applyWorldActivityInteraction,
+  applyWorldActivityEnemyKill,
   tickWorldActivity,
   extractWorldActivity,
   worldActivityRewardCharacterIds
@@ -126,6 +128,40 @@ function checkReconRuntime() {
   const extracted = extractWorldActivity(activity, { characterId: 'recon_character', now: startedAt + 6000 });
   assert.strictEqual(extracted.grade, 'bonus');
 }
+
+function checkOutpostDefenseRuntime() {
+  const startedAt = 3_000_000;
+  const activity = createOutpostDefense({
+    taskId: 'task_defense_a', target: 3, bonusTarget: 4, maxTarget: 5, durationMs: 180000, now: startedAt
+  });
+  assert.strictEqual(activity.kind, 'outpost_defense');
+  assert.strictEqual(activity.threatTier, 1, 'defense must start with the first wave ready');
+  const first = applyWorldActivityEnemyKill(activity, {
+    enemyId: 'attacker_1', characterId: 'defender_character', name: 'Защитник', now: startedAt + 1000
+  });
+  assert.strictEqual(first.changed, true);
+  assert.strictEqual(first.threatTier, 2);
+  assert.strictEqual(applyWorldActivityEnemyKill(activity, { enemyId: 'attacker_1' }).changed, false,
+    'one attacker must never count twice');
+  applyWorldActivityEnemyKill(activity, {
+    enemyId: 'attacker_2', characterId: 'defender_character', name: 'Защитник', now: startedAt + 2000
+  });
+  const goal = applyWorldActivityEnemyKill(activity, {
+    enemyId: 'attacker_3', characterId: 'defender_character', name: 'Защитник', now: startedAt + 3000
+  });
+  assert.strictEqual(goal.extractionOpened, true);
+  assert.strictEqual(activity.status, 'extracting');
+  applyWorldActivityEnemyKill(activity, {
+    enemyId: 'attacker_4', characterId: 'defender_character', name: 'Защитник', now: startedAt + 4000
+  });
+  assert.strictEqual(activity.objectives[0].status, 'bonus');
+  assert.strictEqual(activity.participants[0].contributed, 4);
+  const publicJson = JSON.stringify(publicWorldActivity(activity));
+  assert(!publicJson.includes('defender_character'), 'public defense activity leaked a character id');
+  assert(!publicJson.includes('creditedEntityIds'), 'public defense activity leaked internal kill ids');
+  const extracted = extractWorldActivity(activity, { characterId: 'defender_character', now: startedAt + 5000 });
+  assert.strictEqual(extracted.grade, 'bonus');
+}
 function checkSimulationContract() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-world-activities-'));
   try {
@@ -158,6 +194,15 @@ function checkSimulationContract() {
     assert.strictEqual(reconResult?.ok, true, reconResult?.error || 'recon completion failed');
     assert.strictEqual(reconResult.task.details.activityKind, 'recon_expedition');
     assert.strictEqual(reconResult.task.details.activityGrade, 'mastered');
+    const defenseTask = sim.state().worldTasks.find(row => row?.status === 'active' && row.type === 'outpost_defense');
+    assert(defenseTask, 'simulation did not seed an outpost defense');
+    assert(defenseTask.details?.locationId, 'outpost defense has no target location');
+    const defenseResult = sim.completeWorldActivityTask(defenseTask.id, {
+      grade: 'completed', objectiveCurrent: 6, rewardCharacterIds: ['defender_character']
+    });
+    assert.strictEqual(defenseResult?.ok, true, defenseResult?.error || 'outpost defense completion failed');
+    assert.strictEqual(defenseResult.task.details.activityKind, 'outpost_defense');
+    assert.strictEqual(defenseResult.task.details.activityGrade, 'completed');
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -165,5 +210,6 @@ function checkSimulationContract() {
 
 checkRuntime();
 checkReconRuntime();
+checkOutpostDefenseRuntime();
 checkSimulationContract();
-console.log('World activities OK: objective, threat, extraction, reward eligibility and redaction');
+console.log('World activities OK: collection, recon, defense waves, extraction, rewards and redaction');

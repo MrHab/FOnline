@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,15 +10,15 @@ using Newtonsoft.Json.Linq;
 namespace RealmOfAshes.Net.SocketIo
 {
     /// <summary>
-    /// Клиент Socket.IO поверх System.Net.WebSockets.
+    /// Клиент Socket.IO поверх IRoaWebSocketTransport (ClientWebSocket на
+    /// Standalone, .jslib-мост к браузерному WebSocket на WebGL).
     ///
     /// Реализует Engine.IO v4 + Socket.IO v5 — именно этот протокол отдаёт
     /// socket.io@4.7.5, зафиксированный в package.json сервера.
     ///
-    /// Класс намеренно не зависит от UnityEngine: он работает в фоновых потоках,
-    /// и весь Unity-специфичный маршалинг живёт выше, в RoaSocketClient.
-    /// Это же разделение позволит подменить транспорт на .jslib-мост для WebGL,
-    /// не трогая игровой код.
+    /// Класс намеренно не зависит от UnityEngine: на Standalone он работает в
+    /// фоновых потоках, на WebGL — на главном; весь Unity-специфичный маршалинг
+    /// живёт выше, в RoaSocketClient.
     ///
     /// Поддерживается только пространство имён по умолчанию ("/") и только
     /// текстовые пакеты — сервер бинарных вложений не шлёт.
@@ -42,8 +41,6 @@ namespace RealmOfAshes.Net.SocketIo
         private const char SioBinaryEvent = '5';
         private const char SioBinaryAck = '6';
 
-        private const int ReceiveBufferSize = 16 * 1024;
-
         private readonly Uri _handshakeUri;
         private readonly object _auth;
         private readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
@@ -51,9 +48,8 @@ namespace RealmOfAshes.Net.SocketIo
             NullValueHandling = NullValueHandling.Ignore
         };
 
-        private ClientWebSocket _socket;
+        private IRoaWebSocketTransport _transport;
         private CancellationTokenSource _cancellation;
-        private Task _receiveLoop;
 
         // Отправка из нескольких потоков должна быть сериализована:
         // ClientWebSocket.SendAsync не допускает параллельных вызовов.
@@ -105,14 +101,15 @@ namespace RealmOfAshes.Net.SocketIo
 
         public async Task ConnectAsync(CancellationToken externalToken = default)
         {
-            if (_socket != null) throw new InvalidOperationException("Соединение уже открыто.");
+            if (_transport != null) throw new InvalidOperationException("Соединение уже открыто.");
 
             _cancellation = CancellationTokenSource.CreateLinkedTokenSource(externalToken);
-            _socket = new ClientWebSocket();
+            _transport = RoaWebSocketTransportFactory.Create();
+            _transport.OnMessage += HandleFrame;
+            _transport.OnClosed += Shutdown;
+            _transport.OnError += error => OnError?.Invoke(error);
 
-            await _socket.ConnectAsync(_handshakeUri, _cancellation.Token).ConfigureAwait(false);
-
-            _receiveLoop = Task.Run(() => ReceiveLoopAsync(_cancellation.Token));
+            await _transport.ConnectAsync(_handshakeUri, _cancellation.Token).ConfigureAwait(false);
         }
 
         /// <summary>Отправить событие без подтверждения.</summary>
@@ -157,64 +154,15 @@ namespace RealmOfAshes.Net.SocketIo
 
         private async Task SendRawAsync(string frame)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(frame);
-
             await _sendLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (_socket == null || _socket.State != WebSocketState.Open) return;
-
-                await _socket.SendAsync(
-                    new ArraySegment<byte>(bytes),
-                    WebSocketMessageType.Text,
-                    true,
-                    _cancellation.Token).ConfigureAwait(false);
+                if (_transport == null || !_transport.IsOpen) return;
+                await _transport.SendAsync(frame, _cancellation.Token).ConfigureAwait(false);
             }
             finally
             {
                 _sendLock.Release();
-            }
-        }
-
-        private async Task ReceiveLoopAsync(CancellationToken token)
-        {
-            var buffer = new byte[ReceiveBufferSize];
-            var message = new StringBuilder();
-
-            try
-            {
-                while (!token.IsCancellationRequested && _socket.State == WebSocketState.Open)
-                {
-                    WebSocketReceiveResult result;
-                    message.Clear();
-
-                    // Один логический кадр может прийти несколькими чанками.
-                    do
-                    {
-                        result = await _socket.ReceiveAsync(new ArraySegment<byte>(buffer), token)
-                            .ConfigureAwait(false);
-
-                        if (result.MessageType == WebSocketMessageType.Close)
-                        {
-                            Shutdown("сервер закрыл соединение: " + result.CloseStatusDescription);
-                            return;
-                        }
-
-                        message.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-                    }
-                    while (!result.EndOfMessage);
-
-                    HandleFrame(message.ToString());
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Штатное закрытие через Dispose — не ошибка.
-            }
-            catch (Exception error)
-            {
-                OnError?.Invoke(error);
-                Shutdown("ошибка транспорта: " + error.Message);
             }
         }
 
@@ -372,7 +320,7 @@ namespace RealmOfAshes.Net.SocketIo
 
         private void Shutdown(string reason)
         {
-            if (!IsConnected && _socket == null) return;
+            if (!IsConnected && _transport == null) return;
 
             IsConnected = false;
 
@@ -388,22 +336,15 @@ namespace RealmOfAshes.Net.SocketIo
             try
             {
                 _cancellation?.Cancel();
-
-                if (_socket?.State == WebSocketState.Open)
-                {
-                    _socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "client shutdown", CancellationToken.None)
-                        .Wait(TimeSpan.FromSeconds(1));
-                }
             }
             catch (Exception)
             {
-                // На выключении диагностика уже никому не нужна.
             }
             finally
             {
                 IsConnected = false;
-                _socket?.Dispose();
-                _socket = null;
+                _transport?.Dispose();
+                _transport = null;
                 _cancellation?.Dispose();
                 _cancellation = null;
                 _sendLock.Dispose();

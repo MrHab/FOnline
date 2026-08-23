@@ -122,7 +122,7 @@ namespace RealmOfAshes.Game
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var text = go.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = RoaUiFont.Default;
             text.fontSize = size;
             text.fontStyle = style;
             text.alignment = TextAnchor.MiddleCenter;

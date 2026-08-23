@@ -173,6 +173,16 @@ namespace RealmOfAshes.Game
             Active = this;
             RoaUiTheme.Ensure(gameObject);
             ApplyAutomationEnvironment();
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL-сборка раздаётся тем же Node-сервером (public/unity/): сервер —
+            // origin страницы, как defaultServerApiBase() у браузерного клиента.
+            try
+            {
+                var page = new System.Uri(Application.absoluteURL);
+                BaseUrl = page.GetLeftPart(System.UriPartial.Authority);
+            }
+            catch (System.Exception) { }
+#endif
             ApplySavedQuality();
             _auth = new RoaAuthClient(BaseUrl);
             ActiveBaseUrl = BaseUrl;
@@ -294,6 +304,8 @@ namespace RealmOfAshes.Game
             if (loot == null) loot = gameObject.AddComponent<RoaLootCanvas>();
             loot.Interaction = Interaction;
             if (Interaction != null) Interaction.LootCanvasDriven = true;
+
+            if (GetComponent<RoaWebGlInputProbe>() == null) gameObject.AddComponent<RoaWebGlInputProbe>();
 
             // Подсказка предмета и контекстное меню (#tooltip, #item-context-menu).
             if (GetComponent<RoaItemPopups>() == null) gameObject.AddComponent<RoaItemPopups>();

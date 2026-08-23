@@ -357,7 +357,7 @@ namespace RealmOfAshes.Game
         {
             RectTransform rect = PercentRect(name, parent, left, top, width, height);
             Text label = rect.gameObject.AddComponent<Text>();
-            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.font = RoaUiFont.Default;
             label.fontSize = fontSize;
             label.alignment = alignment;
             label.color = color;
@@ -750,7 +750,7 @@ namespace RealmOfAshes.Game
             RectTransform rect = Rect(name, parent, new Vector2(0f, 1f), new Vector2(0f, 1f),
                                       new Vector2(0f, 1f), position, size);
             Text label = rect.gameObject.AddComponent<Text>();
-            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.font = RoaUiFont.Default;
             label.fontSize = fontSize;
             label.alignment = alignment;
             label.color = color;

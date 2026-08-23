@@ -560,7 +560,7 @@ namespace RealmOfAshes.Game
         {
             RectTransform rect = Child(name, parent);
             var text = rect.gameObject.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = RoaUiFont.Default;
             text.fontSize = size;
             text.alignment = anchor;
             text.color = color;

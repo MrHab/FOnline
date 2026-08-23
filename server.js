@@ -1505,7 +1505,19 @@ app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders(res) {
     const requestPath = String(res.req?.path || '');
     const versioned = /[?&]v=/.test(String(res.req?.originalUrl || ''));
-    if (requestPath === '/' || requestPath.endsWith('/index.html') || requestPath.endsWith('/js/game.js') || requestPath.endsWith('/css/game.css')) {
+    // Unity WebGL-сборка в public/unity/: предсжатые файлы отдаются с Content-Encoding,
+    // чтобы браузер распаковывал их сам (иначе загрузчик Unity делает это в JS, медленнее).
+    if (requestPath.startsWith('/unity/')) {
+      // Файлы сборки названы хэшами содержимого — можно кешировать навсегда.
+      const immutableBuild = requestPath.startsWith('/unity/Build/');
+      if (requestPath.endsWith('.br')) res.setHeader('Content-Encoding', 'br');
+      else if (requestPath.endsWith('.gz') || requestPath.endsWith('.unityweb')) res.setHeader('Content-Encoding', 'gzip');
+      if (/\.wasm(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/wasm');
+      else if (/\.js(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/javascript');
+      else if (/\.data(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/octet-stream');
+      if (immutableBuild) { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); return; }
+    }
+    if (requestPath === '/' || requestPath === '/unity' || requestPath === '/unity/' || requestPath.endsWith('/index.html') || requestPath.endsWith('/js/game.js') || requestPath.endsWith('/css/game.css')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (versioned) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');

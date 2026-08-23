@@ -1492,6 +1492,46 @@ escort_caravan (staging, 2 из 4): «Погрузка: Караванный д�
 … · состояние 100%», меню карточки и меню слота «Правая рука» со всеми
 пунктами.
 
+## WebGL-сборка Unity-клиента (эксперимент: Unity в браузере на том же сервере)
+
+- **Транспорт**: `RoaSocketIoConnection` теперь работает поверх
+  `IRoaWebSocketTransport` (`Net/SocketIo/RoaWebSocketTransport.cs`):
+  `RoaNativeWebSocket` (ClientWebSocket + фоновый приём, как раньше) и
+  `RoaWebGlWebSocket` — мост к браузерному WebSocket через
+  `Assets/Plugins/WebGL/RoaWebSocket.jslib` (в WebGL нет ни сокетов .NET, ни
+  потоков). Протокол Engine.IO/Socket.IO общий; колбэки в WebGL приходят на
+  главном потоке, маршалинг RoaSocketClient не меняется.
+- **Сервер по умолчанию** в WebGL — origin страницы (`Application.absoluteURL`),
+  как `defaultServerApiBase()` у браузерного клиента.
+- **Шрифт**: в WebGL нет системных шрифтов, `LegacyRuntime.ttf` без кириллицы —
+  все канвы берут `RoaUiFont.Default` = Noto Sans (OFL) из
+  `Resources/RealmUi/Fonts`.
+- **Сборка**: меню «Realm of Ashes → Build WebGL» (`Assets/Editor/RoaWebGlBuild.cs`)
+  → `public/unity/` (в .gitignore). Настройки: gzip + decompressionFallback,
+  имена файлов — хэши содержимого (иначе кеш браузера смешивает framework/wasm
+  разных сборок → LinkError), `stripEngineCode = false` (компоненты вроде
+  `SphereCollider`/`CharacterController` добавляются из кода, стрипинг их
+  вырезал), шаблон `Assets/WebGLTemplates/RealmOfAshes` (холст во весь экран,
+  экран загрузки в стиле игры).
+- **Сервер** (`server.js`, статика): для `/unity/*.unityweb|.gz|.br` —
+  `Content-Encoding`, для `/unity/Build/` — `immutable`, для `/unity/` —
+  `no-cache`.
+- **Диагностика**: `?roadebug=1` включает `RoaWebGlInputProbe` — раз в 2 с
+  в консоль браузера: FPS, позиция мыши, модуль EventSystem, фокус.
+
+Замеры (локальный сервер, Chrome, RTX 3060 Ti, 1584×805): сборка 20 МБ
+(wasm 15 + данные 5.7, первая загрузка — секунды локально), экран входа и
+мир — **60 FPS** (упор в vsync), гостевой вход → локация «Караванный двор
+Старого Клима»: 72 модели / 45,7 МБ за 3,2 с, JS-куча ~90 МБ. Две ловушки
+при замерах: встроенная панель браузера и перекрытое окно Chrome троттлят
+rAF до ~1 Гц (`document.hidden = true`) — мерить только в видимом окне или с
+`--disable-backgrounding-occluded-windows`; синтетический клик без
+предшествующего движения мыши оставляет `Input.mousePosition` = (0,0).
+
+Не проверено: мобильные браузеры, https/brotli на rangir.ru, долгие сессии
+(рост памяти), ввод с клавиатуры в InputField (в тестах ввод шёл через
+гостевой старт).
+
 ## Туман войны и линия видимости
 
 `RoaFogOfWar.cs` — единый источник **игровой** видимости, `RoaAuthoredVision.cs` —

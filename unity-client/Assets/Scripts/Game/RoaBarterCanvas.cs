@@ -302,7 +302,8 @@ namespace RealmOfAshes.Game
                     RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · продажа " + e.Price + " кр.",
                     "x" + free, queued > 0 ? "в обмене " + queued : null,
                     queued > 0 ? RowQueued : (equipped ? RowEquipped : RowBorder), free <= 0,
-                    () => Interaction.TradeRequest(captured.RuntimeId, false, capturedFree, captured.Price));
+                    () => Interaction.TradeRequest(captured.RuntimeId, false, capturedFree, captured.Price),
+                    (equipped ? "Предмет сейчас на персонаже. Продавайте его только если точно хотите с ним расстаться. " : string.Empty) + "Продажа: " + e.Price + " крышек за 1 шт.");
             }
             SetEmpty(_player, index == 0, _player.Category == "all"
                 ? "Нет предметов для продажи."
@@ -340,7 +341,8 @@ namespace RealmOfAshes.Game
                     RoaItemData.Weight(e.BaseId).ToString("0.0") + " кг · покупка " + e.Price + " кр. · осталось " + available,
                     e.Price + " кр.", queued > 0 ? "в обмене " + queued : null,
                     queued > 0 ? RowQueued : ((weightBlocked || moneyBlocked) ? RowBlocked : RowBorder), stockBlocked,
-                    () => Interaction.TradeRequest(captured.RuntimeId, true, capturedAvailable, captured.Price));
+                    () => Interaction.TradeRequest(captured.RuntimeId, true, capturedAvailable, captured.Price),
+                    "Цена покупки: " + e.Price + " крышек" + (moneyBlocked ? " · возможна доплата" : (weightBlocked ? " · возможен перегруз" : string.Empty)));
             }
             SetEmpty(_vendor, index == 0, _vendor.Category == "all"
                 ? "У торговца нет товаров."
@@ -399,7 +401,7 @@ namespace RealmOfAshes.Game
 
         /// <summary>.trade-card.barter-row: 34px арт | имя+заметка | правая колонка.</summary>
         private void AddRow(Column column, int index, string baseId, string name, string badge, string note,
-                            string side, string sideSub, Color border, bool disabled, System.Action onClick)
+                            string side, string sideSub, Color border, bool disabled, System.Action onClick, string tooltipStat = null)
         {
             var go = new GameObject("Row:" + baseId, typeof(RectTransform));
             var rect = (RectTransform)go.transform;
@@ -466,6 +468,7 @@ namespace RealmOfAshes.Game
                 button.targetGraphic = image;
                 button.onClick.AddListener(() => { onClick(); _refreshAt = Time.unscaledTime + 0.2f; });
             }
+            RoaItemPopups.Bind(go, baseId, tooltipStat);
             column.Rows.Add(go);
         }
 

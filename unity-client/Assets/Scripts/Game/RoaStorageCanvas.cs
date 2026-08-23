@@ -318,6 +318,7 @@ namespace RealmOfAshes.Game
             button.targetGraphic = image;
             Entry captured = entry;
             button.onClick.AddListener(() => OnCardClicked(captured, backpack));
+            RoaItemPopups.Bind(card, entry.BaseId, carryLimited ? "можно унести: " + carryMax : null);
             return card;
         }
 

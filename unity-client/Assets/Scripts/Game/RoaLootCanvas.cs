@@ -261,6 +261,7 @@ namespace RealmOfAshes.Game
                     string captured = id;
                     AddItemRow(_leftList, RoaItemData.Name(RoaInteraction.TradeBaseId(id)) + "   —   x" + qty,
                         () => Interaction.LootRequest(captured, qty, qty));
+                    RoaItemPopups.Bind(_rows[_rows.Count - 1], RoaInteraction.TradeBaseId(id));
                 }
             }
             if (!any) AddInfoRow(_leftList, "Пусто.");

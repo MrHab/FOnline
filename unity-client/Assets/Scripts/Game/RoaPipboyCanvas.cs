@@ -167,6 +167,7 @@ namespace RealmOfAshes.Game
 
         public void Close()
         {
+            if (RoaItemPopups.Instance != null) { RoaItemPopups.Instance.Hide(); RoaItemPopups.Instance.HideMenu(); }
             if (_root != null) _root.SetActive(false);
         }
 
@@ -972,6 +973,19 @@ namespace RealmOfAshes.Game
             var outline = button.gameObject.AddComponent<Outline>();
             outline.effectColor = SlotBorder;
             outline.effectDistance = new Vector2(1f, -1f);
+            // Правый клик по слоту — showEquippedItemContextMenu web (03d:265); подсказка — по надетому предмету.
+            string slotId = slot;
+            RoaItemPopups.BindMenu(button.gameObject, () => BuildSlotContextOptions(slotId));
+            var hover = button.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+            var enter = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerEnter };
+            enter.callback.AddListener(_ =>
+            {
+                string rt; if (Inventory != null && Inventory.EquipmentSlots.TryGetValue(slotId, out rt) && !string.IsNullOrEmpty(rt) && RoaItemPopups.Instance != null)
+                    RoaItemPopups.Instance.ShowItem(RoaArmorData.BaseId(rt), ItemExtraStat(RoaArmorData.BaseId(rt)));
+            });
+            var exit = new UnityEngine.EventSystems.EventTrigger.Entry { eventID = UnityEngine.EventSystems.EventTriggerType.PointerExit };
+            exit.callback.AddListener(_ => { if (RoaItemPopups.Instance != null) RoaItemPopups.Instance.Hide(); });
+            hover.triggers.Add(enter); hover.triggers.Add(exit);
 
             RectTransform artRect = Child("Art", rect);
             artRect.anchorMin = artRect.anchorMax = new Vector2(0.5f, 1f);
@@ -990,7 +1004,6 @@ namespace RealmOfAshes.Game
             type.text = title.ToUpperInvariant();
             Place_(type.rectTransform, 0f, 0f, 1f, 0f, new Vector2(2f, 2f), new Vector2(-2f, 13f));
 
-            string slotId = slot;
             button.onClick.AddListener(() => OnItemsSlotClicked(slotId));
             _itemsSlots[slot] = (button, art, name, type, empty);
         }
@@ -1154,6 +1167,9 @@ namespace RealmOfAshes.Game
                 _selectedItemId = id;
                 _refreshAt = 0f;
             });
+            // Подсказка (showTooltip) и контекстное меню правой кнопкой (showItemContextMenu web 03d:229).
+            RoaItemPopups.Bind(card, id, ItemExtraStat(id));
+            RoaItemPopups.BindMenu(card, () => { _selectedItemId = id; _refreshAt = 0f; return BuildItemContextOptions(id); });
             return card;
         }
 
@@ -1226,6 +1242,100 @@ namespace RealmOfAshes.Game
                 if (RoaArmorData.BaseId(entry.Value) == _selectedItemId) runtimeId = entry.Value;
             if (Inventory.OpenWorkbench(runtimeId)) Close();
             else _itemsStatus.text = Inventory.ActionStatus;
+        }
+
+        /// <summary>Динамическая часть строки характеристик: состояние и магазин, как itemStatLine web.</summary>
+        private string ItemExtraStat(string baseId)
+        {
+            var parts = new List<string>();
+            if (Inventory != null && (Inventory.IsRepairable(baseId)))
+                parts.Add("состояние " + Mathf.RoundToInt(Inventory.ConditionPercent(baseId)) + "%");
+            return parts.Count > 0 ? string.Join(" · ", parts) : null;
+        }
+
+        /// <summary>Пункты showEquippedItemContextMenu web (03d:265) для слота экипировки.</summary>
+        private List<RoaItemPopups.Option> BuildSlotContextOptions(string slot)
+        {
+            var options = new List<RoaItemPopups.Option>();
+            string runtimeId;
+            if (Inventory == null || !Inventory.EquipmentSlots.TryGetValue(slot, out runtimeId) || string.IsNullOrEmpty(runtimeId)) return options;
+            string baseId = RoaArmorData.BaseId(runtimeId);
+            bool hand = slot == "weapon" || slot == "offhand";
+            options.Add(new RoaItemPopups.Option(hand ? "Снять из руки" : "Снять", () => Submit(Inventory.SubmitEquipmentAction(slot, string.Empty, OnActionAck), "Снимаю…")));
+            if (slot == "weapon" && Inventory.IsFirearmItem(baseId))
+                options.Add(new RoaItemPopups.Option("Разрядить", () => { Inventory.ItemAction("unload", runtimeId); Submit(true, "Разряжаю…"); }));
+            if (RoaWeaponModificationData.IsFirearm(baseId))
+                options.Add(new RoaItemPopups.Option("Модификация", () => { if (Inventory.OpenWorkbench(runtimeId)) Close(); }));
+            if (Inventory.IsRepairable(baseId))
+            {
+                bool intact = Inventory.ConditionPercent(baseId) >= 99.995f;
+                options.Add(new RoaItemPopups.Option(intact ? "Починить (целый)" : "Починить", () => { Inventory.ItemAction("repair", runtimeId); Submit(true, "Ремонтирую…"); }, intact));
+            }
+            if (Quickbar != null && Inventory.IsQuickAssignable(baseId))
+                for (int i = 0; i < Mathf.Min(4, Quickbar.Slots.Count); i++) { int idx = i; options.Add(new RoaItemPopups.Option("В быстрый доступ " + (i + 1), () => { Quickbar.Assign(idx, baseId); _refreshAt = 0f; })); }
+            return options;
+        }
+
+        /// <summary>Пункты showItemContextMenu web (03d:229) в том же порядке.</summary>
+        private List<RoaItemPopups.Option> BuildItemContextOptions(string baseId)
+        {
+            var options = new List<RoaItemPopups.Option>();
+            if (Inventory == null) return options;
+            RoaItemInfo.Row info = RoaItemInfo.Get(baseId);
+            string equippedSlot = null, equippedRuntime = null;
+            foreach (KeyValuePair<string, string> entry in Inventory.EquipmentSlots)
+                if (!string.IsNullOrEmpty(entry.Value) && RoaArmorData.BaseId(entry.Value) == baseId) { equippedSlot = entry.Key; equippedRuntime = entry.Value; }
+            string equipSlot = RoaInventory.SlotFor(baseId);
+
+            if (equippedSlot != null)
+            {
+                string slotCaptured = equippedSlot;
+                bool hand = slotCaptured == "weapon" || slotCaptured == "offhand";
+                options.Add(new RoaItemPopups.Option(hand ? "Снять из " + (slotCaptured == "weapon" ? "правой руки" : "левой руки") : "Снять",
+                    () => Submit(Inventory.SubmitEquipmentAction(slotCaptured, string.Empty, OnActionAck), "Снимаю…")));
+            }
+            else if (equipSlot == "weapon")
+            {
+                if (info != null && info.Hands == 2)
+                    options.Add(new RoaItemPopups.Option("В обе руки", () => Submit(Inventory.SubmitEquipmentAction("weapon", baseId, OnActionAck), "Экипирую…")));
+                else
+                {
+                    options.Add(new RoaItemPopups.Option("В правую руку", () => Submit(Inventory.SubmitEquipmentAction("weapon", baseId, OnActionAck), "Экипирую…")));
+                    options.Add(new RoaItemPopups.Option("В левую руку", () => Submit(Inventory.SubmitEquipmentAction("offhand", baseId, OnActionAck), "Экипирую…")));
+                }
+            }
+            else if (equipSlot != null)
+                options.Add(new RoaItemPopups.Option("Надеть", () => Submit(Inventory.SubmitEquipmentAction(equipSlot, baseId, OnActionAck), "Экипирую…")));
+
+            if (info != null && info.Usable && Inventory.IsQuickAssignable(baseId))
+                options.Add(new RoaItemPopups.Option("Использовать", () => Submit(Inventory.ActivateQuickItem(baseId, Combat), "Использую…")));
+            if (equippedSlot == "weapon" && Inventory.IsFirearmItem(baseId))
+            {
+                string rt = equippedRuntime;
+                options.Add(new RoaItemPopups.Option("Разрядить", () => { Inventory.ItemAction("unload", rt); Submit(true, "Разряжаю…"); }));
+            }
+            if (RoaWeaponModificationData.IsFirearm(baseId))
+                options.Add(new RoaItemPopups.Option("Модификация", OnModifyClicked));
+            if (Inventory.IsRepairable(baseId))
+            {
+                string rt = equippedRuntime ?? baseId;
+                bool intact = Inventory.ConditionPercent(baseId) >= 99.995f;
+                options.Add(new RoaItemPopups.Option(intact ? "Починить (целый)" : "Починить", () => { Inventory.ItemAction("repair", rt); Submit(true, "Ремонтирую…"); }, intact));
+            }
+            if (Inventory.IsSalvageable(baseId))
+                options.Add(new RoaItemPopups.Option("Разобрать", () => { Inventory.ItemAction("salvage", baseId); Submit(true, "Разбираю…"); }));
+            if (Quickbar != null && Inventory.IsQuickAssignable(baseId))
+            {
+                for (int i = 0; i < Mathf.Min(4, Quickbar.Slots.Count); i++)
+                {
+                    int slotIndex = i;
+                    options.Add(new RoaItemPopups.Option("В быстрый доступ " + (i + 1), () => { Quickbar.Assign(slotIndex, baseId); _refreshAt = 0f; }));
+                }
+            }
+            bool cantDrop = equippedSlot != null || baseId == "fists";
+            options.Add(new RoaItemPopups.Option(equippedSlot != null ? "Выбросить на землю (сначала снять)" : "Выбросить на землю",
+                () => Submit(Inventory.SubmitDropItem(baseId, 1, OnActionAck), "Бросаю…"), cantDrop));
+            return options;
         }
 
         private void OnUseClicked()

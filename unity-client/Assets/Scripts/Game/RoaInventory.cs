@@ -728,6 +728,16 @@ namespace RealmOfAshes.Game
             GUILayout.EndArea();
         }
 
+        // --- Фасад контекстного меню предмета (RoaItemContextMenu, web showItemContextMenu 03d:229) ---
+
+        public bool IsRepairable(string itemOrRuntimeId) { return RepairableItems.Contains(BaseId(itemOrRuntimeId)); }
+        public bool IsSalvageable(string itemOrRuntimeId) { return SalvageableItems.Contains(BaseId(itemOrRuntimeId)); }
+        public bool IsFirearmItem(string itemOrRuntimeId) { return Firearms.Contains(BaseId(itemOrRuntimeId)); }
+        public bool IsMedical(string itemOrRuntimeId) { return MedicalItems.Contains(BaseId(itemOrRuntimeId)); }
+        public float ConditionPercent(string itemOrRuntimeId) { return ItemCondition(BaseId(itemOrRuntimeId)); }
+        /// <summary>repair / unload / salvage — inventoryItemAction сервера.</summary>
+        public void ItemAction(string action, string itemRuntimeId) { SubmitItemAction(action, itemRuntimeId); }
+
         // --- Фасад для канва-верстака (RoaWorkbenchCanvas) ---
 
         public string ModifyWeaponRuntimeId { get { return _modifyWeaponRuntimeId; } }

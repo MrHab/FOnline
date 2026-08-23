@@ -295,6 +295,9 @@ namespace RealmOfAshes.Game
             loot.Interaction = Interaction;
             if (Interaction != null) Interaction.LootCanvasDriven = true;
 
+            // Подсказка предмета и контекстное меню (#tooltip, #item-context-menu).
+            if (GetComponent<RoaItemPopups>() == null) gameObject.AddComponent<RoaItemPopups>();
+
             // Панель количества в web-виде (#quantity-side-panel) поверх торговли/хранилища/лута.
             var quantity = GetComponent<RoaQuantityCanvas>();
             if (quantity == null) quantity = gameObject.AddComponent<RoaQuantityCanvas>();

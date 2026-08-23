@@ -179,6 +179,8 @@ for (const file of [
 ]) {
   const source = fs.readFileSync(file, 'utf8');
   for (const ref of collectRefs(file, source)) {
+    // /assets/models-lite — виртуальный маршрут (генерируемые копии GLB с фолбэком на оригинал).
+    if (/^\/assets\/models-lite(\/|$)/.test(ref)) continue;
     serverRefCount += 1;
     const target = publicPathFor(ref, file);
     if (!target.startsWith(publicDir + path.sep) && target !== publicDir) {

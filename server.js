@@ -115,6 +115,7 @@ const {
   createReconExpedition,
   createOutpostDefense,
   createDistressSignal,
+  createAssaultDiversion,
   publicWorldActivity,
   recordWorldActivityParticipant,
   applyWorldActivityHarvest,
@@ -15294,7 +15295,7 @@ function currentRoomWorldState(room) {
   return room.worldState;
 }
 function serverWorldActivityTaskMatchesRoom(task = {}, room = null) {
-  if (!task || !room || task.status !== 'active' || !['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal'].includes(task.type)) return false;
+  if (!task || !room || task.status !== 'active' || !['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal', 'assault_diversion'].includes(task.type)) return false;
   const siteId = String(task.siteId || '');
   if (siteId && siteId === String(room.worldSiteId || '')) return true;
   const locationId = normalizeLocationId(task.details?.locationId || '');
@@ -15353,6 +15354,18 @@ function serverWorldActivityDistressPoints(room) {
     id: `distress_signal_${index + 1}`,
     label: 'Источник сигнала'
   }));
+}
+function serverWorldActivityOperationPoints(room, sabotageCount = 4) {
+  return serverWorldActivityReconPoints(room, Math.max(6, sabotageCount + 2)).map((point, index) => {
+    if (index === 0) return { ...point, id: 'approach_assault', label: 'Позиция штурма' };
+    if (index === 1) return { ...point, id: 'approach_diversion', label: 'Маршрут диверсии' };
+    return {
+      ...point,
+      id: `sabotage_${index - 1}`,
+      label: `Объект диверсии ${index - 1}`,
+      status: 'locked'
+    };
+  });
 }
 function ensureServerWorldActivityForRoom(room, now = Date.now()) {
   if (!room) return null;
@@ -15418,6 +15431,19 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
       maxTarget: task.details?.maxKills,
       interactionPoints
     });
+  } else if (task.type === 'assault_diversion') {
+    const interactionPoints = serverWorldActivityOperationPoints(room, Number(task.details?.sabotagePoints || 4));
+    if (interactionPoints.length < 5) return null;
+    room.worldActivity = createAssaultDiversion({
+      ...common,
+      title: task.title || 'Штурм или диверсия',
+      targetKills: task.details?.targetKills,
+      bonusKills: task.details?.bonusKills,
+      maxKills: task.details?.maxKills,
+      targetSabotage: task.details?.targetSabotage,
+      bonusSabotage: task.details?.bonusSabotage,
+      interactionPoints
+    });
   } else {
     room.worldActivity = createResourceExpedition({
       ...common,
@@ -15446,7 +15472,7 @@ function spawnServerWorldActivityWave(room, threatTier = 0) {
   const activity = room?.worldActivity;
   const tier = clamp(Math.floor(Number(threatTier || 0)), 0, 3);
   if (!room || !activity || tier <= Number(room.lastWorldActivitySpawnedTier || 0)) return 0;
-  const typeName = ['outpost_defense', 'distress_signal'].includes(activity.kind)
+  const typeName = ['outpost_defense', 'distress_signal', 'assault_diversion'].includes(activity.kind)
     ? 'Рейдер'
     : tier >= 3 ? 'Рейдер' : tier >= 2 ? 'Гекко' : 'Пепельный волк';
   const count = tier + 1;
@@ -15517,7 +15543,8 @@ function recordServerWorldActivityHarvest(room, player, item = null, now = Date.
 
 function recordServerWorldActivityEnemyKill(room, enemy, player = null, now = Date.now()) {
   const activity = room?.worldActivity;
-  if (!activity || !['outpost_defense', 'distress_signal'].includes(activity.kind) || !enemy
+  const assaultOperation = activity?.kind === 'assault_diversion' && activity.approach === 'assault';
+  if (!activity || (!['outpost_defense', 'distress_signal'].includes(activity.kind) && !assaultOperation) || !enemy
     || String(enemy.worldActivityId || '') !== String(activity.id || '')
     || enemy.worldActivityKillCredited) return { changed: false, activity: publicWorldActivity(activity) };
   const progress = applyWorldActivityEnemyKill(activity, {
@@ -15537,7 +15564,7 @@ function recordServerWorldActivityEnemyKill(room, enemy, player = null, now = Da
 
 
 function performServerWorldActivityInteraction(player = {}, task = {}, taskId = '', accepted = false, data = {}) {
-  if (!accepted || task.status !== 'active' || !['recon_expedition', 'distress_signal'].includes(task.type)) {
+  if (!accepted || task.status !== 'active' || !['recon_expedition', 'distress_signal', 'assault_diversion'].includes(task.type)) {
     return { ok: false, error: 'Эта точка активности сейчас недоступна.' };
   }
   const room = rooms.get(String(player.roomId || '')) || null;
@@ -15570,7 +15597,7 @@ function performServerWorldActivityInteraction(player = {}, task = {}, taskId = 
   };
 }
 function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '', accepted = false) {
-  if (!accepted || task.status !== 'active' || !['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal'].includes(task.type)) {
+  if (!accepted || task.status !== 'active' || !['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal', 'assault_diversion'].includes(task.type)) {
     return { ok: false, error: 'Эта вылазка сейчас недоступна.' };
   }
   const room = rooms.get(String(player.roomId || '')) || null;
@@ -15592,6 +15619,7 @@ function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '
   const completed = WASTELAND_SIM.completeWorldActivityTask(taskId, {
     grade: extracted.grade,
     objectiveCurrent,
+    approach: activity.approach,
     rewardCharacterIds: worldActivityRewardCharacterIds(activity)
   });
   if (!completed?.ok) return { ok: false, error: completed?.error || 'Эвакуация не была засчитана.' };

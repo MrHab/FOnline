@@ -154,14 +154,12 @@ namespace RealmOfAshes.Game
             _timer.text = status == "completed" ? "ГОТОВО" : Countdown(seconds);
 
             JArray objectives = _activity?["objectives"] as JArray;
-            JObject objective = objectives?[0] as JObject;
-            if (kind == "distress_signal" && objectives != null)
-            {
-                JObject signal = objectives.FirstOrDefault(token => token?["id"]?.ToString() == "distress_signal") as JObject;
-                JObject attackers = objectives.FirstOrDefault(token => token?["id"]?.ToString() == "attackers") as JObject;
-                objective = (signal?["current"]?.ToObject<int>() ?? 0) < (signal?["target"]?.ToObject<int>() ?? 1)
-                    ? signal : attackers;
-            }
+            List<JObject> requiredObjectives = objectives?.OfType<JObject>()
+                .Where(row => row?["required"]?.ToObject<bool>() != false).ToList() ?? new List<JObject>();
+            JObject objective = requiredObjectives.FirstOrDefault(row =>
+                (row?["current"]?.ToObject<int>() ?? 0) < (row?["target"]?.ToObject<int>() ?? 1))
+                ?? requiredObjectives.LastOrDefault()
+                ?? objectives?[0] as JObject;
             int current = Mathf.Max(0, objective?["current"]?.ToObject<int>() ?? 0);
             int target = Mathf.Max(1, objective?["target"]?.ToObject<int>() ?? 1);
             int bonus = Mathf.Max(target, objective?["bonusTarget"]?.ToObject<int>() ?? target);
@@ -170,6 +168,9 @@ namespace RealmOfAshes.Game
                 : kind == "outpost_defense" ? "Нападающие: "
                 : kind == "distress_signal" && objective?["id"]?.ToString() == "distress_signal" ? "Источник сигнала: "
                 : kind == "distress_signal" ? "Засада: "
+                : kind == "assault_diversion" && objective?["id"]?.ToString() == "approach" ? "Подход: "
+                : kind == "assault_diversion" && objective?["id"]?.ToString() == "sabotage" ? "Объекты: "
+                : kind == "assault_diversion" ? "Защитники: "
                 : "Собрано: ";
             _objective.text = objectivePrefix + current + " / " + target
                 + (current >= target ? "   ·   бонус " + bonus + "   ·   максимум " + maximum : string.Empty);
@@ -179,6 +180,7 @@ namespace RealmOfAshes.Game
             _threatFill.color = Color.Lerp(Safe, Danger, threat / 100f);
             string threatPrefix = kind == "outpost_defense" ? "НАТИСК "
                 : kind == "distress_signal" ? "ЗАСАДА "
+                : kind == "assault_diversion" ? "ТРЕВОГА "
                 : "УГРОЗА ";
             _threatText.text = threatPrefix
                 + Mathf.RoundToInt(threat) + "%";
@@ -189,7 +191,8 @@ namespace RealmOfAshes.Game
 
             bool extractionOpen = _activity?["extractionOpen"]?.ToObject<bool>() == true;
             float nearestDistance = float.MaxValue;
-            bool usesPoint = kind == "recon_expedition" || kind == "distress_signal";
+            bool usesPoint = kind == "recon_expedition" || kind == "distress_signal"
+                || kind == "assault_diversion";
             JObject nearestPoint = usesPoint ? NearestPendingPoint(out nearestDistance) : null;
             bool pointInReach = nearestPoint != null && nearestDistance <= 3f;
             _actionPointId = pointInReach ? nearestPoint?["id"]?.ToString() ?? string.Empty : string.Empty;
@@ -199,7 +202,11 @@ namespace RealmOfAshes.Game
             _action.interactable = !_pending && (pointInReach || extractionOpen);
             if (_pending) _actionLabel.text = "ОБРАБОТКА…";
             else if (pointInReach) _actionLabel.text = kind == "distress_signal"
-                ? "АКТИВИРОВАТЬ МАЯК" : "СОБРАТЬ РАЗВЕДДАННЫЕ";
+                ? "АКТИВИРОВАТЬ МАЯК"
+                : kind == "assault_diversion" && _actionPointId == "approach_assault" ? "НАЧАТЬ ШТУРМ"
+                : kind == "assault_diversion" && _actionPointId == "approach_diversion" ? "ВЫБРАТЬ ДИВЕРСИЮ"
+                : kind == "assault_diversion" ? "ЗАЛОЖИТЬ ЗАРЯД"
+                : "СОБРАТЬ РАЗВЕДДАННЫЕ";
             else if (extractionOpen) _actionLabel.text = kind == "outpost_defense"
                 ? "ЗАВЕРШИТЬ ОБОРОНУ" : "ЭВАКУИРОВАТЬСЯ У ВЫХОДА";
             else _actionLabel.text = "ТОЧКА НАБЛЮДЕНИЯ · " + Mathf.CeilToInt(nearestDistance) + " М";
@@ -229,6 +236,10 @@ namespace RealmOfAshes.Game
                     ? "Отразите три волны. Каждая потеря нападающих ускоряет следующий штурм."
                     : kind == "distress_signal"
                     ? "Найдите маяк. После активации будьте готовы к засаде."
+                    : kind == "assault_diversion" && string.IsNullOrEmpty(_activity?["approach"]?.ToString())
+                    ? "Выберите отмеченный подход: громкий штурм или скрытая диверсия."
+                    : kind == "assault_diversion"
+                    ? "Выполните выбранный план и эвакуируйтесь после основной цели."
                     : kind == "recon_expedition"
                     ? "Найдите отмеченные точки. Каждое наблюдение повышает риск обнаружения."
                     : "Добыча создаёт шум и повышает угрозу.";
@@ -246,7 +257,7 @@ namespace RealmOfAshes.Game
             foreach (JToken token in points)
             {
                 JObject point = token as JObject;
-                if (point == null || point["status"]?.ToString() == "completed") continue;
+                if (point == null || point["status"]?.ToString() != "pending") continue;
                 float pointX = point["x"]?.ToObject<float>() ?? 0f;
                 float pointZ = point["z"]?.ToObject<float>() ?? 0f;
                 float candidate = Mathf.Sqrt((playerX - pointX) * (playerX - pointX) + (playerZ - pointZ) * (playerZ - pointZ));
@@ -269,8 +280,13 @@ namespace RealmOfAshes.Game
             string taskId = _activity["taskId"]?.ToString() ?? string.Empty;
             if (string.IsNullOrEmpty(taskId)) return;
             bool distress = _activity["kind"]?.ToString() == "distress_signal";
+            bool operation = _activity["kind"]?.ToString() == "assault_diversion";
             _pending = true;
-            _message.text = distress ? "Активируем аварийный маяк…" : "Собираем данные наблюдения…";
+            _message.text = distress ? "Активируем аварийный маяк…"
+                : operation && pointId == "approach_assault" ? "Начинаем прямой штурм…"
+                : operation && pointId == "approach_diversion" ? "Выбираем скрытый маршрут…"
+                : operation ? "Устанавливаем диверсионный заряд…"
+                : "Собираем данные наблюдения…";
             _message.color = Accent;
             Socket.EmitWithAck("worldTaskAction", new Dictionary<string, object>
             {
@@ -288,7 +304,11 @@ namespace RealmOfAshes.Game
                 }
                 if (ack?["activity"] is JObject activity) _activity = activity;
                 _markerRevision = string.Empty;
-                _message.text = distress ? "Маяк активирован. Засада раскрыта." : "Разведданные получены.";
+                _message.text = distress ? "Маяк активирован. Засада раскрыта."
+                    : operation && pointId == "approach_assault" ? "Штурм начался."
+                    : operation && pointId == "approach_diversion" ? "Диверсионный маршрут выбран."
+                    : operation ? "Объект выведен из строя."
+                    : "Разведданные получены.";
                 _message.color = Safe;
                 _refreshAt = 0f;
             });
@@ -396,6 +416,8 @@ namespace RealmOfAshes.Game
             if (phase == "extraction") return kind == "outpost_defense"
                 ? "ОСНОВНАЯ АТАКА ОТБИТА"
                 : kind == "distress_signal" ? "РАЙОН ЗАЧИЩЕН" : "ЭВАКУАЦИЯ ОТКРЫТА";
+            if (kind == "assault_diversion") return phase == "assaulting" ? "ПРЯМОЙ ШТУРМ"
+                : phase == "sabotaging" ? "ДИВЕРСИЯ" : "ВЫБОР ПОДХОДА";
             return kind == "outpost_defense" ? "ОТРАЖЕНИЕ ШТУРМА"
                 : kind == "distress_signal" ? "ПОИСК И СПАСЕНИЕ"
                 : kind == "recon_expedition" ? "РАЗВЕДКА И РИСК"
@@ -413,7 +435,7 @@ namespace RealmOfAshes.Game
             _markerRevision = key;
             string kind = _activity?["kind"]?.ToString() ?? string.Empty;
             string status = _activity?["status"]?.ToString() ?? string.Empty;
-            if (!new[] { "recon_expedition", "distress_signal" }.Contains(kind) || (status != "active" && status != "extracting")
+            if (!new[] { "recon_expedition", "distress_signal", "assault_diversion" }.Contains(kind) || (status != "active" && status != "extracting")
                 || !(_activity?["interactionPoints"] is JArray points)) return;
 
             _markerRoot = new GameObject("WorldActivityMarkers");
@@ -421,17 +443,21 @@ namespace RealmOfAshes.Game
             foreach (JToken token in points)
             {
                 JObject point = token as JObject;
-                if (point == null) continue;
+                if (point == null || point["status"]?.ToString() == "disabled") continue;
                 bool completed = point["status"]?.ToString() == "completed";
                 float x = point["x"]?.ToObject<float>() ?? 0f;
                 float z = point["z"]?.ToObject<float>() ?? 0f;
                 var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                marker.name = (kind == "distress_signal" ? "DistressSignal:" : "ReconPoint:") + (point["id"]?.ToString() ?? "point");
+                marker.name = (kind == "distress_signal" ? "DistressSignal:"
+                    : kind == "assault_diversion" ? "OperationPoint:" : "ReconPoint:")
+                    + (point["id"]?.ToString() ?? "point");
                 marker.transform.SetParent(_markerRoot.transform, false);
                 marker.transform.position = RoaCoords.ToUnity(x, 0.08f, z);
                 marker.transform.localScale = new Vector3(0.62f, 0.035f, 0.62f);
                 Renderer renderer = marker.GetComponent<Renderer>();
-                if (renderer != null) renderer.material.color = completed ? Safe : Accent;
+                string pointStatus = point["status"]?.ToString() ?? "pending";
+                if (renderer != null) renderer.material.color = completed ? Safe
+                    : pointStatus == "locked" ? Muted : Accent;
                 Collider collider = marker.GetComponent<Collider>();
                 if (collider != null) Destroy(collider);
             }

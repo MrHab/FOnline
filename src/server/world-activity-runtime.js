@@ -5,6 +5,7 @@ const WORLD_ACTIVITY_KIND_RESOURCE_EXPEDITION = 'resource_expedition';
 const WORLD_ACTIVITY_KIND_RECON_EXPEDITION = 'recon_expedition';
 const WORLD_ACTIVITY_KIND_OUTPOST_DEFENSE = 'outpost_defense';
 const WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL = 'distress_signal';
+const WORLD_ACTIVITY_KIND_ASSAULT_DIVERSION = 'assault_diversion';
 const WORLD_ACTIVITY_ACTIVE_STATUSES = new Set(['active', 'extracting']);
 
 function clamp(value, min, max) {
@@ -50,7 +51,8 @@ function normalizeObjective(row = {}, index = 0) {
 }
 
 function normalizeInteractionPoint(row = {}, index = 0) {
-  const status = String(row.status || '').toLowerCase() === 'completed' ? 'completed' : 'pending';
+  const rawStatus = String(row.status || '').toLowerCase();
+  const status = ['completed', 'locked', 'disabled'].includes(rawStatus) ? rawStatus : 'pending';
   return {
     id: safeId(row.id, `point_${index + 1}`),
     label: String(row.label || `Точка наблюдения ${index + 1}`).slice(0, 80),
@@ -130,6 +132,7 @@ function normalizeWorldActivity(row = {}, now = Date.now()) {
     allowedItemIds: uniqueStrings(row.allowedItemIds),
     interactionPoints: (Array.isArray(row.interactionPoints) ? row.interactionPoints : []).slice(0, 8).map(normalizeInteractionPoint),
     creditedEntityIds: uniqueStrings(row.creditedEntityIds, 64, 96),
+    approach: ['assault', 'diversion'].includes(String(row.approach || '').toLowerCase()) ? String(row.approach).toLowerCase() : '',
     participants,
     revision: Math.max(1, Math.floor(Number(row.revision || 1))),
     result: row.result && typeof row.result === 'object' ? { ...row.result } : null,
@@ -295,6 +298,53 @@ function createDistressSignal(options = {}) {
   return activity;
 }
 
+function createAssaultDiversion(options = {}) {
+  const now = Math.max(0, Number(options.now || Date.now()));
+  const points = (Array.isArray(options.interactionPoints) ? options.interactionPoints : [])
+    .slice(0, 8)
+    .map(normalizeInteractionPoint);
+  const targetKills = Math.max(3, Math.floor(Number(options.targetKills || 5)));
+  const bonusKills = Math.max(targetKills, Math.floor(Number(options.bonusKills || 7)));
+  const maxKills = Math.max(bonusKills, Math.floor(Number(options.maxKills || 9)));
+  const sabotagePoints = Math.max(1, points.filter(point => point.id.startsWith('sabotage_')).length);
+  const targetSabotage = Math.min(sabotagePoints, Math.max(1, Math.floor(Number(options.targetSabotage || 3))));
+  const bonusSabotage = Math.min(sabotagePoints, Math.max(targetSabotage, Math.floor(Number(options.bonusSabotage || 4))));
+  const taskId = safeId(options.taskId, `operation_task_${now}`);
+  const activity = normalizeWorldActivity({
+    id: safeId(options.id, `activity_${taskId}`),
+    kind: WORLD_ACTIVITY_KIND_ASSAULT_DIVERSION,
+    taskId,
+    roomId: options.roomId,
+    locationId: options.locationId,
+    siteId: options.siteId,
+    title: options.title || 'Штурм или диверсия',
+    status: 'active',
+    startedAt: now,
+    durationMs: Math.max(4 * 60 * 1000, Number(options.durationMs || 8 * 60 * 1000)),
+    threat: 0,
+    interactionPoints: points,
+    creditedEntityIds: [],
+    approach: '',
+    objectives: [{
+      id: 'approach', type: 'choice', label: 'Выбрать подход', current: 0,
+      target: 1, bonusTarget: 1, maxTarget: 1, required: true
+    }, {
+      id: 'attackers', type: 'assault', label: 'Сломить защитников', current: 0,
+      target: targetKills, bonusTarget: bonusKills, maxTarget: maxKills, required: false
+    }, {
+      id: 'sabotage', type: 'interact', label: 'Вывести объекты из строя', current: 0,
+      target: targetSabotage, bonusTarget: bonusSabotage, maxTarget: sabotagePoints, required: false
+    }],
+    participants: [],
+    revision: 1
+  }, now);
+  for (const point of activity.interactionPoints) {
+    if (point.id.startsWith('sabotage_')) point.status = 'locked';
+  }
+  activity.phase = 'planning';
+  return activity;
+}
+
 function recordWorldActivityParticipant(activity, data = {}) {
   if (!activity || !WORLD_ACTIVITY_ACTIVE_STATUSES.has(activity.status)) return false;
   const participant = normalizeParticipant(data, activity.participants.length);
@@ -366,6 +416,81 @@ function applyWorldActivityHarvest(activity, data = {}) {
 
 function applyWorldActivityInteraction(activity, data = {}) {
   if (!activity || !WORLD_ACTIVITY_ACTIVE_STATUSES.has(activity.status)) return { changed: false, reason: 'inactive' };
+  if (activity.kind === WORLD_ACTIVITY_KIND_ASSAULT_DIVERSION) {
+    const pointId = safeId(data.pointId || data.objectivePointId);
+    const point = activity.interactionPoints.find(row => row.id === pointId);
+    if (!point || point.status !== 'pending') return { changed: false, reason: 'point_unavailable' };
+    const now = Math.max(activity.startedAt, Number(data.now || Date.now()));
+    const previousTier = activity.threatTier;
+    let credited = 0;
+    if (!activity.approach) {
+      const approach = pointId === 'approach_assault'
+        ? 'assault'
+        : pointId === 'approach_diversion' ? 'diversion' : '';
+      if (!approach) return { changed: false, reason: 'choose_approach' };
+      activity.approach = approach;
+      point.status = 'completed';
+      point.completedAt = now;
+      for (const candidate of activity.interactionPoints) {
+        if (candidate.id.startsWith('approach_') && candidate.id !== pointId) candidate.status = 'disabled';
+        if (candidate.id.startsWith('sabotage_')) candidate.status = approach === 'diversion' ? 'pending' : 'disabled';
+      }
+      const routeObjective = activity.objectives.find(row => row.id === 'approach');
+      const branchObjective = activity.objectives.find(row => row.id === (approach === 'assault' ? 'attackers' : 'sabotage'));
+      if (routeObjective) {
+        routeObjective.current = 1;
+        routeObjective.status = 'mastered';
+      }
+      if (branchObjective) branchObjective.required = true;
+      activity.phase = approach === 'assault' ? 'assaulting' : 'sabotaging';
+      activity.threat = approach === 'assault' ? 25 : 0;
+      credited = 1;
+    } else {
+      if (activity.approach !== 'diversion' || !pointId.startsWith('sabotage_')) {
+        return { changed: false, reason: 'wrong_approach' };
+      }
+      const objective = activity.objectives.find(row => row.id === 'sabotage');
+      if (!objective || objective.current >= objective.maxTarget) return { changed: false, reason: 'no_progress' };
+      point.status = 'completed';
+      point.completedAt = now;
+      objective.current = Math.min(objective.maxTarget, objective.current + 1);
+      objective.status = objective.current >= objective.maxTarget
+        ? 'mastered'
+        : objective.current >= objective.bonusTarget
+          ? 'bonus'
+          : objective.current >= objective.target ? 'completed' : 'active';
+      activity.threat = clamp(activity.threat + 15, 0, 100);
+      credited = 1;
+    }
+    activity.threatTier = worldActivityThreatTier(activity.threat);
+    recordWorldActivityParticipant(activity, {
+      ...data,
+      contributed: 0,
+      joinedAt: now,
+      lastActiveAt: now
+    });
+    const participantKey = String(data.characterId || data.userId || data.socketId || '');
+    const participant = activity.participants.find(row => row.key === participantKey);
+    if (participant) participant.contributed += credited;
+    const requiredComplete = activity.objectives
+      .filter(row => row.required)
+      .every(row => row.current >= row.target);
+    if (requiredComplete) {
+      activity.status = 'extracting';
+      activity.phase = 'extraction';
+      activity.extractionOpen = true;
+    }
+    activity.revision += 1;
+    return {
+      changed: true,
+      pointId,
+      approach: activity.approach,
+      threatTierAdvanced: activity.threatTier > previousTier,
+      previousThreatTier: previousTier,
+      threatTier: activity.threatTier,
+      extractionOpened: activity.extractionOpen
+    };
+  }
   const recon = activity.kind === WORLD_ACTIVITY_KIND_RECON_EXPEDITION;
   const distress = activity.kind === WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL;
   if (!recon && !distress) return { changed: false, reason: 'wrong_kind' };
@@ -419,7 +544,9 @@ function applyWorldActivityInteraction(activity, data = {}) {
 
 function applyWorldActivityEnemyKill(activity, data = {}) {
   if (!activity || !WORLD_ACTIVITY_ACTIVE_STATUSES.has(activity.status)) return { changed: false, reason: 'inactive' };
-  if (![WORLD_ACTIVITY_KIND_OUTPOST_DEFENSE, WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL].includes(activity.kind)) {
+  const assaultOperation = activity.kind === WORLD_ACTIVITY_KIND_ASSAULT_DIVERSION && activity.approach === 'assault';
+  if (![WORLD_ACTIVITY_KIND_OUTPOST_DEFENSE, WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL].includes(activity.kind)
+    && !assaultOperation) {
     return { changed: false, reason: 'wrong_kind' };
   }
   const enemyId = safeId(data.enemyId || data.entityId);
@@ -546,6 +673,7 @@ function publicWorldActivity(activity) {
     participantCount: activity.participants.length,
     participantNames: uniqueStrings(activity.participants.map(row => row.name), 8, 48),
     interactionPoints: activity.interactionPoints.map(point => ({ id: point.id, label: point.label, x: point.x, z: point.z, status: point.status })),
+    approach: activity.approach,
     revision: activity.revision,
     result: activity.result ? {
       grade: String(activity.result.grade || '').slice(0, 24),
@@ -567,10 +695,12 @@ module.exports = {
   WORLD_ACTIVITY_KIND_RECON_EXPEDITION,
   WORLD_ACTIVITY_KIND_OUTPOST_DEFENSE,
   WORLD_ACTIVITY_KIND_DISTRESS_SIGNAL,
+  WORLD_ACTIVITY_KIND_ASSAULT_DIVERSION,
   createResourceExpedition,
   createReconExpedition,
   createOutpostDefense,
   createDistressSignal,
+  createAssaultDiversion,
   normalizeWorldActivity,
   publicWorldActivity,
   recordWorldActivityParticipant,

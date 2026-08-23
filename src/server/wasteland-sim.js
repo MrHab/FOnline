@@ -2273,6 +2273,7 @@ function createWastelandSimulation(options = {}) {
     if (type === 'recon_expedition') return { xp: 75 + Math.round(danger * 16 + p * 10), caps: 40 + Math.round(danger * 8 + p * 8), reputation: 1 };
     if (type === 'outpost_defense') return { xp: 95 + Math.round(danger * 20 + p * 12), caps: 52 + Math.round(danger * 11 + p * 9), reputation: 2 };
     if (type === 'distress_signal') return { xp: 90 + Math.round(danger * 18 + p * 11), caps: 48 + Math.round(danger * 10 + p * 8), reputation: 2 };
+    if (type === 'assault_diversion') return { xp: 115 + Math.round(danger * 22 + p * 14), caps: 65 + Math.round(danger * 13 + p * 11), reputation: 3 };
     if (type === 'deliver_supplies') return { xp: 55 + Math.round(p * 10), caps: 28 + Math.round(p * 7), reputation: 1 };
     if (type === 'escort_caravan') return { xp: 90 + Math.round(p * 12), caps: 55 + Math.round(danger * 10 + p * 14), reputation: 2 };
     if (type === 'join_patrol') return { xp: 80 + Math.round(p * 14), caps: 42 + Math.round(p * 10), reputation: 2 };
@@ -2659,6 +2660,53 @@ function createWastelandSimulation(options = {}) {
           bonusKills,
           maxKills,
           durationSeconds: 360
+        }
+      });
+      if (task) created.push(task);
+    }
+    return [...active, ...created];
+  }
+
+  function ensureAssaultDiversionTasks() {
+    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'assault_diversion');
+    const totalActive = state.worldTasks.filter(task => task?.status === 'active').length;
+    const openSlots = Math.max(0, Math.min(1 - active.length, MAX_WORLD_TASK_COUNT - totalActive));
+    if (openSlots <= 0) return active;
+    const activeSiteIds = new Set(active.map(task => String(task.siteId || '')).filter(Boolean));
+    const sites = Object.values(state.sites || {})
+      .filter(site => site
+        && !site.districtInterest
+        && siteTypeKey(site) === 'lair'
+        && worldSiteLocationId(site)
+        && !activeSiteIds.has(String(site.id || '')))
+      .sort((left, right) => (
+        Number(right.danger || 0) - Number(left.danger || 0)
+        || String(left.id || '').localeCompare(String(right.id || ''))
+      ));
+    const created = [];
+    for (const site of sites.slice(0, openSlots)) {
+      const priority = clamp(2 + Math.round(Number(site.danger || 0) / 2), 2, 5);
+      const task = createWorldTask('assault_diversion', {
+        key: `assault_diversion:${site.id}`,
+        title: `Операция: ${site.name}`,
+        text: `Выберите подход к ${site.name}: прямой штурм с усиленными волнами или диверсия на трёх объектах. Четвёртый объект или полная зачистка дают повышенную награду.`,
+        siteId: site.id,
+        objective: 'assault_diversion',
+        durationHours: 24,
+        priority,
+        reward: rewardForWorldTask('assault_diversion', site, priority),
+        details: {
+          activityKind: 'assault_diversion',
+          x: Number(site.x || 0),
+          y: Number(site.y || 0),
+          locationId: worldSiteLocationId(site),
+          targetKills: 5,
+          bonusKills: 7,
+          maxKills: 9,
+          targetSabotage: 3,
+          bonusSabotage: 4,
+          sabotagePoints: 4,
+          durationSeconds: 480
         }
       });
       if (task) created.push(task);
@@ -5011,7 +5059,7 @@ function createWastelandSimulation(options = {}) {
     const id = String(taskId || '').trim();
     const task = state.worldTasks.find(row => row && String(row.id || '') === id);
     if (!task || task.status !== 'active') return { ok: false, error: 'Задание уже недоступно.' };
-    const supportedTypes = new Set(['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal']);
+    const supportedTypes = new Set(['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal', 'assault_diversion']);
     if (!supportedTypes.has(task.type)) return { ok: false, error: 'Это задание нельзя закрыть эвакуацией.' };
     const site = task.siteId ? state.sites[task.siteId] : null;
     if (!site) return { ok: false, error: 'Точка вылазки больше не найдена.' };
@@ -5019,6 +5067,10 @@ function createWastelandSimulation(options = {}) {
       ? String(data.grade).toLowerCase()
       : 'completed';
     const rewardMultiplier = grade === 'mastered' ? 1.5 : grade === 'bonus' ? 1.25 : 1;
+    const approach = ['assault', 'diversion'].includes(String(data.approach || '').toLowerCase()) ? String(data.approach).toLowerCase() : '';
+    if (task.type === 'assault_diversion' && !approach) {
+      return { ok: false, error: 'Подход к операции не выбран.' };
+    }
     task.reward = {
       ...(task.reward && typeof task.reward === 'object' ? task.reward : {}),
       xp: Math.round(Math.max(0, Number(task.reward?.xp || 0)) * rewardMultiplier),
@@ -5046,17 +5098,24 @@ function createWastelandSimulation(options = {}) {
       site.security = clamp(Number(site.security || siteDefaultSecurity(site)) + 3 + (grade === 'mastered' ? 2 : grade === 'bonus' ? 1 : 0), 0, 100);
       site.distressResolvedUntil = Math.max(Number(site.distressResolvedUntil || 0), Number(state.worldHour || 0) + 24);
       site.lastRescueHour = Number(state.worldHour || 0);
+    } else if (activityKind === 'assault_diversion') {
+      site.danger = clamp(Number(site.danger || 0) - (approach === 'assault' ? 1 : 2), 0, 5);
+      site.security = clamp(Number(site.security || siteDefaultSecurity(site)) - (approach === 'assault' ? 4 : 8), 0, 100);
+      site.supplyDisruptedUntil = Math.max(Number(site.supplyDisruptedUntil || 0), Number(state.worldHour || 0) + (approach === 'diversion' ? 24 : 12));
+      site.lastOperationHour = Number(state.worldHour || 0);
     }
     const finished = finishWorldTask(task, 'completed', 'player_activity_extraction', {
       activityKind,
       activityGrade: grade,
       rewardCharacterIds,
       objectiveCurrent: Math.max(0, Math.floor(Number(data.objectiveCurrent || 0))),
+      ...(approach ? { approach } : {}),
       extractedHour: Number(Number(state.worldHour || 0).toFixed(2))
     });
     const activityLabel = activityKind === 'recon_expedition'
       ? 'разведка завершена'
       : activityKind === 'distress_signal' ? 'сигнал бедствия обработан'
+      : activityKind === 'assault_diversion' ? `операция завершена (${approach})`
       : activityKind === 'outpost_defense' ? 'нападение отражено' : 'вылазка завершена';
     addEvent(`${activityKind}_completed`, `${site.name}: ${activityLabel} (${grade}).`, {
       taskId: id,
@@ -9461,6 +9520,7 @@ function createWastelandSimulation(options = {}) {
     ensureReconExpeditionTasks();
     ensureOutpostDefenseTasks();
     ensureDistressSignalTasks();
+    ensureAssaultDiversionTasks();
     createResourceExportCaravans(hours);
     advanceFactionProduction(hours);
     produceAtSettlements(hours);
@@ -11374,6 +11434,7 @@ function createWastelandSimulation(options = {}) {
   ensureReconExpeditionTasks();
   ensureOutpostDefenseTasks();
   ensureDistressSignalTasks();
+  ensureAssaultDiversionTasks();
   save(true);
 
   return {

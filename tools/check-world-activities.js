@@ -12,6 +12,7 @@ const {
   createReconExpedition,
   createOutpostDefense,
   createDistressSignal,
+  createAssaultDiversion,
   publicWorldActivity,
   applyWorldActivityHarvest,
   applyWorldActivityInteraction,
@@ -195,6 +196,52 @@ function checkDistressSignalRuntime() {
   const publicJson = JSON.stringify(publicWorldActivity(activity));
   assert(!publicJson.includes('rescuer_character'), 'public distress activity leaked a character id');
 }
+function operationPoints() {
+  return [
+    { id: 'approach_assault', label: 'Штурм', x: 0, z: 0 },
+    { id: 'approach_diversion', label: 'Диверсия', x: 10, z: 0 },
+    ...Array.from({ length: 4 }, (_, index) => ({
+      id: `sabotage_${index + 1}`, label: `Объект ${index + 1}`, x: index * 5, z: 10, status: 'locked'
+    }))
+  ];
+}
+
+function checkAssaultDiversionRuntime() {
+  const startedAt = 5_000_000;
+  const assault = createAssaultDiversion({
+    taskId: 'task_operation_assault', interactionPoints: operationPoints(),
+    targetKills: 3, bonusKills: 4, maxKills: 5, now: startedAt
+  });
+  assert.strictEqual(assault.approach, '');
+  const selected = applyWorldActivityInteraction(assault, {
+    pointId: 'approach_assault', characterId: 'stormer', name: 'Штурмовик', now: startedAt + 1000
+  });
+  assert.strictEqual(selected.approach, 'assault');
+  assert.strictEqual(assault.threatTier, 1);
+  assert(assault.interactionPoints.filter(point => point.id.startsWith('sabotage_')).every(point => point.status === 'disabled'));
+  for (let index = 1; index <= 3; index += 1) applyWorldActivityEnemyKill(assault, {
+    enemyId: `guard_${index}`, characterId: 'stormer', name: 'Штурмовик', now: startedAt + 1000 + index * 1000
+  });
+  assert.strictEqual(assault.extractionOpen, true);
+  assert.strictEqual(extractWorldActivity(assault, { characterId: 'stormer', now: startedAt + 6000 }).grade, 'completed');
+
+  const diversion = createAssaultDiversion({
+    taskId: 'task_operation_diversion', interactionPoints: operationPoints(),
+    targetSabotage: 3, bonusSabotage: 4, now: startedAt
+  });
+  applyWorldActivityInteraction(diversion, {
+    pointId: 'approach_diversion', characterId: 'saboteur', name: 'Диверсант', now: startedAt + 1000
+  });
+  assert.strictEqual(diversion.approach, 'diversion');
+  assert.strictEqual(diversion.interactionPoints.find(point => point.id === 'approach_assault').status, 'disabled');
+  for (let index = 1; index <= 4; index += 1) applyWorldActivityInteraction(diversion, {
+    pointId: `sabotage_${index}`, characterId: 'saboteur', name: 'Диверсант', now: startedAt + 1000 + index * 1000
+  });
+  assert.strictEqual(diversion.extractionOpen, true);
+  assert.strictEqual(diversion.objectives.find(row => row.id === 'sabotage').status, 'mastered');
+  assert.strictEqual(extractWorldActivity(diversion, { characterId: 'saboteur', now: startedAt + 7000 }).grade, 'mastered');
+}
+
 function checkSimulationContract() {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'realm-world-activities-'));
   try {
@@ -243,6 +290,17 @@ function checkSimulationContract() {
     });
     assert.strictEqual(distressResult?.ok, true, distressResult?.error || 'distress signal completion failed');
     assert.strictEqual(distressResult.task.details.activityKind, 'distress_signal');
+    const operationTask = sim.state().worldTasks.find(row => row?.status === 'active' && row.type === 'assault_diversion');
+    assert(operationTask, 'simulation did not seed an assault/diversion operation');
+    const rewardBeforeRejectedCompletion = JSON.stringify(operationTask.reward);
+    const rejectedOperation = sim.completeWorldActivityTask(operationTask.id, { grade: 'mastered' });
+    assert.strictEqual(rejectedOperation.ok, false, 'operation without an approach must be rejected');
+    assert.strictEqual(JSON.stringify(operationTask.reward), rewardBeforeRejectedCompletion, 'rejected operation mutated its reward');
+    const operationResult = sim.completeWorldActivityTask(operationTask.id, {
+      grade: 'completed', approach: 'diversion', objectiveCurrent: 4, rewardCharacterIds: ['saboteur']
+    });
+    assert.strictEqual(operationResult?.ok, true, operationResult?.error || 'operation completion failed');
+    assert.strictEqual(operationResult.task.details.approach, 'diversion');
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -252,5 +310,6 @@ checkRuntime();
 checkReconRuntime();
 checkOutpostDefenseRuntime();
 checkDistressSignalRuntime();
+checkAssaultDiversionRuntime();
 checkSimulationContract();
 console.log('World activities OK: collection, recon, defense waves, extraction, rewards and redaction');

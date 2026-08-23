@@ -199,9 +199,7 @@ namespace RealmOfAshes.Game
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 40; // выше HUD (30)
             var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            RoaUiScale.Apply(scaler);
 
             // Затемнение мира: web даёт box-shadow 0 0 0 9999px rgba(0,0,0,.46).
             _root = new GameObject("PipboyWindow", typeof(RectTransform));

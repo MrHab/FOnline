@@ -7,6 +7,7 @@
     "start": "node server.js",
     "start:preview": "node -e \"const path=require('path'),os=require('os');process.env.DATA_DIR=process.env.DATA_DIR||path.join(os.tmpdir(),'realm-of-ashes-preview');require('./server.js')\"",
     "start:unity-assets": "node tools/serve-unity-assets.js",
+    "build:models-lite": "node tools/optimize-glb.js",
     "build:colliders": "node tools/build-model-colliders.js",
     "build:stations": "node tools/build-wasteland-models.js craft_station_ammo craft_station_weapon craft_station_tools craft_station_repair craft_station_energy craft_station_chem && node tools/build-model-colliders.js",
     "build:weapons": "node tools/build-weapon-runtime-models.js",
@@ -80,6 +81,10 @@
     "three": "0.125.2"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.4.2",
+    "@gltf-transform/extensions": "^4.4.2",
+    "@gltf-transform/functions": "^4.4.2",
+    "sharp": "^0.35.3",
     "socket.io-client": "4.8.3"
   }
 }

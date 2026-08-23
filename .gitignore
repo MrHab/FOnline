@@ -60,3 +60,6 @@ unity-client/Tools/*/obj/
 
 # Unity WebGL-сборка кладётся сюда при деплое, в репозиторий не входит.
 public/unity/
+
+# Облегчённые копии GLB (npm run build:models-lite), генерируются при деплое.
+public/assets/models-lite/

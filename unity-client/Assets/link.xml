@@ -1,0 +1,17 @@
+<!-- Защита от стрипинга: компоненты добавляются из кода (AddComponent), JSON читается
+     через Newtonsoft с рефлексией — линкер этого не видит. -->
+<linker>
+  <assembly fullname="UnityEngine.PhysicsModule" preserve="all" />
+  <assembly fullname="UnityEngine.UIModule" preserve="all" />
+  <assembly fullname="UnityEngine.IMGUIModule" preserve="all" />
+  <assembly fullname="UnityEngine.AnimationModule" preserve="all" />
+  <assembly fullname="UnityEngine.TextRenderingModule" preserve="all" />
+  <assembly fullname="UnityEngine.UnityWebRequestModule" preserve="all" />
+  <assembly fullname="UnityEngine.UnityWebRequestTextureModule" preserve="all" />
+  <assembly fullname="UnityEngine.ImageConversionModule" preserve="all" />
+  <assembly fullname="UnityEngine.UI" preserve="all" />
+  <assembly fullname="Newtonsoft.Json" preserve="all" />
+  <assembly fullname="Assembly-CSharp" preserve="all" />
+  <assembly fullname="glTFast" preserve="all" />
+  <assembly fullname="glTFast.Newtonsoft" preserve="all" />
+</linker>

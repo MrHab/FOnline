@@ -28,9 +28,9 @@ namespace RealmOfAshes.EditorTools
             string output = OutputDirectory;
             Directory.CreateDirectory(output);
 
-            // Gzip + fallback: сервер шлёт Content-Encoding, а если хостинг этого не умеет —
-            // загрузчик Unity распакует сам. Brotli требует https, gzip работает и по http.
-            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+            // Brotli + fallback: по https браузер распаковывает сам (сервер шлёт Content-Encoding: br),
+            // по http или на хостинге без заголовка — распакует загрузчик Unity.
+            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
             PlayerSettings.WebGL.decompressionFallback = true;
             PlayerSettings.WebGL.dataCaching = true;
             PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.ExplicitlyThrownExceptionsOnly;
@@ -39,9 +39,11 @@ namespace RealmOfAshes.EditorTools
             PlayerSettings.WebGL.maximumMemorySize = 2048;
             PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.Geometric;
             PlayerSettings.runInBackground = true;
-            // Компоненты (CharacterController, коллайдеры) добавляются из кода, а не из сцены —
-            // стрипинг движка их вырезал («class 'SphereCollider' doesn't exist»).
-            PlayerSettings.stripEngineCode = false;
+            // Стрипинг движка и managed-кода включён; то, что добавляется из кода или читается
+            // рефлексией (коллайдеры, Newtonsoft, glTFast), защищено Assets/link.xml.
+            PlayerSettings.stripEngineCode = true;
+            PlayerSettings.SetManagedStrippingLevel(UnityEditor.Build.NamedBuildTarget.WebGL, ManagedStrippingLevel.Medium);
+            PlayerSettings.SplashScreen.show = false; // логотип Unity — 2,7 МБ в данных
             // Имена файлов — хэши содержимого: кеш браузера и IndexedDB-кеш Unity никогда не
             // смешают framework/wasm разных сборок (иначе LinkError при обновлении).
             PlayerSettings.WebGL.nameFilesAsHashes = true;

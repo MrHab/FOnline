@@ -67,6 +67,8 @@
         productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
         showBanner: unityShowBanner
       };
+      // На телефонах рендер в полном DPR (2–3×) слишком дорог: ограничиваем 1.5, как делают мобильные WebGL-игры.
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
       var script = document.createElement("script");
       script.src = buildUrl + "/{{{ LOADER_FILENAME }}}";
       script.onload = function () {

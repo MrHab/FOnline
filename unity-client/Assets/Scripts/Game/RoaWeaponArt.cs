@@ -67,7 +67,7 @@ namespace RealmOfAshes.Game
             string url = BaseUrl.TrimEnd('/') + "/assets/models/weapons/weapon_" + weaponId + ".glb";
             var import = new GltfImport();
 
-            if (!await import.Load(url))
+            if (!await import.Load(RoaModelUrl.Lite(url)))
             {
                 // Нет модели — нет арта; консоль переживёт, но след в логе обязателен.
                 Debug.LogWarning("[ROA] Арт оружия не загрузился: " + url);

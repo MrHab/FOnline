@@ -213,9 +213,7 @@ namespace RealmOfAshes.Game
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 58; // над окнами (42–48), под системными (60+)
             var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            RoaUiScale.Apply(scaler);
             _canvasRect = (RectTransform)canvasGo.transform;
 
             // #tooltip: max-width 280, padding 9/10, pointer-events none.

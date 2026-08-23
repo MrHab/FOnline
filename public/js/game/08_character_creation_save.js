@@ -534,9 +534,15 @@
         beforeRevealProgress: 90,
         beforeReveal: async () => {
           markStartup('network-join-started');
-          const networkReady = await connectMultiplayer({ waitForJoin: true, timeoutMs: 4500 });
+          const networkReady = typeof joinServerWithRetry === 'function'
+            ? await joinServerWithRetry({ markStartup })
+            : await connectMultiplayer({ waitForJoin: true, timeoutMs: 4500 });
           markStartup('network-join-finished', { ok: networkReady !== false });
           if (networkReady === false) {
+            // Причину забираем до сброса сессии, иначе она затрёт настоящую.
+            const failureText = typeof serverJoinFailureText === 'function'
+              ? serverJoinFailureText()
+              : 'Не удалось создать игровую сессию персонажа.';
             gameStarted = false;
             activeCharacterLeaseId = '';
             if (typeof invalidateMultiplayerSessionContext === 'function') {
@@ -548,7 +554,7 @@
               multiplayer.joinRequested = false;
               if (multiplayer.socket) { try { multiplayer.socket.disconnect(); } catch (_) {} multiplayer.socket = null; }
             }
-            throw new Error('Сервер не разрешил создать игровую сессию для персонажа. Попробуйте ещё раз.');
+            throw new Error(failureText);
           }
           // v7.74.67: reveal new character only after the server lease exists.
           hideCharacterCreatorAndStart();
@@ -613,6 +619,9 @@
     }
     const screen = document.getElementById('character-screen');
     if (screen) screen.classList.remove('visible');
+    // Отсюда начинается собственно игра: только теперь имеет смысл грузить
+    // тяжёлые картинки HUD, до этого они занимали очередь запросов.
+    document.body.classList.add('game-running');
     gameStarted = true;
     paused = false;
     const pauseScreen = document.getElementById('pause-screen');

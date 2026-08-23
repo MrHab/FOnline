@@ -1894,15 +1894,26 @@
   // только с перком «Осведомлённость», иначе — словесное состояние.
   const NAMEPLATE_MAX_DISTANCE = 26;
   const NAMEPLATE_HEIGHT = 2.05;
-  const NAMEPLATE_UPDATE_MS = 60;
   const nameplatePool = [];
   let nameplateLayer = null;
-  let nameplateNextUpdateAt = 0;
   const nameplateProjected = new THREE.Vector3();
 
   function nameplateLayerElement() {
     if (nameplateLayer && nameplateLayer.isConnected) return nameplateLayer;
     nameplateLayer = document.getElementById('actor-nameplates');
+    // Раскладку слоя и плашек задаём прямо в элементах, а не только в таблице
+    // стилей: у игрока она может лежать в кэше со старой версией, и тогда
+    // подписи без position сваливаются потоком в левый верхний угол экрана.
+    if (nameplateLayer) {
+      const style = nameplateLayer.style;
+      style.position = 'fixed';
+      style.left = '0';
+      style.top = '0';
+      style.right = '0';
+      style.bottom = '0';
+      style.pointerEvents = 'none';
+      style.overflow = 'hidden';
+    }
     return nameplateLayer;
   }
 
@@ -1912,21 +1923,32 @@
     if (!layer) return null;
     const node = document.createElement('div');
     node.className = 'actor-nameplate';
+    node.style.position = 'absolute';
+    node.style.left = '0';
+    node.style.top = '0';
+    node.style.willChange = 'transform';
+    node.style.whiteSpace = 'nowrap';
+    node.style.textAlign = 'center';
     const name = document.createElement('span');
     name.className = 'plate-name';
     const health = document.createElement('span');
     health.className = 'plate-health';
+    // Перенос строки живёт вместе с именем: у зверья и рядовых врагов имени
+    // нет, и пустая строка над здоровьем поднимала бы плашку над пустотой.
+    const nameBreak = document.createElement('br');
     node.appendChild(name);
-    node.appendChild(document.createElement('br'));
+    node.appendChild(nameBreak);
     node.appendChild(health);
     layer.appendChild(node);
-    const entry = { node, name, health, nameText: '', healthText: '', tone: '', kind: '' };
+    const entry = { node, name, nameBreak, health, nameText: '', healthText: '', tone: '', kind: '' };
     nameplatePool[index] = entry;
     return entry;
   }
 
   function nameplateHealthText(actor) {
-    const aware = typeof talentLevel === 'function' && talentLevel('awareness') > 0;
+    // Своё здоровье игрок знает и без перка — он видит его в панели.
+    const aware = actor?.self === true
+      || (typeof talentLevel === 'function' && talentLevel('awareness') > 0);
     const hp = Math.max(0, Math.ceil(Number(actor?.hp || 0)));
     const maxHp = Math.max(1, Math.ceil(Number(actor?.maxHp || hp || 1)));
     if (aware) return `${hp}/${maxHp}`;
@@ -1942,23 +1964,54 @@
     return '';
   }
 
+  // Роли, ради которых игрок вообще подходит к НПС. Охрана, рабочие и прочая
+  // массовка живут толпами: если подписывать и их, над лагерем встаёт стена
+  // текста вместо мира.
+  const NAMEPLATE_ROLES = new Set(['merchant', 'trader', 'quartermaster', 'shopkeeper']);
+
+  function isNameplateNpc(enemy) {
+    if (!enemy || enemy.canDialogue !== true) return false;
+    if (typeof traderNpc !== 'undefined' && traderNpc && enemy === traderNpc) return true;
+    // Отбор идёт строго по роли. Торговые поля тут не годятся: у охраны и
+    // рабочих стоянки тоже есть traderId, traderProfile и dialogueProfile —
+    // у них можно покупать патроны, — поэтому по ним подписывалась вся толпа.
+    return NAMEPLATE_ROLES.has(String(enemy.role || enemy.encounterRole || '').toLowerCase());
+  }
+
   function collectNameplateActors() {
     const rows = [];
     const px = Number(player?.x || 0);
     const pz = Number(player?.z || 0);
+    // Свой персонаж подписан наравне с остальными: игрок должен видеть, где он
+    // в толпе и что с его здоровьем, не отводя взгляд на панель.
+    if (player) {
+      const drawnSelf = player.mesh?.position;
+      rows.push({
+        name: String(characterProfile?.name || player.name || 'Странник'),
+        hp: player.hp,
+        maxHp: player.maxHp,
+        x: Number(drawnSelf?.x ?? px),
+        z: Number(drawnSelf?.z ?? pz),
+        scale: 1,
+        kind: 'plate-player',
+        self: true
+      });
+    }
     if (Array.isArray(enemies)) {
       for (const enemy of enemies) {
-        // Именные персонажи — те, с кем можно заговорить. Зверьё и рядовые
-        // враги подписей не получают, иначе экран превращается в список.
-        if (!enemy || enemy.dead || enemy._removed || enemy.canDialogue !== true) continue;
+        if (!enemy || enemy.dead || enemy._removed) continue;
         if (!enemy.mesh || enemy.mesh.visible === false) continue;
         if (Math.hypot(Number(enemy.x || 0) - px, Number(enemy.z || 0) - pz) > NAMEPLATE_MAX_DISTANCE) continue;
+        // Здоровье показываем у всех — и у зверья, и у рядовых врагов. Имя
+        // получают только важные персонажи: у массовки имена вида «Караванный
+        // двор Старого Клима: охрана», и стена такого текста закрывает игру.
+        const drawn = enemy.mesh.position;
         rows.push({
-          name: String(enemy.name || ''),
+          name: isNameplateNpc(enemy) ? String(enemy.name || '') : '',
           hp: enemy.hp,
           maxHp: enemy.maxHp,
-          x: Number(enemy.x || 0),
-          z: Number(enemy.z || 0),
+          x: Number(drawn?.x ?? enemy.visualX ?? enemy.x ?? 0),
+          z: Number(drawn?.z ?? enemy.visualZ ?? enemy.z ?? 0),
           scale: Number(enemy.scale || 1),
           kind: enemy.hostileToPlayer === false ? '' : 'plate-hostile'
         });
@@ -1969,8 +2022,9 @@
       remote.forEach(row => {
         const data = row?.data || {};
         if (!row?.group || row.group.visible === false) return;
-        const x = Number(row.visualX ?? data.x ?? 0);
-        const z = Number(row.visualZ ?? data.z ?? 0);
+        const drawn = row.group.position;
+        const x = Number(drawn?.x ?? row.visualX ?? data.x ?? 0);
+        const z = Number(drawn?.z ?? row.visualZ ?? data.z ?? 0);
         if (Math.hypot(x - px, z - pz) > NAMEPLATE_MAX_DISTANCE) return;
         rows.push({
           name: String(data.name || 'Игрок'),
@@ -1989,10 +2043,6 @@
   function updateHpBars() {
     const layer = nameplateLayerElement();
     if (!layer || typeof camera === 'undefined' || !camera) return;
-    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    if (now < nameplateNextUpdateAt) return;
-    nameplateNextUpdateAt = now + NAMEPLATE_UPDATE_MS;
-
     const rows = collectNameplateActors();
     const rect = canvas.getBoundingClientRect();
     let used = 0;
@@ -2009,6 +2059,10 @@
       if (entry.nameText !== row.name) {
         entry.name.textContent = row.name;
         entry.nameText = row.name;
+        // Без имени плашка сжимается до одной строки со здоровьем.
+        const nameDisplay = row.name ? 'inline' : 'none';
+        entry.name.style.display = nameDisplay;
+        entry.nameBreak.style.display = nameDisplay;
       }
       if (entry.healthText !== healthText) {
         entry.health.textContent = healthText;
@@ -2017,8 +2071,7 @@
       const tone = nameplateTone(row);
       const className = `actor-nameplate ${row.kind} ${tone}`.replace(/\s+/g, ' ').trim();
       if (entry.node.className !== className) entry.node.className = className;
-      entry.node.style.left = `${Math.round(left)}px`;
-      entry.node.style.top = `${Math.round(top)}px`;
+      entry.node.style.transform = `translate3d(${left.toFixed(2)}px, ${top.toFixed(2)}px, 0) translate(-50%, -100%)`;
       if (entry.node.style.display !== 'block') entry.node.style.display = 'block';
     }
     for (let index = used; index < nameplatePool.length; index += 1) {

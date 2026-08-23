@@ -439,7 +439,7 @@
           clientInstanceId: String(getClientInstanceId() || '')
         };
     if (!socket || !socket.connected || !serverSession.token || !selectedServerCharacterId || !characterProfile) {
-      resolveMultiplayerJoinWaiters(false);
+      resolveMultiplayerJoinWaiters(false, { reason: socket && socket.connected ? 'session' : 'offline' });
       return Promise.resolve(false);
     }
     if (multiplayerJoinedContextMatchesCurrent(socket)) {
@@ -556,7 +556,7 @@
       if (typeof setClientAuthorityMode === 'function') {
         setClientAuthorityMode('blocked', 'join-timeout', { force: true, clearWorld: true });
       }
-      resolveMultiplayerJoinWaiters(false);
+      resolveMultiplayerJoinWaiters(false, { reason: socket.connected ? 'timeout' : 'offline' });
       setOnlineStatus('Сеть: сервер не подтвердил вход в игровую сессию');
       if (multiplayerSocketGenerationMatches(socket, socketGeneration)
         && typeof socket.disconnect === 'function'
@@ -613,7 +613,12 @@
         }
         resetNetworkPingMeasurement('offline');
         try { socket.disconnect(); } catch (_) {}
-        resolveMultiplayerJoinWaiters(false);
+        // Занятость персонажа после обрыва связи временная: сервер снимет
+        // блокировку, как только заметит смерть прошлого сокета.
+        resolveMultiplayerJoinWaiters(false, {
+          reason: joinRejectionIsTemporary(ack?.code) ? 'busy' : 'rejected',
+          message: msg
+        });
         return;
       }
       multiplayer.transportState = 'joined';
@@ -653,6 +658,7 @@
       (ack.players || []).forEach(p => upsertRemotePlayer(p, { source: 'join', forceSnap: true }));
       initWorldSyncFromServer(ack.worldState);
       resolveMultiplayerJoinWaiters(true);
+      stopMultiplayerRecovery();
       const locationLabel = currentLocation?.name || ack.locationId || 'Локация';
       setOnlineStatus(`Сеть: ${locationLabel} · игроков в локации: ${(ack.players || []).length + 1}`);
       addLog(`Вы вошли в общую локацию «${locationLabel}». Ограничения количества игроков нет.`, null, 'system');
@@ -660,16 +666,105 @@
     return joinPromise;
   }
 
+  // Восстановление связи после обрыва.
+  //
+  // Раньше выход из этого состояния был один: socket.io сам поднимет
+  // соединение и сокет попросится обратно в комнату. Но если сервер отказывал
+  // — а сразу после обрыва он и отказывает, пока не заметит смерть прошлого
+  // сокета, — попытки прекращались навсегда. Игрок оставался в мире, где на
+  // любое действие отвечает «связь восстанавливается», и уйти оттуда было
+  // нечем. Теперь попытки идут по расписанию, а если срок вышел — игрока
+  // возвращает к выбору персонажа.
+  const RECOVERY_ATTEMPT_DELAYS = [1000, 2500, 5000, 8000, 12000, 15000];
+  const multiplayerRecovery = { timer: null, attempt: 0, active: false };
+
+  function stopMultiplayerRecovery() {
+    if (multiplayerRecovery.timer) {
+      try { clearTimeout(multiplayerRecovery.timer); } catch (_) {}
+      multiplayerRecovery.timer = null;
+    }
+    multiplayerRecovery.active = false;
+    multiplayerRecovery.attempt = 0;
+  }
+
+  function multiplayerRecoveryBudgetMs() {
+    return RECOVERY_ATTEMPT_DELAYS.reduce((sum, value) => sum + value, 0);
+  }
+
+  function beginMultiplayerRecovery() {
+    // Восстанавливать нечего, пока игрок не в мире или не выбран персонаж.
+    if (!gameStarted || !serverSession.token || !selectedServerCharacterId) return false;
+    if (multiplayerRecovery.active) return true;
+    multiplayerRecovery.active = true;
+    multiplayerRecovery.attempt = 0;
+    scheduleMultiplayerRecoveryAttempt();
+    return true;
+  }
+
+  function scheduleMultiplayerRecoveryAttempt() {
+    if (!multiplayerRecovery.active) return;
+    const total = RECOVERY_ATTEMPT_DELAYS.length;
+    if (multiplayerRecovery.attempt >= total) {
+      const seconds = Math.round(multiplayerRecoveryBudgetMs() / 1000);
+      stopMultiplayerRecovery();
+      if (typeof dropToCharacterSelect === 'function') {
+        dropToCharacterSelect(`Связь с сервером не восстановилась за ${seconds} с. Откройте персонажа заново.`);
+      }
+      return;
+    }
+    const delay = RECOVERY_ATTEMPT_DELAYS[multiplayerRecovery.attempt];
+    multiplayerRecovery.attempt += 1;
+    setReadout(`Переподключение к серверу… попытка ${multiplayerRecovery.attempt} из ${total}.`);
+    setOnlineStatus(`Сеть: переподключение ${multiplayerRecovery.attempt}/${total}`);
+    multiplayerRecovery.timer = setTimeout(runMultiplayerRecoveryAttempt, delay);
+  }
+
+  async function runMultiplayerRecoveryAttempt() {
+    multiplayerRecovery.timer = null;
+    if (!multiplayerRecovery.active) return;
+    if (!gameStarted || !serverSession.token || !selectedServerCharacterId) {
+      stopMultiplayerRecovery();
+      return;
+    }
+    if (multiplayer.joined && multiplayerJoinedContextMatchesCurrent(multiplayer.socket)) {
+      stopMultiplayerRecovery();
+      setReadout('Связь с сервером восстановлена.');
+      return;
+    }
+    // Сокет мог быть закрыт отказом сервера: без явного намерения войти он
+    // больше не попросится в комнату сам.
+    multiplayer.joinRequested = true;
+    const joined = await connectMultiplayer({ waitForJoin: true, timeoutMs: 4500 });
+    if (!multiplayerRecovery.active) return;
+    if (joined !== false) {
+      stopMultiplayerRecovery();
+      setReadout('Связь с сервером восстановлена.');
+      return;
+    }
+    // Окончательный отказ сервера повторять бессмысленно: он не рассосётся.
+    const terminal = typeof multiplayerJoinFailureReason === 'function'
+      && ['rejected', 'session'].includes(multiplayerJoinFailureReason());
+    if (terminal) {
+      const text = typeof multiplayerJoinFailureText === 'function'
+        ? multiplayerJoinFailureText()
+        : 'Сервер отказал в возврате в игру.';
+      stopMultiplayerRecovery();
+      if (typeof dropToCharacterSelect === 'function') dropToCharacterSelect(text);
+      return;
+    }
+    scheduleMultiplayerRecoveryAttempt();
+  }
+
   function connectMultiplayer(options = {}) {
     const shouldWaitForJoin = !!(options && options.waitForJoin);
     const prepareOnly = !!(options && options.prepareOnly);
     if (!serverSession.token || (!prepareOnly && (!selectedServerCharacterId || !characterProfile))) {
-      resolveMultiplayerJoinWaiters(false);
+      resolveMultiplayerJoinWaiters(false, { reason: 'session' });
       return shouldWaitForJoin ? Promise.resolve(false) : undefined;
     }
     if (!window.io) {
       setOnlineStatus('Сеть: socket.io не загрузился. Откройте игру через Node-сервер, не через отдельный HTML.');
-      resolveMultiplayerJoinWaiters(false);
+      resolveMultiplayerJoinWaiters(false, { reason: 'offline', message: 'socket.io не загрузился.' });
       return shouldWaitForJoin ? Promise.resolve(false) : undefined;
     }
     if (multiplayer.socket) {
@@ -746,8 +841,9 @@
         setClientAuthorityMode('blocked', 'disconnect', { force: true, clearWorld: true });
       }
       resetNetworkPingMeasurement('offline');
-      resolveMultiplayerJoinWaiters(false);
+      resolveMultiplayerJoinWaiters(false, { reason: 'offline' });
       setOnlineStatus('Сеть: отключено от сервера');
+      beginMultiplayerRecovery();
     });
     socket.on('connect_error', err => {
       if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
@@ -759,8 +855,9 @@
         setClientAuthorityMode('blocked', 'connect-error', { force: true, clearWorld: true });
       }
       resetNetworkPingMeasurement('offline');
-      resolveMultiplayerJoinWaiters(false);
+      resolveMultiplayerJoinWaiters(false, { reason: 'offline' });
       setOnlineStatus(`Сеть: ошибка подключения ${err?.message || ''}`.trim());
+      beginMultiplayerRecovery();
     });
     socket.on('sessionRejected', data => {
       if (!multiplayerSocketGenerationMatches(socket, socketGeneration)) return;
@@ -783,7 +880,16 @@
       // v7.74.67: rejected duplicate tab must not keep a live socket that can
       // reconnect later and take over the character after the real tab closes.
       try { socket.disconnect(); } catch (_) {}
-      resolveMultiplayerJoinWaiters(false);
+      resolveMultiplayerJoinWaiters(false, {
+        reason: joinRejectionIsTemporary(data?.code) ? 'busy' : 'rejected',
+        message: msg
+      });
+      if (joinRejectionIsTemporary(data?.code)) {
+        beginMultiplayerRecovery();
+      } else if (gameStarted && typeof dropToCharacterSelect === 'function') {
+        stopMultiplayerRecovery();
+        dropToCharacterSelect(msg);
+      }
     });
     multiplayer.socket.on('playerJoined', data => upsertRemotePlayer(data, { source: 'join', forceSnap: true }));
     multiplayer.socket.on('playerLeft', data => removeRemotePlayerFromNetworkEvent(data));

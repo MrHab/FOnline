@@ -364,6 +364,7 @@ function joinFsmRuntime() {
   return new Function([
     'const authorityCalls = [];',
     'const waiterResults = [];',
+    'const waiterFailures = [];',
     'const statusLines = [];',
     'const timers = [];',
     'let selectedServerCharacterId = "char-a";',
@@ -415,7 +416,12 @@ function joinFsmRuntime() {
     'function multiplayerInjurySnapshot() { return {}; }',
     'function rememberCurrentSettlementLocation() { return "settlement"; }',
     'function setClientAuthorityMode(mode, reason) { authorityCalls.push({ mode, reason }); multiplayer.authorityMode = mode; }',
-    'function resolveMultiplayerJoinWaiters(ok) { waiterResults.push(!!ok); }',
+    'function resolveMultiplayerJoinWaiters(ok, failure) { waiterResults.push(!!ok); if (failure) waiterFailures.push(failure); }',
+    'function joinRejectionIsTemporary(code) { return ["session-busy", "character-busy"].includes(String(code || "")); }',
+    'function stopMultiplayerRecovery() {}',
+    'function beginMultiplayerRecovery() { return false; }',
+    'function dropToCharacterSelect() { return true; }',
+    'let gameStarted = true;',
     'function resetNetworkPingMeasurement() {}',
     'let appliedStates = 0;',
     'function applyServerAuthoritativePlayerState() { appliedStates += 1; }',
@@ -439,7 +445,7 @@ function joinFsmRuntime() {
     functionSource(socketRoom, 'cancelMultiplayerJoinAttempt'),
     functionSource(socketRoom, 'joinMultiplayerRoom'),
     'return {',
-    '  multiplayer, initialSocket, timers, authorityCalls, waiterResults, statusLines, selectedCharacterCalls,',
+    '  multiplayer, initialSocket, timers, authorityCalls, waiterResults, waiterFailures, statusLines, selectedCharacterCalls,',
     '  join: joinMultiplayerRoom, appliedStates: () => appliedStates, selectedCharacter: () => selectedServerCharacterId,',
     '  fireTimer: (timer, includeCleared = false) => { if (timer && (includeCleared || !timer.cleared)) timer.callback(); },',
     '  rotate: () => {',
@@ -493,6 +499,10 @@ function contextReconnectRuntime() {
     'function getDeviceControlType() { return "keyboard"; }',
     'function cancelMultiplayerJoinAttempt() { multiplayer.joinInFlight = false; }',
     'function resolveMultiplayerJoinWaiters() {}',
+    'function joinRejectionIsTemporary(code) { return ["session-busy", "character-busy"].includes(String(code || "")); }',
+    'function stopMultiplayerRecovery() {}',
+    'function beginMultiplayerRecovery() { return false; }',
+    'function dropToCharacterSelect() { return true; }',
     'function resetNetworkPingMeasurement() {}',
     'function setClientAuthorityMode() {}',
     'function setOnlineStatus() {}',
@@ -608,6 +618,27 @@ async function assertJoinAndCorrectionContracts() {
   assert.strictEqual(remappedRuntime.multiplayer.characterLeaseId, 'lease-remapped');
   assert.strictEqual(remappedRuntime.selectedCharacterCalls.at(-1)?.options?.preserveMultiplayerJoin, true,
     'an accepted server remap must not invalidate its own in-flight socket');
+
+  // Временная занятость после обрыва связи и окончательный отказ должны
+  // приходить наверх разными причинами: первую стоит переждать повтором,
+  // вторую — показать игроку.
+  const busyRuntime = joinFsmRuntime();
+  const busyJoin = busyRuntime.join();
+  busyRuntime.initialSocket.emitted[0].ack({
+    ok: false,
+    code: 'session-busy',
+    error: 'Этот аккаунт уже находится в игре на другом устройстве.'
+  });
+  assert.strictEqual(await busyJoin, false);
+  assert.strictEqual(busyRuntime.waiterFailures.at(-1)?.reason, 'busy',
+    'a lock left over from a dropped connection must be reported as temporary');
+
+  const refusedRuntime = joinFsmRuntime();
+  const refusedJoin = refusedRuntime.join();
+  refusedRuntime.initialSocket.emitted[0].ack({ ok: false, error: 'Сервер отклонил вход.' });
+  assert.strictEqual(await refusedJoin, false);
+  assert.strictEqual(refusedRuntime.waiterFailures.at(-1)?.reason, 'rejected',
+    'a terminal server refusal must not be retried as a temporary lock');
 
   const inconsistentRuntime = joinFsmRuntime();
   const inconsistentJoin = inconsistentRuntime.join();
@@ -2290,7 +2321,6 @@ function assertEnemySnapshotFanout() {
       name: enemy.name,
       hostileToPlayer: viewer ? viewer.hostileEnemyIds.has(enemy.id) : false,
       inventory: [{ id: 'water', qty: enemy.qty }],
-      personality: { label: 'calm', traits: ['patient'] },
       aiState: 'idle',
       dead: false
     };

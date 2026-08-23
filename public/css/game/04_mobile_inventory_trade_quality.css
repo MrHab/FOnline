@@ -79,57 +79,18 @@
 
 
   /* ===== v44 mobile target lock / HUD edit / weapon panel fixes ===== */
+  /* Вид подсказки прицела задан в 21_actor_nameplates.css — тот файл
+     подключён с версией в адресе. Здесь остаётся только то, без чего элемента
+     не существует: у игрока этот файл лежит в кэше со старой версией. */
   #target-hint {
     position: absolute;
     display: none;
     z-index: 12020;
-    min-width: 160px;
-    max-width: 220px;
-    padding: 8px 10px;
-    border-radius: 9px;
-    border: 1px solid rgba(240,198,91,0.58);
-    background: rgba(8,10,10,0.88);
-    color: #d9c28b;
-    font-size: 11px;
-    line-height: 1.25;
     pointer-events: none;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.34), inset 0 0 14px rgba(240,198,91,0.06);
-    text-shadow: 0 1px 1px #000;
   }
-  #target-hint b { color: #f0d28a; font-size: 12px; }
-  /* Шанс попадания выделен ярко-красным: это главное число подсказки. */
-  #target-hint .hit-chance { color: #ff2d1f; font-weight: 900; text-shadow: 0 0 6px rgba(255, 45, 31, 0.55); }
-  #target-hint .hit-good,
-  #target-hint .hit-mid,
-  #target-hint .hit-bad { color: #ff2d1f; font-weight: 900; text-shadow: 0 0 6px rgba(255, 45, 31, 0.55); }
-
-  /* Подписи над моделями: имя и здоровье. Слой не перехватывает указатель. */
-  #actor-nameplates {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 6;
-    overflow: hidden;
-  }
-  .actor-nameplate {
-    position: absolute;
-    transform: translate(-50%, -100%);
-    padding: 1px 6px 2px;
-    border-radius: 5px;
-    background: rgba(9, 14, 10, 0.52);
-    border: 1px solid rgba(126, 158, 108, 0.34);
-    font-size: 11px;
-    line-height: 1.25;
-    text-align: center;
-    white-space: nowrap;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
-  }
-  .actor-nameplate .plate-name { color: #dbe7c8; font-weight: 700; }
-  .actor-nameplate .plate-health { color: #9fd7a0; }
-  .actor-nameplate.plate-player .plate-name { color: #8fd3ff; }
-  .actor-nameplate.plate-hostile .plate-name { color: #f3b58a; }
-  .actor-nameplate.plate-hurt .plate-health { color: #f0c65b; }
-  .actor-nameplate.plate-critical .plate-health { color: #ff6a52; }
+  /* Подписи над моделями и шанс попадания вынесены в 21_actor_nameplates.css:
+     этот файл подключён без версии в адресе, поэтому браузер держит его в кэше
+     месяцами и новые правила до игрока не доезжают. */
   #target-hint .target-note { color: #93a582; }
 
   body.device-mobile #weapon-readout,

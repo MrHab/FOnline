@@ -52,6 +52,8 @@ namespace RealmOfAshes.Game
             { "pickaxecraft", "Инструмент для добычи руды." },
             { "axecraft", "Инструмент для заготовки древесины." },
             { "handpumpcraft", "Инструмент для откачки воды и нефти." },
+            { "weaponpartscraft", "Пружины, штифты и заготовки стволов. Нужны почти для любой модификации оружия." },
+            { "electronicscraft", "Платы и датчики. Нужны для прицелов и энергетических модификаций." },
         };
 
         public static readonly IReadOnlyList<RoaCraftRecipe> Recipes = new[]
@@ -73,7 +75,9 @@ namespace RealmOfAshes.Game
             Recipe("rocketammocraft", "Ракета", "rocketAmmo", 2, "ammo_bench", "ore", 5, "wood", 1, "oil", 1, "silver", 4),
             Recipe("pickaxecraft", "Кирка", "pickaxe", 1, "tool_bench", "ore", 2, "wood", 2),
             Recipe("axecraft", "Топор", "axe", 1, "tool_bench", "ore", 1, "wood", 3),
-            Recipe("handpumpcraft", "Ручной насос", "handPump", 1, "tool_bench", "ore", 3, "wood", 1, "scrap", 2)
+            Recipe("handpumpcraft", "Ручной насос", "handPump", 1, "tool_bench", "ore", 3, "wood", 1, "scrap", 2),
+            Recipe("weaponpartscraft", "Оружейные детали", "weaponParts", 2, "weapon_bench", "ore", 6, "scrap", 5),
+            Recipe("electronicscraft", "Электроника", "electronics", 2, "energy_bench", "scrap", 3, "chemicals", 1)
         };
 
         /// <summary>

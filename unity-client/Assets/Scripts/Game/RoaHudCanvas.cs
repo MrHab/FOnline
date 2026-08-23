@@ -130,9 +130,10 @@ namespace RealmOfAshes.Game
             _playerPanel.SetActive(worldHud && _hud != null && _hud.HasState);
             _mapPanel.SetActive(worldHud && _minimap != null);
             _quickPanel.SetActive(worldHud && _quickbar != null && _quickbar.CanvasVisible);
-            _logPanel.SetActive(worldHud && _combat != null && _combat.LogLines.Count > 0);
+            bool mobile = Application.isMobilePlatform; // web device-mobile: журнал боя и системный журнал скрыты
+            _logPanel.SetActive(worldHud && !mobile && _combat != null && _combat.LogLines.Count > 0);
             _consolePanel.SetActive(worldHud && _hud != null && _hud.HasState);
-            RefreshSystemStatus(worldHud);
+            RefreshSystemStatus(worldHud && !mobile);
             RefreshPlayer();
             RefreshConsole();
             RefreshMinimap();
@@ -163,10 +164,7 @@ namespace RealmOfAshes.Game
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 30;
             CanvasScaler scaler = root.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            RoaUiScale.Apply(scaler);
             _safeRoot = Rect("SafeArea", root.transform, Vector2.zero, Vector2.one,
                              new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
             BuildPlayerPanel();
@@ -175,6 +173,7 @@ namespace RealmOfAshes.Game
             BuildQuickbar();
             BuildSystemStatus();
             BuildCombatLog();
+            if (Application.isMobilePlatform) ApplyMobileLayout();
             if (FindAnyObjectByType<EventSystem>() == null)
             {
                 var events = new GameObject("HudEventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
@@ -357,7 +356,7 @@ namespace RealmOfAshes.Game
         {
             RectTransform rect = PercentRect(name, parent, left, top, width, height);
             Text label = rect.gameObject.AddComponent<Text>();
-            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.font = RoaUiFont.Default;
             label.fontSize = fontSize;
             label.alignment = alignment;
             label.color = color;
@@ -435,6 +434,34 @@ namespace RealmOfAshes.Game
                              TextAnchor.LowerLeft, new Color(0.86f, 0.82f, 0.68f, 0.92f));
             _logText.horizontalOverflow = HorizontalWrapMode.Wrap;
             _logText.verticalOverflow = VerticalWrapMode.Truncate;
+        }
+
+        /// <summary>
+        /// Мобильный ландшафт по web (02_mobile_fullscreen_touch.css, 13:647, 17:197):
+        /// рамка игрока ≈47vw слева сверху, оружейная консоль по центру внизу в
+        /// масштабе 0.66 над зоной джойстика, миникарта меньше, системный журнал и
+        /// лог боя скрыты — место занимают сенсорные кнопки.
+        /// </summary>
+        private void ApplyMobileLayout()
+        {
+            float screenW = RoaUiScale.Reference.x;
+            var player = (RectTransform)_playerPanel.transform;
+            float playerScale = Mathf.Clamp(screenW * 0.47f / 760f, 0.5f, 0.8f);
+            player.localScale = Vector3.one * playerScale;
+            player.anchoredPosition = new Vector2(72f, -6f); // left: 62px web — после левой колонки сенсорных иконок
+
+            var console = (RectTransform)_consolePanel.transform;
+            console.localScale = Vector3.one * 0.66f;
+            console.anchoredPosition = new Vector2(0f, 52f);
+
+            var map = (RectTransform)_mapPanel.transform;
+            map.localScale = Vector3.one * 0.78f;
+            map.anchoredPosition = new Vector2(-70f, -8f); // правее — колонка сенсорных кнопок
+
+            var quick = (RectTransform)_quickPanel.transform;
+            quick.localScale = Vector3.one * 0.7f;
+            quick.anchoredPosition = new Vector2(0f, 290f);
+
         }
 
         private void BuildSystemStatus()
@@ -750,7 +777,7 @@ namespace RealmOfAshes.Game
             RectTransform rect = Rect(name, parent, new Vector2(0f, 1f), new Vector2(0f, 1f),
                                       new Vector2(0f, 1f), position, size);
             Text label = rect.gameObject.AddComponent<Text>();
-            label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.font = RoaUiFont.Default;
             label.fontSize = fontSize;
             label.alignment = alignment;
             label.color = color;

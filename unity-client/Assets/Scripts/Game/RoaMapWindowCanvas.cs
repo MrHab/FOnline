@@ -86,9 +86,7 @@ namespace RealmOfAshes.Game
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 41;
             var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            RoaUiScale.Apply(scaler);
 
             _root = new GameObject("MapWindow", typeof(RectTransform));
             var rootRect = (RectTransform)_root.transform;
@@ -148,7 +146,7 @@ namespace RealmOfAshes.Game
             _playerArrow.pivot = new Vector2(0.5f, 0.5f);
             _playerArrow.sizeDelta = new Vector2(24f, 24f);
             Text arrow = _playerArrow.gameObject.AddComponent<Text>();
-            arrow.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            arrow.font = RoaUiFont.Default;
             arrow.fontSize = 18;
             // Без overflow глиф выше области не рисуется вовсе.
             arrow.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -269,7 +267,7 @@ namespace RealmOfAshes.Game
         {
             RectTransform rect = Child(name, parent);
             var text = rect.gameObject.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = RoaUiFont.Default;
             text.fontSize = size;
             text.alignment = anchor;
             text.color = color;

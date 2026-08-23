@@ -348,7 +348,7 @@ namespace RealmOfAshes.Game
             if (WeaponCache.TryGetValue(key, out cached)) return cached;
 
             var import = new GltfImport();
-            if (!await import.Load(url))
+            if (!await import.Load(RoaModelUrl.Lite(url)))
             {
                 import.Dispose();
                 return null;

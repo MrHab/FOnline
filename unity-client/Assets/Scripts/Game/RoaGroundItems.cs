@@ -402,7 +402,7 @@ namespace RealmOfAshes.Game
         {
             var import = new GltfImport();
             var settings = new ImportSettings { AnimationMethod = AnimationMethod.None };
-            if (await import.Load(url, settings)) return import;
+            if (await import.Load(RoaModelUrl.Lite(url), settings)) return import;
             import.Dispose();
             return null;
         }

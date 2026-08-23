@@ -1180,7 +1180,7 @@ namespace RealmOfAshes.Game
         private static async Task<GltfImport> LoadImport(string url)
         {
             var import = new GltfImport();
-            if (await import.Load(url)) return import;
+            if (await import.Load(RoaModelUrl.Lite(url))) return import;
             import.Dispose();
             ModelCache.Remove(url);
             return null;

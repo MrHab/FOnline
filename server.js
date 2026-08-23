@@ -1498,6 +1498,32 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: JSON_LIMIT }));
 app.use(express.urlencoded({ extended: false, limit: JSON_LIMIT }));
 
+// Основной клиент — Unity WebGL (public/unity/, собирается при деплое: Realm of Ashes → Build WebGL).
+// Пока сборки нет (dev-окружение, CI), корень отдаёт прежний браузерный клиент; он же
+// всегда доступен по /legacy/ как источник правды для check:unity-parity.
+const UNITY_INDEX_FILE = path.join(__dirname, 'public', 'unity', 'index.html');
+const LEGACY_INDEX_FILE = path.join(__dirname, 'public', 'index.html');
+app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  if (fs.existsSync(UNITY_INDEX_FILE)) return res.sendFile(UNITY_INDEX_FILE);
+  return res.sendFile(LEGACY_INDEX_FILE);
+});
+app.get(['/legacy', '/legacy/', '/legacy/index.html'], (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  return res.sendFile(LEGACY_INDEX_FILE);
+});
+
+// Облегчённые GLB (tools/optimize-glb.js → public/assets/models-lite/): если копии нет,
+// отдаётся оригинал из public/assets/models/. Каталог генерируется при деплое, в git не входит.
+app.use('/assets/models-lite', (req, res, next) => {
+  const relative = String(req.path || '').replace(/^\/+/, '');
+  if (!relative || relative.includes('..')) return next();
+  const lite = path.join(__dirname, 'public', 'assets', 'models-lite', relative);
+  if (fs.existsSync(lite)) return next();
+  req.url = '/assets/models/' + relative;
+  return app._router.handle(req, res, next);
+});
+
 // Клиент вынесен в public/index.html, CSS и JS лежат в public/css и public/js.
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: true,
@@ -1505,7 +1531,20 @@ app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders(res) {
     const requestPath = String(res.req?.path || '');
     const versioned = /[?&]v=/.test(String(res.req?.originalUrl || ''));
-    if (requestPath === '/' || requestPath.endsWith('/index.html') || requestPath.endsWith('/js/game.js') || requestPath.endsWith('/css/game.css')) {
+    // Unity WebGL-сборка в public/unity/: предсжатые файлы отдаются с Content-Encoding,
+    // чтобы браузер распаковывал их сам (иначе загрузчик Unity делает это в JS, медленнее).
+    if (requestPath.startsWith('/unity/')) {
+      // Файлы сборки названы хэшами содержимого — можно кешировать навсегда.
+      const immutableBuild = requestPath.startsWith('/unity/Build/');
+      if (requestPath.endsWith('.br')) res.setHeader('Content-Encoding', 'br');
+      else if (requestPath.endsWith('.gz')) res.setHeader('Content-Encoding', 'gzip');
+      // .unityweb (decompressionFallback) — без Content-Encoding: формат распознаёт и распаковывает загрузчик Unity.
+      if (/\.wasm(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/wasm');
+      else if (/\.js(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/javascript');
+      else if (/\.data(\.br|\.gz|\.unityweb)?$/.test(requestPath)) res.setHeader('Content-Type', 'application/octet-stream');
+      if (immutableBuild) { res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); return; }
+    }
+    if (requestPath === '/' || requestPath === '/unity' || requestPath === '/unity/' || requestPath.endsWith('/index.html') || requestPath.endsWith('/js/game.js') || requestPath.endsWith('/css/game.css')) {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (versioned) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');

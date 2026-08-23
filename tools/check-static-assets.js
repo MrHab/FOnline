@@ -179,6 +179,8 @@ for (const file of [
 ]) {
   const source = fs.readFileSync(file, 'utf8');
   for (const ref of collectRefs(file, source)) {
+    // /assets/models-lite — виртуальный маршрут (генерируемые копии GLB с фолбэком на оригинал).
+    if (/^\/assets\/models-lite(\/|$)/.test(ref)) continue;
     serverRefCount += 1;
     const target = publicPathFor(ref, file);
     if (!target.startsWith(publicDir + path.sep) && target !== publicDir) {
@@ -243,7 +245,10 @@ if (missing.length) {
   throw new Error(`Missing static asset reference(s):\n${missing.map(row => `- ${row}`).join('\n')}`);
 }
 
-const assetFiles = walkFiles(path.join(publicDir, 'assets'), [], null);
+// public/assets/models-lite — генерируемые копии GLB (npm run build:models-lite), в git не входят
+// и на них ссылаются по маршруту /assets/models-lite/* с фолбэком на оригинал.
+const assetFiles = walkFiles(path.join(publicDir, 'assets'), [], null)
+  .filter(file => !path.relative(publicDir, file).split(path.sep).includes('models-lite'));
 const emptyAssets = assetFiles
   .filter(file => fs.statSync(file).size === 0)
   .map(file => path.relative(root, file));

@@ -91,9 +91,7 @@ namespace RealmOfAshes.Game
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 31; // над HUD (30), под PIP-ASH (40)
             var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            RoaUiScale.Apply(scaler);
 
             // #caravan-staging-window: top 84px, центр по X, ширина 320, padding 12/14.
             _root = new GameObject("CaravanStagingWindow", typeof(RectTransform));
@@ -197,7 +195,7 @@ namespace RealmOfAshes.Game
         {
             RectTransform rect = Child(name, parent);
             var text = rect.gameObject.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = RoaUiFont.Default;
             text.fontSize = size;
             text.alignment = anchor;
             text.color = color;

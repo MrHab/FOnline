@@ -536,10 +536,16 @@ async function waitForHealth(proc, logs) {
 }
 
 async function assertStaticAssets(health) {
-  const html = await request('/');
-  assertStatus(html, 200, 'GET /');
+  // Корень — Unity WebGL, если сборка есть, иначе прежний клиент; прежний всегда по /legacy/.
+  const rootHtml = await request('/');
+  assertStatus(rootHtml, 200, 'GET /');
+  if (!rootHtml.body.includes('Realm of Ashes')) {
+    fail('root page did not return a client HTML', rootHtml.body.slice(0, 500));
+  }
+  const html = await request('/legacy/');
+  assertStatus(html, 200, 'GET /legacy/');
   if (!html.body.includes('Realm of Ashes')) {
-    fail('root page did not return the client HTML', html.body.slice(0, 500));
+    fail('legacy page did not return the client HTML', html.body.slice(0, 500));
   }
   if (health.version && !html.body.includes(`Realm of Ashes v${health.version}`)) {
     fail('root page version is not synced with /health', html.body.slice(0, 500));

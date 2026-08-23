@@ -92,7 +92,7 @@ namespace RealmOfAshes.Game
             var settings = new ImportSettings { AnimationMethod = AnimationMethod.Legacy };
             var import = new GltfImport();
 
-            if (!await import.Load(baseUrl.TrimEnd('/') + GripUrl, settings))
+            if (!await import.Load(RoaModelUrl.Lite(baseUrl.TrimEnd('/') + GripUrl), settings))
             {
                 Debug.LogError("[ROA] Поза хвата не загрузилась: " + GripUrl);
                 import.Dispose();

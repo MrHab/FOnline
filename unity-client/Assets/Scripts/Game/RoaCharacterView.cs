@@ -538,7 +538,7 @@ namespace RealmOfAshes.Game
             var settings = new ImportSettings { AnimationMethod = AnimationMethod.Legacy };
             var import = new GltfImport();
 
-            if (!await import.Load(url, settings))
+            if (!await import.Load(RoaModelUrl.Lite(url), settings))
             {
                 import.Dispose();
                 return null;
@@ -572,7 +572,7 @@ namespace RealmOfAshes.Game
                 var settings = new ImportSettings { AnimationMethod = AnimationMethod.Legacy };
                 var import = new GltfImport();
 
-                if (await import.Load(baseUrl.TrimEnd('/') + AnimationLibraryUrl, settings))
+                if (await import.Load(RoaModelUrl.Lite(baseUrl.TrimEnd('/') + AnimationLibraryUrl), settings))
                     _animationLibrary = import;
                 else
                     import.Dispose();

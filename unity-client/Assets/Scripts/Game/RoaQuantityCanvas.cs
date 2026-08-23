@@ -68,9 +68,7 @@ namespace RealmOfAshes.Game
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 48; // над торговлей/хранилищем (42), под системными окнами
             var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            RoaUiScale.Apply(scaler);
 
             _root = new GameObject("QuantitySidePanel", typeof(RectTransform));
             var root = (RectTransform)_root.transform;
@@ -226,7 +224,7 @@ namespace RealmOfAshes.Game
         {
             RectTransform rect = Child(name, parent);
             var text = rect.gameObject.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = RoaUiFont.Default;
             text.fontSize = size;
             text.alignment = anchor;
             text.color = color;

@@ -57,3 +57,10 @@ unity-client/Tools/*/obj/
 
 # Локальная конфигурация MCP (пути конкретной машины).
 .mcp.json
+
+# Unity WebGL-сборка кладётся сюда при деплое, в репозиторий не входит.
+public/unity/
+
+# Облегчённые копии GLB (npm run build:models-lite), генерируются при деплое.
+public/assets/models-lite/
+unity-client/Data/

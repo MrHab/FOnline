@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using GLTFast;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RealmOfAshes.Game;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -729,7 +730,7 @@ namespace RealmOfAshes.World
             if (CacheModels && _modelCache.TryGetValue(absolute, out GltfImport cached)) return cached;
 
             var import = new GltfImport();
-            bool ok = await import.Load(absolute);
+            bool ok = await import.Load(RoaModelUrl.Lite(absolute));
             if (!ok)
             {
                 import.Dispose();

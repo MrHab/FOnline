@@ -79,7 +79,56 @@ namespace RealmOfAshes.Game
         {
             foreach (GameObject card in _cards) Destroy(card);
             _cards.Clear();
-            foreach (string kind in Kinds) AddCard(kind, PickTask(kind));
+
+            List<JObject> tasks = CollectPriorityTasks();
+            if (tasks.Count == 0) AddCard(Kinds[0], null);
+            else foreach (JObject task in tasks) AddCard(task["type"]?.ToString() ?? string.Empty, task);
+            Map.SetActivityHighlights(tasks);
+        }
+
+        private List<JObject> CollectPriorityTasks()
+        {
+            var rows = new List<JObject>();
+            foreach (string kind in Kinds)
+            {
+                JObject task = PickTask(kind);
+                if (task != null) rows.Add(task);
+            }
+            rows.Sort((left, right) =>
+            {
+                int byScore = TaskScore(right).CompareTo(TaskScore(left));
+                if (byScore != 0) return byScore;
+                return TaskDistance(left).CompareTo(TaskDistance(right));
+            });
+            if (rows.Count > 3) rows.RemoveRange(3, rows.Count - 3);
+            return rows;
+        }
+
+        private double TaskScore(JObject task)
+        {
+            string id = task?["id"]?.ToString() ?? string.Empty;
+            bool accepted = Interaction != null && Interaction.IsWorldTaskAccepted(id);
+            bool tracked = Interaction != null && Interaction.IsWorldTaskTracked(id);
+            double score = accepted ? 2000000d : 0d;
+            score += tracked ? 1000000d : 0d;
+            score += (task?["priority"]?.ToObject<double>() ?? 0d) * 20000d;
+            score -= TaskDistance(task) * 120d;
+
+            double now = Map?.WastelandState?["sim"]?["worldHour"]?.ToObject<double>() ?? double.NaN;
+            double expires = task?["expiresHour"]?.ToObject<double>() ?? double.NaN;
+            if (!double.IsNaN(now) && !double.IsNaN(expires))
+                score += Math.Max(0d, 8d - Math.Max(0d, expires - now)) * 15000d;
+            return score;
+        }
+
+        private float TaskDistance(JObject task)
+        {
+            JToken x = task?["targetX"] ?? task?["details"]?["x"];
+            JToken y = task?["targetY"] ?? task?["details"]?["y"];
+            if (x == null || y == null || x.Type == JTokenType.Null || y.Type == JTokenType.Null)
+                return 9999f;
+            Vector2 point = new Vector2(x.ToObject<float>(), y.ToObject<float>());
+            return Map != null ? Map.DistanceKm(Map.PlayerXY, point) : 9999f;
         }
 
         private JObject PickTask(string kind)
@@ -95,10 +144,7 @@ namespace RealmOfAshes.Game
                 if (task == null || task["status"]?.ToString() != "active"
                     || task["type"]?.ToString() != kind) continue;
                 string id = task["id"]?.ToString() ?? string.Empty;
-                double score = (Interaction != null && Interaction.IsWorldTaskAccepted(id) ? 1000000d : 0d)
-                    + (Interaction != null && Interaction.IsWorldTaskTracked(id) ? 500000d : 0d)
-                    + (task["priority"]?.ToObject<double>() ?? 0d) * 1000d
-                    + (task["createdHour"]?.ToObject<double>() ?? 0d);
+                double score = TaskScore(task);
                 if (score <= bestScore) continue;
                 best = task;
                 bestScore = score;
@@ -114,8 +160,8 @@ namespace RealmOfAshes.Game
             var outline = card.GetComponent<Outline>();
             outline.effectColor = task == null ? new Color(Border.r, Border.g, Border.b, 0.20f) : Border;
             outline.effectDistance = new Vector2(1f, -1f);
-            card.GetComponent<LayoutElement>().preferredWidth = 326f;
-            card.GetComponent<LayoutElement>().preferredHeight = 126f;
+            card.GetComponent<LayoutElement>().preferredWidth = 342f;
+            card.GetComponent<LayoutElement>().preferredHeight = 92f;
             RectTransform rect = (RectTransform)card.transform;
 
             Text kicker = Label("Kind", rect, 10, TextAnchor.MiddleLeft, KindColor(kind), FontStyle.Bold);
@@ -127,10 +173,10 @@ namespace RealmOfAshes.Game
                 Text empty = Label("Empty", rect, 12, TextAnchor.UpperLeft, Muted);
                 empty.text = "Сейчас подходящей цели нет.\nСигналы обновляются вместе с живым миром.";
                 empty.horizontalOverflow = HorizontalWrapMode.Wrap;
-                Place(empty.rectTransform, 10f, -63f, -10f, -27f);
+                Place(empty.rectTransform, 10f, -58f, -10f, -25f);
                 Text wait = Label("Wait", rect, 10, TextAnchor.MiddleLeft, new Color(Muted.r, Muted.g, Muted.b, 0.65f));
                 wait.text = "ОЖИДАНИЕ НОВОГО СОБЫТИЯ";
-                Place(wait.rectTransform, 10f, -112f, -10f, -91f);
+                Place(wait.rectTransform, 10f, -84f, -10f, -63f);
                 _cards.Add(card);
                 return;
             }
@@ -151,20 +197,21 @@ namespace RealmOfAshes.Game
             details.text = target + DistanceText(task) + "\n" + GoalText(kind);
             details.horizontalOverflow = HorizontalWrapMode.Wrap;
             details.verticalOverflow = VerticalWrapMode.Truncate;
-            Place(details.rectTransform, 10f, -78f, -10f, -43f);
+            details.text = target + DistanceText(task) + " · " + RiskLabel(task) + "\n" + GoalText(kind);
+            Place(details.rectTransform, 10f, -65f, -112f, -41f);
 
             JObject reward = task["reward"] as JObject;
             Text rewardText = Label("Reward", rect, 10, TextAnchor.MiddleLeft, accepted ? Safe : Accent);
             rewardText.text = (tracked ? "МЕТКА · " : accepted ? "ПРИНЯТО · " : string.Empty)
                 + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP · "
                 + (reward?["caps"]?.ToObject<int>() ?? 0) + " крышек";
-            Place(rewardText.rectTransform, 10f, -101f, -116f, -82f);
+            Place(rewardText.rectTransform, 10f, -87f, -116f, -67f);
 
             string caption = ActionLabel(kind, accepted, siteId, issuerId);
             bool enabled = Interaction != null && !Interaction.WorldTaskActionPending && !Map.TravelActive
                 && !(kind == "escort_caravan" && accepted);
             Button action = Button(rect, caption, () => Activate(task));
-            Place((RectTransform)action.transform, 214f, -108f, -10f, -84f);
+            Place((RectTransform)action.transform, 232f, -86f, -10f, -61f);
             SetButton(action, enabled);
             _cards.Add(card);
         }
@@ -245,11 +292,18 @@ namespace RealmOfAshes.Game
 
         private string DistanceText(JObject task)
         {
-            JToken x = task?["targetX"] ?? task?["details"]?["x"];
-            JToken y = task?["targetY"] ?? task?["details"]?["y"];
-            if (x == null || y == null || x.Type == JTokenType.Null || y.Type == JTokenType.Null) return string.Empty;
-            Vector2 point = new Vector2(x.ToObject<float>(), y.ToObject<float>());
-            return " · " + Map.DistanceKm(Map.PlayerXY, point).ToString("0.0") + " км";
+            float distance = TaskDistance(task);
+            return distance >= 9999f ? string.Empty : " · " + distance.ToString("0.0") + " км";
+        }
+
+        private static string RiskLabel(JObject task)
+        {
+            string kind = task?["type"]?.ToString() ?? string.Empty;
+            int priority = task?["priority"]?.ToObject<int>() ?? 0;
+            if (kind == "distress_signal" || kind == "outpost_defense"
+                || kind == "assault_diversion" || priority >= 5) return "высокий риск";
+            if (kind == "recon_expedition" || priority >= 3) return "средний риск";
+            return "низкий риск";
         }
 
         private void SetMessage(string value, Color color)
@@ -266,7 +320,7 @@ namespace RealmOfAshes.Game
             canvasGo.transform.SetParent(transform, false);
             _canvas = canvasGo.GetComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _canvas.sortingOrder = 29;
+            _canvas.sortingOrder = 36;
             RoaUiScale.Apply(canvasGo.GetComponent<CanvasScaler>());
 
             _launcher = new GameObject("OpenActivities", typeof(RectTransform), typeof(Image), typeof(Button), typeof(Outline));
@@ -274,13 +328,13 @@ namespace RealmOfAshes.Game
             launcher.SetParent(canvasGo.transform, false);
             launcher.anchorMin = launcher.anchorMax = new Vector2(0f, 1f);
             launcher.pivot = new Vector2(0f, 1f);
-            launcher.anchoredPosition = new Vector2(18f, -72f);
-            launcher.sizeDelta = new Vector2(180f, 42f);
+            launcher.anchoredPosition = new Vector2(18f, -64f);
+            launcher.sizeDelta = new Vector2(210f, 38f);
             _launcher.GetComponent<Image>().color = ButtonBg;
             _launcher.GetComponent<Outline>().effectColor = Border;
             _launcher.GetComponent<Button>().onClick.AddListener(() => { _expanded = true; _refreshAt = 0f; });
             Text launcherLabel = Label("Label", launcher, 12, TextAnchor.MiddleCenter, Accent, FontStyle.Bold);
-            launcherLabel.text = "АКТИВНОСТИ [6]";
+            launcherLabel.text = "СИГНАЛЫ ПУСТОШИ";
             Stretch(launcherLabel.rectTransform, 2f);
 
             _shade = new GameObject("ActivityHubShade", typeof(RectTransform), typeof(Image));
@@ -290,43 +344,44 @@ namespace RealmOfAshes.Game
             shadeRect.anchorMax = Vector2.one;
             shadeRect.offsetMin = Vector2.zero;
             shadeRect.offsetMax = Vector2.zero;
-            _shade.GetComponent<Image>().color = Backdrop;
+            _shade.GetComponent<Image>().color = Color.clear;
             _shade.GetComponent<Image>().raycastTarget = false;
 
             _root = new GameObject("ActivityHub", typeof(RectTransform), typeof(Image), typeof(Outline));
             RectTransform root = (RectTransform)_root.transform;
             root.SetParent(canvasGo.transform, false);
-            root.anchorMin = root.anchorMax = new Vector2(0.5f, 0.5f);
-            root.pivot = new Vector2(0.5f, 0.5f);
-            root.anchoredPosition = new Vector2(-110f, 0f);
-            root.sizeDelta = new Vector2(706f, 488f);
+            root.anchorMin = root.anchorMax = new Vector2(0f, 1f);
+            root.pivot = new Vector2(0f, 1f);
+            root.anchoredPosition = new Vector2(18f, -64f);
+            root.sizeDelta = new Vector2(370f, 414f);
             _root.GetComponent<Image>().color = PanelBg;
             _root.GetComponent<Outline>().effectColor = Border;
 
             Text title = Label("Title", root, 19, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
-            title.text = "ЖИВАЯ КАРТА ВЫЛАЗОК";
-            Place(title.rectTransform, 18f, -39f, -70f, -10f);
+            title.text = "СЕЙЧАС РЯДОМ";
+            Place(title.rectTransform, 14f, -35f, -54f, -8f);
             Text subtitle = Label("Subtitle", root, 11, TextAnchor.MiddleLeft, Muted);
-            subtitle.text = "Выберите занятие — сервер отметит цель и построит маршрут.";
-            Place(subtitle.rectTransform, 18f, -61f, -70f, -41f);
+            subtitle.text = "Три приоритетных сигнала живого мира";
+            Place(subtitle.rectTransform, 14f, -57f, -54f, -37f);
 
             Button close = Button(root, "×", () => _expanded = false);
-            Place((RectTransform)close.transform, 653f, -43f, -14f, -11f);
+            Place((RectTransform)close.transform, 329f, -40f, -10f, -10f);
 
             var gridGo = new GameObject("ActivityGrid", typeof(RectTransform), typeof(GridLayoutGroup));
             _grid = (RectTransform)gridGo.transform;
             _grid.SetParent(root, false);
-            Place(_grid, 18f, -438f, -18f, -72f);
+            Place(_grid, 14f, -358f, -14f, -68f);
             GridLayoutGroup grid = gridGo.GetComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(326f, 112f);
-            grid.spacing = new Vector2(12f, 10f);
+            grid.cellSize = new Vector2(342f, 92f);
+            grid.spacing = new Vector2(0f, 7f);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = 2;
+            grid.constraintCount = 1;
             grid.startAxis = GridLayoutGroup.Axis.Horizontal;
 
             _message = Label("Message", root, 11, TextAnchor.MiddleLeft, Muted);
             _message.text = "Активности обновляются вместе с состоянием пустоши.";
-            Place(_message.rectTransform, 18f, -474f, -18f, -446f);
+            _message.text = "Выберите сигнал — цель станет маршрутом.";
+            Place(_message.rectTransform, 14f, -402f, -14f, -368f);
         }
 
         private static string KindLabel(string kind)

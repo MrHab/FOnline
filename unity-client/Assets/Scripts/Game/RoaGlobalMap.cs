@@ -235,6 +235,8 @@ namespace RealmOfAshes.Game
         private GameObject _dynamicRoot;
         private Coroutine _wastelandPoll;
         private readonly List<DynamicTarget> _dynamicTargets = new List<DynamicTarget>();
+        private readonly List<LineRenderer> _activityHighlightRings = new List<LineRenderer>();
+        private string _activityHighlightKey = string.Empty;
         private readonly Dictionary<string, JObject> _territoryByCell = new Dictionary<string, JObject>();
         private DynamicTarget _selectedDynamic;
         private string _factionSummary = string.Empty;
@@ -1265,6 +1267,7 @@ namespace RealmOfAshes.Game
             if (!IsActive) return;
 
             UpdateCameraPan();
+            PulseActivityHighlights();
 
             if (!_travelActive) return;
             if (_pendingContact != null) return;
@@ -1593,6 +1596,116 @@ namespace RealmOfAshes.Game
             RefreshMarkers();
             StartTravel(completed);
             return true;
+        }
+
+        /// <summary>Draw up to three pulsing rings for the compact live-event rail.</summary>
+        public void SetActivityHighlights(IList<JObject> tasks)
+        {
+            var ids = new List<string>();
+            if (tasks != null)
+            {
+                for (int i = 0; i < tasks.Count && i < 3; i++)
+                    ids.Add(tasks[i]?["id"]?.ToString() ?? string.Empty);
+            }
+            string key = string.Join("|", ids);
+            if (key == _activityHighlightKey && (_activityHighlightRings.Count > 0 || ids.Count == 0)) return;
+            ClearActivityHighlights();
+            _activityHighlightKey = key;
+            if (_root == null || tasks == null) return;
+
+            for (int i = 0; i < tasks.Count && i < 3; i++)
+            {
+                JObject task = tasks[i];
+                GlobalMapPoint point;
+                if (!TryActivityPoint(task, out point)) continue;
+                var ringPoints = new List<GlobalMapPoint>(33);
+                float radius = 10f + i * 1.8f;
+                for (int segment = 0; segment <= 32; segment++)
+                {
+                    float angle = segment / 32f * Mathf.PI * 2f;
+                    ringPoints.Add(new GlobalMapPoint
+                    {
+                        X = point.X + Mathf.Cos(angle) * radius,
+                        Y = point.Y + Mathf.Sin(angle) * radius
+                    });
+                }
+                LineRenderer ring = CreateLine("LiveActivity:" + ids[i], ActivityColor(task), 0.14f, 0.34f + i * 0.02f);
+                ring.loop = true;
+                SetLinePoints(ring, ringPoints);
+                _activityHighlightRings.Add(ring);
+            }
+        }
+
+        private bool TryActivityPoint(JObject task, out GlobalMapPoint point)
+        {
+            point = null;
+            JToken x = task?["targetX"] ?? task?["details"]?["x"];
+            JToken y = task?["targetY"] ?? task?["details"]?["y"];
+            if (x != null && y != null && x.Type != JTokenType.Null && y.Type != JTokenType.Null)
+            {
+                point = new GlobalMapPoint { X = Float(x, 0f), Y = Float(y, 0f) };
+                return true;
+            }
+
+            string siteId = task?["siteId"]?.ToString() ?? string.Empty;
+            DynamicTarget target = _dynamicTargets.Find(row => row != null
+                && (row.SiteId == siteId || (row.Kind == "site" && row.Id == siteId)));
+            if (target != null)
+            {
+                point = CopyPoint(target.Point);
+                return true;
+            }
+
+            foreach (JToken token in _wasteland?["sites"] as JArray ?? new JArray())
+            {
+                JObject site = token as JObject;
+                if (site?["id"]?.ToString() != siteId) continue;
+                point = new GlobalMapPoint { X = Float(site["x"], 0f), Y = Float(site["y"], 0f) };
+                return true;
+            }
+            if (_map?.Nodes != null)
+            {
+                foreach (GlobalMapNode node in _map.Nodes)
+                {
+                    if (node == null || (node.Id != siteId && node.EffectiveLocationId != siteId)) continue;
+                    point = new GlobalMapPoint { X = node.X, Y = node.Y };
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static Color ActivityColor(JObject task)
+        {
+            switch (task?["type"]?.ToString() ?? string.Empty)
+            {
+                case "distress_signal": return new Color(1f, 0.28f, 0.16f, 1f);
+                case "outpost_defense": return new Color(1f, 0.55f, 0.18f, 1f);
+                case "recon_expedition": return new Color(0.35f, 0.86f, 0.92f, 1f);
+                case "resource_expedition": return new Color(0.48f, 0.88f, 0.34f, 1f);
+                default: return new Color(0.96f, 0.76f, 0.25f, 1f);
+            }
+        }
+
+        private void PulseActivityHighlights()
+        {
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4.2f);
+            float width = Mathf.Lerp(0.08f, 0.22f, pulse);
+            for (int i = 0; i < _activityHighlightRings.Count; i++)
+            {
+                LineRenderer ring = _activityHighlightRings[i];
+                if (ring == null) continue;
+                ring.startWidth = width;
+                ring.endWidth = width;
+            }
+        }
+
+        private void ClearActivityHighlights()
+        {
+            for (int i = 0; i < _activityHighlightRings.Count; i++)
+                if (_activityHighlightRings[i] != null) Destroy(_activityHighlightRings[i].gameObject);
+            _activityHighlightRings.Clear();
+            _activityHighlightKey = string.Empty;
         }
 
 
@@ -2008,6 +2121,8 @@ namespace RealmOfAshes.Game
             _routeLine = null;
             _dynamicRoot = null;
             _dynamicTargets.Clear();
+            _activityHighlightRings.Clear();
+            _activityHighlightKey = string.Empty;
 
             if (_terrainTexture != null) Destroy(_terrainTexture);
             _terrainTexture = null;

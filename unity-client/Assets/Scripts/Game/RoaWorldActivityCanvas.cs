@@ -55,6 +55,10 @@ namespace RealmOfAshes.Game
         private float _resultUntil;
         private string _introActivityId = string.Empty;
         private float _introUntil;
+        private GameObject _introRoot;
+        private Text _introKicker;
+        private Text _introTitle;
+        private Text _introInstruction;
 
         public bool IsOpen { get { return _root != null && _root.activeSelf; } }
 
@@ -114,6 +118,7 @@ namespace RealmOfAshes.Game
             _activity = null;
             _pending = false;
             if (_root != null) _root.SetActive(false);
+            if (_introRoot != null) _introRoot.SetActive(false);
             if (_resultRoot != null) _resultRoot.SetActive(false);
             ClearWorldMarkers();
         }
@@ -197,11 +202,16 @@ namespace RealmOfAshes.Game
             if (_activity == null || hiddenByScreen)
             {
                 if (_root != null && _root.activeSelf) _root.SetActive(false);
+                if (_introRoot != null && _introRoot.activeSelf) _introRoot.SetActive(false);
                 if (_markerRoot != null) _markerRoot.SetActive(false);
                 return;
             }
             EnsureBuilt();
-            if (!_root.activeSelf) _root.SetActive(true);
+            bool introActive = _introActivityId == (_activity?["id"]?.ToString() ?? string.Empty)
+                && Time.unscaledTime < _introUntil;
+            _root.SetActive(!introActive);
+            _introRoot.SetActive(introActive);
+            if (introActive) RefreshIntro();
             RebuildWorldMarkers();
             if (_markerRoot != null) _markerRoot.SetActive(true);
             if (Time.unscaledTime < _refreshAt) return;
@@ -323,6 +333,18 @@ namespace RealmOfAshes.Game
             }
         }
 
+        private void RefreshIntro()
+        {
+            if (_introRoot == null || _activity == null) return;
+            string kind = _activity["kind"]?.ToString() ?? string.Empty;
+            _introKicker.text = kind == "distress_signal" ? "ПЕРЕХВАЧЕН СИГНАЛ"
+                : kind == "outpost_defense" ? "АВАНПОСТ ПОД УДАРОМ"
+                : kind == "assault_diversion" ? "БОЕВАЯ ОПЕРАЦИЯ"
+                : "НОВАЯ ВЫЛАЗКА";
+            _introKicker.color = kind == "distress_signal" || kind == "outpost_defense" ? Danger : Accent;
+            _introTitle.text = (_activity["title"]?.ToString() ?? "Активность пустоши").ToUpperInvariant();
+            _introInstruction.text = StartInstruction(kind);
+        }
 
         private JObject NearestPendingPoint(out float distance)
         {
@@ -436,9 +458,9 @@ namespace RealmOfAshes.Game
             _root = new GameObject("WorldActivityHud", typeof(RectTransform), typeof(Image), typeof(Outline));
             var root = (RectTransform)_root.transform;
             root.SetParent(canvasGo.transform, false);
-            root.anchorMin = root.anchorMax = new Vector2(1f, 1f);
-            root.pivot = new Vector2(1f, 1f);
-            root.anchoredPosition = new Vector2(-20f, -82f);
+            root.anchorMin = root.anchorMax = new Vector2(0.5f, 1f);
+            root.pivot = new Vector2(0.5f, 1f);
+            root.anchoredPosition = new Vector2(0f, -18f);
             root.sizeDelta = new Vector2(330f, 194f);
             _root.GetComponent<Image>().color = PanelBg;
             var border = _root.GetComponent<Outline>();
@@ -485,6 +507,27 @@ namespace RealmOfAshes.Game
             _action.onClick.AddListener(PerformPrimaryAction);
             _actionLabel = Label("Label", actionRect, 11, TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
             Stretch(_actionLabel.rectTransform, 2f);
+
+            _introRoot = new GameObject("WorldActivityIntro", typeof(RectTransform), typeof(Image), typeof(Outline));
+            RectTransform introRect = (RectTransform)_introRoot.transform;
+            introRect.SetParent(canvasGo.transform, false);
+            introRect.anchorMin = introRect.anchorMax = new Vector2(0.5f, 1f);
+            introRect.pivot = new Vector2(0.5f, 1f);
+            introRect.anchoredPosition = new Vector2(0f, -24f);
+            introRect.sizeDelta = new Vector2(520f, 112f);
+            _introRoot.GetComponent<Image>().color = new Color(PanelBg.r, PanelBg.g, PanelBg.b, 0.98f);
+            Outline introBorder = _introRoot.GetComponent<Outline>();
+            introBorder.effectColor = Border;
+            introBorder.effectDistance = new Vector2(1f, -1f);
+            _introKicker = Label("IntroKicker", introRect, 10, TextAnchor.MiddleCenter, Accent, FontStyle.Bold);
+            Place(_introKicker.rectTransform, 18f, -25f, -18f, -8f);
+            _introTitle = Label("IntroTitle", introRect, 18, TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
+            Place(_introTitle.rectTransform, 18f, -57f, -18f, -29f);
+            _introInstruction = Label("IntroInstruction", introRect, 11, TextAnchor.UpperCenter, Muted);
+            _introInstruction.horizontalOverflow = HorizontalWrapMode.Wrap;
+            Place(_introInstruction.rectTransform, 26f, -98f, -26f, -64f);
+            _introRoot.SetActive(false);
+
             _resultRoot = new GameObject("WorldActivityResult", typeof(RectTransform), typeof(Image), typeof(Outline));
             RectTransform resultRect = (RectTransform)_resultRoot.transform;
             resultRect.SetParent(canvasGo.transform, false);

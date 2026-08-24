@@ -456,6 +456,8 @@ namespace RealmOfAshes.Game
                 Vector3 start = new Vector3(self.x, Mathf.Max(1.05f, self.y + 0.23f), self.z);
                 Vector3 end = new Vector3(target.x, Mathf.Max(1.02f, target.y + 0.23f), target.z);
                 Fx.PlayShot(start, end, weapon);
+                float impulse = RoaCombatFx.ImpulseFor(weapon) * (MobileInputMode ? 0.6f : 1f);
+                RoaGameBootstrap.Active?.CameraRig?.AddImpulse(impulse);
             }
         }
 

@@ -143,7 +143,7 @@ namespace RealmOfAshes.Game
             _contactBox.gameObject.SetActive(false);
             y -= 110f + 9f; // бокс контакта накладывается на доску работ, когда виден
 
-            KickerLabel(side, "Доска работ", ref y);
+            KickerLabel(side, "Местные дела", ref y);
             _workList = ScrollBox(side, 0.30f, ref y);
             KickerLabel(side, "Системный журнал", ref y);
             RectTransform logBox = Box(side, 120f, ref y);
@@ -207,8 +207,6 @@ namespace RealmOfAshes.Game
         {
             Vector2 player = Map.PlayerXY;
             Vector2 selected = Map.SelectedXY;
-            Vector2Int playerCell = Map.CellOf(player);
-            Vector2Int selectedCell = Map.CellOf(selected);
             string attached = Map.AttachedPartyId;
 
             // --- Маршрут (тексты renderGlobalMapPanel) ---
@@ -216,22 +214,21 @@ namespace RealmOfAshes.Game
             {
                 int pct = Mathf.RoundToInt(Map.TravelProgress * 100f);
                 _route.text = "<b><color=#efd078>Путь к: " + Map.SelectedTitle + "</color></b>\n"
-                    + "Цель: клетка " + selectedCell.x + ":" + selectedCell.y + " · точка " + Mathf.RoundToInt(selected.x) + ":" + Mathf.RoundToInt(selected.y) + "\n"
-                    + "Сейчас: точка " + Mathf.RoundToInt(player.x) + ":" + Mathf.RoundToInt(player.y) + " · прогресс " + pct + "% · осталось " + FormatSeconds(Map.TravelSecondsLeft) + "\n"
-                    + "Дистанция " + Map.DistanceKm(player, selected).ToString("0.0") + " км"
-                    + (Map.HasPendingContact ? "\nСобытие на маршруте." : string.Empty);
+                    + "В пути · " + pct + "% · осталось " + FormatSeconds(Map.TravelSecondsLeft) + "\n"
+                    + "До цели " + Map.DistanceKm(player, selected).ToString("0.0") + " км"
+                    + (Map.HasPendingContact ? "\n<color=#ff9a66>Контакт на маршруте.</color>" : "\nМаршрут контролирует сервер.");
             }
             else if (!string.IsNullOrEmpty(attached))
             {
                 _route.text = "<b><color=#efd078>Вы в караванной группе: " + attached + "</color></b>\n"
-                    + "Сейчас: клетка " + playerCell.x + ":" + playerCell.y + " · точка " + Mathf.RoundToInt(player.x) + ":" + Mathf.RoundToInt(player.y) + "\n"
-                    + "Движение: отряд ведёт маршрут. Собственный путь недоступен.";
+                    + "Отряд ведёт маршрут и принимает решения о встречах.\n"
+                    + "Чтобы выбрать собственную цель, сначала покиньте группу.";
             }
             else if (Map.PendingEntry)
             {
                 _route.text = "<b><color=#efd078>" + Map.PendingEntryTitle + "</color></b>\n"
-                    + "Клетка " + playerCell.x + ":" + playerCell.y + " · точка " + Mathf.RoundToInt(player.x) + ":" + Mathf.RoundToInt(player.y) + "\n"
-                    + "Вы на месте. Нажмите «Войти», чтобы перейти в найденную локацию, или выберите новую точку маршрута.";
+                    + "Вы прибыли.\n"
+                    + "Нажмите «Войти» или выберите новую цель на карте.";
             }
             else
             {
@@ -241,7 +238,6 @@ namespace RealmOfAshes.Game
                     ? (playerNode != null ? "Вы в зоне: " + Map.NodeTitle(playerNode) + "." : "Текущая точка пустоши.")
                     : "Дистанция: " + Map.DistanceKm(player, selected).ToString("0.0") + " км · опасность видна на карте";
                 _route.text = "<b><color=#efd078>" + Map.SelectedTitle + "</color></b>\n"
-                    + "Клетка " + selectedCell.x + ":" + selectedCell.y + " · точка " + Mathf.RoundToInt(selected.x) + ":" + Mathf.RoundToInt(selected.y) + "\n"
                     + where + "\n" + Map.SelectionSummary;
             }
 

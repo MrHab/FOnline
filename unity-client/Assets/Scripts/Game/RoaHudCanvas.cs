@@ -75,6 +75,8 @@ namespace RealmOfAshes.Game
         private Text _systemText;
         private RoaInteraction _interaction;
         private readonly System.Collections.Generic.List<string> _systemLines = new System.Collections.Generic.List<string>();
+        private string _lastCombatLine = string.Empty;
+        private float _combatLogUntil;
         private string _lastHint = string.Empty;
         private string _lastInteractionStatus = string.Empty;
         private float _systemLastPushAt;
@@ -89,6 +91,7 @@ namespace RealmOfAshes.Game
         private float _globalStatusUntil;
         private Rect _lastSafeArea;
         private bool _lastMobile;
+        private const float MinimapPixels = 164f;
 
         public void Configure(RoaHud hud, RoaQuickbar quickbar, RoaMinimap minimap,
                               RoaCombat combat, RoaMobileControls mobile, RoaGlobalMap globalMap)
@@ -131,7 +134,15 @@ namespace RealmOfAshes.Game
             _mapPanel.SetActive(worldHud && _minimap != null);
             _quickPanel.SetActive(worldHud && _quickbar != null && _quickbar.CanvasVisible);
             bool mobile = Application.isMobilePlatform; // web device-mobile: журнал боя и системный журнал скрыты
-            _logPanel.SetActive(worldHud && !mobile && _combat != null && _combat.LogLines.Count > 0);
+            string latestCombat = _combat != null && _combat.LogLines.Count > 0
+                ? _combat.LogLines[_combat.LogLines.Count - 1] : string.Empty;
+            if (latestCombat != _lastCombatLine)
+            {
+                _lastCombatLine = latestCombat;
+                if (!string.IsNullOrEmpty(latestCombat)) _combatLogUntil = Time.unscaledTime + 5f;
+            }
+            _logPanel.SetActive(worldHud && !mobile && !string.IsNullOrEmpty(latestCombat)
+                && Time.unscaledTime < _combatLogUntil);
             _consolePanel.SetActive(worldHud && _hud != null && _hud.HasState);
             RefreshSystemStatus(worldHud && !mobile);
             RefreshPlayer();
@@ -190,36 +201,38 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void BuildPlayerPanel()
         {
-            RectTransform panel = Rect("PlayerStatus", _safeRoot, new Vector2(0f, 1f),
-                                       new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                       new Vector2(8f, -8f), new Vector2(760f, 253f));
+            RectTransform panel = PanelRect("PlayerStatus", _safeRoot, new Vector2(0f, 1f),
+                                            new Vector2(0f, 1f), new Vector2(12f, -12f), new Vector2(330f, 74f));
             _playerPanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("status");
 
             _playerFrame = Raw("Frame", panel, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             _playerFrame.raycastTarget = false;
-            _playerFrame.color = Color.white;
+            _playerFrame.color = Color.clear;
+            _playerFrame.enabled = false;
+            Image accent = Bar("IdentityAccent", panel, new Vector2(10f, -65f), new Vector2(310f, 3f), ConsoleAccent).transform.parent.GetComponent<Image>();
+            if (accent != null) accent.color = new Color(0.04f, 0.04f, 0.035f, 0.72f);
 
-            // Позиции — из css: fps 7.4%/9.5%, имя 26.1%/35.3%, чипы 10.2%/64.2%.
-            _fpsText = PercentLabel("Fps", panel, 0.074f, 0.095f, 0.162f, 0.127f, 15,
-                                    TextAnchor.MiddleCenter, new Color(1f, 0.878f, 0.541f), FontStyle.Bold);
-            _nameText = PercentLabel("Name", panel, 0.261f, 0.353f, 0.565f, 0.18f, 21,
-                                     TextAnchor.MiddleLeft, new Color(1f, 0.871f, 0.525f), FontStyle.Bold);
-            _statsText = PercentLabel("Chips", panel, 0.102f, 0.642f, 0.77f, 0.135f, 13,
-                                      TextAnchor.MiddleLeft, new Color(0.843f, 0.89f, 0.635f), FontStyle.Bold);
+            _fpsText = Label("Diagnostics", panel, Vector2.zero, Vector2.zero, 1,
+                             TextAnchor.MiddleLeft, Color.clear);
+            _fpsText.gameObject.SetActive(false);
+            _nameText = Label("Name", panel, new Vector2(14f, -8f), new Vector2(300f, 25f), 17,
+                              TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
+            _statsText = Label("Progress", panel, new Vector2(14f, -35f), new Vector2(300f, 23f), 11,
+                               TextAnchor.MiddleLeft, MutedInk, FontStyle.Bold);
             _statsText.supportRichText = true;
         }
 
         private void BuildMinimapPanel()
         {
             RectTransform panel = PanelRect("Minimap", _safeRoot, new Vector2(1f, 1f),
-                                            new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(226f, 264f));
+                                            new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(190f, 202f));
             _mapPanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("minimap");
-            _mapTitle = Label("Title", panel, new Vector2(10f, -7f), new Vector2(206f, 22f), 13,
+            _mapTitle = Label("Title", panel, new Vector2(10f, -7f), new Vector2(170f, 22f), 12,
                               TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
             RectTransform map = Rect("Map", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                     new Vector2(0f, 1f), new Vector2(13f, -34f), new Vector2(200f, 200f));
+                                     new Vector2(0f, 1f), new Vector2(13f, -32f), new Vector2(MinimapPixels, MinimapPixels));
             _mapImage = map.gameObject.AddComponent<RawImage>();
             _mapImage.color = Color.white;
             _mapImage.raycastTarget = false;
@@ -241,8 +254,9 @@ namespace RealmOfAshes.Game
             _playerArrow.rectTransform.anchorMin = Vector2.zero;
             _playerArrow.rectTransform.anchorMax = Vector2.zero;
             _playerArrow.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            _cellText = Label("Cell", panel, new Vector2(13f, -238f), new Vector2(200f, 18f), 12,
+            _cellText = Label("Cell", panel, new Vector2(13f, -190f), new Vector2(164f, 10f), 10,
                               TextAnchor.MiddleLeft, MutedInk);
+            _cellText.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -256,7 +270,7 @@ namespace RealmOfAshes.Game
             // width min(1060px), aspect 2048/682, bottom 18 — как в css.
             RectTransform panel = Rect("WeaponConsole", _safeRoot, new Vector2(0.5f, 0f),
                                        new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                                       new Vector2(0f, 18f), new Vector2(1060f, 353f));
+                                       new Vector2(0f, 72f), new Vector2(760f, 253f));
             _consolePanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("console");
 
@@ -395,14 +409,14 @@ namespace RealmOfAshes.Game
         private void BuildQuickbar()
         {
             RectTransform panel = PanelRect("Quickbar", _safeRoot, new Vector2(0.5f, 0f),
-                                            new Vector2(0.5f, 0f), new Vector2(0f, 16f), new Vector2(646f, 82f));
+                                            new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(566f, 54f));
             _quickPanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("quickbar");
             for (int i = 0; i < _slotButtons.Length; i++)
             {
                 int slot = i;
                 RectTransform slotRect = Rect("Slot" + i, panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                              new Vector2(0f, 1f), new Vector2(10f + i * 78f, -8f), new Vector2(72f, 54f));
+                                              new Vector2(0f, 1f), new Vector2(9f + i * 69f, -7f), new Vector2(64f, 38f));
                 Image image = slotRect.gameObject.AddComponent<Image>();
                 image.color = new Color(0.10f, 0.10f, 0.08f, 0.96f);
                 Button button = slotRect.gameObject.AddComponent<Button>();
@@ -413,11 +427,11 @@ namespace RealmOfAshes.Game
                 button.colors = colors;
                 button.onClick.AddListener(() => { if (_quickbar != null) _quickbar.TriggerSlot(slot); });
                 _slotButtons[i] = button;
-                _slotTexts[i] = Label("Label", slotRect, Vector2.zero, slotRect.sizeDelta, 13,
+                _slotTexts[i] = Label("Label", slotRect, Vector2.zero, slotRect.sizeDelta, 11,
                                       TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
                 Stretch(_slotTexts[i].rectTransform, new Vector2(3f, 3f));
             }
-            _quickStatus = Label("Status", panel, new Vector2(12f, -62f), new Vector2(622f, 16f), 11,
+            _quickStatus = Label("Status", panel, new Vector2(10f, -46f), new Vector2(546f, 8f), 9,
                                  TextAnchor.MiddleCenter, MutedInk);
         }
 
@@ -427,10 +441,10 @@ namespace RealmOfAshes.Game
             // полупрозрачным текстом поверх мира.
             RectTransform panel = Rect("CombatLog", _safeRoot, new Vector2(0f, 0f),
                                        new Vector2(0f, 0f), new Vector2(0f, 0f),
-                                       new Vector2(12f, 12f), new Vector2(420f, 190f));
+                                       new Vector2(12f, 12f), new Vector2(360f, 118f));
             _logPanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("combatLog");
-            _logText = Label("Lines", panel, new Vector2(0f, 0f), new Vector2(420f, 190f), 14,
+            _logText = Label("Lines", panel, new Vector2(0f, 0f), new Vector2(360f, 118f), 12,
                              TextAnchor.LowerLeft, new Color(0.86f, 0.82f, 0.68f, 0.92f));
             _logText.horizontalOverflow = HorizontalWrapMode.Wrap;
             _logText.verticalOverflow = VerticalWrapMode.Truncate;
@@ -444,15 +458,13 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void ApplyMobileLayout()
         {
-            float screenW = RoaUiScale.Reference.x;
             var player = (RectTransform)_playerPanel.transform;
-            float playerScale = Mathf.Clamp(screenW * 0.47f / 760f, 0.5f, 0.8f);
-            player.localScale = Vector3.one * playerScale;
+            player.localScale = Vector3.one * 0.86f;
             player.anchoredPosition = new Vector2(72f, -6f); // left: 62px web — после левой колонки сенсорных иконок
 
             var console = (RectTransform)_consolePanel.transform;
-            console.localScale = Vector3.one * 0.66f;
-            console.anchoredPosition = new Vector2(0f, 52f);
+            console.localScale = Vector3.one * 0.74f;
+            console.anchoredPosition = new Vector2(0f, 66f);
 
             var map = (RectTransform)_mapPanel.transform;
             map.localScale = Vector3.one * 0.78f;
@@ -460,7 +472,7 @@ namespace RealmOfAshes.Game
 
             var quick = (RectTransform)_quickPanel.transform;
             quick.localScale = Vector3.one * 0.7f;
-            quick.anchoredPosition = new Vector2(0f, 290f);
+            quick.anchoredPosition = new Vector2(0f, 246f);
 
         }
 
@@ -468,7 +480,7 @@ namespace RealmOfAshes.Game
         {
             // #system-log-panel: right 12, top 206 (под миникартой), width 190, max-height 138.
             RectTransform panel = PanelRect("SystemStatus", _safeRoot, new Vector2(1f, 1f),
-                                            new Vector2(1f, 1f), new Vector2(-16f, -296f), new Vector2(226f, 138f));
+                                            new Vector2(1f, 1f), new Vector2(-16f, -228f), new Vector2(190f, 82f));
             panel.GetComponent<Image>().color = new Color(0.031f, 0.039f, 0.039f, 0.42f);
             panel.GetComponent<Outline>().effectColor = new Color(0.89f, 0.765f, 0.431f, 0.36f);
             _systemPanel = panel.gameObject;
@@ -478,7 +490,7 @@ namespace RealmOfAshes.Game
             Text headText = Label("Title", head, new Vector2(9f, -4f), new Vector2(200f, 20f), 10,
                                   TextAnchor.MiddleLeft, ConsoleAccent, FontStyle.Bold);
             headText.text = "СИСТЕМА";
-            _systemText = Label("Text", panel, new Vector2(9f, -32f), new Vector2(208f, 102f), 11,
+            _systemText = Label("Text", panel, new Vector2(9f, -32f), new Vector2(172f, 44f), 10,
                                 TextAnchor.UpperLeft, new Color(0.624f, 0.784f, 0.816f, 1f));
             _systemText.horizontalOverflow = HorizontalWrapMode.Wrap;
             _systemText.verticalOverflow = VerticalWrapMode.Truncate;
@@ -503,9 +515,9 @@ namespace RealmOfAshes.Game
             _safeRoot.anchorMax = max;
             _safeRoot.offsetMin = Vector2.zero;
             _safeRoot.offsetMax = Vector2.zero;
-            ((RectTransform)_quickPanel.transform).anchoredPosition = new Vector2(0f, mobile ? 86f : 16f);
+            ((RectTransform)_quickPanel.transform).anchoredPosition = new Vector2(0f, mobile ? 76f : 14f);
             ((RectTransform)_logPanel.transform).anchoredPosition = new Vector2(12f, mobile ? 142f : 12f);
-            ((RectTransform)_systemPanel.transform).anchoredPosition = new Vector2(-16f, mobile ? -220f : -296f);
+            ((RectTransform)_systemPanel.transform).anchoredPosition = new Vector2(-16f, mobile ? -184f : -228f);
         }
 
         private void PushSystemLine(string line)
@@ -516,7 +528,7 @@ namespace RealmOfAshes.Game
                 return;
             }
             _systemLines.Add(line);
-            while (_systemLines.Count > 4) _systemLines.RemoveAt(0);
+            while (_systemLines.Count > 2) _systemLines.RemoveAt(0);
             _systemLastPushAt = Time.unscaledTime;
         }
 
@@ -553,36 +565,22 @@ namespace RealmOfAshes.Game
 
             // Журнал виден, пока есть свежие строки (последняя — не старше 12 с).
             // Как #system-log-panel: виден, пока есть строки (в web панель постоянная).
-            bool visible = worldHud && _systemLines.Count > 0 && (_globalMap == null || !_globalMap.IsActive);
+            bool visible = worldHud && _systemLines.Count > 0
+                && Time.unscaledTime - _systemLastPushAt < 6f
+                && (_globalMap == null || !_globalMap.IsActive);
             _systemPanel.SetActive(visible);
             if (visible) _systemText.text = string.Join("\n", _systemLines);
         }
 
-        private float _smoothedFrame = 1f / 60f;
-
         private void RefreshPlayer()
         {
             if (_hud == null || !_playerPanel.activeSelf) return;
-            _playerFrame.texture = _hud.PlayerFrame;
-            _playerFrame.enabled = _hud.PlayerFrame != null;
+            _playerFrame.texture = null;
+            _playerFrame.enabled = false;
             _nameText.text = _hud.DisplayName;
-
-            _smoothedFrame = Mathf.Lerp(_smoothedFrame, Time.unscaledDeltaTime, 0.06f);
-            int fps = Mathf.RoundToInt(1f / Mathf.Max(0.001f, _smoothedFrame));
-
-            // Пинг рядом с FPS, цвет по порогам web: до 80 хорошо, до 160 средне.
-            int ping = _hud.PingMs;
-            string pingColor = ping < 0 ? "#adb3a0" : (ping <= 80 ? "#b8f18b" : (ping <= 160 ? "#ffd676" : "#ff9474"));
-            string pingText = ping < 0 ? "—ms" : ping + "ms";
-            _fpsText.supportRichText = true;
-            _fpsText.text = "FPS: " + fps + " <color=" + pingColor + ">" + pingText + "</color>";
-
-            // Чипы прогрессии — как в web: подпись приглушённая, число тёплое.
             _statsText.text =
-                "<color=#d7e3a2>УРОВЕНЬ</color> <color=#ffd16b>" + _hud.Level + "</color>   "
-                + "<color=#d7e3a2>ОПЫТ</color> <color=#ffd16b>" + _hud.Xp + "/" + Mathf.Max(1, _hud.XpNeeded) + "</color>   "
-                + "<color=#d7e3a2>ПЕРКИ</color> <color=#ffd16b>" + _hud.PerkPoints + "</color>   "
-                + "<color=#d7e3a2>НАВЫКИ</color> <color=#ffd16b>" + _hud.SkillPoints + "</color>";
+                "<color=#d7e3a2>УР.</color> <color=#ffd16b>" + _hud.Level + "</color>   "
+                + "<color=#d7e3a2>ОПЫТ</color> <color=#ffd16b>" + _hud.Xp + "/" + Mathf.Max(1, _hud.XpNeeded) + "</color>";
         }
 
         /// <summary>
@@ -660,7 +658,7 @@ namespace RealmOfAshes.Game
                 Image image = _markers[i];
                 image.gameObject.SetActive(visible);
                 if (!visible) continue;
-                image.rectTransform.anchoredPosition = new Vector2(p.x * 200f, p.y * 200f);
+                image.rectTransform.anchoredPosition = new Vector2(p.x * MinimapPixels, p.y * MinimapPixels);
                 ApplyMarkerStyle(image, marker.Kind);
             }
             for (int i = count; i < _markers.Length; i++) _markers[i].gameObject.SetActive(false);
@@ -670,7 +668,7 @@ namespace RealmOfAshes.Game
             _playerArrow.gameObject.SetActive(playerVisible);
             if (playerVisible)
             {
-                _playerArrow.rectTransform.anchoredPosition = new Vector2(player.x * 200f, player.y * 200f);
+                _playerArrow.rectTransform.anchoredPosition = new Vector2(player.x * MinimapPixels, player.y * MinimapPixels);
                 _playerArrow.rectTransform.localEulerAngles = new Vector3(0f, 0f, -_minimap.PlayerHeading);
             }
         }
@@ -695,7 +693,7 @@ namespace RealmOfAshes.Game
         private void RefreshLog()
         {
             if (_combat == null || !_logPanel.activeSelf) return;
-            int start = Mathf.Max(0, _combat.LogLines.Count - 4);
+            int start = Mathf.Max(0, _combat.LogLines.Count - 3);
             var text = new StringBuilder();
             for (int i = start; i < _combat.LogLines.Count; i++)
             {

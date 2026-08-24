@@ -128,6 +128,14 @@ requireText(server, 'const activityFieldKit = activeActivity?.kind === \'resourc
   'resource expeditions can again be blocked by missing personal tools');
 requireText(server, 'function settleServerWorldActivityPlayers',
   'completed activities no longer settle rewards and clear accepted tasks');
+requirePattern(server,
+  /completeWorldActivityTask\(taskId[\s\S]{0,900}performServerWorldTaskAction\(player, \{[\s\S]{0,120}action: 'claim'[\s\S]{0,120}taskId/,
+  'the extracting player is no longer paid inside the acknowledged extraction action');
+requirePattern(server,
+  /players\.set\(socket\.id, p\);[\s\S]{0,120}settleServerWorldActivityPlayers\(p\.worldTaskAccepted\);/,
+  'pending activity rewards are no longer recovered when the character joins');
+requireText(server, 'lastWorldActivityResult: sanitizeServerWorldActivityResult(savedState.lastWorldActivityResult)',
+  'a pending or paid activity result is no longer restored from the character save');
 requireText(server, 'lastWorldActivityResult: sanitizeServerWorldActivityResult',
   'the authoritative player snapshot no longer exposes a clear activity result');
 requirePattern(server,

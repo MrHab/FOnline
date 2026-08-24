@@ -15819,6 +15819,19 @@ function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '
     rewardCharacterIds: worldActivityRewardCharacterIds(activity)
   });
   if (!completed?.ok) return { ok: false, error: completed?.error || 'Эвакуация не была засчитана.' };
+  const initiatorClaim = performServerWorldTaskAction(player, {
+    action: 'claim',
+    taskId
+  });
+  if (!initiatorClaim?.ok) {
+    setServerWorldActivityResult(player, completed.task || task, {
+      reward: completed.task?.reward || task.reward || {},
+      rewardClaimed: false,
+      reason: initiatorClaim?.error === 'Достигнут предел крышек в рюкзаке.'
+        ? 'reward_inventory_full'
+        : 'reward_pending'
+    });
+  }
   invalidateWastelandPublicCache();
   emitServerWorldActivityState(room, 'worldActivityCompleted');
   settleServerWorldActivityPlayers([taskId]);
@@ -19978,6 +19991,7 @@ io.on('connection', (socket) => {
       worldFactionReputation: sanitizeServerWorldFactionReputation(
         savedState.worldFactionReputation || savedProfile.worldFactionReputation || {}
       ),
+      lastWorldActivityResult: sanitizeServerWorldActivityResult(savedState.lastWorldActivityResult),
       socialState: sanitizeServerSocialState(savedState.socialState || {}),
       globalMap: savedGlobalMap,
       onGlobalMap: !!savedGlobalMap.onWorldMap && !!savedGlobalWorldPoint,
@@ -20016,6 +20030,7 @@ io.on('connection', (socket) => {
     serverApplyDerivedVitals(p);
     rememberPlayerSettlement(p, room.locationId);
     players.set(socket.id, p);
+    settleServerWorldActivityPlayers(p.worldTaskAccepted);
     syncServerPlayerWorldPartyAttachment(p, WASTELAND_SIM.state(), { persist: false, emit: false });
     p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);
     if (p.onGlobalMap && p.globalWorldPoint) {

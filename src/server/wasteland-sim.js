@@ -5128,6 +5128,25 @@ function createWastelandSimulation(options = {}) {
     save(true);
     return { ok: true, task: finished, sim: publicState() };
   }
+
+  function failWorldActivityTask(taskId = '', data = {}) {
+    const id = String(taskId || '').trim();
+    const task = state.worldTasks.find(row => row && String(row.id || '') === id);
+    if (!task || task.status !== 'active') return { ok: false, error: 'Задание уже недоступно.' };
+    const supportedTypes = new Set(['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal', 'assault_diversion']);
+    if (!supportedTypes.has(task.type)) return { ok: false, error: 'Это задание нельзя завершить как локальную активность.' };
+    const reason = String(data.reason || 'player_activity_failed').slice(0, 64);
+    const finished = finishWorldTask(task, 'failed', reason, {
+      activityKind: task.type,
+      activityGrade: 'failed',
+      failureReason: reason,
+      failedHour: Number(Number(state.worldHour || 0).toFixed(2))
+    });
+    dirty = true;
+    save(true);
+    return { ok: true, task: finished, sim: publicState() };
+  }
+
   function applyExpiredWorldTaskConsequences(task = {}) {
     const now = Number(state.worldHour || 0);
     const priority = clamp(Number(task.priority || 1), 1, 5);
@@ -11509,6 +11528,7 @@ function createWastelandSimulation(options = {}) {
     claimClearedSite,
     completeWorldTaskDelivery,
     completeWorldActivityTask,
+    failWorldActivityTask,
     joinWorldParty,
     leaveWorldParty,
     reconcileWorldPartyMembers,

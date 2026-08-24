@@ -263,6 +263,16 @@ function checkSimulationContract() {
     assert.strictEqual(result.task.status, 'completed');
     assert.strictEqual(result.task.details.activityGrade, 'bonus');
     assert.deepStrictEqual(result.task.details.rewardCharacterIds, ['character_a', 'character_b']);
+    const failedTask = sim.state().worldTasks.find(row =>
+      row?.status === 'active' && row.type === 'resource_expedition' && row.id !== task.id);
+    assert(failedTask, 'simulation did not keep a second activity for timeout verification');
+    const failedResult = sim.failWorldActivityTask(failedTask.id, { reason: 'time_expired' });
+    assert.strictEqual(failedResult?.ok, true, failedResult?.error || 'activity failure did not close');
+    assert.strictEqual(failedResult.task.status, 'failed');
+    assert.strictEqual(failedResult.task.details.activityGrade, 'failed');
+    assert.strictEqual(failedResult.task.details.failureReason, 'time_expired');
+    assert.strictEqual(sim.failWorldActivityTask(failedTask.id, { reason: 'time_expired' }).ok, false,
+      'a failed activity must never restart from the same task');
     const reconTask = sim.state().worldTasks.find(row => row?.status === 'active' && row.type === 'recon_expedition');
     assert(reconTask, 'simulation did not seed a recon expedition');
     assert(reconTask.details?.locationId, 'recon expedition has no target location');

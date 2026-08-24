@@ -125,6 +125,14 @@ const {
   extractWorldActivity,
   worldActivityRewardCharacterIds
 } = require('./src/server/world-activity-runtime');
+const SERVER_PLAYABLE_WORLD_ACTIVITY_TYPES = new Set([
+  'escort_caravan',
+  'distress_signal',
+  'recon_expedition',
+  'resource_expedition',
+  'outpost_defense',
+  'assault_diversion'
+]);
 const {
   pruneIdleRooms,
   resolveEphemeralRoomIdleTtlMs,
@@ -6296,6 +6304,59 @@ function serverWorldTaskDeliveryPlan(player = {}, task = {}) {
   return { demand, cost, missing, canDeliver: Object.keys(demand).length > 0 && Object.keys(missing).length === 0 };
 }
 
+function sanitizeServerWorldActivityResult(value = null) {
+  if (!value || !SERVER_PLAYABLE_WORLD_ACTIVITY_TYPES.has(String(value.type || ''))) return null;
+  const status = ['completed', 'failed', 'expired', 'resolved'].includes(String(value.status || '').toLowerCase())
+    ? String(value.status).toLowerCase()
+    : 'resolved';
+  const grade = ['completed', 'bonus', 'mastered', 'failed'].includes(String(value.grade || '').toLowerCase())
+    ? String(value.grade).toLowerCase()
+    : status === 'completed' ? 'completed' : 'failed';
+  const reward = value.reward && typeof value.reward === 'object' ? value.reward : {};
+  return {
+    id: String(value.id || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 180),
+    taskId: String(value.taskId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120),
+    type: String(value.type || '').slice(0, 48),
+    title: String(value.title || 'Активность пустоши').slice(0, 160),
+    status,
+    grade,
+    reward: {
+      xp: Math.max(0, Math.floor(Number(reward.xp || 0))),
+      caps: Math.max(0, Math.floor(Number(reward.caps || 0))),
+      reputation: Math.max(0, Math.floor(Number(reward.reputation || 0))),
+      reputationFactionId: String(reward.reputationFactionId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
+    },
+    rewardClaimed: value.rewardClaimed === true,
+    reason: String(value.reason || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 64),
+    finishedAt: Math.max(0, Number(value.finishedAt || Date.now()))
+  };
+}
+
+function setServerWorldActivityResult(player = {}, task = {}, options = {}) {
+  if (!player || !task || !SERVER_PLAYABLE_WORLD_ACTIVITY_TYPES.has(String(task.type || ''))) return false;
+  const status = String(options.status || task.status || 'resolved').toLowerCase();
+  const details = task.details && typeof task.details === 'object' ? task.details : {};
+  const grade = String(options.grade || details.activityGrade || details.escortGrade || details.grade
+    || (status === 'completed' ? 'completed' : 'failed')).toLowerCase();
+  const rewardClaimed = options.rewardClaimed === true;
+  const next = sanitizeServerWorldActivityResult({
+    id: `${task.id}:${status}:${rewardClaimed ? 'paid' : 'pending'}:${grade}`,
+    taskId: task.id,
+    type: task.type,
+    title: task.title,
+    status,
+    grade,
+    reward: options.reward || task.reward || {},
+    rewardClaimed,
+    reason: options.reason || details.failureReason || details.finishReason || '',
+    finishedAt: Date.now()
+  });
+  const previous = sanitizeServerWorldActivityResult(player.lastWorldActivityResult);
+  if (previous && next && previous.id === next.id
+    && JSON.stringify(previous.reward) === JSON.stringify(next.reward)) return false;
+  player.lastWorldActivityResult = next;
+  return true;
+}
 function performServerWorldTaskAction(player = {}, data = {}) {
   const action = String(data.action || '').toLowerCase();
   const { id, state, task } = serverWorldTaskById(data.taskId || data.worldTaskId || '');
@@ -6422,17 +6483,98 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     player.worldTaskAccepted = player.worldTaskAccepted.filter(value => value !== id);
     if (player.worldTaskTrackedId === id) player.worldTaskTrackedId = '';
     sanitizeCarrySnapshot(player);
+    const reward = { xp, caps, reputation, reputationFactionId };
+    if (SERVER_PLAYABLE_WORLD_ACTIVITY_TYPES.has(String(task.type || ''))) {
+      setServerWorldActivityResult(player, task, { reward, rewardClaimed: true });
+    }
     return {
       ok: true,
       action,
       taskId: id,
-      reward: { xp, caps, reputation, reputationFactionId },
+      reward,
       self: publicAuthoritativePlayerState(player)
     };
   }
   return { ok: false, error: 'Неизвестное действие с работой пустоши.' };
 }
 
+function settleServerWorldActivityPlayers(taskIds = []) {
+  const wanted = new Set((Array.isArray(taskIds) ? taskIds : [taskIds])
+    .map(value => String(value || ''))
+    .filter(Boolean));
+  const simState = typeof WASTELAND_SIM.state === 'function' ? WASTELAND_SIM.state() : null;
+  const allTasks = [
+    ...(Array.isArray(simState?.worldTasks) ? simState.worldTasks : []),
+    ...(Array.isArray(simState?.worldTaskHistory) ? simState.worldTaskHistory : [])
+  ];
+  const tasksById = new Map(allTasks.map(task => [String(task?.id || ''), task]));
+  let changedPlayers = 0;
+  for (const player of players.values()) {
+    if (!player || !socketIsLive(player.id)) continue;
+    const acceptedIds = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []);
+    let playerChanged = false;
+    for (const id of acceptedIds) {
+      if (wanted.size > 0 && !wanted.has(id)) continue;
+      const task = tasksById.get(id);
+      if (!task || !SERVER_PLAYABLE_WORLD_ACTIVITY_TYPES.has(String(task.type || '')) || task.status === 'active') continue;
+      if (task.status === 'completed') {
+        const alreadyClaimed = sanitizeServerWorldTaskClaimIds(player.worldTaskRewardClaims || []).includes(id);
+        if (alreadyClaimed) {
+          player.worldTaskAccepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).filter(value => value !== id);
+          if (player.worldTaskTrackedId === id) player.worldTaskTrackedId = '';
+          playerChanged = setServerWorldActivityResult(player, task, {
+            reward: task.reward || {},
+            rewardClaimed: true
+          }) || playerChanged;
+          continue;
+        }
+        if (worldTaskClaimEligible(task, player, true, worldTransferId)) {
+          const claimed = performServerWorldTaskAction(player, { action: 'claim', taskId: id });
+          if (claimed?.ok) {
+            playerChanged = true;
+          } else {
+            playerChanged = setServerWorldActivityResult(player, task, {
+              reward: task.reward || {},
+              rewardClaimed: false,
+              reason: claimed?.error === 'Достигнут предел крышек в рюкзаке.'
+                ? 'reward_inventory_full'
+                : 'reward_pending'
+            }) || playerChanged;
+          }
+          continue;
+        }
+        player.worldTaskAccepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).filter(value => value !== id);
+        if (player.worldTaskTrackedId === id) player.worldTaskTrackedId = '';
+        playerChanged = setServerWorldActivityResult(player, task, {
+          status: 'resolved',
+          grade: 'failed',
+          reward: {},
+          rewardClaimed: false,
+          reason: 'participation_not_credited'
+        }) || true;
+        continue;
+      }
+      player.worldTaskAccepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).filter(value => value !== id);
+      if (player.worldTaskTrackedId === id) player.worldTaskTrackedId = '';
+      playerChanged = setServerWorldActivityResult(player, task, {
+        status: task.status,
+        grade: 'failed',
+        reward: {},
+        rewardClaimed: false
+      }) || true;
+    }
+    if (!playerChanged) continue;
+    changedPlayers += 1;
+    player.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(player);
+    try {
+      persistActivePlayerState(player);
+    } catch (error) {
+      console.error('World activity settlement persistence failed:', player.id, error);
+    }
+    emitAuthoritativePlayerState(player, { reason: 'worldActivityResult' });
+  }
+  return changedPlayers;
+}
 function serverInventoryRowsToObject(rows = []) {
   const out = {};
   for (const row of sanitizeServerInventorySnapshot(rows, { includeEquipped: true })) {
@@ -15378,6 +15520,37 @@ function serverWorldActivityOperationPoints(room, sabotageCount = 4) {
     };
   });
 }
+function ensureServerWorldActivityResourceCapacity(room, task) {
+  if (!room || !task || task.type !== 'resource_expedition' || !(room.resources instanceof Map)) return false;
+  ensureWastelandSiteResourceNodes(room, roomLocation(room));
+  const allowed = new Set((Array.isArray(task.details?.resourceTypes) ? task.details.resourceTypes : [])
+    .map(value => String(value || ''))
+    .filter(Boolean));
+  const nodes = [...room.resources.values()].filter(resource => {
+    const definition = serverResourceDef(resource?.type);
+    return definition && (allowed.has(String(definition.itemId || '')) || allowed.has(String(resource.type || '')));
+  });
+  if (!nodes.length) return false;
+  const required = Math.max(
+    1,
+    Math.floor(Number(task.details?.targetUnits || 1)),
+    Math.floor(Number(task.details?.bonusUnits || 1)),
+    Math.floor(Number(task.details?.maxUnits || 1))
+  );
+  let available = nodes.reduce((sum, resource) => sum + Math.max(0, Math.floor(Number(resource.hp || 0))), 0);
+  let index = 0;
+  while (available < required) {
+    const resource = nodes[index % nodes.length];
+    resource.hp = Math.max(0, Math.floor(Number(resource.hp || 0))) + 1;
+    resource.maxHp = Math.max(Number(resource.maxHp || 1), resource.hp);
+    delete resource.depletedAt;
+    delete resource.respawnAt;
+    updateResourceTile(room, resource);
+    available += 1;
+    index += 1;
+  }
+  return true;
+}
 function ensureServerWorldActivityForRoom(room, now = Date.now()) {
   if (!room) return null;
   const current = room.worldActivity;
@@ -15403,6 +15576,9 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
     && roomPlayers.some(player => sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(String(row.id || '')))
   ));
   if (!task) return null;
+  if (task.type === 'resource_expedition' && !ensureServerWorldActivityResourceCapacity(room, task)) {
+    return null;
+  }
   const common = {
     taskId: task.id,
     roomId: room.id,
@@ -15482,7 +15658,8 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
 function spawnServerWorldActivityWave(room, threatTier = 0) {
   const activity = room?.worldActivity;
   const tier = clamp(Math.floor(Number(threatTier || 0)), 0, 3);
-  if (!room || !activity || tier <= Number(room.lastWorldActivitySpawnedTier || 0)) return 0;
+  if (!room || !activity || !['active', 'extracting'].includes(String(activity.status || ''))
+    || tier <= Number(room.lastWorldActivitySpawnedTier || 0)) return 0;
   const typeName = ['outpost_defense', 'distress_signal', 'assault_diversion'].includes(activity.kind)
     ? 'Рейдер'
     : tier >= 3 ? 'Рейдер' : tier >= 2 ? 'Гекко' : 'Пепельный волк';
@@ -15525,6 +15702,14 @@ function updateServerWorldActivity(room, now = Date.now()) {
     return !!previous;
   }
   const tick = tickWorldActivity(activity, now);
+  if (tick.expired) {
+    const failed = WASTELAND_SIM.failWorldActivityTask(activity.taskId, {
+      reason: 'time_expired'
+    });
+    if (failed?.ok) invalidateWastelandPublicCache();
+    settleServerWorldActivityPlayers([activity.taskId]);
+  }
+
   const spawned = spawnServerWorldActivityWave(room, activity.threatTier);
   const changed = activity !== previous || tick.expired || tick.threatTierAdvanced || spawned > 0;
   if (changed) emitServerWorldActivityState(room, tick.expired ? 'worldActivityExpired' : 'worldActivity');
@@ -15636,12 +15821,15 @@ function performServerWorldActivityExtraction(player = {}, task = {}, taskId = '
   if (!completed?.ok) return { ok: false, error: completed?.error || 'Эвакуация не была засчитана.' };
   invalidateWastelandPublicCache();
   emitServerWorldActivityState(room, 'worldActivityCompleted');
+  settleServerWorldActivityPlayers([taskId]);
+  const activityResult = sanitizeServerWorldActivityResult(player.lastWorldActivityResult);
   return {
     ok: true,
     action: 'activity_extract',
     taskId,
     grade: extracted.grade,
     task: completed.task,
+    result: activityResult,
     sim: completed.sim,
     activity: publicWorldActivity(activity),
     self: publicAuthoritativePlayerState(player)
@@ -18669,6 +18857,7 @@ function syncWorldCaravanPlayerTransfers() {
   syncWorldPlayerAmbushTransfers(simState);
   syncWorldCaravanArrivalTransfers(simState);
   syncWorldOnsitePartyTransfers(simState);
+  settleServerWorldActivityPlayers();
 }
 
 function publicPlayer(p) {
@@ -18794,6 +18983,7 @@ function publicAuthoritativePlayerState(p = {}) {
     worldTaskRecords,
     worldTaskRewardClaims: sanitizeServerWorldTaskClaimIds(p.worldTaskRewardClaims || []),
     worldFactionReputation: sanitizeServerWorldFactionReputation(p.worldFactionReputation || {}),
+    lastWorldActivityResult: sanitizeServerWorldActivityResult(p.lastWorldActivityResult),
     socialState: sanitizeServerSocialState(p.socialState || {}),
     combat,
     onGlobalMap: !!p.onGlobalMap,
@@ -21404,14 +21594,18 @@ io.on('connection', (socket) => {
     if (dist > 3.2) return fail('Подойдите ближе к ресурсу.');
 
     const expectedTool = resourceDef.toolId;
+    const activeActivity = ensureServerWorldActivityForRoom(room, Date.now());
+    const activityFieldKit = activeActivity?.kind === 'resource_expedition'
+      && sanitizeServerWorldTaskIds(p.worldTaskAccepted || []).includes(String(activeActivity.taskId || ''))
+      && (activeActivity.allowedItemIds || []).includes(String(resourceDef.itemId || ''));
     const toolId = String(data.toolId || '').replace(/^ui_/, '').split('_')[0] || expectedTool;
     const baseToolId = ['pickaxe', 'axe', 'handPump'].includes(toolId) ? toolId : String(data.baseToolId || '').slice(0, 32);
-    if (baseToolId !== expectedTool && toolId !== expectedTool) {
+    if (!activityFieldKit && baseToolId !== expectedTool && toolId !== expectedTool) {
       return fail(resourceDef.needTool);
     }
     const equippedToolId = serverActiveWeaponId(p);
     if (equippedToolId !== expectedTool) {
-      return fail(resourceDef.needTool);
+      if (!activityFieldKit) return fail(resourceDef.needTool);
     }
 
     const now = Date.now();
@@ -21424,7 +21618,7 @@ io.on('connection', (socket) => {
     const rng = room.rng || Math.random;
     const intVal = serverStatValue(p, 'int');
     const luckVal = serverStatValue(p, 'luck');
-    const condition = Number(serverPlayerItemCondition(p, expectedTool) ?? 100);
+    const condition = activityFieldKit ? 100 : Number(serverPlayerItemCondition(p, expectedTool) ?? 100);
     const bonusChance = clamp(
       0.18 +
       Math.max(0, intVal - 5) * 0.025 +
@@ -21453,7 +21647,7 @@ io.on('connection', (socket) => {
     refreshRoomWorldState(room);
 
     const item = { id: resourceDef.itemId, qty };
-    serverWearPlayerItem(p, expectedTool, 1.5);
+    if (!activityFieldKit) serverWearPlayerItem(p, expectedTool, 1.5);
     serverInventoryAdd(p, item.id, item.qty);
     const xp = serverHarvestXp(qty);
     serverGrantXp(p, xp);

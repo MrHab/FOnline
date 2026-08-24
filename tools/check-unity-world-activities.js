@@ -120,6 +120,29 @@ if (!activityHubMetadata.includes('fileFormatVersion: 2')
   fail('Unity metadata for RoaActivityHubCanvas is invalid');
 }
 
+requireText(simulation, 'function failWorldActivityTask',
+  'a timed-out local activity no longer closes its simulation task');
+requireText(server, 'function ensureServerWorldActivityResourceCapacity',
+  'resource expeditions no longer guarantee enough live nodes for the maximum goal');
+requireText(server, 'const activityFieldKit = activeActivity?.kind === \'resource_expedition\'',
+  'resource expeditions can again be blocked by missing personal tools');
+requireText(server, 'function settleServerWorldActivityPlayers',
+  'completed activities no longer settle rewards and clear accepted tasks');
+requireText(server, 'lastWorldActivityResult: sanitizeServerWorldActivityResult',
+  'the authoritative player snapshot no longer exposes a clear activity result');
+requirePattern(server,
+  /syncWorldCaravanArrivalTransfers\(simState\);[\s\S]{0,180}settleServerWorldActivityPlayers\(\);/,
+  'caravan arrival no longer ends with the common activity settlement');
+requireText(canvas, 'Socket.OnAuthoritativeSelf += HandleAuthoritativeSelf;',
+  'Unity no longer listens for authoritative activity results');
+requireText(canvas, 'new GameObject("WorldActivityResult"',
+  'Unity final activity card is missing');
+requireText(canvas, '"АКТИВНОСТЬ НАЧАЛАСЬ. " + StartInstruction(kind)',
+  'Unity no longer announces the start and first objective');
+requireText(canvas, 'Socket.ApplyGameplayAck(ack);',
+  'Unity no longer applies the reward-bearing extraction response');
+requireText(canvas, '"ЗАВЕРШИТЬ СПАСЕНИЕ"',
+  'distress signal still asks for an exit even though it ends in the cleared area');
 if (!process.exitCode) {
   console.log('Unity world activities OK: worldState HUD, server progress and acknowledged extraction');
 }

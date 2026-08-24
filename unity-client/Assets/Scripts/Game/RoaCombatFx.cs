@@ -86,6 +86,8 @@ namespace RealmOfAshes.Game
         private readonly List<ExplosionFx> _explosions = new List<ExplosionFx>();
         private readonly List<SpeechBubble> _speech = new List<SpeechBubble>();
 
+        public RoaAudio Audio;
+
         private RoaSocketClient _socket;
         private RoaEnemies _enemies;
         private bool _subscribed;
@@ -161,6 +163,7 @@ namespace RealmOfAshes.Game
             start += direction * 0.34f;
             start.y = Mathf.Max(start.y, 1.05f);
             end.y = Mathf.Max(end.y, 1.02f);
+            Audio?.PlayShot(start, end, weaponId);
 
             TracerFx tracer = AcquireTracer();
             tracer.Line.positionCount = 2;
@@ -200,6 +203,7 @@ namespace RealmOfAshes.Game
         public void PlayExplosion(Vector3 center, float radius)
         {
             radius = Mathf.Max(1.4f, radius);
+            Audio?.PlayExplosion(center, radius);
             var root = new GameObject("ExplosionFx");
             root.transform.SetParent(transform, false);
             root.transform.position = new Vector3(center.x, Mathf.Max(0.12f, center.y), center.z);

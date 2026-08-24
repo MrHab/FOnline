@@ -68,6 +68,7 @@ namespace RealmOfAshes.Game
         public RoaMinimap Minimap;
         public RoaRoofCutaway RoofCutaway;
         public RoaCombatFx CombatFx;
+        public RoaAudio Audio;
         public RoaMobileControls MobileControls;
         public RoaQuickbar Quickbar;
         public RoaActorNameplates ActorNameplates;
@@ -201,6 +202,10 @@ namespace RealmOfAshes.Game
             Lighting.Configure(BaseUrl);
             Lighting.SetLocalWorldActive(false);
 
+            if (Audio == null) Audio = GetComponent<RoaAudio>();
+            if (Audio == null) Audio = gameObject.AddComponent<RoaAudio>();
+            Audio.Configure(this);
+
             if (Minimap == null) Minimap = GetComponent<RoaMinimap>();
             if (Minimap == null) Minimap = gameObject.AddComponent<RoaMinimap>();
 
@@ -210,6 +215,7 @@ namespace RealmOfAshes.Game
 
             if (CombatFx == null) CombatFx = GetComponent<RoaCombatFx>();
             if (CombatFx == null) CombatFx = gameObject.AddComponent<RoaCombatFx>();
+            CombatFx.Audio = Audio;
             CombatFx.Configure(Socket, Enemies);
 
             if (Enemies != null) Enemies.Fog = Fog;
@@ -246,6 +252,7 @@ namespace RealmOfAshes.Game
                 Combat.RemotePlayers = RemotePlayers;
                 Combat.Inventory = Inventory;
                 Combat.Fx = CombatFx;
+                Combat.Audio = Audio;
                 Combat.Fog = Fog;
             }
 
@@ -1610,6 +1617,7 @@ namespace RealmOfAshes.Game
                 _controller.View = view;
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
+                _controller.Audio = Audio;
 
                 // Бой и подбор знают о персонаже только после спавна: до входа
                 // в мир стрелять не из чего и подбирать некому.
@@ -1638,6 +1646,7 @@ namespace RealmOfAshes.Game
             {
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
+                _controller.Audio = Audio;
             }
             if (Fog != null) Fog.Observer = _controller;
             if (Interaction != null) Interaction.SetPlayer(_controller);

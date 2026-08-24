@@ -57,6 +57,7 @@ namespace RealmOfAshes.Game
         public RoaSocketClient Socket;
         public RoaCameraRig Camera;
         public RoaCharacterView View;
+        public RoaAudio Audio;
         public RoaPipboy Pipboy;
         public RoaInventory Inventory;
 
@@ -115,6 +116,7 @@ namespace RealmOfAshes.Game
         private void OnDisable()
         {
             if (Socket != null) Socket.OnAuthoritativeSelf -= ApplyAuthoritativeState;
+            Audio?.StopLocomotion();
         }
 
         private void Update()
@@ -124,6 +126,7 @@ namespace RealmOfAshes.Game
                 _velocity = Vector3.zero;
                 _visualVelocity = Vector3.zero;
                 Moving = false;
+                Audio?.StopLocomotion();
                 if (View != null) View.UpdateLocomotion(_visualVelocity, _yawDeg, false, _crouching);
                 if (Socket != null)
                     Socket.SendState(transform.position, _yawDeg, _velocity, false, _crouching, false);
@@ -132,6 +135,7 @@ namespace RealmOfAshes.Game
 
             if (PointerAimEnabled) AimAtCursor();
             ReadInputAndMove();
+            Audio?.SetLocomotion(_visualVelocity, transform.position, _controller.isGrounded, _crouching);
 
             if (View != null) View.UpdateLocomotion(_visualVelocity, _yawDeg, Moving, _crouching);
 
@@ -410,6 +414,7 @@ namespace RealmOfAshes.Game
             _visualVelocity = Vector3.zero;
             _colliding = false;
             _collisionNormal = Vector3.zero;
+            Audio?.StopLocomotion();
 
             if (Camera != null) Camera.SnapToTarget();
         }

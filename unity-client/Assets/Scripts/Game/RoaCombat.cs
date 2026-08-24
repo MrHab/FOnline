@@ -31,6 +31,7 @@ namespace RealmOfAshes.Game
         public RoaPipboy Pipboy;
         public RoaInventory Inventory;
         public RoaCombatFx Fx;
+        public RoaAudio Audio;
         public RoaFogOfWar Fog;
         public bool InputEnabled = true;
 
@@ -107,6 +108,7 @@ namespace RealmOfAshes.Game
             string name = payload["enemyName"]?.ToString() ?? "Противник";
             string type = payload["damageType"]?.ToString() ?? "ballistic";
             Player.View?.PlayHit();
+            Audio?.PlayHurt(damage);
             Float("-" + damage, Player.transform.position, new Color(1f, 0.36f, 0.29f));
             AddLog(name + " атакует (" + type + "): -" + damage + " HP"
                 + (absorbed > 0 ? ", броня " + absorbed : string.Empty));
@@ -127,6 +129,7 @@ namespace RealmOfAshes.Game
             if (payload?["effect"]?.ToString() != "infection" || Player == null) return;
             int damage = Mathf.Max(0, payload["damage"]?.ToObject<int>() ?? 0);
             if (damage <= 0) return;
+            Audio?.PlayHurt(damage);
             Float("-" + damage, Player.transform.position, new Color(0.62f, 0.81f, 0.45f));
             AddLog("Инфекция: -" + damage + " HP. Нужны антибиотики.");
         }
@@ -136,6 +139,7 @@ namespace RealmOfAshes.Game
             if (payload == null || payload["killerId"]?.ToString() != Socket?.Session?.Id) return;
             int xp = Mathf.Max(0, payload["xp"]?.ToObject<int>() ?? 0);
             if (xp <= 0) return;
+            Audio?.PlayKillConfirm();
             Vector3 position = RoaCoords.ToUnity(
                 payload["x"]?.ToObject<float>() ?? 0f,
                 payload["z"]?.ToObject<float>() ?? 0f);
@@ -416,6 +420,7 @@ namespace RealmOfAshes.Game
 
             if (melee)
             {
+                Audio?.PlayMeleeSwing(Player.transform.position);
                 Socket.Emit("melee", new Dictionary<string, object>
                 {
                     ["targetX"] = targetX,
@@ -591,6 +596,7 @@ namespace RealmOfAshes.Game
 
             int damage = Mathf.RoundToInt(ack["damage"]?.ToObject<float>() ?? 0f);
             bool critical = ack["critical"]?.ToObject<bool>() ?? false;
+            if (!HasAmmoWeapon()) Audio?.PlayMeleeImpact(targetPosition, critical);
 
             Float((critical ? "КРИТ " : "") + damage, targetPosition,
                 critical ? new Color(1f, 0.85f, 0.25f) : new Color(1f, 0.45f, 0.4f));
@@ -629,6 +635,7 @@ namespace RealmOfAshes.Game
             int damage = Mathf.RoundToInt(ack["damage"]?.ToObject<float>() ?? 0f);
             bool critical = ack["critical"]?.ToObject<bool>() ?? false;
             bool killed = ack["killed"]?.ToObject<bool>() ?? false;
+            if (!HasAmmoWeapon()) Audio?.PlayMeleeImpact(targetPosition, critical);
             Float((critical ? "КРИТ " : "") + damage, targetPosition,
                 critical ? new Color(1f, 0.85f, 0.25f) : new Color(1f, 0.35f, 0.3f));
             AddLog((target?.Name ?? "Игрок") + ": " + damage
@@ -808,6 +815,7 @@ namespace RealmOfAshes.Game
                 int take = ack["take"]?.ToObject<int>() ?? 0;
                 float apCost = ack["apCost"]?.ToObject<float>() ?? 0f;
                 Player.View?.StartReload(0f);
+                Audio?.PlayReload();
                 AddLog("Перезарядка: +" + take + " патр., -" + apCost.ToString("0.#") + " ОД");
             });
         }

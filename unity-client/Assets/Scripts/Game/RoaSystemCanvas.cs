@@ -44,6 +44,7 @@ namespace RealmOfAshes.Game
         private GameObject _tutorial;
         private GameObject _hudToolbar;
         private Text _menuStatus;
+        private Text _audioButtonLabel;
         private Text _graphicsCurrent;
         private readonly List<Button> _presetButtons = new List<Button>();
         private readonly Dictionary<string, Text> _graphicsRows = new Dictionary<string, Text>();
@@ -78,6 +79,7 @@ namespace RealmOfAshes.Game
                 foreach (Button button in _menu.GetComponentsInChildren<Button>())
                     if (button.name == "SwitchCharacter" || button.name == "Logout")
                         button.interactable = !Bootstrap.GameMenuActionPending;
+                RefreshAudioLabel();
             }
             if (_graphics.activeSelf) RefreshGraphics();
         }
@@ -122,12 +124,12 @@ namespace RealmOfAshes.Game
         /// <summary>#game-settings-panel: 310px под ⚙, список кнопок и заметка.</summary>
         private void BuildMenu()
         {
-            RectTransform panel = Panel("GameMenu", new Vector2(1f, 1f), new Vector2(-10f, -58f), new Vector2(310f, 360f));
+            RectTransform panel = Panel("GameMenu", new Vector2(1f, 1f), new Vector2(-10f, -58f), new Vector2(310f, 404f));
             _menu = panel.gameObject;
             PanelTitle(panel, "Меню", () => Bootstrap.MenuOpenGameMenu(false));
 
-            string[] names = { "SwitchCharacter", "Logout", "EditHud", "ResetHud", "Graphics", "Tutorial" };
-            string[] labels = { "Сменить персонажа", "Выйти из аккаунта", "Редактировать HUD", "Сбросить HUD", "Настройки графики", "Обучение и управление (F1)" };
+            string[] names = { "SwitchCharacter", "Logout", "EditHud", "ResetHud", "Graphics", "Audio", "Tutorial" };
+            string[] labels = { "Сменить персонажа", "Выйти из аккаунта", "Редактировать HUD", "Сбросить HUD", "Настройки графики", "Звук", "Обучение и управление (F1)" };
             System.Action[] actions =
             {
                 () => Bootstrap.ReturnToCharacterPicker(),
@@ -135,6 +137,7 @@ namespace RealmOfAshes.Game
                 () => Bootstrap.MenuBeginHudEdit(),
                 () => Bootstrap.MenuResetHud(),
                 () => Bootstrap.MenuOpenGraphics(true),
+                () => { RoaAudio.Active?.CycleMasterVolume(); RefreshAudioLabel(); },
                 () => Bootstrap.MenuOpenTutorial(true)
             };
             for (int i = 0; i < names.Length; i++)
@@ -142,14 +145,25 @@ namespace RealmOfAshes.Game
                 Button button = UiButton(names[i], panel, labels[i], 12, actions[i]);
                 var rect = (RectTransform)button.transform;
                 Place(rect, 0f, 1f, 1f, 1f, new Vector2(12f, -48f - i * 44f - 36f), new Vector2(-12f, -48f - i * 44f));
-                button.GetComponentInChildren<Text>().alignment = TextAnchor.MiddleLeft;
+                Text buttonLabel = button.GetComponentInChildren<Text>();
+                buttonLabel.alignment = TextAnchor.MiddleLeft;
+                if (names[i] == "Audio") _audioButtonLabel = buttonLabel;
             }
+            RefreshAudioLabel();
 
             _menuStatus = Label("Note", panel, 10, TextAnchor.UpperLeft, NoteInk);
             _menuStatus.horizontalOverflow = HorizontalWrapMode.Wrap;
             Place(_menuStatus.rectTransform, 0f, 0f, 1f, 0f, new Vector2(12f, 8f), new Vector2(-12f, 34f));
         }
 
+        private void RefreshAudioLabel()
+        {
+            if (_audioButtonLabel == null) return;
+            RoaAudio audio = RoaAudio.Active;
+            _audioButtonLabel.text = audio == null ? "Звук: —"
+                : audio.Muted ? "Звук: выключен"
+                : "Звук: " + audio.VolumePercent + "%";
+        }
         /// <summary>#graphics-window: пресеты, текущий режим, строки параметров.</summary>
         private void BuildGraphics()
         {

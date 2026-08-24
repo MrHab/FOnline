@@ -16,11 +16,42 @@ const ROOT = path.resolve(__dirname, '..');
 const RUNTIME_SOURCE = path.join(ROOT, 'public', 'js', 'game', '04b_character_glb_runtime.js');
 const CHARACTER_FILE = path.join(ROOT, 'public', 'assets', 'models', 'characters', 'base', 'character_male_medium.glb');
 const DONOR_FILE = path.join(ROOT, 'public', 'assets', 'models', 'characters', 'npc', 'npc_humanoid_animations.glb');
+const UNITY_GAME = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game');
+const UNITY_WORLD = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'World');
 
 const MAX_FOOT_DRIFT = 0.03;   // м, за 6 секунд непрерывной анимации
 const ONE_SHOT_CLIPS = ['attack', 'hurt', 'death'];
 
 async function main() {
+  const playerController = fs.readFileSync(path.join(UNITY_GAME, 'RoaPlayerController.cs'), 'utf8');
+  const characterView = fs.readFileSync(path.join(UNITY_GAME, 'RoaCharacterView.cs'), 'utf8');
+  const footIk = fs.readFileSync(path.join(UNITY_GAME, 'RoaFootIk.cs'), 'utf8');
+  const ikChain = fs.readFileSync(path.join(UNITY_GAME, 'RoaIkChain.cs'), 'utf8');
+  const weaponView = fs.readFileSync(path.join(UNITY_GAME, 'RoaWeaponView.cs'), 'utf8');
+  const locationLoader = fs.readFileSync(path.join(UNITY_WORLD, 'RoaLocationLoader.cs'), 'utf8');
+
+  assert(playerController.includes('Vector3 actual = (transform.position - before) / frameDt;')
+    && playerController.includes('_visualVelocity = Vector3.MoveTowards'),
+  'Unity locomotion no longer uses collision-resolved displacement with visual smoothing');
+  assert(playerController.includes('_controller.enableOverlapRecovery = true;')
+    && playerController.includes('OnControllerColliderHit'),
+  'Unity CharacterController lost overlap recovery or collision diagnostics');
+  assert(footIk.includes('Physics.SphereCastNonAlloc')
+    && footIk.includes('side.LockNormal = surfaceNormal;')
+    && footIk.includes('ApplyFootNormal(side, contactNormal, normalWeight)'),
+  'Unity foot IK no longer follows per-foot ground height and normal');
+  assert(ikChain.includes('Vector3? pole')
+    && ikChain.includes('ApplyPoleConstraint(pole.Value)')
+    && weaponView.includes('ArmPole(true)')
+    && weaponView.includes('ArmPole(false)'),
+  'Unity arm IK lost elbow pole constraints');
+  assert(characterView.includes('nextState.normalizedTime = phase;')
+    && characterView.includes('IsCyclicLocomotion'),
+  'Unity locomotion transitions no longer preserve gait phase');
+  assert(locationLoader.includes('root.InverseTransformPoint(sourceTransform.TransformPoint(point))')
+    && locationLoader.includes('filter.sharedMesh.bounds'),
+  'Unity fallback colliders are no longer rebuilt in object-local space');
+
   global.ProgressEvent = global.ProgressEvent || class ProgressEvent {};
   global.self = global.self || global;
   global.createImageBitmap = global.createImageBitmap || (async () => ({ width: 1, height: 1, close() {} }));

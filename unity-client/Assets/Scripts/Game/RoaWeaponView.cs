@@ -364,6 +364,15 @@ namespace RealmOfAshes.Game
             return bones.TryGetValue(name, out bone) ? bone : null;
         }
 
+        private Vector3 ArmPole(bool left)
+        {
+            Transform upper = Bone(_bones, left ? "upperarm_l" : "upperarm_r");
+            Vector3 origin = upper != null ? upper.position : (_owner != null ? _owner.position : Vector3.zero);
+            Vector3 right = _owner != null ? _owner.right : Vector3.right;
+            Vector3 forward = _owner != null ? _owner.forward : Vector3.forward;
+            return origin + right * (left ? -0.48f : 0.48f) - forward * 0.18f + Vector3.down * 0.22f;
+        }
+
         private static Transform FindDeep(Transform root, string name)
         {
             if (root.name == name) return root;
@@ -559,7 +568,7 @@ namespace RealmOfAshes.Game
             {
                 Matrix4x4 handToSocket = RoaWeaponGrip.HandToMount * Matrix4x4.Translate(PrimarySocketOffset);
                 Matrix4x4 handWorld = _socketGrip.localToWorldMatrix * handToSocket.inverse;
-                _primaryArm.Solve(handWorld.GetColumn(3), handWorld.rotation);
+                _primaryArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(false));
             }
 
             if (!_melee.TwoHanded || _socketGripLeft == null) return;
@@ -575,7 +584,7 @@ namespace RealmOfAshes.Game
                     _melee.SupportRotation.z * Mathf.Rad2Deg);
 
                 Matrix4x4 handWorld = _weapon.localToWorldMatrix * Matrix4x4.TRS(position, rot, Vector3.one);
-                _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation);
+                _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(true));
             }
         }
 
@@ -664,7 +673,7 @@ namespace RealmOfAshes.Game
             Matrix4x4 handLocal = Matrix4x4.TRS(localPosition, localRotation, Vector3.one);
             Matrix4x4 handWorld = _weapon.localToWorldMatrix * handLocal;
 
-            SupportHandSolved = _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation);
+            SupportHandSolved = _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(true));
         }
 
         /// <summary>

@@ -950,8 +950,29 @@ namespace RealmOfAshes.Game
             if (!_clips.Contains(clip)) clip = _clips.Contains("idle") ? "idle" : null;
             if (clip == null || clip == _currentClip) return;
 
+            string previous = _currentClip;
+            float phase = 0f;
+            bool preservePhase = IsCyclicLocomotion(previous) && IsCyclicLocomotion(clip);
+            AnimationState previousState = !string.IsNullOrEmpty(previous) ? _animation[previous] : null;
+            if (preservePhase && previousState != null)
+                phase = previousState.normalizedTime - Mathf.Floor(previousState.normalizedTime);
+
             _currentClip = clip;
-            _animation.CrossFade(clip, 0.16f);
+            AnimationState nextState = _animation[clip];
+            if (preservePhase && nextState != null) nextState.normalizedTime = phase;
+
+            float fade = previous == "idle" || clip == "idle" ? 0.12f
+                : previous == "turn" || clip == "turn" ? 0.10f
+                : preservePhase ? 0.18f
+                : 0.14f;
+            _animation.CrossFade(clip, fade);
+        }
+
+        private static bool IsCyclicLocomotion(string clip)
+        {
+            return clip == "walk" || clip == "run"
+                || clip == "walk_back" || clip == "run_back"
+                || clip == "crouch_walk" || clip == "crouch_walk_back";
         }
 
         private static float WrapAngle(float radians)

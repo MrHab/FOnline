@@ -548,15 +548,52 @@ namespace RealmOfAshes.World
 
         private static void AddBoundsCollider(GameObject root)
         {
-            var renderers = root.GetComponentsInChildren<MeshRenderer>();
-            if (renderers.Length == 0) return;
+            if (root == null) return;
+            Bounds localBounds = default(Bounds);
+            bool hasBounds = false;
 
-            Bounds bounds = renderers[0].bounds;
-            for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+            foreach (MeshFilter filter in root.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (filter == null || filter.sharedMesh == null) continue;
+                EncapsulateLocalBounds(filter.sharedMesh.bounds, filter.transform, root.transform,
+                    ref localBounds, ref hasBounds);
+            }
+            foreach (SkinnedMeshRenderer renderer in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (renderer == null) continue;
+                EncapsulateLocalBounds(renderer.localBounds, renderer.transform, root.transform,
+                    ref localBounds, ref hasBounds);
+            }
+            if (!hasBounds) return;
 
             var box = root.AddComponent<BoxCollider>();
-            box.center = root.transform.InverseTransformPoint(bounds.center);
-            box.size = bounds.size;
+            box.center = localBounds.center;
+            box.size = Vector3.Max(localBounds.size, new Vector3(0.05f, 0.05f, 0.05f));
+        }
+
+        private static void EncapsulateLocalBounds(Bounds source, Transform sourceTransform,
+                                                   Transform root, ref Bounds aggregate, ref bool hasBounds)
+        {
+            Vector3 min = source.min;
+            Vector3 max = source.max;
+            for (int ix = 0; ix < 2; ix++)
+            {
+                for (int iy = 0; iy < 2; iy++)
+                {
+                    for (int iz = 0; iz < 2; iz++)
+                    {
+                        Vector3 point = new Vector3(ix == 0 ? min.x : max.x,
+                            iy == 0 ? min.y : max.y, iz == 0 ? min.z : max.z);
+                        Vector3 local = root.InverseTransformPoint(sourceTransform.TransformPoint(point));
+                        if (!hasBounds)
+                        {
+                            aggregate = new Bounds(local, Vector3.zero);
+                            hasBounds = true;
+                        }
+                        else aggregate.Encapsulate(local);
+                    }
+                }
+            }
         }
 
         private IEnumerator FetchColliderCatalog()

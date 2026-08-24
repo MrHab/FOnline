@@ -12,7 +12,8 @@ namespace RealmOfAshes.Game
     /// опорную стопу в момент контакта, пришивает её к точке касания и держит,
     /// пока анимация не поднимет ногу снова.
     ///
-    /// Двигаются только бедро и голень — ориентацию стопы задаёт анимация.
+    /// Цепь бедро–голень ставит стопу в контакт, а лёгкий слой ориентации
+    /// совмещает подошву с нормалью поверхности.
     /// </summary>
     public sealed class RoaFootIk
     {
@@ -34,6 +35,13 @@ namespace RealmOfAshes.Game
         private const float TeleportReset = 1.6f;
 
         private const int FabrikIterations = 8;
+        private const float GroundProbeRadius = 0.045f;
+        private const float GroundProbeAbove = 0.62f;
+        private const float GroundProbeDistance = 1.28f;
+        private const float GroundFollowRate = 22f;
+        private const float GroundNormalRate = 14f;
+        private const float MinGroundNormalY = 0.57f;
+        private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
 
         private sealed class Side
         {
@@ -46,8 +54,13 @@ namespace RealmOfAshes.Game
             public bool Locked;
             public float Blend;
             public Vector3 LockPos;
+            public Vector3 LockNormal = Vector3.up;
             public float LockYaw;
             public float RelockCooldown;
+
+            public float GroundY;
+            public Vector3 GroundNormal = Vector3.up;
+            public bool HasGround;
 
             public Vector3 PrevAnimated;
             public bool HasPrev;
@@ -175,6 +188,9 @@ namespace RealmOfAshes.Game
             side.Locked = false;
             side.Blend = 0f;
             side.HasPrev = false;
+            side.HasGround = false;
+            side.GroundNormal = Vector3.up;
+            side.LockNormal = Vector3.up;
         }
 
         private void ApplySide(Side side, float frameDt, Vector3 actorVel, float actorSpeed,
@@ -184,10 +200,14 @@ namespace RealmOfAshes.Game
             if (side.Foot == null || side.RestHeight <= 0f) return;
 
             Vector3 animated = side.Foot.position;
+            float surfaceY;
+            Vector3 surfaceNormal;
+            SampleGround(side, animated, groundY, frameDt, out surfaceY, out surfaceNormal);
 
-            // Высота считается от настоящей земли, а не от «земли клипа»:
-            // поправка на просадку корня обязательна, иначе присед ломает замки.
-            float height = animated.y - groundY - side.RestHeight + kneeFlex;
+            // Высота считается от поверхности непосредственно под каждой стопой.
+            // На плоскости это прежний groundY, а на ступени или склоне ноги
+            // получают разные цели и перестают висеть либо проваливаться.
+            float height = animated.y - surfaceY - side.RestHeight + kneeFlex;
 
             Vector3 footVel = Vector3.zero;
             if (side.HasPrev) footVel = (animated - side.PrevAnimated) / frameDt;
@@ -231,7 +251,8 @@ namespace RealmOfAshes.Game
                 if (stance && height < Lift * 1.2f && side.RelockCooldown <= 0f)
                 {
                     side.Locked = true;
-                    side.LockPos = new Vector3(animated.x, groundY + side.RestHeight, animated.z);
+                    side.LockPos = new Vector3(animated.x, surfaceY + side.RestHeight, animated.z);
+                    side.LockNormal = surfaceNormal;
                     side.LockYaw = rootYaw;
                 }
             }
@@ -265,7 +286,7 @@ namespace RealmOfAshes.Game
             // к устаревшему замку и проваливалась.
             Vector3 grounded = new Vector3(
                 animated.x,
-                groundY + side.RestHeight + Mathf.Max(0f, height),
+                surfaceY + side.RestHeight + Mathf.Max(0f, height),
                 animated.z);
 
             bool hasTarget = false;
@@ -283,11 +304,65 @@ namespace RealmOfAshes.Game
             }
 
             if (hasTarget) SolveLegChain(side, target);
+
+            float contact = 1f - Mathf.Clamp01(Mathf.Max(0f, height) / (Lift * 3f));
+            float normalWeight = Mathf.Clamp01(Mathf.Max(side.Blend, contact * 0.72f));
+            Vector3 contactNormal = Vector3.Slerp(surfaceNormal, side.LockNormal, side.Blend).normalized;
+            if (!dead && normalWeight > 0.01f) ApplyFootNormal(side, contactNormal, normalWeight);
+        }
+
+        private void SampleGround(Side side, Vector3 animated, float fallbackY, float dt,
+                                  out float surfaceY, out Vector3 surfaceNormal)
+        {
+            float targetY = fallbackY;
+            Vector3 targetNormal = Vector3.up;
+            float bestDistance = float.PositiveInfinity;
+            Vector3 origin = new Vector3(animated.x, Mathf.Max(animated.y, fallbackY) + GroundProbeAbove, animated.z);
+            int count = Physics.SphereCastNonAlloc(origin, GroundProbeRadius, Vector3.down, GroundHits,
+                GroundProbeDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            Transform owner = _ground != null ? _ground.root : null;
+
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit hit = GroundHits[i];
+                if (hit.collider == null || hit.distance >= bestDistance) continue;
+                if (owner != null && hit.transform != null && hit.transform.IsChildOf(owner)) continue;
+                if (hit.normal.y < MinGroundNormalY) continue;
+                if (hit.point.y < fallbackY - 0.52f || hit.point.y > fallbackY + 0.42f) continue;
+                bestDistance = hit.distance;
+                targetY = hit.point.y;
+                targetNormal = hit.normal.normalized;
+            }
+
+            if (!side.HasGround || Mathf.Abs(side.GroundY - targetY) > TeleportReset)
+            {
+                side.GroundY = targetY;
+                side.GroundNormal = targetNormal;
+                side.HasGround = true;
+            }
+            else
+            {
+                float yBlend = 1f - Mathf.Exp(-GroundFollowRate * dt);
+                float normalBlend = 1f - Mathf.Exp(-GroundNormalRate * dt);
+                side.GroundY = Mathf.Lerp(side.GroundY, targetY, yBlend);
+                side.GroundNormal = Vector3.Slerp(side.GroundNormal, targetNormal, normalBlend).normalized;
+            }
+
+            surfaceY = side.GroundY;
+            surfaceNormal = side.GroundNormal;
+        }
+
+        private static void ApplyFootNormal(Side side, Vector3 normal, float weight)
+        {
+            if (side.Foot == null || normal.sqrMagnitude < 0.5f) return;
+            Quaternion tilt = Quaternion.FromToRotation(Vector3.up, normal.normalized);
+            side.Foot.rotation = Quaternion.Slerp(side.Foot.rotation, tilt * side.Foot.rotation,
+                Mathf.Clamp01(weight * 0.78f));
         }
 
         /// <summary>
-        /// FABRIK по цепи бедро → голень → стопа. Стопу не вращаем: её ориентацию
-        /// задаёт анимация, IK лишь приводит сустав стопы в целевую точку.
+        /// FABRIK по цепи бедро → голень → стопа. Сам решатель меняет только
+        /// направление звеньев; наклон стопы по нормали применяется отдельным слоем.
         /// </summary>
         private static void SolveLegChain(Side side, Vector3 target)
         {

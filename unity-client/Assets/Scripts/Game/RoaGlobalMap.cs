@@ -1595,6 +1595,75 @@ namespace RealmOfAshes.Game
             return true;
         }
 
+
+        /// <summary>Select an activity site and immediately request its server route.</summary>
+        public bool RequestTravelToWorldSite(string siteId, Action<JObject> completed = null)
+        {
+            if (!IsActive || _travelActive || _pendingContact != null || string.IsNullOrEmpty(siteId)) return false;
+            if (!string.IsNullOrEmpty(AttachedPartyId))
+            {
+                StatusText = "Вы движетесь с отрядом. Сначала покиньте группу.";
+                return false;
+            }
+
+            DynamicTarget target = _dynamicTargets.Find(row => row != null
+                && (row.SiteId == siteId || (row.Kind == "site" && row.Id == siteId))
+                && row.CanEnter);
+            if (target != null)
+            {
+                _selectedDynamic = target;
+                _selectedNode = null;
+                _selectedPoint = CopyPoint(target.Point);
+            }
+            else
+            {
+                JObject site = null;
+                foreach (JToken token in _wasteland?["sites"] as JArray ?? new JArray())
+                {
+                    JObject row = token as JObject;
+                    if (row?["id"]?.ToString() == siteId) { site = row; break; }
+                }
+                string locationId = site?["locationId"]?.ToString() ?? siteId;
+                GlobalMapNode node = null;
+                if (_map != null && _map.Nodes != null)
+                foreach (GlobalMapNode row in _map.Nodes)
+                {
+                    if (row.Id == siteId || row.Id == locationId || row.EffectiveLocationId == locationId)
+                    {
+                        node = row;
+                        break;
+                    }
+                }
+                if (node == null)
+                {
+                    StatusText = "Точка активности пока не нанесена на карту.";
+                    return false;
+                }
+                _selectedDynamic = null;
+                _selectedNode = node;
+                _selectedPoint = new GlobalMapPoint { X = node.X, Y = node.Y };
+            }
+
+            RefreshMarkers();
+            if (Distance(_playerPoint, _selectedPoint) <= 0.35f)
+            {
+                StatusText = "Вы прибыли к цели. Можно войти в локацию.";
+                completed?.Invoke(new JObject { ["ok"] = true, ["alreadyThere"] = true });
+                return true;
+            }
+            StartTravel(completed);
+            return true;
+        }
+
+        public bool PlayerAtWorldSite(string siteId)
+        {
+            if (string.IsNullOrEmpty(siteId)) return false;
+            JObject site = PlayerSiteData();
+            if (site == null) return false;
+            string id = site["id"]?.ToString() ?? string.Empty;
+            string locationId = site["locationId"]?.ToString() ?? string.Empty;
+            return id == siteId || locationId == siteId;
+        }
         public bool SubmitPendingContactDecision(bool enter)
         {
             if (_pendingContact == null || _contactDecisionPending || !IsLocalTravelLeader()) return false;

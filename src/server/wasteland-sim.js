@@ -11140,6 +11140,29 @@ function createWastelandSimulation(options = {}) {
       const urgentWeight = type === 'defend_resource' || type === 'retake_site' ? 450 : 0;
       return active + groupWeight + urgentWeight + clamp(Number(task?.priority || 0), 0, 5) * 90 + Number(task?.createdHour || 0) / 1000;
     };
+    const activityTaskTypes = new Set([
+      'escort_caravan',
+      'distress_signal',
+      'recon_expedition',
+      'resource_expedition',
+      'outpost_defense',
+      'assault_diversion'
+    ]);
+    const orderedTasks = state.worldTasks
+      .slice()
+      .sort((a, b) => {
+        const weightDelta = taskBoardWeight(b) - taskBoardWeight(a);
+        if (Math.abs(weightDelta) > 0.0001) return weightDelta;
+        return Number(b.createdHour || 0) - Number(a.createdHour || 0);
+      });
+    // Live activities are the primary Unity entry point and must stay visible.
+    const activityTasks = orderedTasks.filter(task => (
+      task?.status === 'active' && activityTaskTypes.has(String(task?.type || ''))
+    ));
+    const visibleTasks = [
+      ...activityTasks,
+      ...orderedTasks.filter(task => !activityTaskTypes.has(String(task?.type || '')))
+    ].slice(0, 30);
     return {
       schema: state.schema,
       version: state.version,
@@ -11255,15 +11278,8 @@ function createWastelandSimulation(options = {}) {
       worldZones: [],
       worldContacts: [],
       events: state.events.slice(0, 30).map(publicWorldEvent),
-      worldTasks: state.worldTasks
-        .slice()
-        .sort((a, b) => {
-          const weightDelta = taskBoardWeight(b) - taskBoardWeight(a);
-          if (Math.abs(weightDelta) > 0.0001) return weightDelta;
-          return Number(b.createdHour || 0) - Number(a.createdHour || 0);
-        })
-        .slice(0, 30)
-        .map(publicTask),
+      worldTasks: visibleTasks.map(publicTask),
+      worldActivities: activityTasks.slice(0, 18).map(publicTask),
       stats: state.stats
     };
   }

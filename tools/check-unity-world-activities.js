@@ -25,6 +25,8 @@ const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 const globalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 const metadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.cs.meta');
+const activityHub = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs');
+const activityHubMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs.meta');
 
 requireText(runtime, "const WORLD_ACTIVITY_SCHEMA = 'realm.worldActivity.v1';",
   'the versioned server activity schema is missing');
@@ -43,6 +45,10 @@ requirePattern(simulation,
 requirePattern(simulation,
   /function ensureAssaultDiversionTasks\([\s\S]{0,4500}createWorldTask\('assault_diversion'/,
   'the world simulation no longer seeds assault-diversion operations');
+requireText(simulation, 'worldActivities: activityTasks.slice(0, 18).map(publicTask)',
+  'the public simulation no longer exposes a dedicated activity feed');
+requireText(simulation, 'worldTasks: visibleTasks.map(publicTask)',
+  'live activities are no longer prioritized over legacy jobs');
 requirePattern(server,
   /function publicWorldState\([\s\S]{0,900}activity: publicWorldActivity\(room\.worldActivity\)/,
   'activity is no longer part of the authoritative room snapshot');
@@ -90,12 +96,28 @@ requireText(canvas, 'Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap',
   'activity HUD is not hidden outside a local gameplay location');
 requireText(bootstrap, 'WorldActivityCanvas.Configure(Socket, this);',
   'Unity bootstrap no longer configures the activity HUD');
+requireText(bootstrap, 'gameObject.AddComponent<RoaActivityHubCanvas>()',
+  'Unity bootstrap no longer installs the global activity hub');
+requireText(activityHub, 'Map?.WastelandState?["worldActivities"]',
+  'the Unity activity hub no longer reads the dedicated feed');
+requireText(activityHub, 'Interaction.SubmitWorldTaskAction(id, "accept"',
+  'the Unity activity hub no longer accepts activities');
+requireText(activityHub, 'Map.RequestTravelToWorldSite',
+  'the Unity activity hub no longer starts a server route');
+requireText(globalMap, 'public bool RequestTravelToWorldSite',
+  'the global map no longer exposes activity-site routing');
+requireText(server, 'const remoteActivity = player.onGlobalMap',
+  'the server no longer allows map acceptance for short activities');
 requireText(interaction, 'public JObject TrackedWorldTask',
   'Unity interaction facade no longer exposes the tracked activity target');
 requireText(globalMap, 'BuildTrackedWorldTaskMarker();',
   'the live map no longer highlights the tracked activity target');
 if (!/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(metadata)) {
   fail('Unity metadata for RoaWorldActivityCanvas is invalid');
+}
+if (!activityHubMetadata.includes('fileFormatVersion: 2')
+    || !/guid: [0-9a-f]{32}/.test(activityHubMetadata)) {
+  fail('Unity metadata for RoaActivityHubCanvas is invalid');
 }
 
 if (!process.exitCode) {

@@ -28,6 +28,41 @@ namespace RealmOfAshes.Game
         public RoaLocationLoader Loader;
         public RoaGroundItems GroundItems;
 
+        public bool WorldTaskActionPending { get { return _worldRequestPending; } }
+
+        public bool IsWorldTaskAccepted(string taskId)
+        {
+            if (string.IsNullOrEmpty(taskId)) return false;
+            foreach (JToken token in _self?["worldTaskAccepted"] as JArray ?? new JArray())
+                if (token?.ToString() == taskId) return true;
+            return false;
+        }
+
+        public bool IsWorldTaskTracked(string taskId)
+        {
+            return !string.IsNullOrEmpty(taskId)
+                && _self?["worldTaskTrackedId"]?.ToString() == taskId;
+        }
+
+        public JObject WorldTaskRecord(string taskId)
+        {
+            if (string.IsNullOrEmpty(taskId)) return null;
+            foreach (string key in new[] { "worldActivities", "worldTasks" })
+            {
+                foreach (JToken token in _world?[key] as JArray ?? new JArray())
+                {
+                    JObject task = token as JObject;
+                    if (task?["id"]?.ToString() == taskId) return task;
+                }
+            }
+            return null;
+        }
+
+        public void RefreshWorldTasks()
+        {
+            if (!_worldRequestPending) StartCoroutine(LoadWastelandState());
+        }
+
         [Tooltip("Клавиша взаимодействия с ближайшей целью.")]
         public KeyCode InteractKey = KeyCode.E;
         public bool KeyboardInputEnabled = true;

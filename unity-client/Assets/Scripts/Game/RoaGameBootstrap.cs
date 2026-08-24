@@ -343,6 +343,13 @@ namespace RealmOfAshes.Game
             mapCanvas.HudCanvas = HudCanvas;
             if (GlobalMap != null) GlobalMap.CanvasDriven = true;
 
+            // Primary entry point for short activities on the global map.
+            var activityHub = GetComponent<RoaActivityHubCanvas>();
+            if (activityHub == null) activityHub = gameObject.AddComponent<RoaActivityHubCanvas>();
+            activityHub.Bootstrap = this;
+            activityHub.Map = GlobalMap;
+            activityHub.Interaction = Interaction;
+
             // Экран загрузки локации в web-виде (#location-loading-screen).
             var loadingCanvas = GetComponent<RoaLoadingCanvas>();
             if (loadingCanvas == null) loadingCanvas = gameObject.AddComponent<RoaLoadingCanvas>();

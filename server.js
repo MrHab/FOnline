@@ -6309,13 +6309,24 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     if (task.status !== 'active') return { ok: false, error: 'Эта работа уже недоступна.' };
     if (accepted) return { ok: false, error: 'Эта работа уже взята.' };
     const issuer = serverWorldTaskSite(state, task.issuerSiteId || task.siteId || '');
+    const remoteActivityTypes = new Set([
+      'distress_signal',
+      'recon_expedition',
+      'resource_expedition',
+      'outpost_defense',
+      'assault_diversion'
+    ]);
+    const remoteActivity = player.onGlobalMap && remoteActivityTypes.has(String(task.type || ''));
+    if (!remoteActivity) {
     if (!serverPlayerAtWorldSite(player, issuer)) return { ok: false, error: 'Нужно подойти к доске работ в точке выдачи.' };
+    }
     const requiredFaction = serverWorldTaskRequiredFaction(task, state);
     if (requiredFaction && serverWorldFactionKey(player.worldFactionId || player.factionId || '') !== requiredFaction) return { ok: false, error: 'Эта работа доступна только участникам нужной фракции.' };
     if (isWorldPartyTask(task)) {
       const activeGroupTask = serverPlayerActiveWorldPartyTask(player, id);
       if (activeGroupTask) return { ok: false, error: 'Сначала отмените текущую работу с отрядом пустоши.' };
-      if (globalTravelSessionForMember(player.id) || player.onGlobalMap) {
+      if (globalTravelSessionForMember(player.id)
+        || (player.onGlobalMap && !serverPlayerAtWorldSite(player, issuer))) {
         return { ok: false, error: 'Сначала завершите собственный маршрут и вернитесь к доске работ.' };
       }
       const joined = WASTELAND_SIM.joinWorldParty({
@@ -6326,7 +6337,7 @@ function performServerWorldTaskAction(player = {}, data = {}) {
       if (!joined?.ok) return { ok: false, error: joined?.error || 'Группа больше не принимает участников.' };
     }
     player.worldTaskAccepted.push(id);
-    if (!player.worldTaskTrackedId) player.worldTaskTrackedId = id;
+    if (remoteActivity || !player.worldTaskTrackedId) player.worldTaskTrackedId = id;
     if (isWorldPartyTask(task)) {
       syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
     }

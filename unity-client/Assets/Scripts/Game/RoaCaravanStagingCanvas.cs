@@ -48,7 +48,7 @@ namespace RealmOfAshes.Game
                 : details?["staging"]?.ToObject<bool>() == true && details["joinClosed"]?.ToObject<bool>() != true;
             bool onGlobalMap = Bootstrap != null && Bootstrap.OnGlobalMap;
             bool hide = task == null || (Bootstrap != null && Bootstrap.FrontendVisible)
-                || (staging ? onGlobalMap : !onGlobalMap);
+                || (!staging && !onGlobalMap);
             if (hide)
             {
                 if (_root != null && _root.activeSelf) _root.SetActive(false);

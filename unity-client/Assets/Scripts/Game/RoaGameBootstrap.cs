@@ -70,6 +70,7 @@ namespace RealmOfAshes.Game
         public RoaCombatFx CombatFx;
         public RoaCombatPresentationFx CombatPresentation;
         public RoaAudio Audio;
+        public RoaMovementFx MovementFx;
         public RoaMobileControls MobileControls;
         public RoaQuickbar Quickbar;
         public RoaActorNameplates ActorNameplates;
@@ -208,6 +209,10 @@ namespace RealmOfAshes.Game
             if (Audio == null) Audio = GetComponent<RoaAudio>();
             if (Audio == null) Audio = gameObject.AddComponent<RoaAudio>();
             Audio.Configure(this);
+
+            if (MovementFx == null) MovementFx = GetComponent<RoaMovementFx>();
+            if (MovementFx == null) MovementFx = gameObject.AddComponent<RoaMovementFx>();
+            MovementFx.Configure(Audio);
 
             if (Minimap == null) Minimap = GetComponent<RoaMinimap>();
             if (Minimap == null) Minimap = gameObject.AddComponent<RoaMinimap>();

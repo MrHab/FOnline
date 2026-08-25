@@ -135,7 +135,9 @@ namespace RealmOfAshes.Game
 
             if (PointerAimEnabled) AimAtCursor();
             ReadInputAndMove();
-            Audio?.SetLocomotion(_visualVelocity, transform.position, _controller.isGrounded, _crouching);
+            Vector3 footPosition = transform.position;
+            footPosition.y = FeetY() + 0.025f;
+            Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching);
 
             if (View != null) View.UpdateLocomotion(_visualVelocity, _yawDeg, Moving, _crouching);
 

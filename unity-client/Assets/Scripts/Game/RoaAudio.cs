@@ -23,6 +23,18 @@ namespace RealmOfAshes.Game
         public int VolumePercent { get { return Mathf.RoundToInt(_masterVolume * 100f); } }
         public bool Muted { get { return _masterVolume <= 0.001f; } }
 
+        public struct FootstepCue
+        {
+            public Vector3 Position;
+            public Vector3 Velocity;
+            public float Speed;
+            public bool Crouching;
+            public bool RightFoot;
+        }
+
+        /// <summary>Visual-only cadence signal emitted with the same accepted step as the sound.</summary>
+        public event Action<FootstepCue> Footstep;
+
         private readonly List<AudioClip> _clips = new List<AudioClip>();
         private readonly List<AudioSource> _worldVoices = new List<AudioSource>();
         private RoaGameBootstrap _bootstrap;
@@ -60,6 +72,7 @@ namespace RealmOfAshes.Game
         private float _masterVolume;
         private int _worldCursor;
         private int _validatedClipCount;
+        private bool _rightFoot;
         private uint _variationState = 0x7f4a7c15u;
 
         public void Configure(RoaGameBootstrap bootstrap)
@@ -128,6 +141,7 @@ namespace RealmOfAshes.Game
             _locomotion = Vector3.zero;
             _grounded = false;
             _nextStepAt = 0f;
+            _rightFoot = false;
         }
 
         public void PlayShot(Vector3 start, Vector3 end, string weaponId)
@@ -225,6 +239,16 @@ namespace RealmOfAshes.Game
             _feet.pitch = Pitch(0.9f, 1.08f) * (_crouching ? 0.88f : 1f);
             _feet.volume = _crouching ? 0.18f : Mathf.Lerp(0.24f, 0.4f, Mathf.InverseLerp(1.5f, 6.5f, speed));
             _feet.PlayOneShot(_steps[index]);
+
+            _rightFoot = !_rightFoot;
+            Footstep?.Invoke(new FootstepCue
+            {
+                Position = _playerPosition,
+                Velocity = _locomotion,
+                Speed = speed,
+                Crouching = _crouching,
+                RightFoot = _rightFoot
+            });
 
             float cadence = Mathf.Lerp(0.62f, 0.29f, Mathf.InverseLerp(0.4f, 7f, speed));
             _nextStepAt = Time.unscaledTime + cadence * (_crouching ? 1.22f : 1f);

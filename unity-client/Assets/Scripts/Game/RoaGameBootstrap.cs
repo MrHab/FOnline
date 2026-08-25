@@ -79,6 +79,7 @@ namespace RealmOfAshes.Game
         public RoaWorkbenchCanvas WorkbenchCanvas;
         public RoaMapWindowCanvas MapWindow;
         public RoaWorldActivityCanvas WorldActivityCanvas;
+        public RoaFirstRunCoach FirstRunCoach;
 
         [Tooltip("NPC, диалоги, торговля, трупы и контейнеры. Если пусто, создаётся автоматически.")]
         public RoaInteraction Interaction;
@@ -381,6 +382,9 @@ namespace RealmOfAshes.Game
             WorldActivityCanvas.Configure(Socket, this);
             if (Minimap != null) Minimap.WorldActivity = WorldActivityCanvas;
 
+            if (FirstRunCoach == null) FirstRunCoach = GetComponent<RoaFirstRunCoach>();
+            if (FirstRunCoach == null) FirstRunCoach = gameObject.AddComponent<RoaFirstRunCoach>();
+            FirstRunCoach.Configure(this);
 
             // Оружейный верстак в web-виде (#weapon-modification-window).
             var workbench = GetComponent<RoaWorkbenchCanvas>();

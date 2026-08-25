@@ -61,6 +61,7 @@ namespace RealmOfAshes.Game
         private Text _introInstruction;
 
         public bool IsOpen { get { return _root != null && _root.activeSelf; } }
+        public bool HasActiveActivity { get { return _activity != null; } }
 
         public void Configure(RoaSocketClient socket, RoaGameBootstrap bootstrap)
         {

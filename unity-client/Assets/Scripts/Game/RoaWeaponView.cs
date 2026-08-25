@@ -157,6 +157,16 @@ namespace RealmOfAshes.Game
             get { return _socketGrip != null ? _socketGrip.position.y : 0f; }
         }
 
+        public bool TryGetMuzzle(out Vector3 worldPosition)
+        {
+            if (_socketMuzzle != null)
+            {
+                worldPosition = _socketMuzzle.position;
+                return true;
+            }
+            worldPosition = Vector3.zero;
+            return false;
+        }
         private Transform _weapon;
         private Transform _socketGrip;
         private Transform _socketMuzzle;

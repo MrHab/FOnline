@@ -109,6 +109,7 @@ namespace RealmOfAshes.Game
             string type = payload["damageType"]?.ToString() ?? "ballistic";
             Player.View?.PlayHit();
             Audio?.PlayHurt(damage);
+            Fx?.PlayDamagePulse(damage);
             Float("-" + damage, Player.transform.position, new Color(1f, 0.36f, 0.29f));
             AddLog(name + " атакует (" + type + "): -" + damage + " HP"
                 + (absorbed > 0 ? ", броня " + absorbed : string.Empty));
@@ -130,6 +131,7 @@ namespace RealmOfAshes.Game
             int damage = Mathf.Max(0, payload["damage"]?.ToObject<int>() ?? 0);
             if (damage <= 0) return;
             Audio?.PlayHurt(damage);
+            Fx?.PlayDamagePulse(damage);
             Float("-" + damage, Player.transform.position, new Color(0.62f, 0.81f, 0.45f));
             AddLog("Инфекция: -" + damage + " HP. Нужны антибиотики.");
         }
@@ -458,9 +460,12 @@ namespace RealmOfAshes.Game
 
             if (Fx != null)
             {
-                Vector3 start = new Vector3(self.x, Mathf.Max(1.05f, self.y + 0.23f), self.z);
+                Vector3 start = Vector3.zero;
+                bool exactMuzzle = Player.View != null && Player.View.TryGetMuzzle(out start);
+                if (!exactMuzzle)
+                    start = new Vector3(self.x, Mathf.Max(1.05f, self.y + 0.23f), self.z);
                 Vector3 end = new Vector3(target.x, Mathf.Max(1.02f, target.y + 0.23f), target.z);
-                Fx.PlayShot(start, end, weapon);
+                Fx.PlayShot(start, end, weapon, exactMuzzle);
                 float impulse = RoaCombatFx.ImpulseFor(weapon) * (MobileInputMode ? 0.6f : 1f);
                 RoaGameBootstrap.Active?.CameraRig?.AddImpulse(impulse);
             }

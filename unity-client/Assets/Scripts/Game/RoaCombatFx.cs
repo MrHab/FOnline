@@ -87,23 +87,28 @@ namespace RealmOfAshes.Game
         private readonly List<SpeechBubble> _speech = new List<SpeechBubble>();
 
         public RoaAudio Audio;
+        public RoaCombatPresentationFx Polish;
 
         private RoaSocketClient _socket;
         private RoaEnemies _enemies;
         private bool _subscribed;
         private GUIStyle _speechStyle;
 
-        public int ActiveTracerCount { get; private set; }
-        public int ActiveFlashCount { get; private set; }
-        public int ActiveImpactCount { get; private set; }
-        public int ActiveExplosionCount { get { return _explosions.Count; } }
+        private int _activeTracerCount;
+        private int _activeFlashCount;
+        private int _activeImpactCount;
+
+        public int ActiveTracerCount { get { return Polish != null ? Polish.ActiveTracerCount : _activeTracerCount; } }
+        public int ActiveFlashCount { get { return Polish != null ? Polish.ActiveFlashCount : _activeFlashCount; } }
+        public int ActiveImpactCount { get { return Polish != null ? Polish.ActiveImpactCount : _activeImpactCount; } }
+        public int ActiveExplosionCount { get { return Polish != null ? Polish.ActiveExplosionCount : _explosions.Count; } }
 
         public void Configure(RoaSocketClient socket, RoaEnemies enemies)
         {
             Unsubscribe();
             _socket = socket;
             _enemies = enemies;
-            EnsurePools();
+            if (Polish == null) EnsurePools();
             Subscribe();
         }
 
@@ -151,19 +156,24 @@ namespace RealmOfAshes.Game
             PlayShot(start, end, payload["weapon"]?.ToString());
         }
 
-        public void PlayShot(Vector3 start, Vector3 end, string weaponId)
+        public void PlayShot(Vector3 start, Vector3 end, string weaponId, bool startAtMuzzle = false)
         {
-            EnsurePools();
             WeaponFxProfile profile = ProfileFor(weaponId);
             Vector3 direction = end - start;
             direction.y = 0f;
             if (direction.sqrMagnitude < 0.0001f) direction = Vector3.forward;
             else direction.Normalize();
 
-            start += direction * 0.34f;
+            if (!startAtMuzzle) start += direction * 0.34f;
             start.y = Mathf.Max(start.y, 1.05f);
             end.y = Mathf.Max(end.y, 1.02f);
             Audio?.PlayShot(start, end, weaponId);
+            if (Polish != null)
+            {
+                Polish.PlayShot(start, end, weaponId, profile);
+                return;
+            }
+            EnsurePools();
 
             TracerFx tracer = AcquireTracer();
             tracer.Line.positionCount = 2;
@@ -204,6 +214,11 @@ namespace RealmOfAshes.Game
         {
             radius = Mathf.Max(1.4f, radius);
             Audio?.PlayExplosion(center, radius);
+            if (Polish != null)
+            {
+                Polish.PlayExplosion(center, radius);
+                return;
+            }
             var root = new GameObject("ExplosionFx");
             root.transform.SetParent(transform, false);
             root.transform.position = new Vector3(center.x, Mathf.Max(0.12f, center.y), center.z);
@@ -253,8 +268,14 @@ namespace RealmOfAshes.Game
             });
         }
 
+        public void PlayDamagePulse(int damage)
+        {
+            Polish?.PlayDamagePulse(damage);
+        }
+
         public void Clear()
         {
+            Polish?.Clear();
             for (int i = 0; i < _tracers.Count; i++)
             {
                 _tracers[i].Active = false;
@@ -272,9 +293,9 @@ namespace RealmOfAshes.Game
             }
             for (int i = _explosions.Count - 1; i >= 0; i--) DestroyExplosion(_explosions[i]);
             _explosions.Clear();
-            ActiveTracerCount = 0;
-            ActiveFlashCount = 0;
-            ActiveImpactCount = 0;
+            _activeTracerCount = 0;
+            _activeFlashCount = 0;
+            _activeImpactCount = 0;
         }
 
         private void Update()
@@ -592,9 +613,9 @@ namespace RealmOfAshes.Game
             for (int i = 0; i < _tracers.Count; i++) if (_tracers[i].Active) tracers++;
             for (int i = 0; i < _flashes.Count; i++) if (_flashes[i].Active) flashes++;
             for (int i = 0; i < _impacts.Count; i++) if (_impacts[i].Active) impacts++;
-            ActiveTracerCount = tracers;
-            ActiveFlashCount = flashes;
-            ActiveImpactCount = impacts;
+            _activeTracerCount = tracers;
+            _activeFlashCount = flashes;
+            _activeImpactCount = impacts;
         }
 
         private static float Number(JToken token, float fallback)

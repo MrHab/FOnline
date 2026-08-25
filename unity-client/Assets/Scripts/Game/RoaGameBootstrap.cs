@@ -68,6 +68,7 @@ namespace RealmOfAshes.Game
         public RoaMinimap Minimap;
         public RoaRoofCutaway RoofCutaway;
         public RoaCombatFx CombatFx;
+        public RoaCombatPresentationFx CombatPresentation;
         public RoaAudio Audio;
         public RoaMobileControls MobileControls;
         public RoaQuickbar Quickbar;
@@ -213,9 +214,14 @@ namespace RealmOfAshes.Game
             if (RoofCutaway == null) RoofCutaway = gameObject.AddComponent<RoaRoofCutaway>();
             RoofCutaway.Configure(Fog, CameraRig);
 
+            if (CombatPresentation == null) CombatPresentation = GetComponent<RoaCombatPresentationFx>();
+            if (CombatPresentation == null) CombatPresentation = gameObject.AddComponent<RoaCombatPresentationFx>();
+            CombatPresentation.CameraRig = CameraRig;
+
             if (CombatFx == null) CombatFx = GetComponent<RoaCombatFx>();
             if (CombatFx == null) CombatFx = gameObject.AddComponent<RoaCombatFx>();
             CombatFx.Audio = Audio;
+            CombatFx.Polish = CombatPresentation;
             CombatFx.Configure(Socket, Enemies);
 
             if (Enemies != null) Enemies.Fog = Fog;

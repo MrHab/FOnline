@@ -214,6 +214,12 @@ namespace RealmOfAshes.Game
         /// </summary>
         public float AimPlaneY { get { return _weapon != null ? _weapon.GripHeight : 0f; } }
 
+        public bool TryGetMuzzle(out Vector3 worldPosition)
+        {
+            if (_weapon != null) return _weapon.TryGetMuzzle(out worldPosition);
+            worldPosition = Vector3.zero;
+            return false;
+        }
         /// <summary>Запустить визуал перезарядки: левая рука уходит к магазину.</summary>
         public void StartReload(float durationSeconds)
         {

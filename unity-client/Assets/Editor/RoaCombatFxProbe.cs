@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.IO;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
@@ -7,9 +8,30 @@ using UnityEngine;
 
 namespace RealmOfAshes.EditorTools
 {
+    [InitializeOnLoad]
     public static class RoaCombatFxProbe
     {
         private const string MenuPath = "Realm of Ashes/Проверить боевые эффекты";
+        private const string RequestName = "RoaCombatFxProbe.request";
+        private static double _nextRequestCheck;
+
+        static RoaCombatFxProbe()
+        {
+            EditorApplication.update += PollRequest;
+        }
+
+        private static void PollRequest()
+        {
+            if (EditorApplication.timeSinceStartup < _nextRequestCheck) return;
+            _nextRequestCheck = EditorApplication.timeSinceStartup + 0.5d;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            string projectRoot = Directory.GetParent(Application.dataPath)?.FullName;
+            if (string.IsNullOrEmpty(projectRoot)) return;
+            string request = Path.Combine(projectRoot, "Library", RequestName);
+            if (!File.Exists(request)) return;
+            File.Delete(request);
+            Run();
+        }
 
         [MenuItem(MenuPath)]
         private static void Run()
@@ -59,7 +81,7 @@ namespace RealmOfAshes.EditorTools
                 Debug.Log("[БОЕВЫЕ ЭФФЕКТЫ] готово: laser=" + laser.TracerLife.ToString("0.00")
                     + "s, plasma=" + plasma.TracerLife.ToString("0.00")
                     + "s, Z=" + start.z.ToString("0.0") + "→" + end.z.ToString("0.0")
-                    + ", runtime=tracer/flash/explosion/clear");
+                    + ", runtime=moving-tracer/muzzle/sparks/layered-explosion/clear");
             }
             catch (Exception error)
             {
@@ -96,27 +118,39 @@ namespace RealmOfAshes.EditorTools
             try
             {
                 RoaCombatFx fx = root.AddComponent<RoaCombatFx>();
+                RoaCombatPresentationFx polish = root.AddComponent<RoaCombatPresentationFx>();
+                fx.Polish = polish;
                 for (int i = 0; i < 5; i++)
                     fx.PlayShot(new Vector3(i, 1.1f, 0f), new Vector3(i + 6f, 1.1f, 2f),
                                 i % 2 == 0 ? "machineGun" : "laserPistol");
-                Require(fx.ActiveTracerCount == 5 && fx.ActiveFlashCount == 5,
-                        "automatic queue did not activate five pooled tracers/flashes");
+                Require(fx.ActiveTracerCount == 5 && fx.ActiveFlashCount == 5
+                        && fx.ActiveImpactCount == 5,
+                        "automatic queue did not activate five pooled tracer/flash/impact sets");
                 LineRenderer[] lines = root.GetComponentsInChildren<LineRenderer>(true);
-                Require(Array.FindAll(lines, line => line.gameObject.activeSelf && line.positionCount == 2).Length == 5,
-                        "active tracer geometry is incomplete");
+                Require(Array.FindAll(lines, line => line.gameObject.activeInHierarchy
+                        && line.gameObject.name == "PolishedTracerFx" && line.positionCount == 2).Length == 5,
+                        "moving tapered tracer geometry is incomplete");
+                MeshFilter[] bursts = root.GetComponentsInChildren<MeshFilter>(true);
+                Require(Array.FindAll(bursts, burst => burst.gameObject.activeInHierarchy
+                        && burst.sharedMesh != null && burst.sharedMesh.name == "ProceduralMuzzleBurst").Length == 5,
+                        "directional muzzle burst geometry is incomplete");
 
                 fx.PlayExplosion(new Vector3(2f, 0f, -3f), 4.2f);
                 Require(fx.ActiveExplosionCount == 1,
                         "rocket explosion visual was not created");
-                Transform explosion = root.transform.Find("ExplosionFx");
-                Require(explosion != null && explosion.GetComponent<LineRenderer>() != null
-                        && explosion.GetComponent<Light>() != null
-                        && explosion.Find("Core") != null,
-                        "rocket explosion is missing its ring, core or light");
+                Transform explosion = root.transform.Find("PolishedExplosionFx");
+                Require(explosion != null && explosion.GetComponent<Light>() != null
+                        && explosion.Find("Shockwave") != null
+                        && explosion.Find("HeatRing") != null
+                        && explosion.Find("FireballCore") != null
+                        && explosion.Find("FireballGlow") != null
+                        && explosion.Find("Smoke0") != null
+                        && explosion.Find("Ember0") != null,
+                        "rocket explosion is missing a shock, heat, fireball, smoke or ember layer");
 
                 fx.Clear();
                 Require(fx.ActiveTracerCount == 0 && fx.ActiveFlashCount == 0
-                        && fx.ActiveExplosionCount == 0,
+                        && fx.ActiveImpactCount == 0 && fx.ActiveExplosionCount == 0,
                         "combat visual pools did not clear cleanly");
             }
             finally

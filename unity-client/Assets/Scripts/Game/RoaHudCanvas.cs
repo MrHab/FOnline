@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>Single adaptive owner for the always-visible gameplay HUD.</summary>
-    public sealed class RoaHudCanvas : MonoBehaviour
+    public sealed partial class RoaHudCanvas : MonoBehaviour
     {
         private static readonly Color Ink = new Color(0.90f, 0.78f, 0.43f, 1f);
         private static readonly Color MutedInk = new Color(0.73f, 0.66f, 0.43f, 1f);
@@ -77,7 +77,6 @@ namespace RealmOfAshes.Game
         private readonly System.Collections.Generic.List<string> _systemLines = new System.Collections.Generic.List<string>();
         private string _lastCombatLine = string.Empty;
         private float _combatLogUntil;
-        private string _lastHint = string.Empty;
         private string _lastInteractionStatus = string.Empty;
         private float _systemLastPushAt;
 
@@ -145,6 +144,7 @@ namespace RealmOfAshes.Game
                 && Time.unscaledTime < _combatLogUntil);
             _consolePanel.SetActive(worldHud && _hud != null && _hud.HasState);
             RefreshSystemStatus(worldHud && !mobile);
+            RefreshInteractionPrompt(worldHud);
             RefreshPlayer();
             RefreshConsole();
             RefreshMinimap();
@@ -156,7 +156,8 @@ namespace RealmOfAshes.Game
         {
             return _canvas != null && _safeRoot != null && _playerPanel != null
                 && _mapPanel != null && _quickPanel != null && _logPanel != null && _systemPanel != null
-                && _consolePanel != null && _slotButtons[0] != null && _slotTexts[0] != null;
+                && _consolePanel != null && _interactionPrompt != null
+                && _slotButtons[0] != null && _slotTexts[0] != null;
         }
 
         private void Rebuild()
@@ -182,6 +183,7 @@ namespace RealmOfAshes.Game
             BuildMinimapPanel();
             BuildWeaponConsole();
             BuildQuickbar();
+            BuildInteractionPrompt();
             BuildSystemStatus();
             BuildCombatLog();
             if (Application.isMobilePlatform) ApplyMobileLayout();
@@ -518,6 +520,7 @@ namespace RealmOfAshes.Game
             ((RectTransform)_quickPanel.transform).anchoredPosition = new Vector2(0f, mobile ? 76f : 14f);
             ((RectTransform)_logPanel.transform).anchoredPosition = new Vector2(12f, mobile ? 142f : 12f);
             ((RectTransform)_systemPanel.transform).anchoredPosition = new Vector2(-16f, mobile ? -184f : -228f);
+            ApplyInteractionPromptLayout(mobile);
         }
 
         private void PushSystemLine(string line)
@@ -546,15 +549,10 @@ namespace RealmOfAshes.Game
                 && Time.unscaledTime < _globalStatusUntil)
                 PushSystemLine(status);
 
-            // Подсказка взаимодействия и статусы RoaInteraction — как setReadout → addLog('system') в web.
+            // Результаты взаимодействия остаются в журнале; доступное действие
+            // постоянно показывает отдельная центральная плашка.
             if (_interaction != null)
             {
-                string hint = _interaction.InteractionHint ?? string.Empty;
-                if (hint != _lastHint)
-                {
-                    _lastHint = hint;
-                    if (!string.IsNullOrEmpty(hint)) PushSystemLine(hint);
-                }
                 string line = _interaction.StatusLine ?? string.Empty;
                 if (line != _lastInteractionStatus)
                 {

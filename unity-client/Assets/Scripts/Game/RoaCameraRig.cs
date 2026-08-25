@@ -8,7 +8,7 @@ namespace RealmOfAshes.Game
     /// Углы и дистанция подобраны под ту же читаемость сцены, что и у web-клиента:
     /// наклон около 55° даёт видеть и пол, и фасады строений.
     /// </summary>
-    public sealed class RoaCameraRig : MonoBehaviour
+    public sealed partial class RoaCameraRig : MonoBehaviour
     {
         private const string ZoomPrefsKey = "roa.cameraDistance.v2";
 
@@ -52,22 +52,23 @@ namespace RealmOfAshes.Game
                 SetDistance(Distance - scroll * ZoomSpeed * Distance, ZoomPersistenceEnabled);
 
             Quaternion orbit = Quaternion.Euler(PitchDeg, YawDeg, 0f);
-            Vector3 desired = Target.position - orbit * Vector3.forward * Distance;
+            bool teleported;
+            Vector3 framedTarget = UpdatePresentationTarget(Target, orbit, out teleported);
+            Vector3 desired = framedTarget - orbit * Vector3.forward * Distance;
             float impulse = _impulse;
             if (impulse > 0.001f)
             {
-                float phase = Time.unscaledTime * 72f;
-                desired += orbit * new Vector3(Mathf.Sin(phase) * impulse * 0.42f,
-                                                Mathf.Cos(phase * 0.83f) * impulse * 0.28f,
-                                                impulse * 0.48f);
-                _impulse = Mathf.MoveTowards(_impulse, 0f, Time.unscaledDeltaTime * 0.9f);
+                desired += EvaluateShakeOffset(orbit, impulse, Time.unscaledTime);
+                _impulse = Mathf.MoveTowards(_impulse, 0f, Time.unscaledDeltaTime * 1.15f);
             }
 
-            transform.position = SmoothTime > 0f
-                ? Vector3.SmoothDamp(transform.position, desired, ref _velocity, SmoothTime)
+            transform.position = teleported ? desired : SmoothTime > 0f
+                ? Vector3.SmoothDamp(transform.position, desired, ref _velocity,
+                    SmoothTime, Mathf.Infinity, Time.unscaledDeltaTime)
                 : desired;
+            if (teleported) _velocity = Vector3.zero;
 
-            transform.rotation = orbit * Quaternion.Euler(impulse * Mathf.Sin(Time.unscaledTime * 63f) * 7f, 0f, 0f);
+            transform.rotation = orbit * EvaluateShakeRotation(impulse, Time.unscaledTime);
         }
 
         public void AddImpulse(float amount)
@@ -94,6 +95,7 @@ namespace RealmOfAshes.Game
             transform.rotation = orbit;
             _velocity = Vector3.zero;
             _impulse = 0f;
+            ResetPresentationState(Target.position);
         }
 
         /// <summary>Направление «вперёд» для ввода: проекция взгляда камеры на горизонталь.</summary>

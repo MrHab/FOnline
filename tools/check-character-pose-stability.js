@@ -26,6 +26,7 @@ async function main() {
   const playerController = fs.readFileSync(path.join(UNITY_GAME, 'RoaPlayerController.cs'), 'utf8');
   const characterView = fs.readFileSync(path.join(UNITY_GAME, 'RoaCharacterView.cs'), 'utf8');
   const footIk = fs.readFileSync(path.join(UNITY_GAME, 'RoaFootIk.cs'), 'utf8');
+  const presentationLod = fs.readFileSync(path.join(UNITY_GAME, 'RoaActorPresentationLod.cs'), 'utf8');
   const groundShadow = fs.readFileSync(path.join(UNITY_GAME, 'RoaActorGroundShadow.cs'), 'utf8');
   const groundingProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaGroundingProbe.cs'), 'utf8');
   const auditRunner = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaClientAuditRunner.cs'), 'utf8');
@@ -51,8 +52,14 @@ async function main() {
     && footIk.includes('public void Reset()')
     && characterView.includes('SetGroundingLod(bool active)')
     && characterView.includes('if (_groundingActive)')
-    && remotePlayers.includes('RoaFootIk.ShouldRun(t.position, observer')
-    && enemies.includes('RoaFootIk.ShouldRun(t.position, observer'),
+    && presentationLod.includes('DesktopNearDistance = 20f')
+    && presentationLod.includes('MobileNearDistance = 12f')
+    && presentationLod.includes('if (!visible) return RoaActorPresentationTier.Hidden;')
+    && characterView.includes('SetPresentationLod(RoaActorPresentationTier tier)')
+    && characterView.includes('AnimationCullingType.BasedOnRenderers')
+    && characterView.includes('ResetProceduralPresentation()')
+    && remotePlayers.includes('RoaActorPresentationLod.Select(')
+    && enemies.includes('RoaActorPresentationLod.Select('),
   'Unity foot IK lost visibility/distance LOD or stale-state reset');
   assert(groundShadow.includes('public sealed class RoaActorGroundShadow')
     && groundShadow.includes('ProceduralActorContactShadow')

@@ -145,6 +145,13 @@ namespace RealmOfAshes.Game
             Debug.Log("[ROA] Оружие второй руки " + weaponId + " подключено.");
         }
 
+        /// <summary>Дешёвый дальний LOD без решения цепи левой руки.</summary>
+        public void ApplyReduced()
+        {
+            if (!Ready || _weapon == null || _leftHand == null) return;
+            Mount();
+        }
+
         public void Apply(Vector3 aimPoint, bool hasAim)
         {
             if (!Ready || _weapon == null || _characterRoot == null) return;

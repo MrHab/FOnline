@@ -930,8 +930,9 @@ namespace RealmOfAshes.Game
                 bool presentationVisible = visible && !RoaGameBootstrap.BlocksWorldHud;
                 Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
                 if (enemy.CharacterView != null)
-                    enemy.CharacterView.SetGroundingLod(RoaFootIk.ShouldRun(t.position, observer,
-                        presentationVisible, Application.isMobilePlatform));
+                    enemy.CharacterView.SetPresentationLod(RoaActorPresentationLod.Select(
+                        t.position, observer, presentationVisible, Application.isMobilePlatform,
+                        enemy.CharacterView.PresentationTier));
                 if (_movementFx != null)
                 {
                     _movementFx.TrackActor(ref enemy.StepFx, t.position, enemy.Velocity,

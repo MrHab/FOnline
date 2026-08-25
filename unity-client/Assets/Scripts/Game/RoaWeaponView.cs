@@ -401,6 +401,13 @@ namespace RealmOfAshes.Game
             return null;
         }
 
+        /// <summary>Дешёвый дальний LOD: оружие следует за кистью без IK и physics-проб.</summary>
+        public void ApplyReduced()
+        {
+            if (!Ready || _weapon == null || _hand == null) return;
+            Mount();
+        }
+
         /// <summary>
         /// Обновить хват, оружие и доворот корпуса.
         /// Вызывать в LateUpdate после процедурной позы: та задаёт положение таза

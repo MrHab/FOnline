@@ -77,6 +77,7 @@ namespace RealmOfAshes.Game
 
         private bool _locomoting;
         private bool _groundingActive = true;
+        private RoaActorPresentationTier _presentationTier = RoaActorPresentationTier.Near;
         private bool _crouching;
         private Transform _modelRoot;
 
@@ -186,6 +187,8 @@ namespace RealmOfAshes.Game
         public bool FootIkActive { get { return _groundingActive && !_dead; } }
         public bool GroundShadowReady { get { return _groundShadow.Ready; } }
         public bool GroundShadowVisible { get { return _groundShadow.Visible; } }
+        public RoaActorPresentationTier PresentationTier { get { return _presentationTier; } }
+        public bool ProceduralPresentationActive { get { return _presentationTier == RoaActorPresentationTier.Near; } }
 
         /// <summary>Текущая просадка корня, м. Для диагностики.</summary>
         public float KneeFlex { get { return _pose.KneeFlex; } }
@@ -227,6 +230,44 @@ namespace RealmOfAshes.Game
             _groundingActive = active;
             if (!active) _footIk.Reset();
             _groundShadow.SetActive(active);
+        }
+
+        /// <summary>
+        /// Меняет только стоимость визуальной позы. Сетевое положение, коллайдеры
+        /// и выбор клипа продолжают обновляться на любом уровне качества.
+        /// </summary>
+        public void SetPresentationLod(RoaActorPresentationTier tier)
+        {
+            bool changed = _presentationTier != tier;
+            _presentationTier = tier;
+            if (_animation != null)
+                _animation.cullingType = AnimationCullingType.BasedOnRenderers;
+
+            SetGroundingLod(tier == RoaActorPresentationTier.Near);
+            if (tier != RoaActorPresentationTier.Near && changed)
+                ResetProceduralPresentation();
+            if (tier == RoaActorPresentationTier.Hidden && changed && _dead)
+                SnapHiddenDeathToEnd();
+        }
+
+        private void ResetProceduralPresentation()
+        {
+            transform.localRotation = Quaternion.identity;
+            if (_modelRoot == null) return;
+            Vector3 local = _modelRoot.localPosition;
+            local.y = 0f;
+            _modelRoot.localPosition = local;
+        }
+
+        private void SnapHiddenDeathToEnd()
+        {
+            if (_animation == null || !_clips.Contains("death")) return;
+            AnimationState death = _animation["death"];
+            if (death == null) return;
+            death.wrapMode = WrapMode.ClampForever;
+            _animation.Play("death");
+            death.time = Mathf.Max(0f, death.length - 0.001f);
+            _animation.Sample();
         }
 
         /// <summary>
@@ -333,6 +374,7 @@ namespace RealmOfAshes.Game
                 _animation[_currentClip].time = 0f;
                 _animation[_currentClip].speed = 1f;
                 _animation.CrossFade(_currentClip, 0.1f);
+                if (_presentationTier == RoaActorPresentationTier.Hidden) SnapHiddenDeathToEnd();
             }
             else if (!dead)
             {
@@ -459,6 +501,7 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            _animation.cullingType = AnimationCullingType.BasedOnRenderers;
             foreach (AnimationState state in _animation) _clips.Add(state.name);
 
             if (!await TryUseLibraryClips(baseUrl))
@@ -736,7 +779,7 @@ namespace RealmOfAshes.Game
 
         private void LateUpdate()
         {
-            if (!Ready) return;
+            if (!Ready || _presentationTier == RoaActorPresentationTier.Hidden) return;
 
             ApplyHeadShape();
             if (_injuryIndicator != null && _injuryIndicator.gameObject.activeSelf)
@@ -747,7 +790,21 @@ namespace RealmOfAshes.Game
             }
             if (_dead)
             {
+                // Оружие остаётся у кисти и после перехода в позу смерти, но без
+                // дорогого IK и проб столкновения ствола.
+                if (_weapon != null) _weapon.ApplyReduced();
+                if (_offhandWeapon != null) _offhandWeapon.ApplyReduced();
                 UpdateGroundShadow();
+                return;
+            }
+
+            if (_presentationTier == RoaActorPresentationTier.Far)
+            {
+                // Дальний силуэт получает обычный клип и оружие в руке. Скрутка
+                // позвоночника, IK обеих рук, столкновение ствола и foot IK здесь
+                // уже не читаются, поэтому не считаются.
+                if (_weapon != null) _weapon.ApplyReduced();
+                if (_offhandWeapon != null) _offhandWeapon.ApplyReduced();
                 return;
             }
 

@@ -449,8 +449,9 @@ namespace RealmOfAshes.Game
                     remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil);
                 }
 
-                // Скрываем только показ: анимация и интерполяция продолжают идти,
-                // иначе игрок выходил бы из тумана в позе, застывшей при входе.
+                // Туман скрывает рендереры, но сеть, интерполяция и выбор клипа
+                // продолжают обновляться. Сэмплинг костей для невидимого актёра
+                // Unity отсекает отдельно через BasedOnRenderers.
                 if (remote.Gate != null)
                     remote.Gate.SetVisible(Fog == null || Fog.IsVisible(t.position, remote.Crouching));
 
@@ -458,8 +459,9 @@ namespace RealmOfAshes.Game
                 bool presentationVisible = visible && !RoaGameBootstrap.BlocksWorldHud;
                 Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
                 if (remote.View != null)
-                    remote.View.SetGroundingLod(RoaFootIk.ShouldRun(t.position, observer,
-                        presentationVisible, Application.isMobilePlatform));
+                    remote.View.SetPresentationLod(RoaActorPresentationLod.Select(
+                        t.position, observer, presentationVisible, Application.isMobilePlatform,
+                        remote.View.PresentationTier));
                 if (_movementFx != null)
                 {
                     _movementFx.TrackActor(ref remote.StepFx, t.position, remote.Velocity,

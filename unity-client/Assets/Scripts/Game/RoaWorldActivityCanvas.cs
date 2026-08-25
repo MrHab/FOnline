@@ -14,7 +14,7 @@ namespace RealmOfAshes.Game
     /// Клиент только показывает worldState.activity и предлагает эвакуацию через
     /// существующий worldTaskAction; цели, таймер и результат считает сервер.
     /// </summary>
-    public sealed class RoaWorldActivityCanvas : MonoBehaviour
+    public sealed partial class RoaWorldActivityCanvas : MonoBehaviour
     {
         public RoaSocketClient Socket;
         public RoaGameBootstrap Bootstrap;
@@ -121,6 +121,7 @@ namespace RealmOfAshes.Game
             if (_introRoot != null) _introRoot.SetActive(false);
             if (_resultRoot != null) _resultRoot.SetActive(false);
             ClearWorldMarkers();
+            HideActivityNavigation();
         }
 
         private void HandleAuthoritativeSelf(JObject self)
@@ -204,6 +205,7 @@ namespace RealmOfAshes.Game
                 if (_root != null && _root.activeSelf) _root.SetActive(false);
                 if (_introRoot != null && _introRoot.activeSelf) _introRoot.SetActive(false);
                 if (_markerRoot != null) _markerRoot.SetActive(false);
+                HideActivityNavigation();
                 return;
             }
             EnsureBuilt();
@@ -214,6 +216,7 @@ namespace RealmOfAshes.Game
             if (introActive) RefreshIntro();
             RebuildWorldMarkers();
             if (_markerRoot != null) _markerRoot.SetActive(true);
+            RefreshActivityNavigation();
             if (Time.unscaledTime < _refreshAt) return;
             _refreshAt = Time.unscaledTime + 0.2f;
             Refresh();
@@ -269,6 +272,17 @@ namespace RealmOfAshes.Game
             _participants.text = count <= 1 ? "Участник: " + count : "Участников: " + count;
 
             bool extractionOpen = _activity?["extractionOpen"]?.ToObject<bool>() == true;
+            bool defense = kind == "outpost_defense";
+            bool localCompletion = defense || kind == "distress_signal";
+            Vector3 extractionTarget = Vector3.zero;
+            float extractionReach = 0f;
+            bool extractionTargetKnown = extractionOpen && !localCompletion
+                && TryActivityExtractionTarget(out extractionTarget, out extractionReach);
+            float extractionDistance = extractionTargetKnown && Bootstrap?.PlayerView != null
+                ? Vector3.ProjectOnPlane(extractionTarget - Bootstrap.PlayerView.transform.position, Vector3.up).magnitude
+                : 0f;
+            bool extractionInReach = localCompletion || !extractionTargetKnown
+                || extractionDistance <= extractionReach + 0.35f;
             float nearestDistance = float.MaxValue;
             bool usesPoint = kind == "recon_expedition" || kind == "distress_signal"
                 || kind == "assault_diversion";
@@ -278,7 +292,7 @@ namespace RealmOfAshes.Game
             bool showReconAction = usesPoint && nearestPoint != null && !pointInReach && !extractionOpen;
             bool showAction = status != "completed" && (pointInReach || extractionOpen || showReconAction);
             _action.gameObject.SetActive(showAction);
-            _action.interactable = !_pending && (pointInReach || extractionOpen);
+            _action.interactable = !_pending && (pointInReach || (extractionOpen && extractionInReach));
             if (_pending) _actionLabel.text = "ОБРАБОТКА…";
             else if (pointInReach) _actionLabel.text = kind == "distress_signal"
                 ? "АКТИВИРОВАТЬ МАЯК"
@@ -286,9 +300,10 @@ namespace RealmOfAshes.Game
                 : kind == "assault_diversion" && _actionPointId == "approach_diversion" ? "ВЫБРАТЬ ДИВЕРСИЮ"
                 : kind == "assault_diversion" ? "ЗАЛОЖИТЬ ЗАРЯД"
                 : "СОБРАТЬ РАЗВЕДДАННЫЕ";
-            else if (extractionOpen) _actionLabel.text = kind == "outpost_defense"
-                ? "ЗАВЕРШИТЬ ОБОРОНУ" : kind == "distress_signal"
-                ? "ЗАВЕРШИТЬ СПАСЕНИЕ" : "ЭВАКУИРОВАТЬСЯ У ВЫХОДА";
+            else if (extractionOpen) _actionLabel.text = defense
+                ? "ЗАВЕРШИТЬ ОБОРОНУ"
+                : extractionInReach ? (kind == "distress_signal" ? "ЗАВЕРШИТЬ СПАСЕНИЕ" : "ЭВАКУИРОВАТЬСЯ")
+                : "ВЫХОД · " + Mathf.CeilToInt(extractionDistance) + " М";
             else _actionLabel.text = "ТОЧКА НАБЛЮДЕНИЯ · " + Mathf.CeilToInt(nearestDistance) + " М";
             if (status == "active" && _introActivityId == (_activity?["id"]?.ToString() ?? string.Empty)
                 && Time.unscaledTime < _introUntil)
@@ -550,6 +565,7 @@ namespace RealmOfAshes.Game
             _resultReward.horizontalOverflow = HorizontalWrapMode.Wrap;
             Place(_resultReward.rectTransform, 16f, -115f, -16f, -80f);
             _resultRoot.SetActive(false);
+            BuildActivityNavigation(canvasGo.transform);
         }
 
         private static string StartInstruction(string kind)
@@ -584,17 +600,24 @@ namespace RealmOfAshes.Game
         {
             string key = (_activity?["id"]?.ToString() ?? string.Empty) + ":"
                 + (_activity?["revision"]?.ToString() ?? string.Empty) + ":"
-                + (_activity?["status"]?.ToString() ?? string.Empty);
+                + (_activity?["status"]?.ToString() ?? string.Empty) + ":"
+                + (_activity?["extractionOpen"]?.ToString() ?? string.Empty);
             if (key == _markerRevision) return;
             ClearWorldMarkers();
             _markerRevision = key;
             string kind = _activity?["kind"]?.ToString() ?? string.Empty;
             string status = _activity?["status"]?.ToString() ?? string.Empty;
-            if (!new[] { "recon_expedition", "distress_signal", "assault_diversion" }.Contains(kind) || (status != "active" && status != "extracting")
-                || !(_activity?["interactionPoints"] is JArray points)) return;
+            if (status != "active" && status != "extracting") return;
 
             _markerRoot = new GameObject("WorldActivityMarkers");
             _markerRoot.transform.SetParent(transform, false);
+            bool extractionOpen = _activity?["extractionOpen"]?.ToObject<bool>() == true;
+            if (extractionOpen && kind != "outpost_defense" && kind != "distress_signal"
+                && TryActivityExtractionTarget(out Vector3 extraction, out _))
+                CreateActivityWorldBeacon("ExtractionBeacon", extraction, Safe, false);
+
+            bool usesPoints = new[] { "recon_expedition", "distress_signal", "assault_diversion" }.Contains(kind);
+            if (!usesPoints || !(_activity?["interactionPoints"] is JArray points)) return;
             foreach (JToken token in points)
             {
                 JObject point = token as JObject;
@@ -602,19 +625,12 @@ namespace RealmOfAshes.Game
                 bool completed = point["status"]?.ToString() == "completed";
                 float x = point["x"]?.ToObject<float>() ?? 0f;
                 float z = point["z"]?.ToObject<float>() ?? 0f;
-                var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                marker.name = (kind == "distress_signal" ? "DistressSignal:"
+                string markerName = (kind == "distress_signal" ? "DistressSignal:"
                     : kind == "assault_diversion" ? "OperationPoint:" : "ReconPoint:")
                     + (point["id"]?.ToString() ?? "point");
-                marker.transform.SetParent(_markerRoot.transform, false);
-                marker.transform.position = RoaCoords.ToUnity(x, 0.08f, z);
-                marker.transform.localScale = new Vector3(0.62f, 0.035f, 0.62f);
-                Renderer renderer = marker.GetComponent<Renderer>();
                 string pointStatus = point["status"]?.ToString() ?? "pending";
-                if (renderer != null) renderer.material.color = completed ? Safe
-                    : pointStatus == "locked" ? Muted : Accent;
-                Collider collider = marker.GetComponent<Collider>();
-                if (collider != null) Destroy(collider);
+                Color markerColor = completed ? Safe : pointStatus == "locked" ? Muted : Accent;
+                CreateActivityWorldBeacon(markerName, RoaCoords.ToUnity(x, 0.08f, z), markerColor, completed);
             }
         }
 
@@ -622,8 +638,6 @@ namespace RealmOfAshes.Game
         {
             if (_markerRoot != null)
             {
-                foreach (Renderer renderer in _markerRoot.GetComponentsInChildren<Renderer>())
-                    if (renderer != null && renderer.material != null) Destroy(renderer.material);
                 Destroy(_markerRoot);
                 _markerRoot = null;
             }

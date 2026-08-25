@@ -379,6 +379,7 @@ namespace RealmOfAshes.Game
             if (WorldActivityCanvas == null) WorldActivityCanvas = GetComponent<RoaWorldActivityCanvas>();
             if (WorldActivityCanvas == null) WorldActivityCanvas = gameObject.AddComponent<RoaWorldActivityCanvas>();
             WorldActivityCanvas.Configure(Socket, this);
+            if (Minimap != null) Minimap.WorldActivity = WorldActivityCanvas;
 
 
             // Оружейный верстак в web-виде (#weapon-modification-window).

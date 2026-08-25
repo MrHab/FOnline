@@ -21,10 +21,18 @@ const server = read('server.js');
 const simulation = read('src/server/wasteland-sim.js');
 const runtime = read('src/server/world-activity-runtime.js');
 const canvas = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.cs');
+const navigation = read('unity-client/Assets/Scripts/Game/RoaWorldActivityNavigation.cs');
+const beacon = read('unity-client/Assets/Scripts/Game/RoaActivityBeacon.cs');
+const minimap = read('unity-client/Assets/Scripts/Game/RoaMinimap.cs');
+const mapWindow = read('unity-client/Assets/Scripts/Game/RoaMapWindowCanvas.cs');
 const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 const globalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 const metadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.cs.meta');
+const navigationMetadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityNavigation.cs.meta');
+const beaconMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityBeacon.cs.meta');
+const navigationProbe = read('unity-client/Assets/Editor/RoaWorldActivityNavigationProbe.cs');
+const navigationProbeMetadata = read('unity-client/Assets/Editor/RoaWorldActivityNavigationProbe.cs.meta');
 const activityHub = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs');
 const activityHubMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs.meta');
 
@@ -86,6 +94,36 @@ requirePattern(canvas,
   'Unity recon no longer sends an acknowledged point interaction');
 requireText(canvas, 'new GameObject("WorldActivityMarkers")',
   'Unity recon world markers are missing');
+requireText(canvas, 'TryActivityExtractionTarget(out extractionTarget, out extractionReach)',
+  'Unity extraction action no longer checks the authored exit distance');
+requireText(canvas, '_action.interactable = !_pending && (pointInReach || (extractionOpen && extractionInReach));',
+  'Unity allows remote extraction from outside the authored exit');
+requireText(canvas, 'bool localCompletion = defense || kind == "distress_signal";',
+  'Unity no longer mirrors the server rule for local rescue and defense completion');
+requireText(canvas, 'CreateActivityWorldBeacon("ExtractionBeacon"',
+  'Unity no longer creates a readable extraction beacon');
+requireText(navigation, 'CalculateNavigationArrowAngle',
+  'Unity activity navigation lost camera-relative direction');
+requireText(navigation, 'NavigationDistanceLabel',
+  'Unity activity navigation lost distance feedback');
+requireText(navigation, 'CollectMinimapMarkers(List<RoaMinimap.Marker> markers)',
+  'Unity activity goals are no longer exported to the minimap');
+requireText(beacon, 'public sealed class RoaActivityBeacon',
+  'Unity activity beacon component is missing');
+requireText(beacon, 'RemoveCollider',
+  'Unity activity beacons may interfere with gameplay collision');
+requireText(navigationProbe, '[НАВИГАЦИЯ АКТИВНОСТИ] готово',
+  'Unity editor probe for activity navigation is missing');
+requireText(minimap, 'Objective,',
+  'Unity minimap lost objective marker kind');
+requireText(minimap, 'Extraction',
+  'Unity minimap lost extraction marker kind');
+requireText(minimap, 'WorldActivity?.CollectMinimapMarkers(_markers);',
+  'Unity minimap is not collecting live activity goals');
+requireText(mapWindow, 'RoaMinimap.MarkerKind.Extraction',
+  'Unity full map does not style the extraction marker');
+requireText(interaction, 'TryNearestActivityResource',
+  'Unity resource expeditions no longer point to the nearest resource');
 requireText(canvas, 'kind == "outpost_defense"',
   'Unity HUD has no outpost defense presentation');
 requireText(canvas, 'kind == "distress_signal"',
@@ -96,6 +134,8 @@ requireText(canvas, 'Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap',
   'activity HUD is not hidden outside a local gameplay location');
 requireText(bootstrap, 'WorldActivityCanvas.Configure(Socket, this);',
   'Unity bootstrap no longer configures the activity HUD');
+requireText(bootstrap, 'Minimap.WorldActivity = WorldActivityCanvas;',
+  'Unity bootstrap does not connect activity navigation to the minimap');
 requireText(bootstrap, 'gameObject.AddComponent<RoaActivityHubCanvas>()',
   'Unity bootstrap no longer installs the global activity hub');
 requireText(activityHub, 'Map?.WastelandState?["worldActivities"]',
@@ -114,6 +154,15 @@ requireText(globalMap, 'BuildTrackedWorldTaskMarker();',
   'the live map no longer highlights the tracked activity target');
 if (!/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(metadata)) {
   fail('Unity metadata for RoaWorldActivityCanvas is invalid');
+}
+if (!/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(navigationMetadata)) {
+  fail('Unity metadata for RoaWorldActivityNavigation is invalid');
+}
+if (!/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(beaconMetadata)) {
+  fail('Unity metadata for RoaActivityBeacon is invalid');
+}
+if (!/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(navigationProbeMetadata)) {
+  fail('Unity metadata for RoaWorldActivityNavigationProbe is invalid');
 }
 if (!activityHubMetadata.includes('fileFormatVersion: 2')
     || !/guid: [0-9a-f]{32}/.test(activityHubMetadata)) {
@@ -152,5 +201,5 @@ requireText(canvas, 'Socket.ApplyGameplayAck(ack);',
 requireText(canvas, '"ЗАВЕРШИТЬ СПАСЕНИЕ"',
   'distress signal still asks for an exit even though it ends in the cleared area');
 if (!process.exitCode) {
-  console.log('Unity world activities OK: worldState HUD, server progress and acknowledged extraction');
+  console.log('Unity world activities OK: server progress, objective guidance, exit gating and acknowledged rewards');
 }

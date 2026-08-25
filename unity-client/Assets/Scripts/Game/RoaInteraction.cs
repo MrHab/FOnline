@@ -1310,6 +1310,37 @@ namespace RealmOfAshes.Game
             }
         }
 
+        public bool TryNearestActivityResource(Vector3 origin, out Vector3 position, out float distance)
+        {
+            position = Vector3.zero;
+            distance = float.PositiveInfinity;
+            float best = float.PositiveInfinity;
+            bool found = false;
+            foreach (ResourceView view in _resources.Values)
+            {
+                if (view == null || view.Data == null || view.Data["hp"]?.ToObject<float>() <= 0f) continue;
+                Vector3 delta = view.Position - origin;
+                delta.y = 0f;
+                float candidate = delta.sqrMagnitude;
+                if (candidate >= best) continue;
+                best = candidate;
+                position = view.Position;
+                found = true;
+            }
+            if (found) distance = Mathf.Sqrt(best);
+            return found;
+        }
+
+        public void CollectActivityResourceMarkers(List<RoaMinimap.Marker> markers)
+        {
+            if (markers == null) return;
+            foreach (ResourceView view in _resources.Values)
+            {
+                if (view == null || view.Data == null || view.Data["hp"]?.ToObject<float>() <= 0f) continue;
+                markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Objective, view.Position));
+            }
+        }
+
         private void FindCandidate()
         {
             ClearCandidate();

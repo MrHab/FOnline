@@ -17,7 +17,9 @@ namespace RealmOfAshes.Game
             RemotePlayer,
             GroundItem,
             Container,
-            Resource
+            Resource,
+            Objective,
+            Extraction
         }
 
         public struct Marker
@@ -37,6 +39,7 @@ namespace RealmOfAshes.Game
         public RoaRemotePlayers RemotePlayers;
         public RoaGroundItems GroundItems;
         public RoaInteraction Interaction;
+        public RoaWorldActivityCanvas WorldActivity;
 
         [Range(140f, 280f)] public float Size = 190f;
         [Min(0.05f)] public float RefreshSeconds = 0.12f;
@@ -143,6 +146,7 @@ namespace RealmOfAshes.Game
             RemotePlayers?.CollectMinimapMarkers(_markers);
             GroundItems?.CollectMinimapMarkers(_markers);
             Interaction?.CollectMinimapMarkers(_markers);
+            WorldActivity?.CollectMinimapMarkers(_markers);
         }
 
         private void OnGUI()
@@ -209,6 +213,8 @@ namespace RealmOfAshes.Game
                 case MarkerKind.RemotePlayer: color = new Color(0.44f, 0.67f, 0.90f); size = 5f; break;
                 case MarkerKind.GroundItem: color = new Color(0.90f, 0.84f, 0.50f); size = 3f; break;
                 case MarkerKind.Container: color = new Color(0.90f, 0.71f, 0.35f); size = 4f; break;
+                case MarkerKind.Objective: color = new Color(0.95f, 0.78f, 0.25f); size = 6f; break;
+                case MarkerKind.Extraction: color = new Color(0.42f, 0.82f, 0.40f); size = 7f; break;
                 default: color = new Color(0.78f, 0.62f, 0.30f); size = 3f; break;
             }
             Rect markerRect = CenteredRect(rect, p, size);

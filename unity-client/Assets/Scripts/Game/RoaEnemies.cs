@@ -664,6 +664,7 @@ namespace RealmOfAshes.Game
                 var viewRoot = new GameObject("View");
                 viewRoot.transform.SetParent(root.transform, false);
                 enemy.CharacterView = viewRoot.AddComponent<RoaCharacterView>();
+                enemy.CharacterView.OnVisualChanged += enemy.Gate.Invalidate;
                 _ = LoadHumanoidGuarded(enemy, HumanoidAppearance(row));
             }
             else
@@ -926,12 +927,15 @@ namespace RealmOfAshes.Game
                     enemy.Gate.SetVisible(Fog == null || Fog.IsVisible(t.position));
 
                 bool visible = enemy.Gate == null || enemy.Gate.IsVisible;
+                bool presentationVisible = visible && !RoaGameBootstrap.BlocksWorldHud;
+                Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
+                if (enemy.CharacterView != null)
+                    enemy.CharacterView.SetGroundingLod(RoaFootIk.ShouldRun(t.position, observer,
+                        presentationVisible, Application.isMobilePlatform));
                 if (_movementFx != null)
                 {
-                    Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
                     _movementFx.TrackActor(ref enemy.StepFx, t.position, enemy.Velocity,
-                        enemy.Moving && !enemy.Dead, visible && !RoaGameBootstrap.BlocksWorldHud,
-                        false, observer);
+                        enemy.Moving && !enemy.Dead, presentationVisible, false, observer);
                 }
             }
         }

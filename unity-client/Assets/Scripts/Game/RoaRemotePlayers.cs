@@ -174,6 +174,7 @@ namespace RealmOfAshes.Game
                 Moving = player.Moving,
                 Crouching = player.Crouching
             };
+            view.OnVisualChanged += remote.Gate.Invalidate;
             _remotes[player.Id] = remote;
             Debug.Log("[ROA] Другой игрок вошёл: "
                 + (string.IsNullOrEmpty(player.Name) ? player.Id : player.Name)
@@ -454,12 +455,15 @@ namespace RealmOfAshes.Game
                     remote.Gate.SetVisible(Fog == null || Fog.IsVisible(t.position, remote.Crouching));
 
                 bool visible = remote.Gate == null || remote.Gate.IsVisible;
+                bool presentationVisible = visible && !RoaGameBootstrap.BlocksWorldHud;
+                Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
+                if (remote.View != null)
+                    remote.View.SetGroundingLod(RoaFootIk.ShouldRun(t.position, observer,
+                        presentationVisible, Application.isMobilePlatform));
                 if (_movementFx != null)
                 {
-                    Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
                     _movementFx.TrackActor(ref remote.StepFx, t.position, remote.Velocity,
-                        remote.Moving, visible && !RoaGameBootstrap.BlocksWorldHud,
-                        remote.Crouching, observer);
+                        remote.Moving, presentationVisible, remote.Crouching, observer);
                 }
             }
         }

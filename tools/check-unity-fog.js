@@ -40,6 +40,9 @@ assert(gate.includes('_renderers[i].enabled = visible;'),
   'visibility gate no longer hides renderers');
 assert(!gate.includes('gameObject.SetActive(visible)'),
   'visibility gate must not freeze hidden entity animation/interpolation');
+assert(remotes.includes('view.OnVisualChanged += remote.Gate.Invalidate;')
+  && enemies.includes('enemy.CharacterView.OnVisualChanged += enemy.Gate.Invalidate;'),
+  'asynchronously loaded humanoid renderers no longer invalidate their fog gate');
 
 for (const [name, source] of [
   ['enemies', enemies],

@@ -26,6 +26,10 @@ async function main() {
   const playerController = fs.readFileSync(path.join(UNITY_GAME, 'RoaPlayerController.cs'), 'utf8');
   const characterView = fs.readFileSync(path.join(UNITY_GAME, 'RoaCharacterView.cs'), 'utf8');
   const footIk = fs.readFileSync(path.join(UNITY_GAME, 'RoaFootIk.cs'), 'utf8');
+  const groundShadow = fs.readFileSync(path.join(UNITY_GAME, 'RoaActorGroundShadow.cs'), 'utf8');
+  const groundingProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaGroundingProbe.cs'), 'utf8');
+  const auditRunner = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaClientAuditRunner.cs'), 'utf8');
+  const enemies = fs.readFileSync(path.join(UNITY_GAME, 'RoaEnemies.cs'), 'utf8');
   const ikChain = fs.readFileSync(path.join(UNITY_GAME, 'RoaIkChain.cs'), 'utf8');
   const weaponView = fs.readFileSync(path.join(UNITY_GAME, 'RoaWeaponView.cs'), 'utf8');
   const remotePlayers = fs.readFileSync(path.join(UNITY_GAME, 'RoaRemotePlayers.cs'), 'utf8');
@@ -41,6 +45,29 @@ async function main() {
     && footIk.includes('side.LockNormal = surfaceNormal;')
     && footIk.includes('ApplyFootNormal(side, contactNormal, normalWeight)'),
   'Unity foot IK no longer follows per-foot ground height and normal');
+  assert(footIk.includes('DesktopMaxDistance = 20f')
+    && footIk.includes('MobileMaxDistance = 12f')
+    && footIk.includes('public static bool ShouldRun(')
+    && footIk.includes('public void Reset()')
+    && characterView.includes('SetGroundingLod(bool active)')
+    && characterView.includes('if (_groundingActive)')
+    && remotePlayers.includes('RoaFootIk.ShouldRun(t.position, observer')
+    && enemies.includes('RoaFootIk.ShouldRun(t.position, observer'),
+  'Unity foot IK lost visibility/distance LOD or stale-state reset');
+  assert(groundShadow.includes('public sealed class RoaActorGroundShadow')
+    && groundShadow.includes('ProceduralActorContactShadow')
+    && groundShadow.includes('_renderer.sharedMaterial = _sharedMaterial;')
+    && groundShadow.includes('Shader.Find("Sprites/Default")')
+    && groundShadow.includes('mesh.colors = new[] { Color.white')
+    && groundShadow.includes('Quaternion.FromToRotation(Vector3.up, groundNormal)')
+    && characterView.includes('_groundShadow.UpdatePose(transform.position, groundY, normal'),
+  'Unity humanoids lost the shared slope-aware procedural contact shadow');
+  assert(groundingProbe.includes('[КОНТАКТ С ЗЕМЛЁЙ] готово:')
+    && groundingProbe.includes('ik.GroundProbeCount == 2')
+    && groundingProbe.includes('rightFoot.position.y > leftFoot.position.y + 0.12f')
+    && groundingProbe.includes('SharedUsers == usersBefore')
+    && auditRunner.includes('typeof(RoaGroundingProbe)'),
+  'Unity grounding probe no longer verifies step height, LOD and shared-resource cleanup');
   assert(ikChain.includes('Vector3? pole')
     && ikChain.includes('ApplyPoleConstraint(pole.Value)')
     && weaponView.includes('ArmPole(true)')

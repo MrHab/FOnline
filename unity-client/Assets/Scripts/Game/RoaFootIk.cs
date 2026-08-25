@@ -41,6 +41,8 @@ namespace RealmOfAshes.Game
         private const float GroundFollowRate = 22f;
         private const float GroundNormalRate = 14f;
         private const float MinGroundNormalY = 0.57f;
+        private const float DesktopMaxDistance = 20f;
+        private const float MobileMaxDistance = 12f;
         private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
 
         private sealed class Side
@@ -81,14 +83,67 @@ namespace RealmOfAshes.Game
         private string _lastClip = string.Empty;
 
         public bool Ready { get; private set; }
+        public int GroundProbeCount { get; private set; }
 
         /// <summary>Сколько стоп зафиксировано сейчас. Для диагностики.</summary>
         public int LockedCount { get { return (_left.Locked ? 1 : 0) + (_right.Locked ? 1 : 0); } }
+
+        public static float MaxDistance(bool mobile)
+        {
+            return mobile ? MobileMaxDistance : DesktopMaxDistance;
+        }
+
+        public static bool ShouldRun(Vector3 actorPosition, Vector3 observerPosition,
+                                     bool visible, bool mobile)
+        {
+            if (!visible) return false;
+            Vector3 delta = actorPosition - observerPosition;
+            delta.y = 0f;
+            float maxDistance = MaxDistance(mobile);
+            return delta.sqrMagnitude <= maxDistance * maxDistance;
+        }
+
+        public void Reset()
+        {
+            ResetSide(_left);
+            ResetSide(_right);
+            _lastActorPos = Vector3.zero;
+            _hasLastActorPos = false;
+            _lastClip = string.Empty;
+        }
+
+        public bool TryGetGroundPose(out float groundY, out Vector3 normal)
+        {
+            groundY = _ground != null ? _ground.position.y : 0f;
+            normal = Vector3.up;
+            int count = 0;
+            Vector3 normalSum = Vector3.zero;
+            float heightSum = 0f;
+            if (_left.HasGround)
+            {
+                count++;
+                heightSum += _left.GroundY;
+                normalSum += _left.GroundNormal;
+            }
+            if (_right.HasGround)
+            {
+                count++;
+                heightSum += _right.GroundY;
+                normalSum += _right.GroundNormal;
+            }
+            if (count == 0) return false;
+            groundY = heightSum / count;
+            if (normalSum.sqrMagnitude > 0.01f) normal = normalSum.normalized;
+            return true;
+        }
 
         /// <param name="ground">Трансформ на уровне ступней — от него считается земля.</param>
         /// <param name="modelRoot">Корень модели: его поворот задаёт скручивание.</param>
         public void Bind(Transform ground, Transform modelRoot)
         {
+            Reset();
+            GroundProbeCount = 0;
+            Ready = false;
             _ground = ground;
             _modelRoot = modelRoot;
             if (_ground == null || _modelRoot == null) return;
@@ -318,6 +373,7 @@ namespace RealmOfAshes.Game
             Vector3 targetNormal = Vector3.up;
             float bestDistance = float.PositiveInfinity;
             Vector3 origin = new Vector3(animated.x, Mathf.Max(animated.y, fallbackY) + GroundProbeAbove, animated.z);
+            GroundProbeCount++;
             int count = Physics.SphereCastNonAlloc(origin, GroundProbeRadius, Vector3.down, GroundHits,
                 GroundProbeDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
             Transform owner = _ground != null ? _ground.root : null;

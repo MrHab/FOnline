@@ -73,8 +73,10 @@ namespace RealmOfAshes.Game
 
         private readonly RoaCharacterPose _pose = new RoaCharacterPose();
         private readonly RoaFootIk _footIk = new RoaFootIk();
+        private readonly RoaActorGroundShadow _groundShadow = new RoaActorGroundShadow();
 
         private bool _locomoting;
+        private bool _groundingActive = true;
         private bool _crouching;
         private Transform _modelRoot;
 
@@ -165,6 +167,7 @@ namespace RealmOfAshes.Game
 
         private void OnDestroy()
         {
+            _groundShadow.Dispose();
             // Маркеры используют созданные в рантайме материалы. sharedMaterial
             // не освобождает их при удалении персонажа, поэтому удаляем явно.
             for (int i = 0; i < _injuryMaterials.Length; i++)
@@ -180,6 +183,9 @@ namespace RealmOfAshes.Game
 
         /// <summary>Foot IK нашёл кости ног и работает.</summary>
         public bool FootIkReady { get { return _footIk.Ready; } }
+        public bool FootIkActive { get { return _groundingActive && !_dead; } }
+        public bool GroundShadowReady { get { return _groundShadow.Ready; } }
+        public bool GroundShadowVisible { get { return _groundShadow.Visible; } }
 
         /// <summary>Текущая просадка корня, м. Для диагностики.</summary>
         public float KneeFlex { get { return _pose.KneeFlex; } }
@@ -210,6 +216,18 @@ namespace RealmOfAshes.Game
 
         /// <summary>Id оружия в руках. Пусто — руки свободны.</summary>
         public string WeaponId { get { return _weapon != null ? _weapon.WeaponId : string.Empty; } }
+
+        public void SetGroundingLod(bool active)
+        {
+            if (_groundingActive == active)
+            {
+                _groundShadow.SetActive(active);
+                return;
+            }
+            _groundingActive = active;
+            if (!active) _footIk.Reset();
+            _groundShadow.SetActive(active);
+        }
 
         /// <summary>
         /// Высота, на которой брать точку прицела для оружия. Ноль — оружия нет
@@ -305,6 +323,7 @@ namespace RealmOfAshes.Game
         {
             if (_dead == dead && (!dead || _currentClip == "death")) return;
             _dead = dead;
+            if (dead) _footIk.Reset();
             if (!Ready || _animation == null) return;
 
             if (dead && _clips.Contains("death"))
@@ -452,6 +471,8 @@ namespace RealmOfAshes.Game
 
             _modelRoot = transform.Find(LibraryRootName) ?? transform.Find(BaseRootName);
             if (_modelRoot != null) _footIk.Bind(transform, _modelRoot);
+            _groundShadow.Bind(transform);
+            _groundShadow.SetActive(_groundingActive);
 
             // Индекс костей по имени: по нему работают поза хвата и доворот корпуса.
             foreach (Transform bone in GetComponentsInChildren<Transform>(true))
@@ -724,7 +745,11 @@ namespace RealmOfAshes.Game
                 local.y = 2.5f + Mathf.Sin(Time.time / 0.42f) * 0.08f;
                 _injuryIndicator.localPosition = local;
             }
-            if (_dead) return;
+            if (_dead)
+            {
+                UpdateGroundShadow();
+                return;
+            }
 
             if (_pose.Ready)
             {
@@ -756,12 +781,26 @@ namespace RealmOfAshes.Game
 
             // Foot IK последним: он трогает только ноги, а их мировые позиции
             // к этому моменту окончательные.
-            _footIk.Apply(Time.deltaTime, _locomoting, Turning, false, _currentClip, _pose.KneeFlex);
+            if (_groundingActive)
+                _footIk.Apply(Time.deltaTime, _locomoting, Turning, false, _currentClip, _pose.KneeFlex);
 
             // Травма — самый верхний визуальный слой. Перелом руки намеренно
             // ослабляет идеальный IK-хват, а перелом ноги остаётся видим после
             // того, как foot IK поставил стопу на землю.
             ApplyInjuryPose();
+            UpdateGroundShadow();
+        }
+
+        private void UpdateGroundShadow()
+        {
+            if (!_groundingActive || !_groundShadow.Ready) return;
+            if (!_footIk.TryGetGroundPose(out float groundY, out Vector3 normal))
+            {
+                groundY = transform.position.y;
+                normal = Vector3.up;
+            }
+            _groundShadow.UpdatePose(transform.position, groundY, normal,
+                transform.eulerAngles.y, _dead, _crouching);
         }
 
         private float InjuryRootRollDeg()

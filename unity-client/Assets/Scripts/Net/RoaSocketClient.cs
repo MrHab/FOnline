@@ -867,6 +867,9 @@ namespace RealmOfAshes.Net
             if (ack == null) return;
             ApplyAuthoritativeSelf(ack["self"] as JObject);
 
+            JArray combats = ack["combats"] as JArray;
+            if (Session != null && combats != null) Session.Combats = (JArray)combats.DeepClone();
+
             JObject combat = ack["combat"] as JObject;
             if (combat == null) return;
             if (Session != null) Session.Combat = combat;
@@ -921,6 +924,7 @@ namespace RealmOfAshes.Net
                 Session.Z = update.Z;
                 Session.Self = update.Self;
                 Session.Combat = update.Combat ?? update.Self?["combat"] as JObject;
+                if (update.Combats != null) Session.Combats = update.Combats;
                 Session.Players = update.Players ?? new List<PublicPlayer>();
                 Session.WorldState = update.WorldState;
                 Session.ServerAuthoritativeEnemies = update.ServerAuthoritativeEnemies;

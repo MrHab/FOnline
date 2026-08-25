@@ -190,6 +190,9 @@ namespace RealmOfAshes.Game
         /// <summary>Левая рука дотянулась до цевья. Для диагностики.</summary>
         public bool SupportHandSolved { get; private set; }
 
+        public bool DualWield { get; set; }
+        public bool PrimaryHandSolved { get; private set; }
+
         private Dictionary<string, Transform> _bones;
         private readonly Transform[] _torso = new Transform[TorsoBones.Length];
 
@@ -229,6 +232,8 @@ namespace RealmOfAshes.Game
             _primaryArm = null;
             _melee = null;
             _swingStartedAt = -1f;
+            DualWield = false;
+            PrimaryHandSolved = false;
         }
 
         public async Task Load(string baseUrl, string weaponId, Transform characterRoot,
@@ -353,7 +358,7 @@ namespace RealmOfAshes.Game
             Debug.Log("[ROA] Оружие " + weaponId + " подключено.");
         }
 
-        private static async Task<GltfImport> LoadCached(string key, string url)
+        internal static async Task<GltfImport> LoadCached(string key, string url)
         {
             GltfImport cached;
             if (WeaponCache.TryGetValue(key, out cached)) return cached;
@@ -421,6 +426,10 @@ namespace RealmOfAshes.Game
 
             // 1. Поза хвата поверх клипа локомоции: руки, кисти и пальцы.
             RoaWeaponGrip.ApplyTo(_bones);
+
+            // У пары пистолетов каждая рука держит свой ствол. На перезарядке
+            // правая кисть уходит вниз и к центру через ту же IK-цепь.
+            ApplyDualReloadPrimaryPose();
 
             // 2. Оружие в кисть.
             Mount();
@@ -637,7 +646,30 @@ namespace RealmOfAshes.Game
         private void Finish()
         {
             ApplyReadyRaise();
-            SolveSupportHand();
+            if (DualWield) SupportHandSolved = false;
+            else SolveSupportHand();
+        }
+
+        private void ApplyDualReloadPrimaryPose()
+        {
+            PrimaryHandSolved = false;
+            if (!DualWield || _primaryArm == null || !_primaryArm.Ready || _weapon == null) return;
+
+            float phase = ReloadPhase();
+            if (phase < 0f) return;
+            float blend = Mathf.Sin(phase * Mathf.PI);
+
+            Transform root = _weapon.parent;
+            if (root == null) return;
+            Matrix4x4 handLocal = root.worldToLocalMatrix * _hand.localToWorldMatrix;
+            Vector3 position = (Vector3)handLocal.GetColumn(3)
+                + new Vector3(-0.10f, -0.14f, -0.09f) * blend;
+            Quaternion rotation = handLocal.rotation
+                * Quaternion.Euler(18f * blend, 14f * blend, -22f * blend);
+            Matrix4x4 handWorld = root.localToWorldMatrix
+                * Matrix4x4.TRS(position, rotation, Vector3.one);
+            PrimaryHandSolved = _primaryArm.Solve(
+                handWorld.GetColumn(3), handWorld.rotation, ArmPole(false));
         }
 
         /// <summary>

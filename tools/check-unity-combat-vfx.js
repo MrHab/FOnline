@@ -17,8 +17,13 @@ const fallback = read(game, 'RoaCombatFx.cs');
 const combat = read(game, 'RoaCombat.cs');
 const character = read(game, 'RoaCharacterView.cs');
 const weapon = read(game, 'RoaWeaponView.cs');
+const offhand = read(game, 'RoaOffhandWeaponView.cs');
 const bootstrap = read(game, 'RoaGameBootstrap.cs');
+const socket = read('unity-client', 'Assets', 'Scripts', 'Net', 'RoaSocketClient.cs');
+const protocol = read('unity-client', 'Assets', 'Scripts', 'Net', 'RoaProtocol.cs');
+const server = read('server.js');
 const probe = read('unity-client', 'Assets', 'Editor', 'RoaCombatFxProbe.cs');
+const dualProbe = read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs');
 
 assert(presentation.includes('public sealed partial class RoaCombatPresentationFx'),
   'Polished combat presentation component is missing');
@@ -60,11 +65,32 @@ assert(bootstrap.includes('gameObject.AddComponent<RoaCombatPresentationFx>()')
   && bootstrap.includes('CombatFx.Polish = CombatPresentation;'),
   'Bootstrap does not wire the polished VFX component');
 assert(combat.includes('Fx?.PlayDamagePulse(damage);')
-  && combat.includes('Player.View.TryGetMuzzle(out start)')
-  && combat.includes('Fx.PlayShot(start, end, weapon, exactMuzzle);')
-  && character.includes('_weapon.TryGetMuzzle(out worldPosition)')
-  && weapon.includes('_socketMuzzle.position'),
-  'Damage pulse or exact socket_muzzle origin is not connected to combat');
+  && combat.includes('Player.View.TryGetMuzzle(handSlot, out start)')
+  && combat.includes('Fx.PlayShot(start, end, weaponId, exactMuzzle);')
+  && combat.includes('["startX"] = startX')
+  && combat.includes('["startY"] = start.y')
+  && combat.includes('new WaitForSecondsRealtime(0.09f)')
+  && combat.includes('new[] { "weapon", "offhand" }')
+  && combat.includes('LoadedRoundsForHand(handSlot) == 0')
+  && character.includes('TryGetMuzzle(string handSlot, out Vector3 worldPosition)')
+  && character.includes('_offhandWeapon.TryGetMuzzle(out worldPosition)')
+  && weapon.includes('_socketMuzzle.position')
+  && offhand.includes('_socketMuzzle.position'),
+  'Damage pulse, hand-specific muzzles or staggered dual-shot visuals are not connected');
+assert(protocol.includes('[JsonProperty("combats")] public JArray Combats;')
+  && socket.includes('Session.Combats = (JArray)combats.DeepClone()')
+  && server.includes('combats: serverCombatAcksForPlayer(p)')
+  && server.includes('function serverCombatAcksForPlayer('),
+  'Per-hand loaded state is no longer synchronized through join and gameplay acknowledgements');
+assert(offhand.includes('MirrorRigid(rightLocal)')
+  && offhand.includes('_leftArm.Solve')
+  && offhand.includes('RoaWeaponView.IsSegmentBlocked')
+  && character.includes('_offhandWeapon.Apply(_aimPoint, _hasAim)')
+  && weapon.includes('if (DualWield) SupportHandSolved = false;'),
+  'Offhand model lost mirrored arm IK, obstruction or one-handed primary grip');
+assert(dualProbe.includes('RoaOffhandWeaponView.MirrorRigid')
+  && dualProbe.includes('left.determinant - 1f'),
+  'Dual-wield editor probe no longer verifies a rigid mirrored hand pose');
 assert(probe.includes('moving tapered tracer geometry')
   && probe.includes('directional muzzle burst geometry')
   && probe.includes('shock, heat, fireball, smoke or ember layer'),
@@ -74,9 +100,13 @@ for (const file of [
   'RoaCombatPresentationFx.cs.meta',
   'RoaCombatPresentationFx.Motion.cs.meta',
   'RoaCombatPresentationFx.Explosion.cs.meta',
-  'RoaCombatPresentationFx.Factory.cs.meta'
+  'RoaCombatPresentationFx.Factory.cs.meta',
+  'RoaOffhandWeaponView.cs.meta'
 ]) {
   assert(/guid:\s*[0-9a-f]{32}/i.test(read(game, file)), `${file} has no valid GUID`);
 }
 
-console.log('Unity combat VFX OK: moving tracers, socket muzzle, spark impacts, layered explosions and damage pulse');
+assert(/guid:\s*[0-9a-f]{32}/i.test(read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs.meta')),
+  'RoaDualWieldProbe.cs.meta has no valid GUID');
+
+console.log('Unity combat VFX OK: dual hand-specific muzzles, mirrored IK, moving tracers, impacts and explosions');

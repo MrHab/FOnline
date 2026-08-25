@@ -8699,6 +8699,13 @@ function serverCombatAcksForEntries(p = {}, entries = [], now = Date.now()) {
   return entries.map(entry => serverCombatAck(p, entry.weapon, now, entry.slot));
 }
 
+function serverCombatAcksForPlayer(p = {}, now = Date.now()) {
+  const pair = serverDualWieldPistolPair(p);
+  if (pair) return serverCombatAcksForEntries(p, pair.entries, now);
+  const slot = serverActiveWeaponSlot(p);
+  return [serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p), p, '', slot), now, slot)];
+}
+
 function serverResolvePlayerAttackPlan(p = {}, data = {}, now = Date.now()) {
   const requestedMode = String(data.mode || data.combat?.mode || 'single');
   const pair = serverDualWieldPistolPair(p);
@@ -19768,6 +19775,7 @@ function currentJoinedSocketAck(p, options = {}) {
     x: Number(Number(p.x || 0).toFixed(3)),
     z: Number(Number(p.z || 0).toFixed(3)),
     combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()),
+    combats: serverCombatAcksForPlayer(p),
     self: publicAuthoritativePlayerState(p),
     players: others,
     worldState: currentRoomWorldState(room),
@@ -20112,6 +20120,7 @@ io.on('connection', (socket) => {
         x: Number(p.x.toFixed(3)),
         z: Number(p.z.toFixed(3)),
         combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()),
+        combats: serverCombatAcksForPlayer(p),
         self: publicAuthoritativePlayerState(p),
         players: [],
         worldState: null,
@@ -20123,7 +20132,7 @@ io.on('connection', (socket) => {
 
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     refreshRoomWorldState(room);
-    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
+    if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()), combats: serverCombatAcksForPlayer(p), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
     emitGroundItemsSnapshot(room, true, socket.id);
@@ -22500,7 +22509,7 @@ io.on('connection', (socket) => {
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     refreshRoomWorldState(room);
-    if (typeof ack === 'function') ack({ ok: true, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
+    if (typeof ack === 'function') ack({ ok: true, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p), p), Date.now()), combats: serverCombatAcksForPlayer(p), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
     emitGroundItemsSnapshot(room, true, socket.id);

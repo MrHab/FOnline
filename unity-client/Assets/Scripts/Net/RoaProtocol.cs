@@ -147,6 +147,7 @@ namespace RealmOfAshes.Net
         [JsonProperty("z")] public float Z;
         [JsonProperty("self")] public JObject Self;
         [JsonProperty("combat")] public JObject Combat;
+        [JsonProperty("combats")] public JArray Combats;
         [JsonProperty("players")] public List<PublicPlayer> Players = new List<PublicPlayer>();
         [JsonProperty("worldState")] public JObject WorldState;
         [JsonProperty("serverAuthoritativeEnemies")] public bool ServerAuthoritativeEnemies;

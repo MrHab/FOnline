@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
@@ -435,16 +436,83 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            var shots = new List<KeyValuePair<string, string>>();
+            JObject equipment = EquipmentSnapshot();
+            if (_fireMode == "dual" && HasDualPistolPair())
+            {
+                foreach (string handSlot in new[] { "weapon", "offhand" })
+                {
+                    if (LoadedRoundsForHand(handSlot) == 0) continue;
+                    shots.Add(new KeyValuePair<string, string>(handSlot,
+                        BaseItemId(equipment?[handSlot]?.ToString())));
+                }
+            }
+            else
+            {
+                string handSlot = ActiveHandSlot();
+                if (LoadedRoundsForHand(handSlot) != 0)
+                {
+                    string handWeapon = BaseItemId(equipment?[handSlot]?.ToString());
+                    shots.Add(new KeyValuePair<string, string>(handSlot,
+                        string.IsNullOrEmpty(handWeapon) ? weapon : handWeapon));
+                }
+            }
+
+            // При пустых магазинах сервер вернёт честный отказ; клиент не рисует
+            // ложный трассер и не отправляет визуальный пакет другим игрокам.
+            if (shots.Count == 0) return;
+            for (int i = 0; i < shots.Count; i++)
+            {
+                KeyValuePair<string, string> shot = shots[i];
+                if (i == 0)
+                    PlayRangedVisual(self, target, selfX, selfZ, targetX, targetZ,
+                        angle, shot.Key, shot.Value, true);
+                else
+                    StartCoroutine(PlayDelayedRangedVisual(self, target, selfX, selfZ,
+                        targetX, targetZ, angle, shot.Key, shot.Value));
+            }
+        }
+
+        private IEnumerator PlayDelayedRangedVisual(Vector3 self, Vector3 target,
+                                                     float selfX, float selfZ,
+                                                     float targetX, float targetZ, float angle,
+                                                     string handSlot, string weaponId)
+        {
+            yield return new WaitForSecondsRealtime(0.09f);
+            PlayRangedVisual(self, target, selfX, selfZ, targetX, targetZ,
+                angle, handSlot, weaponId, false);
+        }
+
+        private void PlayRangedVisual(Vector3 self, Vector3 target,
+                                      float selfX, float selfZ, float targetX, float targetZ,
+                                      float angle, string handSlot, string weaponId,
+                                      bool addCameraImpulse)
+        {
+            if (Socket == null || Player == null) return;
+
             Vector3 dir = target - self;
             dir.y = 0f;
             if (dir.sqrMagnitude > 0.0001f) dir.Normalize();
-
             RoaCoords.ToServer(dir, out float dirX, out float dirZ);
+
+            Vector3 start = Vector3.zero;
+            bool exactMuzzle = Player.View != null
+                && Player.View.TryGetMuzzle(handSlot, out start);
+            if (!exactMuzzle)
+            {
+                float side = handSlot == "offhand" ? -0.34f : 0.34f;
+                start = self + Player.transform.right * side
+                    + Player.transform.forward * 0.24f + Vector3.up * 0.23f;
+            }
+            RoaCoords.ToServer(start, out float startX, out float startZ);
 
             Socket.Emit("shoot", new Dictionary<string, object>
             {
                 ["shotSeq"] = ++_shotSeq,
                 ["clientFiredAt"] = Mathf.RoundToInt(Time.realtimeSinceStartup * 1000f),
+                ["startX"] = startX,
+                ["startY"] = start.y,
+                ["startZ"] = startZ,
                 ["originX"] = selfX,
                 ["originZ"] = selfZ,
                 ["dirX"] = dirX,
@@ -453,24 +521,20 @@ namespace RealmOfAshes.Game
                 ["endZ"] = targetZ,
                 ["angle"] = angle,
                 ["mode"] = _fireMode,
-                ["handSlot"] = ActiveHandSlot(),
+                ["handSlot"] = handSlot,
                 ["deviceType"] = MobileInputMode ? "mobile" : "desktop",
                 ["controlType"] = MobileInputMode ? "touch" : "keyboard_mouse"
             });
 
-            if (Fx != null)
+            if (Fx == null) return;
+            Vector3 end = new Vector3(target.x, Mathf.Max(1.02f, target.y + 0.23f), target.z);
+            Fx.PlayShot(start, end, weaponId, exactMuzzle);
+            if (addCameraImpulse)
             {
-                Vector3 start = Vector3.zero;
-                bool exactMuzzle = Player.View != null && Player.View.TryGetMuzzle(out start);
-                if (!exactMuzzle)
-                    start = new Vector3(self.x, Mathf.Max(1.05f, self.y + 0.23f), self.z);
-                Vector3 end = new Vector3(target.x, Mathf.Max(1.02f, target.y + 0.23f), target.z);
-                Fx.PlayShot(start, end, weapon, exactMuzzle);
-                float impulse = RoaCombatFx.ImpulseFor(weapon) * (MobileInputMode ? 0.6f : 1f);
+                float impulse = RoaCombatFx.ImpulseFor(weaponId) * (MobileInputMode ? 0.6f : 1f);
                 RoaGameBootstrap.Active?.CameraRig?.AddImpulse(impulse);
             }
         }
-
         private void SendAuthoritativeHit(string enemyId,
                                           float selfX, float selfZ,
                                           float targetX, float targetZ,
@@ -736,6 +800,32 @@ namespace RealmOfAshes.Game
             string right = BaseItemId(equipment?["weapon"]?.ToString());
             string left = BaseItemId(equipment?["offhand"]?.ToString());
             return IsDualPistol(right) && IsDualPistol(left);
+        }
+
+        private int LoadedRoundsForHand(string handSlot)
+        {
+            if (Socket?.Session == null) return -1;
+            string slot = handSlot == "offhand" ? "offhand" : "weapon";
+            string expectedRuntime = Socket.Session.Self?["equipmentRuntime"]?[slot]?.ToString() ?? string.Empty;
+            JArray combats = Socket.Session.Combats;
+            if (combats != null)
+            {
+                foreach (JToken token in combats)
+                {
+                    JObject row = token as JObject;
+                    if (row?["handSlot"]?.ToString() != slot) continue;
+                    if (!string.IsNullOrEmpty(expectedRuntime)
+                        && row?["weaponRuntimeId"]?.ToString() != expectedRuntime) continue;
+                    return Mathf.Max(0, row["loaded"]?.ToObject<int>() ?? 0);
+                }
+            }
+
+            JObject active = Socket.Session.Combat;
+            if (active?["handSlot"]?.ToString() == slot
+                && (string.IsNullOrEmpty(expectedRuntime)
+                    || active?["weaponRuntimeId"]?.ToString() == expectedRuntime))
+                return Mathf.Max(0, active["loaded"]?.ToObject<int>() ?? 0);
+            return -1;
         }
 
         private static bool IsDualPistol(string id)

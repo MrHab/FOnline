@@ -80,6 +80,7 @@ namespace RealmOfAshes.Game
 
         private readonly Dictionary<string, Transform> _bones = new Dictionary<string, Transform>();
         private RoaWeaponView _weapon;
+        private RoaOffhandWeaponView _offhandWeapon;
         private RoaEquipmentView _equipment;
         private int _equipmentRequest;
         private int _loadRequest;
@@ -188,6 +189,8 @@ namespace RealmOfAshes.Game
 
         /// <summary>Оружие подключено и смонтировано.</summary>
         public bool WeaponReady { get { return _weapon != null && _weapon.Ready; } }
+        public bool OffhandWeaponReady { get { return _offhandWeapon != null && _offhandWeapon.Ready; } }
+        public string OffhandWeaponId { get { return _offhandWeapon != null ? _offhandWeapon.WeaponId : string.Empty; } }
 
         /// <summary>Доворот корпуса под ствол, рад. Для диагностики.</summary>
         public float TorsoResidual { get { return _weapon != null ? _weapon.TorsoResidual : 0f; } }
@@ -216,6 +219,13 @@ namespace RealmOfAshes.Game
 
         public bool TryGetMuzzle(out Vector3 worldPosition)
         {
+            return TryGetMuzzle("weapon", out worldPosition);
+        }
+
+        public bool TryGetMuzzle(string handSlot, out Vector3 worldPosition)
+        {
+            if (handSlot == "offhand" && _offhandWeapon != null)
+                return _offhandWeapon.TryGetMuzzle(out worldPosition);
             if (_weapon != null) return _weapon.TryGetMuzzle(out worldPosition);
             worldPosition = Vector3.zero;
             return false;
@@ -224,6 +234,7 @@ namespace RealmOfAshes.Game
         public void StartReload(float durationSeconds)
         {
             if (_weapon != null) _weapon.StartReload(durationSeconds);
+            if (_offhandWeapon != null) _offhandWeapon.StartReload(durationSeconds);
         }
 
         /// <summary>
@@ -325,6 +336,7 @@ namespace RealmOfAshes.Game
 
             if (_weapon == null) _weapon = new RoaWeaponView();
             await _weapon.Load(baseUrl, weaponId, _modelRoot, _bones);
+            UpdateDualWieldState();
             NotifyVisualChanged();
         }
 
@@ -335,8 +347,13 @@ namespace RealmOfAshes.Game
 
             int request = ++_equipmentRequest;
             if (_equipment == null) _equipment = new RoaEquipmentView();
-            await _equipment.Apply(baseUrl, equipment, _bodyKey, _modelRoot, _bones);
+            if (_offhandWeapon == null) _offhandWeapon = new RoaOffhandWeaponView();
+            string offhandId = BaseItemId(equipment?["offhand"]?.ToString());
+            await Task.WhenAll(
+                _equipment.Apply(baseUrl, equipment, _bodyKey, _modelRoot, _bones),
+                _offhandWeapon.Load(baseUrl, offhandId, _modelRoot, _bones));
             if (request != _equipmentRequest) return;
+            UpdateDualWieldState();
             bool helmetOn = !string.IsNullOrEmpty(BaseItemId(equipment?["helmet"]?.ToString()));
             ApplyAppearanceVisuals(helmetOn);
             NotifyVisualChanged();
@@ -352,6 +369,14 @@ namespace RealmOfAshes.Game
         public void CollectEquipmentRenderers(List<SkinnedMeshRenderer> output)
         {
             _equipment?.CollectRenderers(output);
+        }
+
+        private void UpdateDualWieldState()
+        {
+            if (_weapon == null) return;
+            _weapon.DualWield = _weapon.Ready
+                && RoaOffhandWeaponView.IsSupported(_weapon.WeaponId)
+                && _offhandWeapon != null && _offhandWeapon.Ready;
         }
 
         /// <summary>Модель по умолчанию для старых сохранений без внешности (PLAYER_SYSTEM.md).</summary>
@@ -727,6 +752,7 @@ namespace RealmOfAshes.Game
             // Хват и оружие поверх позы: кисть считается от таза и позвоночника,
             // которые направленная поза уже развернула.
             if (_weapon != null) _weapon.Apply(_aimPoint, _hasAim);
+            if (_offhandWeapon != null) _offhandWeapon.Apply(_aimPoint, _hasAim);
 
             // Foot IK последним: он трогает только ноги, а их мировые позиции
             // к этому моменту окончательные.

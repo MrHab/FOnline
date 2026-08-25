@@ -53,6 +53,7 @@ namespace RealmOfAshes.Game
         private Text _resultReward;
         private string _resultKey = string.Empty;
         private float _resultUntil;
+        private bool _resultPending;
         private string _introActivityId = string.Empty;
         private float _introUntil;
         private GameObject _introRoot;
@@ -121,6 +122,7 @@ namespace RealmOfAshes.Game
             if (_root != null) _root.SetActive(false);
             if (_introRoot != null) _introRoot.SetActive(false);
             if (_resultRoot != null) _resultRoot.SetActive(false);
+            _resultPending = false;
             ClearWorldMarkers();
             HideActivityNavigation();
         }
@@ -163,10 +165,18 @@ namespace RealmOfAshes.Game
                     ? "НАГРАДА ЖДЁТ: освободите место для крышек — сервер начислит её автоматически."
                     : "НАГРАДА ЖДЁТ В ЖУРНАЛЕ: " + rewardText;
             else
-                _resultReward.text = "Вылазка закрыта без награды.";
+                _resultReward.text = FailureSummary(result["reason"]?.ToString());
 
-            _resultUntil = Time.unscaledTime + 12f;
-            _resultRoot.SetActive(true);
+            if (result["reason"]?.ToString() == "player_died")
+            {
+                _resultPending = false;
+                _resultUntil = 0f;
+                _resultRoot.SetActive(false);
+                return;
+            }
+            _resultPending = true;
+            _resultUntil = 0f;
+            _resultRoot.SetActive(false);
         }
         private void ApplyWorldState(JObject state)
         {
@@ -197,6 +207,12 @@ namespace RealmOfAshes.Game
         {
             if (_resultRoot != null)
             {
+                bool screenReady = Bootstrap == null || (Bootstrap.InGame && !Bootstrap.FrontendVisible);
+                if (_resultPending && screenReady)
+                {
+                    _resultPending = false;
+                    _resultUntil = Time.unscaledTime + 12f;
+                }
                 bool showResult = Time.unscaledTime < _resultUntil && (Bootstrap == null || !Bootstrap.FrontendVisible);
                 if (_resultRoot.activeSelf != showResult) _resultRoot.SetActive(showResult);
             }
@@ -291,7 +307,8 @@ namespace RealmOfAshes.Game
             bool pointInReach = nearestPoint != null && nearestDistance <= 3f;
             _actionPointId = pointInReach ? nearestPoint?["id"]?.ToString() ?? string.Empty : string.Empty;
             bool showReconAction = usesPoint && nearestPoint != null && !pointInReach && !extractionOpen;
-            bool showAction = status != "completed" && (pointInReach || extractionOpen || showReconAction);
+            bool running = status == "active" || status == "extracting";
+            bool showAction = running && (pointInReach || extractionOpen || showReconAction);
             _action.gameObject.SetActive(showAction);
             _action.interactable = !_pending && (pointInReach || (extractionOpen && extractionInReach));
             if (_pending) _actionLabel.text = "ОБРАБОТКА…";
@@ -322,7 +339,7 @@ namespace RealmOfAshes.Game
             }
             else if (status == "failed" || status == "expired")
             {
-                _message.text = "Время вышло. Вылазка закрыта без награды.";
+                _message.text = "Вылазка закрыта без награды. Дойдите до края локации, чтобы вернуться на живую карту.";
                 _message.color = Danger;
             }
             else if (extractionOpen && string.IsNullOrEmpty(_message.text))
@@ -552,6 +569,7 @@ namespace RealmOfAshes.Game
             resultRect.anchoredPosition = new Vector2(0f, -76f);
             resultRect.sizeDelta = new Vector2(470f, 126f);
             _resultRoot.GetComponent<Image>().color = PanelBg;
+            _resultRoot.GetComponent<Image>().raycastTarget = false;
             Outline resultBorder = _resultRoot.GetComponent<Outline>();
             resultBorder.effectColor = Border;
             resultBorder.effectDistance = new Vector2(1f, -1f);
@@ -567,6 +585,17 @@ namespace RealmOfAshes.Game
             Place(_resultReward.rectTransform, 16f, -115f, -16f, -80f);
             _resultRoot.SetActive(false);
             BuildActivityNavigation(canvasGo.transform);
+        }
+
+        public static string FailureSummary(string reason)
+        {
+            if (reason == "time_expired")
+                return "ВРЕМЯ ВЫШЛО: награда не начислена. Вернитесь на живую карту за новым событием.";
+            if (reason == "participation_not_credited")
+                return "УЧАСТИЕ НЕ ЗАСЧИТАНО: основная цель не была выполнена вместе с группой.";
+            if (reason == "player_died")
+                return "ВЫ ПОГИБЛИ: личная вылазка завершена, награда не начислена.";
+            return "ВЫЛАЗКА ЗАКРЫТА БЕЗ НАГРАДЫ. Вернитесь на живую карту за новым событием.";
         }
 
         private static string StartInstruction(string kind)

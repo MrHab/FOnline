@@ -116,6 +116,7 @@ const {
   orientOnsitePartyOffset
 } = require('./src/server/onsite-party-formation');
 const { buildStartingLoadout } = require('./src/server/starting-loadout');
+const { planFailedPlayerActivities } = require('./src/server/player-activity-recovery');
 const {
   createResourceExpedition,
   createReconExpedition,
@@ -6229,6 +6230,41 @@ function detachServerPlayerFromActiveWorldParties(player = {}) {
   syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
   removePlayerFromIndependentGlobalTravelSessions(player.id);
   return [...detachedIds];
+}
+
+function failServerPlayerActiveWorldActivities(player = {}, reason = 'player_died') {
+  const state = WASTELAND_SIM.state();
+  const plan = planFailedPlayerActivities({
+    acceptedIds: sanitizeServerWorldTaskIds(player.worldTaskAccepted || []),
+    trackedId: player.worldTaskTrackedId || '',
+    tasks: Array.isArray(state?.worldTasks) ? state.worldTasks : [],
+    playableTypes: SERVER_PLAYABLE_WORLD_ACTIVITY_TYPES
+  });
+  for (const task of plan.failedTasks) {
+    if (task.partyId && isWorldPartyTask(task)) {
+      WASTELAND_SIM.leaveWorldParty({
+        partyId: task.partyId,
+        socketId: player.id || '',
+        playerId: player.id || '',
+        userId: player.userId || '',
+        characterId: player.characterId || '',
+        name: player.name || ''
+      });
+    }
+    setServerWorldActivityResult(player, task, {
+      status: 'failed',
+      grade: 'failed',
+      reward: {},
+      rewardClaimed: false,
+      reason
+    });
+  }
+  if (plan.failedIds.length > 0) {
+    player.worldTaskAccepted = plan.remainingAcceptedIds;
+    player.worldTaskTrackedId = plan.trackedId;
+  }
+  syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
+  return plan.failedIds;
 }
 
 function serverWorldTaskById(taskId = '') {
@@ -15905,7 +15941,11 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
   if (!p || !p.id) return;
   const socket = io.sockets.sockets.get(p.id);
   const now = Date.now();
-  const detachedWorldTaskIds = detachServerPlayerFromActiveWorldParties(p);
+  const failedWorldActivityIds = failServerPlayerActiveWorldActivities(p, 'player_died');
+  const detachedWorldTaskIds = [...new Set([
+    ...failedWorldActivityIds,
+    ...detachServerPlayerFromActiveWorldParties(p)
+  ])];
   const respawnLocationId = normalizeRespawnSettlementId(p.lastVisitedSettlementId || cause.lastVisitedSettlementId || 'settlement');
   const settlement = chooseRoomForLocation(respawnLocationId);
   let pos = playerSpawnWorld(respawnLocationId, 'respawn');
@@ -15989,6 +16029,8 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
     hp: p.hp,
     maxHp: p.maxHp,
     detachedWorldTaskIds,
+    failedWorldActivityIds,
+    activityResult: sanitizeServerWorldActivityResult(p.lastWorldActivityResult),
     players: others,
     worldState: settlement.worldState || publicWorldState(settlement, true),
     serverAuthoritativeEnemies: true,

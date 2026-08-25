@@ -1556,9 +1556,17 @@ function assertSocketAndClientContract() {
       < arrivalTransferMarker.lastIndexOf('});'),
     'arrival transfer dedupe commits before its durable arrival marker'
   );
-  assert(serverSource.includes('const detachedWorldTaskIds = detachServerPlayerFromActiveWorldParties(p);')
-    && serverSource.includes("emitAuthoritativePlayerState(p, { reason: 'deathRespawn', detachedWorldTaskIds });"),
-  'death/respawn does not atomically detach active world-party work');
+  const respawnFlow = serverSourceSection(
+    serverSource,
+    'function serverRespawnPlayer(',
+    'function serverEnemyTypeIndexByName('
+  );
+  assert(respawnFlow.includes("failServerPlayerActiveWorldActivities(p, 'player_died')")
+    && respawnFlow.includes('...detachServerPlayerFromActiveWorldParties(p)')
+    && respawnFlow.indexOf('failServerPlayerActiveWorldActivities')
+      < respawnFlow.indexOf('detachServerPlayerFromActiveWorldParties')
+    && respawnFlow.includes("emitAuthoritativePlayerState(p, { reason: 'deathRespawn', detachedWorldTaskIds });"),
+  'death/respawn does not atomically fail personal activities and detach active world-party work');
   const savedLocationContext = serverSource.slice(
     serverSource.indexOf('function serverLocationContextFromPlayer('),
     serverSource.indexOf('function mergeAuthoritativeCharacterState(', serverSource.indexOf('function serverLocationContextFromPlayer('))

@@ -26,15 +26,21 @@ namespace RealmOfAshes.World
         private Mesh _mesh;
         private Material _material;
         private Texture2D _albedo;
+        private Texture2D _microDetail;
         private int _textureSize;
         private float _visualWidth;
         private float _visualDepth;
         private int _mapSignature = int.MinValue;
         private GameObject _movementRoot;
+        private RoaGroundDressing _groundDressing;
 
         public Renderer GroundRenderer { get; private set; }
         public int AuthoritativeMapWidth { get; private set; }
         public int AuthoritativeMapDepth { get; private set; }
+        public int SurfaceDetailClusterCount { get { return _groundDressing != null ? _groundDressing.SurfaceClusterCount : 0; } }
+        public int DistantRidgeCount { get { return _groundDressing != null ? _groundDressing.RidgeCount : 0; } }
+        public int DetailVertexCount { get { return _groundDressing != null ? _groundDressing.VertexCount : 0; } }
+        public int MicroDetailTextureSize { get { return _microDetail != null ? _microDetail.width : 0; } }
 
         public void Initialize(LocationDefinition location, JArray stateMap)
         {
@@ -64,6 +70,8 @@ namespace RealmOfAshes.World
             collider.center = new Vector3(0f, -0.12f, 0f);
             collider.size = new Vector3(worldWidth, 0.24f, worldDepth);
             BuildPlayableBoundary(location);
+            _groundDressing = gameObject.GetComponent<RoaGroundDressing>();
+            if (_groundDressing == null) _groundDressing = gameObject.AddComponent<RoaGroundDressing>();
 
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             if (shader != null)
@@ -73,6 +81,7 @@ namespace RealmOfAshes.World
                 if (_material.HasProperty("_Smoothness")) _material.SetFloat("_Smoothness", 0.015f);
                 if (_material.HasProperty("_Glossiness")) _material.SetFloat("_Glossiness", 0.015f);
                 renderer.sharedMaterial = _material;
+                ApplyMicroDetail(_material, location != null ? location.Seed : 1L);
             }
 
             ApplyMap(stateMap, true);
@@ -89,6 +98,8 @@ namespace RealmOfAshes.World
             AuthoritativeMapWidth = mapWidth;
             AuthoritativeMapDepth = mapDepth;
             BuildTileMovementColliders(stateMap, mapWidth, mapDepth);
+            if (_groundDressing != null)
+                _groundDressing.Build(_location, stateMap, mapWidth, mapDepth, _visualWidth, _visualDepth);
 
             if (_albedo == null || _albedo.width != _textureSize)
             {
@@ -569,6 +580,37 @@ namespace RealmOfAshes.World
                 255);
         }
 
+        private void ApplyMicroDetail(Material material, long seedValue)
+        {
+            if (material == null || !material.HasProperty("_DetailAlbedoMap")) return;
+            int size = Application.isMobilePlatform ? 64 : 128;
+            _microDetail = new Texture2D(size, size, TextureFormat.RGB24, true, true)
+            {
+                name = "RuntimeLocalGroundMicroDetail:" + (_location?.Id ?? "unknown"),
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Repeat,
+                anisoLevel = Application.isMobilePlatform ? 2 : 8
+            };
+            int seed = unchecked((int)seedValue);
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float broad = ValueNoise(x * 0.16f, y * 0.16f, seed + 9011);
+                float grain = Hash01(x, y, seed + 9013);
+                float value = Mathf.Clamp01(0.5f + (broad - 0.5f) * 0.022f + (grain - 0.5f) * 0.008f);
+                byte channel = (byte)Mathf.RoundToInt(value * 255f);
+                pixels[y * size + x] = new Color32(channel, channel, channel, 255);
+            }
+            _microDetail.SetPixels32(pixels);
+            _microDetail.Apply(true, true);
+            material.SetTexture("_DetailAlbedoMap", _microDetail);
+            material.SetTextureScale("_DetailAlbedoMap", new Vector2(
+                Mathf.Max(1f, _visualWidth / 4.2f), Mathf.Max(1f, _visualDepth / 4.2f)));
+            if (material.HasProperty("_DetailAlbedoMapScale")) material.SetFloat("_DetailAlbedoMapScale", 0.24f);
+            material.EnableKeyword("_DETAIL_MULX2");
+        }
+
         private static void SetMaterialColor(Material material, Color color)
         {
             if (material == null) return;
@@ -587,9 +629,11 @@ namespace RealmOfAshes.World
         private void OnDestroy()
         {
             DestroyRuntime(_albedo);
+            DestroyRuntime(_microDetail);
             DestroyRuntime(_material);
             DestroyRuntime(_mesh);
             _albedo = null;
+            _microDetail = null;
             _material = null;
             _mesh = null;
         }

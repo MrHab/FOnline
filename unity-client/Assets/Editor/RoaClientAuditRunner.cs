@@ -26,7 +26,8 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaUiPrefabProbe),
             typeof(RoaLightingProbe),
             typeof(RoaCameraProbe),
-            typeof(RoaMovementFxProbe)
+            typeof(RoaMovementFxProbe),
+            typeof(RoaGroundDressingProbe)
         };
 
         public static async void Run()

@@ -19,7 +19,7 @@ namespace RealmOfAshes.Game
     ///
     /// Вся логика (запросы, этапы, проверки) остаётся в RoaGameBootstrap —
     /// это окно только рисует и дёргает его фасад Auth*.
-    /// Создание персонажа пока остаётся IMGUI-экраном bootstrap.
+    /// Создание персонажа также собирается здесь: SPECIAL, навыки, перки и живой предпросмотр.
     /// </summary>
     public sealed class RoaAuthCanvas : MonoBehaviour
     {

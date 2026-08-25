@@ -115,6 +115,7 @@ const {
   onsitePartyWorkOffset,
   orientOnsitePartyOffset
 } = require('./src/server/onsite-party-formation');
+const { buildStartingLoadout } = require('./src/server/starting-loadout');
 const {
   createResourceExpedition,
   createReconExpedition,
@@ -6589,16 +6590,6 @@ function serverInventoryRowsToObject(rows = []) {
   return out;
 }
 
-function serverStarterInventoryRows(traits = []) {
-  let rows = [
-    { id: 'water', qty: 1 },
-    { id: 'silver', qty: Array.isArray(traits) && traits.includes('traderStart') ? 18 : 6 }
-  ];
-  if (Array.isArray(traits) && traits.includes('scavengerStart')) rows.push({ id: 'scrap', qty: 3 });
-  if (Array.isArray(traits) && traits.includes('craftsmanStart')) rows.push({ id: 'pickaxe', qty: 1 }, { id: 'axe', qty: 1 });
-  return sanitizeServerInventorySnapshot(rows, { includeEquipped: true });
-}
-
 function serverSavedEquipment(state = {}) {
   return sanitizeEquipment(state?.equipment || {}, { weapon: 'fists' });
 }
@@ -7103,11 +7094,11 @@ function initialServerCharacterState(data = {}, characterId = '') {
   const taggedSkills = sanitizeTaggedSkills(data.taggedSkills || []);
   const special = sanitizeSpecial(data.special || {});
   const appearance = sanitizeCharacterAppearance(data.appearance || {});
-  const equipment = { weapon: 'fists', offhand: '', armor: '', helmet: '', boots: '', backpack: '' };
-  const inventory = serverInventoryRowsToObject(serverStarterInventoryRows(traits));
-  inventory.knife = 1;
-  const spawn = playerSpawnWorld('settlement', 'spawn');
   const now = Date.now();
+  const startingLoadout = buildStartingLoadout({ special, taggedSkills, traits }, now);
+  const equipment = startingLoadout.equipment;
+  const inventory = serverInventoryRowsToObject(startingLoadout.inventory);
+  const spawn = playerSpawnWorld('settlement', 'spawn');
   return {
     version: 4,
     savedAt: now,
@@ -7156,7 +7147,7 @@ function initialServerCharacterState(data = {}, characterId = '') {
     worldFactionReputation: {},
     socialState: sanitizeServerSocialState(),
     quickbarSlots: [],
-    itemRuntime: {},
+    itemRuntime: startingLoadout.itemRuntime,
     globalMap: null,
     locationStates: {}
   };

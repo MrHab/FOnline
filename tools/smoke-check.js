@@ -1142,6 +1142,22 @@ async function joinSocketCharacter(socket, account) {
   });
 }
 
+async function joinQuickStartCharacter(socket, account) {
+  return socketAck(socket, 'join', {
+    token: account.token,
+    deviceId: account.deviceId,
+    clientInstanceId: account.clientInstanceId,
+    deviceType: 'desktop',
+    controlType: 'keyboard_mouse',
+    characterId: account.characterId,
+    name: 'Странник',
+    appearance: account.appearance,
+    special: { str: 5, per: 7, end: 6, cha: 5, int: 5, agi: 7, luck: 5 },
+    traits: ['trainedEye', 'scavengerStart'],
+    taggedSkills: ['lightWeapons', 'wanderer']
+  });
+}
+
 async function assertCharacterDeletionLifecycle(account) {
   const headers = authHeaders(account.token, account.deviceId, {
     clientInstanceId: account.clientInstanceId
@@ -1734,6 +1750,24 @@ async function assertSocketMultiplayerLifecycle() {
     if (!soloTravelCancel.ok || soloDistance <= 0.01) {
       fail('authoritative global-map route did not advance the player', JSON.stringify({ soloTravel, soloTravelCancel, soloDistance }));
     }
+
+    const quickAccount = await registerSocketTestAccount(4, suffix);
+    quickAccount.characterId = 'c_quick_' + suffix;
+    const quickSocket = await connectSocketClient();
+    sockets.push(quickSocket);
+    const quickJoin = await joinQuickStartCharacter(quickSocket, quickAccount);
+    const quickPistolRows = (quickJoin.self?.weaponModifications || [])
+      .filter(row => row?.baseId === 'pistol');
+    if (!quickJoin.ok
+      || quickJoin.self?.equipment?.weapon !== 'pistol'
+      || quickJoin.self?.combat?.weapon !== 'pistol'
+      || Number(quickJoin.self?.combat?.loaded) !== 1
+      || Number(quickJoin.self?.combat?.reserveAmmo) !== 18
+      || quickPistolRows.length !== 1) {
+      fail('quick-start join did not receive one equipped loaded pistol and 18 reserve rounds',
+        JSON.stringify(quickJoin));
+    }
+    quickSocket.close();
 
     await assertCharacterDeletionLifecycle(accounts[2]);
   } finally {

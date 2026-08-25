@@ -9,6 +9,8 @@ const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 
 const audio = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaAudio.cs');
 const movementFx = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaMovementFx.cs');
+const remotePlayers = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaRemotePlayers.cs');
+const enemies = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaEnemies.cs');
 const bootstrap = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaGameBootstrap.cs');
 const combat = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaCombat.cs');
 const combatFx = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaCombatFx.cs');
@@ -31,9 +33,14 @@ assert(audio.includes('public event Action<FootstepCue> Footstep;')
   && audio.includes('Footstep?.Invoke(new FootstepCue')
   && audio.includes('RightFoot = _rightFoot'),
 'Audio cadence no longer emits an alternating visual footstep cue');
+assert(audio.includes('PlayActorFootstep(FootstepCue cue)')
+  && audio.includes('14f, false)')
+  && audio.includes('if (!allowSteal) return;'),
+'Visible actor footsteps no longer yield pooled audio voices to combat');
 assert(audio.includes('float.IsNaN(data[i])') && audio.includes('Generated audio is silent')
   && audio.includes('_validatedClipCount++'),
-'Generated clips no longer reject silent or invalid PCM data');assert(audio.includes('VolumePrefsKey') && audio.includes('CycleMasterVolume()')
+'Generated clips no longer reject silent or invalid PCM data');
+assert(audio.includes('VolumePrefsKey') && audio.includes('CycleMasterVolume()')
   && audio.includes('PlayerPrefs.Save()'),
 'Persistent player-facing volume control is incomplete');
 
@@ -63,14 +70,32 @@ assert(movementFx.includes('public sealed class RoaMovementFx')
   && movementFx.includes('Application.isMobilePlatform')
   && movementFx.includes('FootOffset(planar, cue.RightFoot)'),
 'Movement FX lost its pooled dust, ground scuff, mobile budget or alternating feet');
+assert(movementFx.includes('ActorStepState')
+  && movementFx.includes('TryPlanActorStep(ref ActorStepState state')
+  && movementFx.includes('delta.sqrMagnitude > 7.5625f')
+  && movementFx.includes('mobile ? 15f : 24f')
+  && movementFx.includes('EmitActorStep(cue);'),
+'Shared actor step scheduler lost cadence, teleport protection, distance budget or pooled emission');
+assert(remotePlayers.includes('ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)')
+  && remotePlayers.includes('TrackActor(ref remote.StepFx')
+  && enemies.includes('ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)')
+  && enemies.includes('TrackActor(ref enemy.StepFx')
+  && enemies.includes('enemy.Moving && !enemy.Dead'),
+'Remote players or NPCs no longer drive shared visible movement feedback');
+assert(bootstrap.includes('Enemies.ConfigureMovementFx(MovementFx, movementFxCamera);')
+  && bootstrap.includes('RemotePlayers.ConfigureMovementFx(MovementFx, movementFxCamera);'),
+'Bootstrap no longer shares movement FX and camera distance budget with visible actors');
 assert(movementProbe.includes('[ПЫЛЬ ШАГОВ] готово:')
   && movementProbe.includes('run.PuffCount > walk.PuffCount')
-  && movementProbe.includes('crouch.ScuffCount == 0'),
-'Unity movement FX probe no longer covers pace and crouch scaling');
+  && movementProbe.includes('crouch.ScuffCount == 0')
+  && movementProbe.includes('TryPlanActorStep(ref actorState')
+  && movementProbe.includes('fx.ActorStepCount == 1')
+  && movementProbe.includes('серверная коррекция позиции ошибочно выглядит как шаг'),
+'Unity movement FX probe no longer covers pace, visibility, teleport protection and shared actor pools');
 assert(systemCanvas.includes('"Звук: выключен"')
   && systemCanvas.includes('RoaAudio.Active?.CycleMasterVolume()'),
 'System menu no longer exposes audio volume');
 assert(/guid:\s*[0-9a-f]{32}/i.test(meta), 'RoaAudio MonoScript meta GUID is missing');
 assert(/guid:\s*[0-9a-f]{32}/i.test(movementMeta), 'RoaMovementFx MonoScript meta GUID is missing');
 
-console.log('Unity audio/movement OK: ambience, 8 weapon profiles, spatial impacts, synchronized footstep dust, combat/UI feedback and persistent volume');
+console.log('Unity audio/movement OK: ambience, 8 weapon profiles, spatial impacts, pooled local/actor footsteps, combat/UI priority and persistent volume');

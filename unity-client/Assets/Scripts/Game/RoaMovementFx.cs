@@ -32,6 +32,14 @@ namespace RealmOfAshes.Game
             }
         }
 
+        public struct ActorStepState
+        {
+            public Vector3 LastPosition;
+            public float NextStepAt;
+            public bool Initialized;
+            public bool RightFoot;
+        }
+
         private const int PuffCapacityValue = 96;
         private const int ScuffCapacityValue = 24;
 
@@ -43,6 +51,7 @@ namespace RealmOfAshes.Game
         private Texture2D _softParticle;
         private uint _randomState = 0x9e3779b9u;
 
+        public int ActorStepCount { get; private set; }
         public bool Ready { get { return _puffs != null && _scuffs != null; } }
         public int PuffCapacity { get { return _puffs != null ? _puffs.main.maxParticles : 0; } }
         public int ScuffCapacity { get { return _scuffs != null ? _scuffs.main.maxParticles : 0; } }
@@ -98,6 +107,82 @@ namespace RealmOfAshes.Game
             if (planarVelocity.sqrMagnitude < 0.0001f) return Vector3.zero;
             Vector3 lateral = Vector3.Cross(Vector3.up, planarVelocity.normalized);
             return lateral * (rightFoot ? 0.13f : -0.13f);
+        }
+
+        public static float ActorFxMaxDistance(bool mobile)
+        {
+            return mobile ? 15f : 24f;
+        }
+
+        public static bool IsActorFxInRange(Vector3 actorPosition, Vector3 observerPosition, bool mobile)
+        {
+            Vector3 delta = actorPosition - observerPosition;
+            delta.y = 0f;
+            float maxDistance = ActorFxMaxDistance(mobile);
+            return delta.sqrMagnitude <= maxDistance * maxDistance;
+        }
+
+        public static bool TryPlanActorStep(ref ActorStepState state, Vector3 position,
+                                            Vector3 velocity, bool moving, bool visible,
+                                            bool crouching, float now, out RoaAudio.FootstepCue cue)
+        {
+            cue = default(RoaAudio.FootstepCue);
+            velocity.y = 0f;
+            float speed = velocity.magnitude;
+            if (!state.Initialized)
+            {
+                state.Initialized = true;
+                state.LastPosition = position;
+                state.NextStepAt = now + 0.12f;
+                return false;
+            }
+
+            Vector3 delta = position - state.LastPosition;
+            delta.y = 0f;
+            state.LastPosition = position;
+            if (delta.sqrMagnitude > 7.5625f)
+            {
+                state.NextStepAt = now + 0.14f;
+                return false;
+            }
+
+            if (!visible || !moving || speed < 0.28f)
+            {
+                state.NextStepAt = now + 0.10f;
+                return false;
+            }
+            if (delta.sqrMagnitude < 0.000004f || now < state.NextStepAt) return false;
+
+            state.RightFoot = !state.RightFoot;
+            cue = new RoaAudio.FootstepCue
+            {
+                Position = position,
+                Velocity = velocity,
+                Speed = speed,
+                Crouching = crouching,
+                RightFoot = state.RightFoot
+            };
+            float cadence = Mathf.Lerp(0.62f, 0.29f, Mathf.InverseLerp(0.4f, 7f, speed));
+            state.NextStepAt = now + cadence * (crouching ? 1.22f : 1f);
+            return true;
+        }
+
+        public bool TrackActor(ref ActorStepState state, Vector3 position, Vector3 velocity,
+                               bool moving, bool visible, bool crouching, Vector3 observerPosition)
+        {
+            bool active = visible && IsActorFxInRange(position, observerPosition, Application.isMobilePlatform);
+            if (!TryPlanActorStep(ref state, position, velocity, moving, active, crouching,
+                                  Time.unscaledTime, out RoaAudio.FootstepCue cue)) return false;
+            EmitActorStep(cue);
+            return true;
+        }
+
+        /// <summary>Reuses the single audio and particle pools for every visible actor.</summary>
+        public void EmitActorStep(RoaAudio.FootstepCue cue)
+        {
+            ActorStepCount++;
+            _audio?.PlayActorFootstep(cue);
+            EmitFootstep(cue);
         }
 
         /// <summary>Public for deterministic editor probes; runtime calls it through RoaAudio.Footstep.</summary>

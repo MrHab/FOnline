@@ -33,6 +33,9 @@ namespace RealmOfAshes.Game
         [Tooltip("Туман войны. Пока не назначен, существа видны всегда.")]
         public RoaFogOfWar Fog;
 
+        private RoaMovementFx _movementFx;
+        private Camera _worldCamera;
+
         /// <summary>Порог перехода на бег для существ, м/с.</summary>
         private const float RunSpeedThreshold = 2.4f;
 
@@ -67,9 +70,16 @@ namespace RealmOfAshes.Game
             public int ActivityRevision;
             public int Hp;
             public JObject Snapshot;
+            public RoaMovementFx.ActorStepState StepFx;
         }
 
         private readonly Dictionary<string, Enemy> _enemies = new Dictionary<string, Enemy>();
+
+        public void ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)
+        {
+            _movementFx = movementFx;
+            _worldCamera = worldCamera;
+        }
 
         /// <summary>Сколько сущностей в комнате сейчас. Для диагностики.</summary>
         public int Count { get { return _enemies.Count; } }
@@ -914,6 +924,15 @@ namespace RealmOfAshes.Game
                 // видеть его на экране значило бы знать то, чего персонаж не знает.
                 if (enemy.Gate != null)
                     enemy.Gate.SetVisible(Fog == null || Fog.IsVisible(t.position));
+
+                bool visible = enemy.Gate == null || enemy.Gate.IsVisible;
+                if (_movementFx != null)
+                {
+                    Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
+                    _movementFx.TrackActor(ref enemy.StepFx, t.position, enemy.Velocity,
+                        enemy.Moving && !enemy.Dead, visible && !RoaGameBootstrap.BlocksWorldHud,
+                        false, observer);
+                }
             }
         }
 

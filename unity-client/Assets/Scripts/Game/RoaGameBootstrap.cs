@@ -231,8 +231,17 @@ namespace RealmOfAshes.Game
             CombatFx.Polish = CombatPresentation;
             CombatFx.Configure(Socket, Enemies);
 
-            if (Enemies != null) Enemies.Fog = Fog;
-            if (RemotePlayers != null) RemotePlayers.Fog = Fog;
+            Camera movementFxCamera = CameraRig != null ? CameraRig.GetComponent<Camera>() : Camera.main;
+            if (Enemies != null)
+            {
+                Enemies.Fog = Fog;
+                Enemies.ConfigureMovementFx(MovementFx, movementFxCamera);
+            }
+            if (RemotePlayers != null)
+            {
+                RemotePlayers.Fog = Fog;
+                RemotePlayers.ConfigureMovementFx(MovementFx, movementFxCamera);
+            }
             if (GroundItems != null) GroundItems.Fog = Fog;
 
             if (GlobalMap == null) GlobalMap = GetComponent<RoaGlobalMap>();

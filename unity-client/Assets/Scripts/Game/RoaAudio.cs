@@ -144,6 +144,16 @@ namespace RealmOfAshes.Game
             _rightFoot = false;
         }
 
+        public void PlayActorFootstep(FootstepCue cue)
+        {
+            if (_steps == null || _steps.Length < 2 || cue.Speed < 0.28f) return;
+            int index = NextVariation() < 0.5f ? 0 : 1;
+            float pace = Mathf.InverseLerp(1.2f, 6.5f, cue.Speed);
+            float volume = cue.Crouching ? 0.055f : Mathf.Lerp(0.09f, 0.17f, pace);
+            PlayWorld(_steps[index], cue.Position, volume,
+                Pitch(0.92f, 1.07f) * (cue.Crouching ? 0.9f : 1f), 14f, false);
+        }
+
         public void PlayShot(Vector3 start, Vector3 end, string weaponId)
         {
             AudioClip clip = ShotClip(weaponId);
@@ -269,7 +279,8 @@ namespace RealmOfAshes.Game
             _ui.PlayOneShot(clip, volume);
         }
 
-        private void PlayWorld(AudioClip clip, Vector3 position, float volume, float pitch, float maxDistance)
+        private void PlayWorld(AudioClip clip, Vector3 position, float volume, float pitch,
+                               float maxDistance, bool allowSteal = true)
         {
             if (clip == null || _masterVolume <= 0f) return;
             AudioSource source = null;
@@ -283,6 +294,7 @@ namespace RealmOfAshes.Game
             }
             if (source == null)
             {
+                if (!allowSteal) return;
                 source = _worldVoices[_worldCursor];
                 _worldCursor = (_worldCursor + 1) % _worldVoices.Count;
             }

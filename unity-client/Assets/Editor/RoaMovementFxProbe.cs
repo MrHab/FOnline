@@ -59,6 +59,33 @@ namespace RealmOfAshes.EditorTools
                         && Mathf.Abs(right.magnitude - 0.13f) < 0.0001f,
                     "левая и правая стопа не чередуются симметрично");
 
+                var actorState = new RoaMovementFx.ActorStepState();
+                RoaAudio.FootstepCue actorCue;
+                Vector3 actorVelocity = new Vector3(0f, 0f, 3f);
+                Require(!RoaMovementFx.TryPlanActorStep(ref actorState, Vector3.zero,
+                        actorVelocity, true, true, false, 0f, out actorCue),
+                    "чужой актёр шумит сразу при появлении");
+                Require(RoaMovementFx.TryPlanActorStep(ref actorState, new Vector3(0f, 0f, 0.12f),
+                        actorVelocity, true, true, false, 0.2f, out actorCue)
+                        && actorCue.RightFoot,
+                    "первый реальный шаг чужого актёра не распознан");
+                Require(!RoaMovementFx.TryPlanActorStep(ref actorState, new Vector3(0f, 0f, 0.42f),
+                        actorVelocity, true, false, false, 0.7f, out actorCue)
+                        && !RoaMovementFx.TryPlanActorStep(ref actorState, new Vector3(0f, 0f, 0.45f),
+                        actorVelocity, true, true, false, 0.75f, out actorCue),
+                    "после тумана войны возникает пачка накопленных шагов");
+                Require(RoaMovementFx.TryPlanActorStep(ref actorState, new Vector3(0f, 0f, 0.54f),
+                        actorVelocity, true, true, false, 0.9f, out actorCue)
+                        && !actorCue.RightFoot,
+                    "шаги чужого актёра не возобновляются с правильной стопы");
+                Require(!RoaMovementFx.TryPlanActorStep(ref actorState, new Vector3(10f, 0f, 0.54f),
+                        actorVelocity, true, true, false, 1.5f, out actorCue),
+                    "серверная коррекция позиции ошибочно выглядит как шаг");
+                Require(RoaMovementFx.ActorFxMaxDistance(true) < RoaMovementFx.ActorFxMaxDistance(false)
+                        && RoaMovementFx.IsActorFxInRange(new Vector3(14.9f, 8f, 0f), Vector3.zero, true)
+                        && !RoaMovementFx.IsActorFxInRange(new Vector3(15.1f, 0f, 0f), Vector3.zero, true),
+                    "дистанционный или мобильный бюджет чужих шагов не работает");
+
                 host = new GameObject("Movement FX probe");
                 RoaMovementFx fx = host.AddComponent<RoaMovementFx>();
                 fx.EmitFootstep(new RoaAudio.FootstepCue
@@ -75,6 +102,22 @@ namespace RealmOfAshes.EditorTools
                     system.Simulate(0.02f, false, false, true);
                 Require(fx.ActiveParticleCount == run.PuffCount + run.ScuffCount,
                     "один шаг не создал ожидаемый пакет частиц");
+                var pooledActorCue = new RoaAudio.FootstepCue
+                {
+                    Position = new Vector3(0.25f, 0f, 0f),
+                    Velocity = actorVelocity,
+                    Speed = actorVelocity.magnitude,
+                    Crouching = false,
+                    RightFoot = false
+                };
+                RoaMovementFx.EmissionPlan actorPlan = RoaMovementFx.PlanFor(pooledActorCue.Speed, false, false);
+                fx.EmitActorStep(pooledActorCue);
+                foreach (ParticleSystem system in host.GetComponentsInChildren<ParticleSystem>(true))
+                    system.Simulate(0.02f, false, false, true);
+                Require(fx.ActorStepCount == 1
+                        && fx.ActiveParticleCount == run.PuffCount + run.ScuffCount
+                            + actorPlan.PuffCount + actorPlan.ScuffCount,
+                    "чужой шаг не переиспользовал общие пулы частиц");
                 ParticleSystemRenderer[] renderers = host.GetComponentsInChildren<ParticleSystemRenderer>(true);
                 Require(Array.Exists(renderers, r => r.renderMode == ParticleSystemRenderMode.Billboard)
                         && Array.Exists(renderers, r => r.renderMode == ParticleSystemRenderMode.HorizontalBillboard),
@@ -87,7 +130,8 @@ namespace RealmOfAshes.EditorTools
 
                 Debug.Log("[ПЫЛЬ ШАГОВ] готово: walk=" + walk.PuffCount
                     + ", run=" + run.PuffCount + "+" + run.ScuffCount
-                    + ", crouch=" + crouch.PuffCount + ", mobile=" + mobile.PuffCount);
+                    + ", crouch=" + crouch.PuffCount + ", mobile=" + mobile.PuffCount
+                    + ", actorPool=" + fx.ActorStepCount);
             }
             finally
             {

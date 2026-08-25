@@ -30,6 +30,9 @@ namespace RealmOfAshes.Game
         [Tooltip("Туман войны. Пока не назначен, другие игроки видны всегда.")]
         public RoaFogOfWar Fog;
 
+        private RoaMovementFx _movementFx;
+        private Camera _worldCamera;
+
         private sealed class Remote
         {
             public GameObject Root;
@@ -46,9 +49,16 @@ namespace RealmOfAshes.Game
             public bool Crouching;
             public Vector3 AimPoint;
             public float AimUntil;
+            public RoaMovementFx.ActorStepState StepFx;
         }
 
         private readonly Dictionary<string, Remote> _remotes = new Dictionary<string, Remote>();
+
+        public void ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)
+        {
+            _movementFx = movementFx;
+            _worldCamera = worldCamera;
+        }
 
         private void OnEnable()
         {
@@ -442,6 +452,15 @@ namespace RealmOfAshes.Game
                 // иначе игрок выходил бы из тумана в позе, застывшей при входе.
                 if (remote.Gate != null)
                     remote.Gate.SetVisible(Fog == null || Fog.IsVisible(t.position, remote.Crouching));
+
+                bool visible = remote.Gate == null || remote.Gate.IsVisible;
+                if (_movementFx != null)
+                {
+                    Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
+                    _movementFx.TrackActor(ref remote.StepFx, t.position, remote.Velocity,
+                        remote.Moving, visible && !RoaGameBootstrap.BlocksWorldHud,
+                        remote.Crouching, observer);
+                }
             }
         }
 

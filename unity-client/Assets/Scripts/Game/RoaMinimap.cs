@@ -14,6 +14,8 @@ namespace RealmOfAshes.Game
         public enum MarkerKind
         {
             Enemy,
+            FriendlyNpc,
+            ServiceNpc,
             RemotePlayer,
             GroundItem,
             Container,
@@ -210,6 +212,8 @@ namespace RealmOfAshes.Game
             switch (marker.Kind)
             {
                 case MarkerKind.Enemy: color = new Color(0.88f, 0.31f, 0.22f); size = 4f; break;
+                case MarkerKind.FriendlyNpc: color = new Color(0.46f, 0.75f, 0.62f); size = 4f; break;
+                case MarkerKind.ServiceNpc: color = new Color(0.95f, 0.75f, 0.30f); size = 5f; break;
                 case MarkerKind.RemotePlayer: color = new Color(0.44f, 0.67f, 0.90f); size = 5f; break;
                 case MarkerKind.GroundItem: color = new Color(0.90f, 0.84f, 0.50f); size = 3f; break;
                 case MarkerKind.Container: color = new Color(0.90f, 0.71f, 0.35f); size = 4f; break;

@@ -967,9 +967,24 @@ namespace RealmOfAshes.Game
             {
                 if (enemy == null || enemy.Dead || enemy.Root == null) continue;
                 if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
-                markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Enemy,
+                markers.Add(new RoaMinimap.Marker(ClassifyMinimapActor(enemy.Snapshot),
                                                    enemy.Root.transform.position));
             }
+        }
+
+        public static RoaMinimap.MarkerKind ClassifyMinimapActor(JObject snapshot)
+        {
+            bool hostile = snapshot?["hostileToPlayer"]?.ToObject<bool>() ?? true;
+            if (hostile) return RoaMinimap.MarkerKind.Enemy;
+
+            bool hasService = snapshot?["serviceAvailable"]?.ToObject<bool>() == true
+                || snapshot?["personalTrade"]?.ToObject<bool>() == true
+                || !string.IsNullOrWhiteSpace(snapshot?["traderProfile"]?.ToString())
+                || !string.IsNullOrWhiteSpace(snapshot?["traderId"]?.ToString())
+                || !string.IsNullOrWhiteSpace(snapshot?["tradeProfile"]?.ToString());
+            return hasService
+                ? RoaMinimap.MarkerKind.ServiceNpc
+                : RoaMinimap.MarkerKind.FriendlyNpc;
         }
 
         public void CollectNameplates(List<RoaActorNameplates.Entry> rows, Vector3 origin, float maxDistance)

@@ -708,12 +708,20 @@ namespace RealmOfAshes.Game
             {
                 case RoaMinimap.MarkerKind.Enemy:
                     image.color = new Color(0.88f, 0.31f, 0.22f); size = 5f; break;
+                case RoaMinimap.MarkerKind.FriendlyNpc:
+                    image.color = new Color(0.46f, 0.75f, 0.62f); size = 5f; break;
+                case RoaMinimap.MarkerKind.ServiceNpc:
+                    image.color = new Color(0.95f, 0.75f, 0.30f); size = 6f; break;
                 case RoaMinimap.MarkerKind.RemotePlayer:
                     image.color = new Color(0.44f, 0.67f, 0.90f); size = 6f; break;
                 case RoaMinimap.MarkerKind.GroundItem:
                     image.color = new Color(0.90f, 0.84f, 0.50f); size = 4f; break;
                 case RoaMinimap.MarkerKind.Container:
                     image.color = new Color(0.90f, 0.71f, 0.35f); size = 5f; break;
+                case RoaMinimap.MarkerKind.Objective:
+                    image.color = new Color(0.95f, 0.78f, 0.25f); size = 7f; break;
+                case RoaMinimap.MarkerKind.Extraction:
+                    image.color = new Color(0.42f, 0.82f, 0.40f); size = 8f; break;
                 default:
                     image.color = new Color(0.78f, 0.62f, 0.30f); size = 4f; break;
             }

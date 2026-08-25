@@ -234,6 +234,10 @@ namespace RealmOfAshes.Game
             {
                 case RoaMinimap.MarkerKind.Enemy:
                     image.color = new Color(0.878f, 0.314f, 0.216f); size = 10f; break;
+                case RoaMinimap.MarkerKind.FriendlyNpc:
+                    image.color = new Color(0.46f, 0.75f, 0.62f); size = 10f; break;
+                case RoaMinimap.MarkerKind.ServiceNpc:
+                    image.color = new Color(0.95f, 0.75f, 0.30f); size = 13f; break;
                 case RoaMinimap.MarkerKind.RemotePlayer:
                     image.color = new Color(0.439f, 0.675f, 0.902f); size = 12f; break;
                 case RoaMinimap.MarkerKind.GroundItem:

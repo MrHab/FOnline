@@ -111,6 +111,11 @@ const {
   worldTaskClaimEligible
 } = require('./src/server/world-party-integrity');
 const {
+  onsitePartyLaneOffset,
+  onsitePartyWorkOffset,
+  orientOnsitePartyOffset
+} = require('./src/server/onsite-party-formation');
+const {
   createResourceExpedition,
   createReconExpedition,
   createOutpostDefense,
@@ -16421,7 +16426,7 @@ function serverLocationPointWorld(point = null, fallback = null) {
   return { x: 0, z: 0 };
 }
 
-function serverOnsitePartyWorkPoint(loc = {}, zone = {}, actor = {}, index = 0) {
+function serverOnsitePartyWorkPoint(loc = {}, zone = {}, actor = {}, index = 0, entryPoint = null) {
   const reason = String(zone.details?.arrivalReason || '').toLowerCase();
   let anchor = null;
   if (reason === 'harvest') {
@@ -16435,9 +16440,7 @@ function serverOnsitePartyWorkPoint(loc = {}, zone = {}, actor = {}, index = 0) 
   if (!anchor && reason === 'unload') anchor = loc.storage || loc.trader || null;
   if (!anchor && String(actor.role || '').toLowerCase() === 'merchant') anchor = loc.trader || loc.storage || null;
   const base = serverLocationPointWorld(anchor, loc.spawn || loc.entryFromWorld);
-  const angle = (index % 8) / 8 * Math.PI * 2;
-  const radius = index ? 1.15 + Math.floor(index / 8) * 0.65 : 0;
-  return { x: base.x + Math.cos(angle) * radius, z: base.z + Math.sin(angle) * radius };
+  return orientOnsitePartyOffset(base, entryPoint, onsitePartyWorkOffset(index));
 }
 
 function serverOnsitePartyRoute(room = null, zone = {}, actor = {}, index = 0) {
@@ -16452,8 +16455,8 @@ function serverOnsitePartyRoute(room = null, zone = {}, actor = {}, index = 0) {
   const globalExit = (Array.isArray(loc.worldZones) ? loc.worldZones : []).find(row => row && String(row.type || 'globalMap') === 'globalMap')
     || (Array.isArray(loc.worldZones) ? loc.worldZones[0] : null);
   const exit = serverLocationPointWorld(globalExit, loc.entryFromWorld || loc.spawn);
-  const work = serverOnsitePartyWorkPoint(loc, zone, actor, index);
-  const spread = ((index % 5) - 2) * 0.72;
+  const work = serverOnsitePartyWorkPoint(loc, zone, actor, index, entry);
+  const spread = onsitePartyLaneOffset(index);
   const entryDx = work.x - entry.x;
   const entryDz = work.z - entry.z;
   const entryLen = Math.max(0.001, Math.hypot(entryDx, entryDz));
@@ -16579,6 +16582,12 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
     });
     if (!enemy) return;
     changed = true;
+    if (onsiteRoute) {
+      enemy.x = onsiteRoute.entry.x;
+      enemy.z = onsiteRoute.entry.z;
+      enemy.vx = 0;
+      enemy.vz = 0;
+    }
     enemy.worldZoneId = zone.id || '';
     enemy.worldBattleActorId = actorId;
     enemy.worldBattleSide = String(actor.side || '').slice(0, 16);
@@ -17368,7 +17377,7 @@ function updateOnsitePartyActorLifecycle(room = null, enemy = null, dt = 0) {
       return true;
     }
     const distance = moveEnemyTowards(room, enemy, exitX, exitZ, Math.max(1.35, Number(enemy.speed || 1.8)), dt, {
-      separationWeight: 0.16
+      separationWeight: 0.3
     });
     if (distance <= 1.15) {
       rememberExitedOnsiteActor(room, enemy);
@@ -17387,7 +17396,7 @@ function updateOnsitePartyActorLifecycle(room = null, enemy = null, dt = 0) {
     enemy.aiState = 'return';
     enemy.stationary = false;
     const distance = moveEnemyTowards(room, enemy, workX, workZ, Math.max(1.15, Number(enemy.speed || 1.8) * 0.82), dt, {
-      separationWeight: 0.18
+      separationWeight: 0.32
     });
     if (distance <= 1.05) enemy.onsitePhase = 'working';
     return true;

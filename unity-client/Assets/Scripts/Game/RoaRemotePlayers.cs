@@ -44,6 +44,8 @@ namespace RealmOfAshes.Game
             public Vector3 SmoothVelocity;
             public bool Moving;
             public bool Crouching;
+            public Vector3 AimPoint;
+            public float AimUntil;
         }
 
         private readonly Dictionary<string, Remote> _remotes = new Dictionary<string, Remote>();
@@ -91,6 +93,18 @@ namespace RealmOfAshes.Game
 
             Remote remote;
             if (!_remotes.TryGetValue(id, out remote) || remote.View == null) return;
+
+            if (payload["angle"] != null)
+                remote.TargetYawDeg = RoaCoords.AngleToYawDeg(payload["angle"].ToObject<float>());
+
+            Vector3 start;
+            Vector3 end;
+            if (RoaCombatFx.TryShotEndpoints(payload, out start, out end))
+            {
+                remote.AimPoint = end;
+                remote.AimUntil = Time.time + 0.32f;
+                remote.View.SetAim(end, true);
+            }
 
             remote.View.PlayAttack();
         }
@@ -418,8 +432,11 @@ namespace RealmOfAshes.Game
                 // Локомоция берётся из серверной скорости: у удалённых игроков
                 // своего ввода нет, а взгляд и путь так же независимы, как у своего.
                 if (remote.View != null)
+                {
                     remote.View.UpdateLocomotion(remote.Velocity, remote.TargetYawDeg,
                         remote.Moving, remote.Crouching);
+                    remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil);
+                }
 
                 // Скрываем только показ: анимация и интерполяция продолжают идти,
                 // иначе игрок выходил бы из тумана в позе, застывшей при входе.

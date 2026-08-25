@@ -35,10 +35,10 @@ namespace RealmOfAshes.Game
         private const float MinAimDistance = 0.35f;
 
         /// <summary>
-        /// «Поднятое положение» (high-ready): щуп вдоль ствола на этих расстояниях
-        /// от рукояти. 04d:1308.
+        /// «Поднятое положение» (high-ready): непрерывный щуп вдоль ствола
+        /// от рукояти до этой дистанции. Тонкая геометрия между точками не теряется.
         /// </summary>
-        private static readonly float[] ObstructionProbes = { 0.55f, 0.95f };
+        private const float ObstructionDistance = 0.95f;
 
         /// <summary>Радиус щупа, м. Совпадает с проверкой движения игрока.</summary>
         private const float ObstructionRadius = 0.18f;
@@ -50,6 +50,7 @@ namespace RealmOfAshes.Game
         private const float ObstructionBlendStep = 0.16f;
 
         private static readonly Collider[] ProbeHits = new Collider[8];
+        private static readonly RaycastHit[] ProbeCastHits = new RaycastHit[16];
 
         private float _obstructedBlend;
 
@@ -478,12 +479,9 @@ namespace RealmOfAshes.Game
             {
                 Vector3 dir = barrel.normalized;
 
-                foreach (float distance in ObstructionProbes)
-                {
-                    if (!ProbeBlocked(grip + dir * distance)) continue;
-                    target = 1f;
-                    break;
-                }
+                Vector3 start = grip + dir * 0.08f;
+                Vector3 end = grip + dir * ObstructionDistance;
+                if (IsSegmentBlocked(start, end, ObstructionRadius, _owner, _weapon)) target = 1f;
             }
 
             _obstructedBlend += (target - _obstructedBlend) * ObstructionBlendStep;
@@ -491,24 +489,38 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Есть ли что-то в точке щупа. Собственные коллайдеры персонажа
-        /// не считаются: рукоять у самой груди, и щуп неизбежно задевал бы их.
+        /// Есть ли препятствие на всём отрезке щупа. Собственные коллайдеры
+        /// персонажа и оружия не считаются.
         /// </summary>
-        private bool ProbeBlocked(Vector3 point)
+        public static bool IsSegmentBlocked(Vector3 start, Vector3 end, float radius,
+                                            Transform owner, Transform weapon)
         {
-            int count = Physics.OverlapSphereNonAlloc(point, ObstructionRadius, ProbeHits,
+            int count = Physics.OverlapSphereNonAlloc(start, radius, ProbeHits,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
 
             for (int i = 0; i < count; i++)
             {
                 Collider hit = ProbeHits[i];
-                if (hit == null) continue;
-                if (_weapon != null && hit.transform.IsChildOf(_weapon)) continue;
-                if (_owner != null && hit.transform.IsChildOf(_owner)) continue;
-
-                return true;
+                if (!IgnoredProbeCollider(hit, owner, weapon)) return true;
             }
 
+            Vector3 segment = end - start;
+            float distance = segment.magnitude;
+            if (distance <= 0.001f) return false;
+
+            int castCount = Physics.SphereCastNonAlloc(start, radius, segment / distance,
+                ProbeCastHits, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < castCount; i++)
+                if (!IgnoredProbeCollider(ProbeCastHits[i].collider, owner, weapon)) return true;
+
+            return false;
+        }
+
+        private static bool IgnoredProbeCollider(Collider hit, Transform owner, Transform weapon)
+        {
+            if (hit == null) return true;
+            if (weapon != null && hit.transform.IsChildOf(weapon)) return true;
+            if (owner != null && hit.transform.IsChildOf(owner)) return true;
             return false;
         }
 

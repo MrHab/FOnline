@@ -28,6 +28,7 @@ async function main() {
   const footIk = fs.readFileSync(path.join(UNITY_GAME, 'RoaFootIk.cs'), 'utf8');
   const ikChain = fs.readFileSync(path.join(UNITY_GAME, 'RoaIkChain.cs'), 'utf8');
   const weaponView = fs.readFileSync(path.join(UNITY_GAME, 'RoaWeaponView.cs'), 'utf8');
+  const remotePlayers = fs.readFileSync(path.join(UNITY_GAME, 'RoaRemotePlayers.cs'), 'utf8');
   const locationLoader = fs.readFileSync(path.join(UNITY_WORLD, 'RoaLocationLoader.cs'), 'utf8');
 
   assert(playerController.includes('Vector3 actual = (transform.position - before) / frameDt;')
@@ -45,6 +46,14 @@ async function main() {
     && weaponView.includes('ArmPole(true)')
     && weaponView.includes('ArmPole(false)'),
   'Unity arm IK lost elbow pole constraints');
+  assert(weaponView.includes('Physics.SphereCastNonAlloc')
+    && weaponView.includes('IsSegmentBlocked(start, end, ObstructionRadius, _owner, _weapon)')
+    && !weaponView.includes('ObstructionProbes'),
+  'Unity weapon obstruction is no longer a continuous owner-filtered sweep');
+  assert(remotePlayers.includes('RoaCombatFx.TryShotEndpoints(payload, out start, out end)')
+    && remotePlayers.includes('remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil)')
+    && remotePlayers.includes('remote.TargetYawDeg = RoaCoords.AngleToYawDeg'),
+  'Unity remote combat pose no longer follows the relayed shot direction');
   assert(characterView.includes('nextState.normalizedTime = phase;')
     && characterView.includes('IsCyclicLocomotion'),
   'Unity locomotion transitions no longer preserve gait phase');

@@ -26,6 +26,21 @@ namespace RealmOfAshes.EditorTools
             catch (Exception error) { Debug.LogError("[ПРЕДПРОСМОТР ПЕРСОНАЖА] " + error); }
         }
 
+        public static async void RunBatch()
+        {
+            try
+            {
+                await RunAsync();
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] BATCH PASS");
+                EditorApplication.Exit(0);
+            }
+            catch (Exception error)
+            {
+                Debug.LogError("[ПРЕДПРОСМОТР ПЕРСОНАЖА] BATCH FAIL: " + error);
+                EditorApplication.Exit(1);
+            }
+        }
+
         public static async Task RunAsync()
         {
             GameObject host = null;
@@ -208,13 +223,39 @@ namespace RealmOfAshes.EditorTools
 
                 reaction.Reset();
 
+                // Sweep the real authored run cycle through gameplay LateUpdate. Even when
+                // both authored feet enter their flight phase, one procedural support foot
+                // must stay close enough to the sampled ground to read as planted.
+                AnimationState run = animation["run"];
+                Check(run != null, "run-клип недоступен для проверки выстрела в движении");
+                loaded.SetGroundingLod(true);
+                loaded.UpdateLocomotion(Vector3.forward * 4.2f, 0f, true, false);
+                animation.Play("run");
+                run.enabled = true;
+                run.weight = 1f;
+                float maximumMinimumLift = 0f;
+                int supportSafetyFrames = 0;
+                for (int frame = 0; frame < 32; frame++)
+                {
+                    run.normalizedTime = frame / 32f;
+                    animation.Sample();
+                    runtimeLateUpdate.Invoke(loaded, null);
+                    Check(loaded.TryGetFootContactLifts(out float leftLift, out float rightLift),
+                        "foot IK не выдал контакт настоящего бегового клипа");
+                    maximumMinimumLift = Mathf.Max(maximumMinimumLift, Mathf.Min(leftLift, rightLift));
+                    if (loaded.FootSupportSafetyActive) supportSafetyFrames++;
+                }
+                Check(maximumMinimumLift <= 0.085f,
+                    "обе стопы настоящего бегового клипа одновременно оторвались от земли: "
+                    + maximumMinimumLift.ToString("0.000") + " м");
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] опора бега: max="
+                    + maximumMinimumLift.ToString("0.000") + " м, safety=" + supportSafetyFrames + "/32");
+
                 // A firearm shot must be a layer over locomotion. The authored attack clip
                 // has static feet, so switching to it here would visibly stop a running actor.
                 loaded.SetGroundingLod(false);
                 loaded.UpdateLocomotion(Vector3.forward * 4.2f, 0f, true, false);
                 Check(loaded.CurrentClip == "run", "настоящий персонаж не выбрал бег перед выстрелом");
-                AnimationState run = animation["run"];
-                Check(run != null, "run-клип недоступен для проверки выстрела в движении");
                 animation.Play("run");
                 run.enabled = true;
                 run.weight = 1f;

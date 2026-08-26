@@ -54,8 +54,11 @@ async function main() {
   'Unity CharacterController lost overlap recovery or collision diagnostics');
   assert(footIk.includes('Physics.SphereCastNonAlloc')
     && footIk.includes('side.LockNormal = surfaceNormal;')
-    && footIk.includes('ApplyFootNormal(side, contactNormal, normalWeight)'),
-  'Unity foot IK no longer follows per-foot ground height and normal');
+    && footIk.includes('ApplyFootNormal(side, contactNormal, normalWeight)')
+    && footIk.includes('MaximumUnsupportedLift = 0.075f')
+    && footIk.includes('EnsureSupportContact(dead);')
+    && footIk.includes('ReachableSupportTarget(support, target)'),
+  'Unity foot IK no longer follows ground or prevents a dual-foot flight phase');
   assert(footIk.includes('DesktopMaxDistance = 20f')
     && footIk.includes('MobileMaxDistance = 12f')
     && footIk.includes('public static bool ShouldRun(')
@@ -82,10 +85,18 @@ async function main() {
   assert(groundingProbe.includes('[КОНТАКТ С ЗЕМЛЁЙ] готово:')
     && groundingProbe.includes('ik.GroundProbeCount == 2')
     && groundingProbe.includes('rightFoot.position.y > leftFoot.position.y + 0.12f')
+    && groundingProbe.includes('flightIk.SupportSafetyActive')
+    && groundingProbe.includes('обе свободные стопы остаются в воздухе')
     && groundingProbe.includes('SharedUsers == usersBefore')
     && auditRunner.includes('typeof(RoaGroundingProbe)')
     && auditRunner.includes('typeof(RoaLocomotionContactProbe)'),
   'Unity grounding probe no longer verifies step height, LOD and shared-resource cleanup');
+  assert(characterView.includes('FootSupportSafetyActive')
+    && characterView.includes('TryGetFootContactLifts(out float left, out float right)')
+    && characterPreviewProbe.includes('for (int frame = 0; frame < 32; frame++)')
+    && characterPreviewProbe.includes('maximumMinimumLift <= 0.085f')
+    && characterPreviewProbe.includes('обе стопы настоящего бегового клипа одновременно оторвались'),
+  'Real GLB run-cycle probe no longer bounds simultaneous foot lift');
   assert(ikChain.includes('Vector3? pole')
     && ikChain.includes('ApplyPoleConstraint(pole.Value)')
     && weaponView.includes('ArmPole(true)')

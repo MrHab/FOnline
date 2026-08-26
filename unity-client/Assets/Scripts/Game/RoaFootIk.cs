@@ -41,6 +41,7 @@ namespace RealmOfAshes.Game
         private const float GroundFollowRate = 22f;
         private const float GroundNormalRate = 14f;
         private const float MinGroundNormalY = 0.57f;
+        private const float MaximumUnsupportedLift = 0.075f;
         private const float DesktopMaxDistance = 20f;
         private const float MobileMaxDistance = 12f;
         private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
@@ -84,6 +85,7 @@ namespace RealmOfAshes.Game
 
         public bool Ready { get; private set; }
         public int GroundProbeCount { get; private set; }
+        public bool SupportSafetyActive { get; private set; }
 
         /// <summary>Сколько стоп зафиксировано сейчас. Для диагностики.</summary>
         public int LockedCount { get { return (_left.Locked ? 1 : 0) + (_right.Locked ? 1 : 0); } }
@@ -110,6 +112,18 @@ namespace RealmOfAshes.Game
             _lastActorPos = Vector3.zero;
             _hasLastActorPos = false;
             _lastClip = string.Empty;
+            SupportSafetyActive = false;
+        }
+
+        public bool TryGetContactLifts(out float left, out float right)
+        {
+            left = 0f;
+            right = 0f;
+            if (!Ready || !_left.HasGround || !_right.HasGround
+                || _left.Foot == null || _right.Foot == null) return false;
+            left = _left.Foot.position.y - (_left.GroundY + _left.RestHeight);
+            right = _right.Foot.position.y - (_right.GroundY + _right.RestHeight);
+            return true;
         }
 
         public bool TryGetGroundPose(out float groundY, out Vector3 normal)
@@ -193,6 +207,7 @@ namespace RealmOfAshes.Game
         /// </param>
         public void Apply(float dt, bool locomoting, bool turning, bool dead, string clip, float kneeFlex)
         {
+            SupportSafetyActive = false;
             if (!Ready) return;
 
             float frameDt = Mathf.Clamp(dt, 0.001f, 0.08f);
@@ -236,6 +251,51 @@ namespace RealmOfAshes.Game
 
             ApplySide(_left, frameDt, actorVel, actorSpeed, groundY, rootYaw, turning, !locomoting, dead, hadActorPosition, flex);
             ApplySide(_right, frameDt, actorVel, actorSpeed, groundY, rootYaw, turning, !locomoting, dead, hadActorPosition, flex);
+            EnsureSupportContact(dead);
+        }
+
+        private void EnsureSupportContact(bool dead)
+        {
+            if (dead || !_left.HasGround || !_right.HasGround
+                || _left.Foot == null || _right.Foot == null) return;
+
+            float leftContactY = _left.GroundY + _left.RestHeight;
+            float rightContactY = _right.GroundY + _right.RestHeight;
+            float leftLift = _left.Foot.position.y - leftContactY;
+            float rightLift = _right.Foot.position.y - rightContactY;
+            if (Mathf.Min(leftLift, rightLift) <= MaximumUnsupportedLift) return;
+
+            Side support = leftLift <= rightLift ? _left : _right;
+            Vector3 target = support.Foot.position;
+            target.y = support.GroundY + support.RestHeight;
+            target = ReachableSupportTarget(support, target);
+            SolveLegChain(support, target);
+            ApplyFootNormal(support, support.GroundNormal, 0.72f);
+            SupportSafetyActive = true;
+        }
+
+        private static Vector3 ReachableSupportTarget(Side side, Vector3 target)
+        {
+            if (side.Thigh == null || side.Calf == null || side.Foot == null) return target;
+            float reach = Vector3.Distance(side.Thigh.position, side.Calf.position)
+                + Vector3.Distance(side.Calf.position, side.Foot.position) - 0.002f;
+            float vertical = target.y - side.Thigh.position.y;
+            float horizontalLimitSquared = reach * reach - vertical * vertical;
+            if (horizontalLimitSquared <= 0f)
+            {
+                target.x = side.Thigh.position.x;
+                target.z = side.Thigh.position.z;
+                return target;
+            }
+
+            Vector2 horizontal = new Vector2(target.x - side.Thigh.position.x,
+                target.z - side.Thigh.position.z);
+            float horizontalLimit = Mathf.Sqrt(horizontalLimitSquared);
+            if (horizontal.sqrMagnitude <= horizontalLimit * horizontalLimit) return target;
+            horizontal = horizontal.normalized * horizontalLimit;
+            target.x = side.Thigh.position.x + horizontal.x;
+            target.z = side.Thigh.position.z + horizontal.y;
+            return target;
         }
 
         private static void ResetSide(Side side)

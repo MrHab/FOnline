@@ -209,6 +209,11 @@ namespace RealmOfAshes.Game
         /// <summary>Foot IK нашёл кости ног и работает.</summary>
         public bool FootIkReady { get { return _footIk.Ready; } }
         public bool FootIkActive { get { return _groundingActive && !_dead; } }
+        public bool FootSupportSafetyActive { get { return _footIk.SupportSafetyActive; } }
+        public bool TryGetFootContactLifts(out float left, out float right)
+        {
+            return _footIk.TryGetContactLifts(out left, out right);
+        }
         public bool GroundShadowReady { get { return _groundShadow.Ready; } }
         public bool GroundShadowVisible { get { return _groundShadow.Visible; } }
         public RoaActorPresentationTier PresentationTier { get { return _presentationTier; } }

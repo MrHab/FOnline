@@ -17,6 +17,7 @@ namespace RealmOfAshes.EditorTools
             GameObject ownerA = null;
             GameObject ownerB = null;
             GameObject rig = null;
+            GameObject flightRig = null;
             GameObject floor = null;
             GameObject step = null;
             var shadowA = new RoaActorGroundShadow();
@@ -93,6 +94,21 @@ namespace RealmOfAshes.EditorTools
                 Require(ik.LockedCount == 0 && !ik.TryGetGroundPose(out _, out _),
                     "сброс LOD оставил старые замки или поверхность");
 
+                flightRig = new GameObject("DualFlightRig");
+                flightRig.transform.position = new Vector3(0f, 0f, 1.1f);
+                GameObject flightModel = Node(flightRig.transform, "character_root", Vector3.zero);
+                Transform flightLeft = Leg(flightModel.transform, "l", -0.20f);
+                Transform flightRight = Leg(flightModel.transform, "r", 0.20f);
+                var flightIk = new RoaFootIk();
+                flightIk.Bind(flightRig.transform, flightModel.transform);
+                flightLeft.parent.localRotation = Quaternion.Euler(60f, 0f, 0f);
+                flightRight.parent.localRotation = Quaternion.Euler(60f, 0f, 0f);
+                Physics.SyncTransforms();
+                flightIk.Apply(1f / 60f, true, false, false, "run", 0f);
+                Require(flightIk.SupportSafetyActive
+                        && Mathf.Min(flightLeft.position.y, flightRight.position.y) < 0.17f,
+                    "обе свободные стопы остаются в воздухе в фазе полёта клипа");
+
                 Destroy(floor);
                 Destroy(step);
                 floor = null;
@@ -117,6 +133,7 @@ namespace RealmOfAshes.EditorTools
                 Destroy(ownerA);
                 Destroy(ownerB);
                 Destroy(rig);
+                Destroy(flightRig);
                 Destroy(floor);
                 Destroy(step);
             }

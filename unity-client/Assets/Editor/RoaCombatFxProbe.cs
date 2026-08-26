@@ -66,6 +66,12 @@ namespace RealmOfAshes.EditorTools
                 Require(Near(start.x, 2f) && Near(start.z, -3f)
                         && Near(end.x, 8f) && Near(end.z, 4f),
                         "shot endpoints lost the server-to-Unity Z inversion");
+                Require(RoaCombatFx.PayloadHasMuzzleStart(exact),
+                        "a player muzzle payload would receive a second forward offset");
+                var enemyExact = (JObject)exact.DeepClone();
+                enemyExact["enemyShooter"] = true;
+                Require(!RoaCombatFx.PayloadHasMuzzleStart(enemyExact),
+                        "an NPC center payload was mistaken for an exact muzzle");
 
                 var directional = new JObject
                 {
@@ -78,6 +84,8 @@ namespace RealmOfAshes.EditorTools
                 Require(RoaCombatFx.TryShotEndpoints(directional, out start, out end)
                         && Near(end.x, 4f) && Near(end.z, -2f),
                         "directional shot fallback has an incorrect endpoint");
+                Require(!RoaCombatFx.PayloadHasMuzzleStart(directional),
+                        "a legacy directional payload was mistaken for an exact muzzle");
 
                 VerifyRuntimeVisuals();
 

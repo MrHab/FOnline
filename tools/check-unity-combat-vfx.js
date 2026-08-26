@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
+const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8').replace(/\r\n/g, '\n');
 const game = path.join('unity-client', 'Assets', 'Scripts', 'Game');
 const presentation = [
   'RoaCombatPresentationFx.cs',
@@ -95,6 +95,12 @@ assert(fallback.includes('public RoaCombatPresentationFx Polish;')
   && fallback.includes('Polish.PlayExplosion(center, radius);')
   && fallback.includes('if (Polish == null) EnsurePools();'),
   'Legacy effects no longer safely delegate with a fallback path');
+assert(fallback.includes('PayloadHasMuzzleStart(payload)')
+  && fallback.includes('payload[\"enemyShooter\"]?.ToObject<bool>() == true')
+  && probe.includes('RoaCombatFx.PayloadHasMuzzleStart(exact)')
+  && probe.includes('RoaCombatFx.PayloadHasMuzzleStart(enemyExact)')
+  && probe.includes('RoaCombatFx.PayloadHasMuzzleStart(directional)'),
+  'Remote player shots no longer distinguish an exact muzzle from NPC or legacy origins');
 
 const polishedShotStart = presentation.indexOf('public void PlayShot(');
 const polishedShotEnd = presentation.indexOf('public void PlayMiss(', polishedShotStart);

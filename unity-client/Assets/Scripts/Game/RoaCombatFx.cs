@@ -190,7 +190,7 @@ namespace RealmOfAshes.Game
             Vector3 start;
             Vector3 end;
             if (!TryShotEndpoints(payload, out start, out end)) return;
-            PlayShot(start, end, payload["weapon"]?.ToString());
+            PlayShot(start, end, payload["weapon"]?.ToString(), PayloadHasMuzzleStart(payload));
         }
 
         public void PlayShot(Vector3 start, Vector3 end, string weaponId, bool startAtMuzzle = false)
@@ -508,6 +508,22 @@ namespace RealmOfAshes.Game
                 case "rifle": case "assaultRifle": return 0.085f;
                 default: return 0.055f;
             }
+        }
+
+        /// <summary>
+        /// Игроки передают координаты сокета дула со своего Unity-клиента.
+        /// NPC пока передают центр модели, поэтому для них остаётся короткий
+        /// процедурный вынос вспышки вперёд.
+        /// </summary>
+        public static bool PayloadHasMuzzleStart(JObject payload)
+        {
+            if (payload == null || payload["enemyShooter"]?.ToObject<bool>() == true) return false;
+            JToken x = payload["startX"];
+            JToken y = payload["startY"];
+            JToken z = payload["startZ"];
+            return x != null && x.Type != JTokenType.Null
+                && y != null && y.Type != JTokenType.Null
+                && z != null && z.Type != JTokenType.Null;
         }
 
         public static bool TryShotEndpoints(JObject payload, out Vector3 start, out Vector3 end)

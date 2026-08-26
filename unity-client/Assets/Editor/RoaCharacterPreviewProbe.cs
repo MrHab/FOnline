@@ -2,9 +2,11 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using GLTFast;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using RealmOfAshes.Net;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -18,6 +20,9 @@ namespace RealmOfAshes.EditorTools
     public static class RoaCharacterPreviewProbe
     {
         private const string BaseUrl = "http://127.0.0.1:3000";
+        private static bool _batchOptionsCaptured;
+        private static bool _previousEnterPlayModeOptionsEnabled;
+        private static EnterPlayModeOptions _previousEnterPlayModeOptions;
 
         [MenuItem("Realm of Ashes/Проверить предпросмотр создания персонажа")]
         public static async void Run()
@@ -26,19 +31,63 @@ namespace RealmOfAshes.EditorTools
             catch (Exception error) { Debug.LogError("[ПРЕДПРОСМОТР ПЕРСОНАЖА] " + error); }
         }
 
-        public static async void RunBatch()
+        public static void RunBatch()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                RunBatchAsync();
+                return;
+            }
+
+            try
+            {
+                _previousEnterPlayModeOptionsEnabled = EditorSettings.enterPlayModeOptionsEnabled;
+                _previousEnterPlayModeOptions = EditorSettings.enterPlayModeOptions;
+                _batchOptionsCaptured = true;
+                EditorSettings.enterPlayModeOptionsEnabled = true;
+                EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.DisableDomainReload;
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                EditorApplication.playModeStateChanged += OnBatchPlayModeStateChanged;
+                EditorApplication.EnterPlaymode();
+            }
+            catch (Exception error)
+            {
+                Debug.LogError("[ПРЕДПРОСМОТР ПЕРСОНАЖА] BATCH FAIL: " + error);
+                FinishBatch(1);
+            }
+        }
+
+        private static void OnBatchPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state != PlayModeStateChange.EnteredPlayMode) return;
+            EditorApplication.playModeStateChanged -= OnBatchPlayModeStateChanged;
+            RunBatchAsync();
+        }
+
+        private static async void RunBatchAsync()
         {
             try
             {
                 await RunAsync();
                 Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] BATCH PASS");
-                EditorApplication.Exit(0);
+                FinishBatch(0);
             }
             catch (Exception error)
             {
                 Debug.LogError("[ПРЕДПРОСМОТР ПЕРСОНАЖА] BATCH FAIL: " + error);
-                EditorApplication.Exit(1);
+                FinishBatch(1);
             }
+        }
+
+        private static void FinishBatch(int exitCode)
+        {
+            if (_batchOptionsCaptured)
+            {
+                EditorSettings.enterPlayModeOptions = _previousEnterPlayModeOptions;
+                EditorSettings.enterPlayModeOptionsEnabled = _previousEnterPlayModeOptionsEnabled;
+                _batchOptionsCaptured = false;
+            }
+            EditorApplication.Exit(exitCode);
         }
 
         public static async Task RunAsync()
@@ -46,13 +95,17 @@ namespace RealmOfAshes.EditorTools
             GameObject host = null;
             Texture2D readback = null;
             RenderTexture previous = RenderTexture.active;
-            var deferAgent = new UninterruptedDeferAgent();
+            UninterruptedDeferAgent deferAgent = null;
             try
             {
                 // glTFast's normal runtime default owns a DontDestroyOnLoad
-                // MonoBehaviour. Edit-mode probes use the package's dedicated
+                // MonoBehaviour. Edit-mode menu probes use the package's dedicated
                 // uninterrupted agent instead.
-                GltfImport.SetDefaultDeferAgent(deferAgent);
+                if (!Application.isPlaying)
+                {
+                    deferAgent = new UninterruptedDeferAgent();
+                    GltfImport.SetDefaultDeferAgent(deferAgent);
+                }
                 host = new GameObject("RoaCharacterPreviewProbe");
                 RoaCharacterPreview preview = host.AddComponent<RoaCharacterPreview>();
                 var appearance = new CharacterAppearance
@@ -164,9 +217,35 @@ namespace RealmOfAshes.EditorTools
 
                 // The armed path is deliberate: the old full-body grip wrote spine_01..03
                 // after the hit layer and erased the impact while both hands still looked valid.
+                if (Application.isPlaying)
+                {
+                    // glTFast 6.14.1 has an Editor-only multi-primitive skinning job
+                    // bug outside Play Mode. The runtime batch path deliberately checks
+                    // the full kit; the fast editor audit keeps its original weapon path.
+                    var combatEquipment = new JObject
+                    {
+                        ["armor"] = "combatArmor",
+                        ["helmet"] = "tacticalHelmet",
+                        ["boots"] = "scoutBoots",
+                        ["backpack"] = "backpack"
+                    };
+                    await loaded.EquipItems(BaseUrl, combatEquipment);
+                    Check(loaded.LoadedEquipmentSlotCount == 4
+                            && loaded.HasLoadedEquipment("armor", "combatArmor")
+                            && loaded.HasLoadedEquipment("helmet", "tacticalHelmet")
+                            && loaded.HasLoadedEquipment("boots", "scoutBoots")
+                            && loaded.HasLoadedEquipment("backpack", "backpack"),
+                        "боевой контрольный кадр не получил полный комплект экипировки");
+                }
                 await loaded.EquipWeapon(BaseUrl, "assaultRifle");
                 foreach (Transform node in loaded.GetComponentsInChildren<Transform>(true))
                     node.gameObject.layer = RoaCharacterPreview.PreviewLayer;
+                foreach (SkinnedMeshRenderer renderer
+                         in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    renderer.updateWhenOffscreen = true;
+                    renderer.forceMatrixRecalculationPerRender = true;
+                }
                 Check(loaded.WeaponReady && loaded.WeaponId == "assaultRifle",
                     "автомат не загрузился на настоящего персонажа");
                 loaded.transform.localRotation = Quaternion.identity;
@@ -332,9 +411,20 @@ namespace RealmOfAshes.EditorTools
                     Check(preview.RenderNow(), "камера не обновила skinned bounds финального death-кадра");
                     loaded.ApplyDeathSettleForDiagnostics(deathFinalTime);
                     loaded.GroundDeathForDiagnostics(loaded.transform.parent.position.y);
+                    weapon.ApplyReduced();
+                    FieldInfo gripField = typeof(RoaWeaponView).GetField("_socketGrip",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    FieldInfo handField = typeof(RoaWeaponView).GetField("_hand",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    Transform deathGrip = gripField?.GetValue(weapon) as Transform;
+                    Transform deathHand = handField?.GetValue(weapon) as Transform;
+                    Check(deathGrip != null && deathHand != null
+                            && Vector3.Distance(deathGrip.position, deathHand.position) < 0.16f,
+                        "оружие оторвалось от кисти в финальной позе смерти");
                     float stableGroundOffset = loaded.DeathGroundOffsetY;
                     loaded.ApplyDeathSettleForDiagnostics(deathFinalTime);
                     loaded.GroundDeathForDiagnostics(loaded.transform.parent.position.y);
+                    weapon.ApplyReduced();
                     Check(Mathf.Abs(loaded.DeathGroundOffsetY - stableGroundOffset) < 0.005f,
                         "повторное заземление изменило высоту тела между кадрами");
                     Check(loaded.Dead && loaded.CurrentClip == "death",
@@ -345,23 +435,33 @@ namespace RealmOfAshes.EditorTools
                     Check(preview.RenderNow(), "камера не обновила геометрию позы смерти");
                     Check(preview.RenderNow(), "камера не прогрела геометрию позы смерти");
                     bool hasDeathBounds = false;
+                    bool hasBodyDeathBounds = false;
                     Bounds deathBounds = default;
+                    Bounds bodyDeathBounds = default;
                     foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                     {
                         if (!renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
                         if (!hasDeathBounds) deathBounds = renderer.bounds;
                         else deathBounds.Encapsulate(renderer.bounds);
                         hasDeathBounds = true;
+                        if (IsEquipmentRenderer(renderer.transform)) continue;
+                        if (!hasBodyDeathBounds) bodyDeathBounds = renderer.bounds;
+                        else bodyDeathBounds.Encapsulate(renderer.bounds);
+                        hasBodyDeathBounds = true;
                     }
                     float deathGroundY = loaded.transform.parent.position.y;
                     float deathGroundGap = deathBounds.min.y - deathGroundY;
-                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] границы смерти: "
-                        + deathBounds.size.ToString("F2") + ", minY="
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] границы смерти: all="
+                        + deathBounds.size.ToString("F2") + ", body="
+                        + bodyDeathBounds.size.ToString("F2") + ", minY="
                         + deathGroundGap.ToString("0.00") + " м, rootY="
                         + loaded.DeathGroundOffsetY.ToString("0.00") + ", bones="
                         + loaded.DeathGroundContactBones);
-                    Check(hasDeathBounds && Mathf.Max(deathBounds.size.x, deathBounds.size.z) > 1.45f
-                            && deathBounds.size.y < 0.90f,
+                    Check(hasDeathBounds && hasBodyDeathBounds
+                            && Mathf.Max(bodyDeathBounds.size.x, bodyDeathBounds.size.z) > 1.45f
+                            && bodyDeathBounds.size.y < 0.90f
+                            && Mathf.Max(deathBounds.size.x, deathBounds.size.z)
+                                > deathBounds.size.y * 1.55f,
                         "финальная поза не образует читаемый лежащий силуэт");
                     Check(loaded.DeathGroundContactBones == 4
                             && loaded.DeathGroundOffsetY > 0.15f && loaded.DeathGroundOffsetY <= 0.45f
@@ -384,7 +484,7 @@ namespace RealmOfAshes.EditorTools
             }
             finally
             {
-                GltfImport.UnsetDefaultDeferAgent(deferAgent);
+                if (deferAgent != null) GltfImport.UnsetDefaultDeferAgent(deferAgent);
                 RenderTexture.active = previous;
                 if (readback != null) UnityEngine.Object.DestroyImmediate(readback);
                 if (host != null) UnityEngine.Object.DestroyImmediate(host);
@@ -426,6 +526,13 @@ namespace RealmOfAshes.EditorTools
                 }
             }
             Check(found, "hair_08 не записан в реальное color-свойство материала");
+        }
+
+        private static bool IsEquipmentRenderer(Transform node)
+        {
+            for (Transform cursor = node; cursor != null; cursor = cursor.parent)
+                if (cursor.name.StartsWith("Equipment:", StringComparison.Ordinal)) return true;
+            return false;
         }
 
         private static void Check(bool condition, string message)

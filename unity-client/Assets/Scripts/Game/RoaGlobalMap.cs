@@ -288,6 +288,7 @@ namespace RealmOfAshes.Game
         private float _savedMaxDistance;
         private float _savedPitch;
         private float _savedYaw;
+        private float _savedFieldOfView;
         private bool _cameraPanning;
         private Vector2 _lastPanPointer;
         private int _mapTouchFinger = -1;
@@ -2381,9 +2382,11 @@ namespace RealmOfAshes.Game
                 _savedMaxDistance = CameraRig.MaxDistance;
                 _savedPitch = CameraRig.PitchDeg;
                 _savedYaw = CameraRig.YawDeg;
+                _savedFieldOfView = CameraRig.CurrentFieldOfView;
             }
 
             CameraRig.ZoomPersistenceEnabled = false;
+            CameraRig.SetFieldOfView(RoaCameraRig.StrategicFieldOfView);
 
             float span = Mathf.Max(MapWidthPoints, MapHeightPoints) * MapWorldScale;
             CameraRig.Target = _cameraAnchor.transform;
@@ -2403,6 +2406,7 @@ namespace RealmOfAshes.Game
             CameraRig.MaxDistance = _savedMaxDistance;
             CameraRig.PitchDeg = _savedPitch;
             CameraRig.YawDeg = _savedYaw;
+            CameraRig.SetFieldOfView(_savedFieldOfView);
             CameraRig.ZoomPersistenceEnabled = true;
             _cameraSaved = false;
         }

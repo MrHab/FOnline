@@ -10,12 +10,19 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed partial class RoaCameraRig : MonoBehaviour
     {
-        private const string ZoomPrefsKey = "roa.cameraDistance.v2";
+        private const string ZoomPrefsKey = "roa.cameraDistance.v3";
+        private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";
+
+        public const float DefaultGameplayDistance = 13.5f;
+        public const float MinimumGameplayDistance = 8f;
+        public const float MaximumGameplayDistance = 21.5f;
+        public const float GameplayFieldOfView = 52f;
+        public const float StrategicFieldOfView = 60f;
 
         public Transform Target;
 
         [Header("Расположение")]
-        public float Distance = 14f;
+        public float Distance = DefaultGameplayDistance;
         public float PitchDeg = 55f;
         public float YawDeg = 45f;
 
@@ -24,8 +31,8 @@ namespace RealmOfAshes.Game
         public float SmoothTime = 0.12f;
 
         [Header("Зум колесом")]
-        public float MinDistance = 8f;
-        public float MaxDistance = 28f;
+        public float MinDistance = MinimumGameplayDistance;
+        public float MaxDistance = MaximumGameplayDistance;
         public float ZoomSpeed = 6f;
 
         /// <summary>
@@ -39,8 +46,18 @@ namespace RealmOfAshes.Game
 
         private void Awake()
         {
-            if (PlayerPrefs.HasKey(ZoomPrefsKey))
-                Distance = Mathf.Clamp(PlayerPrefs.GetFloat(ZoomPrefsKey, Distance), MinDistance, MaxDistance);
+            string key = PlayerPrefs.HasKey(ZoomPrefsKey) ? ZoomPrefsKey
+                : PlayerPrefs.HasKey(LegacyZoomPrefsKey) ? LegacyZoomPrefsKey : string.Empty;
+            if (!string.IsNullOrEmpty(key))
+            {
+                Distance = Mathf.Clamp(PlayerPrefs.GetFloat(key, Distance), MinDistance, MaxDistance);
+                if (key == LegacyZoomPrefsKey)
+                {
+                    PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);
+                    PlayerPrefs.Save();
+                }
+            }
+            SetFieldOfView(GameplayFieldOfView);
         }
 
         private void LateUpdate()
@@ -83,6 +100,31 @@ namespace RealmOfAshes.Game
             if (!persist) return;
             PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);
             PlayerPrefs.Save();
+        }
+
+        public float CurrentFieldOfView
+        {
+            get
+            {
+                Camera view = GetComponent<Camera>();
+                return view != null ? view.fieldOfView : GameplayFieldOfView;
+            }
+        }
+
+        public void SetFieldOfView(float fieldOfView)
+        {
+            Camera view = GetComponent<Camera>();
+            if (view != null) view.fieldOfView = Mathf.Clamp(fieldOfView, 35f, 75f);
+        }
+
+        public static float ProjectedActorScreenFraction(float actorHeight, float distance,
+                                                          float fieldOfView, float pitchDeg)
+        {
+            float visibleHeight = Mathf.Max(0f, actorHeight)
+                * Mathf.Abs(Mathf.Cos(pitchDeg * Mathf.Deg2Rad));
+            float frustumHeight = 2f * Mathf.Max(0.01f, distance)
+                * Mathf.Tan(Mathf.Clamp(fieldOfView, 1f, 179f) * 0.5f * Mathf.Deg2Rad);
+            return visibleHeight / Mathf.Max(0.001f, frustumHeight);
         }
 
         /// <summary>Мгновенно поставить камеру на место — при входе в локацию, без пролёта через всю карту.</summary>

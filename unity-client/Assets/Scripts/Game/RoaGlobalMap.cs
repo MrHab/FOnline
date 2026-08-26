@@ -18,6 +18,24 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed class RoaGlobalMap : MonoBehaviour
     {
+        public struct OverlayLabel
+        {
+            public string Id;
+            public string Text;
+            public Vector3 World;
+            public Color Color;
+            public bool Activity;
+            public bool Selected;
+        }
+
+        private sealed class ActivityOverlayState
+        {
+            public string Id;
+            public string Text;
+            public GlobalMapPoint Point;
+            public Color Color;
+        }
+
         private const float MapWorldScale = 0.1f;
         private const float NodeSnapRadiusPoints = 18f;
         private const float DynamicSnapRadiusPoints = 13f;
@@ -238,6 +256,7 @@ namespace RealmOfAshes.Game
         private Coroutine _wastelandPoll;
         private readonly List<DynamicTarget> _dynamicTargets = new List<DynamicTarget>();
         private readonly List<LineRenderer> _activityHighlightRings = new List<LineRenderer>();
+        private readonly List<ActivityOverlayState> _activityOverlayLabels = new List<ActivityOverlayState>();
         private string _activityHighlightKey = string.Empty;
         private readonly Dictionary<string, JObject> _territoryByCell = new Dictionary<string, JObject>();
         private DynamicTarget _selectedDynamic;
@@ -1279,7 +1298,12 @@ namespace RealmOfAshes.Game
         {
             if (!IsActive) return;
 
-            if (!UpdateTouchMapInput()) UpdateCameraPan();
+            bool touchActive = UpdateTouchMapInput();
+            if (!touchActive)
+            {
+                UpdateCameraPan();
+                UpdateMouseMapSelection();
+            }
             PulseActivityHighlights();
 
             if (!_travelActive) return;
@@ -1458,6 +1482,23 @@ namespace RealmOfAshes.Game
             Vector2 guiPoint = new Vector2(screenPoint.x, screenHeight - screenPoint.y);
             return MapPointCanSelect(guiPoint, screenWidth, screenHeight);
         }
+        private void UpdateMouseMapSelection()
+        {
+            if (!InputEnabled || _travelActive || _cameraPanning || Input.touchCount > 0
+                || Time.unscaledTime < _suppressSyntheticMouseUntil
+                || !Input.GetMouseButtonDown(0)) return;
+
+            EventSystem events = EventSystem.current;
+            if (events != null && events.IsPointerOverGameObject()) return;
+            Vector2 screenPoint = Input.mousePosition;
+            if (!CanvasDriven)
+            {
+                Vector2 guiPoint = new Vector2(screenPoint.x, Screen.height - screenPoint.y);
+                if (!MapPointCanSelect(guiPoint, Screen.width, Screen.height)) return;
+            }
+            SelectScreenPointAndMaybeTravel(screenPoint);
+        }
+
         private void UpdateCameraPan()
         {
             if (!InputEnabled || CameraRig == null || _cameraAnchor == null)
@@ -1776,6 +1817,49 @@ namespace RealmOfAshes.Game
             return true;
         }
 
+        public int CollectOverlayLabels(List<OverlayLabel> output)
+        {
+            if (output == null) return 0;
+            output.Clear();
+            if (!IsActive || _root == null || _map == null) return 0;
+
+            for (int i = 0; i < _activityOverlayLabels.Count; i++)
+            {
+                ActivityOverlayState row = _activityOverlayLabels[i];
+                if (row == null || row.Point == null) continue;
+                bool selected = _selectedPoint != null && Distance(_selectedPoint, row.Point) <= 1f;
+                output.Add(new OverlayLabel
+                {
+                    Id = row.Id,
+                    Text = row.Text,
+                    World = _root.transform.TransformPoint(PointToWorld(row.Point.X, row.Point.Y, 1.2f)),
+                    Color = row.Color,
+                    Activity = true,
+                    Selected = selected
+                });
+            }
+
+            if (_map.Nodes != null)
+            {
+                foreach (GlobalMapNode node in _map.Nodes)
+                {
+                    if (node == null) continue;
+                    bool selected = _selectedNode == node;
+                    output.Add(new OverlayLabel
+                    {
+                        Id = "node:" + (node.Id ?? node.EffectiveLocationId),
+                        Text = EscapeOverlayText(NodeTitle(node)),
+                        World = _root.transform.TransformPoint(PointToWorld(node.X, node.Y, 0.9f)),
+                        Color = selected ? new Color(0.3f, 0.88f, 1f, 1f)
+                                         : new Color(0.94f, 0.82f, 0.47f, 1f),
+                        Activity = false,
+                        Selected = selected
+                    });
+                }
+            }
+            return output.Count;
+        }
+
         /// <summary>Draw up to three pulsing rings for the compact live-event rail.</summary>
         public void SetActivityHighlights(IList<JObject> tasks)
         {
@@ -1807,7 +1891,23 @@ namespace RealmOfAshes.Game
                         Y = point.Y + Mathf.Sin(angle) * radius
                     });
                 }
-                LineRenderer ring = CreateLine("LiveActivity:" + ids[i], ActivityColor(task), 0.14f, 0.34f + i * 0.02f);
+                Color color = ActivityColor(task);
+                string type = task?["type"]?.ToString() ?? string.Empty;
+                string kindLabel = ActivityKindLabel(type);
+                string title = task?["title"]?.ToString() ?? string.Empty;
+                string text = "<b>" + EscapeOverlayText(kindLabel.ToUpperInvariant()) + "</b>";
+                if (!string.IsNullOrEmpty(title)
+                    && !string.Equals(title, kindLabel, StringComparison.OrdinalIgnoreCase))
+                    text += "\n" + EscapeOverlayText(title);
+                _activityOverlayLabels.Add(new ActivityOverlayState
+                {
+                    Id = "activity:" + ids[i],
+                    Text = text,
+                    Point = CopyPoint(point),
+                    Color = color
+                });
+
+                LineRenderer ring = CreateLine("LiveActivity:" + ids[i], color, 0.14f, 0.34f + i * 0.02f);
                 ring.loop = true;
                 SetLinePoints(ring, ringPoints);
                 _activityHighlightRings.Add(ring);
@@ -1861,8 +1961,30 @@ namespace RealmOfAshes.Game
                 case "outpost_defense": return new Color(1f, 0.55f, 0.18f, 1f);
                 case "recon_expedition": return new Color(0.35f, 0.86f, 0.92f, 1f);
                 case "resource_expedition": return new Color(0.48f, 0.88f, 0.34f, 1f);
-                default: return new Color(0.96f, 0.76f, 0.25f, 1f);
+                case "assault_diversion": return new Color(0.96f, 0.38f, 0.24f, 1f);
+                case "escort_caravan": return new Color(0.96f, 0.76f, 0.25f, 1f);
+                default: return new Color(0.82f, 0.82f, 0.68f, 1f);
             }
+        }
+
+        private static string ActivityKindLabel(string kind)
+        {
+            switch (kind ?? string.Empty)
+            {
+                case "escort_caravan": return "Караван";
+                case "distress_signal": return "Сигнал бедствия";
+                case "recon_expedition": return "Разведка";
+                case "resource_expedition": return "Вылазка за ресурсами";
+                case "outpost_defense": return "Защита аванпоста";
+                case "assault_diversion": return "Штурм / диверсия";
+                default: return "Активность";
+            }
+        }
+
+        private static string EscapeOverlayText(string value)
+        {
+            return (value ?? string.Empty).Replace("&", "&amp;")
+                .Replace("<", "&lt;").Replace(">", "&gt;");
         }
 
         private void PulseActivityHighlights()
@@ -1883,6 +2005,7 @@ namespace RealmOfAshes.Game
             for (int i = 0; i < _activityHighlightRings.Count; i++)
                 if (_activityHighlightRings[i] != null) Destroy(_activityHighlightRings[i].gameObject);
             _activityHighlightRings.Clear();
+            _activityOverlayLabels.Clear();
             _activityHighlightKey = string.Empty;
         }
 
@@ -2300,6 +2423,7 @@ namespace RealmOfAshes.Game
             _dynamicRoot = null;
             _dynamicTargets.Clear();
             _activityHighlightRings.Clear();
+            _activityOverlayLabels.Clear();
             _activityHighlightKey = string.Empty;
 
             if (_terrainTexture != null) Destroy(_terrainTexture);
@@ -2857,26 +2981,10 @@ namespace RealmOfAshes.Game
 
         private void OnGUI()
         {
+            if (!IsActive || !InputEnabled || CanvasDriven) return;
             RoaUiTheme.Apply();
-            if (!IsActive || !InputEnabled) return;
 
             Rect panel = InformationPanelRect(Screen.width, Screen.height);
-            Event guiEvent = Event.current;
-            bool pointerOverCanvas = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-            if (!_travelActive && !_cameraPanning && !pointerOverCanvas
-                && Input.touchCount == 0 && Time.unscaledTime >= _suppressSyntheticMouseUntil
-                && guiEvent != null && guiEvent.type == EventType.MouseDown && guiEvent.button == 0
-                && (CanvasDriven || MapPointCanSelect(guiEvent.mousePosition, Screen.width, Screen.height)))
-            {
-                if (SelectScreenPointAndMaybeTravel(Input.mousePosition)) guiEvent.Use();
-            }
-
-            if (CanvasDriven)
-            {
-                DrawNodeLabels();
-                return;
-            }
-
             DrawPanelBackdrop(panel);
             GUILayout.BeginArea(panel, GUI.skin.box);
             GUILayout.Label("<b>Глобальная карта</b>", Rich());
@@ -2990,19 +3098,28 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Keeps world-space map labels inside the visible map viewport. 3D marker
-        /// names are drawn by IMGUI and therefore are not clipped by the sidebar;
-        /// without this guard they appear on top of route controls and summaries.
-        /// Nearby labels are shifted vertically or omitted instead of overlapping.
+        /// Keeps projected Canvas labels inside the visible map viewport and out
+        /// of the route sidebar. Higher-priority activity labels reserve their
+        /// rectangles first; nearby settlements are shifted or omitted.
         /// </summary>
         public static bool TryResolveNodeLabelRect(Vector2 point, Rect blocked,
                                                    IReadOnlyList<Rect> occupied,
                                                    int screenWidth, int screenHeight,
                                                    out Rect resolved)
         {
-            const float width = 140f;
-            const float height = 24f;
+            return TryResolveOverlayLabelRect(point, blocked, occupied, screenWidth,
+                                              screenHeight, 140f, 24f, out resolved);
+        }
+
+        public static bool TryResolveOverlayLabelRect(Vector2 point, Rect blocked,
+                                                      IReadOnlyList<Rect> occupied,
+                                                      int screenWidth, int screenHeight,
+                                                      float requestedWidth, float requestedHeight,
+                                                      out Rect resolved)
+        {
             const float margin = 5f;
+            float width = Mathf.Clamp(requestedWidth, 60f, Mathf.Max(60f, screenWidth - margin * 2f));
+            float height = Mathf.Clamp(requestedHeight, 20f, Mathf.Max(20f, screenHeight - margin * 2f));
             if (point.x < 0f || point.y < 0f || point.x > screenWidth || point.y > screenHeight
                 || blocked.Contains(point))
             {
@@ -3010,16 +3127,19 @@ namespace RealmOfAshes.Game
                 return false;
             }
 
-            float rightEdge = Mathf.Min(screenWidth - margin, blocked.xMin - margin);
+            float rightEdge = screenWidth - margin;
+            if (blocked.width > 0f && blocked.height > 0f)
+                rightEdge = Mathf.Min(rightEdge, blocked.xMin - margin);
             if (rightEdge - margin < width)
             {
                 resolved = default;
                 return false;
             }
+
             float x = Mathf.Clamp(point.x - width * 0.5f, margin, rightEdge - width);
             float baseY = Mathf.Clamp(point.y - height * 0.5f, margin,
                                       Mathf.Max(margin, screenHeight - height - margin));
-            for (int attempt = 0; attempt < 5; attempt++)
+            for (int attempt = 0; attempt < 7; attempt++)
             {
                 int step = attempt == 0 ? 0 : (attempt + 1) / 2;
                 float direction = attempt == 0 || attempt % 2 == 1 ? -1f : 1f;

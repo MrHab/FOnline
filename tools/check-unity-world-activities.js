@@ -30,6 +30,7 @@ const mapWindow = read('unity-client/Assets/Scripts/Game/RoaMapWindowCanvas.cs')
 const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 const globalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
+const globalMapCanvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
 const metadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.cs.meta');
 const feedbackMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityFeedback.cs.meta');
 const feedbackCanvasMetadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.Feedback.cs.meta');
@@ -162,6 +163,25 @@ requireText(interaction, 'public JObject TrackedWorldTask',
   'Unity interaction facade no longer exposes the tracked activity target');
 requireText(globalMap, 'BuildTrackedWorldTaskMarker();',
   'the live map no longer highlights the tracked activity target');
+requireText(globalMap, '_activityOverlayLabels.Add(new ActivityOverlayState',
+  'priority activities no longer receive readable labels on the live map');
+for (const [kind, label] of [
+  ['escort_caravan', 'Караван'],
+  ['distress_signal', 'Сигнал бедствия'],
+  ['recon_expedition', 'Разведка'],
+  ['resource_expedition', 'Вылазка за ресурсами'],
+  ['outpost_defense', 'Защита аванпоста'],
+  ['assault_diversion', 'Штурм / диверсия']
+]) requireText(globalMap, `case "${kind}": return "${label}";`,
+  `the live map lost the canonical ${kind} label`);
+requireText(globalMap, 'public int CollectOverlayLabels(List<OverlayLabel> output)',
+  'the live map no longer combines activity and settlement overlays');
+requireText(globalMapCanvas, 'Map.CollectOverlayLabels(_mapLabelFrames)',
+  'the global-map Canvas no longer consumes live activity labels');
+requireText(globalMapCanvas, 'TryResolveOverlayLabelRect(point, sidebar, _occupiedMapLabels',
+  'live activity labels can overlap the route sidebar or each other');
+requireText(globalMapCanvas, 'background.raycastTarget = false;',
+  'live activity labels intercept route-selection input');
 requireText(activityHub, 'BuildVisibleCardSignature(tasks)',
   'the activity hub rebuilds cards without comparing visible state');
 requirePattern(activityHub,

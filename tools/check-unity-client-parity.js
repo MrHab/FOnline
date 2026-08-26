@@ -296,10 +296,11 @@ assert(unityGlobalMap.includes('private bool UpdateTouchMapInput()')
   && unityGlobalMap.includes('events.IsPointerOverGameObject(touch.fingerId)')
   && unityGlobalMap.includes('CameraRig.SetDistance(PinchZoomDistance(')
   && unityGlobalMap.includes('TouchTapEligible(')
+  && unityGlobalMap.includes('private void UpdateMouseMapSelection()')
+  && unityGlobalMap.includes('Input.GetMouseButtonDown(0)')
   && unityGlobalMap.includes('SelectScreenPointAndMaybeTravel(screenPoint)')
-  && unityGlobalMap.includes('SelectScreenPointAndMaybeTravel(Input.mousePosition)')
-  && unityGlobalMap.includes('Time.unscaledTime >= _suppressSyntheticMouseUntil'),
-  'Unity global map touch must share route selection while separating tap, drag, pinch and synthetic mouse input');
+  && unityGlobalMap.includes('Time.unscaledTime < _suppressSyntheticMouseUntil'),
+  'Unity global map mouse/touch must share route selection while separating tap, drag, pinch and synthetic mouse input');
 assert(unityGlobalMapCanvas.includes('TouchGestureHelp')
   && unityGlobalMapCanvas.includes('КАСАНИЕ — МАРШРУТ')
   && unityGlobalMapCanvas.includes('ПОТЯНУТЬ — ОБЗОР')
@@ -307,14 +308,28 @@ assert(unityGlobalMapCanvas.includes('TouchGestureHelp')
   'Unity global map does not explain its touch gestures on mobile');
 assert(unityCameraProbe.includes('короткое касание не выбирает маршрут')
   && unityCameraProbe.includes('pinch карты меняет масштаб в неверном направлении')
-  && unityCameraProbe.includes('legacy-панель карты не блокирует касание по интерфейсу')
-  && unityCameraProbe.includes('touch=tap/drag/pinch'),
-  'Unity camera probe does not cover the global-map touch gesture contract');
-assert(unityGlobalMap.includes('public static bool TryResolveNodeLabelRect(')
+  && unityCameraProbe.includes('Canvas-подпись активности перекрывает панель')
+  && unityCameraProbe.includes('экранная подпись неверно переводится')
+  && unityCameraProbe.includes('пул Canvas-подписей карты не ограничен')
+  && unityCameraProbe.includes('touch=tap/drag/pinch, labels=canvas/activities'),
+  'Unity camera probe does not cover the global-map gesture and Canvas-label contract');
+assert(unityGlobalMap.includes('public int CollectOverlayLabels(List<OverlayLabel> output)')
+  && unityGlobalMap.includes('_activityOverlayLabels.Add(new ActivityOverlayState')
+  && unityGlobalMap.includes('case "escort_caravan": return "Караван";')
+  && unityGlobalMap.includes('case "assault_diversion": return "Штурм / диверсия";')
+  && unityGlobalMap.includes('public static bool TryResolveOverlayLabelRect(')
   && unityGlobalMap.includes('blocked.Contains(point)')
-  && unityGlobalMap.includes('candidate.Overlaps(blocked)')
-  && unityGlobalMap.includes('occupied.Add(label);'),
-  'Unity global-map labels must stay out of the information panel and each other');
+  && unityGlobalMap.includes('candidate.Overlaps(blocked)'),
+  'Unity global map no longer exports collision-safe settlement and activity labels');
+assert(unityGlobalMapCanvas.includes('MapOverlayLabels')
+  && unityGlobalMapCanvas.includes('private void LateUpdate()')
+  && unityGlobalMapCanvas.includes('EnsureMapLabelPool(8)')
+  && unityGlobalMapCanvas.includes('background.raycastTarget = false;')
+  && unityGlobalMapCanvas.includes('TryResolveOverlayLabelRect(point, sidebar, _occupiedMapLabels')
+  && unityGlobalMapCanvas.includes('_occupiedMapLabels.Add(resolved);')
+  && unityGlobalMapCanvas.includes('CanvasPositionForScreenRect(')
+  && unityGlobalMap.includes('if (!IsActive || !InputEnabled || CanvasDriven) return;'),
+  'Unity global-map labels are not rendered by a pooled, input-transparent and scale-aware Canvas');
 assert(unityGlobalMap.includes('TravelDescriptorGraceSeconds = 2.5f')
   && unityGlobalMap.includes('bool preserveFreshTravel = preserveIdleSelection')
   && unityGlobalMap.includes('else if (!preserveFreshTravel) ClearTravel();')
@@ -324,4 +339,4 @@ assert(unityGlobalMap.includes('TravelDescriptorGraceSeconds = 2.5f')
 console.log(`Unity client parity OK: ${webEmits.length} outgoing events, ${webHandlers.length} incoming events, `
   + `${Object.keys(unityItems).length} items, ${actualRecipes.length} recipes, `
   + `${Object.keys(unityMods).length} weapon modifications, ${unityTraitRows.length} starting traits, `
-  + 'live GLB preview, persistent camera zoom/map pan/touch');
+  + 'live GLB preview, persistent camera zoom/map pan/touch and live Canvas labels');

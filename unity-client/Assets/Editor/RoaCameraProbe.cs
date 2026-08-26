@@ -1,7 +1,10 @@
 using System;
+using System.Linq;
+using System.Reflection;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -12,6 +15,7 @@ namespace RealmOfAshes.EditorTools
         {
             GameObject cameraObject = null;
             GameObject targetObject = null;
+            GameObject canvasObject = null;
             try
             {
                 cameraObject = new GameObject("RoaCameraProbe");
@@ -75,14 +79,55 @@ namespace RealmOfAshes.EditorTools
                       && !RoaGlobalMap.MapScreenPointCanGesture(new Vector2(640f, 250f), 840, 500, false),
                     "legacy-панель карты не блокирует касание по интерфейсу");
 
+                Rect sidebar = RoaGlobalMap.InformationPanelRect(840, 500);
+                var occupied = new[] { new Rect(216f, 228f, 220f, 44f) };
+                Check(RoaGlobalMap.TryResolveOverlayLabelRect(new Vector2(326f, 250f), sidebar,
+                    occupied, 840, 500, 220f, 44f, out Rect activityLabel)
+                      && Mathf.Approximately(activityLabel.width, 220f)
+                      && Mathf.Approximately(activityLabel.height, 44f)
+                      && !activityLabel.Overlaps(sidebar)
+                      && !activityLabel.Overlaps(occupied[0]),
+                    "Canvas-подпись активности перекрывает панель или соседнюю метку");
+                Check(!RoaGlobalMap.TryResolveOverlayLabelRect(sidebar.center, sidebar, null,
+                    840, 500, 220f, 44f, out _),
+                    "Canvas-подпись активности появилась поверх панели маршрута");
+
+                Rect projectedRect = new Rect(320f, 180f, 200f, 40f);
+                Vector2 canvasPosition = RoaGlobalMapCanvas.CanvasPositionForScreenRect(
+                    projectedRect, 840, 500, 2f);
+                Vector2 canvasSize = RoaGlobalMapCanvas.CanvasSizeForScreenRect(projectedRect, 2f);
+                Check(Vector2.Distance(canvasPosition, new Vector2(0f, 25f)) < 0.001f
+                      && Vector2.Distance(canvasSize, new Vector2(100f, 20f)) < 0.001f,
+                    "экранная подпись неверно переводится в масштабируемый Canvas");
+
+                canvasObject = new GameObject("Global map label Canvas probe");
+                RoaGlobalMapCanvas mapCanvas = canvasObject.AddComponent<RoaGlobalMapCanvas>();
+                MethodInfo ensureBuilt = typeof(RoaGlobalMapCanvas).GetMethod("EnsureBuilt",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Check(ensureBuilt != null, "Canvas глобальной карты не имеет детерминированной сборки");
+                ensureBuilt.Invoke(mapCanvas, null);
+                Canvas.ForceUpdateCanvases();
+                Image[] mapLabelBackgrounds = canvasObject.GetComponentsInChildren<Image>(true)
+                    .Where(image => image.gameObject.name == "MapOverlayLabel").ToArray();
+                Text[] mapLabelTexts = canvasObject.GetComponentsInChildren<Text>(true)
+                    .Where(text => text.transform.parent != null
+                        && text.transform.parent.gameObject.name == "MapOverlayLabel").ToArray();
+                Check(mapCanvas.MapLabelPoolSize == 8
+                      && mapLabelBackgrounds.Length == 8
+                      && mapLabelTexts.Length == 8
+                      && mapLabelBackgrounds.All(image => !image.raycastTarget)
+                      && mapLabelTexts.All(text => !text.raycastTarget && text.supportRichText),
+                    "пул Canvas-подписей карты не ограничен, перехватывает ввод или теряет rich text");
+
                 Debug.Log("[КАМЕРА] готово: zoom=8–28, distance=14, map drag="
                     + movement.x.ToString("0.00") + ":" + movement.z.ToString("0.00")
-                    + ", clamp=50:-60, touch=tap/drag/pinch");
+                    + ", clamp=50:-60, touch=tap/drag/pinch, labels=canvas/activities");
             }
             finally
             {
                 if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
                 if (targetObject != null) UnityEngine.Object.DestroyImmediate(targetObject);
+                if (canvasObject != null) UnityEngine.Object.DestroyImmediate(canvasObject);
             }
         }
 

@@ -17,6 +17,15 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed class RoaGlobalMapCanvas : MonoBehaviour
     {
+        private sealed class MapLabelSlot
+        {
+            public GameObject Root;
+            public RectTransform Rect;
+            public Image Background;
+            public Outline Outline;
+            public Text Text;
+        }
+
         private static readonly Color SideBg = new Color(0.03f, 0.07f, 0.045f, 1f);        // rgba(2,10,6,.72) на тёмном
         private static readonly Color SideBorder = new Color(0.494f, 0.784f, 0.357f, 0.34f);
         private static readonly Color Kicker = new Color(0.831f, 0.702f, 0.357f, 1f);      // #d4b35b
@@ -37,6 +46,10 @@ namespace RealmOfAshes.Game
         private GameObject _root;
         private Text _route;
         private Text _gestureHelp;
+        private RectTransform _mapLabelLayer;
+        private readonly List<MapLabelSlot> _mapLabelPool = new List<MapLabelSlot>();
+        private readonly List<RoaGlobalMap.OverlayLabel> _mapLabelFrames = new List<RoaGlobalMap.OverlayLabel>();
+        private readonly List<Rect> _occupiedMapLabels = new List<Rect>();
         private Button _enterButton;
         private Text _enterLabel;
         private Button _cancelButton;
@@ -57,6 +70,8 @@ namespace RealmOfAshes.Game
 
         /// <summary>Ширина сайдбара в единицах канвы (340 px как в web).</summary>
         public const float SidebarWidth = 340f;
+        public int ActiveMapLabelCount { get; private set; }
+        public int MapLabelPoolSize { get { return _mapLabelPool.Count; } }
 
         private void Update()
         {
@@ -64,6 +79,7 @@ namespace RealmOfAshes.Game
             if (!visible)
             {
                 if (_root != null && _root.activeSelf) _root.SetActive(false);
+                ActiveMapLabelCount = 0;
                 return;
             }
             EnsureBuilt();
@@ -71,6 +87,12 @@ namespace RealmOfAshes.Game
             if (Time.unscaledTime < _refreshAt) return;
             _refreshAt = Time.unscaledTime + 0.3f;
             Refresh();
+        }
+
+        private void LateUpdate()
+        {
+            if (_root == null || !_root.activeInHierarchy) return;
+            RefreshMapLabels();
         }
 
         // ------------------------------------------------------------------
@@ -101,6 +123,10 @@ namespace RealmOfAshes.Game
             _gestureHelp.text = "КАСАНИЕ — МАРШРУТ  ·  ПОТЯНУТЬ — ОБЗОР  ·  ЩИПОК — МАСШТАБ";
             Place(_gestureHelp.rectTransform, 0f, 0f, 1f, 0f,
                   new Vector2(18f, 16f), new Vector2(-SidebarWidth - 28f, 46f));
+
+            _mapLabelLayer = Child("MapOverlayLabels", rootRect);
+            Stretch(_mapLabelLayer, 0f);
+            EnsureMapLabelPool(8);
 
             // .global-map-side
             RectTransform side = Child("Side", rootRect);
@@ -161,6 +187,120 @@ namespace RealmOfAshes.Game
             _partyList = ScrollBox(side, 0.16f, ref y);
 
             _root.SetActive(false);
+        }
+
+        private void RefreshMapLabels()
+        {
+            if (_mapLabelLayer == null || Map == null)
+            {
+                HideMapLabels();
+                return;
+            }
+
+            Camera camera = Camera.main;
+            if (camera == null || Map.CollectOverlayLabels(_mapLabelFrames) == 0)
+            {
+                HideMapLabels();
+                return;
+            }
+
+            EnsureMapLabelPool(_mapLabelFrames.Count);
+            _occupiedMapLabels.Clear();
+            Rect sidebar = RoaGlobalMap.InformationPanelRect(Screen.width, Screen.height);
+            _occupiedMapLabels.Add(new Rect(12f, 10f, 430f, 40f));
+            _occupiedMapLabels.Add(new Rect(14f, 58f, 222f, 48f));
+            bool mobile = Application.isMobilePlatform
+                || RoaGameBootstrap.Active?.MobileControls?.ControlsEnabled == true;
+            if (mobile && sidebar.xMin > 60f)
+                _occupiedMapLabels.Add(new Rect(12f, Screen.height - 54f, sidebar.xMin - 24f, 42f));
+
+            int visible = 0;
+            for (int i = 0; i < _mapLabelFrames.Count; i++)
+            {
+                RoaGlobalMap.OverlayLabel frame = _mapLabelFrames[i];
+                Vector3 projected = camera.WorldToScreenPoint(frame.World);
+                if (projected.z <= 0f) continue;
+
+                Vector2 point = new Vector2(projected.x, Screen.height - projected.y);
+                float width = frame.Activity ? 220f : (frame.Selected ? 156f : 140f);
+                float height = frame.Activity ? 44f : 26f;
+                if (!RoaGlobalMap.TryResolveOverlayLabelRect(point, sidebar, _occupiedMapLabels,
+                    Screen.width, Screen.height, width, height, out Rect resolved)) continue;
+
+                MapLabelSlot slot = _mapLabelPool[visible++];
+                slot.Root.SetActive(true);
+                slot.Root.name = "MapOverlayLabel:" + frame.Id;
+                slot.Rect.anchoredPosition = CanvasPositionForScreenRect(
+                    resolved, Screen.width, Screen.height, _canvas.scaleFactor);
+                slot.Rect.sizeDelta = CanvasSizeForScreenRect(resolved, _canvas.scaleFactor);
+                slot.Text.text = frame.Selected ? "◆ " + frame.Text : frame.Text;
+                slot.Text.alignment = frame.Activity ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter;
+                slot.Text.fontSize = frame.Activity || frame.Selected ? 12 : 11;
+                slot.Text.color = frame.Color;
+                float alpha = frame.Selected ? 0.98f : (frame.Activity ? 0.93f : 0.78f);
+                slot.Background.color = new Color(0.018f, 0.045f, 0.028f, alpha);
+                slot.Outline.effectColor = new Color(frame.Color.r, frame.Color.g, frame.Color.b,
+                    frame.Selected ? 0.95f : 0.68f);
+                slot.Outline.effectDistance = frame.Selected ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
+                _occupiedMapLabels.Add(resolved);
+            }
+
+            for (int i = visible; i < _mapLabelPool.Count; i++)
+                if (_mapLabelPool[i].Root.activeSelf) _mapLabelPool[i].Root.SetActive(false);
+            ActiveMapLabelCount = visible;
+        }
+
+        private void EnsureMapLabelPool(int count)
+        {
+            if (_mapLabelLayer == null) return;
+            while (_mapLabelPool.Count < count)
+            {
+                var root = new GameObject("MapOverlayLabel", typeof(RectTransform),
+                    typeof(Image), typeof(Outline));
+                RectTransform rect = (RectTransform)root.transform;
+                rect.SetParent(_mapLabelLayer, false);
+                rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                Image background = root.GetComponent<Image>();
+                background.raycastTarget = false;
+                var outline = root.GetComponent<Outline>();
+                outline.useGraphicAlpha = true;
+                Text text = Label("Text", rect, 11, TextAnchor.MiddleCenter, Mono, FontStyle.Bold);
+                text.supportRichText = true;
+                text.horizontalOverflow = HorizontalWrapMode.Wrap;
+                text.verticalOverflow = VerticalWrapMode.Truncate;
+                Stretch(text.rectTransform, 6f);
+                root.SetActive(false);
+                _mapLabelPool.Add(new MapLabelSlot
+                {
+                    Root = root,
+                    Rect = rect,
+                    Background = background,
+                    Outline = outline,
+                    Text = text
+                });
+            }
+        }
+
+        private void HideMapLabels()
+        {
+            for (int i = 0; i < _mapLabelPool.Count; i++)
+                if (_mapLabelPool[i].Root.activeSelf) _mapLabelPool[i].Root.SetActive(false);
+            ActiveMapLabelCount = 0;
+        }
+
+        public static Vector2 CanvasPositionForScreenRect(Rect screenRect, int screenWidth,
+                                                          int screenHeight, float canvasScale)
+        {
+            float scale = Mathf.Max(0.01f, canvasScale);
+            return new Vector2((screenRect.center.x - screenWidth * 0.5f) / scale,
+                (screenHeight - screenRect.center.y - screenHeight * 0.5f) / scale);
+        }
+
+        public static Vector2 CanvasSizeForScreenRect(Rect screenRect, float canvasScale)
+        {
+            float scale = Mathf.Max(0.01f, canvasScale);
+            return new Vector2(screenRect.width / scale, screenRect.height / scale);
         }
 
         private void KickerLabel(RectTransform side, string caption, ref float y)

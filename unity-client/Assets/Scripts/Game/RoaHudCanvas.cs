@@ -101,12 +101,14 @@ namespace RealmOfAshes.Game
             _combat = combat;
             _mobile = mobile;
             _globalMap = globalMap;
+            ConfigureEconomyFeedback(hud != null ? hud.Socket : null);
             ClaimLegacyRenderers(true);
             if (_canvas == null) Build();
         }
 
         private void OnDestroy()
         {
+            ReleaseEconomyFeedback();
             ClaimLegacyRenderers(false);
         }
 
@@ -144,6 +146,7 @@ namespace RealmOfAshes.Game
                 && Time.unscaledTime < _combatLogUntil);
             _consolePanel.SetActive(worldHud && _hud != null && _hud.HasState);
             RefreshSystemStatus(worldHud && !mobile);
+            RefreshEconomyFeedback(worldHud);
             RefreshInteractionPrompt(worldHud);
             RefreshPlayer();
             RefreshConsole();
@@ -156,7 +159,7 @@ namespace RealmOfAshes.Game
         {
             return _canvas != null && _safeRoot != null && _playerPanel != null
                 && _mapPanel != null && _quickPanel != null && _logPanel != null && _systemPanel != null
-                && _consolePanel != null && _interactionPrompt != null
+                && _economyRoot != null && _consolePanel != null && _interactionPrompt != null
                 && _slotButtons[0] != null && _slotTexts[0] != null;
         }
 
@@ -185,6 +188,7 @@ namespace RealmOfAshes.Game
             BuildQuickbar();
             BuildInteractionPrompt();
             BuildSystemStatus();
+            BuildEconomyFeedback();
             BuildCombatLog();
             if (Application.isMobilePlatform) ApplyMobileLayout();
             if (FindAnyObjectByType<EventSystem>() == null)

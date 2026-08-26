@@ -23,6 +23,7 @@ namespace RealmOfAshes.Game
         public int VolumePercent { get { return Mathf.RoundToInt(_masterVolume * 100f); } }
         public bool Muted { get { return _masterVolume <= 0.001f; } }
         public int GeneratedClipCount { get { return _validatedClipCount; } }
+        public bool EconomyCuesReady { get { return _economyGain != null && _levelUp != null; } }
         public bool ActivityCuesReady
         {
             get
@@ -74,6 +75,8 @@ namespace RealmOfAshes.Game
         private AudioClip _activityExtraction;
         private AudioClip _activitySuccess;
         private AudioClip _activityFailure;
+        private AudioClip _economyGain;
+        private AudioClip _levelUp;
         private AudioClip[] _steps;
 
         private Vector3 _playerPosition;
@@ -85,6 +88,7 @@ namespace RealmOfAshes.Game
         private float _lastUiAt;
         private float _lastActivityAt = -100f;
         private RoaActivityFeedbackCue _lastActivityCue;
+        private float _lastEconomyAt = -100f;
         private float _masterVolume;
         private int _worldCursor;
         private int _validatedClipCount;
@@ -252,6 +256,16 @@ namespace RealmOfAshes.Game
             _lastActivityCue = cue;
             _lastActivityAt = Time.unscaledTime;
             PlayUi(clip, volume, Pitch(0.99f, 1.01f));
+        }
+
+        public void PlayEconomyCue(RoaEconomyNoticeKind kind)
+        {
+            bool level = kind == RoaEconomyNoticeKind.LevelUp;
+            if (!level && kind == RoaEconomyNoticeKind.Spend) return;
+            if (!level && Time.unscaledTime - _lastEconomyAt < 0.16f) return;
+            _lastEconomyAt = Time.unscaledTime;
+            PlayUi(level ? _levelUp : _economyGain, level ? 0.5f : 0.22f,
+                Pitch(level ? 0.995f : 0.98f, level ? 1.005f : 1.04f));
         }
 
         public void PlayReload()
@@ -443,6 +457,10 @@ namespace RealmOfAshes.Game
                 new[] { 392f, 523.25f, 659.25f, 783.99f }, 0.018f, 0x91b7u);
             _activityFailure = BuildActivitySignal("ActivityFailure", 0.64f,
                 new[] { 329.63f, 246.94f, 185f, 146.83f }, 0.055f, 0xa529u);
+            _economyGain = BuildActivitySignal("EconomyGain", 0.16f,
+                new[] { 523.25f, 783.99f }, 0.01f, 0xb137u);
+            _levelUp = BuildActivitySignal("LevelUp", 0.78f,
+                new[] { 261.63f, 392f, 523.25f, 659.25f }, 0.014f, 0xc521u);
             _steps = new[] { BuildStep("StepA", 0x92a1u, 82f), BuildStep("StepB", 0x5c71u, 96f) };
         }
 

@@ -263,7 +263,7 @@ requireText(feedbackCanvas, 'cue == RoaActivityFeedbackCue.Started ? 2',
   'deferred progress can overwrite the activity start cue');
 requireText(feedbackProbe, '[ОБРАТНАЯ СВЯЗЬ АКТИВНОСТИ] готово:',
   'Unity editor probe for activity transition feedback is missing');
-requireText(feedbackProbe, 'audio.GeneratedClipCount == 26',
+requireText(feedbackProbe, 'audio.GeneratedClipCount == 28',
   'Unity editor probe no longer validates the generated activity sounds');
 for (const [contents, label] of [
   [feedbackMetadata, 'RoaActivityFeedback'],

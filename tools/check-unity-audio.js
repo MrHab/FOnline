@@ -10,6 +10,8 @@ const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 const audio = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaAudio.cs');
 const activityFeedbackCanvas = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaWorldActivityCanvas.Feedback.cs');
 const activityFeedbackProbe = read('unity-client', 'Assets', 'Editor', 'RoaActivityFeedbackProbe.cs');
+const economyFeedbackCanvas = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaHudCanvas.EconomyFeedback.cs');
+const economyFeedbackProbe = read('unity-client', 'Assets', 'Editor', 'RoaEconomyFeedbackProbe.cs');
 const movementFx = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaMovementFx.cs');
 const remotePlayers = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaRemotePlayers.cs');
 const enemies = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaEnemies.cs');
@@ -56,8 +58,14 @@ assert(audio.includes('Time.unscaledTime - _lastActivityAt < 0.42f')
   && activityFeedbackCanvas.includes('audio?.PlayActivityCue(cue);'),
 'Activity feedback can chatter or is disconnected from the HUD');
 assert(activityFeedbackProbe.includes('audio.ActivityCuesReady')
-  && activityFeedbackProbe.includes('audio.GeneratedClipCount == 26'),
+  && activityFeedbackProbe.includes('audio.GeneratedClipCount == 28'),
 'Unity editor probe no longer validates generated activity PCM');
+assert(audio.includes('PlayEconomyCue(RoaEconomyNoticeKind kind)')
+  && audio.includes('BuildActivitySignal("EconomyGain"')
+  && audio.includes('BuildActivitySignal("LevelUp"')
+  && economyFeedbackCanvas.includes('PlayEconomyCue(RoaEconomyNoticeKind.LevelUp)')
+  && economyFeedbackProbe.includes('audio.EconomyCuesReady'),
+'Generated economy gain or level-up audio is incomplete');
 
 assert(bootstrap.includes('gameObject.AddComponent<RoaAudio>()')
   && bootstrap.includes('gameObject.AddComponent<RoaMovementFx>()')
@@ -113,4 +121,4 @@ assert(systemCanvas.includes('"Звук: выключен"')
 assert(/guid:\s*[0-9a-f]{32}/i.test(meta), 'RoaAudio MonoScript meta GUID is missing');
 assert(/guid:\s*[0-9a-f]{32}/i.test(movementMeta), 'RoaMovementFx MonoScript meta GUID is missing');
 
-console.log('Unity audio/movement OK: ambience, combat/footsteps, five activity cues, UI priority and persistent volume');
+console.log('Unity audio/movement OK: ambience, combat/footsteps, activity/economy cues, UI priority and persistent volume');

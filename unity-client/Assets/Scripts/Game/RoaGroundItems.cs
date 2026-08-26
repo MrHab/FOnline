@@ -578,9 +578,12 @@ namespace RealmOfAshes.Game
 
                 // Метку не убираем по одному ack: общий groundItemPicked или
                 // следующий снимок одинаково покажут авторитетный результат.
-                Show(ok
-                    ? "подобрано: " + nearest.ItemId
-                    : (ack["error"]?.ToString() ?? "не удалось подобрать"));
+                if (ok)
+                {
+                    _status = string.Empty;
+                    _statusUntil = 0f;
+                }
+                else Show(ack["error"]?.ToString() ?? "не удалось подобрать");
                 completed?.Invoke(ack);
             });
             return true;

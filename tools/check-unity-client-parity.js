@@ -328,8 +328,15 @@ assert(unityGlobalMapCanvas.includes('MapOverlayLabels')
   && unityGlobalMapCanvas.includes('TryResolveOverlayLabelRect(point, sidebar, _occupiedMapLabels')
   && unityGlobalMapCanvas.includes('_occupiedMapLabels.Add(resolved);')
   && unityGlobalMapCanvas.includes('CanvasPositionForScreenRect(')
+  && unityGlobalMapCanvas.includes('RouteProgressTrack')
+  && unityGlobalMapCanvas.includes('SetRouteProgress(Map.TravelActive, Map.TravelProgress, Map.HasPendingContact)')
+  && unityGlobalMapCanvas.includes('RouteProgressColor(bool contact)')
   && unityGlobalMap.includes('if (!IsActive || !InputEnabled || CanvasDriven) return;'),
   'Unity global-map labels are not rendered by a pooled, input-transparent and scale-aware Canvas');
+assert(unityCameraProbe.includes('route=progress/contact')
+  && unityCameraProbe.includes('mapCanvas.RouteProgressFill - 0.42f')
+  && unityCameraProbe.includes('полоса маршрута остаётся без активного пути'),
+  'Unity camera probe does not cover route progress visibility and contact warning');
 assert(unityGlobalMap.includes('TravelDescriptorGraceSeconds = 2.5f')
   && unityGlobalMap.includes('bool preserveFreshTravel = preserveIdleSelection')
   && unityGlobalMap.includes('else if (!preserveFreshTravel) ClearTravel();')

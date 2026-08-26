@@ -119,9 +119,30 @@ namespace RealmOfAshes.EditorTools
                       && mapLabelTexts.All(text => !text.raycastTarget && text.supportRichText),
                     "пул Canvas-подписей карты не ограничен, перехватывает ввод или теряет rich text");
 
+                MethodInfo setRouteProgress = typeof(RoaGlobalMapCanvas).GetMethod("SetRouteProgress",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Check(setRouteProgress != null
+                      && Mathf.Approximately(RoaGlobalMapCanvas.RouteProgressFillAmount(-1f), 0.025f)
+                      && Mathf.Approximately(RoaGlobalMapCanvas.RouteProgressFillAmount(2f), 1f),
+                    "полоса маршрута не ограничивает начало и завершение пути");
+                setRouteProgress.Invoke(mapCanvas, new object[] { true, 0.42f, false });
+                Image progressFill = canvasObject.GetComponentsInChildren<Image>(true)
+                    .FirstOrDefault(image => image.gameObject.name == "RouteProgressFill");
+                Color safeRouteColor = RoaGlobalMapCanvas.RouteProgressColor(false);
+                Color contactRouteColor = RoaGlobalMapCanvas.RouteProgressColor(true);
+                Check(mapCanvas.RouteProgressVisible
+                      && Mathf.Abs(mapCanvas.RouteProgressFill - 0.42f) < 0.001f
+                      && progressFill != null && !progressFill.raycastTarget
+                      && contactRouteColor.r > safeRouteColor.r
+                      && contactRouteColor.g < safeRouteColor.g,
+                    "маршрут не показывает прогресс или тревожный контакт");
+                setRouteProgress.Invoke(mapCanvas, new object[] { false, 0f, false });
+                Check(!mapCanvas.RouteProgressVisible,
+                    "полоса маршрута остаётся без активного пути");
+
                 Debug.Log("[КАМЕРА] готово: zoom=8–28, distance=14, map drag="
                     + movement.x.ToString("0.00") + ":" + movement.z.ToString("0.00")
-                    + ", clamp=50:-60, touch=tap/drag/pinch, labels=canvas/activities");
+                    + ", clamp=50:-60, touch=tap/drag/pinch, labels=canvas/activities, route=progress/contact");
             }
             finally
             {

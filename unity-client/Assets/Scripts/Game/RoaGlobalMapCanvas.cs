@@ -45,6 +45,9 @@ namespace RealmOfAshes.Game
         private Canvas _canvas;
         private GameObject _root;
         private Text _route;
+        private RectTransform _routeProgressTrack;
+        private RectTransform _routeProgressFill;
+        private Image _routeProgressImage;
         private Text _gestureHelp;
         private RectTransform _mapLabelLayer;
         private readonly List<MapLabelSlot> _mapLabelPool = new List<MapLabelSlot>();
@@ -72,6 +75,8 @@ namespace RealmOfAshes.Game
         public const float SidebarWidth = 340f;
         public int ActiveMapLabelCount { get; private set; }
         public int MapLabelPoolSize { get { return _mapLabelPool.Count; } }
+        public bool RouteProgressVisible { get { return _routeProgressTrack != null && _routeProgressTrack.gameObject.activeSelf; } }
+        public float RouteProgressFill { get { return _routeProgressFill != null ? _routeProgressFill.anchorMax.x : 0f; } }
 
         private void Update()
         {
@@ -147,7 +152,21 @@ namespace RealmOfAshes.Game
             _route.supportRichText = true;
             _route.horizontalOverflow = HorizontalWrapMode.Wrap;
             _route.verticalOverflow = VerticalWrapMode.Truncate;
-            Stretch(_route.rectTransform, 9f);
+            Place(_route.rectTransform, 0f, 0f, 1f, 1f, new Vector2(9f, 18f), new Vector2(-9f, -9f));
+
+            _routeProgressTrack = Child("RouteProgressTrack", routeBox);
+            Place(_routeProgressTrack, 0f, 0f, 1f, 0f, new Vector2(9f, 8f), new Vector2(-9f, 14f));
+            Image trackImage = _routeProgressTrack.gameObject.AddComponent<Image>();
+            trackImage.color = new Color(0.11f, 0.16f, 0.11f, 0.95f);
+            trackImage.raycastTarget = false;
+            _routeProgressFill = Child("RouteProgressFill", _routeProgressTrack);
+            _routeProgressFill.anchorMin = Vector2.zero;
+            _routeProgressFill.anchorMax = new Vector2(0f, 1f);
+            _routeProgressFill.offsetMin = Vector2.zero;
+            _routeProgressFill.offsetMax = Vector2.zero;
+            _routeProgressImage = _routeProgressFill.gameObject.AddComponent<Image>();
+            _routeProgressImage.raycastTarget = false;
+            _routeProgressTrack.gameObject.SetActive(false);
 
             // .global-map-actions
             RectTransform actions = Child("Actions", side);
@@ -357,6 +376,7 @@ namespace RealmOfAshes.Game
             bool touchHints = Application.isMobilePlatform
                 || RoaGameBootstrap.Active?.MobileControls?.ControlsEnabled == true;
             if (_gestureHelp != null) _gestureHelp.gameObject.SetActive(touchHints);
+            SetRouteProgress(Map.TravelActive, Map.TravelProgress, Map.HasPendingContact);
 
             // --- Маршрут (тексты renderGlobalMapPanel) ---
             if (Map.TravelActive)
@@ -532,6 +552,28 @@ namespace RealmOfAshes.Game
         {
             int total = Mathf.CeilToInt(seconds);
             return total >= 60 ? (total / 60) + " мин " + (total % 60) + " с" : total + " с";
+        }
+
+        public static float RouteProgressFillAmount(float progress)
+        {
+            return Mathf.Max(0.025f, Mathf.Clamp01(progress));
+        }
+
+        public static Color RouteProgressColor(bool contact)
+        {
+            return contact
+                ? new Color(1f, 0.42f, 0.22f, 0.88f)
+                : new Color(0.831f, 0.702f, 0.357f, 0.78f);
+        }
+
+        private void SetRouteProgress(bool visible, float progress, bool contact)
+        {
+            if (_routeProgressTrack == null || _routeProgressFill == null) return;
+            if (_routeProgressTrack.gameObject.activeSelf != visible)
+                _routeProgressTrack.gameObject.SetActive(visible);
+            if (!visible) return;
+            _routeProgressFill.anchorMax = new Vector2(RouteProgressFillAmount(progress), 1f);
+            if (_routeProgressImage != null) _routeProgressImage.color = RouteProgressColor(contact);
         }
 
         private static void SetButton(Button button, Text label, bool enabled)

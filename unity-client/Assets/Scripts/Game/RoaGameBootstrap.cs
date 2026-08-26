@@ -722,6 +722,7 @@ namespace RealmOfAshes.Game
         public void MenuOpenGameMenu(bool open) { SetGameMenuOpen(open); }
         public void MenuOpenGraphics(bool open) { SetGraphicsOpen(open); }
         public void MenuOpenTutorial(bool open) { SetTutorialOpen(open); }
+        public void MenuRestartFirstRunCoach() { SetTutorialOpen(false); FirstRunCoach?.Restart(); }
         public void MenuBeginHudEdit() { BeginHudEdit(); }
         public void MenuEndHudEdit() { EndHudEdit(); }
         public void MenuResetHud() { RoaHudLayout.Reset(); _status = "Позиции HUD сброшены."; }

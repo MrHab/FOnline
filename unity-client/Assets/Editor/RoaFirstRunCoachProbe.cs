@@ -1,6 +1,8 @@
 #if UNITY_EDITOR
 using System;
 using System.IO;
+using System.Reflection;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
@@ -36,26 +38,45 @@ namespace RealmOfAshes.EditorTools
         private static void Run()
         {
             GameObject host = null;
+            GameObject activityHost = null;
             try
             {
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Movement,
-                        true, false, false, false) == RoaFirstRunCoach.CoachStep.Interaction,
+                        true, false, false, false, false, false)
+                        == RoaFirstRunCoach.CoachStep.Interaction,
                         "movement does not advance the coach");
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Interaction,
-                        false, true, false, false) == RoaFirstRunCoach.CoachStep.Activity,
+                        false, true, false, false, false, false)
+                        == RoaFirstRunCoach.CoachStep.Activity,
                         "a real interaction does not advance the coach");
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Interaction,
-                        false, false, true, false) == RoaFirstRunCoach.CoachStep.Activity,
+                        false, false, true, false, false, false)
+                        == RoaFirstRunCoach.CoachStep.Activity,
                         "reaching the global map can trap the interaction step");
                 Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Activity,
-                        false, false, false, true) == RoaFirstRunCoach.CoachStep.Complete,
-                        "starting an activity does not complete onboarding");
+                        false, false, false, true, false, false)
+                        == RoaFirstRunCoach.CoachStep.Mission,
+                        "starting an activity must hand guidance to the mission HUD");
+                Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Mission,
+                        false, false, false, false, true, false)
+                        == RoaFirstRunCoach.CoachStep.Complete,
+                        "a matching successful result does not complete onboarding");
+                Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Mission,
+                        false, false, false, false, false, true)
+                        == RoaFirstRunCoach.CoachStep.Activity,
+                        "a failed result does not return onboarding to activity selection");
+                Require(RoaFirstRunCoach.ResolveStep(RoaFirstRunCoach.CoachStep.Mission,
+                        false, false, true, false, false, false)
+                        == RoaFirstRunCoach.CoachStep.Activity,
+                        "an abandoned mission traps onboarding");
                 Require(RoaFirstRunCoach.InstructionFor(RoaFirstRunCoach.CoachStep.Movement,
                         false, false).Contains("WASD"), "desktop movement copy is missing");
                 Require(RoaFirstRunCoach.InstructionFor(RoaFirstRunCoach.CoachStep.Movement,
                         true, false).Contains("Левый палец"), "mobile movement copy is missing");
                 Require(RoaFirstRunCoach.InstructionFor(RoaFirstRunCoach.CoachStep.Activity,
                         false, true).Contains("ВЗЯТЬ И ЕХАТЬ"), "global-map action is unclear");
+                Require(RoaFirstRunCoach.InstructionFor(RoaFirstRunCoach.CoachStep.Mission,
+                        false, false).Contains("ЭВАКУАЦИЯ"), "mission extraction guidance is missing");
 
                 host = new GameObject("FirstRunCoachProbe");
                 RoaFirstRunCoach coach = host.AddComponent<RoaFirstRunCoach>();
@@ -72,8 +93,34 @@ namespace RealmOfAshes.EditorTools
                             "coach blocks gameplay input outside the skip button: " + graphic.name);
                 }
                 Require(raycastGraphics == 1, "coach must expose exactly one clickable graphic");
+                Require(panel.Find("Step4") != null, "full-route coach does not expose four progress steps");
 
-                Debug.Log("[ПЕРВЫЙ ВЫХОД] готово: движение → взаимодействие → живая карта → активность");
+                activityHost = new GameObject("FirstRunActivityResultProbe");
+                RoaWorldActivityCanvas activity = activityHost.AddComponent<RoaWorldActivityCanvas>();
+                MethodInfo handleResult = typeof(RoaWorldActivityCanvas).GetMethod(
+                    "HandleAuthoritativeSelf", BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(handleResult != null, "authoritative activity result handler is missing");
+                handleResult.Invoke(activity, new object[]
+                {
+                    new JObject
+                    {
+                        ["lastWorldActivityResult"] = new JObject
+                        {
+                            ["id"] = "activity_test:completed:paid",
+                            ["taskId"] = "activity_test",
+                            ["title"] = "Проверочная вылазка",
+                            ["status"] = "completed",
+                            ["grade"] = "completed",
+                            ["rewardClaimed"] = true,
+                            ["reward"] = new JObject { ["xp"] = 25, ["caps"] = 10 }
+                        }
+                    }
+                });
+                Require(activity.LastResultTaskId == "activity_test"
+                        && activity.LastResultSucceeded && activity.LastResultRewardClaimed,
+                    "coach cannot observe the matching authoritative paid result");
+
+                Debug.Log("[ПЕРВЫЙ ВЫХОД] готово: движение → взаимодействие → живая карта → активность → результат");
             }
             catch (Exception error)
             {
@@ -81,6 +128,7 @@ namespace RealmOfAshes.EditorTools
             }
             finally
             {
+                if (activityHost != null) UnityEngine.Object.DestroyImmediate(activityHost);
                 if (host != null) UnityEngine.Object.DestroyImmediate(host);
             }
         }

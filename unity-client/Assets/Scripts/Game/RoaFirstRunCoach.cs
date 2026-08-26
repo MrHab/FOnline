@@ -6,7 +6,7 @@ namespace RealmOfAshes.Game
     [DisallowMultipleComponent]
     public sealed class RoaFirstRunCoach : MonoBehaviour
     {
-        public enum CoachStep { Movement, Interaction, Activity, Complete }
+        public enum CoachStep { Movement, Interaction, Activity, Mission, Complete }
 
         private const string PrefsKey = "roa.firstRunCoach.v1";
         private static readonly Color Panel = new Color(0.035f, 0.050f, 0.039f, 0.96f);
@@ -23,7 +23,7 @@ namespace RealmOfAshes.Game
         private RectTransform _panel;
         private Text _kicker;
         private Text _instruction;
-        private readonly Image[] _progress = new Image[3];
+        private readonly Image[] _progress = new Image[4];
         private CoachStep _step;
         private Vector3 _lastPlayerPosition;
         private float _movementMeters;
@@ -31,6 +31,8 @@ namespace RealmOfAshes.Game
         private Rect _lastSafeArea;
         private bool _lastMobile;
         private bool _skipped;
+        private string _trackedActivityTaskId = string.Empty;
+        private string _consumedResultId = string.Empty;
 
         public CoachStep CurrentStep { get { return _step; } }
         public bool IsVisible { get { return _canvas != null && _canvas.gameObject.activeSelf; } }
@@ -40,6 +42,21 @@ namespace RealmOfAshes.Game
         {
             Bootstrap = bootstrap;
             if (_canvas == null) Build();
+            if (string.IsNullOrEmpty(_consumedResultId))
+                _consumedResultId = bootstrap?.WorldActivityCanvas?.LastResultId ?? string.Empty;
+        }
+
+        public void Restart()
+        {
+            _skipped = false;
+            _step = CoachStep.Movement;
+            _movementMeters = 0f;
+            _hasPlayerPosition = false;
+            _trackedActivityTaskId = string.Empty;
+            _consumedResultId = Bootstrap?.WorldActivityCanvas?.LastResultId ?? string.Empty;
+            PlayerPrefs.DeleteKey(PrefsKey);
+            PlayerPrefs.Save();
+            RefreshCopy();
         }
 
         private void Awake()
@@ -60,10 +77,25 @@ namespace RealmOfAshes.Game
 
             TrackMovement();
             bool interacted = Bootstrap.Interaction != null && Bootstrap.Interaction.IsPanelOpen;
-            bool activityActive = Bootstrap.WorldActivityCanvas != null
-                && Bootstrap.WorldActivityCanvas.HasActiveActivity;
+            RoaWorldActivityCanvas activity = Bootstrap.WorldActivityCanvas;
+            bool activityActive = activity != null && activity.IsActivityRunning;
+            string activeTaskId = activity?.CurrentActivityTaskId ?? string.Empty;
+            if (activityActive && !string.IsNullOrEmpty(activeTaskId)
+                && (_step != CoachStep.Mission || string.IsNullOrEmpty(_trackedActivityTaskId)))
+                _trackedActivityTaskId = activeTaskId;
+            bool matchingResult = activity != null && !string.IsNullOrEmpty(_trackedActivityTaskId)
+                && string.Equals(activity.LastResultTaskId, _trackedActivityTaskId,
+                    System.StringComparison.Ordinal)
+                && !string.IsNullOrEmpty(activity.LastResultId)
+                && !string.Equals(activity.LastResultId, _consumedResultId,
+                    System.StringComparison.Ordinal);
+            bool activitySucceeded = matchingResult && activity.LastResultSucceeded;
+            bool activityFailed = matchingResult && !activity.LastResultSucceeded;
             CoachStep next = ResolveStep(_step, _movementMeters >= 1.5f, interacted,
-                                         Bootstrap.OnGlobalMap, activityActive);
+                                         Bootstrap.OnGlobalMap, activityActive,
+                                         activitySucceeded, activityFailed);
+            if (matchingResult) _consumedResultId = activity.LastResultId;
+            if (activityFailed) _trackedActivityTaskId = string.Empty;
             if (next == CoachStep.Complete)
             {
                 PlayerPrefs.SetInt(PrefsKey, 1);
@@ -78,7 +110,8 @@ namespace RealmOfAshes.Game
             }
 
             UpdateSafeArea();
-            bool visible = !RoaGameBootstrap.BlocksWorldHud;
+            bool visible = !RoaGameBootstrap.BlocksWorldHud
+                && !(_step == CoachStep.Mission && activityActive);
             _canvas.gameObject.SetActive(visible);
             if (visible) RefreshCopy();
         }
@@ -104,9 +137,13 @@ namespace RealmOfAshes.Game
         }
 
         public static CoachStep ResolveStep(CoachStep current, bool moved, bool interacted,
-                                            bool onGlobalMap, bool activityActive)
+                                            bool onGlobalMap, bool activityActive,
+                                            bool activitySucceeded, bool activityFailed)
         {
-            if (activityActive) return CoachStep.Complete;
+            if (activitySucceeded) return CoachStep.Complete;
+            if (activityFailed) return CoachStep.Activity;
+            if (activityActive) return CoachStep.Mission;
+            if (current == CoachStep.Mission && onGlobalMap) return CoachStep.Activity;
             if (onGlobalMap && (int)current < (int)CoachStep.Activity) return CoachStep.Activity;
             if (current == CoachStep.Movement && moved) return CoachStep.Interaction;
             if (current == CoachStep.Interaction && interacted) return CoachStep.Activity;
@@ -127,15 +164,17 @@ namespace RealmOfAshes.Game
                 return "Выберите карточку события и нажмите «ВЗЯТЬ И ЕХАТЬ».";
             if (step == CoachStep.Activity)
                 return "Дойдите до края локации: переход на живую карту произойдёт автоматически.";
-            return "Маршрут освоен. Все клавиши и жесты всегда доступны по F1.";
+            if (step == CoachStep.Mission)
+                return "Выполните выделенные цели. Когда появится «ЭВАКУАЦИЯ», доберитесь до неё и подтвердите выход.";
+            return "Первая вылазка завершена. Результат и награда показаны в карточке.";
         }
 
         private void RefreshCopy()
         {
             if (_kicker == null || _instruction == null) return;
             bool mobile = Application.isMobilePlatform;
-            int number = Mathf.Clamp((int)_step + 1, 1, 3);
-            _kicker.text = "ПЕРВЫЙ ВЫХОД   " + number + "/3";
+            int number = Mathf.Clamp((int)_step + 1, 1, 4);
+            _kicker.text = "ПЕРВЫЙ ВЫХОД   " + number + "/4";
             _instruction.text = InstructionFor(_step, mobile, Bootstrap != null && Bootstrap.OnGlobalMap);
             for (int i = 0; i < _progress.Length; i++)
                 _progress[i].color = i < (int)_step ? Done : i == (int)_step

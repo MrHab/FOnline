@@ -104,6 +104,19 @@ namespace RealmOfAshes.Game
 
         public bool IsOpen { get { return _root != null && _root.activeSelf; } }
         public bool HasActiveActivity { get { return _activity != null; } }
+        public bool IsActivityRunning
+        {
+            get
+            {
+                string status = _activity?["status"]?.ToString() ?? string.Empty;
+                return status == "active" || status == "extracting";
+            }
+        }
+        public string CurrentActivityTaskId { get { return _activity?["taskId"]?.ToString() ?? string.Empty; } }
+        public string LastResultId { get { return _resultKey; } }
+        public string LastResultTaskId { get; private set; } = string.Empty;
+        public bool LastResultSucceeded { get; private set; }
+        public bool LastResultRewardClaimed { get; private set; }
         public int ActiveObjectiveRowCount { get; private set; }
         public int ObjectiveRowPoolSize { get { return _objectiveSlots.Count; } }
 
@@ -184,6 +197,9 @@ namespace RealmOfAshes.Game
             string grade = result["grade"]?.ToString() ?? "failed";
             bool success = status == "completed";
             bool claimed = result["rewardClaimed"]?.ToObject<bool>() == true;
+            LastResultTaskId = result["taskId"]?.ToString() ?? string.Empty;
+            LastResultSucceeded = success;
+            LastResultRewardClaimed = claimed;
             _pendingResultCue = RoaActivityFeedback.ClassifyResult(result);
             _resultTitle.text = success
                 ? claimed ? "АКТИВНОСТЬ ЗАВЕРШЕНА" : "ЦЕЛЬ ВЫПОЛНЕНА"

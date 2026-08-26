@@ -262,7 +262,7 @@ namespace RealmOfAshes.Game
             PanelTitle(panel, "Обучение", () => Bootstrap.MenuOpenTutorial(false));
 
             RectTransform scrollArea = Child("Scroll", panel);
-            Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 30f), new Vector2(-14f, -48f));
+            Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 38f), new Vector2(-14f, -48f));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
             scrollArea.gameObject.AddComponent<RectMask2D>();
@@ -285,7 +285,8 @@ namespace RealmOfAshes.Game
                 new[] { "Взаимодействие", "Короткое E открывает разговор, торговлю, хранилище, контейнер, ресурс, станок, доску работ или переход между локациями. Удержание E открывает круг быстрых слотов; клавиши 1–8 используют слот сразу." },
                 new[] { "Инвентарь", "Tab — сумка, P или B — PIP-ASH, M — карта локации. В сумке вкладки категорий и сортировка; кнопка «быстро» назначает предмет в быстрый слот." },
                 new[] { "HUD", "В меню ⚙ включите «Редактировать HUD» и перетащите золотые рамки; «Сбросить HUD» возвращает раскладку." },
-                new[] { "Глобальная карта", "G у границы локации — выход на глобальную карту. Выберите точку и подтвердите маршрут: время, встречи, состав группы, отмену и прибытие ведёт сервер." }
+                new[] { "Глобальная карта", "G у границы локации — выход на глобальную карту. Выберите точку и подтвердите маршрут: время, встречи, состав группы, отмену и прибытие ведёт сервер." },
+                new[] { "Активности", "В центре событий выберите карточку и нажмите «ВЗЯТЬ И ЕХАТЬ». В локации следуйте золотым целям; после основной задачи доберитесь до зелёной «ЭВАКУАЦИИ». Результат и начисленную награду подтверждает сервер." }
             };
             foreach (string[] section in sections)
             {
@@ -300,7 +301,11 @@ namespace RealmOfAshes.Game
 
             Text hint = Label("Hint", panel, 10, TextAnchor.MiddleLeft, NoteInk);
             hint.text = "F1 / Esc — закрыть";
-            Place(hint.rectTransform, 0f, 0f, 1f, 0f, new Vector2(14f, 6f), new Vector2(-14f, 26f));
+            Place(hint.rectTransform, 0f, 0f, 1f, 0f, new Vector2(14f, 6f), new Vector2(-202f, 30f));
+            Button restartCoach = UiButton("RestartFirstRunCoach", panel, "Повторить первый выход", 10,
+                () => Bootstrap.MenuRestartFirstRunCoach());
+            Place((RectTransform)restartCoach.transform, 1f, 0f, 1f, 0f,
+                new Vector2(-194f, 6f), new Vector2(-14f, 30f));
         }
 
         /// <summary>Тулбар редактирования HUD внизу экрана.</summary>

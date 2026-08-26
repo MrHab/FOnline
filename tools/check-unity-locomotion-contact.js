@@ -13,8 +13,10 @@ const resolver = read(game, 'RoaLocomotionPresentation.cs');
 const controller = read(game, 'RoaPlayerController.cs');
 const character = read(game, 'RoaCharacterView.cs');
 const pose = read(game, 'RoaCharacterPose.cs');
+const grip = read(game, 'RoaWeaponGrip.cs');
 const audio = read(game, 'RoaAudio.cs');
 const probe = read(editor, 'RoaLocomotionContactProbe.cs');
+const previewProbe = read(editor, 'RoaCharacterPreviewProbe.cs');
 const runner = read(editor, 'RoaClientAuditRunner.cs');
 
 assert(resolver.includes('public static float ContactPressure')
@@ -43,6 +45,15 @@ assert(pose.includes('public float ContactPressure')
   && pose.includes('float contactForward = _contactForward * _contactPressure;')
   && pose.includes('contactSide * 0.026f'),
   'Procedural pose lost contact compression or directional body response');
+assert(grip.includes('if (!fingersOnly && IsGripTorsoBone(entry.Key)) continue;')
+  && grip.includes('boneName == "spine_01"')
+  && grip.includes('boneName == "spine_03"'),
+  'Firearm grip must preserve locomotion, contact and hit-reaction ownership of the spine');
+assert(previewProbe.includes('await loaded.EquipWeapon(BaseUrl, "assaultRifle")')
+  && previewProbe.includes('runtimeLateUpdate.Invoke(loaded, null);')
+  && previewProbe.includes('оружейный хват стёр реакцию позвоночника на попадание')
+  && previewProbe.includes('weapon.SupportHandSolved'),
+  'Real-GLB probe no longer verifies armed hit reaction through the complete weapon IK frame');
 assert(audio.includes('bool grounded, bool crouching, bool moving)')
   && audio.includes('_locomotionActive = moving;')
   && audio.includes('!_locomotionActive || !_grounded'),

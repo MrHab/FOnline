@@ -128,47 +128,89 @@ namespace RealmOfAshes.EditorTools
                     Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] кадр: " + capturePath);
                 }
 
+                FieldInfo reactionField = typeof(RoaCharacterView).GetField("_hitReaction",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                RoaHitReaction reaction = reactionField?.GetValue(loaded) as RoaHitReaction;
+                Check(reaction != null && reaction.Ready,
+                    "направленная реакция не привязана к настоящему GLB");
+                FieldInfo spineField = typeof(RoaHitReaction).GetField("_spine02",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Transform hitSpine = spineField?.GetValue(reaction) as Transform;
+                Check(hitSpine != null, "реакция не нашла spine_02 настоящего GLB");
+                bool skinnedBone = false;
+                foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    renderer.updateWhenOffscreen = true;
+                    renderer.forceMatrixRecalculationPerRender = true;
+                    foreach (Transform bone in renderer.bones)
+                        if (bone == hitSpine) skinnedBone = true;
+                }
+                Check(skinnedBone, "spine_02 реакции не входит в skinned mesh");
+
+                // The armed path is deliberate: the old full-body grip wrote spine_01..03
+                // after the hit layer and erased the impact while both hands still looked valid.
+                await loaded.EquipWeapon(BaseUrl, "assaultRifle");
+                foreach (Transform node in loaded.GetComponentsInChildren<Transform>(true))
+                    node.gameObject.layer = RoaCharacterPreview.PreviewLayer;
+                Check(loaded.WeaponReady && loaded.WeaponId == "assaultRifle",
+                    "автомат не загрузился на настоящего персонажа");
+                loaded.transform.localRotation = Quaternion.identity;
+                Vector3 aimPoint = loaded.transform.position + loaded.transform.forward * 8f;
+                aimPoint.y = loaded.AimPlaneY;
+                loaded.SetAim(aimPoint, true);
+                loaded.UpdateLocomotion(Vector3.zero, 0f, false, false);
+                MethodInfo runtimeLateUpdate = typeof(RoaCharacterView).GetMethod("LateUpdate",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Check(runtimeLateUpdate != null, "runtime LateUpdate персонажа недоступен");
+                runtimeLateUpdate.Invoke(loaded, null);
+                FieldInfo weaponField = typeof(RoaCharacterView).GetField("_weapon",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                RoaWeaponView weapon = weaponField?.GetValue(loaded) as RoaWeaponView;
+                Check(weapon != null && weapon.SupportHandSolved,
+                    "оружейный IK не посадил левую руку на цевьё");
+                Check(loaded.TryGetMuzzle(out Vector3 muzzle)
+                        && Vector3.Distance(muzzle, loaded.transform.position) > 0.45f,
+                    "дуло автомата осталось внутри корпуса");
+
+                Quaternion beforeHit = hitSpine.localRotation;
+                loaded.PlayHit(loaded.transform.position + loaded.transform.right * 3f, 46, true);
+                reaction.Apply(RoaHitReaction.ImpactSeconds);
+                float appliedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
+                Check(loaded.HitReactionActive && loaded.HitReactionDirection.x > 0.98f,
+                    "настоящий персонаж не отреагировал на удар справа");
+                Check(appliedAngle > 3f, "поза настоящего GLB не получила заметный импульс");
+
+                // Re-sample the authored frame, then execute the same complete LateUpdate
+                // order as gameplay. The impact must survive the subsequent weapon layer.
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
+                float retainedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
+                Check(retainedAngle > 3f,
+                    "оружейный хват стёр реакцию позвоночника на попадание");
+                Check(weapon.SupportHandSolved,
+                    "левая рука потеряла цевьё после реакции на попадание");
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] вооружённая реакция spine_02: "
+                    + appliedAngle.ToString("0.0") + "° → " + retainedAngle.ToString("0.0")
+                    + "°, muzzle=" + muzzle.ToString("F2"));
+
                 string hitCapturePath = Environment.GetEnvironmentVariable("ROA_UNITY_HIT_CAPTURE");
                 if (!string.IsNullOrWhiteSpace(hitCapturePath))
                 {
-                    FieldInfo field = typeof(RoaCharacterView).GetField("_hitReaction",
-                        BindingFlags.Instance | BindingFlags.NonPublic);
-                    RoaHitReaction reaction = field?.GetValue(loaded) as RoaHitReaction;
-                    Check(reaction != null && reaction.Ready,
-                        "направленная реакция не привязана к настоящему GLB");
-                    FieldInfo spineField = typeof(RoaHitReaction).GetField("_spine02",
-                        BindingFlags.Instance | BindingFlags.NonPublic);
-                    Transform hitSpine = spineField?.GetValue(reaction) as Transform;
-                    Check(hitSpine != null, "реакция не нашла spine_02 настоящего GLB");
-                    bool skinnedBone = false;
-                    foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                    {
-                        renderer.updateWhenOffscreen = true;
-                        renderer.forceMatrixRecalculationPerRender = true;
-                        foreach (Transform bone in renderer.bones)
-                            if (bone == hitSpine) skinnedBone = true;
-                    }
-                    Check(skinnedBone, "spine_02 реакции не входит в skinned mesh");
-                    Quaternion beforeHit = hitSpine.localRotation;
-                    loaded.PlayHit(loaded.transform.position + loaded.transform.right * 3f, 46, true);
-                    reaction.Apply(RoaHitReaction.ImpactSeconds);
-                    float appliedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
-                    Check(loaded.HitReactionActive && loaded.HitReactionDirection.x > 0.98f,
-                        "настоящий персонаж не отреагировал на удар справа");
-                    Check(appliedAngle > 3f, "поза настоящего GLB не получила заметный импульс");
-                    Check(preview.RenderNow(), "камера не приняла позу попадания");
+                    Check(preview.RenderNow(), "камера не приняла вооружённую позу попадания");
                     Check(preview.RenderNow(), "камера не отрисовала прогретую позу попадания");
-                    float retainedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
-                    Check(retainedAngle > 3f, "render-submit сбросил позу попадания");
-                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] угол реакции spine_02: "
-                        + appliedAngle.ToString("0.0") + "° → " + retainedAngle.ToString("0.0") + "°");
                     RenderTexture.active = preview.Texture;
                     readback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
                     readback.Apply(false, false);
                     System.IO.File.WriteAllBytes(hitCapturePath, readback.EncodeToPNG());
-                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] реакция на урон: " + hitCapturePath);
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] вооружённая реакция на урон: "
+                        + hitCapturePath);
                 }
 
+                reaction.Reset();
+                animation.Play("idle");
+                idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
                 string deathCapturePath = Environment.GetEnvironmentVariable("ROA_UNITY_DEATH_CAPTURE");
                 if (!string.IsNullOrWhiteSpace(deathCapturePath))
                 {

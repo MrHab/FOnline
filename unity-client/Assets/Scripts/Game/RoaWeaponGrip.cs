@@ -220,7 +220,10 @@ namespace RealmOfAshes.Game
             Debug.Log("[ROA] Поза хвата загружена: " + pose.Count + " костей.");
         }
 
-        /// <summary>Записать позу на кости персонажа. Вызывать каждый кадр после анимации.</summary>
+        /// <summary>
+        /// Записать оружейную позу рук и пальцев после клипа, сохранив уже
+        /// рассчитанные движение, упор и реакцию на попадание позвоночника.
+        /// </summary>
         public static void ApplyTo(Dictionary<string, Transform> bones)
         {
             Write(bones, false);
@@ -243,6 +246,7 @@ namespace RealmOfAshes.Game
             foreach (KeyValuePair<string, BonePose> entry in Pose)
             {
                 if (fingersOnly && !IsFinger(entry.Key)) continue;
+                if (!fingersOnly && IsGripTorsoBone(entry.Key)) continue;
 
                 Transform bone;
                 if (!bones.TryGetValue(entry.Key, out bone) || bone == null) continue;
@@ -250,6 +254,13 @@ namespace RealmOfAshes.Game
                 bone.localRotation = entry.Value.Rotation;
                 if (entry.Value.HasPosition) bone.localPosition = entry.Value.Position;
             }
+        }
+
+        private static bool IsGripTorsoBone(string boneName)
+        {
+            return boneName == "spine_01"
+                || boneName == "spine_02"
+                || boneName == "spine_03";
         }
 
         /// <summary>Имена вида index_01_l, thumb_03_r и т.д. approvedGripBoneIsFinger(), 04d:1630.</summary>

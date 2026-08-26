@@ -41,11 +41,12 @@ namespace RealmOfAshes.EditorTools
 
                 VerifyIndependentTouchZones(1920, 1080);
                 VerifyIndependentTouchZones(896, 414);
+                VerifyCanvasLayoutAndInput();
 
                 Debug.Log("[МОБИЛЬНОЕ УПРАВЛЕНИЕ] готово: stick="
                     + diagonal.x.ToString("0.00") + ":" + diagonal.y.ToString("0.00")
                     + ", fire=" + fire.width.ToString("0") + "px, compact="
-                    + compactFire.width.ToString("0") + "px, multitouch-zones=independent");
+                    + compactFire.width.ToString("0") + "px, multitouch-zones=independent, canvas=safe/held/states");
             }
             catch (Exception error)
             {
@@ -61,6 +62,111 @@ namespace RealmOfAshes.EditorTools
         private static bool Near(float a, float b)
         {
             return Mathf.Abs(a - b) < 0.0001f;
+        }
+
+        private static void VerifyCanvasLayoutAndInput()
+        {
+            const int width = 896;
+            const int height = 414;
+            Rect safe = new Rect(24f, 12f, 848f, 390f);
+            RoaMobileControlsCanvas.Layout layout =
+                RoaMobileControlsCanvas.CalculateLayout(width, height, safe);
+            Vector2 railGui = new Vector2(layout.Map.center.x, height - layout.Map.center.y);
+            Require(!RoaMobileControls.IsJoystickStart(railGui, width, height, safe),
+                    "left shortcut rail can no longer steal the floating joystick finger");
+            var rects = new[]
+            {
+                layout.Inventory, layout.Map, layout.Pipboy, layout.Menu,
+                layout.Fire, layout.Interact, layout.Target, layout.Crouch,
+                layout.Reload, layout.Mode, layout.Player
+            };
+            for (int i = 0; i < rects.Length; i++)
+            {
+                Require(Contains(layout.SafeArea, rects[i]),
+                        "mobile Canvas control leaves the device safe area");
+                for (int j = 0; j < i; j++)
+                    Require(!rects[i].Overlaps(rects[j]),
+                            "mobile Canvas controls overlap on compact landscape");
+            }
+
+            var root = new GameObject("Mobile Canvas probe");
+            try
+            {
+                RoaMobileControls controls = root.AddComponent<RoaMobileControls>();
+                controls.ForceVisible = true;
+                controls.CanvasDriven = true;
+                int menuRequests = 0;
+                controls.MenuRequested = () => menuRequests++;
+                RoaMobileControlsCanvas canvas = root.AddComponent<RoaMobileControlsCanvas>();
+                canvas.Configure(controls);
+                var state = new RoaMobileControlsCanvas.Presentation
+                {
+                    Visible = true,
+                    TargetSelected = true,
+                    Crouching = true,
+                    FireMode = "Одиночный",
+                    JoystickActive = true,
+                    JoystickBase = new Vector2(220f, 108f),
+                    JoystickPoint = new Vector2(258f, 132f),
+                    JoystickRadius = 54f
+                };
+                canvas.PresentNow(state, width, height, safe);
+                Require(canvas.CanvasReady && canvas.InputReady
+                        && canvas.ButtonCount == 11 && canvas.ActiveButtonCount == 11
+                        && canvas.GameplayButtonsVisible && canvas.JoystickVisible,
+                        "mobile uGUI Canvas, touch targets or joystick visual is incomplete");
+                Require(canvas.ButtonLabel("Target") == "ЦЕЛЬ ✓"
+                        && canvas.ButtonLabel("Crouch") == "ВСТАТЬ"
+                        && canvas.ButtonLabel("Mode") == "ОДИНОЧНЫЙ",
+                        "mobile Canvas does not reflect live target, stance or fire mode");
+                Require(canvas.TryGetButtonScreenRect("Fire", out Rect fireRect)
+                        && RectNear(fireRect, layout.Fire),
+                        "mobile Canvas fire visual differs from its touch layout");
+                Require(canvas.SimulatePressForProbe("Fire", true)
+                        && controls.FireHeldForCanvas,
+                        "mobile Canvas pointer-down does not start held fire");
+                Require(canvas.SimulatePressForProbe("Fire", false)
+                        && !controls.FireHeldForCanvas,
+                        "mobile Canvas pointer-up does not stop held fire");
+                Require(canvas.SimulateClickForProbe("Menu") && menuRequests == 1,
+                        "mobile Canvas menu button is not connected to gameplay control");
+
+                state.InputSuppressed = true;
+                state.JoystickActive = true;
+                canvas.PresentNow(state, width, height, safe);
+                Require(canvas.ActiveButtonCount == 1 && !canvas.GameplayButtonsVisible
+                        && !canvas.JoystickVisible && canvas.ButtonLabel("Menu") == "ЗАКРЫТЬ",
+                        "suppressed mobile input does not collapse to one clear close action");
+
+                state.InputSuppressed = false;
+                state.PanelOpen = true;
+                canvas.PresentNow(state, width, height, safe);
+                Require(canvas.ActiveButtonCount == 4 && !canvas.GameplayButtonsVisible,
+                        "mobile panel state does not hide conflicting gameplay controls");
+
+                controls.SetFireHeld(true);
+                state.Visible = false;
+                canvas.PresentNow(state, width, height, safe);
+                Require(!canvas.Visible && !controls.FireHeldForCanvas,
+                        "hidden mobile Canvas leaves held fire latched");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static bool Contains(Rect outer, Rect inner)
+        {
+            const float epsilon = 0.01f;
+            return inner.xMin >= outer.xMin - epsilon && inner.yMin >= outer.yMin - epsilon
+                && inner.xMax <= outer.xMax + epsilon && inner.yMax <= outer.yMax + epsilon;
+        }
+
+        private static bool RectNear(Rect a, Rect b)
+        {
+            return Near(a.x, b.x) && Near(a.y, b.y)
+                && Near(a.width, b.width) && Near(a.height, b.height);
         }
 
         private static void VerifyIndependentTouchZones(int width, int height)

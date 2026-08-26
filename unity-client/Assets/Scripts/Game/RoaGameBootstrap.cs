@@ -293,6 +293,10 @@ namespace RealmOfAshes.Game
             if (_automationForceMobile) MobileControls.ForceVisible = true;
             MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GlobalMap, GroundItems);
             MobileControls.MenuRequested = ToggleGameMenu;
+            var mobileCanvas = GetComponent<RoaMobileControlsCanvas>();
+            if (mobileCanvas == null) mobileCanvas = gameObject.AddComponent<RoaMobileControlsCanvas>();
+            mobileCanvas.Configure(MobileControls);
+            MobileControls.CanvasDriven = true;
 
             if (Quickbar == null) Quickbar = GetComponent<RoaQuickbar>();
             if (Quickbar == null) Quickbar = gameObject.AddComponent<RoaQuickbar>();

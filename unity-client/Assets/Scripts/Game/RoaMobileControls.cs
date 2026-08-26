@@ -34,6 +34,7 @@ namespace RealmOfAshes.Game
         private Vector2 _joystickPoint;
         private float _joystickRadius = 54f;
         private bool _crouching;
+        private bool _fireHeld;
         private bool _lastEnabled;
         private float _targetRefreshAt;
 
@@ -52,8 +53,23 @@ namespace RealmOfAshes.Game
         private Texture2D _playerIcon;
 
         public bool ControlsEnabled { get { return Application.isMobilePlatform || ForceVisible; } }
+        public bool CanvasDriven { get; set; }
         public bool JoystickActive { get { return _joystickFinger >= 0; } }
         public string SelectedTargetId { get { return _selectedId; } }
+        public bool PlayerReady
+        {
+            get { return _player != null && _player.gameObject.activeInHierarchy; }
+        }
+        public bool PanelOpen { get { return IsPanelOpen(); } }
+        public bool PipboyOpen { get { return _pipboy != null && _pipboy.IsOpen; } }
+        public bool InventoryOpen { get { return _inventory != null && _inventory.IsOpen; } }
+        public bool TargetSelected { get { return !string.IsNullOrEmpty(_selectedId); } }
+        public bool Crouching { get { return _crouching; } }
+        public string CurrentFireMode
+        {
+            get { return _combat != null ? _combat.FireMode : "Режим"; }
+        }
+        public bool FireHeldForCanvas { get { return _fireHeld; } }
 
         public void Configure(RoaCombat combat, RoaInteraction interaction, RoaInventory inventory,
                               RoaPipboy pipboy, RoaEnemies enemies, RoaGlobalMap globalMap,
@@ -80,6 +96,7 @@ namespace RealmOfAshes.Game
             _player = player;
             ResetJoystick();
             _crouching = false;
+            _fireHeld = false;
             if (_player != null) _player.SetVirtualCrouch(false);
             _selectedId = string.Empty;
             _combat?.ClearMobileAimTarget();
@@ -90,6 +107,7 @@ namespace RealmOfAshes.Game
         {
             ResetJoystick();
             _crouching = false;
+            _fireHeld = false;
             if (_player != null) _player.SetVirtualCrouch(false);
             _selectedId = string.Empty;
             _targets.Clear();
@@ -114,6 +132,7 @@ namespace RealmOfAshes.Game
             if (!ControlsEnabled || InputSuppressed || _player == null || !_player.gameObject.activeInHierarchy)
             {
                 if (_joystickFinger >= 0) ResetJoystick();
+                SetFireHeld(false);
                 _combat?.ClearMobileAimTarget();
                 return;
             }
@@ -128,11 +147,13 @@ namespace RealmOfAshes.Game
             if (panelOpen)
             {
                 if (_joystickFinger >= 0) ResetJoystick();
+                SetFireHeld(false);
             }
             else
             {
                 ReadJoystickTouches();
-                if (TouchHeld(FireRect(Screen.width, Screen.height))) Fire();
+                if (_fireHeld || (!CanvasDriven && TouchHeld(FireRect(Screen.width, Screen.height))))
+                    Fire();
             }
 
             UpdateTargetRing(panelOpen);
@@ -173,7 +194,7 @@ namespace RealmOfAshes.Game
                 }
 
                 if (_joystickFinger < 0 && touch.phase == TouchPhase.Began
-                    && IsJoystickStart(gui, Screen.width, Screen.height))
+                    && IsJoystickStart(gui, Screen.width, Screen.height, Screen.safeArea))
                 {
                     _joystickFinger = touch.fingerId;
                     _joystickRadius = Mathf.Clamp(Mathf.Min(Screen.width, Screen.height) * 0.09f, 42f, 68f);
@@ -279,6 +300,7 @@ namespace RealmOfAshes.Game
         }
         private void OnGUI()
         {
+            if (CanvasDriven) return;
             RoaUiTheme.Apply();
             if (!ControlsEnabled || _player == null || !_player.gameObject.activeInHierarchy) return;
             // PIP-Boy owns the whole landscape viewport and has its own close
@@ -293,22 +315,13 @@ namespace RealmOfAshes.Game
             Rect pip = new Rect(12f, 24f + railSize * 2f, railSize, railSize);
             Rect menu = new Rect(12f, 30f + railSize * 3f, railSize, railSize);
             if (IconButton(menu, InputSuppressed ? "Закрыть" : "Меню", _menuIcon))
-                MenuRequested?.Invoke();
+                TriggerMenu();
             if (InputSuppressed) return;
             if (IconButton(inventory, _inventory != null && _inventory.IsOpen ? "Закрыть" : "Сумка",
-                           _inventoryIcon))
-            {
-                if (_pipboy != null && _pipboy.IsOpen) _pipboy.Toggle();
-                _inventory?.Toggle();
-            }
+                           _inventoryIcon)) TriggerInventory();
             if (IconButton(pip, _pipboy != null && _pipboy.IsOpen ? "Закрыть" : "Пип-бой",
-                           _pipboyIcon))
-            {
-                if (_inventory != null && _inventory.IsOpen) _inventory.Toggle();
-                _pipboy?.Toggle();
-            }
-            if (IconButton(map, "Карта", _mapIcon) && !IsPanelOpen())
-                _globalMap?.RequestEnterFromLocation();
+                           _pipboyIcon)) TriggerPipboy();
+            if (IconButton(map, "Карта", _mapIcon)) TriggerMap();
 
             if (IsPanelOpen()) return;
 
@@ -324,23 +337,89 @@ namespace RealmOfAshes.Game
             Rect player = ActionRect(Screen.width, Screen.height, 6);
             if (IconButton(interact, "Действие", _interactIcon)) TriggerInteract();
             if (IconButton(target, string.IsNullOrEmpty(_selectedId) ? "Цель" : "Цель выбрана",
-                           _targetIcon)) CycleTarget();
+                           _targetIcon)) TriggerTargetCycle();
             if (IconButton(crouch, _crouching ? "Встать" : "Присесть", _crouchIcon))
-            {
-                _crouching = !_crouching;
-                _player.SetVirtualCrouch(_crouching);
-            }
-            if (IconButton(reload, "Перезарядить", _reloadIcon)) _combat?.TriggerReload();
+                TriggerCrouch();
+            if (IconButton(reload, "Перезарядить", _reloadIcon)) TriggerReload();
             if (IconButton(mode, _combat != null ? _combat.FireMode : "Режим", _modeIcon))
-                _combat?.TriggerCycleFireMode();
-            if (IconButton(player, "Игрок", _playerIcon)) _pipboy?.OpenSocial();
+                TriggerFireMode();
+            if (IconButton(player, "Игрок", _playerIcon)) TriggerPlayerPanel();
 
             DrawJoystick();
+        }
+
+        public bool TryGetJoystickVisual(out Vector2 guiBase, out Vector2 guiPoint,
+                                         out float radius)
+        {
+            guiBase = _joystickBase;
+            guiPoint = _joystickPoint;
+            radius = _joystickRadius;
+            return _joystickFinger >= 0;
+        }
+
+        public void SetFireHeld(bool held)
+        {
+            if (_fireHeld == held) return;
+            _fireHeld = held;
+            if (held && ControlsEnabled && !InputSuppressed && !IsPanelOpen()) Fire();
+        }
+
+        public void TriggerMenu()
+        {
+            MenuRequested?.Invoke();
+        }
+
+        public void TriggerInventory()
+        {
+            if (InputSuppressed) return;
+            if (_pipboy != null && _pipboy.IsOpen) _pipboy.Toggle();
+            _inventory?.Toggle();
+        }
+
+        public void TriggerPipboy()
+        {
+            if (InputSuppressed) return;
+            if (_inventory != null && _inventory.IsOpen) _inventory.Toggle();
+            _pipboy?.Toggle();
+        }
+
+        public void TriggerMap()
+        {
+            if (InputSuppressed || IsPanelOpen()) return;
+            _globalMap?.RequestEnterFromLocation();
+        }
+
+        public void TriggerTargetCycle()
+        {
+            if (!InputSuppressed && !IsPanelOpen()) CycleTarget();
+        }
+
+        public void TriggerCrouch()
+        {
+            if (InputSuppressed || IsPanelOpen() || _player == null) return;
+            _crouching = !_crouching;
+            _player.SetVirtualCrouch(_crouching);
+        }
+
+        public void TriggerReload()
+        {
+            if (!InputSuppressed && !IsPanelOpen()) _combat?.TriggerReload();
+        }
+
+        public void TriggerFireMode()
+        {
+            if (!InputSuppressed && !IsPanelOpen()) _combat?.TriggerCycleFireMode();
+        }
+
+        public void TriggerPlayerPanel()
+        {
+            if (!InputSuppressed && !IsPanelOpen()) _pipboy?.OpenSocial();
         }
 
         /// <summary>Uses desktop E priority: an interaction target first, then nearby ground loot.</summary>
         public void TriggerInteract()
         {
+            if (InputSuppressed || IsPanelOpen()) return;
             _interaction?.TriggerInteract();
             if (_interaction == null || !_interaction.BlocksGroundPickup)
                 _groundItems?.RequestPickupNearest();
@@ -430,7 +509,19 @@ namespace RealmOfAshes.Game
 
         public static bool IsJoystickStart(Vector2 guiPoint, int width, int height)
         {
-            return guiPoint.x >= 8f
+            return IsJoystickStart(guiPoint, width, height, new Rect(0f, 0f, width, height));
+        }
+
+        public static bool IsJoystickStart(Vector2 guiPoint, int width, int height, Rect safeArea)
+        {
+            Vector2 screenPoint = new Vector2(guiPoint.x, height - guiPoint.y);
+            RoaMobileControlsCanvas.Layout layout =
+                RoaMobileControlsCanvas.CalculateLayout(width, height, safeArea);
+            if (!layout.SafeArea.Contains(screenPoint)
+                || layout.Inventory.Contains(screenPoint) || layout.Map.Contains(screenPoint)
+                || layout.Pipboy.Contains(screenPoint) || layout.Menu.Contains(screenPoint))
+                return false;
+            return guiPoint.x >= Mathf.Max(8f, safeArea.xMin)
                 && guiPoint.x <= Mathf.Min(width * 0.46f, 380f)
                 && guiPoint.y >= Mathf.Max(80f, height * 0.18f)
                 && guiPoint.y <= height - 18f;

@@ -47,7 +47,7 @@ namespace RealmOfAshes.EditorTools
                     1.75f, RoaCameraRig.DefaultGameplayDistance, RoaCameraRig.GameplayFieldOfView, rig.PitchDeg);
                 float farActorFraction = RoaCameraRig.ProjectedActorScreenFraction(
                     1.75f, RoaCameraRig.MaximumGameplayDistance, RoaCameraRig.GameplayFieldOfView, rig.PitchDeg);
-                Check(defaultActorFraction > 0.07f && farActorFraction > 0.045f
+                Check(defaultActorFraction > 0.085f && farActorFraction > 0.045f
                       && farActorFraction < defaultActorFraction,
                     "персонаж снова стал слишком мелким в локальном кадре");
                 CaptureIfRequested(rig, targetObject.transform);
@@ -177,7 +177,7 @@ namespace RealmOfAshes.EditorTools
                          != RoaGlobalMapCanvas.BuildPartySignature("caravan-1"),
                     "неизменная доска работ пересобирается или обновление списка теряется");
 
-                Debug.Log("[КАМЕРА] готово: zoom=8–21.5, distance=13.5, fov=52, actor>=4.5%, map drag="
+                Debug.Log("[КАМЕРА] готово: zoom=8–21.5, distance=11.5, fov=52, actor>=4.5%, map drag="
                     + movement.x.ToString("0.00") + ":" + movement.z.ToString("0.00")
                     + ", clamp=50:-60, touch=tap/drag/pinch, labels=canvas/activities, route=progress/contact, lists=stable");
             }

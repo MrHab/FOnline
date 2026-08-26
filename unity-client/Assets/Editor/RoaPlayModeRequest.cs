@@ -1,7 +1,9 @@
 #if UNITY_EDITOR
 using System.IO;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -40,6 +42,11 @@ namespace RealmOfAshes.EditorTools
             if (!File.Exists(requestPath)) return;
 
             File.Delete(requestPath);
+            Scene active = SceneManager.GetActiveScene();
+            if (!active.IsValid() || !active.isLoaded
+                || !string.Equals(active.path, "Assets/Scenes/Wasteland.unity",
+                    System.StringComparison.OrdinalIgnoreCase))
+                EditorSceneManager.OpenScene("Assets/Scenes/Wasteland.unity", OpenSceneMode.Single);
             if (!EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorApplication.isPlaying = true;
         }

@@ -320,7 +320,8 @@ const unityGlobalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 const unityGlobalMapCanvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
 const unityCameraProbe = read('unity-client/Assets/Editor/RoaCameraProbe.cs');
 assert(browserCamera.includes("const CAMERA_ZOOM_STORAGE_KEY = 'realm.cameraZoomScale';")
-  && unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDistance.v3";')
+  && unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDistance.v4";')
+  && unityCamera.includes('private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";')
   && unityCamera.includes('private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";')
   && unityCamera.includes('PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);')
   && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud ? 0f'),

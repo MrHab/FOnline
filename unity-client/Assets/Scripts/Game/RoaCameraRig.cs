@@ -10,10 +10,12 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed partial class RoaCameraRig : MonoBehaviour
     {
-        private const string ZoomPrefsKey = "roa.cameraDistance.v3";
+        private const string ZoomPrefsKey = "roa.cameraDistance.v4";
+        private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";
         private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";
+        private const float PreviousDefaultGameplayDistance = 13.5f;
 
-        public const float DefaultGameplayDistance = 13.5f;
+        public const float DefaultGameplayDistance = 11.5f;
         public const float MinimumGameplayDistance = 8f;
         public const float MaximumGameplayDistance = 21.5f;
         public const float GameplayFieldOfView = 52f;
@@ -47,11 +49,16 @@ namespace RealmOfAshes.Game
         private void Awake()
         {
             string key = PlayerPrefs.HasKey(ZoomPrefsKey) ? ZoomPrefsKey
+                : PlayerPrefs.HasKey(PreviousZoomPrefsKey) ? PreviousZoomPrefsKey
                 : PlayerPrefs.HasKey(LegacyZoomPrefsKey) ? LegacyZoomPrefsKey : string.Empty;
             if (!string.IsNullOrEmpty(key))
             {
-                Distance = Mathf.Clamp(PlayerPrefs.GetFloat(key, Distance), MinDistance, MaxDistance);
-                if (key == LegacyZoomPrefsKey)
+                float stored = PlayerPrefs.GetFloat(key, Distance);
+                if (key != ZoomPrefsKey
+                    && Mathf.Abs(stored - PreviousDefaultGameplayDistance) < 0.01f)
+                    stored = DefaultGameplayDistance;
+                Distance = Mathf.Clamp(stored, MinDistance, MaxDistance);
+                if (key != ZoomPrefsKey)
                 {
                     PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);
                     PlayerPrefs.Save();

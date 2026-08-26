@@ -19,10 +19,13 @@ assert(rig.includes('public sealed partial class RoaCameraRig')
   && rig.includes('EvaluateShakeOffset(orbit, impulse, Time.unscaledTime)')
   && rig.includes('EvaluateShakeRotation(impulse, Time.unscaledTime)'),
   'Camera rig is not connected to the live presentation layer');
-assert(rig.includes('public const float DefaultGameplayDistance = 13.5f;')
+assert(rig.includes('public const float DefaultGameplayDistance = 11.5f;')
   && rig.includes('public const float MaximumGameplayDistance = 21.5f;')
   && rig.includes('public const float GameplayFieldOfView = 52f;')
-  && rig.includes('private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";')
+  && rig.includes('private const string ZoomPrefsKey = "roa.cameraDistance.v4";')
+  && rig.includes('private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";')
+  && rig.includes('PreviousDefaultGameplayDistance = 13.5f')
+  && rig.includes('stored = DefaultGameplayDistance;')
   && rig.includes('SetFieldOfView(GameplayFieldOfView);')
   && rig.includes('ProjectedActorScreenFraction('),
   'Local tactical camera no longer guarantees a readable actor size or migrates old zoom');
@@ -30,11 +33,12 @@ assert(globalMap.includes('_savedFieldOfView = CameraRig.CurrentFieldOfView;')
   && globalMap.includes('CameraRig.SetFieldOfView(RoaCameraRig.StrategicFieldOfView);')
   && globalMap.includes('CameraRig.SetFieldOfView(_savedFieldOfView);'),
   'Global map no longer preserves its independent strategic field of view');
-assert(scene.includes('  Distance: 13.5')
+assert(scene.includes('  Distance: 11.5')
   && scene.includes('  MaxDistance: 21.5')
   && scene.includes('  field of view: 52')
   && cameraProbe.includes('farActorFraction > 0.045f')
-  && cameraProbe.includes('zoom=8–21.5, distance=13.5, fov=52'),
+  && cameraProbe.includes('defaultActorFraction > 0.085f')
+  && cameraProbe.includes('zoom=8–21.5, distance=11.5, fov=52'),
   'Authored scene or Unity probe no longer enforces the tactical camera framing');
 assert(rig.includes('Mathf.Infinity, Time.unscaledDeltaTime')
   && rig.includes('if (teleported) _velocity = Vector3.zero;')

@@ -53,8 +53,31 @@ namespace RealmOfAshes.Game
         public bool MobileInputMode { get; set; }
 
         public string FireMode { get { return _fireMode; } }
+        public bool ReloadRequestPending { get { return _reloadRequestInFlight; } }
+        public float ReloadVisualRemaining
+        {
+            get { return Mathf.Max(0f, _reloadVisualEndsAt - Time.unscaledTime); }
+        }
+        public bool HasUsableRound
+        {
+            get
+            {
+                if (!HasAmmoWeapon()) return true;
+                if (_fireMode == "dual" && HasDualPistolPair())
+                    return LoadedRoundsForHand("weapon") > 0
+                        || LoadedRoundsForHand("offhand") > 0;
+
+                int loaded = LoadedRoundsForHand(ActiveHandSlot());
+                return loaded >= 0
+                    ? loaded > 0
+                    : (Socket?.Session?.Combat?["loaded"]?.ToObject<int>() ?? 0) > 0;
+            }
+        }
 
         private float _nextRequestAt;
+        private bool _reloadRequestInFlight;
+        private float _reloadVisualEndsAt = -100f;
+        private const float ReloadVisualSeconds = 0.82f;
         private int _shotSeq;
         private string _fireMode = "single";
         private string _modeWeapon = string.Empty;
@@ -354,6 +377,12 @@ namespace RealmOfAshes.Game
         private void AttackAt(Vector3 cursor)
         {
             string weapon = ActiveWeapon();
+            if (_reloadRequestInFlight)
+            {
+                _nextRequestAt = Time.time + Mathf.Max(MinRequestInterval, 0.16f);
+                AddLog("Перезарядка подтверждается сервером.");
+                return;
+            }
             if (Player != null && Player.View != null && Player.View.FireObstructed)
             {
                 // IK уже поднял оружие у стены. Не отправляем заведомо
@@ -364,6 +393,21 @@ namespace RealmOfAshes.Game
                 Audio?.PlayWeaponBlocked();
                 AddLog("Ствол упирается в препятствие.");
                 return;
+            }
+
+            if (HasAmmoWeapon() && !HasUsableRound)
+            {
+                _nextRequestAt = Time.time + Mathf.Max(MinRequestInterval, 0.18f);
+                Player.View?.PlayAttack();
+                Audio?.PlayDryFire();
+                AddLog("Магазин пуст — нажмите R.");
+                return;
+            }
+
+            if (_reloadVisualEndsAt > Time.unscaledTime)
+            {
+                _reloadVisualEndsAt = -100f;
+                Player.View?.CancelReload();
             }
 
             _nextRequestAt = Time.time + MinRequestInterval;
@@ -1034,6 +1078,12 @@ namespace RealmOfAshes.Game
         private void Reload()
         {
             if (Socket == null || Socket.Session == null) return;
+            if (_reloadRequestInFlight)
+            {
+                AddLog("Перезарядка уже подтверждается сервером.");
+                return;
+            }
+
             JObject combat = Socket.Session.Combat;
             string weapon = combat?["weapon"]?.ToString();
             if (string.IsNullOrEmpty(weapon))
@@ -1042,12 +1092,36 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            string ammoType = combat?["ammoType"]?.ToString() ?? string.Empty;
+            int magSize = combat?["magSize"]?.ToObject<int>() ?? 0;
+            int loaded = combat?["loaded"]?.ToObject<int>() ?? 0;
+            int reserve = combat?["reserveAmmo"]?.ToObject<int>() ?? 0;
+            if (string.IsNullOrEmpty(ammoType) || magSize <= 0)
+            {
+                AddLog("Это оружие не требует перезарядки.");
+                return;
+            }
+            if (_fireMode != "dual" && loaded >= magSize)
+            {
+                AddLog("Магазин уже полон.");
+                return;
+            }
+            if (reserve <= 0)
+            {
+                Audio?.PlayDryFire();
+                AddLog("Нет патронов в запасе.");
+                return;
+            }
+
             var payload = new Dictionary<string, object> { ["weapon"] = weapon };
             JObject equipment = Socket.Session.Self?["equipment"] as JObject;
             if (equipment != null) payload["equipment"] = equipment;
 
+            _reloadRequestInFlight = true;
+            AddLog("Перезарядка…");
             Socket.EmitWithAck("reloadWeapon", payload, ack =>
             {
+                _reloadRequestInFlight = false;
                 if (ack == null)
                 {
                     AddLog("Сервер не ответил на перезарядку.");
@@ -1057,13 +1131,15 @@ namespace RealmOfAshes.Game
                 Socket.ApplyGameplayAck(ack);
                 if (ack["ok"]?.ToObject<bool>() != true)
                 {
+                    Audio?.PlayDryFire();
                     AddLog(ack["error"]?.ToString() ?? "Перезарядка отклонена.");
                     return;
                 }
 
                 int take = ack["take"]?.ToObject<int>() ?? 0;
                 float apCost = ack["apCost"]?.ToObject<float>() ?? 0f;
-                Player.View?.StartReload(0f);
+                _reloadVisualEndsAt = Time.unscaledTime + ReloadVisualSeconds;
+                Player.View?.StartReload(ReloadVisualSeconds);
                 Audio?.PlayReload();
                 AddLog("Перезарядка: +" + take + " патр., -" + apCost.ToString("0.#") + " ОД");
             });

@@ -67,7 +67,7 @@ assert(audio.includes('BuildActivitySignal("EconomyGain"')
 'Generated gain and level-up sounds are incomplete');
 assert(probe.includes('[НАГРАДЫ HUD] готово:')
   && probe.includes('partial authoritative vitals')
-  && probe.includes('audio.EconomyCuesReady && audio.GeneratedClipCount == 30')
+  && probe.includes('audio.EconomyCuesReady && audio.GeneratedClipCount == 31')
   && audit.includes('typeof(RoaEconomyFeedbackProbe)'),
 'Unity audit no longer covers authoritative reward notifications');
 

@@ -52,6 +52,7 @@ namespace RealmOfAshes.Game
         private int _magSize;
         private int _reserveAmmo;
         private float _condition = 1f;
+        private float _cooldownEndsAt = -1f;
 
         /// <summary>Последний урон — чтобы подсветить полосу на мгновение.</summary>
         private float _damageFlashUntil;
@@ -80,6 +81,10 @@ namespace RealmOfAshes.Game
         public int MagSize { get { return _magSize; } }
         public int ReserveAmmo { get { return _reserveAmmo; } }
         public float Condition { get { return _condition; } }
+        public float CooldownRemainingSeconds
+        {
+            get { return Mathf.Max(0f, _cooldownEndsAt - Time.unscaledTime); }
+        }
         public bool DamageFlashActive { get { return Time.unscaledTime < _damageFlashUntil; } }
         public Texture2D PlayerFrame { get { return _playerFrame; } }
         /// <summary>Тип патронов активного оружия (ammo9, ammo556...). Пусто у ближнего боя.</summary>
@@ -293,6 +298,11 @@ namespace RealmOfAshes.Game
             _magSize = combat["magSize"]?.ToObject<int>() ?? _magSize;
             _reserveAmmo = combat["reserveAmmo"]?.ToObject<int>() ?? _reserveAmmo;
             _condition = combat["condition"]?.ToObject<float>() ?? _condition;
+
+            JToken cooldown = combat["cooldownRemainingMs"];
+            if (cooldown != null)
+                _cooldownEndsAt = Time.unscaledTime
+                    + Mathf.Max(0f, cooldown.ToObject<float>()) / 1000f;
 
             JToken ap = combat["ap"];
             JToken maxAp = combat["maxAp"];

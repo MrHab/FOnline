@@ -76,7 +76,7 @@ assert(audio.includes('BuildUiTone("HitConfirm"')
 'Confirmed hit audio is missing, chatters for cone attacks, or is not probed');
 
 assert(probe.includes('RoaCombatConfirmation.Expired(0.39f, false)')
-  && probe.includes('audio.CombatConfirmationCuesReady && audio.GeneratedClipCount == 30')
+  && probe.includes('audio.CombatConfirmationCuesReady && audio.GeneratedClipCount == 31')
   && probe.includes('fx.ActiveImpactCount == 1')
   && probe.includes('[ПОДТВЕРЖДЕНИЕ ПОПАДАНИЯ] готово:'),
 'Editor probe no longer covers marker lifetime, generated audio and pooled impact');

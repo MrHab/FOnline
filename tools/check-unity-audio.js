@@ -58,7 +58,7 @@ assert(audio.includes('Time.unscaledTime - _lastActivityAt < 0.42f')
   && activityFeedbackCanvas.includes('audio?.PlayActivityCue(cue);'),
 'Activity feedback can chatter or is disconnected from the HUD');
 assert(activityFeedbackProbe.includes('audio.ActivityCuesReady')
-  && activityFeedbackProbe.includes('audio.GeneratedClipCount == 30'),
+  && activityFeedbackProbe.includes('audio.GeneratedClipCount == 31'),
 'Unity editor probe no longer validates generated activity PCM');
 assert(audio.includes('PlayEconomyCue(RoaEconomyNoticeKind kind)')
   && audio.includes('BuildActivitySignal("EconomyGain"')

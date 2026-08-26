@@ -80,6 +80,11 @@ namespace RealmOfAshes.Game
             _reloadStartedAt = Time.time;
         }
 
+        public void CancelReload()
+        {
+            _reloadStartedAt = -1f;
+        }
+
         public void Unequip()
         {
             _loadRequest++;

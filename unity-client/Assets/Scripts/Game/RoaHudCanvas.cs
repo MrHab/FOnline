@@ -42,6 +42,7 @@ namespace RealmOfAshes.Game
         private Text _consoleReserve;
         private Text _consoleAmmoType;
         private Text _consoleModeLabel;
+        private Text _consoleWeaponState;
         private Text _consoleApCost;
         private Text _consoleAmmoMain;
         private Text _consoleWeaponName;
@@ -313,8 +314,10 @@ namespace RealmOfAshes.Game
 
             // Центральная сцена: 30%/16.5% 39.2%x56.5%.
             RectTransform stage = PercentRect("Stage", panel, 0.30f, 0.165f, 0.392f, 0.565f);
-            _consoleModeLabel = PercentLabel("Mode", stage, 0.08f, 0.06f, 0.84f, 0.22f, 22,
+            _consoleModeLabel = PercentLabel("Mode", stage, 0.08f, 0.04f, 0.84f, 0.15f, 20,
                                              TextAnchor.MiddleCenter, new Color(0.851f, 0.718f, 0.412f), FontStyle.Bold);
+            _consoleWeaponState = PercentLabel("WeaponState", stage, 0.08f, 0.19f, 0.84f, 0.10f, 11,
+                                               TextAnchor.MiddleCenter, LedOn, FontStyle.Bold);
             // Силуэт оружия по центру сцены — web: 58% x 18% в центре
             // (15_css:787). Рендерится из той же GLB, что держит персонаж.
             RectTransform art = PercentRect("WeaponArt", stage, 0.21f, 0.30f, 0.58f, 0.34f);
@@ -616,6 +619,12 @@ namespace RealmOfAshes.Game
             _consoleArmor.text = _hud.ArmorThreshold.ToString();
 
             bool hasAmmo = !string.IsNullOrEmpty(weapon.AmmoType);
+            bool hasLoadedRound = _combat != null ? _combat.HasUsableRound : _hud.Loaded > 0;
+            RoaWeaponReadiness.Frame readiness = RoaWeaponReadiness.Evaluate(
+                hasAmmo, hasLoadedRound, _hud.ReserveAmmo, _hud.Ap, mode.ApCost,
+                _hud.CooldownRemainingSeconds,
+                _combat != null && _combat.ReloadRequestPending,
+                _combat != null ? _combat.ReloadVisualRemaining : 0f);
             _consoleDamage.text = Mathf.Max(1, Mathf.RoundToInt(weapon.DmgMin * mode.DamageMul))
                 + "-" + Mathf.Max(1, Mathf.RoundToInt(weapon.DmgMax * mode.DamageMul));
             _consoleMag.text = hasAmmo ? _hud.Loaded + "/" + Mathf.Max(0, _hud.MagSize) : "—";
@@ -623,6 +632,8 @@ namespace RealmOfAshes.Game
             _consoleAmmoType.text = RoaWeaponData.AmmoLabel(weapon.AmmoType);
 
             _consoleModeLabel.text = mode.Label;
+            _consoleWeaponState.text = readiness.Label;
+            _consoleWeaponState.color = WeaponStateColor(readiness.Kind);
             _consoleApCost.text = mode.ApCost + " ОД";
             _consoleAmmoMain.text = hasAmmo ? _hud.Loaded.ToString("000") : "---";
             _consoleAmmoMain.color = hasAmmo && _hud.Loaded <= 0 ? AmmoEmpty : ConsoleAccent;
@@ -633,6 +644,23 @@ namespace RealmOfAshes.Game
             int activeLeds = Mathf.Clamp(Mathf.FloorToInt(_hud.Ap), 0, LedCount);
             for (int i = 0; i < LedCount; i++)
                 if (_leds[i] != null) _leds[i].color = i < activeLeds ? LedOn : LedOff;
+        }
+
+        private static Color WeaponStateColor(RoaWeaponReadinessKind kind)
+        {
+            switch (kind)
+            {
+                case RoaWeaponReadinessKind.Ready:
+                    return LedOn;
+                case RoaWeaponReadinessKind.Cooldown:
+                case RoaWeaponReadinessKind.ReloadPending:
+                case RoaWeaponReadinessKind.Reloading:
+                    return ConsoleAccent;
+                case RoaWeaponReadinessKind.Empty:
+                    return HpWarning;
+                default:
+                    return AmmoEmpty;
+            }
         }
 
         private void RefreshMinimap()

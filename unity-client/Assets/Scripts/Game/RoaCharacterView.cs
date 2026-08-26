@@ -362,6 +362,13 @@ namespace RealmOfAshes.Game
             if (_offhandWeapon != null) _offhandWeapon.StartReload(durationSeconds);
         }
 
+        /// <summary>Убрать косметическую перезарядку перед следующим разрешённым выстрелом.</summary>
+        public void CancelReload()
+        {
+            if (_weapon != null) _weapon.CancelReload();
+            if (_offhandWeapon != null) _offhandWeapon.CancelReload();
+        }
+
         /// <summary>
         /// Проиграть удар или выстрел. Клип одноразовый и перебивает локомоцию:
         /// в вебе он выбирается раньше клипа ходьбы (04b:1676).

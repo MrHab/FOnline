@@ -171,6 +171,12 @@ namespace RealmOfAshes.Game
             _reloadStartedAt = Time.time;
         }
 
+        /// <summary>Вернуть руку в боевую стойку перед следующим разрешённым выстрелом.</summary>
+        public void CancelReload()
+        {
+            _reloadStartedAt = -1f;
+        }
+
         /// <summary>Фаза перезарядки 0..1, либо −1 если она не идёт.</summary>
         private float ReloadPhase()
         {

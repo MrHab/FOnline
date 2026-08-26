@@ -24,6 +24,7 @@ namespace RealmOfAshes.Game
         public bool Muted { get { return _masterVolume <= 0.001f; } }
         public int GeneratedClipCount { get { return _validatedClipCount; } }
         public bool EconomyCuesReady { get { return _economyGain != null && _levelUp != null; } }
+        public bool WeaponFeedbackCuesReady { get { return _reload != null && _dryFire != null; } }
         public bool CombatConfirmationCuesReady
         {
             get { return _hitConfirm != null && _criticalConfirm != null && _killConfirm != null; }
@@ -73,6 +74,7 @@ namespace RealmOfAshes.Game
         private AudioClip _criticalConfirm;
         private AudioClip _killConfirm;
         private AudioClip _reload;
+        private AudioClip _dryFire;
         private AudioClip _uiClick;
         private AudioClip _panelOpen;
         private AudioClip _panelClose;
@@ -97,6 +99,7 @@ namespace RealmOfAshes.Game
         private RoaActivityFeedbackCue _lastActivityCue;
         private float _lastEconomyAt = -100f;
         private float _lastWeaponBlockedAt = -100f;
+        private float _lastDryFireAt = -100f;
         private float _lastHitConfirmAt = -100f;
         private float _masterVolume;
         private int _worldCursor;
@@ -294,6 +297,14 @@ namespace RealmOfAshes.Game
             PlayUi(_reload, 0.42f, Pitch(0.97f, 1.03f));
         }
 
+        /// <summary>Сухой механический щелчок без ложного звука выстрела.</summary>
+        public void PlayDryFire()
+        {
+            if (Time.unscaledTime - _lastDryFireAt < 0.16f) return;
+            _lastDryFireAt = Time.unscaledTime;
+            PlayUi(_dryFire, 0.28f, Pitch(0.98f, 1.03f));
+        }
+
         /// <summary>Короткий глухой контакт, когда ствол упёрся в препятствие.</summary>
         public void PlayWeaponBlocked()
         {
@@ -475,6 +486,7 @@ namespace RealmOfAshes.Game
             _criticalConfirm = BuildUiTone("CriticalConfirm", 0.13f, 720f, 1180f);
             _killConfirm = BuildUiTone("KillConfirm", 0.24f, 620f, 930f);
             _reload = BuildReload();
+            _dryFire = BuildDryFire();
             _uiClick = BuildUiTone("UiClick", 0.055f, 920f, 680f);
             _panelOpen = BuildUiTone("PanelOpen", 0.16f, 260f, 440f);
             _panelClose = BuildUiTone("PanelClose", 0.14f, 410f, 230f);
@@ -620,6 +632,20 @@ namespace RealmOfAshes.Game
                     * Mathf.Exp(-progress * 5.8f);
                 float sole = Mathf.Sin(Mathf.PI * 2f * hz * time) * 0.42f;
                 return Mathf.Clamp((dust * 0.68f + sole) * envelope, -0.78f, 0.78f);
+            });
+        }
+
+        private AudioClip BuildDryFire()
+        {
+            uint state = 0x8d31u;
+            return Mono("DryFire", 0.12f, (sample, time, progress) =>
+            {
+                float trigger = Pulse(time, 0.018f, 0.009f);
+                float hammer = Pulse(time, 0.061f, 0.012f);
+                float metal = Mathf.Sin(Mathf.PI * 2f * (860f - progress * 290f) * time);
+                float envelope = Mathf.Exp(-progress * 7.5f);
+                return Mathf.Clamp((trigger * 0.78f + hammer)
+                    * (metal * 0.58f + Noise(ref state) * 0.24f) * envelope, -0.8f, 0.8f);
             });
         }
 

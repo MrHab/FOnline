@@ -55,6 +55,7 @@ namespace RealmOfAshes.Game
         private float _resultUntil;
         private bool _resultPending;
         private string _introActivityId = string.Empty;
+        private bool _introPending;
         private float _introUntil;
         private GameObject _introRoot;
         private Text _introKicker;
@@ -123,6 +124,8 @@ namespace RealmOfAshes.Game
             if (_introRoot != null) _introRoot.SetActive(false);
             if (_resultRoot != null) _resultRoot.SetActive(false);
             _resultPending = false;
+            _introPending = false;
+            ResetActivityFeedback();
             ClearWorldMarkers();
             HideActivityNavigation();
         }
@@ -139,6 +142,7 @@ namespace RealmOfAshes.Game
             string grade = result["grade"]?.ToString() ?? "failed";
             bool success = status == "completed";
             bool claimed = result["rewardClaimed"]?.ToObject<bool>() == true;
+            _pendingResultCue = RoaActivityFeedback.ClassifyResult(result);
             _resultTitle.text = success
                 ? claimed ? "АКТИВНОСТЬ ЗАВЕРШЕНА" : "ЦЕЛЬ ВЫПОЛНЕНА"
                 : status == "resolved" ? "УЧАСТИЕ НЕ ЗАСЧИТАНО" : "АКТИВНОСТЬ ПРОВАЛЕНА";
@@ -170,6 +174,7 @@ namespace RealmOfAshes.Game
             if (result["reason"]?.ToString() == "player_died")
             {
                 _resultPending = false;
+                _pendingResultCue = RoaActivityFeedbackCue.None;
                 _resultUntil = 0f;
                 _resultRoot.SetActive(false);
                 return;
@@ -181,18 +186,26 @@ namespace RealmOfAshes.Game
         private void ApplyWorldState(JObject state)
         {
             JObject next = state?["activity"] as JObject;
+            RoaActivityFeedbackCue feedback = RoaActivityFeedback.ClassifyActivity(_activity, next);
             string previousId = _activity?["id"]?.ToString() ?? string.Empty;
             string nextId = next?["id"]?.ToString() ?? string.Empty;
             if (!string.IsNullOrEmpty(nextId) && !string.Equals(previousId, nextId, StringComparison.Ordinal))
             {
                 _introActivityId = nextId;
-                _introUntil = Time.unscaledTime + 4f;
+                _introPending = true;
+                _introUntil = 0f;
             }
             string previousRevision = _activity?["revision"]?.ToString() ?? string.Empty;
             string nextRevision = next?["revision"]?.ToString() ?? string.Empty;
             bool changed = !string.Equals(previousRevision, nextRevision, StringComparison.Ordinal)
                 || !string.Equals(_activity?["status"]?.ToString(), next?["status"]?.ToString(), StringComparison.Ordinal);
             _activity = next;
+            if (_activity == null)
+            {
+                _introPending = false;
+                _pendingActivityCue = RoaActivityFeedbackCue.None;
+            }
+            else QueueActivityFeedback(feedback);
             if (changed)
             {
                 _pending = false;
@@ -205,18 +218,26 @@ namespace RealmOfAshes.Game
 
         private void Update()
         {
+            bool showResult = false;
             if (_resultRoot != null)
             {
-                bool screenReady = Bootstrap == null || (Bootstrap.InGame && !Bootstrap.FrontendVisible);
+                bool screenReady = Bootstrap == null || (Bootstrap.InGame && !Bootstrap.FrontendVisible
+                    && !RoaGameBootstrap.BlocksWorldHud);
                 if (_resultPending && screenReady)
                 {
                     _resultPending = false;
-                    _resultUntil = Time.unscaledTime + 12f;
+                    _resultStartedAt = Time.unscaledTime;
+                    _resultUntil = Time.unscaledTime + RoaActivityFeedback.ResultSeconds;
+                    EmitActivityFeedback(_pendingResultCue);
+                    _pendingResultCue = RoaActivityFeedbackCue.None;
                 }
-                bool showResult = Time.unscaledTime < _resultUntil && (Bootstrap == null || !Bootstrap.FrontendVisible);
+                showResult = Time.unscaledTime < _resultUntil
+                    && (Bootstrap == null || (!Bootstrap.FrontendVisible && !RoaGameBootstrap.BlocksWorldHud));
                 if (_resultRoot.activeSelf != showResult) _resultRoot.SetActive(showResult);
+                UpdateResultCardAnimation(showResult);
             }
-            bool hiddenByScreen = Bootstrap != null && (Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap);
+            bool hiddenByScreen = Bootstrap != null && (Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap
+                || RoaGameBootstrap.BlocksWorldHud);
             if (_activity == null || hiddenByScreen)
             {
                 if (_root != null && _root.activeSelf) _root.SetActive(false);
@@ -226,10 +247,19 @@ namespace RealmOfAshes.Game
                 return;
             }
             EnsureBuilt();
+            if (_introPending && _introActivityId == (_activity?["id"]?.ToString() ?? string.Empty))
+            {
+                _introPending = false;
+                _introStartedAt = Time.unscaledTime;
+                _introUntil = Time.unscaledTime + RoaActivityFeedback.IntroSeconds;
+            }
+            FlushActivityFeedback();
             bool introActive = _introActivityId == (_activity?["id"]?.ToString() ?? string.Empty)
                 && Time.unscaledTime < _introUntil;
             _root.SetActive(!introActive);
             _introRoot.SetActive(introActive);
+            UpdateIntroCardAnimation(introActive);
+            UpdateActivityPulseVisuals();
             if (introActive) RefreshIntro();
             RebuildWorldMarkers();
             if (_markerRoot != null) _markerRoot.SetActive(true);
@@ -583,6 +613,7 @@ namespace RealmOfAshes.Game
             _resultReward = Label("ResultReward", resultRect, 11, TextAnchor.UpperLeft, Muted);
             _resultReward.horizontalOverflow = HorizontalWrapMode.Wrap;
             Place(_resultReward.rectTransform, 16f, -115f, -16f, -80f);
+            ConfigureActivityFeedbackVisuals(introRect, resultRect);
             _resultRoot.SetActive(false);
             BuildActivityNavigation(canvasGo.transform);
         }

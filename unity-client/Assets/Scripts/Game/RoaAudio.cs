@@ -22,6 +22,15 @@ namespace RealmOfAshes.Game
 
         public int VolumePercent { get { return Mathf.RoundToInt(_masterVolume * 100f); } }
         public bool Muted { get { return _masterVolume <= 0.001f; } }
+        public int GeneratedClipCount { get { return _validatedClipCount; } }
+        public bool ActivityCuesReady
+        {
+            get
+            {
+                return _activityStart != null && _activityProgress != null && _activityExtraction != null
+                    && _activitySuccess != null && _activityFailure != null;
+            }
+        }
 
         public struct FootstepCue
         {
@@ -60,6 +69,11 @@ namespace RealmOfAshes.Game
         private AudioClip _uiClick;
         private AudioClip _panelOpen;
         private AudioClip _panelClose;
+        private AudioClip _activityStart;
+        private AudioClip _activityProgress;
+        private AudioClip _activityExtraction;
+        private AudioClip _activitySuccess;
+        private AudioClip _activityFailure;
         private AudioClip[] _steps;
 
         private Vector3 _playerPosition;
@@ -69,6 +83,8 @@ namespace RealmOfAshes.Game
         private bool _panelWasOpen;
         private float _nextStepAt;
         private float _lastUiAt;
+        private float _lastActivityAt = -100f;
+        private RoaActivityFeedbackCue _lastActivityCue;
         private float _masterVolume;
         private int _worldCursor;
         private int _validatedClipCount;
@@ -104,7 +120,11 @@ namespace RealmOfAshes.Game
         {
             if (Active == this) Active = null;
             for (int i = 0; i < _clips.Count; i++)
-                if (_clips[i] != null) Destroy(_clips[i]);
+            {
+                if (_clips[i] == null) continue;
+                if (Application.isPlaying) Destroy(_clips[i]);
+                else DestroyImmediate(_clips[i]);
+            }
             _clips.Clear();
         }
 
@@ -194,6 +214,44 @@ namespace RealmOfAshes.Game
         public void PlayKillConfirm()
         {
             PlayUi(_killConfirm, 0.34f, 1f);
+        }
+
+        public void PlayActivityCue(RoaActivityFeedbackCue cue)
+        {
+            if (cue == RoaActivityFeedbackCue.None) return;
+            if (cue == RoaActivityFeedbackCue.Progress && _lastActivityCue == cue
+                && Time.unscaledTime - _lastActivityAt < 0.42f) return;
+
+            AudioClip clip;
+            float volume;
+            switch (cue)
+            {
+                case RoaActivityFeedbackCue.Started:
+                    clip = _activityStart;
+                    volume = 0.42f;
+                    break;
+                case RoaActivityFeedbackCue.Progress:
+                    clip = _activityProgress;
+                    volume = 0.24f;
+                    break;
+                case RoaActivityFeedbackCue.ExtractionOpened:
+                    clip = _activityExtraction;
+                    volume = 0.48f;
+                    break;
+                case RoaActivityFeedbackCue.Success:
+                    clip = _activitySuccess;
+                    volume = 0.52f;
+                    break;
+                case RoaActivityFeedbackCue.Failure:
+                    clip = _activityFailure;
+                    volume = 0.44f;
+                    break;
+                default:
+                    return;
+            }
+            _lastActivityCue = cue;
+            _lastActivityAt = Time.unscaledTime;
+            PlayUi(clip, volume, Pitch(0.99f, 1.01f));
         }
 
         public void PlayReload()
@@ -375,6 +433,16 @@ namespace RealmOfAshes.Game
             _uiClick = BuildUiTone("UiClick", 0.055f, 920f, 680f);
             _panelOpen = BuildUiTone("PanelOpen", 0.16f, 260f, 440f);
             _panelClose = BuildUiTone("PanelClose", 0.14f, 410f, 230f);
+            _activityStart = BuildActivitySignal("ActivityStart", 0.42f,
+                new[] { 220f, 329.63f, 440f }, 0.035f, 0x3419u);
+            _activityProgress = BuildActivitySignal("ActivityProgress", 0.17f,
+                new[] { 659.25f, 880f }, 0.012f, 0x7291u);
+            _activityExtraction = BuildActivitySignal("ActivityExtraction", 0.5f,
+                new[] { 392f, 523.25f, 659.25f }, 0.024f, 0x8723u);
+            _activitySuccess = BuildActivitySignal("ActivitySuccess", 0.72f,
+                new[] { 392f, 523.25f, 659.25f, 783.99f }, 0.018f, 0x91b7u);
+            _activityFailure = BuildActivitySignal("ActivityFailure", 0.64f,
+                new[] { 329.63f, 246.94f, 185f, 146.83f }, 0.055f, 0xa529u);
             _steps = new[] { BuildStep("StepA", 0x92a1u, 82f), BuildStep("StepB", 0x5c71u, 96f) };
         }
 
@@ -520,6 +588,26 @@ namespace RealmOfAshes.Game
             });
         }
 
+        private AudioClip BuildActivitySignal(string name, float seconds, float[] notes,
+                                              float noiseAmount, uint seed)
+        {
+            float phase = 0f;
+            uint state = seed;
+            return Mono(name, seconds, (sample, time, progress) =>
+            {
+                float notePosition = progress * notes.Length;
+                int noteIndex = Mathf.Min(notes.Length - 1, Mathf.FloorToInt(notePosition));
+                float local = notePosition - noteIndex;
+                float attack = Mathf.Sin(Mathf.Clamp01(local / 0.12f) * Mathf.PI * 0.5f);
+                float release = Mathf.Pow(Mathf.Clamp01(1f - local), 1.15f);
+                float global = Mathf.Sin(Mathf.Clamp01(progress / 0.035f) * Mathf.PI * 0.5f)
+                    * Mathf.Pow(1f - progress, 0.22f);
+                phase += Mathf.PI * 2f * notes[noteIndex] / SampleRate;
+                float tone = Mathf.Sin(phase) * 0.62f + Mathf.Sin(phase * 2.005f + 0.23f) * 0.18f;
+                return Mathf.Clamp((tone + Noise(ref state) * noiseAmount)
+                    * attack * release * global, -0.86f, 0.86f);
+            });
+        }
         private AudioClip BuildUiTone(string name, float seconds, float startHz, float endHz)
         {
             float phase = 0f;

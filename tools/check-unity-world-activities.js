@@ -21,6 +21,8 @@ const server = read('server.js');
 const simulation = read('src/server/wasteland-sim.js');
 const runtime = read('src/server/world-activity-runtime.js');
 const canvas = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.cs');
+const feedback = read('unity-client/Assets/Scripts/Game/RoaActivityFeedback.cs');
+const feedbackCanvas = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.Feedback.cs');
 const navigation = read('unity-client/Assets/Scripts/Game/RoaWorldActivityNavigation.cs');
 const beacon = read('unity-client/Assets/Scripts/Game/RoaActivityBeacon.cs');
 const minimap = read('unity-client/Assets/Scripts/Game/RoaMinimap.cs');
@@ -29,12 +31,16 @@ const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 const globalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 const metadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.cs.meta');
+const feedbackMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityFeedback.cs.meta');
+const feedbackCanvasMetadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityCanvas.Feedback.cs.meta');
 const navigationMetadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityNavigation.cs.meta');
 const beaconMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityBeacon.cs.meta');
 const navigationProbe = read('unity-client/Assets/Editor/RoaWorldActivityNavigationProbe.cs');
 const navigationProbeMetadata = read('unity-client/Assets/Editor/RoaWorldActivityNavigationProbe.cs.meta');
 const activityHub = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs');
 const activityHubMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs.meta');
+const feedbackProbe = read('unity-client/Assets/Editor/RoaActivityFeedbackProbe.cs');
+const feedbackProbeMetadata = read('unity-client/Assets/Editor/RoaActivityFeedbackProbe.cs.meta');
 
 requireText(runtime, "const WORLD_ACTIVITY_SCHEMA = 'realm.worldActivity.v1';",
   'the versioned server activity schema is missing');
@@ -200,6 +206,39 @@ requireText(canvas, 'Socket.ApplyGameplayAck(ack);',
   'Unity no longer applies the reward-bearing extraction response');
 requireText(canvas, '"ЗАВЕРШИТЬ СПАСЕНИЕ"',
   'distress signal still asks for an exit even though it ends in the cleared area');
+requireText(feedback, 'ClassifyActivity(JObject previous, JObject next)',
+  'activity feedback is no longer derived from authoritative snapshot transitions');
+requirePattern(feedback,
+  /!previousExtraction && nextExtraction[\s\S]{0,120}ExtractionOpened/,
+  'opening extraction no longer has a distinct high-priority cue');
+requireText(feedback, 'ObjectiveProgress(next) > ObjectiveProgress(previous)',
+  'objective progress no longer has restrained transition feedback');
+requireText(canvas, '_pendingActivityCue = RoaActivityFeedbackCue.None;',
+  'leaving an activity can replay a stale deferred cue');
+requireText(canvas, '_introPending && _introActivityId ==',
+  'activity intro timing is no longer deferred until local gameplay is visible');
+requireText(canvas, '!RoaGameBootstrap.BlocksWorldHud',
+  'activity result can appear behind a blocking modal');
+requireText(feedbackCanvas, 'ApplyCardAnimation(_introGroup',
+  'activity intro card lost its fade, slide and scale transition');
+requireText(feedbackCanvas, 'audio?.PlayActivityCue(cue);',
+  'activity state transitions no longer reach the audio feedback layer');
+requireText(feedbackCanvas, 'cue == RoaActivityFeedbackCue.Started ? 2',
+  'deferred progress can overwrite the activity start cue');
+requireText(feedbackProbe, '[ОБРАТНАЯ СВЯЗЬ АКТИВНОСТИ] готово:',
+  'Unity editor probe for activity transition feedback is missing');
+requireText(feedbackProbe, 'audio.GeneratedClipCount == 26',
+  'Unity editor probe no longer validates the generated activity sounds');
+for (const [contents, label] of [
+  [feedbackMetadata, 'RoaActivityFeedback'],
+  [feedbackCanvasMetadata, 'RoaWorldActivityCanvas.Feedback'],
+  [feedbackProbeMetadata, 'RoaActivityFeedbackProbe']
+]) {
+  if (!contents.includes('fileFormatVersion: 2')
+      || !/^guid: [0-9a-f]{32}$/m.test(contents)) {
+    fail('Unity metadata for ' + label + ' is invalid');
+  }
+}
 if (!process.exitCode) {
-  console.log('Unity world activities OK: server progress, objective guidance, exit gating and acknowledged rewards');
+  console.log('Unity world activities OK: authoritative progress, deferred transition feedback, exit gating and acknowledged rewards');
 }

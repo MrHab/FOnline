@@ -8,6 +8,8 @@ const root = path.resolve(__dirname, '..');
 const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 
 const audio = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaAudio.cs');
+const activityFeedbackCanvas = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaWorldActivityCanvas.Feedback.cs');
+const activityFeedbackProbe = read('unity-client', 'Assets', 'Editor', 'RoaActivityFeedbackProbe.cs');
 const movementFx = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaMovementFx.cs');
 const remotePlayers = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaRemotePlayers.cs');
 const enemies = read('unity-client', 'Assets', 'Scripts', 'Game', 'RoaEnemies.cs');
@@ -43,6 +45,19 @@ assert(audio.includes('float.IsNaN(data[i])') && audio.includes('Generated audio
 assert(audio.includes('VolumePrefsKey') && audio.includes('CycleMasterVolume()')
   && audio.includes('PlayerPrefs.Save()'),
 'Persistent player-facing volume control is incomplete');
+assert(audio.includes('PlayActivityCue(RoaActivityFeedbackCue cue)')
+  && audio.includes('BuildActivitySignal("ActivityStart"')
+  && audio.includes('BuildActivitySignal("ActivityProgress"')
+  && audio.includes('BuildActivitySignal("ActivityExtraction"')
+  && audio.includes('BuildActivitySignal("ActivitySuccess"')
+  && audio.includes('BuildActivitySignal("ActivityFailure"'),
+'Activity start, progress, extraction and result cues are incomplete');
+assert(audio.includes('Time.unscaledTime - _lastActivityAt < 0.42f')
+  && activityFeedbackCanvas.includes('audio?.PlayActivityCue(cue);'),
+'Activity feedback can chatter or is disconnected from the HUD');
+assert(activityFeedbackProbe.includes('audio.ActivityCuesReady')
+  && activityFeedbackProbe.includes('audio.GeneratedClipCount == 26'),
+'Unity editor probe no longer validates generated activity PCM');
 
 assert(bootstrap.includes('gameObject.AddComponent<RoaAudio>()')
   && bootstrap.includes('gameObject.AddComponent<RoaMovementFx>()')
@@ -98,4 +113,4 @@ assert(systemCanvas.includes('"Звук: выключен"')
 assert(/guid:\s*[0-9a-f]{32}/i.test(meta), 'RoaAudio MonoScript meta GUID is missing');
 assert(/guid:\s*[0-9a-f]{32}/i.test(movementMeta), 'RoaMovementFx MonoScript meta GUID is missing');
 
-console.log('Unity audio/movement OK: ambience, 8 weapon profiles, spatial impacts, pooled local/actor footsteps, combat/UI priority and persistent volume');
+console.log('Unity audio/movement OK: ambience, combat/footsteps, five activity cues, UI priority and persistent volume');

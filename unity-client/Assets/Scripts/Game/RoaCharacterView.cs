@@ -229,6 +229,28 @@ namespace RealmOfAshes.Game
         public bool OffhandWeaponReady { get { return _offhandWeapon != null && _offhandWeapon.Ready; } }
         public string OffhandWeaponId { get { return _offhandWeapon != null ? _offhandWeapon.WeaponId : string.Empty; } }
 
+        /// <summary>Максимальная глубина упора стволов, 0..1.</summary>
+        public float WeaponObstruction
+        {
+            get
+            {
+                float primary = _weapon != null ? _weapon.ObstructedBlend : 0f;
+                float offhand = _offhandWeapon != null ? _offhandWeapon.ObstructedBlend : 0f;
+                return Mathf.Max(primary, offhand);
+            }
+        }
+
+        /// <summary>Огнестрел поднят препятствием настолько, что выстрел невозможен.</summary>
+        public bool FireObstructed
+        {
+            get
+            {
+                float primary = _weapon != null ? _weapon.ObstructedBlend : 0f;
+                float offhand = _offhandWeapon != null ? _offhandWeapon.ObstructedBlend : 0f;
+                return RoaWeaponView.BlocksFire(WeaponId, primary, offhand);
+            }
+        }
+
         /// <summary>Доворот корпуса под ствол, рад. Для диагностики.</summary>
         public float TorsoResidual { get { return _weapon != null ? _weapon.TorsoResidual : 0f; } }
 
@@ -322,6 +344,14 @@ namespace RealmOfAshes.Game
             worldPosition = Vector3.zero;
             return false;
         }
+
+        /// <summary>Дать обеим поднятым рукам короткий контактный толчок.</summary>
+        public void PlayBlockedFireContact()
+        {
+            if (_weapon != null) _weapon.PlayBlockedContact();
+            if (_offhandWeapon != null) _offhandWeapon.PlayBlockedContact();
+        }
+
         /// <summary>Запустить визуал перезарядки: левая рука уходит к магазину.</summary>
         public void StartReload(float durationSeconds)
         {

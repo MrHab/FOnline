@@ -38,6 +38,7 @@ namespace RealmOfAshes.Game
         private Dictionary<string, Transform> _bones;
         private int _loadRequest;
         private float _obstructedBlend;
+        private float _contactBumpStartedAt = -100f;
         private float _reloadStartedAt = -1f;
         private float _reloadDuration = DefaultReloadSeconds;
 
@@ -46,6 +47,15 @@ namespace RealmOfAshes.Game
         public bool ArmSolved { get; private set; }
         public float ObstructedBlend { get { return _obstructedBlend; } }
         public float ReloadBlend { get { return ReloadEnvelope(); } }
+        public float ContactBumpWeight
+        {
+            get { return RoaWeaponView.ContactBumpEnvelope(Time.time - _contactBumpStartedAt); }
+        }
+
+        public void PlayBlockedContact()
+        {
+            _contactBumpStartedAt = Time.time;
+        }
 
         public static bool IsSupported(string weaponId)
         {
@@ -238,13 +248,15 @@ namespace RealmOfAshes.Game
 
         private void ApplyReadyRaise()
         {
-            if (_obstructedBlend <= 0.01f) return;
+            float contactBump = ContactBumpWeight;
+            if (_obstructedBlend <= 0.01f && contactBump <= 0.001f) return;
             Vector3 pivot = _socketGrip.position;
             Vector3 barrel = _socketMuzzle.position - pivot;
             barrel.y = 0f;
             if (barrel.sqrMagnitude < 0.002f) return;
             Vector3 axis = Vector3.Cross(barrel.normalized, Vector3.up).normalized;
-            _weapon.RotateAround(pivot, axis, _obstructedBlend * ReadyRaiseAngle * Mathf.Rad2Deg);
+            float angle = _obstructedBlend * ReadyRaiseAngle + contactBump * 0.13f;
+            _weapon.RotateAround(pivot, axis, angle * Mathf.Rad2Deg);
         }
 
         private float ReloadEnvelope()
@@ -297,6 +309,7 @@ namespace RealmOfAshes.Game
             Ready = false;
             ArmSolved = false;
             _obstructedBlend = 0f;
+            _contactBumpStartedAt = -100f;
             _reloadStartedAt = -1f;
         }
     }

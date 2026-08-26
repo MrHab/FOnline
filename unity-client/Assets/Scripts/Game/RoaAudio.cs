@@ -89,6 +89,7 @@ namespace RealmOfAshes.Game
         private float _lastActivityAt = -100f;
         private RoaActivityFeedbackCue _lastActivityCue;
         private float _lastEconomyAt = -100f;
+        private float _lastWeaponBlockedAt = -100f;
         private float _masterVolume;
         private int _worldCursor;
         private int _validatedClipCount;
@@ -271,6 +272,14 @@ namespace RealmOfAshes.Game
         public void PlayReload()
         {
             PlayUi(_reload, 0.42f, Pitch(0.97f, 1.03f));
+        }
+
+        /// <summary>Короткий глухой контакт, когда ствол упёрся в препятствие.</summary>
+        public void PlayWeaponBlocked()
+        {
+            if (Time.unscaledTime - _lastWeaponBlockedAt < 0.12f) return;
+            _lastWeaponBlockedAt = Time.unscaledTime;
+            PlayUi(_impact, 0.16f, Pitch(1.18f, 1.28f));
         }
 
         public void CycleMasterVolume()

@@ -50,13 +50,50 @@ namespace RealmOfAshes.Game
         private const float ObstructionRaiseRate = 15f;
         private const float ObstructionReleaseRate = 8f;
 
+        /// <summary>
+        /// После этой глубины упора выстрел уже физически не помещается между
+        /// кистью и препятствием. Небольшое касание у конца щупа только начинает
+        /// high-ready и не должно блокировать огонь слишком рано.
+        /// </summary>
+        public const float FireBlockThreshold = 0.34f;
+
+        private const float ContactBumpSeconds = 0.18f;
+        private const float ContactBumpAngle = 0.13f;
+
         private static readonly Collider[] ProbeHits = new Collider[8];
         private static readonly RaycastHit[] ProbeCastHits = new RaycastHit[16];
 
         private float _obstructedBlend;
+        private float _contactBumpStartedAt = -100f;
 
         /// <summary>Насколько ствол поднят из-за препятствия, 0..1. Для диагностики.</summary>
         public float ObstructedBlend { get { return _obstructedBlend; } }
+
+        /// <summary>Короткая процедурная отдача от попытки выстрела в упор.</summary>
+        public float ContactBumpWeight
+        {
+            get { return ContactBumpEnvelope(Time.time - _contactBumpStartedAt); }
+        }
+
+        public static bool BlocksFire(string weaponId, float primaryObstruction,
+                                      float offhandObstruction = 0f)
+        {
+            return IsFirearm(weaponId)
+                && Mathf.Max(primaryObstruction, offhandObstruction) >= FireBlockThreshold;
+        }
+
+        /// <summary>FPS-независимая огибающая контактного толчка, 0..1.</summary>
+        public static float ContactBumpEnvelope(float elapsed)
+        {
+            if (elapsed < 0f || elapsed >= ContactBumpSeconds) return 0f;
+            float phase = elapsed / ContactBumpSeconds;
+            return Mathf.Sin(phase * Mathf.PI);
+        }
+
+        public void PlayBlockedContact()
+        {
+            _contactBumpStartedAt = Time.time;
+        }
 
         /// <summary>Позвонки, по которым раскладывается доворот корпуса.</summary>
         private static readonly string[] TorsoBones = { "spine_01", "spine_02", "spine_03" };
@@ -225,6 +262,7 @@ namespace RealmOfAshes.Game
             TorsoResidual = 0f;
             WeaponConverge = 0f;
             _obstructedBlend = 0f;
+            _contactBumpStartedAt = -100f;
             _reloadStartedAt = -1f;
             _reloadProfile = null;
             _reloadNode = null;
@@ -772,7 +810,8 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void ApplyReadyRaise()
         {
-            if (_obstructedBlend <= 0.01f) return;
+            float contactBump = ContactBumpWeight;
+            if (_obstructedBlend <= 0.01f && contactBump <= 0.001f) return;
 
             Vector3 pivot = _socketGrip.position;
             Vector3 barrel = _socketMuzzle.position - pivot;
@@ -781,7 +820,8 @@ namespace RealmOfAshes.Game
 
             // Ось «вправо» относительно ствола: поворот вокруг неё задирает дуло.
             Vector3 axis = Vector3.Cross(barrel.normalized, Vector3.up).normalized;
-            _weapon.RotateAround(pivot, axis, _obstructedBlend * ReadyRaiseAngle * Mathf.Rad2Deg);
+            float angle = _obstructedBlend * ReadyRaiseAngle + contactBump * ContactBumpAngle;
+            _weapon.RotateAround(pivot, axis, angle * Mathf.Rad2Deg);
         }
 
         /// <summary>Поставить оружие так, чтобы его сокет хвата пришёл в кисть. 04d:1414.</summary>

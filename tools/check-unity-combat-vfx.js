@@ -25,6 +25,7 @@ const protocol = read('unity-client', 'Assets', 'Scripts', 'Net', 'RoaProtocol.c
 const server = read('server.js');
 const probe = read('unity-client', 'Assets', 'Editor', 'RoaCombatFxProbe.cs');
 const dualProbe = read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs');
+const collisionProbe = read('unity-client', 'Assets', 'Editor', 'RoaWeaponCollisionProbe.cs');
 
 assert(presentation.includes('public sealed partial class RoaCombatPresentationFx'),
   'Polished combat presentation component is missing');
@@ -100,6 +101,30 @@ assert(offhand.includes('MirrorRigid(rightLocal)')
 assert(dualProbe.includes('RoaOffhandWeaponView.MirrorRigid')
   && dualProbe.includes('left.determinant - 1f'),
   'Dual-wield editor probe no longer verifies a rigid mirrored hand pose');
+
+const attackAtStart = combat.indexOf('private void AttackAt(Vector3 cursor)');
+const attackAtEnd = combat.indexOf('private bool TryScreenPointToWorld', attackAtStart);
+const attackAt = combat.slice(attackAtStart, attackAtEnd);
+assert(attackAtStart >= 0 && attackAtEnd > attackAtStart
+  && attackAt.includes('Player.View.FireObstructed')
+  && attackAt.includes('Player.View.PlayBlockedFireContact()')
+  && attackAt.includes('Audio?.PlayWeaponBlocked()')
+  && attackAt.indexOf('Player.View.FireObstructed') < attackAt.indexOf('Player.View.PlayAttack()')
+  && attackAt.indexOf('Player.View.FireObstructed') < attackAt.indexOf('SendAttackVisual('),
+  'Obstructed fire is not stopped before animation, network emission and AP/ammo use');
+assert(weapon.includes('public const float FireBlockThreshold = 0.34f;')
+  && weapon.includes('public static bool BlocksFire')
+  && weapon.includes('ContactBumpEnvelope')
+  && weapon.includes('contactBump * ContactBumpAngle')
+  && offhand.includes('PlayBlockedContact()')
+  && offhand.includes('RoaWeaponView.ContactBumpEnvelope')
+  && character.includes('public bool FireObstructed')
+  && character.includes('public void PlayBlockedFireContact()'),
+  'Weapon collision, IK high-ready and contact animation are no longer mechanically coupled');
+assert(collisionProbe.includes('RoaWeaponView.FireBlockThreshold')
+  && collisionProbe.includes('RoaWeaponView.BlocksFire("pistol"')
+  && collisionProbe.includes('RoaWeaponView.ContactBumpEnvelope(0.09f)'),
+  'Weapon collision probe does not verify the fire interlock and contact envelope');
 assert(probe.includes('moving tapered tracer geometry')
   && probe.includes('directional muzzle burst geometry')
   && probe.includes('shock, heat, fireball, smoke or ember layer')
@@ -120,4 +145,4 @@ for (const file of [
 assert(/guid:\s*[0-9a-f]{32}/i.test(read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs.meta')),
   'RoaDualWieldProbe.cs.meta has no valid GUID');
 
-console.log('Unity combat VFX OK: dual muzzles, mirrored IK, moving tracers, impacts, explosions and directional damage Canvas');
+console.log('Unity combat VFX OK: collision-gated fire, contact animation, dual IK, moving tracers, impacts, explosions and directional damage Canvas');

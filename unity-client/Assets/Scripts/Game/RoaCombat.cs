@@ -337,6 +337,18 @@ namespace RealmOfAshes.Game
 
         private void AttackAt(Vector3 cursor)
         {
+            string weapon = ActiveWeapon();
+            if (Player != null && Player.View != null && Player.View.FireObstructed)
+            {
+                // IK уже поднял оружие у стены. Не отправляем заведомо
+                // невозможный выстрел: игрок не теряет ОД/патроны, а другие
+                // клиенты не увидят трассер сквозь препятствие.
+                _nextRequestAt = Time.time + Mathf.Max(MinRequestInterval, 0.16f);
+                Player.View.PlayBlockedFireContact();
+                Audio?.PlayWeaponBlocked();
+                AddLog("Ствол упирается в препятствие.");
+                return;
+            }
 
             _nextRequestAt = Time.time + MinRequestInterval;
 
@@ -355,7 +367,6 @@ namespace RealmOfAshes.Game
             string attackToken = Guid.NewGuid().ToString("N");
             SendAttackVisual(self, targetPosition, selfX, selfZ, targetX, targetZ, angle);
 
-            string weapon = ActiveWeapon();
             if (weapon == "rocketLauncher")
             {
                 SendExplosion(selfX, selfZ, targetX, targetZ, angle, targetPosition, attackToken);

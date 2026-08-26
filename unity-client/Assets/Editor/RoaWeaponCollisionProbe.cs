@@ -59,8 +59,22 @@ namespace RealmOfAshes.EditorTools
             if (Mathf.Abs(thirtyFps - highFps) > 0.002f)
                 throw new System.Exception("[КОЛЛИЗИЯ ОРУЖИЯ] скорость подъёма зависит от FPS");
 
+            float threshold = RoaWeaponView.FireBlockThreshold;
+            if (RoaWeaponView.BlocksFire("pistol", threshold - 0.01f)
+                || !RoaWeaponView.BlocksFire("pistol", threshold)
+                || !RoaWeaponView.BlocksFire("pistol", 0f, threshold + 0.01f)
+                || RoaWeaponView.BlocksFire("knife", 1f))
+                throw new System.Exception("[КОЛЛИЗИЯ ОРУЖИЯ] механический запрет не совпал с high-ready");
+
+            float bumpStart = RoaWeaponView.ContactBumpEnvelope(0f);
+            float bumpPeak = RoaWeaponView.ContactBumpEnvelope(0.09f);
+            float bumpEnd = RoaWeaponView.ContactBumpEnvelope(0.18f);
+            if (bumpStart > 0.001f || bumpPeak < 0.99f || bumpEnd > 0.001f)
+                throw new System.Exception("[КОЛЛИЗИЯ ОРУЖИЯ] контактный толчок не имеет чистой огибающей");
+
             Debug.Log("[КОЛЛИЗИЯ ОРУЖИЯ] готово: near=" + nearAmount.ToString("0.00")
-                + ", far=" + farAmount.ToString("0.00") + ", 30/144 FPS="
+                + ", far=" + farAmount.ToString("0.00") + ", запрет="
+                + threshold.ToString("0.00") + ", 30/144 FPS="
                 + thirtyFps.ToString("0.000") + "/" + highFps.ToString("0.000"));
         }
 

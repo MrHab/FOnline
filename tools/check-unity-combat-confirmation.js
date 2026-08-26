@@ -9,6 +9,7 @@ const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 const game = path.join('unity-client', 'Assets', 'Scripts', 'Game');
 const combat = read(game, 'RoaCombat.cs');
 const confirmation = read(game, 'RoaCombatConfirmation.cs');
+const feedback = read(game, 'RoaCombatFeedbackCanvas.cs');
 const enemies = read(game, 'RoaEnemies.cs');
 const fx = read(game, 'RoaCombatFx.cs');
 const polish = read(game, 'RoaCombatPresentationFx.cs');
@@ -27,6 +28,14 @@ assert(confirmation.includes('critical ? 26f : 23f')
   && confirmation.includes('killed ? 30f')
   && confirmation.includes('killed ? 12f : critical ? 10f : 8f'),
 'Normal, critical and kill markers are no longer visually distinct');
+assert(feedback.includes('InitialFloatingPool = 16')
+  && feedback.includes('InitialMarkerPool = 12')
+  && feedback.includes('public static FloatingFrame EvaluateFloating(')
+  && feedback.includes('Mathf.InverseLerp(0.52f, 1f, t)')
+  && feedback.includes('RoaUiScale.Apply(')
+  && feedback.includes('image.raycastTarget = false')
+  && feedback.includes('group.blocksRaycasts = false'),
+'Combat feedback Canvas lost bounded pools, scaled presentation or input transparency');
 
 const enemyResult = combat.slice(combat.indexOf('private void HandleHitResult('),
   combat.indexOf('private void HandlePlayerHitResult('));
@@ -55,10 +64,13 @@ assert(explosionResult.includes('FindResultRow(enemyHits, "enemyId"')
   && explosionResult.includes('if (confirmedTargets > 0) Audio?.PlayHitConfirm(anyCritical);'),
 'Explosion hits lose authoritative NPC context, duplicate self-damage, or lack multi-target confirmation');
 assert(combat.includes('HitConfirmationLimit = 12')
-  && combat.includes('RoaCombatConfirmation.Expired(')
-  && combat.includes('DrawMarkerCorner(')
-  && combat.includes('Texture2D.whiteTexture'),
-'Target marker queue is unbounded, not expired, or not rendered');
+  && combat.includes('feedback.ShowFloating(')
+  && combat.includes('feedback.ShowHit(')
+  && combat.includes('if (!CanvasDriven && cam != null)')
+  && feedback.includes('RoaCombatConfirmation.Evaluate(')
+  && feedback.includes('AcquireFloating()')
+  && feedback.includes('AcquireMarker()'),
+'Authoritative feedback is not routed through the bounded Canvas or IMGUI still renders in the primary HUD');
 
 assert(enemies.includes('public void ApplyPublicEnemyHit(')
   && enemies.includes('enemy.CharacterView.PlayHit(hitSource, hitDamage, hitCritical);'),
@@ -76,17 +88,22 @@ assert(audio.includes('BuildUiTone("HitConfirm"')
 'Confirmed hit audio is missing, chatters for cone attacks, or is not probed');
 
 assert(probe.includes('RoaCombatConfirmation.Expired(0.39f, false)')
+  && probe.includes('RoaCombatFeedbackCanvas.EvaluateFloating(0.82f)')
+  && probe.includes('feedback.InputTransparent')
+  && probe.includes('accepted feedback did not project to a visible Canvas position')
+  && probe.includes('feedback.FloatingPoolSize == floatingPool')
   && probe.includes('audio.CombatConfirmationCuesReady && audio.GeneratedClipCount == 32')
   && probe.includes('fx.ActiveImpactCount == 1')
   && probe.includes('[ПОДТВЕРЖДЕНИЕ ПОПАДАНИЯ] готово:'),
-'Editor probe no longer covers marker lifetime, generated audio and pooled impact');
+'Editor probe no longer covers Canvas motion, bounded pools, input transparency, audio and pooled impact');
 assert(runner.includes('typeof(RoaCombatConfirmationProbe)'),
   'Combat confirmation probe is not included in the Unity audit');
 for (const file of [
   ['unity-client', 'Assets', 'Scripts', 'Game', 'RoaCombatConfirmation.cs.meta'],
+  ['unity-client', 'Assets', 'Scripts', 'Game', 'RoaCombatFeedbackCanvas.cs.meta'],
   ['unity-client', 'Assets', 'Editor', 'RoaCombatConfirmationProbe.cs.meta']
 ]) assert(/guid:\s*[0-9a-f]{32}/i.test(read(...file)), `${file.join('/')} has no GUID`);
 assert(packageJson.scripts['check:unity-combat-confirmation'],
   'package.json has no narrow combat confirmation check');
 
-console.log('Unity combat confirmation OK: authoritative marker/audio/impact, directional NPC reaction and bounded pooled feedback');
+console.log('Unity combat confirmation OK: authoritative Canvas marker/text/audio/impact, directional NPC reaction and bounded pooled feedback');

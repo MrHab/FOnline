@@ -4,6 +4,7 @@ using System.Reflection;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -33,7 +34,72 @@ namespace RealmOfAshes.EditorTools
                         && RoaCombatConfirmation.Expired(0.49f, true),
                         "normal and kill marker lifetimes are not bounded");
 
+                RoaCombatFeedbackCanvas.FloatingFrame floatingStart =
+                    RoaCombatFeedbackCanvas.EvaluateFloating(0f);
+                RoaCombatFeedbackCanvas.FloatingFrame floatingFade =
+                    RoaCombatFeedbackCanvas.EvaluateFloating(0.82f);
+                Require(floatingStart.Visible && floatingStart.Alpha > 0.99f
+                        && floatingFade.Visible && floatingFade.Rise > 20f
+                        && floatingFade.Alpha < floatingStart.Alpha
+                        && !RoaCombatFeedbackCanvas.EvaluateFloating(1.11f).Visible,
+                        "floating combat text does not pop, rise, fade and expire deterministically");
+
                 root = new GameObject("Combat confirmation probe");
+                var cameraRoot = new GameObject("Combat feedback camera", typeof(Camera));
+                cameraRoot.transform.SetParent(root.transform, false);
+                Camera camera = cameraRoot.GetComponent<Camera>();
+                cameraRoot.transform.position = new Vector3(0f, 3f, -8f);
+                cameraRoot.transform.LookAt(new Vector3(0f, 1f, 0f));
+
+                RoaCombatFeedbackCanvas feedback = root.AddComponent<RoaCombatFeedbackCanvas>();
+                feedback.Configure(camera);
+                Canvas.ForceUpdateCanvases();
+                feedback.ShowFloating("КРИТ 42", new Vector3(1.25f, 1.7f, 0f),
+                    new Color(1f, 0.82f, 0.3f));
+                feedback.ShowHit(new Vector3(1.25f, 1.1f, 0f), true, false);
+                feedback.RefreshNow();
+                Require(feedback.CanvasReady && feedback.InputTransparent
+                        && feedback.ActiveFloatingCount == 1 && feedback.ActiveMarkerCount == 1,
+                        "combat feedback Canvas is missing, intercepts input or lost an accepted result");
+                RectTransform markerRect = Array.Find(
+                    root.GetComponentsInChildren<RectTransform>(true),
+                    item => item.gameObject.activeInHierarchy
+                        && item.gameObject.name == "AuthoritativeHitMarker");
+                RectTransform floatingRect = Array.Find(
+                    root.GetComponentsInChildren<RectTransform>(true),
+                    item => item.gameObject.activeInHierarchy
+                        && item.gameObject.name == "FloatingCombatText");
+                Require(markerRect != null && floatingRect != null
+                        && markerRect.anchoredPosition.x > 0.1f
+                        && floatingRect.anchoredPosition.x > 0.1f
+                        && markerRect.GetComponent<CanvasGroup>().alpha > 0.99f
+                        && floatingRect.GetComponent<CanvasGroup>().alpha > 0.99f,
+                        "accepted feedback did not project to a visible Canvas position");
+                RawImage[] markerSegments = Array.FindAll(
+                    root.GetComponentsInChildren<RawImage>(true),
+                    image => image.gameObject.activeInHierarchy
+                        && image.gameObject.name.StartsWith("Segment"));
+                Text[] labels = Array.FindAll(root.GetComponentsInChildren<Text>(true),
+                    label => label.gameObject.activeInHierarchy);
+                Require(markerSegments.Length == 8 && labels.Length == 1
+                        && labels[0].fontSize == 23 && labels[0].text == "КРИТ 42",
+                        "Canvas marker corners or critical floating text styling is incomplete");
+
+                int floatingPool = feedback.FloatingPoolSize;
+                int markerPool = feedback.MarkerPoolSize;
+                for (int i = 0; i < floatingPool + 5; i++)
+                    feedback.ShowFloating(i.ToString(), new Vector3(0f, 1.7f, 0f), Color.white);
+                for (int i = 0; i < markerPool + 5; i++)
+                    feedback.ShowHit(new Vector3(0f, 1.1f, 0f), false, false);
+                Require(feedback.FloatingPoolSize == floatingPool
+                        && feedback.MarkerPoolSize == markerPool
+                        && feedback.ActiveFloatingCount == floatingPool
+                        && feedback.ActiveMarkerCount == markerPool,
+                        "combat feedback pools grew or exceeded their fixed capacity");
+                feedback.Clear();
+                Require(feedback.ActiveFloatingCount == 0 && feedback.ActiveMarkerCount == 0,
+                        "combat feedback pools did not clear cleanly");
+
                 RoaAudio audio = root.AddComponent<RoaAudio>();
                 if (audio.GeneratedClipCount == 0)
                 {
@@ -60,6 +126,7 @@ namespace RealmOfAshes.EditorTools
                     + normal.Radius.ToString("0") + "→" + settled.Radius.ToString("0")
                     + ", critical/kill=" + critical.Length.ToString("0") + "/"
                     + killed.Length.ToString("0") + ", audio=" + audio.GeneratedClipCount
+                    + ", canvasPools=" + floatingPool + "/" + markerPool
                     + ", pooledImpact=" + fx.ActiveImpactCount);
             }
             catch (Exception error)

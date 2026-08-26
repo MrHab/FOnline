@@ -119,6 +119,7 @@ namespace RealmOfAshes.Game
         private string _lastLogRaw = string.Empty;
         private int _lastLogCount;
         public bool CanvasDriven { get; set; }
+        public RoaCombatFeedbackCanvas FeedbackCanvas;
         public IReadOnlyList<string> LogLines { get { return _log; } }
 
         /// <summary>Всплывающий текст над целью: (текст, мир, до какого времени).</summary>
@@ -143,7 +144,14 @@ namespace RealmOfAshes.Game
             public bool Killed;
         }
 
-        public int ActiveHitConfirmationCount { get { return _hitConfirmations.Count; } }
+        public int ActiveHitConfirmationCount
+        {
+            get
+            {
+                return CanvasDriven && FeedbackCanvas != null
+                    ? FeedbackCanvas.ActiveMarkerCount : _hitConfirmations.Count;
+            }
+        }
 
         private void OnEnable()
         {
@@ -1363,6 +1371,16 @@ namespace RealmOfAshes.Game
 
         private void Float(string text, Vector3 world, Color color)
         {
+            if (CanvasDriven)
+            {
+                RoaCombatFeedbackCanvas feedback = EnsureFeedbackCanvas();
+                if (feedback != null)
+                {
+                    feedback.ShowFloating(text, world + Vector3.up * 1.6f, color);
+                    return;
+                }
+            }
+
             _floating.Add(new FloatingText
             {
                 Text = text,
@@ -1374,6 +1392,16 @@ namespace RealmOfAshes.Game
 
         private void ConfirmHit(Vector3 world, bool critical, bool killed)
         {
+            if (CanvasDriven)
+            {
+                RoaCombatFeedbackCanvas feedback = EnsureFeedbackCanvas();
+                if (feedback != null)
+                {
+                    feedback.ShowHit(world + Vector3.up * 1.08f, critical, killed);
+                    return;
+                }
+            }
+
             while (_hitConfirmations.Count >= HitConfirmationLimit)
                 _hitConfirmations.RemoveAt(0);
             _hitConfirmations.Add(new HitConfirmation
@@ -1383,6 +1411,15 @@ namespace RealmOfAshes.Game
                 Critical = critical,
                 Killed = killed
             });
+        }
+
+        private RoaCombatFeedbackCanvas EnsureFeedbackCanvas()
+        {
+            if (FeedbackCanvas == null) FeedbackCanvas = GetComponent<RoaCombatFeedbackCanvas>();
+            if (FeedbackCanvas == null) FeedbackCanvas = gameObject.AddComponent<RoaCombatFeedbackCanvas>();
+            Camera camera = RoaGameBootstrap.Active?.CameraRig?.GetComponent<Camera>() ?? Camera.main;
+            FeedbackCanvas.Configure(camera);
+            return FeedbackCanvas;
         }
 
         private static void DrawHitConfirmation(Camera camera, HitConfirmation confirmation)
@@ -1626,7 +1663,7 @@ namespace RealmOfAshes.Game
             if (RoaGameBootstrap.BlocksWorldHud) return;
             UnityEngine.Camera cam = UnityEngine.Camera.main;
 
-            if (cam != null)
+            if (!CanvasDriven && cam != null)
             {
                 foreach (HitConfirmation confirmation in _hitConfirmations)
                     DrawHitConfirmation(cam, confirmation);

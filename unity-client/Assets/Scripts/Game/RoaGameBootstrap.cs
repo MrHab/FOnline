@@ -276,6 +276,10 @@ namespace RealmOfAshes.Game
                 Combat.Fx = CombatFx;
                 Combat.Audio = Audio;
                 Combat.Fog = Fog;
+                var feedback = GetComponent<RoaCombatFeedbackCanvas>();
+                if (feedback == null) feedback = gameObject.AddComponent<RoaCombatFeedbackCanvas>();
+                feedback.Configure(CameraRig != null ? CameraRig.GetComponent<Camera>() : Camera.main);
+                Combat.FeedbackCanvas = feedback;
             }
 
             if (MobileControls == null) MobileControls = GetComponent<RoaMobileControls>();

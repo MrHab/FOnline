@@ -72,6 +72,15 @@ namespace RealmOfAshes.EditorTools
             if (bumpStart > 0.001f || bumpPeak < 0.99f || bumpEnd > 0.001f)
                 throw new System.Exception("[КОЛЛИЗИЯ ОРУЖИЯ] контактный толчок не имеет чистой огибающей");
 
+            float recoilStart = RoaWeaponView.RecoilEnvelope(0f);
+            float recoilPeak = RoaWeaponView.RecoilEnvelope(RoaWeaponView.RecoilPeakSeconds);
+            float recoilRelease = RoaWeaponView.RecoilEnvelope(
+                (RoaWeaponView.RecoilPeakSeconds + RoaWeaponView.RecoilDurationSeconds) * 0.5f);
+            float recoilEnd = RoaWeaponView.RecoilEnvelope(RoaWeaponView.RecoilDurationSeconds);
+            if (recoilStart > 0.001f || recoilPeak < 0.99f
+                || recoilRelease <= 0.05f || recoilRelease >= recoilPeak || recoilEnd > 0.001f)
+                throw new System.Exception("[КОЛЛИЗИЯ ОРУЖИЯ] отдача не имеет быстрого импульса и чистого возврата");
+
             Debug.Log("[КОЛЛИЗИЯ ОРУЖИЯ] готово: near=" + nearAmount.ToString("0.00")
                 + ", far=" + farAmount.ToString("0.00") + ", запрет="
                 + threshold.ToString("0.00") + ", 30/144 FPS="

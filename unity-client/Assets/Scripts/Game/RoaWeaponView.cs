@@ -60,11 +60,17 @@ namespace RealmOfAshes.Game
         private const float ContactBumpSeconds = 0.18f;
         private const float ContactBumpAngle = 0.13f;
 
+        /// <summary>Момент максимального импульса и полная длина отдачи огнестрела.</summary>
+        public const float RecoilPeakSeconds = 0.045f;
+        public const float RecoilDurationSeconds = 0.20f;
+
         private static readonly Collider[] ProbeHits = new Collider[8];
         private static readonly RaycastHit[] ProbeCastHits = new RaycastHit[16];
 
         private float _obstructedBlend;
         private float _contactBumpStartedAt = -100f;
+        private float _recoilStartedAt = -100f;
+        private float _recoilSide = 1f;
 
         /// <summary>Насколько ствол поднят из-за препятствия, 0..1. Для диагностики.</summary>
         public float ObstructedBlend { get { return _obstructedBlend; } }
@@ -73,6 +79,12 @@ namespace RealmOfAshes.Game
         public float ContactBumpWeight
         {
             get { return ContactBumpEnvelope(Time.time - _contactBumpStartedAt); }
+        }
+
+        /// <summary>Текущий импульс обычного выстрела, 0..1. Для диагностики.</summary>
+        public float RecoilWeight
+        {
+            get { return RecoilEnvelope(Time.time - _recoilStartedAt); }
         }
 
         public static bool BlocksFire(string weaponId, float primaryObstruction,
@@ -90,6 +102,42 @@ namespace RealmOfAshes.Game
             return Mathf.Sin(phase * Mathf.PI);
         }
 
+        /// <summary>
+        /// Быстрый толчок назад и более мягкое возвращение. Огибающая не зависит
+        /// от FPS, поэтому одиночный выстрел одинаково читается на 30 и 144 кадрах.
+        /// </summary>
+        public static float RecoilEnvelope(float elapsed)
+        {
+            if (elapsed < 0f || elapsed >= RecoilDurationSeconds) return 0f;
+            if (elapsed <= RecoilPeakSeconds)
+            {
+                float rise = Mathf.Clamp01(elapsed / RecoilPeakSeconds);
+                return rise * rise * (3f - 2f * rise);
+            }
+
+            float fall = Mathf.Clamp01((elapsed - RecoilPeakSeconds)
+                / (RecoilDurationSeconds - RecoilPeakSeconds));
+            fall = fall * fall * (3f - 2f * fall);
+            return 1f - fall;
+        }
+
+        /// <summary>
+        /// Проиграть атаку оружия без замены клипа ног: ближний бой запускает
+        /// существующий замах, огнестрел — короткую процедурную отдачу корпуса.
+        /// </summary>
+        public void PlayAttack()
+        {
+            if (!Ready) return;
+            if (_melee != null)
+            {
+                StartSwing(0f);
+                return;
+            }
+
+            _recoilSide = -_recoilSide;
+            _recoilStartedAt = Time.time;
+        }
+
         public void PlayBlockedContact()
         {
             _contactBumpStartedAt = Time.time;
@@ -97,6 +145,12 @@ namespace RealmOfAshes.Game
 
         /// <summary>Позвонки, по которым раскладывается доворот корпуса.</summary>
         private static readonly string[] TorsoBones = { "spine_01", "spine_02", "spine_03" };
+        private static readonly Vector3[] RecoilOffsets =
+        {
+            new Vector3(-0.010f, 0.002f, 0.003f),
+            new Vector3(-0.020f, 0.003f, 0.004f),
+            new Vector3(-0.014f, 0.002f, 0.002f)
+        };
 
         private static readonly Dictionary<string, GltfImport> WeaponCache = new Dictionary<string, GltfImport>();
 
@@ -269,6 +323,8 @@ namespace RealmOfAshes.Game
             WeaponConverge = 0f;
             _obstructedBlend = 0f;
             _contactBumpStartedAt = -100f;
+            _recoilStartedAt = -100f;
+            _recoilSide = 1f;
             _reloadStartedAt = -1f;
             _reloadProfile = null;
             _reloadNode = null;
@@ -478,6 +534,10 @@ namespace RealmOfAshes.Game
 
             // 1. Поза хвата поверх клипа локомоции: руки, кисти и пальцы.
             RoaWeaponGrip.ApplyTo(_bones);
+
+            // Короткий импульс не останавливает ноги. Он добавляется после клипа
+            // и хвата, а последующий IK снова точно посадит левую руку на цевьё.
+            ApplyFirearmRecoil();
 
             // У пары пистолетов каждая рука держит свой ствол. На перезарядке
             // правая кисть уходит вниз и к центру через ту же IK-цепь.
@@ -716,6 +776,23 @@ namespace RealmOfAshes.Game
                     rotation.x * weight * Mathf.Rad2Deg,
                     rotation.y * weight * Mathf.Rad2Deg,
                     rotation.z * weight * Mathf.Rad2Deg);
+            }
+        }
+
+        private void ApplyFirearmRecoil()
+        {
+            float weight = RecoilWeight;
+            if (weight <= 0.001f) return;
+
+            int count = Mathf.Min(_torso.Length, RecoilOffsets.Length);
+            for (int i = 0; i < count; i++)
+            {
+                Transform bone = _torso[i];
+                if (bone == null) continue;
+                Vector3 radians = RecoilOffsets[i] * weight;
+                radians.y *= _recoilSide;
+                radians.z *= _recoilSide;
+                bone.localRotation = bone.localRotation * Quaternion.Euler(radians * Mathf.Rad2Deg);
             }
         }
 

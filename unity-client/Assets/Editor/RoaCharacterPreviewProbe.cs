@@ -207,6 +207,63 @@ namespace RealmOfAshes.EditorTools
                 }
 
                 reaction.Reset();
+
+                // A firearm shot must be a layer over locomotion. The authored attack clip
+                // has static feet, so switching to it here would visibly stop a running actor.
+                loaded.SetGroundingLod(false);
+                loaded.UpdateLocomotion(Vector3.forward * 4.2f, 0f, true, false);
+                Check(loaded.CurrentClip == "run", "настоящий персонаж не выбрал бег перед выстрелом");
+                AnimationState run = animation["run"];
+                Check(run != null, "run-клип недоступен для проверки выстрела в движении");
+                animation.Play("run");
+                run.enabled = true;
+                run.weight = 1f;
+                run.normalizedTime = 0.25f;
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
+                Quaternion beforeRecoil = hitSpine.localRotation;
+
+                loaded.PlayAttack();
+                Check(loaded.CurrentClip == "run",
+                    "вооружённый выстрел сбросил походку в полнотелый attack-клип");
+                FieldInfo recoilField = typeof(RoaWeaponView).GetField("_recoilStartedAt",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Check(recoilField != null, "время процедурной отдачи недоступно");
+                recoilField.SetValue(weapon, Time.time - RoaWeaponView.RecoilPeakSeconds);
+                run.enabled = true;
+                run.weight = 1f;
+                run.normalizedTime = 0.25f;
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
+                float recoilAngle = Quaternion.Angle(beforeRecoil, hitSpine.localRotation);
+                Check(weapon.RecoilWeight > 0.85f, "отдача не достигла читаемого импульса");
+                Check(recoilAngle > 0.8f, "отдача не дошла до позвоночника настоящего GLB");
+                Check(weapon.SupportHandSolved,
+                    "левая рука потеряла цевьё во время отдачи на бегу");
+                Check(loaded.TryGetMuzzle(out Vector3 movingMuzzle)
+                        && Vector3.Distance(movingMuzzle, loaded.transform.position) > 0.45f,
+                    "дуло ушло внутрь корпуса во время отдачи на бегу");
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] выстрел в движении: clip="
+                    + loaded.CurrentClip + ", recoil=" + recoilAngle.ToString("0.0")
+                    + "°, IK=" + weapon.SupportHandSolved);
+
+                string movingFireCapturePath = Environment.GetEnvironmentVariable(
+                    "ROA_UNITY_MOVING_FIRE_CAPTURE");
+                if (!string.IsNullOrWhiteSpace(movingFireCapturePath))
+                {
+                    Check(preview.RenderNow(), "камера не приняла позу выстрела на бегу");
+                    Check(preview.RenderNow(), "камера не отрисовала прогретую позу выстрела на бегу");
+                    RenderTexture.active = preview.Texture;
+                    readback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
+                    readback.Apply(false, false);
+                    System.IO.File.WriteAllBytes(movingFireCapturePath, readback.EncodeToPNG());
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] выстрел на бегу: "
+                        + movingFireCapturePath);
+                }
+
+                recoilField.SetValue(weapon, -100f);
+                loaded.SetGroundingLod(true);
+                loaded.UpdateLocomotion(Vector3.zero, 0f, false, false);
                 animation.Play("idle");
                 idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
                 animation.Sample();

@@ -372,16 +372,20 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Проиграть удар или выстрел. Клип одноразовый и перебивает локомоцию:
-        /// в вебе он выбирается раньше клипа ходьбы (04b:1676).
+        /// Проиграть удар или выстрел. Экипированное оружие использует свой
+        /// процедурный слой и сохраняет текущую походку; полнотелый attack-клип
+        /// остаётся резервом для безоружной атаки.
         /// </summary>
         public void PlayAttack()
         {
             if (_dead) return;
 
-            // Замах оружием ближнего боя — своя система стоек, она работает
-            // и без клипа.
-            if (_weapon != null) _weapon.StartSwing(0f);
+            if (_weapon != null && _weapon.Ready)
+            {
+                _weapon.PlayAttack();
+                _attackUntil = 0f;
+                return;
+            }
 
             if (!Ready || !_clips.Contains("attack")) return;
 

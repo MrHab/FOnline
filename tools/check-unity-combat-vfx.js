@@ -28,6 +28,7 @@ const server = read('server.js');
 const probe = read('unity-client', 'Assets', 'Editor', 'RoaCombatFxProbe.cs');
 const dualProbe = read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs');
 const collisionProbe = read('unity-client', 'Assets', 'Editor', 'RoaWeaponCollisionProbe.cs');
+const characterPreviewProbe = read('unity-client', 'Assets', 'Editor', 'RoaCharacterPreviewProbe.cs');
 
 assert(presentation.includes('public sealed partial class RoaCombatPresentationFx'),
   'Polished combat presentation component is missing');
@@ -168,8 +169,21 @@ assert(weapon.includes('public const float FireBlockThreshold = 0.34f;')
   'Weapon collision, IK high-ready and contact animation are no longer mechanically coupled');
 assert(collisionProbe.includes('RoaWeaponView.FireBlockThreshold')
   && collisionProbe.includes('RoaWeaponView.BlocksFire("pistol"')
-  && collisionProbe.includes('RoaWeaponView.ContactBumpEnvelope(0.09f)'),
-  'Weapon collision probe does not verify the fire interlock and contact envelope');
+  && collisionProbe.includes('RoaWeaponView.ContactBumpEnvelope(0.09f)')
+  && collisionProbe.includes('RoaWeaponView.RecoilEnvelope(RoaWeaponView.RecoilPeakSeconds)'),
+  'Weapon collision probe does not verify the fire interlock, contact and recoil envelopes');
+assert(character.includes('_weapon != null && _weapon.Ready')
+  && character.includes('_weapon.PlayAttack();')
+  && character.includes('_attackUntil = 0f;')
+  && weapon.includes('public static float RecoilEnvelope(float elapsed)')
+  && weapon.includes('private void ApplyFirearmRecoil()')
+  && weapon.includes('_recoilStartedAt = Time.time;'),
+  'Armed attack no longer preserves gait through procedural firearm recoil');
+assert(characterPreviewProbe.includes('loaded.CurrentClip == "run"')
+  && characterPreviewProbe.includes('weapon.RecoilWeight > 0.85f')
+  && characterPreviewProbe.includes('weapon.SupportHandSolved')
+  && characterPreviewProbe.includes('отдача не дошла до позвоночника настоящего GLB'),
+  'Real-GLB preview does not verify gait-preserving recoil and support-hand IK');
 assert(probe.includes('moving tapered tracer geometry')
   && probe.includes('directional muzzle burst geometry')
   && probe.includes('speculative shots created a false impact before server confirmation')
@@ -196,4 +210,4 @@ for (const file of [
 assert(/guid:\s*[0-9a-f]{32}/i.test(read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs.meta')),
   'RoaDualWieldProbe.cs.meta has no valid GUID');
 
-console.log('Unity combat VFX OK: collision-gated fire, contact animation, dual IK, authoritative hit/miss impacts, explosions, directional damage and pooled world overlays');
+console.log('Unity combat VFX OK: gait-preserving recoil, collision-gated fire, contact animation, dual IK, authoritative impacts, explosions, directional damage and pooled world overlays');

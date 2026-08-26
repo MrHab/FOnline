@@ -46,6 +46,10 @@ namespace RealmOfAshes.Game
         private const float StrideSyncMin = 0.6f;
         private const float StrideSyncMax = 2.9f;
 
+        // Быстрые клипы авторизованы примерно на 1/6 цикла впереди walk.
+        // Перенос normalizedTime 1:1 меняет либо разгружает опорную стопу в cross-fade.
+        private const float FastGaitPhaseOffset = -1f / 6f;
+
         /// <summary>
         /// Порог перехода walk → run, м/с. 04b_character_glb_runtime.js:783.
         /// </summary>
@@ -1326,7 +1330,7 @@ namespace RealmOfAshes.Game
             bool preservePhase = IsCyclicLocomotion(previous) && IsCyclicLocomotion(clip);
             AnimationState previousState = !string.IsNullOrEmpty(previous) ? _animation[previous] : null;
             if (preservePhase && previousState != null)
-                phase = previousState.normalizedTime - Mathf.Floor(previousState.normalizedTime);
+                phase = SyncedLocomotionPhase(previous, clip, previousState.normalizedTime);
 
             _currentClip = clip;
             AnimationState nextState = _animation[clip];
@@ -1337,6 +1341,26 @@ namespace RealmOfAshes.Game
                 : preservePhase ? 0.18f
                 : 0.14f;
             _animation.CrossFade(clip, fade);
+        }
+
+        /// <summary>
+        /// Перевести фазу между локомоционными клипами по реальному контакту
+        /// стоп, а не только по normalizedTime. Run и crouch получены из одной
+        /// быстрой основы; walk сдвинут относительно неё примерно на 1/6 цикла.
+        /// </summary>
+        public static float SyncedLocomotionPhase(string previousClip, string nextClip,
+                                                   float previousNormalizedPhase)
+        {
+            float phase = Mathf.Repeat(previousNormalizedPhase, 1f);
+            return Mathf.Repeat(phase + LocomotionPhaseOffset(nextClip)
+                - LocomotionPhaseOffset(previousClip), 1f);
+        }
+
+        private static float LocomotionPhaseOffset(string clip)
+        {
+            return clip == "run" || clip == "run_back"
+                || clip == "crouch_walk" || clip == "crouch_walk_back"
+                ? FastGaitPhaseOffset : 0f;
         }
 
         private static bool IsCyclicLocomotion(string clip)

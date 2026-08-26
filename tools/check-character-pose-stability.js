@@ -143,8 +143,10 @@ async function main() {
     && remotePlayers.includes('remote.TargetYawDeg = RoaCoords.AngleToYawDeg'),
   'Unity remote combat pose no longer follows the relayed shot direction');
   assert(characterView.includes('nextState.normalizedTime = phase;')
+    && characterView.includes('SyncedLocomotionPhase(previous, clip')
+    && characterView.includes('FastGaitPhaseOffset = -1f / 6f')
     && characterView.includes('IsCyclicLocomotion'),
-  'Unity locomotion transitions no longer preserve gait phase');
+  'Unity locomotion transitions no longer preserve contact-aligned gait phase');
   assert(locationLoader.includes('root.InverseTransformPoint(sourceTransform.TransformPoint(point))')
     && locationLoader.includes('filter.sharedMesh.bounds'),
   'Unity fallback colliders are no longer rebuilt in object-local space');

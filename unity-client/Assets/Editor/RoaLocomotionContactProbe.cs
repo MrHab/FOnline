@@ -39,6 +39,23 @@ namespace RealmOfAshes.EditorTools
             Require(accelerated.z > 0.40f && accelerated.z < 0.45f,
                 "темп старта перестал сглаживаться отдельно от направления");
 
+            float slowToFast = RoaCharacterView.SyncedLocomotionPhase(
+                "walk", "run", 0.25f);
+            float fastToSlow = RoaCharacterView.SyncedLocomotionPhase(
+                "run", "walk", slowToFast);
+            float fastToCrouch = RoaCharacterView.SyncedLocomotionPhase(
+                "run", "crouch_walk", 0.37f);
+            float backToFast = RoaCharacterView.SyncedLocomotionPhase(
+                "walk_back", "run_back", 0.25f);
+            float wrappedFast = RoaCharacterView.SyncedLocomotionPhase(
+                "walk", "run", 0.05f);
+            Require(Mathf.Abs(slowToFast - 1f / 12f) < 0.001f
+                    && Mathf.Abs(fastToSlow - 0.25f) < 0.001f,
+                "переход walk/run не компенсирует сдвиг фаз или не обратим");
+            Require(Mathf.Abs(fastToCrouch - 0.37f) < 0.001f
+                    && Mathf.Abs(backToFast - 1f / 12f) < 0.001f
+                    && Mathf.Abs(wrappedFast - 53f / 60f) < 0.001f,
+                "семейства fast gait или переход через границу цикла рассинхронизированы");
             var root = new GameObject("LocomotionContactPoseProbe");
             Transform pelvis = Node(root.transform, "pelvis");
             Transform spine01 = Node(pelvis, "spine_01");
@@ -65,7 +82,8 @@ namespace RealmOfAshes.EditorTools
             Debug.Log("[КОНТАКТНАЯ ЛОКОМОЦИЯ] готово: давление="
                 + directPressure.ToString("0.00") + ", slide=" + slide
                 + ", reverse=" + reversed.z.ToString("0.00")
-                + ", pose=" + pose.ContactPressure.ToString("0.00"));
+                + ", pose=" + pose.ContactPressure.ToString("0.00")
+                + ", phase=" + slowToFast.ToString("0.000"));
         }
 
         private static Transform Node(Transform parent, string name)

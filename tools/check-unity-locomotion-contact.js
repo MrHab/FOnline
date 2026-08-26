@@ -62,8 +62,11 @@ assert(audio.includes('bool grounded, bool crouching, bool moving)')
 assert(probe.includes('Vector3.back * 4f')
   && probe.includes('ResolveCollisionVelocity(')
   && probe.includes('pose.KneeFlex > 0.03f')
+  && probe.includes('SyncedLocomotionPhase(')
+  && probe.includes('fastToSlow')
+  && probe.includes('wrappedFast')
   && probe.includes('spine01.localRotation'),
-  'Editor probe does not cover reversal, wall slide, foot IK compression and body response');
+  'Editor probe does not cover reversal, wall slide, contact-aligned gait phase, foot IK compression and body response');
 assert(runner.includes('typeof(RoaLocomotionContactProbe)'),
   'Locomotion contact probe is not part of the batch Unity audit');
 
@@ -74,4 +77,4 @@ for (const file of [
   assert(/guid:\s*[0-9a-f]{32}/i.test(read(file)), `${file} has no valid GUID`);
 }
 
-console.log('Unity locomotion contact OK: instant direction sync, stable wall slide, strongest contact, body compression and exact footstep stop');
+console.log('Unity locomotion contact OK: instant direction sync, contact-aligned gait phase, stable wall slide, strongest contact, body compression and exact footstep stop');

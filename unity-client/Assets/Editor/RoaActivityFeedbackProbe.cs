@@ -149,8 +149,12 @@ namespace RealmOfAshes.EditorTools
                 Require(objectiveRows != null && objectiveRows.childCount == 3
                         && activityCanvas.ObjectiveRowPoolSize == 3,
                     "activity Canvas does not prebuild the bounded three-row objective pool");
-                foreach (Image image in objectiveRows.GetComponentsInChildren<Image>(true))
-                    Require(!image.raycastTarget, "objective presentation intercepts gameplay input");
+                foreach (Image image in canvasHost.GetComponentsInChildren<Image>(true))
+                {
+                    bool interactive = image.GetComponent<Button>() != null;
+                    Require(image.raycastTarget == interactive,
+                        image.name + " has an invalid activity HUD raycast state");
+                }
                 foreach (Text text in objectiveRows.GetComponentsInChildren<Text>(true))
                     Require(!text.raycastTarget, "objective text intercepts gameplay input");
 

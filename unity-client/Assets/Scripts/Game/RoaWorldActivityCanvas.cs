@@ -549,6 +549,7 @@ namespace RealmOfAshes.Game
             root.anchoredPosition = new Vector2(0f, -18f);
             root.sizeDelta = new Vector2(410f, 260f);
             _root.GetComponent<Image>().color = PanelBg;
+            _root.GetComponent<Image>().raycastTarget = false;
             var border = _root.GetComponent<Outline>();
             border.effectColor = Border;
             border.effectDistance = new Vector2(1f, -1f);
@@ -566,10 +567,13 @@ namespace RealmOfAshes.Game
 
             RectTransform threatTrack = Child("ThreatTrack", root);
             Place(threatTrack, 14f, -151f, -14f, -141f);
-            threatTrack.gameObject.AddComponent<Image>().color = new Color(0.08f, 0.08f, 0.065f, 1f);
+            Image threatBackground = threatTrack.gameObject.AddComponent<Image>();
+            threatBackground.color = new Color(0.08f, 0.08f, 0.065f, 1f);
+            threatBackground.raycastTarget = false;
             RectTransform fill = Child("ThreatFill", threatTrack);
             Stretch(fill, 1f);
             _threatFill = fill.gameObject.AddComponent<Image>();
+            _threatFill.raycastTarget = false;
             _threatFill.type = Image.Type.Filled;
             _threatFill.fillMethod = Image.FillMethod.Horizontal;
             _threatFill.fillOrigin = 0;
@@ -604,6 +608,7 @@ namespace RealmOfAshes.Game
             introRect.anchoredPosition = new Vector2(0f, -24f);
             introRect.sizeDelta = new Vector2(520f, 112f);
             _introRoot.GetComponent<Image>().color = new Color(PanelBg.r, PanelBg.g, PanelBg.b, 0.98f);
+            _introRoot.GetComponent<Image>().raycastTarget = false;
             Outline introBorder = _introRoot.GetComponent<Outline>();
             introBorder.effectColor = Border;
             introBorder.effectDistance = new Vector2(1f, -1f);

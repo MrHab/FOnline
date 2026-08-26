@@ -348,6 +348,14 @@ requireText(feedbackProbe, 'objectiveViews[1].Progress == "ПОСЛЕ ВЫБОР
   'Unity editor probe no longer validates the assault/diversion branch preview');
 requireText(feedbackProbe, 'objectiveRows.childCount == 3',
   'Unity editor probe no longer validates the bounded objective Canvas pool');
+requireText(canvas, '_root.GetComponent<Image>().raycastTarget = false;',
+  'the decorative activity panel intercepts world input');
+requireText(canvas, 'threatBackground.raycastTarget = false;',
+  'the decorative threat track intercepts world input');
+requireText(canvas, '_threatFill.raycastTarget = false;',
+  'the decorative threat fill intercepts world input');
+requireText(feedbackProbe, 'image.raycastTarget == interactive',
+  'Unity editor probe no longer validates activity HUD input transparency');
 for (const [contents, label] of [
   [feedbackMetadata, 'RoaActivityFeedback'],
   [feedbackCanvasMetadata, 'RoaWorldActivityCanvas.Feedback'],

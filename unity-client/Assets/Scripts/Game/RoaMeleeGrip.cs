@@ -51,6 +51,18 @@ namespace RealmOfAshes.Game
         public const float DefaultSwingSeconds = 0.36f;
 
         /// <summary>
+        /// Фаза фактического контакта: в этот момент оружие достигает Strike,
+        /// после чего начинается возврат. Используется и позой, и подтверждением
+        /// урона, чтобы звук/реакция не возникали во время замаха.
+        /// </summary>
+        public const float StrikeContactPhase = 0.58f;
+
+        public static float StrikeContactSeconds(float durationSeconds = DefaultSwingSeconds)
+        {
+            return Mathf.Max(0.18f, durationSeconds) * StrikeContactPhase;
+        }
+
+        /// <summary>
         /// Перевод авторских координат стойки в пространство корня модели Unity.
         ///
         /// Преобразований два, и они частично гасят друг друга:
@@ -166,17 +178,17 @@ namespace RealmOfAshes.Game
                 spineFrom = Vector3.zero; spineTo = profile.SpineWindup;
                 blend = SmoothStep(phase / 0.34f);
             }
-            else if (phase < 0.58f)
+            else if (phase < StrikeContactPhase)
             {
                 from = profile.Windup; to = profile.Strike;
                 spineFrom = profile.SpineWindup; spineTo = profile.SpineStrike;
-                blend = SmoothStep((phase - 0.34f) / 0.24f);
+                blend = SmoothStep((phase - 0.34f) / (StrikeContactPhase - 0.34f));
             }
             else
             {
                 from = profile.Strike; to = profile.Idle;
                 spineFrom = profile.SpineStrike; spineTo = Vector3.zero;
-                blend = SmoothStep((phase - 0.58f) / 0.42f);
+                blend = SmoothStep((phase - StrikeContactPhase) / (1f - StrikeContactPhase));
             }
 
             primary = Vector3.Lerp(from.Primary, to.Primary, blend);

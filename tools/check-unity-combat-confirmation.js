@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, '..');
 const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8');
 const game = path.join('unity-client', 'Assets', 'Scripts', 'Game');
 const combat = read(game, 'RoaCombat.cs');
+const meleeGrip = read(game, 'RoaMeleeGrip.cs');
 const confirmation = read(game, 'RoaCombatConfirmation.cs');
 const feedback = read(game, 'RoaCombatFeedbackCanvas.cs');
 const enemies = read(game, 'RoaEnemies.cs');
@@ -36,6 +37,11 @@ assert(feedback.includes('InitialFloatingPool = 16')
   && feedback.includes('image.raycastTarget = false')
   && feedback.includes('group.blocksRaycasts = false'),
 'Combat feedback Canvas lost bounded pools, scaled presentation or input transparency');
+assert(meleeGrip.includes('public const float StrikeContactPhase = 0.58f;')
+  && meleeGrip.includes('public static float StrikeContactSeconds(')
+  && meleeGrip.includes('else if (phase < StrikeContactPhase)')
+  && meleeGrip.includes('(phase - StrikeContactPhase) / (1f - StrikeContactPhase)'),
+'Authored melee pose and result timing no longer share one contact phase');
 
 const enemyResult = combat.slice(combat.indexOf('private void HandleHitResult('),
   combat.indexOf('private void HandlePlayerHitResult('));
@@ -50,11 +56,20 @@ for (const [name, body] of [['enemy', enemyResult], ['player', playerResult]]) {
     `${name} accepted hit is missing a confirmed world impact`);
   assert(body.includes('ConfirmHit(targetPosition, critical,'),
     `${name} accepted hit is missing a target-anchored HUD marker`);
+  assert(body.includes('TryTakeMeleePresentationDelay(')
+    && body.includes('new WaitForSecondsRealtime(delay)')
+    && body.indexOf('Socket.ApplyGameplayAck(ack)') < body.indexOf('StartCoroutine('),
+    `${name} melee feedback is not contact-synchronized after immediate authoritative state`);
 }
 assert(enemyResult.includes('Enemies.ApplyPublicEnemyHit(enemy, sourcePosition, damage, critical)'),
   'NPC hit state loses source, damage or critical context');
 assert(playerResult.includes('if (killed) Audio?.PlayKillConfirm();'),
   'PvP kill has no local kill confirmation');
+assert(combat.includes('public static float MeleePresentationDelay(')
+  && combat.includes('RoaMeleeGrip.StrikeContactSeconds(swingSeconds)')
+  && combat.includes('PresentEnemyKillAfterDelay')
+  && combat.includes('BeginAttackRequest(attackToken, meleeAttack, attackVisualStartedAt);'),
+  'Melee contact timing is not connected to attack start, hit feedback and kill reward');
 assert(explosionResult.includes('FindResultRow(enemyHits, "enemyId"')
   && explosionResult.includes('Enemies.ApplyPublicEnemyHit(enemy, impactPosition,')
   && explosionResult.includes('if (selfHit) continue;')
@@ -88,6 +103,8 @@ assert(audio.includes('BuildUiTone("HitConfirm"')
 'Confirmed hit audio is missing, chatters for cone attacks, or is not probed');
 
 assert(probe.includes('RoaCombatConfirmation.Expired(0.39f, false)')
+  && probe.includes('RoaCombat.MeleePresentationDelay(10f, 10.035f)')
+  && probe.includes('RoaMeleeGrip.StrikeContactPhase')
   && probe.includes('RoaCombatFeedbackCanvas.EvaluateFloating(0.82f)')
   && probe.includes('feedback.InputTransparent')
   && probe.includes('accepted feedback did not project to a visible Canvas position')
@@ -106,4 +123,4 @@ for (const file of [
 assert(packageJson.scripts['check:unity-combat-confirmation'],
   'package.json has no narrow combat confirmation check');
 
-console.log('Unity combat confirmation OK: authoritative Canvas marker/text/audio/impact, directional NPC reaction and bounded pooled feedback');
+console.log('Unity combat confirmation OK: contact-synchronized melee plus authoritative Canvas marker/text/audio/impact, directional reaction and bounded pools');

@@ -42,7 +42,7 @@ assert(combat.includes('public bool ReloadRequestPending')
   && combat.includes('Audio?.PlayDryFire()'),
 'Combat input lacks reload de-duplication, immediate pending feedback or dry-fire response');
 const completeCalls = (combat.match(/CompleteAttackRequest\(attackToken, ack\);/g) || []).length;
-assert(combat.includes('BeginAttackRequest(attackToken);')
+assert(combat.includes('BeginAttackRequest(attackToken, meleeAttack, attackVisualStartedAt);')
   && combat.includes('private bool BlockKnownImpossibleAttack()')
   && combat.includes('RoaWeaponReadinessKind.AttackPending')
   && combat.includes('public static float AuthoritativeRetrySeconds(JObject ack)')
@@ -52,7 +52,7 @@ assert(combat.includes('BeginAttackRequest(attackToken);')
   && combat.includes('AttackRequestTimeoutSeconds = 1.5f')
   && completeCalls === 4,
 'One input can still produce repeated speculative visuals before every authoritative attack ACK');
-assert(combat.indexOf('BeginAttackRequest(attackToken);')
+assert(combat.indexOf('BeginAttackRequest(attackToken, meleeAttack, attackVisualStartedAt);')
   < combat.indexOf('SendAttackVisual(self, targetPosition'),
 'Attack visual is emitted before the request becomes cadence-gated');
 assert(preview.includes('public static int EffectiveApCost(')

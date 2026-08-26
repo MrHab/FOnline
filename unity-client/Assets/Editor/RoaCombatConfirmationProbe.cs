@@ -34,6 +34,22 @@ namespace RealmOfAshes.EditorTools
                         && RoaCombatConfirmation.Expired(0.49f, true),
                         "normal and kill marker lifetimes are not bounded");
 
+                float contactSeconds = RoaMeleeGrip.StrikeContactSeconds();
+                float fastAckDelay = RoaCombat.MeleePresentationDelay(10f, 10.035f);
+                float lateAckDelay = RoaCombat.MeleePresentationDelay(10f, 10.25f);
+                Require(contactSeconds > 0.208f && contactSeconds < 0.210f
+                        && fastAckDelay > 0.173f && fastAckDelay < 0.175f
+                        && lateAckDelay < 0.001f,
+                        "melee result is not synchronized with the authored contact phase");
+                RoaMeleeGrip.Profile axe = RoaMeleeGrip.Get("axe");
+                RoaMeleeGrip.Sample(axe, RoaMeleeGrip.StrikeContactPhase,
+                    out Vector3 contactPrimary, out Vector3 contactDirection,
+                    out Vector3 contactSpine);
+                Require(Vector3.Distance(contactPrimary, axe.Strike.Primary) < 0.001f
+                        && Vector3.Angle(contactDirection, axe.Strike.Direction) < 0.1f
+                        && Vector3.Distance(contactSpine, axe.SpineStrike) < 0.001f,
+                        "shared contact phase no longer reaches the authored strike pose");
+
                 RoaCombatFeedbackCanvas.FloatingFrame floatingStart =
                     RoaCombatFeedbackCanvas.EvaluateFloating(0f);
                 RoaCombatFeedbackCanvas.FloatingFrame floatingFade =
@@ -127,7 +143,9 @@ namespace RealmOfAshes.EditorTools
                     + ", critical/kill=" + critical.Length.ToString("0") + "/"
                     + killed.Length.ToString("0") + ", audio=" + audio.GeneratedClipCount
                     + ", canvasPools=" + floatingPool + "/" + markerPool
-                    + ", pooledImpact=" + fx.ActiveImpactCount);
+                    + ", pooledImpact=" + fx.ActiveImpactCount
+                    + ", meleeContact=" + Mathf.RoundToInt(contactSeconds * 1000f)
+                    + "ms, ack35Wait=" + Mathf.RoundToInt(fastAckDelay * 1000f) + "ms");
             }
             catch (Exception error)
             {

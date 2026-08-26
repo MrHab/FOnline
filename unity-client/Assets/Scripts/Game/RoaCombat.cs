@@ -99,6 +99,8 @@ namespace RealmOfAshes.Game
         private string _pendingAttackToken = string.Empty;
         private float _attackRequestTimeoutAt = -100f;
         private const float AttackRequestTimeoutSeconds = 1.5f;
+        private string _meleePresentationToken = string.Empty;
+        private float _meleeVisualStartedAt = -100f;
         private bool _reloadRequestInFlight;
         private float _reloadVisualEndsAt = -100f;
         private const float ReloadVisualSeconds = 0.82f;
@@ -167,6 +169,8 @@ namespace RealmOfAshes.Game
         {
             _pendingAttackToken = string.Empty;
             _attackRequestTimeoutAt = -100f;
+            _meleePresentationToken = string.Empty;
+            _meleeVisualStartedAt = -100f;
             if (Socket == null) return;
             Socket.OnEnemyAttack -= HandleEnemyAttack;
             Socket.OnEnemyAttackMiss -= HandleEnemyAttackMiss;
@@ -266,7 +270,24 @@ namespace RealmOfAshes.Game
         private void HandleEnemyKilled(JObject payload)
         {
             if (payload == null || payload["killerId"]?.ToString() != Socket?.Session?.Id) return;
-            int xp = Mathf.Max(0, payload["xp"]?.ToObject<int>() ?? 0);
+            float delay = PeekMeleePresentationDelay();
+            if (delay > 0.001f)
+            {
+                StartCoroutine(PresentEnemyKillAfterDelay((JObject)payload.DeepClone(), delay));
+                return;
+            }
+            PresentEnemyKill(payload);
+        }
+
+        private IEnumerator PresentEnemyKillAfterDelay(JObject payload, float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            PresentEnemyKill(payload);
+        }
+
+        private void PresentEnemyKill(JObject payload)
+        {
+            int xp = Mathf.Max(0, payload?["xp"]?.ToObject<int>() ?? 0);
             if (xp <= 0) return;
             Audio?.PlayKillConfirm();
             Vector3 position = RoaCoords.ToUnity(
@@ -525,10 +546,43 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private void BeginAttackRequest(string attackToken)
+        private void BeginAttackRequest(string attackToken, bool melee, float visualStartedAt)
         {
             _pendingAttackToken = attackToken ?? string.Empty;
             _attackRequestTimeoutAt = Time.unscaledTime + AttackRequestTimeoutSeconds;
+            _meleePresentationToken = melee ? _pendingAttackToken : string.Empty;
+            _meleeVisualStartedAt = melee ? visualStartedAt : -100f;
+        }
+
+        /// <summary>
+        /// Сколько ещё ждать до контактной позы уже начатого замаха. Серверный
+        /// ACK и состояние игрока применяются сразу; задерживается только видимый
+        /// результат на цели.
+        /// </summary>
+        public static float MeleePresentationDelay(float visualStartedAt, float now,
+            float swingSeconds = RoaMeleeGrip.DefaultSwingSeconds)
+        {
+            return Mathf.Max(0f, visualStartedAt
+                + RoaMeleeGrip.StrikeContactSeconds(swingSeconds) - now);
+        }
+
+        private float PeekMeleePresentationDelay()
+        {
+            if (string.IsNullOrEmpty(_meleePresentationToken)) return 0f;
+            return MeleePresentationDelay(_meleeVisualStartedAt, Time.unscaledTime);
+        }
+
+        private bool TryTakeMeleePresentationDelay(string attackToken, out float delay)
+        {
+            delay = 0f;
+            if (string.IsNullOrEmpty(attackToken)
+                || !string.Equals(_meleePresentationToken, attackToken, StringComparison.Ordinal))
+                return false;
+
+            delay = MeleePresentationDelay(_meleeVisualStartedAt, Time.unscaledTime);
+            _meleePresentationToken = string.Empty;
+            _meleeVisualStartedAt = -100f;
+            return true;
         }
 
         private void CompleteAttackRequest(string attackToken, JObject ack)
@@ -598,12 +652,15 @@ namespace RealmOfAshes.Game
             float angle = RoaCoords.YawDegToAngle(Player.transform.eulerAngles.y);
 
             // Замах проигрывается сразу, не дожидаясь ответа сервера: иначе
-            // удар отставал бы от нажатия на величину задержки. Если сервер
-            // откажет, промах покажет журнал, но замах уже был честным вводом.
+            // удар отставал бы от нажатия на величину задержки. Серверное
+            // состояние применится сразу, а видимый результат ближнего удара
+            // дождётся фактического контакта оружия.
+            bool meleeAttack = !HasAmmoWeapon();
+            float attackVisualStartedAt = Time.unscaledTime;
             if (Player.View != null) Player.View.PlayAttack();
 
             string attackToken = Guid.NewGuid().ToString("N");
-            BeginAttackRequest(attackToken);
+            BeginAttackRequest(attackToken, meleeAttack, attackVisualStartedAt);
             SendAttackVisual(self, targetPosition, selfX, selfZ, targetX, targetZ, angle);
 
             if (weapon == "rocketLauncher")
@@ -921,6 +978,7 @@ namespace RealmOfAshes.Game
             }, ack =>
             {
                 CompleteAttackRequest(attackToken, ack);
+                TryTakeMeleePresentationDelay(attackToken, out float unusedPresentationDelay);
                 if (ack == null) return;
                 Socket.ApplyGameplayAck(ack);
                 if (ack["ok"]?.ToObject<bool>() != true)
@@ -958,10 +1016,34 @@ namespace RealmOfAshes.Game
         private void HandleHitResult(JObject ack, Vector3 targetPosition, Vector3 sourcePosition,
                                      string attackToken)
         {
+            bool meleePresentation = TryTakeMeleePresentationDelay(
+                attackToken, out float presentationDelay);
             if (ack == null) return;
             Socket.ApplyGameplayAck(ack);
             ApplyResolvedMode(ack);
 
+            bool accepted = ack["ok"]?.ToObject<bool>() == true;
+            if (accepted && meleePresentation && presentationDelay > 0.001f)
+            {
+                StartCoroutine(PresentHitResultAfterDelay((JObject)ack.DeepClone(),
+                    targetPosition, sourcePosition, attackToken, presentationDelay));
+                return;
+            }
+
+            PresentHitResult(ack, targetPosition, sourcePosition, attackToken);
+        }
+
+        private IEnumerator PresentHitResultAfterDelay(JObject ack, Vector3 targetPosition,
+                                                        Vector3 sourcePosition, string attackToken,
+                                                        float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            PresentHitResult(ack, targetPosition, sourcePosition, attackToken);
+        }
+
+        private void PresentHitResult(JObject ack, Vector3 targetPosition, Vector3 sourcePosition,
+                                      string attackToken)
+        {
             bool accepted = ack["ok"]?.ToObject<bool>() == true;
             bool hit = accepted && (ack["hit"]?.ToObject<bool>() ?? true);
             int damage = Mathf.Max(0, Mathf.RoundToInt(ack["damage"]?.ToObject<float>() ?? 0f));
@@ -1000,7 +1082,8 @@ namespace RealmOfAshes.Game
 
             bool dead = enemy?["dead"]?.ToObject<bool>() ?? false;
             string weapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
-            if (!HasAmmoWeapon()) Audio?.PlayMeleeImpact(targetPosition, critical);
+            if (string.IsNullOrEmpty(RoaWeaponData.Get(weapon).AmmoType))
+                Audio?.PlayMeleeImpact(targetPosition, critical);
             Audio?.PlayHitConfirm(critical);
             Fx?.PlayConfirmedHit(targetPosition, sourcePosition, weapon, critical, dead);
             ConfirmHit(targetPosition, critical, dead);
@@ -1015,10 +1098,36 @@ namespace RealmOfAshes.Game
         private void HandlePlayerHitResult(JObject ack, PublicPlayer target, Vector3 targetPosition,
                                            Vector3 sourcePosition, string attackToken)
         {
+            bool meleePresentation = TryTakeMeleePresentationDelay(
+                attackToken, out float presentationDelay);
             if (ack == null) return;
             Socket.ApplyGameplayAck(ack);
             ApplyResolvedMode(ack);
 
+            bool accepted = ack["ok"]?.ToObject<bool>() == true;
+            if (accepted && meleePresentation && presentationDelay > 0.001f)
+            {
+                StartCoroutine(PresentPlayerHitResultAfterDelay((JObject)ack.DeepClone(), target,
+                    targetPosition, sourcePosition, attackToken, presentationDelay));
+                return;
+            }
+
+            PresentPlayerHitResult(ack, target, targetPosition, sourcePosition, attackToken);
+        }
+
+        private IEnumerator PresentPlayerHitResultAfterDelay(JObject ack, PublicPlayer target,
+                                                              Vector3 targetPosition,
+                                                              Vector3 sourcePosition,
+                                                              string attackToken, float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            PresentPlayerHitResult(ack, target, targetPosition, sourcePosition, attackToken);
+        }
+
+        private void PresentPlayerHitResult(JObject ack, PublicPlayer target,
+                                            Vector3 targetPosition, Vector3 sourcePosition,
+                                            string attackToken)
+        {
             if (ack["target"] is JObject targetState)
                 RemotePlayers?.ApplyPublicPlayer(targetState.ToObject<PublicPlayer>());
 
@@ -1048,7 +1157,8 @@ namespace RealmOfAshes.Game
             bool critical = ack["critical"]?.ToObject<bool>() ?? false;
             bool killed = ack["killed"]?.ToObject<bool>() ?? false;
             string weapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
-            if (!HasAmmoWeapon()) Audio?.PlayMeleeImpact(targetPosition, critical);
+            if (string.IsNullOrEmpty(RoaWeaponData.Get(weapon).AmmoType))
+                Audio?.PlayMeleeImpact(targetPosition, critical);
             Audio?.PlayHitConfirm(critical);
             if (killed) Audio?.PlayKillConfirm();
             Fx?.PlayConfirmedHit(targetPosition, sourcePosition, weapon, critical, killed);

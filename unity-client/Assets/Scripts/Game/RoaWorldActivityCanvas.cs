@@ -16,6 +16,44 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed partial class RoaWorldActivityCanvas : MonoBehaviour
     {
+        public enum ObjectiveVisualState
+        {
+            Locked,
+            Active,
+            Complete,
+            Bonus,
+            Mastered
+        }
+
+        public readonly struct ObjectiveView
+        {
+            public readonly string Id;
+            public readonly string Label;
+            public readonly string Progress;
+            public readonly ObjectiveVisualState State;
+            public readonly bool IsCurrent;
+
+            public ObjectiveView(string id, string label, string progress,
+                                 ObjectiveVisualState state, bool isCurrent)
+            {
+                Id = id ?? string.Empty;
+                Label = label ?? string.Empty;
+                Progress = progress ?? string.Empty;
+                State = state;
+                IsCurrent = isCurrent;
+            }
+        }
+
+        private sealed class ObjectiveSlot
+        {
+            public GameObject Root;
+            public Image Background;
+            public Image Stripe;
+            public Text Label;
+            public Text Progress;
+            public ObjectiveView View;
+        }
+
         public RoaSocketClient Socket;
         public RoaGameBootstrap Bootstrap;
 
@@ -32,7 +70,9 @@ namespace RealmOfAshes.Game
         private Text _title;
         private Text _phase;
         private Text _timer;
-        private Text _objective;
+        private Text _objectiveHeader;
+        private readonly List<ObjectiveSlot> _objectiveSlots = new List<ObjectiveSlot>(3);
+        private readonly List<ObjectiveView> _objectiveViews = new List<ObjectiveView>(3);
         private Text _threatText;
         private Text _participants;
         private Text _actionLabel;
@@ -64,6 +104,8 @@ namespace RealmOfAshes.Game
 
         public bool IsOpen { get { return _root != null && _root.activeSelf; } }
         public bool HasActiveActivity { get { return _activity != null; } }
+        public int ActiveObjectiveRowCount { get; private set; }
+        public int ObjectiveRowPoolSize { get { return _objectiveSlots.Count; } }
 
         public void Configure(RoaSocketClient socket, RoaGameBootstrap bootstrap)
         {
@@ -282,27 +324,7 @@ namespace RealmOfAshes.Game
             float seconds = Mathf.Max(0f, (endsAt - now) / 1000f);
             _timer.text = status == "completed" ? "ГОТОВО" : Countdown(seconds);
 
-            JArray objectives = _activity?["objectives"] as JArray;
-            List<JObject> requiredObjectives = objectives?.OfType<JObject>()
-                .Where(row => row?["required"]?.ToObject<bool>() != false).ToList() ?? new List<JObject>();
-            JObject objective = requiredObjectives.FirstOrDefault(row =>
-                (row?["current"]?.ToObject<int>() ?? 0) < (row?["target"]?.ToObject<int>() ?? 1))
-                ?? requiredObjectives.LastOrDefault()
-                ?? objectives?[0] as JObject;
-            int current = Mathf.Max(0, objective?["current"]?.ToObject<int>() ?? 0);
-            int target = Mathf.Max(1, objective?["target"]?.ToObject<int>() ?? 1);
-            int bonus = Mathf.Max(target, objective?["bonusTarget"]?.ToObject<int>() ?? target);
-            int maximum = Mathf.Max(bonus, objective?["maxTarget"]?.ToObject<int>() ?? bonus);
-            string objectivePrefix = kind == "recon_expedition" ? "Разведано: "
-                : kind == "outpost_defense" ? "Нападающие: "
-                : kind == "distress_signal" && objective?["id"]?.ToString() == "distress_signal" ? "Источник сигнала: "
-                : kind == "distress_signal" ? "Засада: "
-                : kind == "assault_diversion" && objective?["id"]?.ToString() == "approach" ? "Подход: "
-                : kind == "assault_diversion" && objective?["id"]?.ToString() == "sabotage" ? "Объекты: "
-                : kind == "assault_diversion" ? "Защитники: "
-                : "Собрано: ";
-            _objective.text = objectivePrefix + current + " / " + target
-                + (current >= target ? "   ·   бонус " + bonus + "   ·   максимум " + maximum : string.Empty);
+            RefreshObjectiveRows();
 
             float threat = Mathf.Clamp(_activity?["threat"]?.ToObject<float>() ?? 0f, 0f, 100f);
             _threatFill.fillAmount = threat / 100f;
@@ -524,23 +546,25 @@ namespace RealmOfAshes.Game
             root.anchorMin = root.anchorMax = new Vector2(0.5f, 1f);
             root.pivot = new Vector2(0.5f, 1f);
             root.anchoredPosition = new Vector2(0f, -18f);
-            root.sizeDelta = new Vector2(330f, 194f);
+            root.sizeDelta = new Vector2(410f, 260f);
             _root.GetComponent<Image>().color = PanelBg;
             var border = _root.GetComponent<Outline>();
             border.effectColor = Border;
             border.effectDistance = new Vector2(1f, -1f);
 
             _title = Label("Title", root, 12, TextAnchor.MiddleLeft, Accent, FontStyle.Bold);
-            Place(_title.rectTransform, 14f, -28f, -90f, -10f);
+            Place(_title.rectTransform, 14f, -28f, -110f, -10f);
             _timer = Label("Timer", root, 14, TextAnchor.MiddleRight, Accent, FontStyle.Bold);
-            Place(_timer.rectTransform, 230f, -28f, -14f, -10f);
+            Place(_timer.rectTransform, 300f, -28f, -14f, -10f);
             _phase = Label("Phase", root, 10, TextAnchor.MiddleLeft, Muted);
             Place(_phase.rectTransform, 14f, -47f, -14f, -31f);
-            _objective = Label("Objective", root, 12, TextAnchor.MiddleLeft, Ink);
-            Place(_objective.rectTransform, 14f, -70f, -14f, -49f);
+            _objectiveHeader = Label("ObjectiveHeader", root, 9, TextAnchor.MiddleLeft, Muted, FontStyle.Bold);
+            _objectiveHeader.text = "ЦЕЛИ ОПЕРАЦИИ";
+            Place(_objectiveHeader.rectTransform, 14f, -67f, -14f, -50f);
+            BuildObjectiveRowPool(root);
 
             RectTransform threatTrack = Child("ThreatTrack", root);
-            Place(threatTrack, 14f, -86f, -14f, -75f);
+            Place(threatTrack, 14f, -151f, -14f, -141f);
             threatTrack.gameObject.AddComponent<Image>().color = new Color(0.08f, 0.08f, 0.065f, 1f);
             RectTransform fill = Child("ThreatFill", threatTrack);
             Stretch(fill, 1f);
@@ -550,17 +574,17 @@ namespace RealmOfAshes.Game
             _threatFill.fillOrigin = 0;
             _threatFill.fillAmount = 0f;
             _threatText = Label("Threat", root, 10, TextAnchor.MiddleLeft, Muted, FontStyle.Bold);
-            Place(_threatText.rectTransform, 14f, -105f, -130f, -89f);
+            Place(_threatText.rectTransform, 14f, -169f, -160f, -153f);
             _participants = Label("Participants", root, 10, TextAnchor.MiddleRight, Muted);
-            Place(_participants.rectTransform, 170f, -105f, -14f, -89f);
+            Place(_participants.rectTransform, 220f, -169f, -14f, -153f);
             _message = Label("Message", root, 10, TextAnchor.UpperLeft, Muted);
             _message.horizontalOverflow = HorizontalWrapMode.Wrap;
-            Place(_message.rectTransform, 14f, -139f, -14f, -110f);
+            Place(_message.rectTransform, 14f, -203f, -14f, -174f);
 
             var actionGo = new GameObject("Btn:ActivityExtract", typeof(RectTransform), typeof(Image), typeof(Outline), typeof(Button));
             var actionRect = (RectTransform)actionGo.transform;
             actionRect.SetParent(root, false);
-            Place(actionRect, 14f, -181f, -14f, -147f);
+            Place(actionRect, 14f, -247f, -14f, -211f);
             actionGo.GetComponent<Image>().color = ButtonBg;
             var actionBorder = actionGo.GetComponent<Outline>();
             actionBorder.effectColor = Safe;
@@ -616,6 +640,184 @@ namespace RealmOfAshes.Game
             ConfigureActivityFeedbackVisuals(introRect, resultRect);
             _resultRoot.SetActive(false);
             BuildActivityNavigation(canvasGo.transform);
+        }
+
+        private void BuildObjectiveRowPool(RectTransform parent)
+        {
+            if (_objectiveSlots.Count > 0) return;
+            var rowsGo = new GameObject("ObjectiveRows", typeof(RectTransform));
+            RectTransform rows = (RectTransform)rowsGo.transform;
+            rows.SetParent(parent, false);
+            Place(rows, 14f, -137f, -14f, -69f);
+            for (int index = 0; index < 3; index += 1)
+            {
+                var rowGo = new GameObject("ObjectiveRow:" + (index + 1), typeof(RectTransform), typeof(Image));
+                RectTransform row = (RectTransform)rowGo.transform;
+                row.SetParent(rows, false);
+                Place(row, 0f, -(21f + index * 23f), 0f, -(index * 23f));
+                Image background = rowGo.GetComponent<Image>();
+                background.color = new Color(0.07f, 0.08f, 0.06f, 0.78f);
+                background.raycastTarget = false;
+
+                RectTransform stripeRect = Child("State", row);
+                stripeRect.anchorMin = new Vector2(0f, 0f);
+                stripeRect.anchorMax = new Vector2(0f, 1f);
+                stripeRect.pivot = new Vector2(0f, 0.5f);
+                stripeRect.offsetMin = Vector2.zero;
+                stripeRect.offsetMax = new Vector2(3f, 0f);
+                Image stripe = stripeRect.gameObject.AddComponent<Image>();
+                stripe.raycastTarget = false;
+
+                Text label = Label("Label", row, 10, TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
+                label.verticalOverflow = VerticalWrapMode.Truncate;
+                Place(label.rectTransform, 9f, -19f, -137f, -2f);
+                Text progress = Label("Progress", row, 9, TextAnchor.MiddleRight, Muted, FontStyle.Bold);
+                progress.verticalOverflow = VerticalWrapMode.Truncate;
+                Place(progress.rectTransform, 250f, -19f, -8f, -2f);
+                _objectiveSlots.Add(new ObjectiveSlot
+                {
+                    Root = rowGo,
+                    Background = background,
+                    Stripe = stripe,
+                    Label = label,
+                    Progress = progress
+                });
+                rowGo.SetActive(false);
+            }
+        }
+
+        private void RefreshObjectiveRows()
+        {
+            BuildObjectiveViews(_activity, _objectiveViews);
+            ActiveObjectiveRowCount = Mathf.Min(_objectiveViews.Count, _objectiveSlots.Count);
+            for (int index = 0; index < _objectiveSlots.Count; index += 1)
+            {
+                ObjectiveSlot slot = _objectiveSlots[index];
+                bool visible = index < ActiveObjectiveRowCount;
+                if (slot.Root.activeSelf != visible) slot.Root.SetActive(visible);
+                if (!visible) continue;
+                slot.View = _objectiveViews[index];
+                slot.Label.text = slot.View.Label;
+                slot.Progress.text = slot.View.Progress;
+                Color color = ObjectiveViewColor(slot.View);
+                slot.Stripe.color = color;
+                slot.Label.color = color;
+                slot.Progress.color = slot.View.State == ObjectiveVisualState.Locked ? color : Ink;
+                slot.Background.color = slot.View.IsCurrent
+                    ? new Color(color.r * 0.20f, color.g * 0.20f, color.b * 0.20f, 0.94f)
+                    : new Color(0.07f, 0.08f, 0.06f, 0.78f);
+                slot.Root.transform.localScale = Vector3.one;
+            }
+        }
+
+        public static void BuildObjectiveViews(JObject activity, List<ObjectiveView> output)
+        {
+            if (output == null) throw new ArgumentNullException(nameof(output));
+            output.Clear();
+            JArray objectives = activity?["objectives"] as JArray;
+            if (objectives == null) return;
+            string kind = activity?["kind"]?.ToString() ?? string.Empty;
+            string approach = activity?["approach"]?.ToString() ?? string.Empty;
+            bool extractionOpen = activity?["extractionOpen"]?.ToObject<bool>() == true;
+            bool sequenceBlocked = false;
+            bool currentAssigned = extractionOpen;
+
+            foreach (JToken token in objectives)
+            {
+                JObject objective = token as JObject;
+                if (objective == null || output.Count >= 3) continue;
+                string id = objective["id"]?.ToString() ?? string.Empty;
+                bool branchLocked = false;
+                if (kind == "assault_diversion")
+                {
+                    if (id == "attackers")
+                    {
+                        if (approach == "diversion") continue;
+                        branchLocked = string.IsNullOrEmpty(approach);
+                    }
+                    else if (id == "sabotage")
+                    {
+                        if (approach == "assault") continue;
+                        branchLocked = string.IsNullOrEmpty(approach);
+                    }
+                }
+
+                int current = Mathf.Max(0, objective["current"]?.ToObject<int>() ?? 0);
+                int target = Mathf.Max(1, objective["target"]?.ToObject<int>() ?? 1);
+                int bonus = Mathf.Max(target, objective["bonusTarget"]?.ToObject<int>() ?? target);
+                int maximum = Mathf.Max(bonus, objective["maxTarget"]?.ToObject<int>() ?? bonus);
+                bool required = objective["required"]?.ToObject<bool>() != false;
+                if (kind == "assault_diversion" && ((approach == "assault" && id == "attackers")
+                    || (approach == "diversion" && id == "sabotage"))) required = true;
+                bool locked = branchLocked || sequenceBlocked;
+                bool reachedTarget = current >= target;
+                bool reachedMaximum = current >= maximum;
+                bool isCurrent = !locked && !currentAssigned && !reachedMaximum;
+                if (isCurrent) currentAssigned = true;
+
+                ObjectiveVisualState visualState = locked ? ObjectiveVisualState.Locked
+                    : reachedMaximum ? (maximum > target ? ObjectiveVisualState.Mastered : ObjectiveVisualState.Complete)
+                    : current >= bonus && bonus > target ? ObjectiveVisualState.Bonus
+                    : reachedTarget ? ObjectiveVisualState.Complete
+                    : isCurrent ? ObjectiveVisualState.Active : ObjectiveVisualState.Locked;
+                string progress = locked
+                    ? branchLocked ? "ПОСЛЕ ВЫБОРА" : "СЛЕДУЮЩИЙ ЭТАП"
+                    : ObjectiveProgressText(current, target, bonus, maximum);
+                output.Add(new ObjectiveView(id, ObjectiveLabel(kind, approach, id,
+                    objective["label"]?.ToString()), progress, visualState, isCurrent));
+                if (!locked && required && !reachedTarget) sequenceBlocked = true;
+            }
+
+            if (extractionOpen && output.Count < 3)
+            {
+                output.Add(new ObjectiveView("extraction", ExtractionObjectiveLabel(kind), "ДОСТУПНО",
+                    ObjectiveVisualState.Active, true));
+            }
+        }
+
+        private static string ObjectiveLabel(string kind, string approach, string id, string authored)
+        {
+            if (kind == "assault_diversion" && string.IsNullOrEmpty(approach))
+            {
+                if (id == "attackers") return "Штурм: сломить защитников";
+                if (id == "sabotage") return "Диверсия: вывести объекты из строя";
+            }
+            if (!string.IsNullOrWhiteSpace(authored)) return authored;
+            if (id == "resources") return "Собрать ресурсы";
+            if (id == "recon_points") return "Проверить точки наблюдения";
+            if (id == "distress_signal") return "Найти источник сигнала";
+            if (id == "attackers") return kind == "distress_signal" ? "Зачистить засаду" : "Отразить нападение";
+            if (id == "sabotage") return "Вывести объекты из строя";
+            if (id == "approach") return "Выбрать подход";
+            return "Выполнить цель";
+        }
+
+        private static string ObjectiveProgressText(int current, int target, int bonus, int maximum)
+        {
+            if (current >= maximum)
+                return maximum > target ? "МАКСИМУМ · " + current + "/" + maximum : "ГОТОВО · " + current + "/" + target;
+            if (bonus > target && current >= bonus)
+                return maximum > bonus ? "БОНУС ГОТОВ · " + current + "/" + maximum : "БОНУС ГОТОВ";
+            if (current >= target)
+                return bonus > target ? "ОСНОВА ГОТОВА · " + current + "/" + bonus : "ГОТОВО";
+            return current + " / " + target;
+        }
+
+        private static string ExtractionObjectiveLabel(string kind)
+        {
+            if (kind == "outpost_defense") return "Завершить оборону";
+            if (kind == "distress_signal") return "Завершить спасение";
+            return "Добраться до эвакуации";
+        }
+
+        private static Color ObjectiveViewColor(ObjectiveView view)
+        {
+            if (view.State == ObjectiveVisualState.Locked)
+                return new Color(Muted.r, Muted.g, Muted.b, 0.62f);
+            if (view.State == ObjectiveVisualState.Complete
+                || view.State == ObjectiveVisualState.Bonus
+                || view.State == ObjectiveVisualState.Mastered) return Safe;
+            return view.IsCurrent ? Accent : Ink;
         }
 
         public static string FailureSummary(string reason)

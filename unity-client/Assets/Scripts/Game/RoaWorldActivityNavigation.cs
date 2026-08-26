@@ -52,8 +52,8 @@ namespace RealmOfAshes.Game
             rect.SetParent(canvasRoot, false);
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -220f);
-            rect.sizeDelta = new Vector2(300f, 36f);
+            rect.anchoredPosition = new Vector2(0f, -282f);
+            rect.sizeDelta = new Vector2(340f, 36f);
             Image navigationBackground = _navigationRoot.GetComponent<Image>();
             navigationBackground.color = new Color(PanelBg.r, PanelBg.g, PanelBg.b, 0.93f);
             navigationBackground.raycastTarget = false;

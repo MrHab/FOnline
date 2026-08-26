@@ -1,9 +1,11 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -43,6 +45,44 @@ namespace RealmOfAshes.EditorTools
                     == RoaActivityFeedbackCue.None,
                 "death recovery duplicates the activity failure cue");
 
+            var objectiveViews = new List<RoaWorldActivityCanvas.ObjectiveView>();
+            JObject distress = ActivityPlan("distress_signal",
+                Objective("distress_signal", "Найти источник сигнала", 0, 1, 1, 1, true),
+                Objective("attackers", "Зачистить засаду", 0, 4, 6, 9, true));
+            RoaWorldActivityCanvas.BuildObjectiveViews(distress, objectiveViews);
+            Require(objectiveViews.Count == 2 && objectiveViews[0].IsCurrent
+                    && objectiveViews[0].State == RoaWorldActivityCanvas.ObjectiveVisualState.Active
+                    && objectiveViews[1].State == RoaWorldActivityCanvas.ObjectiveVisualState.Locked,
+                "distress signal does not reveal a clear ordered plan");
+            ObjectiveAt(distress, 0)["current"] = 1;
+            RoaWorldActivityCanvas.BuildObjectiveViews(distress, objectiveViews);
+            Require(objectiveViews[0].State == RoaWorldActivityCanvas.ObjectiveVisualState.Complete
+                    && objectiveViews[1].IsCurrent,
+                "clearing the distress beacon does not advance the visible objective");
+            ObjectiveAt(distress, 1)["current"] = 4;
+            distress["extractionOpen"] = true;
+            RoaWorldActivityCanvas.BuildObjectiveViews(distress, objectiveViews);
+            Require(objectiveViews.Count == 3 && objectiveViews[2].Id == "extraction"
+                    && objectiveViews[2].IsCurrent && objectiveViews[1].Progress.Contains("ОСНОВА ГОТОВА"),
+                "opened rescue completion has no explicit final step or bonus milestone");
+
+            JObject operation = ActivityPlan("assault_diversion",
+                Objective("approach", "Выбрать подход", 0, 1, 1, 1, true),
+                Objective("attackers", "Сломить защитников", 0, 5, 7, 9, false),
+                Objective("sabotage", "Вывести объекты из строя", 0, 3, 4, 4, false));
+            RoaWorldActivityCanvas.BuildObjectiveViews(operation, objectiveViews);
+            Require(objectiveViews.Count == 3 && objectiveViews[0].IsCurrent
+                    && objectiveViews[1].Progress == "ПОСЛЕ ВЫБОРА"
+                    && objectiveViews[2].Label.StartsWith("Диверсия:"),
+                "assault/diversion planning does not preview both mutually exclusive branches");
+            operation["approach"] = "diversion";
+            ObjectiveAt(operation, 0)["current"] = 1;
+            ObjectiveAt(operation, 2)["required"] = true;
+            RoaWorldActivityCanvas.BuildObjectiveViews(operation, objectiveViews);
+            Require(objectiveViews.Count == 2 && objectiveViews[0].Id == "approach"
+                    && objectiveViews[1].Id == "sabotage" && objectiveViews[1].IsCurrent,
+                "selected diversion branch does not replace the discarded assault branch");
+
             RoaActivityFeedback.CardSample hidden = RoaActivityFeedback.SampleCard(0f,
                 RoaActivityFeedback.IntroSeconds);
             RoaActivityFeedback.CardSample shown = RoaActivityFeedback.SampleCard(0.3f,
@@ -62,8 +102,25 @@ namespace RealmOfAshes.EditorTools
                 "objective pulse envelope is not bounded");
 
             GameObject audioHost = null;
+            GameObject canvasHost = null;
             try
             {
+                canvasHost = new GameObject("Activity objective Canvas probe");
+                RoaWorldActivityCanvas activityCanvas = canvasHost.AddComponent<RoaWorldActivityCanvas>();
+                var ensureBuilt = typeof(RoaWorldActivityCanvas).GetMethod("EnsureBuilt",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                Require(ensureBuilt != null, "activity Canvas build entry point is missing");
+                ensureBuilt.Invoke(activityCanvas, null);
+                Transform objectiveRows = canvasHost.transform.Find(
+                    "WorldActivityCanvas/WorldActivityHud/ObjectiveRows");
+                Require(objectiveRows != null && objectiveRows.childCount == 3
+                        && activityCanvas.ObjectiveRowPoolSize == 3,
+                    "activity Canvas does not prebuild the bounded three-row objective pool");
+                foreach (Image image in objectiveRows.GetComponentsInChildren<Image>(true))
+                    Require(!image.raycastTarget, "objective presentation intercepts gameplay input");
+                foreach (Text text in objectiveRows.GetComponentsInChildren<Text>(true))
+                    Require(!text.raycastTarget, "objective text intercepts gameplay input");
+
                 audioHost = new GameObject("Activity feedback audio probe");
                 RoaAudio audio = audioHost.AddComponent<RoaAudio>();
                 if (!audio.ActivityCuesReady)
@@ -80,10 +137,42 @@ namespace RealmOfAshes.EditorTools
             finally
             {
                 if (audioHost != null) UnityEngine.Object.DestroyImmediate(audioHost);
+                if (canvasHost != null) UnityEngine.Object.DestroyImmediate(canvasHost);
             }
 
             Debug.Log("[ОБРАТНАЯ СВЯЗЬ АКТИВНОСТИ] готово: старт → прогресс → эвакуация, "
-                + "результат=успех/провал, карточки=fade+slide, сигналы=5/5");
+                + "цели=этапы/ветки/бонус/финал, результат=успех/провал, карточки=fade+slide, сигналы=5/5");
+        }
+
+        private static JObject ActivityPlan(string kind, params JObject[] objectives)
+        {
+            return new JObject
+            {
+                ["kind"] = kind,
+                ["approach"] = string.Empty,
+                ["extractionOpen"] = false,
+                ["objectives"] = new JArray(objectives)
+            };
+        }
+
+        private static JObject Objective(string id, string label, int current, int target,
+                                         int bonus, int maximum, bool required)
+        {
+            return new JObject
+            {
+                ["id"] = id,
+                ["label"] = label,
+                ["current"] = current,
+                ["target"] = target,
+                ["bonusTarget"] = bonus,
+                ["maxTarget"] = maximum,
+                ["required"] = required
+            };
+        }
+
+        private static JObject ObjectiveAt(JObject activity, int index)
+        {
+            return ((activity?["objectives"] as JArray)?[index] as JObject) ?? new JObject();
         }
 
         private static JObject Activity(string id, int current, bool extractionOpen, string phase)

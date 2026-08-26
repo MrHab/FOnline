@@ -25,10 +25,10 @@ namespace RealmOfAshes.Game
             _resultRect = result;
             _introBasePosition = intro.anchoredPosition;
             _resultBasePosition = result.anchoredPosition;
-            _introGroup = intro.gameObject.GetComponent<CanvasGroup>()
-                ?? intro.gameObject.AddComponent<CanvasGroup>();
-            _resultGroup = result.gameObject.GetComponent<CanvasGroup>()
-                ?? result.gameObject.AddComponent<CanvasGroup>();
+            _introGroup = intro.gameObject.GetComponent<CanvasGroup>();
+            if (_introGroup == null) _introGroup = intro.gameObject.AddComponent<CanvasGroup>();
+            _resultGroup = result.gameObject.GetComponent<CanvasGroup>();
+            if (_resultGroup == null) _resultGroup = result.gameObject.AddComponent<CanvasGroup>();
             _introGroup.blocksRaycasts = false;
             _introGroup.interactable = false;
             _resultGroup.blocksRaycasts = false;
@@ -99,10 +99,15 @@ namespace RealmOfAshes.Game
             Color target = LastFeedbackCue == RoaActivityFeedbackCue.ExtractionOpened
                 || LastFeedbackCue == RoaActivityFeedbackCue.Success ? Safe
                 : LastFeedbackCue == RoaActivityFeedbackCue.Failure ? Danger : Accent;
-            if (_objective != null)
+            foreach (ObjectiveSlot slot in _objectiveSlots)
             {
-                _objective.color = Color.Lerp(Ink, target, pulse);
-                _objective.rectTransform.localScale = Vector3.one * (1f + pulse * 0.035f);
+                if (slot == null || slot.Root == null || !slot.Root.activeSelf) continue;
+                Color baseline = ObjectiveViewColor(slot.View);
+                slot.Label.color = slot.View.IsCurrent ? Color.Lerp(baseline, target, pulse) : baseline;
+                slot.Progress.color = slot.View.State == ObjectiveVisualState.Locked
+                    ? baseline : slot.View.IsCurrent ? Color.Lerp(Ink, target, pulse * 0.65f) : Ink;
+                slot.Root.transform.localScale = Vector3.one
+                    * (slot.View.IsCurrent ? 1f + pulse * 0.035f : 1f);
             }
             if (_action != null && _action.targetGraphic is Image image)
                 image.color = Color.Lerp(ButtonBg, target * new Color(0.52f, 0.52f, 0.52f, 1f), pulse);
@@ -114,10 +119,13 @@ namespace RealmOfAshes.Game
             _pendingResultCue = RoaActivityFeedbackCue.None;
             LastFeedbackCue = RoaActivityFeedbackCue.None;
             _feedbackPulseStartedAt = -100f;
-            if (_objective != null)
+            foreach (ObjectiveSlot slot in _objectiveSlots)
             {
-                _objective.color = Ink;
-                _objective.rectTransform.localScale = Vector3.one;
+                if (slot == null || slot.Root == null) continue;
+                Color baseline = ObjectiveViewColor(slot.View);
+                slot.Label.color = baseline;
+                slot.Progress.color = slot.View.State == ObjectiveVisualState.Locked ? baseline : Ink;
+                slot.Root.transform.localScale = Vector3.one;
             }
             if (_action != null && _action.targetGraphic is Image image) image.color = ButtonBg;
         }

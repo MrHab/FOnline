@@ -141,6 +141,21 @@ requireText(canvas, 'kind == "distress_signal"',
   'Unity HUD has no distress signal presentation');
 requireText(canvas, 'kind == "assault_diversion"',
   'Unity HUD has no assault-diversion presentation');
+requireText(canvas, 'public static void BuildObjectiveViews(JObject activity, List<ObjectiveView> output)',
+  'Unity HUD no longer derives a deterministic multi-stage objective plan');
+requireText(canvas, 'new GameObject("ObjectiveRows"',
+  'Unity HUD lost its bounded Canvas objective-row pool');
+requireText(canvas, 'branchLocked ? "ПОСЛЕ ВЫБОРА" : "СЛЕДУЮЩИЙ ЭТАП"',
+  'ordered and mutually exclusive activity stages are no longer distinguished');
+requireText(canvas, 'ExtractionObjectiveLabel(kind), "ДОСТУПНО"',
+  'opening extraction no longer adds a clear final objective');
+requireText(canvas, '"ОСНОВА ГОТОВА · " + current + "/" + bonus',
+  'required, bonus and maximum milestones are no longer readable');
+requireText(feedbackCanvas, 'foreach (ObjectiveSlot slot in _objectiveSlots)',
+  'authoritative progress feedback no longer pulses the active Canvas objective row');
+requirePattern(feedbackCanvas,
+  /GetComponent<CanvasGroup>\(\);[\s\S]{0,100}if \(_introGroup == null\)[\s\S]{0,180}if \(_resultGroup == null\)/,
+  'activity feedback CanvasGroups are not recreated safely under Unity fake-null semantics');
 requireText(canvas, 'Bootstrap.FrontendVisible || Bootstrap.OnGlobalMap',
   'activity HUD is not hidden outside a local gameplay location');
 requireText(bootstrap, 'WorldActivityCanvas.Configure(Socket, this);',
@@ -285,6 +300,10 @@ requireText(feedbackProbe, '[ОБРАТНАЯ СВЯЗЬ АКТИВНОСТИ] �
   'Unity editor probe for activity transition feedback is missing');
 requireText(feedbackProbe, 'audio.GeneratedClipCount == 32',
   'Unity editor probe no longer validates the generated activity sounds');
+requireText(feedbackProbe, 'objectiveViews[1].Progress == "ПОСЛЕ ВЫБОРА"',
+  'Unity editor probe no longer validates the assault/diversion branch preview');
+requireText(feedbackProbe, 'objectiveRows.childCount == 3',
+  'Unity editor probe no longer validates the bounded objective Canvas pool');
 for (const [contents, label] of [
   [feedbackMetadata, 'RoaActivityFeedback'],
   [feedbackCanvasMetadata, 'RoaWorldActivityCanvas.Feedback'],
@@ -296,5 +315,5 @@ for (const [contents, label] of [
   }
 }
 if (!process.exitCode) {
-  console.log('Unity world activities OK: authoritative progress, deferred transition feedback, exit gating and acknowledged rewards');
+  console.log('Unity world activities OK: authoritative multi-stage objectives, deferred feedback, exit gating and acknowledged rewards');
 }

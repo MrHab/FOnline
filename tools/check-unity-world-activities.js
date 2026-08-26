@@ -39,6 +39,10 @@ const navigationProbe = read('unity-client/Assets/Editor/RoaWorldActivityNavigat
 const navigationProbeMetadata = read('unity-client/Assets/Editor/RoaWorldActivityNavigationProbe.cs.meta');
 const activityHub = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs');
 const activityHubMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs.meta');
+const activityHubPresentation = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.Presentation.cs');
+const activityHubPresentationMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.Presentation.cs.meta');
+const activityHubProbe = read('unity-client/Assets/Editor/RoaActivityHubPresentationProbe.cs');
+const activityHubProbeMetadata = read('unity-client/Assets/Editor/RoaActivityHubPresentationProbe.cs.meta');
 const feedbackProbe = read('unity-client/Assets/Editor/RoaActivityFeedbackProbe.cs');
 const feedbackProbeMetadata = read('unity-client/Assets/Editor/RoaActivityFeedbackProbe.cs.meta');
 
@@ -158,6 +162,29 @@ requireText(interaction, 'public JObject TrackedWorldTask',
   'Unity interaction facade no longer exposes the tracked activity target');
 requireText(globalMap, 'BuildTrackedWorldTaskMarker();',
   'the live map no longer highlights the tracked activity target');
+requireText(activityHub, 'BuildVisibleCardSignature(tasks)',
+  'the activity hub rebuilds cards without comparing visible state');
+requirePattern(activityHub,
+  /if \(!string\.Equals\(signature, _cardSignature[\s\S]{0,120}RefreshCards\(tasks, signature\)/,
+  'unchanged activity snapshots can still destroy and recreate every card');
+requireText(activityHub, 'SetExpanded(false);',
+  'starting an activity route no longer reveals the global map');
+requireText(activityHub, 'RoaActivityHubPresentation.DeadlineLabel(task, worldHour)',
+  'activity cards no longer communicate event urgency');
+requireText(activityHubPresentation, 'public static string BuildSignature',
+  'the visible activity-card signature is missing');
+requireText(activityHubPresentation, 'Map.TravelProgress',
+  'the compact route launcher lost its progress fill');
+requireText(activityHubPresentation, 'LauncherText(',
+  'the compact launcher no longer names travel time or available signals');
+requireText(activityHubPresentation, 'SampleCardRefresh(',
+  'changed activity cards pop in without a restrained refresh transition');
+requireText(activityHub, 'card.SetActive(false);',
+  'a real activity change can leave stale cards visible for one frame');
+requireText(activityHub, 'MarkActivityCardsRebuilt();',
+  'a real activity change no longer starts the restrained card transition');
+requireText(activityHubProbe, '[ЦЕНТР АКТИВНОСТЕЙ] готово:',
+  'Unity editor probe for stable activity cards is missing');
 if (!/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(metadata)) {
   fail('Unity metadata for RoaWorldActivityCanvas is invalid');
 }
@@ -173,6 +200,15 @@ if (!/^fileFormatVersion: 2\r?\nguid: [0-9a-f]{32}\r?\n?$/.test(navigationProbeM
 if (!activityHubMetadata.includes('fileFormatVersion: 2')
     || !/guid: [0-9a-f]{32}/.test(activityHubMetadata)) {
   fail('Unity metadata for RoaActivityHubCanvas is invalid');
+}
+for (const [contents, label] of [
+  [activityHubPresentationMetadata, 'RoaActivityHubCanvas.Presentation'],
+  [activityHubProbeMetadata, 'RoaActivityHubPresentationProbe']
+]) {
+  if (!contents.includes('fileFormatVersion: 2')
+      || !/^guid: [0-9a-f]{32}$/m.test(contents)) {
+    fail('Unity metadata for ' + label + ' is invalid');
+  }
 }
 
 requireText(simulation, 'function failWorldActivityTask',

@@ -33,6 +33,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaHitReactionProbe),
             typeof(RoaRemoteDeathProbe),
             typeof(RoaActivityFeedbackProbe),
+            typeof(RoaActivityHubPresentationProbe),
             typeof(RoaGroundDressingProbe)
         };
 

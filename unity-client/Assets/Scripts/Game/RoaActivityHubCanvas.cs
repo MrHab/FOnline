@@ -11,7 +11,7 @@ namespace RealmOfAshes.Game
     /// каждого типа прямо на глобальной карте, принимает локальные вылазки без
     /// старой доски и передает движение существующему серверному маршруту.
     /// </summary>
-    public sealed class RoaActivityHubCanvas : MonoBehaviour
+    public sealed partial class RoaActivityHubCanvas : MonoBehaviour
     {
         private static readonly string[] Kinds =
         {
@@ -64,25 +64,34 @@ namespace RealmOfAshes.Game
             if (!_wasVisible)
             {
                 _wasVisible = true;
-                _expanded = true;
-                _refreshAt = 0f;
+                PrepareHubForMap();
             }
-            _root.SetActive(_expanded);
-            _shade.SetActive(_expanded);
-            _launcher.SetActive(!_expanded);
-            if (!_expanded || Time.unscaledTime < _refreshAt) return;
+            UpdateHubPresentation();
+            UpdateLauncherPresentation();
+            if (Time.unscaledTime < _refreshAt) return;
             _refreshAt = Time.unscaledTime + 0.75f;
-            RefreshCards();
+            List<JObject> tasks = CollectPriorityTasks();
+            string signature = BuildVisibleCardSignature(tasks);
+            if (!string.Equals(signature, _cardSignature, StringComparison.Ordinal))
+                RefreshCards(tasks, signature);
         }
 
-        private void RefreshCards()
+        private void RefreshCards(List<JObject> tasks, string signature)
         {
-            foreach (GameObject card in _cards) Destroy(card);
+            foreach (GameObject card in _cards)
+            {
+                if (card == null) continue;
+                card.SetActive(false);
+                Destroy(card);
+            }
             _cards.Clear();
 
-            List<JObject> tasks = CollectPriorityTasks();
             if (tasks.Count == 0) AddCard(Kinds[0], null);
             else foreach (JObject task in tasks) AddCard(task["type"]?.ToString() ?? string.Empty, task);
+            _cardSignature = signature;
+            _visibleTaskCount = tasks.Count;
+            CardRebuildCount++;
+            MarkActivityCardsRebuilt();
             Map.SetActivityHighlights(tasks);
         }
 
@@ -166,7 +175,7 @@ namespace RealmOfAshes.Game
 
             Text kicker = Label("Kind", rect, 10, TextAnchor.MiddleLeft, KindColor(kind), FontStyle.Bold);
             kicker.text = KindLabel(kind).ToUpperInvariant();
-            Place(kicker.rectTransform, 10f, -20f, -10f, -5f);
+            Place(kicker.rectTransform, 10f, -20f, -118f, -5f);
 
             if (task == null)
             {
@@ -187,6 +196,12 @@ namespace RealmOfAshes.Game
             string siteId = task["siteId"]?.ToString() ?? string.Empty;
             string issuerId = task["issuerSiteId"]?.ToString() ?? siteId;
             string target = task["targetSiteName"]?.ToString() ?? siteId;
+            double worldHour = Map?.WastelandState?["sim"]?["worldHour"]?.ToObject<double>() ?? double.NaN;
+            string deadline = RoaActivityHubPresentation.DeadlineLabel(task, worldHour);
+            Text deadlineText = Label("Deadline", rect, 10, TextAnchor.MiddleRight,
+                deadline == "истекает" || deadline == "меньше часа" ? Danger : Muted, FontStyle.Bold);
+            deadlineText.text = deadline.ToUpperInvariant();
+            Place(deadlineText.rectTransform, 226f, -20f, -10f, -5f);
 
             Text title = Label("Title", rect, 12, TextAnchor.UpperLeft, Ink, FontStyle.Bold);
             title.text = task["title"]?.ToString() ?? KindLabel(kind);
@@ -194,10 +209,10 @@ namespace RealmOfAshes.Game
             Place(title.rectTransform, 10f, -42f, -10f, -22f);
 
             Text details = Label("Details", rect, 10, TextAnchor.UpperLeft, Muted);
-            details.text = target + DistanceText(task) + "\n" + GoalText(kind);
             details.horizontalOverflow = HorizontalWrapMode.Wrap;
             details.verticalOverflow = VerticalWrapMode.Truncate;
-            details.text = target + DistanceText(task) + " · " + RiskLabel(task) + "\n" + GoalText(kind);
+            details.text = target + DistanceText(task) + " · " + RiskLabel(task)
+                + "\n" + GoalText(kind);
             Place(details.rectTransform, 10f, -65f, -112f, -41f);
 
             JObject reward = task["reward"] as JObject;
@@ -239,8 +254,12 @@ namespace RealmOfAshes.Game
 
             if (kind == "escort_caravan" && !accepted && !Map.PlayerAtWorldSite(issuerId))
             {
-                SetMessage("Строим маршрут к месту сбора каравана…", Accent);
-                Map.RequestTravelToWorldSite(issuerId);
+                if (Map.RequestTravelToWorldSite(issuerId))
+                {
+                    SetMessage("Маршрут к месту сбора каравана начат.", Safe);
+                    SetExpanded(false);
+                }
+                else SetMessage("Не удалось построить маршрут к месту сбора.", Danger);
                 return;
             }
 
@@ -256,7 +275,7 @@ namespace RealmOfAshes.Game
                     }
                     SetMessage(kind == "escort_caravan" ? "Вы в группе каравана." : "Вылазка принята. Маршрут построен.", Safe);
                     if (kind != "escort_caravan") TravelTo(task);
-                    _refreshAt = 0f;
+                    InvalidateActivityCards();
                 });
                 return;
             }
@@ -267,7 +286,7 @@ namespace RealmOfAshes.Game
                 {
                     if (ack?["ok"]?.ToObject<bool>() == true) TravelTo(task);
                     else SetMessage(ack?["error"]?.ToString() ?? "Не удалось отметить цель.", Danger);
-                    _refreshAt = 0f;
+                    InvalidateActivityCards();
                 });
                 return;
             }
@@ -287,7 +306,11 @@ namespace RealmOfAshes.Game
                 SetMessage("Входим в район активности…", Safe);
                 Map.EnterCurrent();
             }
-            else SetMessage("Маршрут к активности начат.", Safe);
+            else
+            {
+                SetMessage("Маршрут к активности начат.", Safe);
+                SetExpanded(false);
+            }
         }
 
         private string DistanceText(JObject task)
@@ -332,7 +355,7 @@ namespace RealmOfAshes.Game
             launcher.sizeDelta = new Vector2(210f, 38f);
             _launcher.GetComponent<Image>().color = ButtonBg;
             _launcher.GetComponent<Outline>().effectColor = Border;
-            _launcher.GetComponent<Button>().onClick.AddListener(() => { _expanded = true; _refreshAt = 0f; });
+            _launcher.GetComponent<Button>().onClick.AddListener(() => SetExpanded(true));
             Text launcherLabel = Label("Label", launcher, 12, TextAnchor.MiddleCenter, Accent, FontStyle.Bold);
             launcherLabel.text = "СИГНАЛЫ ПУСТОШИ";
             Stretch(launcherLabel.rectTransform, 2f);
@@ -364,7 +387,7 @@ namespace RealmOfAshes.Game
             subtitle.text = "Три приоритетных сигнала живого мира";
             Place(subtitle.rectTransform, 14f, -57f, -54f, -37f);
 
-            Button close = Button(root, "×", () => _expanded = false);
+            Button close = Button(root, "×", () => SetExpanded(false));
             Place((RectTransform)close.transform, 329f, -40f, -10f, -10f);
 
             var gridGo = new GameObject("ActivityGrid", typeof(RectTransform), typeof(GridLayoutGroup));
@@ -379,9 +402,9 @@ namespace RealmOfAshes.Game
             grid.startAxis = GridLayoutGroup.Axis.Horizontal;
 
             _message = Label("Message", root, 11, TextAnchor.MiddleLeft, Muted);
-            _message.text = "Активности обновляются вместе с состоянием пустоши.";
             _message.text = "Выберите сигнал — цель станет маршрутом.";
             Place(_message.rectTransform, 14f, -402f, -14f, -368f);
+            ConfigureHubPresentation(root, launcher, _grid, launcherLabel);
         }
 
         private static string KindLabel(string kind)

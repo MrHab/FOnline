@@ -77,7 +77,7 @@ namespace RealmOfAshes.EditorTools
                         && terrain.GroundRenderer.sharedMaterial.IsKeywordEnabled("_DETAIL_MULX2"),
                     "повторяемая микротекстура земли не подключена");
                 Require(terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 4
-                        && terrain.DetailVertexCount < 4400,
+                        && terrain.DetailVertexCount < 10000,
                     "геометрический бюджет оформления нарушен: " + terrain.DetailVertexCount);
                 int initialVertices = terrain.DetailVertexCount;
 
@@ -92,8 +92,11 @@ namespace RealmOfAshes.EditorTools
                     + generator.ScrubClusterCount + "/" + generator.StoneClusterCount);
                 Require(RoaGroundDressing.ScrubBladeCount >= 6
                         && RoaGroundDressing.StoneClusterPieceCount >= 4
-                        && terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 22,
+                        && terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 48,
                     "детали земли остались слишком мелкими или схематичными");
+                Require(generator.MinimumClusterSpacing >= RoaGroundDressing.MinimumSurfaceSpacing - 0.001f,
+                    "декоративные группы снова накладываются друг на друга: "
+                    + generator.MinimumClusterSpacing.ToString("0.00") + " м");
                 int initialScrubCount = generator.ScrubClusterCount;
                 int initialStoneCount = generator.StoneClusterCount;
 
@@ -103,15 +106,18 @@ namespace RealmOfAshes.EditorTools
                     "визуальное оформление добавило игровой коллайдер");
                 MeshRenderer[] renderers = dressing.GetComponentsInChildren<MeshRenderer>(true);
                 Require(renderers.Length == 2
-                        && Array.TrueForAll(renderers, renderer => renderer.sharedMaterial != null),
+                        && Array.TrueForAll(renderers, renderer => renderer.sharedMaterial != null
+                            && renderer.shadowCastingMode == ShadowCastingMode.Off),
                     "ожидались отдельные материалы кустарника и камней");
                 MeshRenderer scrubRenderer = Array.Find(renderers, renderer => renderer.name == "Scrub");
                 MeshRenderer stoneRenderer = Array.Find(renderers,
                     renderer => renderer.name == "StonesAndDistantRidge");
                 Require(scrubRenderer != null && stoneRenderer != null
-                        && scrubRenderer.sharedMaterial.color.r > 0.38f
-                        && stoneRenderer.sharedMaterial.color.r > 0.30f,
-                    "декор земли снова сливается в почти чёрные точки");
+                        && scrubRenderer.sharedMaterial.color.r > 0.35f
+                        && stoneRenderer.sharedMaterial.color.r > 0.44f
+                        && scrubRenderer.GetComponent<MeshFilter>().sharedMesh.bounds.max.y < 0.52f
+                        && scrubRenderer.sharedMaterial.shader.name.Contains("Unlit"),
+                    "декор земли снова сливается в почти чёрные точки или вырос выше щиколотки");
 
                 GameObject dressingObject = dressing.gameObject;
                 Require(!terrain.ApplyMap(map), "одинаковый авторитетный снимок пересобрал оформление");
@@ -248,7 +254,12 @@ namespace RealmOfAshes.EditorTools
                 readback = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false);
                 readback.ReadPixels(new Rect(0f, 0f, target.width, target.height), 0, 0);
                 readback.Apply(false, false);
+                float darkRatio = DarkPixelRatio(readback.GetPixels32());
+                Require(darkRatio < 0.0075f,
+                    "кадр снова провалился в чёрные пятна: " + darkRatio.ToString("0.0000"));
                 File.WriteAllBytes(path, readback.EncodeToPNG());
+                Debug.Log("[ОФОРМЛЕНИЕ ЗЕМЛИ] доля почти чёрных пикселей: "
+                    + darkRatio.ToString("0.0000"));
                 Debug.Log("[ОФОРМЛЕНИЕ ЗЕМЛИ] кадр: " + path);
             }
             finally
@@ -265,6 +276,19 @@ namespace RealmOfAshes.EditorTools
                 if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
                 if (lightObject != null) UnityEngine.Object.DestroyImmediate(lightObject);
             }
+        }
+
+        public static float DarkPixelRatio(Color32[] pixels)
+        {
+            if (pixels == null || pixels.Length == 0) return 0f;
+            int dark = 0;
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                Color32 pixel = pixels[i];
+                float luminance = (0.2126f * pixel.r + 0.7152f * pixel.g + 0.0722f * pixel.b) / 255f;
+                if (luminance < 0.20f) dark++;
+            }
+            return dark / (float)pixels.Length;
         }
 
         private static void Require(bool condition, string message)

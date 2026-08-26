@@ -15,7 +15,8 @@ namespace RealmOfAshes.World
     {
         private const int Grass = 0;
         private const int Dark = 4;
-        public const int ScrubBladeCount = 6;
+        public const int ScrubBladeCount = 7;
+        public const float MinimumSurfaceSpacing = 0.72f;
         public const int StoneClusterPieceCount = 4;
 
         private GameObject _root;
@@ -29,6 +30,7 @@ namespace RealmOfAshes.World
         public int StoneClusterCount { get; private set; }
         public int RidgeCount { get; private set; }
         public int VertexCount { get; private set; }
+        public float MinimumClusterSpacing { get; private set; }
 
         public static int SurfaceBudget(bool mobile)
         {
@@ -63,7 +65,9 @@ namespace RealmOfAshes.World
             var stoneTriangles = new List<int>();
 
             int budget = SurfaceBudget(mobile);
-            int attempts = budget * 7;
+            var accepted = new List<Vector2>();
+            float minimumSpacing = float.PositiveInfinity;
+            int attempts = budget * 12;
             for (int i = 0; i < attempts && SurfaceClusterCount < budget; i++)
             {
                 float x = (Hash01(i, seed, 8101) - 0.5f) * worldWidth * 0.92f;
@@ -71,9 +75,16 @@ namespace RealmOfAshes.World
                 if (!SupportsPosition(location, stateMap, mapWidth, mapDepth, x, z, settlement)) continue;
                 if (KeepClear(location, x, z, mapWidth, mapDepth, settlement)) continue;
 
+                float patch = PatchDensity(x, z, seed);
+                if (Hash01(i, seed, 8167) > 0.24f + patch * 0.72f) continue;
+                Vector2 point = new Vector2(x, z);
+                float nearest = NearestDistance(point, accepted);
+                if (nearest < MinimumSurfaceSpacing) continue;
+
                 float yaw = Hash01(i, seed, 8107) * Mathf.PI * 2f;
-                float scale = 0.90f + Hash01(i, seed, 8111) * 1.15f;
-                if (Hash01(i, seed, 8113) < 0.56f)
+                float sizeRandom = Hash01(i, seed, 8111);
+                float scale = 0.65f + Mathf.Pow(sizeRandom, 1.65f) * 0.72f;
+                if (Hash01(i, seed, 8113) < Mathf.Lerp(0.50f, 0.70f, patch))
                 {
                     AppendScrub(scrubVertices, scrubTriangles, new Vector3(x, 0.004f, z), yaw, scale, i, seed);
                     ScrubClusterCount++;
@@ -84,9 +95,11 @@ namespace RealmOfAshes.World
                         new Vector3(x, -0.012f, z), yaw, scale, i, seed);
                     StoneClusterCount++;
                 }
+                if (!float.IsInfinity(nearest)) minimumSpacing = Mathf.Min(minimumSpacing, nearest);
+                accepted.Add(point);
                 SurfaceClusterCount++;
             }
-
+            MinimumClusterSpacing = float.IsInfinity(minimumSpacing) ? 0f : minimumSpacing;
             AppendDistantRidge(stoneVertices, stoneTriangles, worldWidth, worldDepth,
                 Mathf.Max(worldWidth, visualWidth), Mathf.Max(worldDepth, visualDepth), seed, mobile);
 
@@ -96,15 +109,17 @@ namespace RealmOfAshes.World
             {
                 _scrubMesh = CreateMesh("RuntimeGroundScrubMesh", scrubVertices, scrubTriangles);
                 _scrubMaterial = CreateMaterial("RuntimeGroundScrubMaterial",
-                    settlement ? new Color(0.48f, 0.37f, 0.14f) : new Color(0.52f, 0.40f, 0.15f), true);
-                CreateRenderNode("Scrub", _scrubMesh, _scrubMaterial, !mobile);
+                    settlement ? new Color(0.42f, 0.35f, 0.14f) : new Color(0.38f, 0.35f, 0.16f),
+                    true, 0f);
+                CreateRenderNode("Scrub", _scrubMesh, _scrubMaterial, false);
             }
             if (stoneVertices.Count > 0)
             {
                 _stoneMesh = CreateMesh("RuntimeGroundStoneMesh", stoneVertices, stoneTriangles);
                 _stoneMaterial = CreateMaterial("RuntimeGroundStoneMaterial",
-                    settlement ? new Color(0.42f, 0.35f, 0.27f) : new Color(0.40f, 0.33f, 0.25f), false);
-                CreateRenderNode("StonesAndDistantRidge", _stoneMesh, _stoneMaterial, !mobile);
+                    settlement ? new Color(0.50f, 0.43f, 0.35f) : new Color(0.46f, 0.42f, 0.36f),
+                    false, 0.035f);
+                CreateRenderNode("StonesAndDistantRidge", _stoneMesh, _stoneMaterial, false);
             }
             VertexCount = scrubVertices.Count + stoneVertices.Count;
         }
@@ -169,19 +184,44 @@ namespace RealmOfAshes.World
         {
             for (int blade = 0; blade < ScrubBladeCount; blade++)
             {
-                float angle = yaw + blade * Mathf.PI / ScrubBladeCount;
-                float width = (0.11f + Hash01(index, blade, seed + 8121) * 0.09f) * scale;
-                float height = (0.32f + Hash01(index, blade, seed + 8123) * 0.24f) * scale;
-                Vector3 side = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * width;
-                Vector3 lean = new Vector3(Mathf.Sin(angle), 0f, -Mathf.Cos(angle)) * height * 0.12f;
-                int start = vertices.Count;
-                vertices.Add(center - side);
-                vertices.Add(center + side);
-                vertices.Add(center + side * 0.28f + Vector3.up * height + lean);
-                vertices.Add(center - side * 0.28f + Vector3.up * height + lean);
-                triangles.Add(start); triangles.Add(start + 2); triangles.Add(start + 1);
-                triangles.Add(start); triangles.Add(start + 3); triangles.Add(start + 2);
+                float angle = yaw + Hash01(index, blade, seed + 8120) * Mathf.PI * 2f;
+                float length = (0.22f + Hash01(index, blade, seed + 8121) * 0.28f) * scale;
+                float height = (0.08f + Hash01(index, blade, seed + 8123) * 0.12f) * scale;
+                float width = (0.050f + Hash01(index, blade, seed + 8125) * 0.044f) * scale;
+                Vector3 direction = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                Vector3 sideOffset = new Vector3(-direction.z, 0f, direction.x)
+                    * ((Hash01(index, blade, seed + 8126) - 0.5f) * 0.10f * scale);
+                Vector3 branchStart = center + direction * (0.018f * scale) + sideOffset;
+                Vector3 branchEnd = center + direction * length + Vector3.up * height;
+                AppendTaperedBranch(vertices, triangles, branchStart, branchEnd, width,
+                    width * (0.42f + Hash01(index, blade, seed + 8127) * 0.22f));
             }
+            AppendStone(vertices, triangles, center - Vector3.up * 0.012f, yaw,
+                0.16f * scale, 0.12f * scale, index, seed + 53, 5);
+        }
+
+        private static void AppendTaperedBranch(List<Vector3> vertices, List<int> triangles,
+                                                Vector3 from, Vector3 to,
+                                                float baseRadius, float tipRadius)
+        {
+            Vector3 axis = (to - from).normalized;
+            Vector3 lateral = Vector3.Cross(Vector3.up, axis).normalized;
+            if (lateral.sqrMagnitude < 0.5f) lateral = Vector3.right;
+            Vector3 vertical = Vector3.Cross(axis, lateral).normalized;
+            int start = vertices.Count;
+            vertices.Add(from - lateral * baseRadius - vertical * baseRadius * 0.55f);
+            vertices.Add(from + lateral * baseRadius - vertical * baseRadius * 0.55f);
+            vertices.Add(from + lateral * baseRadius + vertical * baseRadius * 0.55f);
+            vertices.Add(from - lateral * baseRadius + vertical * baseRadius * 0.55f);
+            vertices.Add(to - lateral * tipRadius - vertical * tipRadius * 0.55f);
+            vertices.Add(to + lateral * tipRadius - vertical * tipRadius * 0.55f);
+            vertices.Add(to + lateral * tipRadius + vertical * tipRadius * 0.55f);
+            vertices.Add(to - lateral * tipRadius + vertical * tipRadius * 0.55f);
+            AppendQuad(triangles, start, 0, 1, 5, 4);
+            AppendQuad(triangles, start, 1, 2, 6, 5);
+            AppendQuad(triangles, start, 2, 3, 7, 6);
+            AppendQuad(triangles, start, 3, 0, 4, 7);
+            AppendQuad(triangles, start, 4, 5, 6, 7);
         }
 
         private static void AppendStoneCluster(List<Vector3> vertices, List<int> triangles,
@@ -211,7 +251,6 @@ namespace RealmOfAshes.World
                                         int index, int seed, int sides)
         {
             int start = vertices.Count;
-            vertices.Add(center + Vector3.up * height);
             for (int side = 0; side < sides; side++)
             {
                 float angle = yaw + side / (float)sides * Mathf.PI * 2f;
@@ -219,12 +258,36 @@ namespace RealmOfAshes.World
                 vertices.Add(center + new Vector3(Mathf.Cos(angle) * radius * jitter,
                     0f, Mathf.Sin(angle) * radius * (0.72f + jitter * 0.22f)));
             }
+            int shoulder = vertices.Count;
             for (int side = 0; side < sides; side++)
             {
-                triangles.Add(start);
-                triangles.Add(start + 1 + side);
-                triangles.Add(start + 1 + (side + 1) % sides);
+                float angle = yaw + 0.08f + side / (float)sides * Mathf.PI * 2f;
+                float jitter = 0.82f + Hash01(index, side, seed + 8133) * 0.30f;
+                vertices.Add(center + new Vector3(Mathf.Cos(angle) * radius * 0.72f * jitter,
+                    height * (0.52f + Hash01(index, side, seed + 8134) * 0.12f),
+                    Mathf.Sin(angle) * radius * 0.66f * jitter));
             }
+            int crown = vertices.Count;
+            vertices.Add(center + new Vector3(
+                (Hash01(index, seed, 8173) - 0.5f) * radius * 0.30f,
+                height,
+                (Hash01(index, seed, 8177) - 0.5f) * radius * 0.30f));
+            for (int side = 0; side < sides; side++)
+            {
+                int next = (side + 1) % sides;
+                AppendQuad(triangles, 0, start + side, start + next,
+                    shoulder + next, shoulder + side);
+                triangles.Add(shoulder + side);
+                triangles.Add(shoulder + next);
+                triangles.Add(crown);
+            }
+        }
+
+        private static void AppendQuad(List<int> triangles, int offset,
+                                       int a, int b, int c, int d)
+        {
+            triangles.Add(offset + a); triangles.Add(offset + c); triangles.Add(offset + b);
+            triangles.Add(offset + a); triangles.Add(offset + d); triangles.Add(offset + c);
         }
 
         private void AppendDistantRidge(List<Vector3> vertices, List<int> triangles,
@@ -282,18 +345,49 @@ namespace RealmOfAshes.World
             return mesh;
         }
 
-        private static Material CreateMaterial(string name, Color color, bool twoSided)
+        private static Material CreateMaterial(string name, Color color, bool twoSided,
+                                               float emissionLift)
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            Shader shader = twoSided
+                ? (Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"))
+                : (Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
             if (shader == null) return null;
             var material = new Material(shader) { name = name, color = color };
             if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
             if (material.HasProperty("_Color")) material.SetColor("_Color", color);
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.015f);
             if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", 0.015f);
+            if (material.HasProperty("_EmissionColor") && emissionLift > 0f)
+            {
+                material.SetColor("_EmissionColor", color.linear * emissionLift);
+                material.EnableKeyword("_EMISSION");
+            }
             if (twoSided && material.HasProperty("_Cull")) material.SetFloat("_Cull", (float)CullMode.Off);
             material.doubleSidedGI = twoSided;
             return material;
+        }
+
+        private static float PatchDensity(float x, float z, int seed)
+        {
+            float gx = x / 9f;
+            float gz = z / 9f;
+            int ix = Mathf.FloorToInt(gx);
+            int iz = Mathf.FloorToInt(gz);
+            float tx = Mathf.SmoothStep(0f, 1f, gx - ix);
+            float tz = Mathf.SmoothStep(0f, 1f, gz - iz);
+            float a = Mathf.Lerp(Hash01(ix, iz, seed + 8161),
+                Hash01(ix + 1, iz, seed + 8161), tx);
+            float b = Mathf.Lerp(Hash01(ix, iz + 1, seed + 8161),
+                Hash01(ix + 1, iz + 1, seed + 8161), tx);
+            return Mathf.Lerp(a, b, tz);
+        }
+
+        private static float NearestDistance(Vector2 point, List<Vector2> accepted)
+        {
+            float nearest = float.PositiveInfinity;
+            for (int i = 0; i < accepted.Count; i++)
+                nearest = Mathf.Min(nearest, Vector2.Distance(point, accepted[i]));
+            return nearest;
         }
 
         private static float Hash01(int a, int b, int c)
@@ -325,6 +419,7 @@ namespace RealmOfAshes.World
             StoneClusterCount = 0;
             RidgeCount = 0;
             VertexCount = 0;
+            MinimumClusterSpacing = 0f;
         }
 
         private void OnDestroy()

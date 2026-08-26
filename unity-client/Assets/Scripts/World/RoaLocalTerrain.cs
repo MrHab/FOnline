@@ -352,8 +352,10 @@ namespace RealmOfAshes.World
         private void PaintPathTile(Color32[] pixels, JArray stateMap, int tx, int tz,
                                    int mapWidth, int mapDepth, Vector3 center)
         {
-            PaintEllipse(pixels, center.x, center.z, 2.32f, 2.08f, 0f,
-                Hex(0xc7a66f), 0.34f, tx * 103 + tz * 199);
+            PaintEllipse(pixels, center.x, center.z, 2.56f, 2.28f, 0f,
+                Hex(0x80623f), 0.24f, tx * 101 + tz * 197);
+            PaintEllipse(pixels, center.x, center.z, 2.30f, 2.04f, 0f,
+                Hex(0xd0b47d), 0.48f, tx * 103 + tz * 199);
 
             if (TileType(stateMap, tx + 1, tz, mapWidth, mapDepth) == Path)
                 PaintPathConnection(pixels, center,
@@ -362,27 +364,27 @@ namespace RealmOfAshes.World
                 PaintPathConnection(pixels, center,
                     RoaCoords.TileToWorld(tx, tz + 1, mapWidth, mapDepth), tx, tz, 2);
         }
-
         private void PaintPathConnection(Color32[] pixels, Vector3 from, Vector3 to,
                                          int tx, int tz, int salt)
         {
             PathConnectionCount++;
-            PaintLine(pixels, from.x, from.z, to.x, to.z, 0.92f,
-                Hex(0xc9a66b), 0.42f);
+            PaintLine(pixels, from.x, from.z, to.x, to.z, 1.10f,
+                Hex(0x7b5d3b), 0.25f);
+            PaintLine(pixels, from.x, from.z, to.x, to.z, 0.90f,
+                Hex(0xd2b57b), 0.58f);
             Vector2 direction = new Vector2(to.x - from.x, to.z - from.z).normalized;
             Vector2 side = new Vector2(-direction.y, direction.x) * 0.29f;
             PaintLine(pixels, from.x + side.x, from.z + side.y,
-                to.x + side.x, to.z + side.y, 0.055f,
-                Hex(0x493521), 0.24f);
+                to.x + side.x, to.z + side.y, 0.070f,
+                Hex(0x493521), 0.38f);
             PaintLine(pixels, from.x - side.x, from.z - side.y,
-                to.x - side.x, to.z - side.y, 0.055f,
-                Hex(0x493521), 0.24f);
+                to.x - side.x, to.z - side.y, 0.070f,
+                Hex(0x493521), 0.38f);
             float t = 0.24f + Hash01(tx, tz, 430 + salt) * 0.52f;
             PaintEllipse(pixels, Mathf.Lerp(from.x, to.x, t), Mathf.Lerp(from.z, to.z, t),
                 0.34f, 0.18f, Mathf.Atan2(direction.y, direction.x),
                 Hex(0x71583a), 0.34f, tx * 131 + tz * 17 + salt);
         }
-
         private static int TileType(JArray stateMap, int tx, int tz, int mapWidth, int mapDepth)
         {
             if (stateMap == null || tx < 0 || tz < 0 || tx >= mapWidth || tz >= mapDepth

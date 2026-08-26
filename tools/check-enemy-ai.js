@@ -12,6 +12,7 @@ const {
   playerThreatScore,
   targetInsideVisionArc,
   npcAttackHitChance,
+  npcAttackTelegraph,
   segmentIntersectsRotatedBlocker
 } = require('../src/server/enemy-ai');
 
@@ -56,6 +57,19 @@ assert(nearChance > movingChance, 'moving targets are harder to hit');
 assert(nearChance > automaticChance, 'automatic weapons carry an accuracy penalty');
 assert(nearChance < 1 && farChance > 0, 'NPC attacks are probabilistic rather than guaranteed');
 
+const aimingRifleman = { aiState: 'attack', targetId: 'socket-target', attackTimer: 0.31 };
+const rifleTell = npcAttackTelegraph(aimingRifleman, rifle);
+assert(rifleTell && rifleTell.ranged && rifleTell.targetId === 'socket-target',
+  'ranged attack enters a target-specific warning window');
+assert.strictEqual(npcAttackTelegraph({ ...aimingRifleman, attackTimer: 0.7 }, rifle), null,
+  'ordinary ranged cooldown is not shown as one long warning');
+const rocketTell = npcAttackTelegraph({ ...aimingRifleman, attackTimer: 0.62 },
+  { id: 'rocketLauncher', ammoType: 'rocketAmmo' });
+assert(rocketTell && rocketTell.windowMs > rifleTell.windowMs,
+  'slow explosive attacks receive a longer readable tell');
+assert.strictEqual(npcAttackTelegraph({ ...aimingRifleman, aiState: 'chase' }, rifle), null,
+  'non-attacking NPC does not leak a false warning');
+
 const blocker = { x: 0, z: 0, halfX: 1, halfZ: 0.5, rotationY: Math.PI / 4 };
 assert.strictEqual(segmentIntersectsRotatedBlocker(-5, 0, 5, 0, blocker), true, 'rotated collider blocks a crossing ray');
 assert.strictEqual(segmentIntersectsRotatedBlocker(-5, 4, 5, 4, blocker), false, 'separated ray remains clear');
@@ -67,8 +81,10 @@ const serverSource = fs.readFileSync(path.resolve(__dirname, '..', 'server.js'),
   'beginEnemySearchAt(room, enemy, searchX, searchZ',
   "io.to(target.id).emit('enemyAttackMiss'",
   "enemy.aiState = readiness.reloading ? 'reload' : 'chase'",
+  'const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e));',
+  'frame.attackTargetId = telegraph.targetId;',
   'updateEnemyCombatRetreat(room, enemy, visibleTarget, dt, now)',
   'room.enemySpawnTimer * 1000 >= ENEMY_RESPAWN_INTERVAL_MS'
 ].forEach(contract => assert(serverSource.includes(contract), `server AI integration is missing: ${contract}`));
 
-console.log('Enemy AI checks OK: personal hostility, threat, FOV, accuracy, and collider LOS');
+console.log('Enemy AI checks OK: hostility, threat, FOV, accuracy, attack tells, and collider LOS');

@@ -58,6 +58,7 @@ const {
   playerThreatScore,
   targetInsideVisionArc,
   npcAttackHitChance,
+  npcAttackTelegraph,
   segmentIntersectsRotatedBlocker
 } = require('./src/server/enemy-ai');
 const {
@@ -15018,7 +15019,7 @@ function publicEnemySnapshotForViewer(enemy, viewer = null, sharedSnapshot = nul
 
 // Compact absolute realtime state. Static identity, equipment, inventory,
 // trader and loot data stay in the reliable enemySnapshot contract.
-// flags: 1=moving, 2=dead, 4=looted, 8=hostile, 16=look, 32=speech.
+// flags: 1=moving, 2=dead, 4=looted, 8=hostile, 16=look, 32=speech, 64=attack tell, 128=ranged tell.
 function publicEnemyFrame(e, viewer = null, now = Date.now()) {
   const aiState = e.aiState || (e.dead ? 'dead' : 'idle');
   const dirX = Number(e.vx || 0);
@@ -15041,6 +15042,7 @@ function publicEnemyFrame(e, viewer = null, now = Date.now()) {
   const speechText = !e.dead && Number(e.npcSpeechUntil || 0) > now
     ? String(e.npcSpeechText || '').trim().slice(0, 96)
     : '';
+  const telegraph = npcAttackTelegraph(e, serverNpcWeaponDef(e));
   const scheduleState = aiState === 'dialogue'
     ? 'dialogue'
     : String(e.npcScheduleState || '').slice(0, 24);
@@ -15049,7 +15051,9 @@ function publicEnemyFrame(e, viewer = null, now = Date.now()) {
     | (e.looted ? 4 : 0)
     | (hostile ? 8 : 0)
     | (hasLook ? 16 : 0)
-    | (speechText ? 32 : 0);
+    | (speechText ? 32 : 0)
+    | (telegraph ? 64 : 0)
+    | (telegraph?.ranged ? 128 : 0);
   const frame = {
     id: e.id,
     x: Number(Number(e.x || 0).toFixed(3)),
@@ -15065,6 +15069,11 @@ function publicEnemyFrame(e, viewer = null, now = Date.now()) {
   if (hasLook) {
     frame.lookX = Number(Number(e.lookX).toFixed(3));
     frame.lookZ = Number(Number(e.lookZ).toFixed(3));
+  }
+  if (telegraph) {
+    frame.attackMs = telegraph.remainingMs;
+    frame.attackWindowMs = telegraph.windowMs;
+    frame.attackTargetId = telegraph.targetId;
   }
   if (scheduleState) frame.scheduleState = scheduleState;
   if (speechText) {

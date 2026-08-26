@@ -42,7 +42,7 @@ namespace RealmOfAshes.EditorTools
                     Require(awake != null, "audio Awake is missing");
                     awake.Invoke(audio, null);
                 }
-                Require(audio.CombatConfirmationCuesReady && audio.GeneratedClipCount == 31,
+                Require(audio.CombatConfirmationCuesReady && audio.GeneratedClipCount == 32,
                         "normal, critical or kill confirmation audio is missing");
 
                 RoaCombatFx fx = root.AddComponent<RoaCombatFx>();

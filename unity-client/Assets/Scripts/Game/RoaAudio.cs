@@ -25,6 +25,7 @@ namespace RealmOfAshes.Game
         public int GeneratedClipCount { get { return _validatedClipCount; } }
         public bool EconomyCuesReady { get { return _economyGain != null && _levelUp != null; } }
         public bool WeaponFeedbackCuesReady { get { return _reload != null && _dryFire != null; } }
+        public bool ThreatWarningCueReady { get { return _threatWarning != null; } }
         public bool CombatConfirmationCuesReady
         {
             get { return _hitConfirm != null && _criticalConfirm != null && _killConfirm != null; }
@@ -75,6 +76,7 @@ namespace RealmOfAshes.Game
         private AudioClip _killConfirm;
         private AudioClip _reload;
         private AudioClip _dryFire;
+        private AudioClip _threatWarning;
         private AudioClip _uiClick;
         private AudioClip _panelOpen;
         private AudioClip _panelClose;
@@ -100,6 +102,7 @@ namespace RealmOfAshes.Game
         private float _lastEconomyAt = -100f;
         private float _lastWeaponBlockedAt = -100f;
         private float _lastDryFireAt = -100f;
+        private float _lastThreatWarningAt = -100f;
         private float _lastHitConfirmAt = -100f;
         private float _masterVolume;
         private int _worldCursor;
@@ -305,6 +308,14 @@ namespace RealmOfAshes.Game
             PlayUi(_dryFire, 0.28f, Pitch(0.98f, 1.03f));
         }
 
+        /// <summary>Короткий персональный сигнал: сервер подтвердил подготовку атаки по игроку.</summary>
+        public void PlayThreatWarning(bool ranged)
+        {
+            if (Time.unscaledTime - _lastThreatWarningAt < 0.16f) return;
+            _lastThreatWarningAt = Time.unscaledTime;
+            PlayUi(_threatWarning, 0.3f, ranged ? 1.06f : 0.94f);
+        }
+
         /// <summary>Короткий глухой контакт, когда ствол упёрся в препятствие.</summary>
         public void PlayWeaponBlocked()
         {
@@ -487,6 +498,8 @@ namespace RealmOfAshes.Game
             _killConfirm = BuildUiTone("KillConfirm", 0.24f, 620f, 930f);
             _reload = BuildReload();
             _dryFire = BuildDryFire();
+            _threatWarning = BuildActivitySignal("ThreatWarning", 0.2f,
+                new[] { 329.63f, 659.25f }, 0.018f, 0x4d29u);
             _uiClick = BuildUiTone("UiClick", 0.055f, 920f, 680f);
             _panelOpen = BuildUiTone("PanelOpen", 0.16f, 260f, 440f);
             _panelClose = BuildUiTone("PanelClose", 0.14f, 410f, 230f);

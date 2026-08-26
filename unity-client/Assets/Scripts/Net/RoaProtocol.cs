@@ -265,6 +265,8 @@ namespace RealmOfAshes.Net
         public const int HostileToViewer = 8;
         public const int HasLook = 16;
         public const int HasSpeech = 32;
+        public const int AttackTelegraph = 64;
+        public const int RangedAttackTelegraph = 128;
     }
 
     #endregion

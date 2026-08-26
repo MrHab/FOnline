@@ -205,6 +205,24 @@ function segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius
   return tMax >= startT && tMin <= endT;
 }
 
+function npcAttackTelegraph(actor = {}, weapon = {}, options = {}) {
+  if (actor.dead || String(actor.aiState || "") !== "attack") return null;
+  const targetId = String(actor.targetId || "").slice(0, 96);
+  if (!targetId) return null;
+
+  const ranged = !!weapon.ammoType;
+  const weaponId = String(weapon.id || "");
+  let windowMs = ranged ? 380 : 520;
+  if (weaponId === "rocketLauncher") windowMs = 680;
+  else if (weaponId === "shotgun" || weaponId === "sawedOffShotgun") windowMs = 520;
+  else if (weapon.automatic) windowMs = 330;
+  windowMs = Math.round(clamp(options.windowMs ?? windowMs, 240, 800));
+
+  const remainingMs = Math.max(0, Math.ceil(Number(actor.attackTimer || 0) * 1000));
+  if (remainingMs <= 0 || remainingMs > windowMs) return null;
+  return { remainingMs, windowMs, targetId, ranged };
+}
+
 module.exports = {
   actorHostilityKeys,
   actorIsExplicitlyHostileToPlayer,
@@ -216,5 +234,6 @@ module.exports = {
   actorFieldOfViewDegrees,
   targetInsideVisionArc,
   npcAttackHitChance,
+  npcAttackTelegraph,
   segmentIntersectsRotatedBlocker
 };

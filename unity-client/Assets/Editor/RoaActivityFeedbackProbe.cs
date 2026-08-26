@@ -73,7 +73,7 @@ namespace RealmOfAshes.EditorTools
                     Require(awake != null, "audio initialization entry point is missing");
                     awake.Invoke(audio, null);
                 }
-                Require(audio.ActivityCuesReady && audio.GeneratedClipCount == 31,
+                Require(audio.ActivityCuesReady && audio.GeneratedClipCount == 32,
                     "the five generated activity cues are incomplete or invalid; generated="
                     + audio.GeneratedClipCount);
             }

@@ -2512,6 +2512,8 @@ function assertEnemyFrameBudgetAndSparseMerge() {
   const frameRuntime = new Function(
     'serverActorHostileToPlayer',
     'actorHostilityKeys',
+    'npcAttackTelegraph',
+    'serverNpcWeaponDef',
     'Date',
     [
       functionSource(server, 'publicEnemyFrame'),
@@ -2520,6 +2522,8 @@ function assertEnemyFrameBudgetAndSparseMerge() {
   )(
     () => true,
     () => new Set(),
+    () => null,
+    () => ({ id: 'fists', ammoType: null }),
     { now: () => 5000 }
   );
   const frameRows = Array.from({ length: 100 }, (_, index) => frameRuntime.publicEnemyFrame({

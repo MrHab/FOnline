@@ -76,6 +76,14 @@ namespace RealmOfAshes.Game
             public int Hp;
             public JObject Snapshot;
             public RoaMovementFx.ActorStepState StepFx;
+            public RoaEnemyThreatTelegraph ThreatView;
+            public Vector3 LookPoint;
+            public float ThreatRemaining;
+            public float ThreatWindow;
+            public float AttackWindupUntil;
+            public bool ThreatActive;
+            public bool ThreatRanged;
+            public bool ThreatTargetsLocalPlayer;
         }
 
         private readonly Dictionary<string, Enemy> _enemies = new Dictionary<string, Enemy>();
@@ -487,10 +495,16 @@ namespace RealmOfAshes.Game
                 if (payload?["equipment"] != null) enemy.Snapshot["equipment"] = payload["equipment"].DeepClone();
                 if (enemy.UnifiedHumanoid) _ = RefreshHumanoidEquipment(enemy);
             }
-            enemy.ActionUntil = Time.time + 0.45f;
-            enemy.Clip = string.Empty;
-            if (enemy.CharacterView != null) enemy.CharacterView.PlayAttack();
-            else PlayClip(enemy, "attack");
+            bool windupAnimated = Time.time < enemy.AttackWindupUntil;
+            enemy.ThreatActive = false;
+            enemy.ThreatRemaining = 0f;
+            enemy.ActionUntil = Mathf.Max(enemy.ActionUntil, Time.time + 0.45f);
+            if (!windupAnimated)
+            {
+                enemy.Clip = string.Empty;
+                if (enemy.CharacterView != null) enemy.CharacterView.PlayAttack();
+                else PlayClip(enemy, "attack");
+            }
         }
 
         private void HandleEnemyKilled(JObject payload)
@@ -503,6 +517,8 @@ namespace RealmOfAshes.Game
             enemy.Velocity = Vector3.zero;
             enemy.PresentationVelocity = Vector3.zero;
             enemy.ActionUntil = 0f;
+            enemy.ThreatActive = false;
+            enemy.ThreatRemaining = 0f;
             if (payload["x"] != null && payload["z"] != null)
             {
                 enemy.TargetPosition = RoaCoords.ToUnity(Value(payload, "x"), Value(payload, "z"));
@@ -915,13 +931,43 @@ namespace RealmOfAshes.Game
                     ? RoaCoords.VelocityToUnity(Value(data, "vx"), Value(data, "vz"))
                     : Vector3.zero;
 
-                // Взгляд приходит отдельно от движения: NPC может стоять
-                // и смотреть в сторону.
+                // lookX/lookZ — абсолютная серверная точка, а не направление.
                 if ((flags & EnemyFrameFlags.HasLook) != 0)
                 {
-                    Vector3 look = RoaCoords.VelocityToUnity(Value(data, "lookX"), Value(data, "lookZ"));
+                    enemy.LookPoint = RoaCoords.ToUnity(Value(data, "lookX"), Value(data, "lookZ"));
+                    Vector3 look = enemy.LookPoint - enemy.TargetPosition;
+                    look.y = 0f;
                     if (look.sqrMagnitude > 0.0001f)
                         enemy.TargetYawDeg = Mathf.Atan2(look.x, look.z) * Mathf.Rad2Deg;
+                }
+
+                bool threat = !enemy.Dead
+                    && (flags & EnemyFrameFlags.AttackTelegraph) != 0
+                    && Value(data, "attackMs") > 0f;
+                bool started = threat && !enemy.ThreatActive;
+                enemy.ThreatActive = threat;
+                enemy.ThreatRemaining = threat ? Value(data, "attackMs") / 1000f : 0f;
+                enemy.ThreatWindow = threat
+                    ? Mathf.Max(enemy.ThreatRemaining, Value(data, "attackWindowMs") / 1000f) : 0f;
+                enemy.ThreatRanged = threat
+                    && (flags & EnemyFrameFlags.RangedAttackTelegraph) != 0;
+                enemy.ThreatTargetsLocalPlayer = threat
+                    && string.Equals(data["attackTargetId"]?.ToString(), Socket?.Session?.Id,
+                        StringComparison.Ordinal);
+
+                if (threat && enemy.ThreatView == null && enemy.Root != null)
+                    enemy.ThreatView = enemy.Root.AddComponent<RoaEnemyThreatTelegraph>();
+
+                if (started)
+                {
+                    enemy.AttackWindupUntil = Time.time + enemy.ThreatRemaining + 0.18f;
+                    enemy.ActionUntil = Mathf.Max(enemy.ActionUntil,
+                        Time.time + enemy.ThreatRemaining + 0.08f);
+                    enemy.Clip = string.Empty;
+                    if (enemy.CharacterView != null) enemy.CharacterView.PlayAttack();
+                    else PlayClip(enemy, "attack");
+                    if (enemy.ThreatTargetsLocalPlayer)
+                        RoaAudio.Active?.PlayThreatWarning(enemy.ThreatRanged);
                 }
             }
         }
@@ -968,6 +1014,19 @@ namespace RealmOfAshes.Game
 
                 bool visible = enemy.Gate == null || enemy.Gate.IsVisible;
                 bool presentationVisible = visible && !RoaGameBootstrap.BlocksWorldHud;
+                if (enemy.ThreatView != null)
+                {
+                    RoaEnemyThreatTelegraph.Frame threatFrame = RoaEnemyThreatTelegraph.Evaluate(
+                        enemy.ThreatRemaining, enemy.ThreatWindow, enemy.ThreatRanged,
+                        enemy.ThreatTargetsLocalPlayer);
+                    Vector3 aimPoint = enemy.LookPoint;
+                    if ((aimPoint - t.position).sqrMagnitude < 0.1f)
+                        aimPoint = t.position + t.forward * 5f;
+                    enemy.ThreatView.Present(threatFrame, t.position, aimPoint,
+                        presentationVisible && !enemy.Dead);
+                    enemy.ThreatRemaining = Mathf.Max(0f,
+                        enemy.ThreatRemaining - Time.deltaTime);
+                }
                 Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
                 if (enemy.CharacterView != null)
                     enemy.CharacterView.SetPresentationLod(RoaActorPresentationLod.Select(

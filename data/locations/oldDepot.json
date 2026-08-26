@@ -158,7 +158,10 @@
       ],
       "resourceType": "scrap",
       "hp": 6,
-      "maxHp": 6
+      "maxHp": 6,
+      "vision": {
+        "mode": "cover"
+      }
     },
     {
       "id": "depot_barrels_01",

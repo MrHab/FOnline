@@ -5,8 +5,13 @@ const assert = require('assert');
 const root = path.resolve(__dirname, '..');
 const readUnity = name => fs.readFileSync(path.join(
   root, 'unity-client', 'Assets', 'Scripts', 'Game', name), 'utf8');
+const readEditor = name => fs.readFileSync(path.join(
+  root, 'unity-client', 'Assets', 'Editor', name), 'utf8');
 
 const fog = readUnity('RoaFogOfWar.cs');
+const authoredVision = readUnity('RoaAuthoredVision.cs');
+const fogProbe = readEditor('RoaFogProbe.cs');
+const auditRunner = readEditor('RoaClientAuditRunner.cs');
 const gate = readUnity('RoaVisibilityGate.cs');
 const enemies = readUnity('RoaEnemies.cs');
 const remotes = readUnity('RoaRemotePlayers.cs');
@@ -33,6 +38,20 @@ const groundItems = readUnity('RoaGroundItems.cs');
   'material.SetOverrideTag("RenderType", "Transparent")',
   'material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT")'
 ].forEach(marker => assert(fog.includes(marker), `Unity fog visual contract is missing: ${marker}`));
+
+assert(authoredVision.indexOf('Kind explicitKind = FromConfig(entry.Vision);')
+  < authoredVision.indexOf('string collision = (entry.Collision ?? string.Empty).ToLowerInvariant();'),
+'Explicit authored vision no longer overrides collision/tag fallback');
+assert(fogProbe.includes('public static void Run()')
+  && fogProbe.includes('ExplicitVisionCollisions.Contains(collision)')
+  && fogProbe.includes('entry.Vision == null')
+  && fogProbe.includes('physical resource is not low cover')
+  && fogProbe.includes('low garden patch blocks sight')
+  && fogProbe.includes('LineOfSightCheck(host, out bool lineOfSightOk)')
+  && fogProbe.includes('[ТУМАН ВОЙНЫ] готово:'),
+'Strict Unity fog probe no longer audits authored collision/vision parity and synthetic LOS');
+assert(auditRunner.includes('typeof(RoaFogProbe)'),
+'Strict fog probe is not included in the deterministic Unity client audit');
 
 assert(gate.includes('GetComponentsInChildren(true, _renderers);'),
   'visibility gate no longer tracks asynchronously loaded renderers');
@@ -64,4 +83,4 @@ const blockCells = 7;
 assert.equal((fogCells + blockCells) * 4, 820);
 assert.equal((fogCells + blockCells) * 6, 1230);
 
-console.log('Unity fog OK: 2-submesh transparent overlay, 820-vertex live probe contract, entity LOS gates');
+console.log('Unity fog OK: explicit authored collision/vision parity, synthetic LOS, 2-submesh overlay and entity gates');

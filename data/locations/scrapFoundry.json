@@ -362,7 +362,10 @@
       ],
       "resourceType": "scrap",
       "hp": 6,
-      "maxHp": 6
+      "maxHp": 6,
+      "vision": {
+        "mode": "cover"
+      }
     },
     {
       "id": "foundry_barrels_01",

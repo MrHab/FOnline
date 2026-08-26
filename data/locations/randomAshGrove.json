@@ -73,7 +73,10 @@
       ],
       "resourceType": "wood",
       "hp": 4,
-      "maxHp": 4
+      "maxHp": 4,
+      "vision": {
+        "mode": "cover"
+      }
     },
     {
       "id": "ash_grove_deadwood_01",
@@ -102,7 +105,10 @@
       ],
       "resourceType": "wood",
       "hp": 3,
-      "maxHp": 3
+      "maxHp": 3,
+      "vision": {
+        "mode": "cover"
+      }
     }
   ]
 }

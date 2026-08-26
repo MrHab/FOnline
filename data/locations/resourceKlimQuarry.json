@@ -134,7 +134,10 @@
       ],
       "resourceType": "scrap",
       "hp": 5,
-      "maxHp": 5
+      "maxHp": 5,
+      "vision": {
+        "mode": "cover"
+      }
     },
     {
       "id": "rest_campfire_01",

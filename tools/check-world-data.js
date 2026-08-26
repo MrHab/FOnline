@@ -21,6 +21,7 @@ const wastelandSimFile = path.join(dataDir, 'wasteland-sim.json');
 
 const errors = [];
 const warnings = [];
+let explicitStaticVisionCount = 0;
 let wastelandSim = null;
 const serverSource = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
 const clientWorldSyncSource = fs.readFileSync(path.join(root, 'public', 'js', 'game', '05e_ground_items_world_sync.js'), 'utf8');
@@ -135,6 +136,26 @@ function objectIsNpc(row = {}) {
     || kind === 'monster'
     || tags.some(tag => ['npc', 'enemy', 'monster', 'living', 'friendly', 'guard', 'merchant', 'trader'].includes(tag))
     || /^(enemy|npc|tradernpc|caravanmerchant|caravanguard|klimpatrolguard|wastelandsettler|friendlybrahmin)/i.test(String(row.model || ''));
+}
+
+const EXPLICIT_VISION_COLLISIONS = new Set(['solid', 'block', 'blocked', 'wall', 'resource', 'cover']);
+
+function objectVisionKind(row = {}) {
+  const vision = row.vision && typeof row.vision === 'object' ? row.vision : null;
+  if (!vision) return '';
+  const decisions = new Set();
+  const mode = String(vision.mode || vision.kind || '').trim().toLowerCase();
+  if (['block', 'blocking'].includes(mode) || vision.blocks === true) decisions.add('block');
+  if (['cover', 'low-cover'].includes(mode) || vision.cover === true || vision.lowCover === true) decisions.add('cover');
+  if (['none', 'clear'].includes(mode) || vision.blocks === false) decisions.add('clear');
+  if (decisions.size === 0) return 'unknown';
+  if (decisions.size > 1) return 'conflict';
+  return [...decisions][0];
+}
+
+function objectRequiresExplicitVision(row = {}) {
+  return !objectIsNpc(row)
+    && EXPLICIT_VISION_COLLISIONS.has(String(row.collision || '').trim().toLowerCase());
 }
 
 function objectIsTrader(row = {}) {
@@ -1062,6 +1083,33 @@ for (const [id, row] of locations) {
     }
     if (!pointLooksValid(obj)) warnings.push(`${rel}: object "${objectId || index}" has no tx/tz or position x/z`);
     if (obj.url && !publicAssetExists(obj.url)) errors.push(`${rel}: object "${objectId || index}" missing asset ${obj.url}`);
+
+    const visionKind = objectVisionKind(obj);
+    if (obj.vision && (visionKind === 'unknown' || visionKind === 'conflict')) {
+      errors.push(`${rel}: object "${objectId || index}" has ${visionKind} vision config ${JSON.stringify(obj.vision)}`);
+    }
+    if (objectRequiresExplicitVision(obj)) {
+      if (!['clear', 'cover', 'block'].includes(visionKind)) {
+        errors.push(`${rel}: static blocking object "${objectId || index}" requires explicit vision`);
+      } else {
+        explicitStaticVisionCount += 1;
+      }
+      const collision = String(obj.collision || '').trim().toLowerCase();
+      if (collision === 'cover' && visionKind !== 'cover') {
+        errors.push(`${rel}: cover object "${objectId || index}" must use vision cover`);
+      }
+    }
+
+    const model = String(obj.model || '').trim().toLowerCase();
+    const collision = String(obj.collision || '').trim().toLowerCase();
+    if (collision === 'resource' && ['scrapheap', 'oreoutcrop', 'deadtreeb', 'deadwood'].includes(model)
+      && visionKind !== 'cover') {
+      errors.push(`${rel}: physical resource "${objectId || index}" must provide low cover`);
+    }
+    if (collision === 'resource' && model === 'gardenpatch' && visionKind !== 'clear') {
+      errors.push(`${rel}: low garden patch "${objectId || index}" must keep line of sight clear`);
+    }
+
     const resourceType = objectResourceType(obj);
     if (resourceType && obj.collision === 'none') {
       warnings.push(`${rel}: resource object "${objectId || index}" has collision "none"; harvesting may not be reachable through interaction`);
@@ -1327,4 +1375,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`World data OK: ${locations.size} locations checked.`);
+console.log(`World data OK: ${locations.size} locations checked, ${explicitStaticVisionCount} static blockers have explicit vision.`);

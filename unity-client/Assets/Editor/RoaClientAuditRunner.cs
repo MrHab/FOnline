@@ -20,6 +20,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RealmOfAshes.Editor.RoaQuickbarProbe),
             typeof(RoaMinimapProbe),
             typeof(RoaRoofCutawayProbe),
+            typeof(RoaFogProbe),
             typeof(RoaCombatFxProbe),
             typeof(RoaCombatConfirmationProbe),
             typeof(RoaWeaponReadinessProbe),

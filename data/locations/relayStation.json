@@ -182,7 +182,10 @@
       "collision": "solid",
       "tags": [
         "relay"
-      ]
+      ],
+      "vision": {
+        "mode": "cover"
+      }
     },
     {
       "id": "relay_tank_01",

@@ -24,6 +24,7 @@ const ONE_SHOT_CLIPS = ['attack', 'hurt', 'death'];
 
 async function main() {
   const playerController = fs.readFileSync(path.join(UNITY_GAME, 'RoaPlayerController.cs'), 'utf8');
+  const locomotionPresentation = fs.readFileSync(path.join(UNITY_GAME, 'RoaLocomotionPresentation.cs'), 'utf8');
   const characterView = fs.readFileSync(path.join(UNITY_GAME, 'RoaCharacterView.cs'), 'utf8');
   const footIk = fs.readFileSync(path.join(UNITY_GAME, 'RoaFootIk.cs'), 'utf8');
   const hitReaction = fs.readFileSync(path.join(UNITY_GAME, 'RoaHitReaction.cs'), 'utf8');
@@ -42,8 +43,12 @@ async function main() {
   const locationLoader = fs.readFileSync(path.join(UNITY_WORLD, 'RoaLocationLoader.cs'), 'utf8');
 
   assert(playerController.includes('Vector3 actual = (transform.position - before) / frameDt;')
-    && playerController.includes('_visualVelocity = Vector3.MoveTowards'),
-  'Unity locomotion no longer uses collision-resolved displacement with visual smoothing');
+    && playerController.includes('ResolveCollisionVelocity(')
+    && playerController.includes('SmoothVisualVelocity(')
+    && locomotionPresentation.includes('Vector3.ProjectOnPlane(requestedVelocity, collisionNormal)')
+    && locomotionPresentation.includes('return target / targetSpeed * nextSpeed;')
+    && !playerController.includes('Vector3.MoveTowards(_visualVelocity, actual'),
+  'Unity locomotion no longer uses collision-resolved displacement with direction-safe speed smoothing');
   assert(playerController.includes('_controller.enableOverlapRecovery = true;')
     && playerController.includes('OnControllerColliderHit'),
   'Unity CharacterController lost overlap recovery or collision diagnostics');
@@ -78,7 +83,8 @@ async function main() {
     && groundingProbe.includes('ik.GroundProbeCount == 2')
     && groundingProbe.includes('rightFoot.position.y > leftFoot.position.y + 0.12f')
     && groundingProbe.includes('SharedUsers == usersBefore')
-    && auditRunner.includes('typeof(RoaGroundingProbe)'),
+    && auditRunner.includes('typeof(RoaGroundingProbe)')
+    && auditRunner.includes('typeof(RoaLocomotionContactProbe)'),
   'Unity grounding probe no longer verifies step height, LOD and shared-resource cleanup');
   assert(ikChain.includes('Vector3? pole')
     && ikChain.includes('ApplyPoleConstraint(pole.Value)')

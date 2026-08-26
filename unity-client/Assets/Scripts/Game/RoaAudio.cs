@@ -82,6 +82,7 @@ namespace RealmOfAshes.Game
         private Vector3 _playerPosition;
         private Vector3 _locomotion;
         private bool _grounded;
+        private bool _locomotionActive;
         private bool _crouching;
         private bool _panelWasOpen;
         private float _nextStepAt;
@@ -152,19 +153,22 @@ namespace RealmOfAshes.Game
             UpdateFootsteps(inGame && !panelOpen);
         }
 
-        public void SetLocomotion(Vector3 velocity, Vector3 worldPosition, bool grounded, bool crouching)
+        public void SetLocomotion(Vector3 velocity, Vector3 worldPosition,
+                                  bool grounded, bool crouching, bool moving)
         {
             _locomotion = velocity;
             _locomotion.y = 0f;
             _playerPosition = worldPosition;
             _grounded = grounded;
             _crouching = crouching;
+            _locomotionActive = moving;
         }
 
         public void StopLocomotion()
         {
             _locomotion = Vector3.zero;
             _grounded = false;
+            _locomotionActive = false;
             _nextStepAt = 0f;
             _rightFoot = false;
         }
@@ -318,7 +322,7 @@ namespace RealmOfAshes.Game
         private void UpdateFootsteps(bool active)
         {
             float speed = _locomotion.magnitude;
-            if (!active || !_grounded || speed < 0.28f)
+            if (!active || !_locomotionActive || !_grounded || speed < 0.28f)
             {
                 if (speed < 0.1f) _nextStepAt = Mathf.Min(_nextStepAt, Time.unscaledTime + 0.08f);
                 return;

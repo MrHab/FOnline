@@ -67,6 +67,8 @@ namespace RealmOfAshes.Game
         private Vector3 _velocity;
         private Vector3 _visualVelocity;
         private Vector3 _collisionNormal;
+        private Vector3 _requestedVelocity;
+        private float _collisionPressure;
         private bool _colliding;
         private float _yawDeg;
         private bool _crouching;
@@ -77,6 +79,7 @@ namespace RealmOfAshes.Game
         public bool Moving { get; private set; }
         public bool Colliding { get { return _colliding; } }
         public Vector3 CollisionNormal { get { return _collisionNormal; } }
+        public float CollisionPressure { get { return _collisionPressure; } }
 
         /// <summary>Touch UI disables cursor aiming and supplies an explicit target.</summary>
         public bool PointerAimEnabled { get; private set; } = true;
@@ -125,6 +128,10 @@ namespace RealmOfAshes.Game
             {
                 _velocity = Vector3.zero;
                 _visualVelocity = Vector3.zero;
+                _requestedVelocity = Vector3.zero;
+                _colliding = false;
+                _collisionNormal = Vector3.zero;
+                _collisionPressure = 0f;
                 Moving = false;
                 Audio?.StopLocomotion();
                 if (View != null) View.UpdateLocomotion(_visualVelocity, _yawDeg, false, _crouching);
@@ -137,9 +144,11 @@ namespace RealmOfAshes.Game
             ReadInputAndMove();
             Vector3 footPosition = transform.position;
             footPosition.y = FeetY() + 0.025f;
-            Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching);
+            Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching, Moving);
 
-            if (View != null) View.UpdateLocomotion(_visualVelocity, _yawDeg, Moving, _crouching);
+            if (View != null)
+                View.UpdateLocomotion(_visualVelocity, _yawDeg, Moving, _crouching,
+                    _collisionNormal, _collisionPressure);
 
             // turning — часть протокола: сервер ретранслирует его другим клиентам,
             // чтобы у них персонаж тоже переступал, а не проворачивался на месте.
@@ -254,10 +263,12 @@ namespace RealmOfAshes.Game
 
             float speed = Mathf.Min(Speed, ServerSpeedLimit) * (_crouching ? CrouchSpeedFactorValue : 1f);
             Vector3 requestedVelocity = wish * speed;
+            _requestedVelocity = requestedVelocity;
             float frameDt = Mathf.Max(0.001f, Time.deltaTime);
             Vector3 before = transform.position;
             _colliding = false;
             _collisionNormal = Vector3.zero;
+            _collisionPressure = 0f;
 
             Vector3 motion = requestedVelocity * frameDt;
             motion.y = _controller.isGrounded ? -0.05f : -9.81f * frameDt;
@@ -271,18 +282,28 @@ namespace RealmOfAshes.Game
             _velocity = actual;
             Moving = requestedMovement && actual.sqrMagnitude > 0.0064f;
 
-            float visualRate = actual.sqrMagnitude > _visualVelocity.sqrMagnitude
-                ? VisualAcceleration
-                : VisualDeceleration;
-            _visualVelocity = Vector3.MoveTowards(_visualVelocity, actual, visualRate * frameDt);
-            if (!Moving && _visualVelocity.sqrMagnitude < 0.0025f) _visualVelocity = Vector3.zero;
+            Vector3 presentationVelocity = RoaLocomotionPresentation.ResolveCollisionVelocity(
+                requestedVelocity, actual, _colliding, _collisionNormal);
+            _visualVelocity = RoaLocomotionPresentation.SmoothVisualVelocity(
+                _visualVelocity, presentationVelocity,
+                VisualAcceleration, VisualDeceleration, frameDt);
         }
 
         private void OnControllerColliderHit(ControllerColliderHit hit)
         {
             if (hit == null || hit.normal.y > 0.55f) return;
-            _colliding = true;
-            _collisionNormal = hit.normal;
+            float pressure = RoaLocomotionPresentation.ContactPressure(
+                _requestedVelocity, hit.normal);
+            if (pressure <= 0.001f) return;
+
+            // В углу CharacterController может вернуть несколько стен за кадр.
+            // Для позы и скольжения сохраняем ту, в которую игрок давит сильнее.
+            if (!_colliding || pressure > _collisionPressure)
+            {
+                _colliding = true;
+                _collisionNormal = hit.normal;
+                _collisionPressure = pressure;
+            }
         }
 
         /// <summary>
@@ -416,6 +437,8 @@ namespace RealmOfAshes.Game
             _visualVelocity = Vector3.zero;
             _colliding = false;
             _collisionNormal = Vector3.zero;
+            _collisionPressure = 0f;
+            _requestedVelocity = Vector3.zero;
             Audio?.StopLocomotion();
 
             if (Camera != null) Camera.SnapToTarget();

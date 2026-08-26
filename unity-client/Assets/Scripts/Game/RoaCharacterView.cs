@@ -221,6 +221,9 @@ namespace RealmOfAshes.Game
         /// <summary>Текущая просадка корня, м. Для диагностики.</summary>
         public float KneeFlex { get { return _pose.KneeFlex; } }
 
+        /// <summary>Сглаженная сила контактной позы у препятствия.</summary>
+        public float LocomotionContactPressure { get { return _pose.ContactPressure; } }
+
         /// <summary>Персонаж в приседе. Для диагностики.</summary>
         public bool Crouching { get { return _crouching; } }
 
@@ -883,7 +886,9 @@ namespace RealmOfAshes.Game
         /// </summary>
         /// <param name="velocity">Скорость в мировых координатах Unity.</param>
         /// <param name="facingYawDeg">Куда смотрит персонаж (прицел), градусы.</param>
-        public void UpdateLocomotion(Vector3 velocity, float facingYawDeg, bool moving, bool crouching)
+        public void UpdateLocomotion(Vector3 velocity, float facingYawDeg, bool moving, bool crouching,
+                                     Vector3 collisionNormal = default(Vector3),
+                                     float collisionPressure = 0f)
         {
             if (_dead || !Ready || _animation == null) return;
 
@@ -898,6 +903,14 @@ namespace RealmOfAshes.Game
             float facingRad = facingYawDeg * Mathf.Deg2Rad;
             Vector3 facing = new Vector3(Mathf.Sin(facingRad), 0f, Mathf.Cos(facingRad));
             Vector3 right = new Vector3(Mathf.Cos(facingRad), 0f, -Mathf.Sin(facingRad));
+            Vector3 obstacleDirection = Vector3.zero;
+            collisionNormal.y = 0f;
+            if (collisionNormal.sqrMagnitude > 0.0001f)
+                obstacleDirection = -collisionNormal.normalized;
+            float contactForward = Vector3.Dot(obstacleDirection, facing);
+            float contactSide = Vector3.Dot(obstacleDirection, right);
+            float contactWeight = Mathf.Clamp01(collisionPressure);
+
             Vector3 move = actuallyMoving
                 ? new Vector3(velocity.x, 0f, velocity.z).normalized
                 : facing;
@@ -952,7 +965,8 @@ namespace RealmOfAshes.Game
             _crouching = crouching;
 
             _pose.Step(locomoting, Turning, clip, lowerBodyYaw,
-                sideAmount, forwardAmount, _turnAmount, crouching, false, dt);
+                sideAmount, forwardAmount, _turnAmount, crouching, false, dt,
+                contactWeight, contactForward, contactSide);
         }
 
         private void LateUpdate()

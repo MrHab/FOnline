@@ -84,7 +84,9 @@ assert(combat.includes('Audio?.PlayMeleeSwing')
   && combat.includes('Audio?.PlayReload()'),
 'Accepted combat actions lost an important sound feedback branch');
 assert(controller.includes('footPosition.y = FeetY() + 0.025f;')
-  && controller.includes('Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching);')
+  && controller.includes('Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching, Moving);')
+  && audio.includes('_locomotionActive = moving;')
+  && audio.includes('!_locomotionActive || !_grounded')
   && controller.includes('Audio?.StopLocomotion();'),
 'Footsteps are no longer driven by collision-resolved movement');
 assert(movementFx.includes('public sealed class RoaMovementFx')

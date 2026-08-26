@@ -292,6 +292,7 @@ namespace RealmOfAshes.Game
             if (Hud == null) Hud = GetComponent<RoaHud>();
             if (Hud == null) Hud = gameObject.AddComponent<RoaHud>();
             if (ActorNameplates != null) ActorNameplates.Hud = Hud;
+            if (Combat != null) Combat.Hud = Hud;
             if (Hud.Socket == null)
             {
                 bool wasEnabled = Hud.enabled;

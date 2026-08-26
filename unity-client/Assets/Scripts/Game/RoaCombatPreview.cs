@@ -65,6 +65,16 @@ namespace RealmOfAshes.Game
             return weapon.Range * (mode == "dual" ? 0.85f : 1f);
         }
 
+        public static int EffectiveApCost(JObject self, JObject combat, string requestedMode)
+        {
+            string weaponId = BaseId(combat?["weapon"]?.ToString()
+                ?? self?["equipment"]?["weapon"]?.ToString() ?? "fists");
+            Weapon source;
+            if (!Weapons.TryGetValue(weaponId, out source)) source = Weapons["fists"];
+            Weapon weapon = ApplyModifications(source.Copy(), combat?["weaponMods"] as JObject);
+            string mode = ResolveMode(weapon, requestedMode, self);
+            return ModeApCost(weapon, mode, self) + (Injury(self, "brokenArm") ? 1 : 0);
+        }
         public static Result Calculate(JObject self, JObject combat, JObject target,
                                        RoaPlayerController player, Vector3 targetPosition,
                                        string requestedMode)
@@ -87,8 +97,7 @@ namespace RealmOfAshes.Game
             result.Distance = HorizontalDistance(player.transform.position, targetPosition);
             result.Range = weapon.Range * modeRange;
             result.InRange = result.Distance <= result.Range;
-            result.ApCost = ModeApCost(weapon, mode, self);
-            if (Injury(self, "brokenArm")) result.ApCost++;
+            result.ApCost = EffectiveApCost(self, combat, requestedMode);
             result.CriticalChance = weapon.Ammo ? Stat(self, "luck") : 0;
             result.DamageType = weapon.DamageType;
             result.EnergyFailureChance = EnergyFailurePercent(weapon, mode, self, combat);

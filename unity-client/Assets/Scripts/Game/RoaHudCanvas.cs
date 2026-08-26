@@ -620,11 +620,12 @@ namespace RealmOfAshes.Game
 
             bool hasAmmo = !string.IsNullOrEmpty(weapon.AmmoType);
             bool hasLoadedRound = _combat != null ? _combat.HasUsableRound : _hud.Loaded > 0;
-            RoaWeaponReadiness.Frame readiness = RoaWeaponReadiness.Evaluate(
-                hasAmmo, hasLoadedRound, _hud.ReserveAmmo, _hud.Ap, mode.ApCost,
-                _hud.CooldownRemainingSeconds,
-                _combat != null && _combat.ReloadRequestPending,
-                _combat != null ? _combat.ReloadVisualRemaining : 0f);
+            int attackApCost = _combat != null ? _combat.CurrentAttackApCost : mode.ApCost;
+            RoaWeaponReadiness.Frame readiness = _combat != null
+                ? _combat.WeaponReadiness
+                : RoaWeaponReadiness.Evaluate(
+                    hasAmmo, hasLoadedRound, _hud.ReserveAmmo, _hud.Ap, attackApCost,
+                    _hud.CooldownRemainingSeconds, false, 0f);
             _consoleDamage.text = Mathf.Max(1, Mathf.RoundToInt(weapon.DmgMin * mode.DamageMul))
                 + "-" + Mathf.Max(1, Mathf.RoundToInt(weapon.DmgMax * mode.DamageMul));
             _consoleMag.text = hasAmmo ? _hud.Loaded + "/" + Mathf.Max(0, _hud.MagSize) : "—";
@@ -634,7 +635,7 @@ namespace RealmOfAshes.Game
             _consoleModeLabel.text = mode.Label;
             _consoleWeaponState.text = readiness.Label;
             _consoleWeaponState.color = WeaponStateColor(readiness.Kind);
-            _consoleApCost.text = mode.ApCost + " ОД";
+            _consoleApCost.text = attackApCost + " ОД";
             _consoleAmmoMain.text = hasAmmo ? _hud.Loaded.ToString("000") : "---";
             _consoleAmmoMain.color = hasAmmo && _hud.Loaded <= 0 ? AmmoEmpty : ConsoleAccent;
             _consoleWeaponName.text = weapon.Name;
@@ -652,6 +653,7 @@ namespace RealmOfAshes.Game
             {
                 case RoaWeaponReadinessKind.Ready:
                     return LedOn;
+                case RoaWeaponReadinessKind.AttackPending:
                 case RoaWeaponReadinessKind.Cooldown:
                 case RoaWeaponReadinessKind.ReloadPending:
                 case RoaWeaponReadinessKind.Reloading:

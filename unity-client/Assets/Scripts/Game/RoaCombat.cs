@@ -17,9 +17,9 @@ namespace RealmOfAshes.Game
     /// Никакого локального расчёта урона нет и быть не должно —
     /// docs/wiki/SERVER_AUTHORITATIVE_RULES.md.
     ///
-    /// Сервер сам проверяет доступность боя в локации, дистанцию, очки действия,
-    /// магазин и темп стрельбы, поэтому клиент не дублирует эти проверки:
-    /// он показывает отказ, если он пришёл.
+    /// Сервер окончательно проверяет локацию, дистанцию, ОД, магазин и темп.
+    /// Клиент использует только последний authoritative ACK, чтобы не рисовать
+    /// заранее известный ложный выстрел; любой новый результат всё равно решает сервер.
     /// </summary>
     public sealed class RoaCombat : MonoBehaviour
     {
@@ -33,6 +33,7 @@ namespace RealmOfAshes.Game
         public RoaInventory Inventory;
         public RoaCombatFx Fx;
         public RoaAudio Audio;
+        public RoaHud Hud;
         public RoaFogOfWar Fog;
         public bool InputEnabled = true;
 
@@ -54,6 +55,26 @@ namespace RealmOfAshes.Game
 
         public string FireMode { get { return _fireMode; } }
         public bool ReloadRequestPending { get { return _reloadRequestInFlight; } }
+        public bool AttackRequestPending
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(_pendingAttackToken)
+                    && Time.unscaledTime < _attackRequestTimeoutAt;
+            }
+        }
+        public int CurrentAttackApCost
+        {
+            get
+            {
+                return RoaCombatPreview.EffectiveApCost(
+                    Socket?.Session?.Self, Socket?.Session?.Combat, _fireMode);
+            }
+        }
+        public RoaWeaponReadiness.Frame WeaponReadiness
+        {
+            get { return EvaluateWeaponReadiness(); }
+        }
         public float ReloadVisualRemaining
         {
             get { return Mathf.Max(0f, _reloadVisualEndsAt - Time.unscaledTime); }
@@ -75,6 +96,9 @@ namespace RealmOfAshes.Game
         }
 
         private float _nextRequestAt;
+        private string _pendingAttackToken = string.Empty;
+        private float _attackRequestTimeoutAt = -100f;
+        private const float AttackRequestTimeoutSeconds = 1.5f;
         private bool _reloadRequestInFlight;
         private float _reloadVisualEndsAt = -100f;
         private const float ReloadVisualSeconds = 0.82f;
@@ -133,6 +157,8 @@ namespace RealmOfAshes.Game
 
         private void OnDisable()
         {
+            _pendingAttackToken = string.Empty;
+            _attackRequestTimeoutAt = -100f;
             if (Socket == null) return;
             Socket.OnEnemyAttack -= HandleEnemyAttack;
             Socket.OnEnemyAttackMiss -= HandleEnemyAttackMiss;
@@ -452,6 +478,68 @@ namespace RealmOfAshes.Game
             TriggerAttackAtScreenPoint(Input.mousePosition);
         }
 
+        private RoaWeaponReadiness.Frame EvaluateWeaponReadiness()
+        {
+            JObject combat = Socket?.Session?.Combat;
+            JObject self = Socket?.Session?.Self;
+            float actionPoints = Hud != null
+                ? Hud.Ap : self?["ap"]?.ToObject<float>() ?? 0f;
+            int reserveAmmo = Hud != null
+                ? Hud.ReserveAmmo : combat?["reserveAmmo"]?.ToObject<int>() ?? 0;
+            float cooldown = Hud != null ? Hud.CooldownRemainingSeconds : 0f;
+            return RoaWeaponReadiness.Evaluate(
+                HasAmmoWeapon(), HasUsableRound, reserveAmmo,
+                actionPoints, CurrentAttackApCost, cooldown,
+                _reloadRequestInFlight, ReloadVisualRemaining, AttackRequestPending);
+        }
+
+        private bool BlockKnownImpossibleAttack()
+        {
+            RoaWeaponReadiness.Frame readiness = EvaluateWeaponReadiness();
+            switch (readiness.Kind)
+            {
+                case RoaWeaponReadinessKind.AttackPending:
+                    _nextRequestAt = Time.time + 0.04f;
+                    return true;
+                case RoaWeaponReadinessKind.Cooldown:
+                    float cooldown = Hud != null ? Hud.CooldownRemainingSeconds : 0.08f;
+                    _nextRequestAt = Time.time + Mathf.Clamp(cooldown, 0.035f, 0.12f);
+                    return true;
+                case RoaWeaponReadinessKind.LowActionPoints:
+                    _nextRequestAt = Time.time + 0.24f;
+                    AddLog(readiness.Label);
+                    return true;
+                default:
+                    // Reloading is a cosmetic tail after the authoritative ACK:
+                    // firing intentionally cancels it below. Empty magazines and
+                    // a pending reload have their own tactile feedback above.
+                    return false;
+            }
+        }
+
+        private void BeginAttackRequest(string attackToken)
+        {
+            _pendingAttackToken = attackToken ?? string.Empty;
+            _attackRequestTimeoutAt = Time.unscaledTime + AttackRequestTimeoutSeconds;
+        }
+
+        private void CompleteAttackRequest(string attackToken, JObject ack)
+        {
+            float retry = AuthoritativeRetrySeconds(ack);
+            if (retry > 0f) _nextRequestAt = Mathf.Max(_nextRequestAt, Time.time + retry);
+            if (!string.Equals(_pendingAttackToken, attackToken, StringComparison.Ordinal)) return;
+            _pendingAttackToken = string.Empty;
+            _attackRequestTimeoutAt = -100f;
+        }
+
+        public static float AuthoritativeRetrySeconds(JObject ack)
+        {
+            if (ack == null) return 0f;
+            float retryMs = Mathf.Max(0f, ack["retryAfterMs"]?.ToObject<float>() ?? 0f);
+            float cooldownMs = Mathf.Max(0f,
+                ack["combat"]?["cooldownRemainingMs"]?.ToObject<float>() ?? 0f);
+            return Mathf.Clamp(Mathf.Max(retryMs, cooldownMs) / 1000f, 0f, 5f);
+        }
         private void AttackAt(Vector3 cursor)
         {
             string weapon = ActiveWeapon();
@@ -478,9 +566,13 @@ namespace RealmOfAshes.Game
                 _nextRequestAt = Time.time + Mathf.Max(MinRequestInterval, 0.18f);
                 Player.View?.PlayAttack();
                 Audio?.PlayDryFire();
-                AddLog("Магазин пуст — нажмите R.");
+                int reserve = Hud != null
+                    ? Hud.ReserveAmmo : Socket?.Session?.Combat?["reserveAmmo"]?.ToObject<int>() ?? 0;
+                AddLog(reserve > 0 ? "Магазин пуст — нажмите R." : "Боеприпасы закончились.");
                 return;
             }
+
+            if (BlockKnownImpossibleAttack()) return;
 
             if (_reloadVisualEndsAt > Time.unscaledTime)
             {
@@ -503,6 +595,7 @@ namespace RealmOfAshes.Game
             if (Player.View != null) Player.View.PlayAttack();
 
             string attackToken = Guid.NewGuid().ToString("N");
+            BeginAttackRequest(attackToken);
             SendAttackVisual(self, targetPosition, selfX, selfZ, targetX, targetZ, angle);
 
             if (weapon == "rocketLauncher")
@@ -768,7 +861,11 @@ namespace RealmOfAshes.Game
                 ["coneWidth"] = coneWidth,
                 ["shotDirX"] = shotDirX,
                 ["shotDirZ"] = shotDirZ
-            }, ack => HandleHitResult(ack, targetPosition, RoaCoords.ToUnity(selfX, selfZ)));
+            }, ack =>
+            {
+                CompleteAttackRequest(attackToken, ack);
+                HandleHitResult(ack, targetPosition, RoaCoords.ToUnity(selfX, selfZ));
+            });
         }
 
         private void SendAuthoritativePlayerHit(PublicPlayer target,
@@ -792,7 +889,11 @@ namespace RealmOfAshes.Game
                 ["weapon"] = ActiveWeapon(),
                 ["weaponRuntimeId"] = ActiveWeaponRuntimeId(),
                 ["equipment"] = EquipmentSnapshot()
-            }, ack => HandlePlayerHitResult(ack, target, targetPosition, RoaCoords.ToUnity(selfX, selfZ)));
+            }, ack =>
+            {
+                CompleteAttackRequest(attackToken, ack);
+                HandlePlayerHitResult(ack, target, targetPosition, RoaCoords.ToUnity(selfX, selfZ));
+            });
         }
 
         private void SendUntargetedAttack(float selfX, float selfZ, float angle, string attackToken)
@@ -810,6 +911,7 @@ namespace RealmOfAshes.Game
                 ["equipment"] = EquipmentSnapshot()
             }, ack =>
             {
+                CompleteAttackRequest(attackToken, ack);
                 if (ack == null) return;
                 Socket.ApplyGameplayAck(ack);
                 if (ack["ok"]?.ToObject<bool>() != true)
@@ -837,7 +939,11 @@ namespace RealmOfAshes.Game
                 ["z"] = selfZ,
                 ["angle"] = angle,
                 ["equipment"] = EquipmentSnapshot()
-            }, ack => HandleExplosionResult(ack, impactPosition));
+            }, ack =>
+            {
+                CompleteAttackRequest(attackToken, ack);
+                HandleExplosionResult(ack, impactPosition);
+            });
         }
 
         private void HandleHitResult(JObject ack, Vector3 targetPosition, Vector3 sourcePosition)

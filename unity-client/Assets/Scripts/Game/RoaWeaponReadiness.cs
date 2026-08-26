@@ -5,6 +5,7 @@ namespace RealmOfAshes.Game
     public enum RoaWeaponReadinessKind
     {
         Ready,
+        AttackPending,
         Cooldown,
         ReloadPending,
         Reloading,
@@ -14,8 +15,8 @@ namespace RealmOfAshes.Game
     }
 
     /// <summary>
-    /// Pure presentation rule for the weapon console. Authoritative values still
-    /// come from combat ACKs; this class only turns them into one readable state.
+    /// Pure readiness rule shared by the weapon console and input gate.
+    /// All values still come from authoritative combat ACKs/snapshots.
     /// </summary>
     public static class RoaWeaponReadiness
     {
@@ -29,8 +30,11 @@ namespace RealmOfAshes.Game
         public static Frame Evaluate(bool usesAmmo, bool hasLoadedRound, int reserveAmmo,
                                      float actionPoints, int actionPointCost,
                                      float cooldownSeconds, bool reloadPending,
-                                     float reloadRemainingSeconds)
+                                     float reloadRemainingSeconds, bool attackPending = false)
         {
+            if (attackPending)
+                return State(RoaWeaponReadinessKind.AttackPending, "ВЫСТРЕЛ…", false);
+
             if (reloadPending)
                 return State(RoaWeaponReadinessKind.ReloadPending, "ПОДТВЕРЖДЕНИЕ R…", false);
 

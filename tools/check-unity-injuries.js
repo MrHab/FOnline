@@ -12,6 +12,7 @@ const player = read('unity-client/Assets/Scripts/Game/RoaPlayerController.cs');
 const character = read('unity-client/Assets/Scripts/Game/RoaCharacterView.cs');
 const fog = read('unity-client/Assets/Scripts/Game/RoaFogOfWar.cs');
 const preview = read('unity-client/Assets/Scripts/Game/RoaCombatPreview.cs');
+const combat = read('unity-client/Assets/Scripts/Game/RoaCombat.cs');
 const socket = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 const remotes = read('unity-client/Assets/Scripts/Game/RoaRemotePlayers.cs');
 
@@ -45,7 +46,10 @@ has(character, 'if (material != null) Destroy(material);', 'Unity marker materia
 has(fog, 'if (concussion) radius -= 2f;', 'Unity concussion vision penalty');
 has(fog, 'if (infection) radius -= 0.5f;', 'Unity infection vision penalty');
 has(preview, '(Injury(self, "brokenArm") ? 0.12f : 0f)', 'Unity preview arm penalty');
-has(preview, 'if (Injury(self, "brokenArm")) result.ApCost++;', 'Unity preview AP penalty');
+has(preview, 'public static int EffectiveApCost(', 'Unity shared AP calculation');
+has(preview, 'ModeApCost(weapon, mode, self) + (Injury(self, "brokenArm") ? 1 : 0)', 'Unity preview AP penalty');
+has(preview, 'result.ApCost = EffectiveApCost(self, combat, requestedMode);', 'Unity preview shared AP use');
+has(combat, 'public int CurrentAttackApCost', 'Unity input/HUD shared injury AP use');
 has(socket, 'merged["injuries"] = injuries.DeepClone();', 'Unity local injury event merge');
 has(remotes, 'remote.View.SetInjuries(remote.Player.Injuries);', 'Unity remote injury propagation');
 

@@ -24,7 +24,7 @@ namespace RealmOfAshes.Game
         private const float ObstructionDistance = 0.95f;
         private const float ObstructionRadius = 0.18f;
         private const float ReadyRaiseAngle = 1.05f;
-        private const float ObstructionBlendStep = 0.16f;
+
         private const float DefaultReloadSeconds = 0.82f;
 
         private Transform _characterRoot;
@@ -214,11 +214,11 @@ namespace RealmOfAshes.Game
                 Vector3 direction = barrel.normalized;
                 Vector3 start = grip + direction * 0.08f;
                 Vector3 end = grip + direction * ObstructionDistance;
-                if (RoaWeaponView.IsSegmentBlocked(start, end, ObstructionRadius, _owner, _weapon))
-                    target = 1f;
+                target = RoaWeaponView.ObstructionAmount(
+                    start, end, ObstructionRadius, _owner, _weapon);
             }
-            _obstructedBlend += (target - _obstructedBlend) * ObstructionBlendStep;
-            if (_obstructedBlend < 0.005f) _obstructedBlend = 0f;
+            _obstructedBlend = RoaWeaponView.SmoothObstruction(
+                _obstructedBlend, target, Time.deltaTime);
         }
 
         private void ConvergeToAim(Vector3 aim)

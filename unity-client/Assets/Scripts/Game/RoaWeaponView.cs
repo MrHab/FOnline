@@ -46,8 +46,9 @@ namespace RealmOfAshes.Game
         /// <summary>Насколько ствол поднимается при полном упоре, рад.</summary>
         private const float ReadyRaiseAngle = 1.05f;
 
-        /// <summary>Скорость смешивания подъёма за кадр. 04d:1314.</summary>
-        private const float ObstructionBlendStep = 0.16f;
+        /// <summary>Скорости входа в high-ready и возврата, 1/с.</summary>
+        private const float ObstructionRaiseRate = 15f;
+        private const float ObstructionReleaseRate = 8f;
 
         private static readonly Collider[] ProbeHits = new Collider[8];
         private static readonly RaycastHit[] ProbeCastHits = new RaycastHit[16];
@@ -497,11 +498,10 @@ namespace RealmOfAshes.Game
 
                 Vector3 start = grip + dir * 0.08f;
                 Vector3 end = grip + dir * ObstructionDistance;
-                if (IsSegmentBlocked(start, end, ObstructionRadius, _owner, _weapon)) target = 1f;
+                target = ObstructionAmount(start, end, ObstructionRadius, _owner, _weapon);
             }
 
-            _obstructedBlend += (target - _obstructedBlend) * ObstructionBlendStep;
-            if (_obstructedBlend < 0.005f) _obstructedBlend = 0f;
+            _obstructedBlend = SmoothObstruction(_obstructedBlend, target, Time.deltaTime);
         }
 
         /// <summary>
@@ -511,25 +511,54 @@ namespace RealmOfAshes.Game
         public static bool IsSegmentBlocked(Vector3 start, Vector3 end, float radius,
                                             Transform owner, Transform weapon)
         {
+            return ObstructionAmount(start, end, radius, owner, weapon) > 0f;
+        }
+
+        /// <summary>
+        /// Непрерывная величина упора 0..1. Стена у конца щупа лишь начинает
+        /// поднимать ствол, стена у рукояти переводит оружие в полный high-ready.
+        /// </summary>
+        public static float ObstructionAmount(Vector3 start, Vector3 end, float radius,
+                                              Transform owner, Transform weapon)
+        {
             int count = Physics.OverlapSphereNonAlloc(start, radius, ProbeHits,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
 
             for (int i = 0; i < count; i++)
             {
                 Collider hit = ProbeHits[i];
-                if (!IgnoredProbeCollider(hit, owner, weapon)) return true;
+                if (!IgnoredProbeCollider(hit, owner, weapon)) return 1f;
             }
 
             Vector3 segment = end - start;
             float distance = segment.magnitude;
-            if (distance <= 0.001f) return false;
+            if (distance <= 0.001f) return 0f;
 
             int castCount = Physics.SphereCastNonAlloc(start, radius, segment / distance,
                 ProbeCastHits, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            float nearest = float.PositiveInfinity;
             for (int i = 0; i < castCount; i++)
-                if (!IgnoredProbeCollider(ProbeCastHits[i].collider, owner, weapon)) return true;
+            {
+                RaycastHit hit = ProbeCastHits[i];
+                if (!IgnoredProbeCollider(hit.collider, owner, weapon))
+                    nearest = Mathf.Min(nearest, hit.distance);
+            }
 
-            return false;
+            return float.IsPositiveInfinity(nearest)
+                ? 0f
+                : Mathf.Clamp01(1f - nearest / distance);
+        }
+
+        /// <summary>Экспоненциальное сглаживание не зависит от частоты кадров.</summary>
+        public static float SmoothObstruction(float current, float target, float dt)
+        {
+            current = Mathf.Clamp01(current);
+            target = Mathf.Clamp01(target);
+            float rate = target > current ? ObstructionRaiseRate : ObstructionReleaseRate;
+            float blend = 1f - Mathf.Exp(-rate * Mathf.Clamp(dt, 0f, 0.1f));
+            float result = Mathf.Lerp(current, target, blend);
+            if (target <= 0f && result < 0.005f) return 0f;
+            return result;
         }
 
         private static bool IgnoredProbeCollider(Collider hit, Transform owner, Transform weapon)

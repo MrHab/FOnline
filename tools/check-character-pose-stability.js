@@ -81,9 +81,11 @@ async function main() {
     && weaponView.includes('ArmPole(false)'),
   'Unity arm IK lost elbow pole constraints');
   assert(weaponView.includes('Physics.SphereCastNonAlloc')
-    && weaponView.includes('IsSegmentBlocked(start, end, ObstructionRadius, _owner, _weapon)')
+    && weaponView.includes('ObstructionAmount(start, end, ObstructionRadius, _owner, _weapon)')
+    && weaponView.includes('SmoothObstruction(_obstructedBlend, target, Time.deltaTime)')
+    && weaponView.includes('1f - Mathf.Exp(-rate * Mathf.Clamp(dt, 0f, 0.1f))')
     && !weaponView.includes('ObstructionProbes'),
-  'Unity weapon obstruction is no longer a continuous owner-filtered sweep');
+  'Unity weapon obstruction lost distance-aware owner filtering or frame-rate independent smoothing');
   assert(remotePlayers.includes('RoaCombatFx.TryShotEndpoints(payload, out start, out end)')
     && remotePlayers.includes('remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil)')
     && remotePlayers.includes('remote.TargetYawDeg = RoaCoords.AngleToYawDeg'),

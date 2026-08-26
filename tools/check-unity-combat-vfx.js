@@ -92,7 +92,8 @@ assert(protocol.includes('[JsonProperty("combats")] public JArray Combats;')
   'Per-hand loaded state is no longer synchronized through join and gameplay acknowledgements');
 assert(offhand.includes('MirrorRigid(rightLocal)')
   && offhand.includes('_leftArm.Solve')
-  && offhand.includes('RoaWeaponView.IsSegmentBlocked')
+  && offhand.includes('RoaWeaponView.ObstructionAmount')
+  && offhand.includes('RoaWeaponView.SmoothObstruction')
   && character.includes('_offhandWeapon.Apply(_aimPoint, _hasAim)')
   && weapon.includes('if (DualWield) SupportHandSolved = false;'),
   'Offhand model lost mirrored arm IK, obstruction or one-handed primary grip');

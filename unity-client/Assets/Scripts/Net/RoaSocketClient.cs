@@ -173,6 +173,7 @@ namespace RealmOfAshes.Net
         private float _reconnectAt;
         private int _reconnectAttempt;
         private bool _shuttingDown;
+        private bool _connectFailureLogged;
 
         private const float NetworkPingIntervalSeconds = 2f;
         private const float NetworkPingTimeoutSeconds = 3.5f;
@@ -238,6 +239,7 @@ namespace RealmOfAshes.Net
             _shuttingDown = false;
             _reconnectAttempt = 0;
             _reconnectScheduled = false;
+            _connectFailureLogged = false;
             LastError = string.Empty;
 
             BeginTransportConnection();
@@ -276,7 +278,7 @@ namespace RealmOfAshes.Net
                     if (_connection != connection || _shuttingDown) return;
                     Phase = ConnectionPhase.Disconnected;
                     LastError = "Не удалось подключиться: " + message;
-                    Debug.LogError("[ROA] " + LastError);
+                    ReportConnectFailureOnce(LastError);
                     ScheduleReconnect();
                 });
             });
@@ -301,7 +303,7 @@ namespace RealmOfAshes.Net
                 Session = null;
                 _joinPending = false;
                 ResetNetworkPing();
-                Debug.LogWarning("[ROA] Соединение потеряно: " + reason);
+                ReportConnectFailureOnce("Соединение потеряно: " + reason);
                 OnDisconnected?.Invoke(reason);
                 if (!rejected) ScheduleReconnect();
             });
@@ -311,6 +313,7 @@ namespace RealmOfAshes.Net
                 if (_connection != registeredConnection || _shuttingDown) return;
                 Phase = ConnectionPhase.Disconnected;
                 LastError = "Ошибка подключения: " + message;
+                ReportConnectFailureOnce(LastError);
                 OnDisconnected?.Invoke(message);
                 ScheduleReconnect();
             });
@@ -702,6 +705,7 @@ namespace RealmOfAshes.Net
                 _lastEnemyFrameSeq = 0;
                 _reconnectAttempt = 0;
                 _reconnectScheduled = false;
+                _connectFailureLogged = false;
                 _nextNetworkPingAt = Time.realtimeSinceStartup + 0.25f;
 
                 // Эти поля нужны только для первого создания. Повторный join после
@@ -723,6 +727,18 @@ namespace RealmOfAshes.Net
             _reconnectAt = Time.realtimeSinceStartup + delay;
             _reconnectScheduled = true;
             LastError = "Повторное подключение через " + delay.ToString("0") + " с.";
+        }
+
+        public static bool ShouldReportConnectFailure(bool alreadyReported)
+        {
+            return !alreadyReported;
+        }
+
+        private void ReportConnectFailureOnce(string message)
+        {
+            if (!ShouldReportConnectFailure(_connectFailureLogged)) return;
+            _connectFailureLogged = true;
+            Debug.LogWarning("[ROA] " + message);
         }
 
         private void ResetNetworkPing()

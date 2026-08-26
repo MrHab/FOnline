@@ -21,6 +21,8 @@ namespace RealmOfAshes.Game
         private const string AutomationLoginVariable = "ROA_UNITY_LOGIN";
         private const string AutomationPasswordVariable = "ROA_UNITY_PASSWORD";
         private const string AutomationForceMobileVariable = "ROA_UNITY_FORCE_MOBILE";
+        private const float AuthHeartbeatIntervalSeconds = 10f;
+        private const float AuthHeartbeatFailureRetrySeconds = 60f;
 
         public static RoaGameBootstrap Active { get; private set; }
         public static bool BlocksWorldHud
@@ -161,6 +163,7 @@ namespace RealmOfAshes.Game
         private bool _joiningNewCharacter;
         private float _nextAuthHeartbeatAt;
         private bool _authHeartbeatPending;
+        private bool _authHeartbeatWarningShown;
         private bool _gameMenuOpen;
         private bool _gameMenuActionPending;
         private bool _tutorialOpen;
@@ -531,9 +534,27 @@ namespace RealmOfAshes.Game
                     SetGameMenuOpen(true);
             }
 
+            bool gameplaySession = _stage == Stage.Joining || _stage == Stage.LoadingLocation
+                || _stage == Stage.InWorld || _stage == Stage.LoadingGlobalMap
+                || _stage == Stage.GlobalMap;
+            RoaSocketClient.ConnectionPhase socketPhase = Socket != null
+                ? Socket.Phase
+                : RoaSocketClient.ConnectionPhase.Disconnected;
             if (_auth != null && _auth.IsAuthenticated && !_authHeartbeatPending
+                && ShouldAttemptAuthHeartbeat(gameplaySession, socketPhase)
                 && Time.unscaledTime >= _nextAuthHeartbeatAt)
                 StartCoroutine(DoAuthHeartbeat());
+        }
+
+        public static float AuthHeartbeatDelay(bool success)
+        {
+            return success ? AuthHeartbeatIntervalSeconds : AuthHeartbeatFailureRetrySeconds;
+        }
+
+        public static bool ShouldAttemptAuthHeartbeat(
+            bool gameplaySession, RoaSocketClient.ConnectionPhase socketPhase)
+        {
+            return !gameplaySession || socketPhase == RoaSocketClient.ConnectionPhase.Joined;
         }
 
         private void ToggleGameMenu()
@@ -1011,7 +1032,6 @@ namespace RealmOfAshes.Game
         private IEnumerator DoAuthHeartbeat()
         {
             _authHeartbeatPending = true;
-            _nextAuthHeartbeatAt = Time.unscaledTime + 10f;
             bool ok = false;
             string failure = null;
             yield return StartCoroutine(_auth.Heartbeat((success, error) =>
@@ -1020,8 +1040,16 @@ namespace RealmOfAshes.Game
                 failure = error;
             }));
             _authHeartbeatPending = false;
-            if (!ok && !string.IsNullOrEmpty(failure))
+            _nextAuthHeartbeatAt = Time.unscaledTime + AuthHeartbeatDelay(ok);
+            if (ok)
+            {
+                _authHeartbeatWarningShown = false;
+            }
+            else if (!_authHeartbeatWarningShown && !string.IsNullOrEmpty(failure))
+            {
+                _authHeartbeatWarningShown = true;
                 Debug.LogWarning("[ROA] Heartbeat аккаунта: " + failure);
+            }
         }
 
         private void RecreateAuthClient()
@@ -1031,8 +1059,9 @@ namespace RealmOfAshes.Game
             if (RemotePlayers != null) RemotePlayers.BaseUrl = BaseUrl;
             if (Enemies != null) Enemies.BaseUrl = BaseUrl;
             _auth = new RoaAuthClient(BaseUrl);
-            _nextAuthHeartbeatAt = Time.unscaledTime + 10f;
+            _nextAuthHeartbeatAt = Time.unscaledTime + AuthHeartbeatDelay(true);
             _authHeartbeatPending = false;
+            _authHeartbeatWarningShown = false;
             Quickbar?.Configure(_auth, Socket, Inventory, Combat, MobileControls, Interaction);
         }
 

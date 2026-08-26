@@ -75,12 +75,31 @@ function normalizeCost(cost) {
 const web = sourceTree(WEB_DIR, '.js');
 const unity = sourceTree(UNITY_DIR, '.cs');
 const socket = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
+const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 const auth = read('unity-client/Assets/Scripts/Net/RoaAuthClient.cs');
 const uiScale = read('unity-client/Assets/Scripts/Game/RoaUiScale.cs');
+const offlineProbe = read('unity-client/Assets/Editor/RoaOfflineResilienceProbe.cs');
+const auditRunner = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
 
 assert(uiScale.includes('return mobile ? new Vector2(1280f, 720f) : new Vector2(1600f, 900f);'),
   'Unity UI must keep readable 1600x900 desktop and 1280x720 mobile references');
+
+assert(bootstrap.includes('private const float AuthHeartbeatFailureRetrySeconds = 60f;')
+  && bootstrap.includes('ShouldAttemptAuthHeartbeat(gameplaySession, socketPhase)')
+  && bootstrap.includes('_nextAuthHeartbeatAt = Time.unscaledTime + AuthHeartbeatDelay(ok);')
+  && bootstrap.includes('else if (!_authHeartbeatWarningShown && !string.IsNullOrEmpty(failure))'),
+  'Unity account heartbeat must pause during gameplay reconnects, back off after failures, and log once');
+assert(socket.includes('ReportConnectFailureOnce(LastError);')
+  && socket.includes('ReportConnectFailureOnce("Соединение потеряно: " + reason);')
+  && socket.includes('_connectFailureLogged = false;')
+  && socket.includes('ShouldReportConnectFailure(_connectFailureLogged)'),
+  'Unity socket reconnects must retain UI state while logging one warning per offline episode');
+assert(offlineProbe.includes('AuthHeartbeatDelay(false), 60f')
+  && offlineProbe.includes('ConnectionPhase.Disconnected')
+  && offlineProbe.includes('ShouldReportConnectFailure(true)')
+  && auditRunner.includes('typeof(RoaOfflineResilienceProbe)'),
+  'Unity offline resilience probe must cover heartbeat gating, warning latching, and the full audit');
 
 // Browser -> server. Literal calls are supplemented by the browser's single
 // audited guarded emitter, exactly like check-socket-event-contract.js.

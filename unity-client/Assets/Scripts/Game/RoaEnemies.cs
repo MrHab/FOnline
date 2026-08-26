@@ -406,6 +406,19 @@ namespace RealmOfAshes.Game
             ApplySnapshotRow(id, row);
         }
 
+        /// <summary>
+        /// Apply the authoritative post-hit state while preserving the shot
+        /// direction, damage and critical strength that a plain HP snapshot loses.
+        /// </summary>
+        public void ApplyPublicEnemyHit(JObject row, Vector3 sourceWorld,
+                                        int damage, bool critical)
+        {
+            if (row == null) return;
+            string id = row["id"]?.ToString();
+            if (string.IsNullOrEmpty(id)) return;
+            ApplySnapshotRow(id, row, true, sourceWorld, damage, critical);
+        }
+
         private void OnEnable()
         {
             if (Socket == null) return;
@@ -589,6 +602,12 @@ namespace RealmOfAshes.Game
 
         private void ApplySnapshotRow(string id, JObject row)
         {
+            ApplySnapshotRow(id, row, false, Vector3.zero, 0, false);
+        }
+
+        private void ApplySnapshotRow(string id, JObject row, bool confirmedHit,
+                                      Vector3 hitSource, int hitDamage, bool hitCritical)
+        {
             Enemy enemy;
             if (!_enemies.TryGetValue(id, out enemy))
             {
@@ -616,7 +635,11 @@ namespace RealmOfAshes.Game
             {
                 enemy.CharacterView.SetDead(enemy.Dead);
                 if (!enemy.Dead && previousHp > 0 && nextHp > 0 && nextHp < previousHp)
-                    enemy.CharacterView.PlayHit();
+                {
+                    if (confirmedHit)
+                        enemy.CharacterView.PlayHit(hitSource, hitDamage, hitCritical);
+                    else enemy.CharacterView.PlayHit();
+                }
                 if (enemy.CharacterView.Ready) _ = RefreshHumanoidEquipment(enemy);
             }
 

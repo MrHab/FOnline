@@ -95,7 +95,7 @@ namespace RealmOfAshes.Game
                 float angle = (i + Next01() * 0.45f) / fx.Sparks.Length * Mathf.PI * 2f;
                 Vector3 spread = side * Mathf.Cos(angle) + Vector3.up * Mathf.Sin(angle);
                 Vector3 velocity = (spread * 0.86f - shotDirection * 0.24f + Vector3.up * 0.38f).normalized;
-                fx.Velocities[i] = velocity * Mathf.Lerp(1.1f, 2.4f, Next01()) * strength;
+                fx.Velocities[i] = velocity * Mathf.Lerp(1.1f, 2.4f, Next01()) * strength * Mathf.Max(0.5f, fx.Scale);
                 fx.Sparks[i].SetPosition(0, Vector3.zero);
                 fx.Sparks[i].SetPosition(1, velocity * 0.035f);
             }
@@ -104,9 +104,9 @@ namespace RealmOfAshes.Game
 
         private void UpdateImpact(ImpactFx fx, float t)
         {
-            float fade = 1f - Mathf.SmoothStep(0.35f, 1f, t);
+            float fade = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 1f, t));
             float burst = Mathf.Sin(Mathf.Clamp01(t / 0.32f) * Mathf.PI * 0.5f);
-            fx.Core.transform.localScale = Vector3.one * Mathf.Lerp(0.055f, 0.24f, burst) * fade;
+            fx.Core.transform.localScale = Vector3.one * Mathf.Lerp(0.055f, 0.24f, burst) * fade * Mathf.Max(0.5f, fx.Scale);
             SetMaterialColor(fx.CoreMaterial, fx.Color, 0.94f * fade, 2.8f);
             SetMaterialAlpha(fx.SparkMaterial, 0.92f * fade);
             for (int i = 0; i < fx.Sparks.Length; i++)

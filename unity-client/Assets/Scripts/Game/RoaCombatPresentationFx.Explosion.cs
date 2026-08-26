@@ -91,7 +91,7 @@ namespace RealmOfAshes.Game
                 * Mathf.Lerp(0.22f, 0.88f, eased) * (1f - t * 0.42f);
             SetMaterialColor(fx.CoreMaterial,
                 Color.Lerp(new Color(1f, 0.9f, 0.48f), new Color(1f, 0.18f, 0.015f), t),
-                0.98f * (1f - Mathf.SmoothStep(0.52f, 1f, t)), 4f);
+                0.98f * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.52f, 1f, t))), 4f);
             SetMaterialAlpha(fx.GlowMaterial, 0.66f * (1f - t) * (1f - t));
 
             float smokeT = Mathf.Clamp01((t - 0.13f) / 0.87f);
@@ -110,7 +110,7 @@ namespace RealmOfAshes.Game
                 fx.Smoke[i].transform.localScale = Vector3.one * scale;
             }
 
-            float emberFade = 1f - Mathf.SmoothStep(0.35f, 1f, t);
+            float emberFade = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 1f, t));
             SetMaterialAlpha(fx.EmberMaterial, 0.96f * emberFade);
             for (int i = 0; i < fx.Embers.Length; i++)
             {
@@ -121,7 +121,7 @@ namespace RealmOfAshes.Game
                 fx.Embers[i].SetPosition(1, head);
             }
 
-            fx.Light.intensity = 8f * (1f - Mathf.SmoothStep(0f, 0.55f, t));
+            fx.Light.intensity = 8f * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0f, 0.55f, t)));
         }
 
         private void DestroyExplosion(ExplosionFx fx)

@@ -58,7 +58,7 @@ requirePattern(combat,
   /private void SendExplosion\([\s\S]{0,900}EmitWithAck\("explosionAttack"/,
   'rocket attacks no longer emit the authoritative explosion action');
 requirePattern(combat,
-  /HandleExplosionResult\(JObject ack[\s\S]{0,350}ApplyGameplayAck\(ack\)[\s\S]{0,450}ack\["enemies"\] is JArray[\s\S]{0,250}ApplyPublicEnemy/,
+  /HandleExplosionResult\(JObject ack[\s\S]{0,350}ApplyGameplayAck\(ack\)[\s\S]{0,750}ack\["enemies"\] is JArray[\s\S]{0,850}ApplyPublicEnemy(?:Hit)?/,
   'rocket acknowledgement no longer refreshes authoritative player and enemy state');
 
 requirePattern(interaction,

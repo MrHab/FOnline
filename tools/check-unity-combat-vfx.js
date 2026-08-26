@@ -52,6 +52,11 @@ assert(presentation.includes('public const float Life = 0.96f')
   && presentation.includes('ExplosionEmberCount = 10')
   && presentation.includes('MaxExplosions = 8'),
   'Layered bounded explosion lost shock, heat, smoke or ember coverage');
+assert(presentation.includes('Mathf.InverseLerp(0.35f, 1f, t)')
+  && presentation.includes('Mathf.InverseLerp(0.52f, 1f, t)')
+  && presentation.includes('Mathf.InverseLerp(0f, 0.55f, t)')
+  && !presentation.includes('Mathf.SmoothStep(0.35f, 1f, t)'),
+  'Impact sparks, explosion core, embers or light can pop instead of fading to zero');
 assert(presentation.includes('CreateDamageVignette()')
   && presentation.includes('PlayDamagePulse(int damage, Vector3 targetWorld, Vector3 sourceWorld)')
   && presentation.includes('CombatDamageFeedback')

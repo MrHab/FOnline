@@ -210,6 +210,29 @@ namespace RealmOfAshes.Game
             Recount();
         }
 
+        public void PlayConfirmedHit(Vector3 target, Vector3 source, string weaponId,
+                                     bool critical, bool killed)
+        {
+            if (Polish != null)
+            {
+                Polish.PlayConfirmedHit(target, source, weaponId, critical, killed);
+                return;
+            }
+            EnsurePools();
+            ImpactFx impact = AcquireImpact();
+            impact.Root.transform.position = new Vector3(
+                target.x, Mathf.Max(0.88f, target.y + 1.02f), target.z);
+            impact.Root.transform.localScale = Vector3.one * (killed ? 0.28f : critical ? 0.23f : 0.19f);
+            Color color = killed ? new Color(1f, 0.28f, 0.12f)
+                : critical ? new Color(1f, 0.78f, 0.18f) : new Color(1f, 0.48f, 0.30f);
+            SetMaterialColor(impact.Material, color, 0.94f);
+            impact.Started = Time.unscaledTime;
+            impact.Life = killed ? 0.42f : critical ? 0.34f : 0.28f;
+            impact.Active = true;
+            impact.Root.SetActive(true);
+            Recount();
+        }
+
         public void PlayExplosion(Vector3 center, float radius)
         {
             radius = Mathf.Max(1.4f, radius);

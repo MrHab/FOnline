@@ -46,6 +46,7 @@ namespace RealmOfAshes.Game
             public Color Color;
             public float Started;
             public float Life;
+            public float Scale;
             public bool Active;
             public bool Visible;
         }
@@ -167,10 +168,36 @@ namespace RealmOfAshes.Game
             impact.Color = Color.Lerp(profile.Tracer, new Color(0.92f, 0.66f, 0.31f), 0.46f);
             impact.Started = Time.unscaledTime + Mathf.Min(0.075f, tracer.Life * 0.42f);
             impact.Life = weaponId == "rocketLauncher" ? 0.4f : 0.3f;
+            impact.Scale = 1f;
             impact.Active = true;
             impact.Visible = false;
             impact.Root.SetActive(false);
             ConfigureImpact(impact, direction, weaponId);
+        }
+
+        public void PlayConfirmedHit(Vector3 target, Vector3 source, string weaponId,
+                                     bool critical, bool killed)
+        {
+            EnsurePools();
+            Vector3 direction = target - source;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.0001f) direction = Vector3.forward;
+            else direction.Normalize();
+
+            ImpactFx impact = AcquireImpact();
+            impact.Root.transform.position = new Vector3(
+                target.x, Mathf.Max(0.88f, target.y + 1.02f), target.z);
+            impact.Color = killed
+                ? new Color(1f, 0.28f, 0.12f)
+                : critical ? new Color(1f, 0.78f, 0.18f) : new Color(1f, 0.48f, 0.30f);
+            impact.Started = Time.unscaledTime;
+            impact.Life = killed ? 0.46f : critical ? 0.39f : 0.32f;
+            impact.Scale = killed ? 1.6f : critical ? 1.35f : 1.16f;
+            impact.Active = true;
+            impact.Visible = true;
+            impact.Root.SetActive(true);
+            ConfigureImpact(impact, direction, weaponId);
+            UpdateImpact(impact, 0f);
         }
 
         public void PlayExplosion(Vector3 center, float radius)

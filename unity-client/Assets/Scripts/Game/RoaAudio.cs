@@ -24,6 +24,10 @@ namespace RealmOfAshes.Game
         public bool Muted { get { return _masterVolume <= 0.001f; } }
         public int GeneratedClipCount { get { return _validatedClipCount; } }
         public bool EconomyCuesReady { get { return _economyGain != null && _levelUp != null; } }
+        public bool CombatConfirmationCuesReady
+        {
+            get { return _hitConfirm != null && _criticalConfirm != null && _killConfirm != null; }
+        }
         public bool ActivityCuesReady
         {
             get
@@ -65,6 +69,8 @@ namespace RealmOfAshes.Game
         private AudioClip _meleeSwing;
         private AudioClip _meleeImpact;
         private AudioClip _hurt;
+        private AudioClip _hitConfirm;
+        private AudioClip _criticalConfirm;
         private AudioClip _killConfirm;
         private AudioClip _reload;
         private AudioClip _uiClick;
@@ -91,6 +97,7 @@ namespace RealmOfAshes.Game
         private RoaActivityFeedbackCue _lastActivityCue;
         private float _lastEconomyAt = -100f;
         private float _lastWeaponBlockedAt = -100f;
+        private float _lastHitConfirmAt = -100f;
         private float _masterVolume;
         private int _worldCursor;
         private int _validatedClipCount;
@@ -218,6 +225,15 @@ namespace RealmOfAshes.Game
         {
             float strength = Mathf.InverseLerp(2f, 45f, Mathf.Max(0, damage));
             PlayUi(_hurt, Mathf.Lerp(0.38f, 0.72f, strength), Mathf.Lerp(1.08f, 0.86f, strength));
+        }
+
+        public void PlayHitConfirm(bool critical)
+        {
+            // A shotgun/cone can resolve several targets in the same frame. One
+            // crisp confirmation is clearer than a stack of identical tones.
+            if (Time.unscaledTime - _lastHitConfirmAt < 0.045f) return;
+            _lastHitConfirmAt = Time.unscaledTime;
+            PlayUi(critical ? _criticalConfirm : _hitConfirm, critical ? 0.31f : 0.22f, 1f);
         }
 
         public void PlayKillConfirm()
@@ -455,6 +471,8 @@ namespace RealmOfAshes.Game
             _meleeSwing = BuildWhoosh("MeleeSwing", 0.24f, 0x85c3u, 0.58f);
             _meleeImpact = BuildThud("MeleeImpact", 0.2f, 72f, 0.7f, 0xd1a3u);
             _hurt = BuildThud("PlayerHurt", 0.27f, 58f, 0.55f, 0x9821u);
+            _hitConfirm = BuildUiTone("HitConfirm", 0.075f, 980f, 720f);
+            _criticalConfirm = BuildUiTone("CriticalConfirm", 0.13f, 720f, 1180f);
             _killConfirm = BuildUiTone("KillConfirm", 0.24f, 620f, 930f);
             _reload = BuildReload();
             _uiClick = BuildUiTone("UiClick", 0.055f, 920f, 680f);

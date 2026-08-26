@@ -80,6 +80,7 @@ namespace RealmOfAshes.Game
         private float _combatLogUntil;
         private string _lastInteractionStatus = string.Empty;
         private float _systemLastPushAt;
+        private readonly Vector3[] _occupiedScreenCorners = new Vector3[4];
 
         /// <summary>Источник подсказок взаимодействия и статусов для системного журнала.</summary>
         public void SetInteraction(RoaInteraction interaction)
@@ -87,6 +88,39 @@ namespace RealmOfAshes.Game
             _interaction = interaction;
             if (interaction != null) interaction.HintCanvasDriven = true;
         }
+
+        /// <summary>Appends visible HUD panel bounds in top-left screen-space coordinates.</summary>
+        public int CollectOccupiedScreenRects(System.Collections.Generic.List<Rect> output)
+        {
+            if (output == null) throw new System.ArgumentNullException(nameof(output));
+            int before = output.Count;
+            AppendOccupiedScreenRect(_playerPanel, output);
+            AppendOccupiedScreenRect(_mapPanel, output);
+            AppendOccupiedScreenRect(_quickPanel, output);
+            AppendOccupiedScreenRect(_logPanel, output);
+            AppendOccupiedScreenRect(_systemPanel, output);
+            AppendOccupiedScreenRect(_consolePanel, output);
+            AppendOccupiedScreenRect(_economyRoot, output);
+            AppendOccupiedScreenRect(_interactionPrompt, output);
+            return output.Count - before;
+        }
+
+        private void AppendOccupiedScreenRect(GameObject panel,
+            System.Collections.Generic.List<Rect> output)
+        {
+            if (panel == null || !panel.activeInHierarchy) return;
+            RectTransform rect = panel.transform as RectTransform;
+            if (rect == null) return;
+            rect.GetWorldCorners(_occupiedScreenCorners);
+            Vector2 bottomLeft = RectTransformUtility.WorldToScreenPoint(
+                _canvas != null ? _canvas.worldCamera : null, _occupiedScreenCorners[0]);
+            Vector2 topRight = RectTransformUtility.WorldToScreenPoint(
+                _canvas != null ? _canvas.worldCamera : null, _occupiedScreenCorners[2]);
+            if (topRight.x <= bottomLeft.x || topRight.y <= bottomLeft.y) return;
+            output.Add(new Rect(bottomLeft.x, Screen.height - topRight.y,
+                topRight.x - bottomLeft.x, topRight.y - bottomLeft.y));
+        }
+
         private string _lastGlobalStatus = string.Empty;
         private float _globalStatusUntil;
         private Rect _lastSafeArea;

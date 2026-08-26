@@ -28,6 +28,7 @@ const beacon = read('unity-client/Assets/Scripts/Game/RoaActivityBeacon.cs');
 const minimap = read('unity-client/Assets/Scripts/Game/RoaMinimap.cs');
 const mapWindow = read('unity-client/Assets/Scripts/Game/RoaMapWindowCanvas.cs');
 const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
+const hudCanvas = read('unity-client/Assets/Scripts/Game/RoaHudCanvas.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 const globalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 const globalMapCanvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
@@ -37,6 +38,7 @@ const feedbackCanvasMetadata = read('unity-client/Assets/Scripts/Game/RoaWorldAc
 const navigationMetadata = read('unity-client/Assets/Scripts/Game/RoaWorldActivityNavigation.cs.meta');
 const beaconMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityBeacon.cs.meta');
 const navigationProbe = read('unity-client/Assets/Editor/RoaWorldActivityNavigationProbe.cs');
+const auditRunner = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
 const navigationProbeMetadata = read('unity-client/Assets/Editor/RoaWorldActivityNavigationProbe.cs.meta');
 const activityHub = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs');
 const activityHubMetadata = read('unity-client/Assets/Scripts/Game/RoaActivityHubCanvas.cs.meta');
@@ -117,6 +119,34 @@ requireText(navigation, 'CalculateNavigationArrowAngle',
   'Unity activity navigation lost camera-relative direction');
 requireText(navigation, 'NavigationDistanceLabel',
   'Unity activity navigation lost distance feedback');
+requireText(navigation, 'private const int MaxWorldLabels = 4;',
+  'Unity world-objective labels lost their strict visual budget');
+requireText(canvas, 'BuildObjectiveWorldLabelLayer((RectTransform)canvasGo.transform);',
+  'Unity activity Canvas no longer builds the projected world-label layer');
+requireText(navigation, 'private void LateUpdate()',
+  'world objective labels no longer follow the final camera pose');
+requireText(navigation, 'CollectWorldLabelFrames(_worldLabelFrames)',
+  'world objective labels no longer consume authoritative activity points');
+requireText(navigation, 'TryResolveWorldLabelRect(anchor, safe, _occupiedWorldLabels',
+  'world objective labels can overlap the activity HUD or each other');
+requireText(navigation, 'Bootstrap.HudCanvas?.CollectOccupiedScreenRects(_occupiedWorldLabels);',
+  'world objective labels no longer avoid the adaptive gameplay HUD');
+requirePattern(hudCanvas,
+  /CollectOccupiedScreenRects[\s\S]{0,900}_playerPanel[\s\S]{0,900}_interactionPrompt/,
+  'adaptive HUD occupancy no longer covers all visible gameplay panels');
+requireText(hudCanvas, 'rect.GetWorldCorners(_occupiedScreenCorners);',
+  'adaptive HUD occupancy no longer follows actual draggable panel bounds');
+requireText(hudCanvas, 'panel == null || !panel.activeInHierarchy',
+  'hidden HUD panels still reserve world-label space');
+requireText(navigation, 'WorldLabelText(frame.Label, frame.Distance, frame.Completed)',
+  'world objective labels lost distance, reach or completion states');
+requireText(navigation, 'background.raycastTarget = false;',
+  'world objective labels intercept gameplay input');
+requireText(canvas, 'pointStatus == "disabled" || pointStatus == "locked"',
+  'locked future branch points still create world beacons');
+requirePattern(navigation,
+  /status == "completed" \|\| status == "disabled"[\s\S]{0,80}status == "locked"/,
+  'locked future branch points still clutter the activity minimap');
 requireText(navigation, 'CollectMinimapMarkers(List<RoaMinimap.Marker> markers)',
   'Unity activity goals are no longer exported to the minimap');
 requireText(beacon, 'public sealed class RoaActivityBeacon',
@@ -125,6 +155,14 @@ requireText(beacon, 'RemoveCollider',
   'Unity activity beacons may interfere with gameplay collision');
 requireText(navigationProbe, '[НАВИГАЦИЯ АКТИВНОСТИ] готово',
   'Unity editor probe for activity navigation is missing');
+requireText(auditRunner, 'typeof(RoaWorldActivityNavigationProbe)',
+  'activity navigation probe is not part of the mandatory Unity client audit');
+requireText(navigationProbe, 'canvas.WorldLabelPoolSize == 4',
+  'Unity editor probe no longer validates the bounded world-label pool');
+requireText(navigationProbe, '!firstLabel.Overlaps(hud) && !firstLabel.Overlaps(navigationRect)',
+  'Unity editor probe no longer validates world-label collision avoidance');
+requireText(navigationProbe, '!image.raycastTarget',
+  'Unity editor probe no longer validates input-transparent world labels');
 requireText(minimap, 'Objective,',
   'Unity minimap lost objective marker kind');
 requireText(minimap, 'Extraction',
@@ -315,5 +353,5 @@ for (const [contents, label] of [
   }
 }
 if (!process.exitCode) {
-  console.log('Unity world activities OK: authoritative multi-stage objectives, deferred feedback, exit gating and acknowledged rewards');
+  console.log('Unity world activities OK: authoritative stages, readable world targets, exit gating and acknowledged rewards');
 }

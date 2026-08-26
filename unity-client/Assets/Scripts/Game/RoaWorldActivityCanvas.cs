@@ -535,10 +535,11 @@ namespace RealmOfAshes.Game
             var canvasGo = new GameObject("WorldActivityCanvas", typeof(RectTransform), typeof(Canvas),
                 typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.transform.SetParent(transform, false);
-            var canvas = canvasGo.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 32;
+            _activityCanvas = canvasGo.GetComponent<Canvas>();
+            _activityCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _activityCanvas.sortingOrder = 32;
             RoaUiScale.Apply(canvasGo.GetComponent<CanvasScaler>());
+            BuildObjectiveWorldLabelLayer((RectTransform)canvasGo.transform);
 
             _root = new GameObject("WorldActivityHud", typeof(RectTransform), typeof(Image), typeof(Outline));
             var root = (RectTransform)_root.transform;
@@ -884,15 +885,15 @@ namespace RealmOfAshes.Game
             foreach (JToken token in points)
             {
                 JObject point = token as JObject;
-                if (point == null || point["status"]?.ToString() == "disabled") continue;
-                bool completed = point["status"]?.ToString() == "completed";
+                string pointStatus = point?["status"]?.ToString() ?? "pending";
+                if (point == null || pointStatus == "disabled" || pointStatus == "locked") continue;
+                bool completed = pointStatus == "completed";
                 float x = point["x"]?.ToObject<float>() ?? 0f;
                 float z = point["z"]?.ToObject<float>() ?? 0f;
                 string markerName = (kind == "distress_signal" ? "DistressSignal:"
                     : kind == "assault_diversion" ? "OperationPoint:" : "ReconPoint:")
                     + (point["id"]?.ToString() ?? "point");
-                string pointStatus = point["status"]?.ToString() ?? "pending";
-                Color markerColor = completed ? Safe : pointStatus == "locked" ? Muted : Accent;
+                Color markerColor = completed ? Safe : Accent;
                 CreateActivityWorldBeacon(markerName, RoaCoords.ToUnity(x, 0.08f, z), markerColor, completed);
             }
         }

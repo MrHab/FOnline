@@ -1,10 +1,12 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -48,6 +50,28 @@ namespace RealmOfAshes.EditorTools
                     "distance label does not round up safely");
                 Require(RoaWorldActivityCanvas.NavigationDistanceLabel("цель", 1f, true).Contains("ДОСТУПНО"),
                     "reachable target is not announced");
+                Require(RoaWorldActivityCanvas.WorldLabelText("позиция штурма", 12.1f, false)
+                        == "ПОЗИЦИЯ ШТУРМА\n13 М"
+                        && RoaWorldActivityCanvas.WorldLabelText("маяк", 2f, false).EndsWith("ДОСТУПНО")
+                        && RoaWorldActivityCanvas.WorldLabelText("маяк", 2f, true).EndsWith("ГОТОВО"),
+                    "world objective label does not distinguish distance, reach and completion");
+
+                Rect safe = RoaWorldActivityCanvas.TopLeftSafeScreenRect(
+                    new Rect(10f, 20f, 1260f, 680f), 720);
+                Rect hud = RoaWorldActivityCanvas.ActivityHudScreenRect(1280, 1f);
+                Rect navigationRect = RoaWorldActivityCanvas.ActivityNavigationScreenRect(1280, 1f);
+                var reserved = new List<Rect> { hud, navigationRect };
+                Require(Mathf.Approximately(safe.yMin, 20f) && !hud.Overlaps(navigationRect),
+                    "safe-area conversion or activity HUD reservations are invalid");
+                Require(RoaWorldActivityCanvas.TryResolveWorldLabelRect(
+                        new Vector2(640f, 120f), safe, reserved, 190f, 38f, out Rect firstLabel)
+                        && !firstLabel.Overlaps(hud) && !firstLabel.Overlaps(navigationRect),
+                    "world objective label cannot escape the activity HUD");
+                reserved.Add(firstLabel);
+                Require(RoaWorldActivityCanvas.TryResolveWorldLabelRect(
+                        new Vector2(640f, 120f), safe, reserved, 190f, 38f, out Rect secondLabel)
+                        && !secondLabel.Overlaps(firstLabel),
+                    "world objective labels overlap each other");
 
                 host = new GameObject("WorldActivityNavigationProbe");
                 RoaWorldActivityCanvas canvas = host.AddComponent<RoaWorldActivityCanvas>();
@@ -56,6 +80,14 @@ namespace RealmOfAshes.EditorTools
                 ensureBuilt.Invoke(canvas, null);
                 Transform navigation = host.transform.Find("WorldActivityCanvas/WorldActivityNavigation");
                 Require(navigation != null, "activity navigation strip was not built");
+                Transform worldLabels = host.transform.Find("WorldActivityCanvas/WorldObjectiveLabels");
+                Require(worldLabels != null && worldLabels.childCount == 4
+                        && canvas.WorldLabelPoolSize == 4,
+                    "bounded world-objective label pool was not built");
+                foreach (Image image in worldLabels.GetComponentsInChildren<Image>(true))
+                    Require(!image.raycastTarget, "world objective label intercepts gameplay input");
+                foreach (Text text in worldLabels.GetComponentsInChildren<Text>(true))
+                    Require(!text.raycastTarget, "world objective text intercepts gameplay input");
 
                 beaconRoot = new GameObject("ObjectiveProbe");
                 beaconRoot.AddComponent<RoaActivityBeacon>().Configure(new Color(0.93f, 0.78f, 0.34f, 1f), false);
@@ -71,7 +103,8 @@ namespace RealmOfAshes.EditorTools
                 }
                 Require(enabledColliders == 0, "objective beacon affects gameplay collisions:" + enabledColliderNames);
 
-                Debug.Log("[НАВИГАЦИЯ АКТИВНОСТИ] готово: стрелка, дистанция, мини-карта, маяк без коллайдеров");
+                Debug.Log("[НАВИГАЦИЯ АКТИВНОСТИ] готово: стрелка, дистанция, мини-карта, "
+                    + "подписи=4/без пересечений/без ввода, маяк без коллайдеров");
             }
             catch (Exception error)
             {

@@ -48,9 +48,36 @@ namespace RealmOfAshes.EditorTools
                       && Mathf.Approximately(clamped.y, 3f),
                     "anchor карты вышел за границы или потерял высоту");
 
+                Vector2 touchStart = new Vector2(100f, 100f);
+                Check(!RoaGlobalMap.TouchDragReached(touchStart, new Vector2(108f, 106f), 14f),
+                    "небольшое касание ошибочно стало drag карты");
+                Check(RoaGlobalMap.TouchDragReached(touchStart, new Vector2(118f, 100f), 14f),
+                    "явный drag карты не достиг порога");
+                Check(RoaGlobalMap.TouchTapEligible(0.25f, touchStart, new Vector2(106f, 105f), false),
+                    "короткое касание не выбирает маршрут");
+                Check(!RoaGlobalMap.TouchTapEligible(0.8f, touchStart, touchStart, false)
+                      && !RoaGlobalMap.TouchTapEligible(0.2f, touchStart, new Vector2(120f, 100f), false)
+                      && !RoaGlobalMap.TouchTapEligible(0.2f, touchStart, touchStart, true),
+                    "долгое, сдвинутое или отменённое касание ошибочно выбирает маршрут");
+
+                float pinchIn = RoaGlobalMap.PinchZoomDistance(100f, 100f, 200f, 8f, 220f);
+                float pinchOut = RoaGlobalMap.PinchZoomDistance(100f, 100f, 50f, 8f, 220f);
+                Check(Mathf.Approximately(pinchIn, 50f) && Mathf.Approximately(pinchOut, 200f),
+                    "pinch карты меняет масштаб в неверном направлении");
+                Check(Mathf.Approximately(RoaGlobalMap.PinchZoomDistance(100f, 100f, 10000f, 8f, 220f), 8f)
+                      && Mathf.Approximately(RoaGlobalMap.PinchZoomDistance(100f, 100f, 1f, 8f, 220f), 220f),
+                    "pinch карты вышел за границы камеры");
+
+                Check(RoaGlobalMap.MapScreenPointCanGesture(new Vector2(420f, 250f), 840, 500, true)
+                      && !RoaGlobalMap.MapScreenPointCanGesture(new Vector2(-1f, 250f), 840, 500, true),
+                    "Canvas-карта неверно определяет доступную область касания");
+                Check(RoaGlobalMap.MapScreenPointCanGesture(new Vector2(200f, 250f), 840, 500, false)
+                      && !RoaGlobalMap.MapScreenPointCanGesture(new Vector2(640f, 250f), 840, 500, false),
+                    "legacy-панель карты не блокирует касание по интерфейсу");
+
                 Debug.Log("[КАМЕРА] готово: zoom=8–28, distance=14, map drag="
                     + movement.x.ToString("0.00") + ":" + movement.z.ToString("0.00")
-                    + ", clamp=50:-60");
+                    + ", clamp=50:-60, touch=tap/drag/pinch");
             }
             finally
             {

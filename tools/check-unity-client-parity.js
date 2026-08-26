@@ -279,6 +279,8 @@ const browserCamera = read('public/js/game/02_renderer_world_map.js');
 const browserGlobalControls = read('public/js/game/12_global_map_canvas_controls.js');
 const unityCamera = read('unity-client/Assets/Scripts/Game/RoaCameraRig.cs');
 const unityGlobalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
+const unityGlobalMapCanvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
+const unityCameraProbe = read('unity-client/Assets/Editor/RoaCameraProbe.cs');
 assert(browserCamera.includes("const CAMERA_ZOOM_STORAGE_KEY = 'realm.cameraZoomScale';")
   && unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDistance.v2";')
   && unityCamera.includes('PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);')
@@ -289,6 +291,25 @@ assert(browserGlobalControls.includes('e.button !== 1 && e.button !== 2')
   && unityGlobalMap.includes('CameraRig.ZoomPersistenceEnabled = false;')
   && unityGlobalMap.includes('_cameraAnchor.transform.position = ClampCameraPan('),
   'Unity global map must retain independent zoom and middle/right-button panning');
+assert(unityGlobalMap.includes('private bool UpdateTouchMapInput()')
+  && unityGlobalMap.includes('int count = Input.touchCount;')
+  && unityGlobalMap.includes('events.IsPointerOverGameObject(touch.fingerId)')
+  && unityGlobalMap.includes('CameraRig.SetDistance(PinchZoomDistance(')
+  && unityGlobalMap.includes('TouchTapEligible(')
+  && unityGlobalMap.includes('SelectScreenPointAndMaybeTravel(screenPoint)')
+  && unityGlobalMap.includes('SelectScreenPointAndMaybeTravel(Input.mousePosition)')
+  && unityGlobalMap.includes('Time.unscaledTime >= _suppressSyntheticMouseUntil'),
+  'Unity global map touch must share route selection while separating tap, drag, pinch and synthetic mouse input');
+assert(unityGlobalMapCanvas.includes('TouchGestureHelp')
+  && unityGlobalMapCanvas.includes('КАСАНИЕ — МАРШРУТ')
+  && unityGlobalMapCanvas.includes('ПОТЯНУТЬ — ОБЗОР')
+  && unityGlobalMapCanvas.includes('ЩИПОК — МАСШТАБ'),
+  'Unity global map does not explain its touch gestures on mobile');
+assert(unityCameraProbe.includes('короткое касание не выбирает маршрут')
+  && unityCameraProbe.includes('pinch карты меняет масштаб в неверном направлении')
+  && unityCameraProbe.includes('legacy-панель карты не блокирует касание по интерфейсу')
+  && unityCameraProbe.includes('touch=tap/drag/pinch'),
+  'Unity camera probe does not cover the global-map touch gesture contract');
 assert(unityGlobalMap.includes('public static bool TryResolveNodeLabelRect(')
   && unityGlobalMap.includes('blocked.Contains(point)')
   && unityGlobalMap.includes('candidate.Overlaps(blocked)')
@@ -303,4 +324,4 @@ assert(unityGlobalMap.includes('TravelDescriptorGraceSeconds = 2.5f')
 console.log(`Unity client parity OK: ${webEmits.length} outgoing events, ${webHandlers.length} incoming events, `
   + `${Object.keys(unityItems).length} items, ${actualRecipes.length} recipes, `
   + `${Object.keys(unityMods).length} weapon modifications, ${unityTraitRows.length} starting traits, `
-  + 'live GLB preview, persistent camera zoom/map pan');
+  + 'live GLB preview, persistent camera zoom/map pan/touch');

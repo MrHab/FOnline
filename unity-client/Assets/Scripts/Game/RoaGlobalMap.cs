@@ -24,6 +24,8 @@ namespace RealmOfAshes.Game
         private const float WastelandRefreshSeconds = 5f;
         // Only bridges main-thread queue reordering; it is not a client authority timeout.
         private const float TravelDescriptorGraceSeconds = 2.5f;
+        private const float TouchDragThresholdPixels = 14f;
+        private const float TouchTapMaxSeconds = 0.55f;
 
         public RoaSocketClient Socket;
         public RoaCameraRig CameraRig;
@@ -269,6 +271,17 @@ namespace RealmOfAshes.Game
         private float _savedYaw;
         private bool _cameraPanning;
         private Vector2 _lastPanPointer;
+        private int _mapTouchFinger = -1;
+        private Vector2 _mapTouchStart;
+        private float _mapTouchStartedAt;
+        private bool _mapTouchDragging;
+        private bool _mapTouchBlocked;
+        private bool _pinching;
+        private int _pinchFingerA = -1;
+        private int _pinchFingerB = -1;
+        private float _pinchStartSpan;
+        private float _pinchStartCameraDistance;
+        private float _suppressSyntheticMouseUntil;
 
         public void Configure(RoaGameBootstrap bootstrap, RoaSocketClient socket,
                               RoaCameraRig cameraRig, string baseUrl)
@@ -373,7 +386,7 @@ namespace RealmOfAshes.Game
         {
             _pendingEntry = false;
             IsActive = false;
-            _cameraPanning = false;
+            ResetTouchMapInput();
             _travelActive = false;
             _arrivalPending = false;
             if (_wastelandPoll != null) StopCoroutine(_wastelandPoll);
@@ -1266,7 +1279,7 @@ namespace RealmOfAshes.Game
         {
             if (!IsActive) return;
 
-            UpdateCameraPan();
+            if (!UpdateTouchMapInput()) UpdateCameraPan();
             PulseActivityHighlights();
 
             if (!_travelActive) return;
@@ -1298,6 +1311,153 @@ namespace RealmOfAshes.Game
             }
         }
 
+        private bool UpdateTouchMapInput()
+        {
+            if (!InputEnabled)
+            {
+                ResetTouchMapInput();
+                return false;
+            }
+
+            int count = Input.touchCount;
+            if (count <= 0)
+            {
+                if (_mapTouchFinger >= 0 || _pinching) ResetTouchMapInput();
+                return false;
+            }
+
+            _suppressSyntheticMouseUntil = Time.unscaledTime + 0.45f;
+            if (count >= 2)
+            {
+                Touch first = Input.GetTouch(0);
+                Touch second = Input.GetTouch(1);
+                _mapTouchFinger = -1;
+                _mapTouchDragging = false;
+                _mapTouchBlocked = false;
+                if (!TouchCanUseMap(first) || !TouchCanUseMap(second)
+                    || CameraRig == null)
+                {
+                    ResetPinch();
+                    _cameraPanning = false;
+                    return true;
+                }
+
+                int fingerA = Mathf.Min(first.fingerId, second.fingerId);
+                int fingerB = Mathf.Max(first.fingerId, second.fingerId);
+                float span = Vector2.Distance(first.position, second.position);
+                if (!_pinching || fingerA != _pinchFingerA || fingerB != _pinchFingerB)
+                {
+                    _pinching = true;
+                    _pinchFingerA = fingerA;
+                    _pinchFingerB = fingerB;
+                    _pinchStartSpan = Mathf.Max(1f, span);
+                    _pinchStartCameraDistance = CameraRig.Distance;
+                }
+                else
+                {
+                    CameraRig.SetDistance(PinchZoomDistance(_pinchStartCameraDistance,
+                        _pinchStartSpan, span, CameraRig.MinDistance, CameraRig.MaxDistance), false);
+                }
+                _cameraPanning = true;
+                return true;
+            }
+
+            ResetPinch();
+            _cameraPanning = false;
+            Touch touch = Input.GetTouch(0);
+            if (_mapTouchFinger < 0)
+            {
+                if (touch.phase != TouchPhase.Began) return true;
+                _mapTouchFinger = touch.fingerId;
+                _mapTouchStart = touch.position;
+                _mapTouchStartedAt = Time.unscaledTime;
+                _mapTouchDragging = false;
+                _mapTouchBlocked = !TouchCanUseMap(touch);
+                _cameraPanning = false;
+            }
+            if (touch.fingerId != _mapTouchFinger) return true;
+
+            bool ended = touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled;
+            if (!_mapTouchBlocked && !_mapTouchDragging
+                && TouchDragReached(_mapTouchStart, touch.position, TouchDragThresholdPixels))
+            {
+                _mapTouchDragging = true;
+                _cameraPanning = true;
+            }
+            if (!_mapTouchBlocked && _mapTouchDragging && touch.phase == TouchPhase.Moved)
+                ApplyCameraPanDelta(touch.deltaPosition);
+
+            if (!ended) return true;
+            bool tap = !_mapTouchBlocked && TouchTapEligible(
+                Time.unscaledTime - _mapTouchStartedAt, _mapTouchStart, touch.position,
+                touch.phase == TouchPhase.Canceled);
+            Vector2 screenPoint = touch.position;
+            ResetSingleTouch();
+            if (tap) SelectScreenPointAndMaybeTravel(screenPoint);
+            return true;
+        }
+
+        private bool TouchCanUseMap(Touch touch)
+        {
+            if (!MapScreenPointCanGesture(touch.position, Screen.width, Screen.height, CanvasDriven))
+                return false;
+            EventSystem events = EventSystem.current;
+            return events == null || !events.IsPointerOverGameObject(touch.fingerId);
+        }
+
+        private void ResetSingleTouch()
+        {
+            _mapTouchFinger = -1;
+            _mapTouchDragging = false;
+            _mapTouchBlocked = false;
+            _cameraPanning = false;
+        }
+
+        private void ResetPinch()
+        {
+            _pinching = false;
+            _pinchFingerA = -1;
+            _pinchFingerB = -1;
+            _pinchStartSpan = 0f;
+            _pinchStartCameraDistance = 0f;
+        }
+
+        private void ResetTouchMapInput()
+        {
+            ResetSingleTouch();
+            ResetPinch();
+        }
+
+        public static bool TouchDragReached(Vector2 start, Vector2 current, float threshold)
+        {
+            float safeThreshold = Mathf.Max(1f, threshold);
+            return (current - start).sqrMagnitude >= safeThreshold * safeThreshold;
+        }
+
+        public static bool TouchTapEligible(float heldSeconds, Vector2 start,
+                                            Vector2 current, bool cancelled)
+        {
+            return !cancelled && heldSeconds <= TouchTapMaxSeconds
+                && !TouchDragReached(start, current, TouchDragThresholdPixels);
+        }
+
+        public static float PinchZoomDistance(float startCameraDistance, float startFingerSpan,
+                                              float currentFingerSpan, float minDistance,
+                                              float maxDistance)
+        {
+            float ratio = Mathf.Max(1f, startFingerSpan) / Mathf.Max(1f, currentFingerSpan);
+            return Mathf.Clamp(startCameraDistance * ratio, minDistance, maxDistance);
+        }
+
+        public static bool MapScreenPointCanGesture(Vector2 screenPoint, int screenWidth,
+                                                     int screenHeight, bool canvasDriven)
+        {
+            if (screenPoint.x < 0f || screenPoint.y < 0f
+                || screenPoint.x > screenWidth || screenPoint.y > screenHeight) return false;
+            if (canvasDriven) return true;
+            Vector2 guiPoint = new Vector2(screenPoint.x, screenHeight - screenPoint.y);
+            return MapPointCanSelect(guiPoint, screenWidth, screenHeight);
+        }
         private void UpdateCameraPan()
         {
             if (!InputEnabled || CameraRig == null || _cameraAnchor == null)
@@ -1326,13 +1486,18 @@ namespace RealmOfAshes.Game
             _lastPanPointer = pointer;
             if (delta.sqrMagnitude < 0.01f) return;
 
-            Vector3 movement = CameraPanMovement(delta, CameraRig.Distance, Screen.height,
+            ApplyCameraPanDelta(delta);
+        }
+
+        private void ApplyCameraPanDelta(Vector2 pointerDelta)
+        {
+            if (CameraRig == null || _cameraAnchor == null || pointerDelta.sqrMagnitude < 0.01f) return;
+            Vector3 movement = CameraPanMovement(pointerDelta, CameraRig.Distance, Screen.height,
                 CameraRig.PlanarRight(), CameraRig.PlanarForward());
             _cameraAnchor.transform.position = ClampCameraPan(
                 _cameraAnchor.transform.position + movement,
                 MapWidthPoints * MapWorldScale, MapHeightPoints * MapWorldScale);
         }
-
         public static Vector3 CameraPanMovement(Vector2 pointerDelta, float distance,
                                                 float screenHeight, Vector3 right, Vector3 forward)
         {
@@ -1527,14 +1692,26 @@ namespace RealmOfAshes.Game
             });
         }
 
-        private void SelectFromCursor()
+        private bool SelectScreenPointAndMaybeTravel(Vector2 screenPoint)
+        {
+            if (_travelActive || !SelectFromScreen(screenPoint)) return false;
+            if (CanvasDriven && !PlayerAtSelection)
+            {
+                // Один production-путь для мыши и touch: выбор цели сразу просит
+                // сервер построить маршрут, как selectGlobalMapDestination в web.
+                _pendingEntry = false;
+                if (_pendingContact == null && string.IsNullOrEmpty(AttachedPartyId)) StartTravel();
+            }
+            return true;
+        }
+
+        private bool SelectFromScreen(Vector2 screenPoint)
         {
             Camera camera = Camera.main;
-            if (camera == null || _terrainCollider == null) return;
+            if (camera == null || _terrainCollider == null) return false;
 
-            Ray ray = camera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (!_terrainCollider.Raycast(ray, out hit, 1000f)) return;
+            Ray ray = camera.ScreenPointToRay(screenPoint);
+            if (!_terrainCollider.Raycast(ray, out RaycastHit hit, 1000f)) return false;
 
             _selectedPoint = WorldToPoint(hit.point);
             _selectedDynamic = NearestDynamicTarget(_selectedPoint, DynamicSnapRadiusPoints);
@@ -1548,6 +1725,7 @@ namespace RealmOfAshes.Game
                 ? "Выбрано: " + _selectedDynamic.Name
                 : (_selectedNode != null ? "Выбрано: " + _selectedNode.EffectiveLocationId : "Выбрана точка пустоши.");
             RefreshMarkers();
+            return true;
         }
 
         public void RequestEnterFromLocation()
@@ -2686,18 +2864,11 @@ namespace RealmOfAshes.Game
             Event guiEvent = Event.current;
             bool pointerOverCanvas = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
             if (!_travelActive && !_cameraPanning && !pointerOverCanvas
+                && Input.touchCount == 0 && Time.unscaledTime >= _suppressSyntheticMouseUntil
                 && guiEvent != null && guiEvent.type == EventType.MouseDown && guiEvent.button == 0
                 && (CanvasDriven || MapPointCanSelect(guiEvent.mousePosition, Screen.width, Screen.height)))
             {
-                SelectFromCursor();
-                guiEvent.Use();
-                // Web: клик по карте = выбор цели и сразу старт маршрута (selectGlobalMapDestination);
-                // pendingWorldDrop сбрасывается, только если новая точка дальше 0.35.
-                if (CanvasDriven && !PlayerAtSelection)
-                {
-                    _pendingEntry = false;
-                    if (_pendingContact == null && string.IsNullOrEmpty(AttachedPartyId)) StartTravel();
-                }
+                if (SelectScreenPointAndMaybeTravel(Input.mousePosition)) guiEvent.Use();
             }
 
             if (CanvasDriven)

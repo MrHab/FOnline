@@ -36,6 +36,7 @@ namespace RealmOfAshes.Game
         private Canvas _canvas;
         private GameObject _root;
         private Text _route;
+        private Text _gestureHelp;
         private Button _enterButton;
         private Text _enterLabel;
         private Button _cancelButton;
@@ -95,6 +96,11 @@ namespace RealmOfAshes.Game
             Text title = Label("Title", rootRect, 12, TextAnchor.MiddleLeft, TitleInk, FontStyle.Bold);
             title.text = "ГЛОБАЛЬНАЯ КАРТА";
             Place(title.rectTransform, 0f, 1f, 0f, 1f, new Vector2(18f, -40f), new Vector2(420f, -14f));
+
+            _gestureHelp = Label("TouchGestureHelp", rootRect, 11, TextAnchor.MiddleCenter, Mono, FontStyle.Bold);
+            _gestureHelp.text = "КАСАНИЕ — МАРШРУТ  ·  ПОТЯНУТЬ — ОБЗОР  ·  ЩИПОК — МАСШТАБ";
+            Place(_gestureHelp.rectTransform, 0f, 0f, 1f, 0f,
+                  new Vector2(18f, 16f), new Vector2(-SidebarWidth - 28f, 46f));
 
             // .global-map-side
             RectTransform side = Child("Side", rootRect);
@@ -208,6 +214,9 @@ namespace RealmOfAshes.Game
             Vector2 player = Map.PlayerXY;
             Vector2 selected = Map.SelectedXY;
             string attached = Map.AttachedPartyId;
+            bool touchHints = Application.isMobilePlatform
+                || RoaGameBootstrap.Active?.MobileControls?.ControlsEnabled == true;
+            if (_gestureHelp != null) _gestureHelp.gameObject.SetActive(touchHints);
 
             // --- Маршрут (тексты renderGlobalMapPanel) ---
             if (Map.TravelActive)

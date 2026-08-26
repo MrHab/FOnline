@@ -102,6 +102,7 @@ namespace RealmOfAshes.Game
         {
             _muzzleMesh = CreateMuzzleMesh();
             _damageVignette = CreateDamageVignette();
+            EnsureDamageCanvas();
             EnsurePools();
             Debug.Log("[ROA] Combat VFX ready: " + _tracers.Count + " moving tracers, "
                 + _flashes.Count + " muzzle bursts, " + _impacts.Count + " spark impacts");
@@ -115,6 +116,7 @@ namespace RealmOfAshes.Game
         private void OnDestroy()
         {
             DestroyPools();
+            DestroyDamageCanvas();
             if (_muzzleMesh != null) Destroy(_muzzleMesh);
             if (_damageVignette != null) Destroy(_damageVignette);
         }
@@ -196,6 +198,8 @@ namespace RealmOfAshes.Game
             float strength = Mathf.Lerp(0.28f, 0.82f, Mathf.InverseLerp(2f, 55f, damage));
             _damageStrength = Mathf.Max(_damageStrength, strength);
             _damageStarted = Time.unscaledTime;
+            _damageHasDirection = false;
+            EnsureDamageCanvas();
             CameraRig?.AddImpulse(Mathf.Lerp(0.045f, 0.14f, strength));
         }
 
@@ -220,6 +224,8 @@ namespace RealmOfAshes.Game
             for (int i = _explosions.Count - 1; i >= 0; i--) DestroyExplosion(_explosions[i]);
             _explosions.Clear();
             _damageStrength = 0f;
+            _damageHasDirection = false;
+            ClearDamageFeedback();
         }
 
         private void Update()
@@ -239,24 +245,7 @@ namespace RealmOfAshes.Game
                 }
                 else UpdateExplosion(fx, t);
             }
-        }
-
-        private void OnGUI()
-        {
-            if (RoaGameBootstrap.BlocksWorldHud || _damageStrength <= 0.001f) return;
-            float t = (Time.unscaledTime - _damageStarted) / 0.48f;
-            if (t >= 1f)
-            {
-                _damageStrength = 0f;
-                return;
-            }
-            if (Event.current.type != EventType.Repaint || _damageVignette == null) return;
-            float pulse = (1f - t) * (1f - t) * (0.86f + Mathf.Sin(t * Mathf.PI * 5f) * 0.14f);
-            Color previous = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, _damageStrength * pulse);
-            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), _damageVignette,
-                ScaleMode.StretchToFill, true);
-            GUI.color = previous;
+            UpdateDamageFeedback(now);
         }
     }
 }

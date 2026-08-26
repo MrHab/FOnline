@@ -11,7 +11,8 @@ const presentation = [
   'RoaCombatPresentationFx.cs',
   'RoaCombatPresentationFx.Motion.cs',
   'RoaCombatPresentationFx.Explosion.cs',
-  'RoaCombatPresentationFx.Factory.cs'
+  'RoaCombatPresentationFx.Factory.cs',
+  'RoaCombatPresentationFx.Damage.cs'
 ].map(file => read(game, file)).join('\n');
 const fallback = read(game, 'RoaCombatFx.cs');
 const combat = read(game, 'RoaCombat.cs');
@@ -51,9 +52,12 @@ assert(presentation.includes('public const float Life = 0.96f')
   && presentation.includes('MaxExplosions = 8'),
   'Layered bounded explosion lost shock, heat, smoke or ember coverage');
 assert(presentation.includes('CreateDamageVignette()')
-  && presentation.includes('PlayDamagePulse(int damage)')
-  && presentation.includes('GUI.DrawTexture'),
-  'Player damage feedback vignette is incomplete');
+  && presentation.includes('PlayDamagePulse(int damage, Vector3 targetWorld, Vector3 sourceWorld)')
+  && presentation.includes('CombatDamageFeedback')
+  && presentation.includes('RawImage')
+  && presentation.includes('TryDamageScreenDirection')
+  && !presentation.includes('GUI.DrawTexture'),
+  'Directional Canvas damage feedback is incomplete or returned to IMGUI');
 
 assert(fallback.includes('public RoaCombatPresentationFx Polish;')
   && fallback.includes('Polish.PlayShot(start, end, weaponId, profile);')
@@ -65,6 +69,10 @@ assert(bootstrap.includes('gameObject.AddComponent<RoaCombatPresentationFx>()')
   && bootstrap.includes('CombatFx.Polish = CombatPresentation;'),
   'Bootstrap does not wire the polished VFX component');
 assert(combat.includes('Fx?.PlayDamagePulse(damage);')
+  && combat.includes('Socket.OnPlayerDamaged += HandlePlayerDamaged;')
+  && combat.includes('TryDamageSource(payload, attackerId, out Vector3 source)')
+  && server.includes('sourceX: Number(origin.x.toFixed(2))')
+  && server.includes('sourceX: Number(impactX.toFixed(2))')
   && combat.includes('Player.View.TryGetMuzzle(handSlot, out start)')
   && combat.includes('Fx.PlayShot(start, end, weaponId, exactMuzzle);')
   && combat.includes('["startX"] = startX')
@@ -93,7 +101,8 @@ assert(dualProbe.includes('RoaOffhandWeaponView.MirrorRigid')
   'Dual-wield editor probe no longer verifies a rigid mirrored hand pose');
 assert(probe.includes('moving tapered tracer geometry')
   && probe.includes('directional muzzle burst geometry')
-  && probe.includes('shock, heat, fireball, smoke or ember layer'),
+  && probe.includes('shock, heat, fireball, smoke or ember layer')
+  && probe.includes('damage Canvas, direction marker or input transparency'),
   'Unity editor probe does not inspect the new VFX structure');
 
 for (const file of [
@@ -101,6 +110,7 @@ for (const file of [
   'RoaCombatPresentationFx.Motion.cs.meta',
   'RoaCombatPresentationFx.Explosion.cs.meta',
   'RoaCombatPresentationFx.Factory.cs.meta',
+  'RoaCombatPresentationFx.Damage.cs.meta',
   'RoaOffhandWeaponView.cs.meta'
 ]) {
   assert(/guid:\s*[0-9a-f]{32}/i.test(read(game, file)), `${file} has no valid GUID`);
@@ -109,4 +119,4 @@ for (const file of [
 assert(/guid:\s*[0-9a-f]{32}/i.test(read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs.meta')),
   'RoaDualWieldProbe.cs.meta has no valid GUID');
 
-console.log('Unity combat VFX OK: dual hand-specific muzzles, mirrored IK, moving tracers, impacts and explosions');
+console.log('Unity combat VFX OK: dual muzzles, mirrored IK, moving tracers, impacts, explosions and directional damage Canvas');

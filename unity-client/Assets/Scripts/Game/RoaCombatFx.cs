@@ -273,6 +273,11 @@ namespace RealmOfAshes.Game
             Polish?.PlayDamagePulse(damage);
         }
 
+        public void PlayDamagePulse(int damage, Vector3 targetWorld, Vector3 sourceWorld)
+        {
+            Polish?.PlayDamagePulse(damage, targetWorld, sourceWorld);
+        }
+
         public void Clear()
         {
             Polish?.Clear();

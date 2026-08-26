@@ -221,7 +221,7 @@ namespace RealmOfAshes.Game
                 }
             }
             texture.SetPixels32(pixels);
-            texture.Apply(false, true);
+            texture.Apply(false, false);
             return texture;
         }
 

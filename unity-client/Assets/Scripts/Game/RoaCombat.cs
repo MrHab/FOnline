@@ -88,6 +88,7 @@ namespace RealmOfAshes.Game
             if (Socket == null) return;
             Socket.OnEnemyAttack += HandleEnemyAttack;
             Socket.OnEnemyAttackMiss += HandleEnemyAttackMiss;
+            Socket.OnPlayerDamaged += HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect += HandlePlayerStatusEffect;
             Socket.OnEnemyKilled += HandleEnemyKilled;
         }
@@ -97,6 +98,7 @@ namespace RealmOfAshes.Game
             if (Socket == null) return;
             Socket.OnEnemyAttack -= HandleEnemyAttack;
             Socket.OnEnemyAttackMiss -= HandleEnemyAttackMiss;
+            Socket.OnPlayerDamaged -= HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect -= HandlePlayerStatusEffect;
             Socket.OnEnemyKilled -= HandleEnemyKilled;
         }
@@ -110,12 +112,59 @@ namespace RealmOfAshes.Game
             string type = payload["damageType"]?.ToString() ?? "ballistic";
             Player.View?.PlayHit();
             Audio?.PlayHurt(damage);
-            Fx?.PlayDamagePulse(damage);
+            if (payload["x"] != null && payload["z"] != null)
+                Fx?.PlayDamagePulse(damage, Player.transform.position, RoaCoords.ToUnity(
+                    payload["x"].ToObject<float>(), payload["z"].ToObject<float>()));
+            else Fx?.PlayDamagePulse(damage);
             Float("-" + damage, Player.transform.position, new Color(1f, 0.36f, 0.29f));
             AddLog(name + " атакует (" + type + "): -" + damage + " HP"
                 + (absorbed > 0 ? ", броня " + absorbed : string.Empty));
             if (payload["secondChance"]?.ToObject<bool>() == true)
                 AddLog("Второй шанс: смертельный удар оставил 1 HP.");
+        }
+
+        private void HandlePlayerDamaged(JObject payload)
+        {
+            if (payload == null || Player == null || Socket?.Session == null) return;
+            string targetId = payload["playerId"]?.ToString() ?? payload["targetId"]?.ToString();
+            if (!string.Equals(targetId, Socket.Session.Id, StringComparison.Ordinal)) return;
+
+            // Урон NPC уже приходит отдельным адресным enemyAttack с координатами.
+            // Здесь нужен только PvP/взрыв игрока, иначе feedback проиграется дважды.
+            if (!string.IsNullOrEmpty(payload["enemyId"]?.ToString())) return;
+            string attackerId = payload["attackerId"]?.ToString();
+            if (string.IsNullOrEmpty(attackerId)) return;
+
+            int damage = Mathf.Max(0, Mathf.RoundToInt(payload["damage"]?.ToObject<float>() ?? 0f));
+            int absorbed = Mathf.Max(0, Mathf.RoundToInt(payload["absorbed"]?.ToObject<float>() ?? 0f));
+            string attacker = payload["attackerName"]?.ToString() ?? "Игрок";
+            string type = payload["damageType"]?.ToString() ?? "ballistic";
+            bool critical = payload["critical"]?.ToObject<bool>() == true;
+
+            Player.View?.PlayHit();
+            Audio?.PlayHurt(damage);
+            if (TryDamageSource(payload, attackerId, out Vector3 source))
+                Fx?.PlayDamagePulse(damage, Player.transform.position, source);
+            else Fx?.PlayDamagePulse(damage);
+            Float("-" + damage, Player.transform.position,
+                critical ? new Color(1f, 0.72f, 0.2f) : new Color(1f, 0.36f, 0.29f));
+            AddLog(attacker + (critical ? " наносит критический удар" : " атакует")
+                + " (" + DamageTypeLabel(type) + "): -" + damage + " HP"
+                + (absorbed > 0 ? ", броня " + absorbed : string.Empty));
+            if (payload["secondChance"]?.ToObject<bool>() == true)
+                AddLog("Второй шанс: смертельный удар оставил 1 HP.");
+        }
+
+        private bool TryDamageSource(JObject payload, string attackerId, out Vector3 source)
+        {
+            source = Vector3.zero;
+            if (payload["sourceX"] != null && payload["sourceZ"] != null)
+            {
+                source = RoaCoords.ToUnity(payload["sourceX"].ToObject<float>(),
+                                           payload["sourceZ"].ToObject<float>());
+                return true;
+            }
+            return RemotePlayers != null && RemotePlayers.TryGetPosition(attackerId, out source);
         }
 
         private void HandleEnemyAttackMiss(JObject payload)

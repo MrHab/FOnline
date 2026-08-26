@@ -212,6 +212,15 @@ namespace RealmOfAshes.Game
             }
         }
 
+        public bool TryGetPosition(string id, out Vector3 position)
+        {
+            position = Vector3.zero;
+            if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote)
+                || remote?.Root == null) return false;
+            position = remote.Root.transform.position;
+            return true;
+        }
+
         public bool TryGetNearest(Vector3 origin, float maxDistance, out PublicPlayer player, out float distance)
         {
             player = null;

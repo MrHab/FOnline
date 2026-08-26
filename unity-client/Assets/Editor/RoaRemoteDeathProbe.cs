@@ -44,10 +44,10 @@ namespace RealmOfAshes.EditorTools
                         "dead player stayed targetable or was not retained");
                 Require(view.Dead && !collider.enabled && root.name == "RemoteDeath:probe",
                         "death pose, collider removal or diagnostic name is missing");
-                view.ApplyDeathFallForDiagnostics(RoaCharacterView.DeathFallSeconds);
-                Require(view.DeathFallWeight > 0.999f
-                        && Quaternion.Angle(Quaternion.identity, view.transform.localRotation) > 75f,
-                        "death clip was not laid onto the ground");
+                view.ApplyDeathSettleForDiagnostics(RoaCharacterView.DeathSettleSeconds);
+                Require(view.DeathSettleWeight > 0.999f
+                        && Quaternion.Angle(Quaternion.identity, view.transform.localRotation) < 0.1f,
+                        "authored death clip was replaced by a synthetic root rotation");
 
                 update.Invoke(players, new object[]
                 {

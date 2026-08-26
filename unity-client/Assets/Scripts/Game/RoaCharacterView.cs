@@ -64,7 +64,7 @@ namespace RealmOfAshes.Game
 
         private static readonly string[] DeathContactBones =
         {
-            "head", "hand_l", "hand_r", "pelvis", "foot_l", "foot_r"
+            "hand_l", "hand_r", "foot_l", "foot_r"
         };
         private static readonly Dictionary<string, GltfImport> ModelCache = new Dictionary<string, GltfImport>();
         private static GltfImport _animationLibrary;
@@ -87,6 +87,7 @@ namespace RealmOfAshes.Game
         private Transform _modelRoot;
 
         private readonly Dictionary<string, Transform> _bones = new Dictionary<string, Transform>();
+        private readonly List<SkinnedMeshRenderer> _deathGroundRenderers = new List<SkinnedMeshRenderer>();
         private RoaWeaponView _weapon;
         private RoaOffhandWeaponView _offhandWeapon;
         private RoaEquipmentView _equipment;
@@ -102,8 +103,7 @@ namespace RealmOfAshes.Game
         private bool _deathFallStarted;
         private bool _deathPoseFrozen;
         private float _deathStartedAt;
-        private float _deathSide = 1f;
-        private float _deathFallWeight;
+        private float _deathSettleWeight;
         private int _deathGroundContactBones;
         private bool _brokenArm;
         private bool _brokenLeg;
@@ -132,14 +132,14 @@ namespace RealmOfAshes.Game
         /// <summary>Длительность вспышки удара по умолчанию, с.</summary>
         private const float AttackSeconds = 0.45f;
 
-        // Клип библиотеки заканчивается глубоким наклоном, а не положением на земле.
-        // Небольшой корневой слой доводит силуэт до читаемого падения на бок.
-        private const float DeathPoseHoldSecondsValue = 0.34f;
-        private const float DeathFallDelaySeconds = 0.16f;
-        private const float DeathFallDurationSeconds = 0.92f;
-        private const float DeathFallPitchDeg = 0f;
-        private const float DeathFallRollDeg = 88f;
-        private const float DeathContactClearanceMeters = 0.56f;
+        // Утверждённый humanoid death-клип уже содержит потерю равновесия,
+        // падение и зафиксированные контакты рук/ног. Корень персонажа нельзя
+        // поворачивать поверх него: это превращает расслабленную позу в доску.
+        private const float DeathClipEndPaddingSeconds = 0.001f;
+        private const float DeathSettleDurationSeconds = 1.27f;
+        private const float DeathContactHeightMeters = 0.025f;
+        private const float DeathMeshGroundClearanceMeters = 0.015f;
+        private const float DeathMaximumGroundCorrectionMeters = 0.45f;
 
         // Сглаженные темпы. 04b:1657.
         private float _playbackRate = 1f;
@@ -212,9 +212,8 @@ namespace RealmOfAshes.Game
         public bool HitReactionActive { get { return _hitReaction.Active; } }
         public Vector2 HitReactionDirection { get { return _hitReaction.LocalSourceDirection; } }
         public bool Dead { get { return _dead; } }
-        public float DeathFallWeight { get { return _deathFallWeight; } }
-        public static float DeathFallSeconds { get { return DeathFallDelaySeconds + DeathFallDurationSeconds; } }
-        public static float DeathPoseHoldSeconds { get { return DeathPoseHoldSecondsValue; } }
+        public float DeathSettleWeight { get { return _deathSettleWeight; } }
+        public static float DeathSettleSeconds { get { return DeathSettleDurationSeconds; } }
         public int DeathGroundContactBones { get { return _deathGroundContactBones; } }
         public float DeathGroundOffsetY { get { return transform.localPosition.y; } }
 
@@ -321,8 +320,7 @@ namespace RealmOfAshes.Game
             if (death == null) return;
             death.wrapMode = WrapMode.ClampForever;
             _animation.Play("death");
-            death.time = Mathf.Min(DeathPoseHoldSecondsValue,
-                Mathf.Max(0f, death.length - 0.001f));
+            death.time = FinalDeathPoseTime(death);
             death.speed = 0f;
             _animation.Sample();
             _deathPoseFrozen = true;
@@ -460,6 +458,7 @@ namespace RealmOfAshes.Game
             if (_dead == dead && (!dead || _currentClip == "death")) return;
             bool wasDead = _dead;
             _dead = dead;
+            _deathGroundRenderers.Clear();
             if (dead)
             {
                 _footIk.Reset();
@@ -469,8 +468,7 @@ namespace RealmOfAshes.Game
                     _deathFallStarted = true;
                     _deathPoseFrozen = false;
                     _deathStartedAt = Time.unscaledTime;
-                    _deathSide = StableDeathSide(transform);
-                    _deathFallWeight = 0f;
+                    _deathSettleWeight = 0f;
                     transform.localRotation = Quaternion.identity;
                     transform.localPosition = Vector3.zero;
                 }
@@ -480,7 +478,7 @@ namespace RealmOfAshes.Game
             {
                 _deathFallStarted = false;
                 _deathPoseFrozen = false;
-                _deathFallWeight = 0f;
+                _deathSettleWeight = 0f;
                 transform.localRotation = Quaternion.identity;
                 transform.localPosition = Vector3.zero;
                 UpdateInjuryIndicator();
@@ -505,33 +503,38 @@ namespace RealmOfAshes.Game
 
         private void FreezeDeathPose(float elapsed)
         {
-            if (_deathPoseFrozen || elapsed < DeathPoseHoldSecondsValue
-                || _animation == null || !_clips.Contains("death")) return;
+            if (_deathPoseFrozen || _animation == null || !_clips.Contains("death")) return;
             AnimationState death = _animation["death"];
             if (death == null) return;
-            death.time = Mathf.Min(DeathPoseHoldSecondsValue, Mathf.Max(0f, death.length - 0.001f));
+            float finalTime = FinalDeathPoseTime(death);
+            if (elapsed < finalTime) return;
+            death.time = finalTime;
             death.speed = 0f;
             _animation.Sample();
             _deathPoseFrozen = true;
         }
-        public static float DeathFallWeightAt(float elapsed)
+
+        public static float FinalDeathPoseTime(AnimationState death)
         {
-            float t = Mathf.Clamp01((elapsed - DeathFallDelaySeconds) / DeathFallDurationSeconds);
+            return death != null ? Mathf.Max(0f, death.length - DeathClipEndPaddingSeconds) : 0f;
+        }
+
+        public static float DeathSettleWeightAt(float elapsed)
+        {
+            float t = Mathf.Clamp01(elapsed / DeathSettleDurationSeconds);
             return t * t * (3f - 2f * t);
         }
 
-        /// <summary>Применить тот же корневой слой падения вручную для editor-аудита.</summary>
-        public void ApplyDeathFallForDiagnostics(float elapsed)
+        /// <summary>Обновить только фазу контактной тени; позу целиком даёт GLB-клип.</summary>
+        public void ApplyDeathSettleForDiagnostics(float elapsed)
         {
             if (!_dead) return;
-            _deathFallWeight = DeathFallWeightAt(elapsed);
-            float roll = DeathFallRollDeg * _deathFallWeight;
-            transform.localRotation = Quaternion.Euler(
-                DeathFallPitchDeg * _deathFallWeight, 0f, _deathSide * roll);
+            _deathSettleWeight = DeathSettleWeightAt(elapsed);
+            transform.localRotation = Quaternion.identity;
             transform.localPosition = Vector3.zero;
         }
 
-        /// <summary>Поднять повёрнутую позу так, чтобы нижняя опорная кость касалась земли.</summary>
+        /// <summary>Слегка выровнять авторские контакты ладоней/стоп по реальной земле.</summary>
         public void GroundDeathForDiagnostics(float groundY)
         {
             if (!_dead || _bones.Count == 0) return;
@@ -545,25 +548,30 @@ namespace RealmOfAshes.Game
                     _deathGroundContactBones++;
                 }
             }
-            if (float.IsInfinity(minY)) return;
+            bool hasMeshBounds = TryGetDeathMeshMinimumY(out float meshMinY);
+            if (!hasMeshBounds && float.IsInfinity(minY)) return;
+            float surfaceMinY = hasMeshBounds ? meshMinY : minY;
+            float targetClearance = hasMeshBounds
+                ? DeathMeshGroundClearanceMeters : DeathContactHeightMeters;
+            float correction = Mathf.Clamp(groundY + targetClearance - surfaceMinY,
+                -DeathMaximumGroundCorrectionMeters, DeathMaximumGroundCorrectionMeters);
             Vector3 local = transform.localPosition;
-            local.y += groundY + DeathContactClearanceMeters - minY;
+            local.y += correction;
             transform.localPosition = local;
         }
-        private static float StableDeathSide(Transform actor)
+
+        private bool TryGetDeathMeshMinimumY(out float minimumY)
         {
-            string key = actor != null && actor.parent != null ? actor.parent.name
-                : actor != null ? actor.name : "actor";
-            uint hash = 2166136261u;
-            unchecked
+            minimumY = float.PositiveInfinity;
+            if (_deathGroundRenderers.Count == 0)
+                GetComponentsInChildren(true, _deathGroundRenderers);
+            for (int i = 0; i < _deathGroundRenderers.Count; i++)
             {
-                foreach (char symbol in key)
-                {
-                    hash ^= symbol;
-                    hash *= 16777619u;
-                }
+                SkinnedMeshRenderer renderer = _deathGroundRenderers[i];
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                minimumY = Mathf.Min(minimumY, renderer.bounds.min.y);
             }
-            return (hash & 1u) == 0u ? -1f : 1f;
+            return !float.IsInfinity(minimumY);
         }
 
         /// <summary>
@@ -990,9 +998,9 @@ namespace RealmOfAshes.Game
             if (_dead)
             {
                 float deathElapsed = _deathFallStarted
-                    ? Time.unscaledTime - _deathStartedAt : DeathFallSeconds;
+                    ? Time.unscaledTime - _deathStartedAt : DeathSettleSeconds;
                 FreezeDeathPose(deathElapsed);
-                ApplyDeathFallForDiagnostics(deathElapsed);
+                ApplyDeathSettleForDiagnostics(deathElapsed);
                 float deathGroundY = transform.parent != null
                     ? transform.parent.position.y : transform.position.y;
                 GroundDeathForDiagnostics(deathGroundY);
@@ -1063,6 +1071,8 @@ namespace RealmOfAshes.Game
             if (!_groundingActive || !_groundShadow.Ready) return;
             Vector3 actorPosition = _dead && transform.parent != null
                 ? transform.parent.position : transform.position;
+            if (_dead && TryGetDeathShadowCenter(out Vector3 corpseCenter))
+                actorPosition = Vector3.Lerp(actorPosition, corpseCenter, _deathSettleWeight);
             float groundY;
             Vector3 normal;
             if (_dead)
@@ -1078,7 +1088,19 @@ namespace RealmOfAshes.Game
             float yaw = _dead && transform.parent != null
                 ? transform.parent.eulerAngles.y : transform.eulerAngles.y;
             _groundShadow.UpdatePose(actorPosition, groundY, normal,
-                yaw, _dead, _crouching, _deathSide, _deathFallWeight);
+                yaw, _dead, _crouching, _deathSettleWeight);
+        }
+
+        private bool TryGetDeathShadowCenter(out Vector3 center)
+        {
+            center = transform.position;
+            if (!_bones.TryGetValue("head", out Transform head) || head == null
+                || !_bones.TryGetValue("foot_l", out Transform leftFoot) || leftFoot == null
+                || !_bones.TryGetValue("foot_r", out Transform rightFoot) || rightFoot == null)
+                return false;
+            center = (head.position + (leftFoot.position + rightFoot.position) * 0.5f) * 0.5f;
+            if (transform.parent != null) center.y = transform.parent.position.y;
+            return true;
         }
 
         private float InjuryRootRollDeg()

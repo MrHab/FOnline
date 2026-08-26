@@ -180,19 +180,28 @@ namespace RealmOfAshes.EditorTools
                     loaded.SetDead(true);
                     AnimationState death = animation["death"];
                     Check(death != null, "death-клип недоступен");
+                    animation.Play("death");
                     death.enabled = true;
                     death.weight = 1f;
                     death.wrapMode = WrapMode.ClampForever;
-                    death.time = Mathf.Min(RoaCharacterView.DeathPoseHoldSeconds,
-                        Mathf.Max(0f, death.length - 0.001f));
+                    float deathFinalTime = RoaCharacterView.FinalDeathPoseTime(death);
+                    Check(deathFinalTime >= 1.19f,
+                        "утверждённый death-клип снова обрезан до фазы наклона");
+                    death.time = deathFinalTime;
                     animation.Sample();
-                    loaded.ApplyDeathFallForDiagnostics(RoaCharacterView.DeathFallSeconds);
+                    Check(preview.RenderNow(), "камера не обновила skinned bounds финального death-кадра");
+                    loaded.ApplyDeathSettleForDiagnostics(deathFinalTime);
                     loaded.GroundDeathForDiagnostics(loaded.transform.parent.position.y);
+                    float stableGroundOffset = loaded.DeathGroundOffsetY;
+                    loaded.ApplyDeathSettleForDiagnostics(deathFinalTime);
+                    loaded.GroundDeathForDiagnostics(loaded.transform.parent.position.y);
+                    Check(Mathf.Abs(loaded.DeathGroundOffsetY - stableGroundOffset) < 0.005f,
+                        "повторное заземление изменило высоту тела между кадрами");
                     Check(loaded.Dead && loaded.CurrentClip == "death",
                         "настоящий персонаж не перешёл в позу смерти");
-                    Check(loaded.DeathFallWeight > 0.999f
-                            && Quaternion.Angle(Quaternion.identity, loaded.transform.localRotation) > 75f,
-                        "финальный кадр death-клипа не доведён до земли");
+                    Check(loaded.DeathSettleWeight > 0.98f
+                            && Quaternion.Angle(Quaternion.identity, loaded.transform.localRotation) < 0.1f,
+                        "авторская death-поза заменена синтетическим поворотом корня");
                     Check(preview.RenderNow(), "камера не обновила геометрию позы смерти");
                     Check(preview.RenderNow(), "камера не прогрела геометрию позы смерти");
                     bool hasDeathBounds = false;
@@ -204,18 +213,20 @@ namespace RealmOfAshes.EditorTools
                         else deathBounds.Encapsulate(renderer.bounds);
                         hasDeathBounds = true;
                     }
-                    float deathGroundY = loaded.transform.position.y;
+                    float deathGroundY = loaded.transform.parent.position.y;
+                    float deathGroundGap = deathBounds.min.y - deathGroundY;
                     Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] границы смерти: "
                         + deathBounds.size.ToString("F2") + ", minY="
-                        + (deathBounds.min.y - deathGroundY).ToString("0.00") + " м, rootY="
+                        + deathGroundGap.ToString("0.00") + " м, rootY="
                         + loaded.DeathGroundOffsetY.ToString("0.00") + ", bones="
                         + loaded.DeathGroundContactBones);
-                    Check(hasDeathBounds && Mathf.Max(deathBounds.size.x, deathBounds.size.z) > 1.1f,
+                    Check(hasDeathBounds && Mathf.Max(deathBounds.size.x, deathBounds.size.z) > 1.45f
+                            && deathBounds.size.y < 0.90f,
                         "финальная поза не образует читаемый лежащий силуэт");
-                    Check(loaded.DeathGroundContactBones == 6
-                            && loaded.DeathGroundOffsetY > 0.3f
-                            && loaded.DeathGroundOffsetY < 1.35f,
-                        "поза смерти не заземлена по опорным костям");
+                    Check(loaded.DeathGroundContactBones == 4
+                            && loaded.DeathGroundOffsetY > 0.15f && loaded.DeathGroundOffsetY <= 0.45f
+                            && deathGroundGap > -0.06f && deathGroundGap < 0.12f,
+                        "поза смерти не соприкасается с реальной землёй");
                     camera.transform.position = deathBounds.center + new Vector3(2.8f, 2.4f, 3.6f);
                     camera.transform.LookAt(deathBounds.center);
                     camera.fieldOfView = 34f;

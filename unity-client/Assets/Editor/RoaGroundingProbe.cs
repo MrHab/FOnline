@@ -54,9 +54,10 @@ namespace RealmOfAshes.EditorTools
                 Require(Mathf.Abs(nodeA.position.y - 0.286f) < 0.001f
                         && Vector3.Dot(nodeA.up, slopeNormal) > 0.999f,
                     "контактная тень не следует высоте и нормали земли");
-                shadowA.UpdatePose(Vector3.zero, 0f, Vector3.up, 0f, true, false, 1f, 1f);
-                Require(nodeA.localScale.x > 2f && nodeA.localScale.z > 1.2f
-                        && nodeA.position.x > 0.6f,
+                shadowA.UpdatePose(new Vector3(0.42f, 0f, 0.75f), 0f,
+                    Vector3.up, 0f, true, false, 1f);
+                Require(nodeA.localScale.x < 1.3f && nodeA.localScale.z > 2f
+                        && nodeA.position.z > 0.7f,
                     "тень лежащего тела не расширяется и не следует за падением");
                 shadowA.SetActive(false);
                 Require(!shadowA.Visible, "LOD не скрывает дальнюю контактную тень");

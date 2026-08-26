@@ -77,6 +77,10 @@ const unity = sourceTree(UNITY_DIR, '.cs');
 const socket = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
 const auth = read('unity-client/Assets/Scripts/Net/RoaAuthClient.cs');
+const uiScale = read('unity-client/Assets/Scripts/Game/RoaUiScale.cs');
+
+assert(uiScale.includes('return mobile ? new Vector2(1280f, 720f) : new Vector2(1600f, 900f);'),
+  'Unity UI must keep readable 1600x900 desktop and 1280x720 mobile references');
 
 // Browser -> server. Literal calls are supplemented by the browser's single
 // audited guarded emitter, exactly like check-socket-event-contract.js.

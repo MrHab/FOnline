@@ -4,16 +4,22 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Единый масштаб uGUI-канв. Web-раскладка рассчитана на 1920×1080; на
-    /// мобильных (в т.ч. мобильный браузер WebGL — Application.isMobilePlatform)
-    /// референс уменьшается до 1280×720, чтобы текст и кнопки были в 1,5 раза
-    /// крупнее, как у мобильных стилей web-клиента.
+    /// Единый масштаб uGUI-канв. Десктопный референс 1600×900 сохраняет
+    /// свободное место вокруг игрового мира, но не превращает шрифты 11–13 pt
+    /// в нечитаемые 7–9 пикселей на распространённых ноутбучных экранах.
+    /// На мобильных референс остаётся 1280×720 и дополняется локальной
+    /// мобильной раскладкой каждого экрана.
     /// </summary>
     public static class RoaUiScale
     {
         public static Vector2 Reference
         {
-            get { return Application.isMobilePlatform ? new Vector2(1280f, 720f) : new Vector2(1920f, 1080f); }
+            get { return ReferenceFor(Application.isMobilePlatform); }
+        }
+
+        public static Vector2 ReferenceFor(bool mobile)
+        {
+            return mobile ? new Vector2(1280f, 720f) : new Vector2(1600f, 900f);
         }
 
         public static void Apply(CanvasScaler scaler)

@@ -21,6 +21,7 @@ const audit = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
   'return type == Grass || type == Dark;',
   'KeepClear(location, x, z, mapWidth, mapDepth, settlement)',
   'AppendScrub(',
+  'AppendStoneCluster(',
   'AppendStone(',
   'AppendDistantRidge(',
   'new GameObject("GroundDressing")',
@@ -49,6 +50,8 @@ assert(!/AddComponent<[^>]*Collider/.test(dressing)
   'terrain.ApplyMap(water)',
   'ROA_GROUND_DRESSING_CAPTURE',
   'expectedDetailSize = Application.isMobilePlatform ? 64 : 128',
+  'RoaGroundDressing.StoneClusterPieceCount >= 3',
+  'декор земли снова сливается в почти чёрные точки',
   '[ОФОРМЛЕНИЕ ЗЕМЛИ] готово:',
 ].forEach(marker => assert(probe.includes(marker), `Проба оформления земли неполна: ${marker}`));
 

@@ -270,9 +270,9 @@ namespace RealmOfAshes.World
         {
             var pixels = new Color32[_textureSize * _textureSize];
             int seed = unchecked((int)(_location != null ? _location.Seed : 1L));
-            Color32 low = IsSettlement ? Hex(0x9b7546) : Hex(0x8c704b);
-            Color32 high = IsSettlement ? Hex(0xd8b981) : Hex(0xc8aa77);
-            Color32 dust = IsSettlement ? Hex(0xb99561) : Hex(0xb28f5d);
+            Color32 low = IsSettlement ? Hex(0x80603a) : Hex(0x725a3b);
+            Color32 high = IsSettlement ? Hex(0xc2a471) : Hex(0xb79a68);
+            Color32 dust = IsSettlement ? Hex(0xa78654) : Hex(0x9d7a4d);
 
             for (int y = 0; y < _textureSize; y++)
             {
@@ -390,10 +390,10 @@ namespace RealmOfAshes.World
             {
                 float x = (Hash01(i, seed, 7701) - 0.5f) * _visualWidth * 0.62f;
                 float z = (Hash01(i, seed, 7703) - 0.5f) * _visualDepth * 0.62f;
-                float size = 0.18f + Hash01(i, seed, 7705) * 0.52f;
-                Color32 color = Hash01(i, seed, 7707) > 0.48f ? Hex(0x756640) : Hex(0xa08f75);
+                float size = 0.30f + Hash01(i, seed, 7705) * 0.85f;
+                Color32 color = Hash01(i, seed, 7707) > 0.48f ? Hex(0x665938) : Hex(0xb19b79);
                 PaintEllipse(pixels, x, z, size, size * 0.55f,
-                    Hash01(i, seed, 7709) * Mathf.PI, color, 0.34f, seed + i);
+                    Hash01(i, seed, 7709) * Mathf.PI, color, 0.38f, seed + i);
             }
         }
 
@@ -598,7 +598,7 @@ namespace RealmOfAshes.World
             {
                 float broad = ValueNoise(x * 0.16f, y * 0.16f, seed + 9011);
                 float grain = Hash01(x, y, seed + 9013);
-                float value = Mathf.Clamp01(0.5f + (broad - 0.5f) * 0.022f + (grain - 0.5f) * 0.008f);
+                float value = Mathf.Clamp01(0.5f + (broad - 0.5f) * 0.075f + (grain - 0.5f) * 0.030f);
                 byte channel = (byte)Mathf.RoundToInt(value * 255f);
                 pixels[y * size + x] = new Color32(channel, channel, channel, 255);
             }
@@ -607,7 +607,7 @@ namespace RealmOfAshes.World
             material.SetTexture("_DetailAlbedoMap", _microDetail);
             material.SetTextureScale("_DetailAlbedoMap", new Vector2(
                 Mathf.Max(1f, _visualWidth / 4.2f), Mathf.Max(1f, _visualDepth / 4.2f)));
-            if (material.HasProperty("_DetailAlbedoMapScale")) material.SetFloat("_DetailAlbedoMapScale", 0.24f);
+            if (material.HasProperty("_DetailAlbedoMapScale")) material.SetFloat("_DetailAlbedoMapScale", 0.36f);
             material.EnableKeyword("_DETAIL_MULX2");
         }
 

@@ -15,6 +15,8 @@ namespace RealmOfAshes.World
     {
         private const int Grass = 0;
         private const int Dark = 4;
+        public const int ScrubBladeCount = 4;
+        public const int StoneClusterPieceCount = 3;
 
         private GameObject _root;
         private Mesh _scrubMesh;
@@ -23,6 +25,8 @@ namespace RealmOfAshes.World
         private Material _stoneMaterial;
 
         public int SurfaceClusterCount { get; private set; }
+        public int ScrubClusterCount { get; private set; }
+        public int StoneClusterCount { get; private set; }
         public int RidgeCount { get; private set; }
         public int VertexCount { get; private set; }
 
@@ -68,12 +72,18 @@ namespace RealmOfAshes.World
                 if (KeepClear(location, x, z, mapWidth, mapDepth, settlement)) continue;
 
                 float yaw = Hash01(i, seed, 8107) * Mathf.PI * 2f;
-                float scale = 0.72f + Hash01(i, seed, 8111) * 0.66f;
-                if (Hash01(i, seed, 8113) < 0.68f)
+                float scale = 0.92f + Hash01(i, seed, 8111) * 0.88f;
+                if (Hash01(i, seed, 8113) < 0.56f)
+                {
                     AppendScrub(scrubVertices, scrubTriangles, new Vector3(x, 0.004f, z), yaw, scale, i, seed);
+                    ScrubClusterCount++;
+                }
                 else
-                    AppendStone(stoneVertices, stoneTriangles, new Vector3(x, -0.012f, z), yaw,
-                        0.11f * scale, 0.075f * scale, i, seed, 5);
+                {
+                    AppendStoneCluster(stoneVertices, stoneTriangles,
+                        new Vector3(x, -0.012f, z), yaw, scale, i, seed);
+                    StoneClusterCount++;
+                }
                 SurfaceClusterCount++;
             }
 
@@ -86,14 +96,14 @@ namespace RealmOfAshes.World
             {
                 _scrubMesh = CreateMesh("RuntimeGroundScrubMesh", scrubVertices, scrubTriangles);
                 _scrubMaterial = CreateMaterial("RuntimeGroundScrubMaterial",
-                    settlement ? new Color(0.28f, 0.25f, 0.12f) : new Color(0.22f, 0.25f, 0.13f), true);
+                    settlement ? new Color(0.42f, 0.33f, 0.13f) : new Color(0.46f, 0.35f, 0.12f), true);
                 CreateRenderNode("Scrub", _scrubMesh, _scrubMaterial, false);
             }
             if (stoneVertices.Count > 0)
             {
                 _stoneMesh = CreateMesh("RuntimeGroundStoneMesh", stoneVertices, stoneTriangles);
                 _stoneMaterial = CreateMaterial("RuntimeGroundStoneMaterial",
-                    settlement ? new Color(0.27f, 0.22f, 0.16f) : new Color(0.24f, 0.21f, 0.17f), false);
+                    settlement ? new Color(0.36f, 0.30f, 0.23f) : new Color(0.34f, 0.29f, 0.23f), false);
                 CreateRenderNode("StonesAndDistantRidge", _stoneMesh, _stoneMaterial, !mobile);
             }
             VertexCount = scrubVertices.Count + stoneVertices.Count;
@@ -157,11 +167,11 @@ namespace RealmOfAshes.World
         private static void AppendScrub(List<Vector3> vertices, List<int> triangles,
                                         Vector3 center, float yaw, float scale, int index, int seed)
         {
-            for (int blade = 0; blade < 3; blade++)
+            for (int blade = 0; blade < ScrubBladeCount; blade++)
             {
-                float angle = yaw + blade * Mathf.PI / 3f;
-                float width = (0.075f + Hash01(index, blade, seed + 8121) * 0.055f) * scale;
-                float height = (0.18f + Hash01(index, blade, seed + 8123) * 0.17f) * scale;
+                float angle = yaw + blade * Mathf.PI / 4f;
+                float width = (0.09f + Hash01(index, blade, seed + 8121) * 0.06f) * scale;
+                float height = (0.22f + Hash01(index, blade, seed + 8123) * 0.16f) * scale;
                 Vector3 side = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * width;
                 Vector3 lean = new Vector3(Mathf.Sin(angle), 0f, -Mathf.Cos(angle)) * height * 0.12f;
                 int start = vertices.Count;
@@ -171,6 +181,28 @@ namespace RealmOfAshes.World
                 vertices.Add(center - side * 0.28f + Vector3.up * height + lean);
                 triangles.Add(start); triangles.Add(start + 2); triangles.Add(start + 1);
                 triangles.Add(start); triangles.Add(start + 3); triangles.Add(start + 2);
+            }
+        }
+
+        private static void AppendStoneCluster(List<Vector3> vertices, List<int> triangles,
+                                               Vector3 center, float yaw, float scale,
+                                               int index, int seed)
+        {
+            for (int piece = 0; piece < StoneClusterPieceCount; piece++)
+            {
+                float angle = yaw + piece * Mathf.PI * 0.72f
+                    + (Hash01(index, piece, seed + 8135) - 0.5f) * 0.42f;
+                float spread = piece == 0 ? 0f
+                    : (0.15f + Hash01(index, piece, seed + 8137) * 0.11f) * scale;
+                Vector3 offset = new Vector3(Mathf.Cos(angle) * spread, 0f,
+                    Mathf.Sin(angle) * spread);
+                float baseRadius = piece == 0
+                    ? 0.18f + Hash01(index, piece, seed + 8139) * 0.06f
+                    : 0.085f + Hash01(index, piece, seed + 8140) * 0.05f;
+                float radius = baseRadius * scale;
+                float height = radius * (0.54f + Hash01(index, piece, seed + 8142) * 0.24f);
+                AppendStone(vertices, triangles, center + offset, angle, radius, height,
+                    index * StoneClusterPieceCount + piece, seed + 19, 6);
             }
         }
 
@@ -291,6 +323,8 @@ namespace RealmOfAshes.World
             _scrubMaterial = null;
             _stoneMaterial = null;
             SurfaceClusterCount = 0;
+            ScrubClusterCount = 0;
+            StoneClusterCount = 0;
             RidgeCount = 0;
             VertexCount = 0;
         }

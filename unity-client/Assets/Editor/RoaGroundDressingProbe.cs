@@ -72,6 +72,22 @@ namespace RealmOfAshes.EditorTools
                     "геометрический бюджет оформления нарушен: " + terrain.DetailVertexCount);
                 int initialVertices = terrain.DetailVertexCount;
 
+                RoaGroundDressing generator = host.GetComponent<RoaGroundDressing>();
+                Require(generator != null
+                        && generator.ScrubClusterCount + generator.StoneClusterCount
+                            == terrain.SurfaceDetailClusterCount,
+                    "типы деталей поверхности не учтены полностью");
+                Require(generator.ScrubClusterCount > budget / 3
+                        && generator.StoneClusterCount > budget / 4,
+                    "ландшафт потерял разнообразие кустов или групп камней: "
+                    + generator.ScrubClusterCount + "/" + generator.StoneClusterCount);
+                Require(RoaGroundDressing.ScrubBladeCount >= 4
+                        && RoaGroundDressing.StoneClusterPieceCount >= 3
+                        && terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 14,
+                    "детали земли остались слишком мелкими или схематичными");
+                int initialScrubCount = generator.ScrubClusterCount;
+                int initialStoneCount = generator.StoneClusterCount;
+
                 Transform dressing = host.transform.Find("GroundDressing");
                 Require(dressing != null, "корень GroundDressing не создан");
                 Require(dressing.GetComponentsInChildren<Collider>(true).Length == 0,
@@ -80,6 +96,13 @@ namespace RealmOfAshes.EditorTools
                 Require(renderers.Length == 2
                         && Array.TrueForAll(renderers, renderer => renderer.sharedMaterial != null),
                     "ожидались отдельные материалы кустарника и камней");
+                MeshRenderer scrubRenderer = Array.Find(renderers, renderer => renderer.name == "Scrub");
+                MeshRenderer stoneRenderer = Array.Find(renderers,
+                    renderer => renderer.name == "StonesAndDistantRidge");
+                Require(scrubRenderer != null && stoneRenderer != null
+                        && scrubRenderer.sharedMaterial.color.r > 0.38f
+                        && stoneRenderer.sharedMaterial.color.r > 0.30f,
+                    "декор земли снова сливается в почти чёрные точки");
 
                 GameObject dressingObject = dressing.gameObject;
                 Require(!terrain.ApplyMap(map), "одинаковый авторитетный снимок пересобрал оформление");
@@ -101,6 +124,7 @@ namespace RealmOfAshes.EditorTools
 
                 Debug.Log("[ОФОРМЛЕНИЕ ЗЕМЛИ] готово: поверхность=" + budget
                     + ", дальний рельеф=" + RoaGroundDressing.RidgeBudget(Application.isMobilePlatform)
+                    + ", кусты/камни=" + initialScrubCount + "/" + initialStoneCount
                     + ", вершины=" + initialVertices + ", коллайдеры=0");
             }
             finally

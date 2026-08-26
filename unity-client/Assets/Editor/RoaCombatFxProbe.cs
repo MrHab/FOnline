@@ -83,7 +83,7 @@ namespace RealmOfAshes.EditorTools
                 Debug.Log("[БОЕВЫЕ ЭФФЕКТЫ] готово: laser=" + laser.TracerLife.ToString("0.00")
                     + "s, plasma=" + plasma.TracerLife.ToString("0.00")
                     + "s, Z=" + start.z.ToString("0.0") + "→" + end.z.ToString("0.0")
-                    + ", runtime=moving-tracer/muzzle/sparks/layered-explosion/clear");
+                    + ", runtime=speculative-shot/confirmed-miss-hit/layered-explosion/clear");
             }
             catch (Exception error)
             {
@@ -134,8 +134,8 @@ namespace RealmOfAshes.EditorTools
                     fx.PlayShot(new Vector3(i, 1.1f, 0f), new Vector3(i + 6f, 1.1f, 2f),
                                 i % 2 == 0 ? "machineGun" : "laserPistol");
                 Require(fx.ActiveTracerCount == 5 && fx.ActiveFlashCount == 5
-                        && fx.ActiveImpactCount == 5,
-                        "automatic queue did not activate five pooled tracer/flash/impact sets");
+                        && fx.ActiveImpactCount == 0,
+                        "speculative shots created a false impact before server confirmation");
                 LineRenderer[] lines = root.GetComponentsInChildren<LineRenderer>(true);
                 Require(Array.FindAll(lines, line => line.gameObject.activeInHierarchy
                         && line.gameObject.name == "PolishedTracerFx" && line.positionCount == 2).Length == 5,
@@ -144,6 +144,27 @@ namespace RealmOfAshes.EditorTools
                 Require(Array.FindAll(bursts, burst => burst.gameObject.activeInHierarchy
                         && burst.sharedMesh != null && burst.sharedMesh.name == "ProceduralMuzzleBurst").Length == 5,
                         "directional muzzle burst geometry is incomplete");
+
+                Vector3 missSource = new Vector3(-4f, 0f, -1f);
+                Vector3 missTarget = new Vector3(2f, 0f, 3f);
+                Vector3 missA = RoaCombatFx.ResolveMissPoint(
+                    missSource, missTarget, "probe-attack-a", 1.1f);
+                Vector3 missAgain = RoaCombatFx.ResolveMissPoint(
+                    missSource, missTarget, "probe-attack-a", 1.1f);
+                Vector3 missB = RoaCombatFx.ResolveMissPoint(
+                    missSource, missTarget, "probe-attack-b", 1.1f);
+                Require(Vector3.Distance(missA, missAgain) < 0.0001f
+                        && Vector2.Distance(new Vector2(missA.x, missA.z),
+                                            new Vector2(missTarget.x, missTarget.z)) > 0.72f
+                        && Vector3.Distance(missA, missB) > 0.04f,
+                        "miss endpoint is not deterministic or remains inside the target silhouette");
+                fx.PlayMiss(missA, missSource, "machineGun");
+                Require(fx.ActiveImpactCount == 1,
+                        "server-confirmed miss did not activate a separate ground impact");
+                Transform missImpact = Array.Find(root.GetComponentsInChildren<Transform>(true), item =>
+                    item.gameObject.activeInHierarchy && item.gameObject.name == "LayeredImpactFx");
+                Require(missImpact != null && Vector3.Distance(missImpact.position, missA) < 0.001f,
+                        "miss ground impact was not placed at the resolved endpoint");
 
                 fx.PlayExplosion(new Vector3(2f, 0f, -3f), 4.2f);
                 Require(fx.ActiveExplosionCount == 1,

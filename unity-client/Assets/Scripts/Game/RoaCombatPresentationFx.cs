@@ -162,17 +162,28 @@ namespace RealmOfAshes.Game
             flash.Life = Mathf.Max(0.065f, profile.FlashLife);
             flash.Active = true;
             flash.Root.SetActive(true);
+        }
+
+        public void PlayMiss(Vector3 point, Vector3 source, string weaponId,
+                             RoaCombatFx.WeaponFxProfile profile)
+        {
+            EnsurePools();
+            Vector3 direction = point - source;
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.0001f) direction = Vector3.forward;
+            else direction.Normalize();
 
             ImpactFx impact = AcquireImpact();
-            impact.Root.transform.position = end + Vector3.up * 0.025f;
-            impact.Color = Color.Lerp(profile.Tracer, new Color(0.92f, 0.66f, 0.31f), 0.46f);
-            impact.Started = Time.unscaledTime + Mathf.Min(0.075f, tracer.Life * 0.42f);
-            impact.Life = weaponId == "rocketLauncher" ? 0.4f : 0.3f;
-            impact.Scale = 1f;
+            impact.Root.transform.position = point;
+            impact.Color = Color.Lerp(new Color(0.72f, 0.61f, 0.43f), profile.Tracer, 0.18f);
+            impact.Started = Time.unscaledTime;
+            impact.Life = 0.27f;
+            impact.Scale = 0.76f;
             impact.Active = true;
-            impact.Visible = false;
-            impact.Root.SetActive(false);
+            impact.Visible = true;
+            impact.Root.SetActive(true);
             ConfigureImpact(impact, direction, weaponId);
+            UpdateImpact(impact, 0f);
         }
 
         public void PlayConfirmedHit(Vector3 target, Vector3 source, string weaponId,

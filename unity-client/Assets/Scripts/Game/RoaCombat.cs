@@ -864,7 +864,7 @@ namespace RealmOfAshes.Game
             }, ack =>
             {
                 CompleteAttackRequest(attackToken, ack);
-                HandleHitResult(ack, targetPosition, RoaCoords.ToUnity(selfX, selfZ));
+                HandleHitResult(ack, targetPosition, RoaCoords.ToUnity(selfX, selfZ), attackToken);
             });
         }
 
@@ -892,7 +892,8 @@ namespace RealmOfAshes.Game
             }, ack =>
             {
                 CompleteAttackRequest(attackToken, ack);
-                HandlePlayerHitResult(ack, target, targetPosition, RoaCoords.ToUnity(selfX, selfZ));
+                HandlePlayerHitResult(ack, target, targetPosition,
+                    RoaCoords.ToUnity(selfX, selfZ), attackToken);
             });
         }
 
@@ -946,7 +947,8 @@ namespace RealmOfAshes.Game
             });
         }
 
-        private void HandleHitResult(JObject ack, Vector3 targetPosition, Vector3 sourcePosition)
+        private void HandleHitResult(JObject ack, Vector3 targetPosition, Vector3 sourcePosition,
+                                     string attackToken)
         {
             if (ack == null) return;
             Socket.ApplyGameplayAck(ack);
@@ -975,6 +977,14 @@ namespace RealmOfAshes.Game
             if (!hit)
             {
                 float chance = ack["chance"]?.ToObject<float>() ?? 0f;
+                string missWeapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
+                if (!string.IsNullOrEmpty(RoaWeaponData.Get(missWeapon).AmmoType))
+                {
+                    float targetScale = Mathf.Max(0.72f, enemy?["scale"]?.ToObject<float>() ?? 1f);
+                    Vector3 missPoint = RoaCombatFx.ResolveMissPoint(
+                        sourcePosition, targetPosition, attackToken, targetScale);
+                    Fx?.PlayMiss(missPoint, sourcePosition, missWeapon);
+                }
                 Float("мимо", targetPosition, new Color(0.72f, 0.72f, 0.72f));
                 AddLog("Промах, шанс был " + Mathf.RoundToInt(chance) + "%");
                 return;
@@ -995,7 +1005,7 @@ namespace RealmOfAshes.Game
         }
 
         private void HandlePlayerHitResult(JObject ack, PublicPlayer target, Vector3 targetPosition,
-                                           Vector3 sourcePosition)
+                                           Vector3 sourcePosition, string attackToken)
         {
             if (ack == null) return;
             Socket.ApplyGameplayAck(ack);
@@ -1013,6 +1023,13 @@ namespace RealmOfAshes.Game
             bool hit = ack["hit"]?.ToObject<bool>() ?? false;
             if (!hit)
             {
+                string missWeapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
+                if (!string.IsNullOrEmpty(RoaWeaponData.Get(missWeapon).AmmoType))
+                {
+                    Vector3 missPoint = RoaCombatFx.ResolveMissPoint(
+                        sourcePosition, targetPosition, attackToken);
+                    Fx?.PlayMiss(missPoint, sourcePosition, missWeapon);
+                }
                 Float("мимо", targetPosition, new Color(0.72f, 0.72f, 0.72f));
                 AddLog("Промах по " + (target?.Name ?? "игроку") + ", шанс "
                     + Mathf.RoundToInt(ack["chance"]?.ToObject<float>() ?? 0f) + "%");

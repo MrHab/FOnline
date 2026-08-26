@@ -103,6 +103,42 @@ namespace RealmOfAshes.Game
         public int ActiveImpactCount { get { return Polish != null ? Polish.ActiveImpactCount : _activeImpactCount; } }
         public int ActiveExplosionCount { get { return Polish != null ? Polish.ActiveExplosionCount : _explosions.Count; } }
 
+        public static Vector3 ResolveMissPoint(Vector3 source, Vector3 target,
+                                               string attackToken, float targetScale = 1f)
+        {
+            Vector3 forward = target - source;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward;
+            else forward.Normalize();
+            Vector3 side = Vector3.Cross(Vector3.up, forward).normalized;
+
+            uint hash = StableHash(attackToken);
+            float scale = Mathf.Clamp(targetScale, 0.72f, 1.85f);
+            float lateralNoise = ((hash >> 1) & 1023u) / 1023f;
+            float depthNoise = ((hash >> 11) & 1023u) / 1023f;
+            float lateral = Mathf.Lerp(0.76f, 1.28f, lateralNoise) * scale;
+            float depth = Mathf.Lerp(-0.14f, 0.36f, depthNoise) * scale;
+            float sign = (hash & 1u) == 0u ? -1f : 1f;
+            Vector3 point = target + side * (lateral * sign) + forward * depth;
+            point.y = Mathf.Max(0.08f, target.y + 0.08f);
+            return point;
+        }
+
+        private static uint StableHash(string value)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                if (string.IsNullOrEmpty(value)) return hash;
+                for (int i = 0; i < value.Length; i++)
+                {
+                    hash ^= value[i];
+                    hash *= 16777619u;
+                }
+                return hash;
+            }
+        }
+
         public void Configure(RoaSocketClient socket, RoaEnemies enemies)
         {
             Unsubscribe();
@@ -198,15 +234,27 @@ namespace RealmOfAshes.Game
             flash.Active = true;
             flash.Root.SetActive(true);
 
+            Recount();
+        }
+
+        public void PlayMiss(Vector3 point, Vector3 source, string weaponId)
+        {
+            WeaponFxProfile profile = ProfileFor(weaponId);
+            if (Polish != null)
+            {
+                Polish.PlayMiss(point, source, weaponId, profile);
+                return;
+            }
+            EnsurePools();
             ImpactFx impact = AcquireImpact();
-            impact.Root.transform.position = end + Vector3.up * 0.04f;
-            impact.Root.transform.localScale = Vector3.one * 0.16f;
-            SetMaterialColor(impact.Material, Color.Lerp(profile.Tracer, new Color(0.72f, 0.62f, 0.46f), 0.45f), 0.82f);
+            impact.Root.transform.position = point;
+            impact.Root.transform.localScale = Vector3.one * 0.13f;
+            SetMaterialColor(impact.Material,
+                Color.Lerp(new Color(0.72f, 0.61f, 0.43f), profile.Tracer, 0.18f), 0.82f);
             impact.Started = Time.unscaledTime;
-            impact.Life = 0.18f;
+            impact.Life = 0.22f;
             impact.Active = true;
             impact.Root.SetActive(true);
-
             Recount();
         }
 

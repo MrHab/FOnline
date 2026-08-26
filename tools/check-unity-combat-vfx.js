@@ -43,9 +43,9 @@ assert(presentation.includes('ProceduralMuzzleBurst')
   && presentation.includes('collider.enabled = false'),
   'Combat VFX pools must stay bounded and decorative geometry must not collide');
 assert(presentation.includes('ImpactSparkCount = 6')
-  && presentation.includes('impact.Visible = false')
+  && presentation.includes('public void PlayMiss(')
   && presentation.includes('Vector3.down * (t * t * 0.18f)'),
-  'Delayed ballistic impact no longer has six animated sparks');
+  'Authoritative miss/hit impacts no longer have six animated sparks');
 assert(presentation.includes('public const float Life = 0.96f')
   && presentation.includes('Shockwave') && presentation.includes('HeatRing')
   && presentation.includes('ExplosionSmokeCount = 6')
@@ -67,9 +67,26 @@ assert(presentation.includes('CreateDamageVignette()')
 
 assert(fallback.includes('public RoaCombatPresentationFx Polish;')
   && fallback.includes('Polish.PlayShot(start, end, weaponId, profile);')
+  && fallback.includes('Polish.PlayMiss(point, source, weaponId, profile);')
   && fallback.includes('Polish.PlayExplosion(center, radius);')
   && fallback.includes('if (Polish == null) EnsurePools();'),
   'Legacy effects no longer safely delegate with a fallback path');
+
+const polishedShotStart = presentation.indexOf('public void PlayShot(');
+const polishedShotEnd = presentation.indexOf('public void PlayMiss(', polishedShotStart);
+const fallbackShotStart = fallback.indexOf('public void PlayShot(');
+const fallbackShotEnd = fallback.indexOf('public void PlayMiss(', fallbackShotStart);
+const polishedShot = presentation.slice(polishedShotStart, polishedShotEnd);
+const fallbackShot = fallback.slice(fallbackShotStart, fallbackShotEnd);
+assert(polishedShotStart >= 0 && polishedShotEnd > polishedShotStart
+  && fallbackShotStart >= 0 && fallbackShotEnd > fallbackShotStart
+  && !polishedShot.includes('AcquireImpact()')
+  && !fallbackShot.includes('AcquireImpact()')
+  && fallback.includes('public static Vector3 ResolveMissPoint(')
+  && fallback.includes('uint hash = StableHash(attackToken);')
+  && combat.includes('RoaCombatFx.ResolveMissPoint(')
+  && combat.includes('Fx?.PlayMiss(missPoint, sourcePosition, missWeapon);'),
+  'Speculative fire still creates false contacts or misses are not server-confirmed');
 assert(bootstrap.includes('gameObject.AddComponent<RoaCombatPresentationFx>()')
   && bootstrap.includes('CombatPresentation.CameraRig = CameraRig;')
   && bootstrap.includes('CombatFx.Polish = CombatPresentation;'),
@@ -132,6 +149,8 @@ assert(collisionProbe.includes('RoaWeaponView.FireBlockThreshold')
   'Weapon collision probe does not verify the fire interlock and contact envelope');
 assert(probe.includes('moving tapered tracer geometry')
   && probe.includes('directional muzzle burst geometry')
+  && probe.includes('speculative shots created a false impact before server confirmation')
+  && probe.includes('miss endpoint is not deterministic or remains inside the target silhouette')
   && probe.includes('shock, heat, fireball, smoke or ember layer')
   && probe.includes('damage Canvas, direction marker or input transparency'),
   'Unity editor probe does not inspect the new VFX structure');
@@ -150,4 +169,4 @@ for (const file of [
 assert(/guid:\s*[0-9a-f]{32}/i.test(read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs.meta')),
   'RoaDualWieldProbe.cs.meta has no valid GUID');
 
-console.log('Unity combat VFX OK: collision-gated fire, contact animation, dual IK, moving tracers, impacts, explosions and directional damage Canvas');
+console.log('Unity combat VFX OK: collision-gated fire, contact animation, dual IK, speculative tracers, authoritative hit/miss impacts, explosions and directional damage Canvas');

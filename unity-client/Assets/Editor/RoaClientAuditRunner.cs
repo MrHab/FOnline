@@ -28,6 +28,7 @@ namespace RealmOfAshes.EditorTools
             typeof(RoaCameraProbe),
             typeof(RoaMovementFxProbe),
             typeof(RoaLocomotionContactProbe),
+            typeof(RoaNetworkActorMotionProbe),
             typeof(RoaGroundingProbe),
             typeof(RoaActorPresentationLodProbe),
             typeof(RoaWeaponCollisionProbe),

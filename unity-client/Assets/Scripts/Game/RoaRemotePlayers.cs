@@ -22,6 +22,9 @@ namespace RealmOfAshes.Game
         [Tooltip("Сколько секунд продолжать движение по последней скорости, если пакетов нет.")]
         public float MaxExtrapolationSeconds = 0.25f;
 
+        [Tooltip("Коррекция больше этой дистанции считается телепортом, а не рывком.")]
+        public float SnapDistance = 3.4f;
+
         public RoaSocketClient Socket;
 
         [Tooltip("Origin сервера — отсюда грузятся модели персонажей.")]
@@ -41,11 +44,13 @@ namespace RealmOfAshes.Game
             public PublicPlayer Player;
             public Vector3 TargetPosition;
             public Vector3 Velocity;
+            public Vector3 PresentationVelocity;
             public float TargetYawDeg;
             public float LastPacketTime;
             public long LastSeq;
             public Vector3 SmoothVelocity;
             public bool Moving;
+            public bool PresentationMoving;
             public bool Crouching;
             public Vector3 AimPoint;
             public float AimUntil;
@@ -183,7 +188,9 @@ namespace RealmOfAshes.Game
                 TargetYawDeg = RoaCoords.AngleToYawDeg(player.Angle),
                 LastPacketTime = Time.time,
                 Velocity = Vector3.zero,
+                PresentationVelocity = Vector3.zero,
                 Moving = player.Moving,
+                PresentationMoving = false,
                 Crouching = player.Crouching
             };
             view.OnVisualChanged += remote.Gate.Invalidate;
@@ -445,7 +452,9 @@ namespace RealmOfAshes.Game
                 remote.Player.Hp = 0;
             }
             remote.Moving = false;
+            remote.PresentationMoving = false;
             remote.Velocity = Vector3.zero;
+            remote.PresentationVelocity = Vector3.zero;
             remote.View?.SetDead(true);
             if (remote.Root == null) return true;
 
@@ -539,15 +548,18 @@ namespace RealmOfAshes.Game
             {
                 if (remote.Root == null) continue;
 
-                // Экстраполяция закрывает разрыв между пакетами, но ограничена по
-                // времени: иначе потерянный «стоп» уводит фигуру в бесконечный бег.
-                float sincePacket = Time.time - remote.LastPacketTime;
-                if (sincePacket <= MaxExtrapolationSeconds)
-                    remote.TargetPosition += remote.Velocity * Time.deltaTime;
-
+                float sincePacket = Time.time - remote.LastPacketTime
+                    + RoaNetworkActorMotion.OneWayLatencySeconds(
+                        Socket != null ? Socket.PingMs : -1f, MaxExtrapolationSeconds);
                 Transform t = remote.Root.transform;
-                t.position = Vector3.SmoothDamp(t.position, remote.TargetPosition,
-                    ref remote.SmoothVelocity, SmoothTime);
+                RoaNetworkActorMotion.Sample motion = RoaNetworkActorMotion.Step(
+                    t.position, remote.TargetPosition, remote.Velocity, remote.Moving,
+                    sincePacket, Time.deltaTime, SmoothTime,
+                    MaxExtrapolationSeconds, SnapDistance, ref remote.SmoothVelocity);
+                t.position = motion.Position;
+                remote.PresentationVelocity = motion.VisualVelocity;
+                remote.PresentationMoving = motion.Moving;
+                if (motion.Snapped) remote.StepFx = default(RoaMovementFx.ActorStepState);
 
                 t.rotation = Quaternion.Slerp(t.rotation,
                     Quaternion.Euler(0f, remote.TargetYawDeg, 0f), 1f - Mathf.Exp(-12f * Time.deltaTime));
@@ -556,8 +568,8 @@ namespace RealmOfAshes.Game
                 // своего ввода нет, а взгляд и путь так же независимы, как у своего.
                 if (remote.View != null)
                 {
-                    remote.View.UpdateLocomotion(remote.Velocity, remote.TargetYawDeg,
-                        remote.Moving, remote.Crouching);
+                    remote.View.UpdateLocomotion(remote.PresentationVelocity, remote.TargetYawDeg,
+                        remote.PresentationMoving, remote.Crouching);
                     remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil);
                 }
 
@@ -576,8 +588,8 @@ namespace RealmOfAshes.Game
                         remote.View.PresentationTier));
                 if (_movementFx != null)
                 {
-                    _movementFx.TrackActor(ref remote.StepFx, t.position, remote.Velocity,
-                        remote.Moving, presentationVisible, remote.Crouching, observer);
+                    _movementFx.TrackActor(ref remote.StepFx, t.position, remote.PresentationVelocity,
+                        remote.PresentationMoving, presentationVisible, remote.Crouching, observer);
                 }
             }
             UpdateDeathVisuals(Time.unscaledTime);

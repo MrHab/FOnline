@@ -103,9 +103,12 @@ assert(movementFx.includes('ActorStepState')
 'Shared actor step scheduler lost cadence, teleport protection, distance budget or pooled emission');
 assert(remotePlayers.includes('ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)')
   && remotePlayers.includes('TrackActor(ref remote.StepFx')
+  && remotePlayers.includes('remote.PresentationVelocity')
+  && remotePlayers.includes('remote.PresentationMoving')
   && enemies.includes('ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)')
   && enemies.includes('TrackActor(ref enemy.StepFx')
-  && enemies.includes('enemy.Moving && !enemy.Dead'),
+  && enemies.includes('enemy.PresentationVelocity')
+  && enemies.includes('enemy.PresentationMoving'),
 'Remote players or NPCs no longer drive shared visible movement feedback');
 assert(bootstrap.includes('Enemies.ConfigureMovementFx(MovementFx, movementFxCamera);')
   && bootstrap.includes('RemotePlayers.ConfigureMovementFx(MovementFx, movementFxCamera);'),

@@ -28,6 +28,9 @@ namespace RealmOfAshes.Game
         [Tooltip("Сколько секунд продолжать движение по последней скорости без новых пакетов.")]
         public float MaxExtrapolationSeconds = 0.4f;
 
+        [Tooltip("Коррекция больше этой дистанции считается телепортом или спавном.")]
+        public float SnapDistance = 4f;
+
         public RoaSocketClient Socket;
 
         [Tooltip("Туман войны. Пока не назначен, существа видны всегда.")]
@@ -60,10 +63,12 @@ namespace RealmOfAshes.Game
 
             public Vector3 TargetPosition;
             public Vector3 Velocity;
+            public Vector3 PresentationVelocity;
             public Vector3 SmoothVelocity;
             public float TargetYawDeg;
 
             public bool Moving;
+            public bool PresentationMoving;
             public bool Dead;
             public float LastPacketTime;
             public float ActionUntil;
@@ -481,10 +486,16 @@ namespace RealmOfAshes.Game
             if (string.IsNullOrEmpty(id) || !_enemies.TryGetValue(id, out Enemy enemy)) return;
             enemy.Dead = true;
             enemy.Moving = false;
+            enemy.PresentationMoving = false;
             enemy.Velocity = Vector3.zero;
+            enemy.PresentationVelocity = Vector3.zero;
             enemy.ActionUntil = 0f;
             if (payload["x"] != null && payload["z"] != null)
+            {
                 enemy.TargetPosition = RoaCoords.ToUnity(Value(payload, "x"), Value(payload, "z"));
+                if (enemy.Root != null) enemy.Root.transform.position = enemy.TargetPosition;
+                enemy.SmoothVelocity = Vector3.zero;
+            }
             if (enemy.Snapshot != null)
             {
                 enemy.Snapshot["dead"] = true;
@@ -898,17 +909,23 @@ namespace RealmOfAshes.Game
             {
                 if (enemy.Root == null) continue;
 
-                float sincePacket = Time.time - enemy.LastPacketTime;
-                if (enemy.Moving && sincePacket <= MaxExtrapolationSeconds)
-                    enemy.TargetPosition += enemy.Velocity * Time.deltaTime;
-
+                float sincePacket = Time.time - enemy.LastPacketTime
+                    + RoaNetworkActorMotion.OneWayLatencySeconds(
+                        Socket != null ? Socket.PingMs : -1f, MaxExtrapolationSeconds);
                 Transform t = enemy.Root.transform;
-                t.position = Vector3.SmoothDamp(t.position, enemy.TargetPosition,
-                    ref enemy.SmoothVelocity, SmoothTime);
+                RoaNetworkActorMotion.Sample motion = RoaNetworkActorMotion.Step(
+                    t.position, enemy.TargetPosition, enemy.Velocity, enemy.Moving,
+                    sincePacket, Time.deltaTime, SmoothTime,
+                    MaxExtrapolationSeconds, SnapDistance, ref enemy.SmoothVelocity);
+                t.position = motion.Position;
+                enemy.PresentationVelocity = motion.VisualVelocity;
+                enemy.PresentationMoving = motion.Moving && !enemy.Dead;
+                if (motion.Snapped) enemy.StepFx = default(RoaMovementFx.ActorStepState);
 
-                // Идущее существо смотрит по пути, стоящее — по последнему взгляду.
-                if (enemy.Moving && enemy.Velocity.sqrMagnitude > 0.0001f)
-                    enemy.TargetYawDeg = Mathf.Atan2(enemy.Velocity.x, enemy.Velocity.z) * Mathf.Rad2Deg;
+                // Поворот следует видимому пути, а не устаревшей скорости пакета.
+                if (enemy.PresentationMoving && enemy.PresentationVelocity.sqrMagnitude > 0.0001f)
+                    enemy.TargetYawDeg = Mathf.Atan2(
+                        enemy.PresentationVelocity.x, enemy.PresentationVelocity.z) * Mathf.Rad2Deg;
 
                 Quaternion wanted = Quaternion.Euler(0f, enemy.TargetYawDeg + enemy.YawOffset, 0f);
                 t.rotation = Quaternion.Slerp(t.rotation, wanted, 1f - Mathf.Exp(-10f * Time.deltaTime));
@@ -916,8 +933,8 @@ namespace RealmOfAshes.Game
                 if (enemy.CharacterView != null)
                 {
                     enemy.CharacterView.SetDead(enemy.Dead);
-                    enemy.CharacterView.UpdateLocomotion(enemy.Velocity, enemy.TargetYawDeg,
-                        enemy.Moving, false);
+                    enemy.CharacterView.UpdateLocomotion(enemy.PresentationVelocity, enemy.TargetYawDeg,
+                        enemy.PresentationMoving, false);
                 }
                 else UpdateClip(enemy);
 
@@ -935,8 +952,8 @@ namespace RealmOfAshes.Game
                         enemy.CharacterView.PresentationTier));
                 if (_movementFx != null)
                 {
-                    _movementFx.TrackActor(ref enemy.StepFx, t.position, enemy.Velocity,
-                        enemy.Moving && !enemy.Dead, presentationVisible, false, observer);
+                    _movementFx.TrackActor(ref enemy.StepFx, t.position, enemy.PresentationVelocity,
+                        enemy.PresentationMoving, presentationVisible, false, observer);
                 }
             }
         }
@@ -949,8 +966,8 @@ namespace RealmOfAshes.Game
             string wanted;
             if (enemy.Dead) wanted = "death";
             else if (Time.time < enemy.ActionUntil && enemy.Animation.GetClip("attack") != null) wanted = "attack";
-            else if (!enemy.Moving) wanted = "idle";
-            else wanted = enemy.Velocity.magnitude > RunSpeedThreshold ? "run" : "walk";
+            else if (!enemy.PresentationMoving) wanted = "idle";
+            else wanted = enemy.PresentationVelocity.magnitude > RunSpeedThreshold ? "run" : "walk";
 
             PlayClip(enemy, wanted);
         }

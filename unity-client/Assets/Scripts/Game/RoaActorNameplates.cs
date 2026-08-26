@@ -180,26 +180,31 @@ namespace RealmOfAshes.Game
         private void RefreshHint(bool show)
         {
             EnsureHint();
-            string name; int chance;
-            bool visible = show && Combat != null && Combat.TryGetTargetHint(out name, out chance);
+            string label = string.Empty;
+            Color color = Color.white;
+            bool visible = show && Combat != null
+                && Combat.TryGetTargetDisplay(out _, out label, out color);
             if (!visible)
             {
                 if (_hint.activeSelf) _hint.SetActive(false);
                 return;
             }
-            Combat.TryGetTargetHint(out name, out chance);
+
             _hint.SetActive(true);
+            // Keep the deliberately compact target hint: one value beside the
+            // pointer. Invalid shots now explain why instead of looking like 0%.
             _hintName.text = string.Empty;
-            _hintChance.text = chance + "%";
-            _hintChance.fontSize = 16;
-            _hintRect.sizeDelta = new Vector2(80f, 44f);
+            _hintChance.text = label;
+            _hintChance.color = color;
+            _hintChance.fontSize = label.EndsWith("%") ? 16 : 12;
+            _hintRect.sizeDelta = new Vector2(label.EndsWith("%") ? 80f : 154f, 44f);
             Vector2 mouse = Input.mousePosition;
             const float pad = 14f;
-            float x = Mathf.Min(Screen.width - 88f, Mathf.Max(8f, mouse.x + pad));
+            float x = Mathf.Min(Screen.width - _hintRect.sizeDelta.x - 8f,
+                Mathf.Max(8f, mouse.x + pad));
             float y = Mathf.Max(52f, Mathf.Min(Screen.height - 8f, mouse.y - pad));
             _hintRect.anchoredPosition = new Vector2(x, y);
         }
-
         private void LateUpdate()
         {
             if (!CanvasDriven) return;

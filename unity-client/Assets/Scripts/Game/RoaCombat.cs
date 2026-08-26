@@ -84,6 +84,9 @@ namespace RealmOfAshes.Game
         private JObject _hoverTarget;
         private Vector3 _hoverPosition;
         private float _nextHoverAt;
+        private string _mobileAimTargetId = string.Empty;
+        private Vector3 _mobileAimPosition;
+        private RoaTargetingFeedback _targetingFeedback;
         private GUIStyle _targetHintStyle;
 
         /// <summary>Последние строки боевого журнала. Показываются в углу.</summary>
@@ -248,7 +251,8 @@ namespace RealmOfAshes.Game
             if (inputAllowed && Input.GetKeyDown(ModeKey)) CycleFireMode();
             if (inputAllowed && Input.GetKeyDown(ReloadKey)) Reload();
             if (!MobileInputMode && inputAllowed && Input.GetMouseButton(0) && Time.time >= _nextRequestAt) Attack();
-            UpdateHoverTarget(inputAllowed && !MobileInputMode);
+            UpdateHoverTarget(inputAllowed);
+            UpdateTargetingFeedback(inputAllowed);
 
             for (int i = _floating.Count - 1; i >= 0; i--)
                 if (Time.time > _floating[i].Until) _floating.RemoveAt(i);
@@ -273,16 +277,41 @@ namespace RealmOfAshes.Game
                 _hoverTarget = null;
                 return;
             }
+
+            if (MobileInputMode)
+            {
+                RefreshMobileAimTarget();
+                return;
+            }
+
             if (Time.unscaledTime < _nextHoverAt) return;
-            _nextHoverAt = Time.unscaledTime + 0.10f;
-            // Наведение — только когда курсор над самой моделью (hit-test web), а не
-            // в радиусе вокруг ног: иначе подсказка появляется раньше наведения.
+            _nextHoverAt = Time.unscaledTime + 0.05f;
             Camera hoverCamera = Camera.main;
             if (hoverCamera == null)
             {
                 _hoverTarget = null;
                 return;
             }
+
+            // Сначала показываем цель, которую выберет фактический выстрел:
+            // экранная точка проходит тот же ray resolver, что и AttackAt.
+            // Поэтому кольцо, процент и отправленный серверу targetId не спорят.
+            if (TryScreenPointToWorld(Input.mousePosition, out Vector3 cursor)
+                && TryResolvePrimaryTarget(cursor, out string resolvedEnemyId,
+                    out Vector3 resolvedEnemyPosition, out PublicPlayer resolvedRemote,
+                    out Vector3 resolvedRemotePosition))
+            {
+                if (resolvedRemote != null)
+                {
+                    SetRemoteAimTarget(resolvedRemote, resolvedRemotePosition);
+                    return;
+                }
+                if (!string.IsNullOrEmpty(resolvedEnemyId)
+                    && SetEnemyAimTarget(resolvedEnemyId, resolvedEnemyPosition)) return;
+            }
+
+            // Запасной hit-test сохраняет полезную подсказку по самой модели,
+            // даже если она за пределами дальности текущего оружия.
             Ray hoverRay = hoverCamera.ScreenPointToRay(Input.mousePosition);
             bool hasEnemy = Enemies.TryFindTargetUnderCursor(hoverRay,
                 out string enemyId, out Vector3 enemyPosition, out float enemyCursorDistance);
@@ -294,29 +323,78 @@ namespace RealmOfAshes.Game
 
             if (hasRemote && (!hasEnemy || remoteCursorDistance < enemyCursorDistance))
             {
-                _hoverPosition = remotePosition;
-                _hoverTarget = new JObject
-                {
-                    ["id"] = remote.Id ?? string.Empty,
-                    ["name"] = remote.Name ?? "Игрок",
-                    ["hp"] = remote.Hp,
-                    ["maxHp"] = Mathf.Max(1, remote.MaxHp),
-                    ["dead"] = remote.Dead,
-                    ["isRemotePlayer"] = true,
-                    ["worldFactionId"] = remote.WorldFactionId ?? remote.FactionId ?? string.Empty
-                };
+                SetRemoteAimTarget(remote, remotePosition);
                 return;
             }
 
-            JObject snapshot;
-            if (hasEnemy && Enemies.TryGetSnapshot(enemyId, out snapshot))
-            {
-                _hoverPosition = enemyPosition;
-                _hoverTarget = snapshot;
-            }
-            else _hoverTarget = null;
+            if (hasEnemy && SetEnemyAimTarget(enemyId, enemyPosition)) return;
+            _hoverTarget = null;
         }
 
+        /// <summary>
+        /// Mobile auto-target supplies its intended point here. Combat resolves
+        /// that point through the same line selector as a real shot, so a nearer
+        /// actor intercepting the line is shown before the player presses fire.
+        /// </summary>
+        public void SetMobileAimTarget(string targetId, Vector3 position)
+        {
+            _mobileAimTargetId = targetId ?? string.Empty;
+            _mobileAimPosition = position;
+            if (MobileInputMode) RefreshMobileAimTarget();
+        }
+
+        public void ClearMobileAimTarget()
+        {
+            _mobileAimTargetId = string.Empty;
+            if (MobileInputMode) _hoverTarget = null;
+        }
+
+        private void RefreshMobileAimTarget()
+        {
+            if (string.IsNullOrEmpty(_mobileAimTargetId))
+            {
+                _hoverTarget = null;
+                return;
+            }
+
+            if (TryResolvePrimaryTarget(_mobileAimPosition, out string enemyId,
+                out Vector3 enemyPosition, out PublicPlayer remote, out Vector3 remotePosition))
+            {
+                if (remote != null)
+                {
+                    SetRemoteAimTarget(remote, remotePosition);
+                    return;
+                }
+                if (!string.IsNullOrEmpty(enemyId) && SetEnemyAimTarget(enemyId, enemyPosition)) return;
+            }
+
+            // The selected enemy can still be valid but outside this weapon's
+            // range. Keep it visible as an explicit out-of-range target.
+            if (!SetEnemyAimTarget(_mobileAimTargetId, _mobileAimPosition)) _hoverTarget = null;
+        }
+
+        private bool SetEnemyAimTarget(string enemyId, Vector3 position)
+        {
+            if (!Enemies.TryGetSnapshot(enemyId, out JObject snapshot)) return false;
+            _hoverPosition = position;
+            _hoverTarget = snapshot;
+            return true;
+        }
+
+        private void SetRemoteAimTarget(PublicPlayer remote, Vector3 position)
+        {
+            _hoverPosition = position;
+            _hoverTarget = new JObject
+            {
+                ["id"] = remote.Id ?? string.Empty,
+                ["name"] = remote.Name ?? "Игрок",
+                ["hp"] = remote.Hp,
+                ["maxHp"] = Mathf.Max(1, remote.MaxHp),
+                ["dead"] = remote.Dead,
+                ["isRemotePlayer"] = true,
+                ["worldFactionId"] = remote.WorldFactionId ?? remote.FactionId ?? string.Empty
+            };
+        }
         public bool TriggerAttackAt(Vector3 worldTarget)
         {
             if (Socket == null || Enemies == null || Player == null) return false;
@@ -1224,25 +1302,74 @@ namespace RealmOfAshes.Game
         public bool TargetHintCanvasDriven { get; set; }
 
         /// <summary>
-        /// Компактная подсказка наведения: имя цели и шанс попадания (как просил
-        /// игрок — только эти два значения; расчёт тот же RoaCombatPreview).
+        /// Compact compatibility API retained for the existing HUD. The richer
+        /// display overload below also exposes blocked/range state and colour.
         /// </summary>
         public bool TryGetTargetHint(out string name, out int chance)
         {
-            name = string.Empty;
-            chance = 0;
-            if (_hoverTarget == null || Player == null || Socket?.Session?.Self == null) return false;
-            if (_hoverTarget["dead"]?.ToObject<bool>() == true) return false;
-            RoaCombatPreview.Result preview = RoaCombatPreview.Calculate(
-                Socket.Session.Self, Socket.Session.Combat, _hoverTarget, Player, _hoverPosition, _fireMode);
-            bool lineBlocked = preview.InRange && AttackLineBlocked(_hoverPosition,
-                _hoverTarget["scale"]?.ToObject<float>() ?? 1f);
-            bool remote = _hoverTarget["isRemotePlayer"]?.ToObject<bool>() == true;
-            name = _hoverTarget["name"]?.ToString() ?? (remote ? "Игрок" : "Цель");
-            chance = lineBlocked ? 0 : preview.Chance;
+            if (!TryBuildTargetFrame(out name, out chance, out _))
+            {
+                name = string.Empty;
+                chance = 0;
+                return false;
+            }
             return true;
         }
 
+        public bool TryGetTargetDisplay(out string name, out string label, out Color color)
+        {
+            name = string.Empty;
+            label = string.Empty;
+            color = Color.white;
+            if (!TryBuildTargetFrame(out name, out _, out RoaTargetingFeedback.Frame frame)) return false;
+            label = frame.Label;
+            // Keep the requested bright-red percentage; only explicit invalid
+            // states use the matching blocked/range colour.
+            color = frame.State == RoaTargetingFeedback.Status.Ready
+                ? new Color(1f, 0.176f, 0.122f, 1f) : frame.Color;
+            return true;
+        }
+
+        private bool TryBuildTargetFrame(out string name, out int chance,
+                                         out RoaTargetingFeedback.Frame frame)
+        {
+            name = string.Empty;
+            chance = 0;
+            frame = default(RoaTargetingFeedback.Frame);
+            if (_hoverTarget == null || Player == null || Socket?.Session?.Self == null) return false;
+            if (_hoverTarget["dead"]?.ToObject<bool>() == true) return false;
+
+            RoaCombatPreview.Result preview = RoaCombatPreview.Calculate(
+                Socket.Session.Self, Socket.Session.Combat, _hoverTarget, Player, _hoverPosition, _fireMode);
+            float targetScale = _hoverTarget["isRemotePlayer"]?.ToObject<bool>() == true
+                ? 1f : _hoverTarget["scale"]?.ToObject<float>() ?? 1f;
+            bool lineBlocked = preview.InRange
+                && ((Player.View != null && Player.View.FireObstructed)
+                    || AttackLineBlocked(_hoverPosition, targetScale));
+            bool remote = _hoverTarget["isRemotePlayer"]?.ToObject<bool>() == true;
+            name = _hoverTarget["name"]?.ToString() ?? (remote ? "Игрок" : "Цель");
+            chance = lineBlocked ? 0 : preview.Chance;
+            frame = RoaTargetingFeedback.Evaluate(Time.unscaledTime, chance,
+                preview.InRange, lineBlocked, targetScale);
+            return true;
+        }
+
+        private void UpdateTargetingFeedback(bool enabled)
+        {
+            if (!enabled || RoaGameBootstrap.BlocksWorldHud
+                || !TryBuildTargetFrame(out _, out _, out RoaTargetingFeedback.Frame frame))
+            {
+                if (_targetingFeedback != null) _targetingFeedback.Hide();
+                return;
+            }
+
+            if (_targetingFeedback == null)
+            {
+                _targetingFeedback = GetComponent<RoaTargetingFeedback>();
+                if (_targetingFeedback == null) _targetingFeedback = gameObject.AddComponent<RoaTargetingFeedback>();
+            }
+            _targetingFeedback.Present(frame, Player.transform.position, _hoverPosition, true);
+        }
         private void DrawTargetHint()
         {
             if (TargetHintCanvasDriven) return;

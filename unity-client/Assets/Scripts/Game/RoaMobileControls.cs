@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace RealmOfAshes.Game
 {
@@ -38,8 +37,6 @@ namespace RealmOfAshes.Game
         private bool _lastEnabled;
         private float _targetRefreshAt;
 
-        private GameObject _targetRing;
-        private Material _targetMaterial;
         private GUIStyle _buttonStyle;
         private GUIStyle _iconButtonStyle;
         private Texture2D _inventoryIcon;
@@ -85,6 +82,7 @@ namespace RealmOfAshes.Game
             _crouching = false;
             if (_player != null) _player.SetVirtualCrouch(false);
             _selectedId = string.Empty;
+            _combat?.ClearMobileAimTarget();
             ApplyMode();
         }
 
@@ -95,7 +93,7 @@ namespace RealmOfAshes.Game
             if (_player != null) _player.SetVirtualCrouch(false);
             _selectedId = string.Empty;
             _targets.Clear();
-            if (_targetRing != null) _targetRing.SetActive(false);
+            _combat?.ClearMobileAimTarget();
         }
 
         private void OnDisable()
@@ -110,19 +108,13 @@ namespace RealmOfAshes.Game
             Clear();
         }
 
-        private void OnDestroy()
-        {
-            if (_targetMaterial != null) Destroy(_targetMaterial);
-            if (_targetRing != null) Destroy(_targetRing);
-        }
-
         private void Update()
         {
             if (_lastEnabled != ControlsEnabled) ApplyMode();
             if (!ControlsEnabled || InputSuppressed || _player == null || !_player.gameObject.activeInHierarchy)
             {
                 if (_joystickFinger >= 0) ResetJoystick();
-                if (_targetRing != null) _targetRing.SetActive(false);
+                _combat?.ClearMobileAimTarget();
                 return;
             }
 
@@ -277,40 +269,14 @@ namespace RealmOfAshes.Game
             Vector3 position;
             if (panelOpen || !TrySelectedTarget(out position))
             {
-                if (_targetRing != null) _targetRing.SetActive(false);
+                _combat?.ClearMobileAimTarget();
                 return;
             }
-            EnsureTargetRing();
-            _targetRing.SetActive(true);
-            _targetRing.transform.position = new Vector3(position.x, 0.10f, position.z);
-        }
 
-        private void EnsureTargetRing()
-        {
-            if (_targetRing != null) return;
-            _targetRing = new GameObject("MobileTargetRing");
-            _targetRing.transform.SetParent(transform, false);
-            var line = _targetRing.AddComponent<LineRenderer>();
-            line.useWorldSpace = false;
-            line.loop = true;
-            line.positionCount = 40;
-            line.widthMultiplier = 0.07f;
-            line.shadowCastingMode = ShadowCastingMode.Off;
-            line.receiveShadows = false;
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Sprites/Default") ?? Shader.Find("Unlit/Color");
-            _targetMaterial = new Material(shader);
-            Color color = new Color(1f, 0.72f, 0.18f, 0.92f);
-            if (_targetMaterial.HasProperty("_BaseColor")) _targetMaterial.SetColor("_BaseColor", color);
-            if (_targetMaterial.HasProperty("_Color")) _targetMaterial.SetColor("_Color", color);
-            line.sharedMaterial = _targetMaterial;
-            for (int i = 0; i < 40; i++)
-            {
-                float a = i / 40f * Mathf.PI * 2f;
-                line.SetPosition(i, new Vector3(Mathf.Cos(a) * 0.85f, 0f, Mathf.Sin(a) * 0.85f));
-            }
+            // Rendering and target resolution now belong to RoaCombat. Both
+            // desktop and mobile therefore preview the exact same shot line.
+            _combat?.SetMobileAimTarget(_selectedId, position);
         }
-
         private void OnGUI()
         {
             RoaUiTheme.Apply();

@@ -211,23 +211,7 @@ namespace RealmOfAshes.Game
                 : grade == "bonus" ? "ОЦЕНКА: БОНУС"
                 : "ОЦЕНКА: ВЫПОЛНЕНО";
 
-            JObject reward = result["reward"] as JObject ?? new JObject();
-            var rewardParts = new List<string>();
-            int xp = Mathf.Max(0, reward["xp"]?.ToObject<int>() ?? 0);
-            int caps = Mathf.Max(0, reward["caps"]?.ToObject<int>() ?? 0);
-            int reputation = Mathf.Max(0, reward["reputation"]?.ToObject<int>() ?? 0);
-            if (xp > 0) rewardParts.Add("+" + xp + " XP");
-            if (caps > 0) rewardParts.Add("+" + caps + " крышек");
-            if (reputation > 0) rewardParts.Add("+" + reputation + " репутации");
-            string rewardText = rewardParts.Count > 0 ? string.Join(" · ", rewardParts) : "без выплаты";
-            if (success && claimed)
-                _resultReward.text = "НАГРАДА НАЧИСЛЕНА: " + rewardText;
-            else if (success)
-                _resultReward.text = result["reason"]?.ToString() == "reward_inventory_full"
-                    ? "НАГРАДА ЖДЁТ: освободите место для крышек — сервер начислит её автоматически."
-                    : "НАГРАДА ЖДЁТ В ЖУРНАЛЕ: " + rewardText;
-            else
-                _resultReward.text = FailureSummary(result["reason"]?.ToString());
+            _resultReward.text = RewardReceipt(result, self);
 
             if (result["reason"]?.ToString() == "player_died")
             {
@@ -638,7 +622,7 @@ namespace RealmOfAshes.Game
             resultRect.anchorMin = resultRect.anchorMax = new Vector2(0.5f, 1f);
             resultRect.pivot = new Vector2(0.5f, 1f);
             resultRect.anchoredPosition = new Vector2(0f, -76f);
-            resultRect.sizeDelta = new Vector2(470f, 126f);
+            resultRect.sizeDelta = new Vector2(470f, 148f);
             _resultRoot.GetComponent<Image>().color = PanelBg;
             _resultRoot.GetComponent<Image>().raycastTarget = false;
             Outline resultBorder = _resultRoot.GetComponent<Outline>();
@@ -653,7 +637,7 @@ namespace RealmOfAshes.Game
             Place(_resultGrade.rectTransform, 16f, -76f, -16f, -57f);
             _resultReward = Label("ResultReward", resultRect, 11, TextAnchor.UpperLeft, Muted);
             _resultReward.horizontalOverflow = HorizontalWrapMode.Wrap;
-            Place(_resultReward.rectTransform, 16f, -115f, -16f, -80f);
+            Place(_resultReward.rectTransform, 16f, -139f, -16f, -80f);
             ConfigureActivityFeedbackVisuals(introRect, resultRect);
             _resultRoot.SetActive(false);
             BuildActivityNavigation(canvasGo.transform);
@@ -835,6 +819,60 @@ namespace RealmOfAshes.Game
                 || view.State == ObjectiveVisualState.Bonus
                 || view.State == ObjectiveVisualState.Mastered) return Safe;
             return view.IsCurrent ? Accent : Ink;
+        }
+
+        public static string RewardReceipt(JObject result, JObject authoritativeSelf)
+        {
+            if (result == null) return FailureSummary(string.Empty);
+            string status = result["status"]?.ToString() ?? "resolved";
+            if (status != "completed") return FailureSummary(result["reason"]?.ToString());
+
+            JObject reward = result["reward"] as JObject ?? new JObject();
+            var grants = new List<string>();
+            int xp = Mathf.Max(0, reward["xp"]?.ToObject<int>() ?? 0);
+            int caps = Mathf.Max(0, reward["caps"]?.ToObject<int>() ?? 0);
+            int reputation = Mathf.Max(0, reward["reputation"]?.ToObject<int>() ?? 0);
+            string factionId = reward["reputationFactionId"]?.ToString() ?? string.Empty;
+            if (xp > 0) grants.Add("+" + xp + " XP");
+            if (caps > 0) grants.Add("+" + caps + " крышек");
+            if (reputation > 0)
+                grants.Add("+" + reputation + " репутации"
+                    + (string.IsNullOrEmpty(factionId) ? string.Empty : " · " + RoaPipboy.FactionLabel(factionId)));
+            string rewardText = grants.Count > 0 ? string.Join(" · ", grants) : "без выплаты";
+
+            bool claimed = result["rewardClaimed"]?.ToObject<bool>() == true;
+            if (!claimed)
+                return result["reason"]?.ToString() == "reward_inventory_full"
+                    ? "НАГРАДА ЖДЁТ: освободите место для крышек — сервер начислит её автоматически."
+                    : "НАГРАДА ЖДЁТ В ЖУРНАЛЕ: " + rewardText;
+
+            var confirmed = new List<string>();
+            if (authoritativeSelf?["inventory"] is JArray inventory)
+            {
+                int balance = 0;
+                foreach (JToken row in inventory)
+                    if (RoaInventory.BaseId(row?["id"]?.ToString()) == "silver")
+                        balance += Mathf.Max(0, row?["qty"]?.ToObject<int>() ?? 0);
+                confirmed.Add("баланс " + balance + " крышек");
+            }
+            if (authoritativeSelf?["level"] != null)
+                confirmed.Add("ур. " + Mathf.Max(1, authoritativeSelf["level"].ToObject<int>()));
+            if (authoritativeSelf?["xp"] != null)
+            {
+                int currentXp = Mathf.Max(0, authoritativeSelf["xp"].ToObject<int>());
+                int neededXp = Mathf.Max(1, authoritativeSelf["xpNeeded"]?.ToObject<int>()
+                    ?? authoritativeSelf["xpToNext"]?.ToObject<int>() ?? 1);
+                confirmed.Add("XP " + currentXp + "/" + neededXp);
+            }
+            if (reputation > 0 && !string.IsNullOrEmpty(factionId)
+                && authoritativeSelf?["worldFactionReputation"]?[factionId] != null)
+            {
+                int total = Mathf.Max(0, authoritativeSelf["worldFactionReputation"][factionId].ToObject<int>());
+                confirmed.Add(RoaPipboy.FactionLabel(factionId) + " " + total);
+            }
+
+            return "НАГРАДА НАЧИСЛЕНА: " + rewardText
+                + (confirmed.Count > 0 ? "\nПОДТВЕРЖДЕНО СЕРВЕРОМ · " + string.Join(" · ", confirmed) : string.Empty);
         }
 
         public static string FailureSummary(string reason)

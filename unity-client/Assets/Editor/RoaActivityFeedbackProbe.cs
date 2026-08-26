@@ -45,6 +45,39 @@ namespace RealmOfAshes.EditorTools
                     == RoaActivityFeedbackCue.None,
                 "death recovery duplicates the activity failure cue");
 
+            JObject paidResult = new JObject
+            {
+                ["status"] = "completed",
+                ["rewardClaimed"] = true,
+                ["reward"] = new JObject
+                {
+                    ["xp"] = 25,
+                    ["caps"] = 10,
+                    ["reputation"] = 2,
+                    ["reputationFactionId"] = "old_klim"
+                }
+            };
+            JObject paidSelf = new JObject
+            {
+                ["inventory"] = new JArray(new JObject { ["id"] = "silver", ["qty"] = 117 }),
+                ["level"] = 3,
+                ["xp"] = 55,
+                ["xpNeeded"] = 100,
+                ["worldFactionReputation"] = new JObject { ["old_klim"] = 14 }
+            };
+            string receipt = RoaWorldActivityCanvas.RewardReceipt(paidResult, paidSelf);
+            Require(receipt.Contains("+25 XP") && receipt.Contains("+10 крышек")
+                    && receipt.Contains("ПОДТВЕРЖДЕНО СЕРВЕРОМ")
+                    && receipt.Contains("баланс 117 крышек") && receipt.Contains("XP 55/100")
+                    && receipt.Contains("Старый Клим 14"),
+                "paid activity result has no authoritative reward receipt");
+            JObject pendingResult = (JObject)paidResult.DeepClone();
+            pendingResult["rewardClaimed"] = false;
+            pendingResult["reason"] = "reward_inventory_full";
+            Require(RoaWorldActivityCanvas.RewardReceipt(pendingResult, paidSelf)
+                    .Contains("освободите место для крышек"),
+                "blocked reward receipt does not explain how payment resumes");
+
             var objectiveViews = new List<RoaWorldActivityCanvas.ObjectiveView>();
             JObject distress = ActivityPlan("distress_signal",
                 Objective("distress_signal", "Найти источник сигнала", 0, 1, 1, 1, true),
@@ -141,7 +174,7 @@ namespace RealmOfAshes.EditorTools
             }
 
             Debug.Log("[ОБРАТНАЯ СВЯЗЬ АКТИВНОСТИ] готово: старт → прогресс → эвакуация, "
-                + "цели=этапы/ветки/бонус/финал, результат=успех/провал, карточки=fade+slide, сигналы=5/5");
+                + "цели=этапы/ветки/бонус/финал, результат=успех/провал/квитанция, карточки=fade+slide, сигналы=5/5");
         }
 
         private static JObject ActivityPlan(string kind, params JObject[] objectives)

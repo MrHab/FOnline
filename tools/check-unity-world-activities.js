@@ -309,6 +309,12 @@ requireText(canvas, 'Socket.OnAuthoritativeSelf += HandleAuthoritativeSelf;',
   'Unity no longer listens for authoritative activity results');
 requireText(canvas, 'new GameObject("WorldActivityResult"',
   'Unity final activity card is missing');
+requireText(canvas, 'RewardReceipt(result, self)',
+  'Unity final activity card no longer uses the authoritative reward receipt');
+requireText(canvas, 'ПОДТВЕРЖДЕНО СЕРВЕРОМ',
+  'Unity paid result no longer confirms the resulting wallet and progression state');
+requireText(feedbackProbe, 'paid activity result has no authoritative reward receipt',
+  'Unity editor probe no longer validates the paid and pending reward receipts');
 requireText(canvas, '"АКТИВНОСТЬ НАЧАЛАСЬ. " + StartInstruction(kind)',
   'Unity no longer announces the start and first objective');
 requireText(canvas, 'Socket.ApplyGameplayAck(ack);',

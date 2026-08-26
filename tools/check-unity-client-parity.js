@@ -81,6 +81,8 @@ const auth = read('unity-client/Assets/Scripts/Net/RoaAuthClient.cs');
 const uiScale = read('unity-client/Assets/Scripts/Game/RoaUiScale.cs');
 const offlineProbe = read('unity-client/Assets/Editor/RoaOfflineResilienceProbe.cs');
 const auditRunner = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
+const hudCanvas = read('unity-client/Assets/Scripts/Game/RoaHudCanvas.cs');
+const hudProbe = read('unity-client/Assets/Editor/RoaHudCanvasProbe.cs');
 
 assert(uiScale.includes('return mobile ? new Vector2(1280f, 720f) : new Vector2(1600f, 900f);'),
   'Unity UI must keep readable 1600x900 desktop and 1280x720 mobile references');
@@ -100,6 +102,19 @@ assert(offlineProbe.includes('AuthHeartbeatDelay(false), 60f')
   && offlineProbe.includes('ShouldReportConnectFailure(true)')
   && auditRunner.includes('typeof(RoaOfflineResilienceProbe)'),
   'Unity offline resilience probe must cover heartbeat gating, warning latching, and the full audit');
+assert(socket.includes('public bool ReconnectScheduled')
+  && socket.includes('public float ReconnectDelayRemainingSeconds'),
+  'Unity socket must expose read-only reconnect timing for honest player feedback');
+assert(hudCanvas.includes('BuildConnectionStatus();')
+  && hudCanvas.includes('RefreshConnectionStatus(gameplayScreen);')
+  && hudCanvas.includes('AppendOccupiedScreenRect(_connectionPanel, output);')
+  && hudCanvas.includes('public static ConnectionBannerState DescribeConnection(')
+  && hudCanvas.includes('_connectionRestoredUntil = Time.unscaledTime + 2.4f;'),
+  'Unity HUD must show non-blocking reconnect progress and a bounded restored confirmation');
+assert(hudProbe.includes('offline banner lost retry countdown or attempt number')
+  && hudProbe.includes('successful reconnect has no confirmation')
+  && hudProbe.includes('healthy connection leaves a permanent banner on screen'),
+  'Unity HUD probe must cover interrupted, reconnecting, restored, and healthy connection states');
 
 // Browser -> server. Literal calls are supplemented by the browser's single
 // audited guarded emitter, exactly like check-socket-event-contract.js.

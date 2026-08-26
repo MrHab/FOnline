@@ -42,6 +42,16 @@ namespace RealmOfAshes.Net
         public JoinAck Session { get; private set; }
         public float PingMs { get; private set; } = -1f;
         public int ReconnectAttempt { get { return _reconnectAttempt; } }
+        public bool ReconnectScheduled { get { return _reconnectScheduled; } }
+        public float ReconnectDelayRemainingSeconds
+        {
+            get
+            {
+                return _reconnectScheduled
+                    ? Mathf.Max(0f, _reconnectAt - Time.realtimeSinceStartup)
+                    : 0f;
+            }
+        }
 
         // Игровые события, уже разложенные по главному потоку.
         public event Action<JoinAck> OnJoined;

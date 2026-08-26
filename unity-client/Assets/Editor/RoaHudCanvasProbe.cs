@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using RealmOfAshes.Game;
+using RealmOfAshes.Net;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -34,6 +35,30 @@ namespace RealmOfAshes.EditorTools
                     "desktop UI reference no longer protects laptop readability");
             Require(mobileReference == new Vector2(1280f, 720f),
                     "mobile UI reference changed unexpectedly");
+            RoaHudCanvas.ConnectionBannerState interrupted = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Disconnected, 3, 4.2f, string.Empty, false);
+            Require(interrupted.Kind == RoaHudCanvas.ConnectionBannerKind.Interrupted
+                    && interrupted.Title.Contains("ПОТЕРЯНА")
+                    && interrupted.Detail.Contains("5 с")
+                    && interrupted.Detail.Contains("3"),
+                "offline banner lost retry countdown or attempt number");
+            RoaHudCanvas.ConnectionBannerState connecting = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Connecting, 2, 0f, string.Empty, false);
+            Require(connecting.Kind == RoaHudCanvas.ConnectionBannerKind.Connecting
+                    && connecting.Detail.Contains("2"),
+                "connecting banner no longer explains the current attempt");
+            RoaHudCanvas.ConnectionBannerState synchronizing = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Joining, 2, 0f, string.Empty, false);
+            Require(synchronizing.Kind == RoaHudCanvas.ConnectionBannerKind.Synchronizing,
+                "join recovery is not presented as world synchronization");
+            RoaHudCanvas.ConnectionBannerState restored = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Joined, 0, 0f, string.Empty, true);
+            Require(restored.Kind == RoaHudCanvas.ConnectionBannerKind.Restored,
+                "successful reconnect has no confirmation");
+            RoaHudCanvas.ConnectionBannerState healthy = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Joined, 0, 0f, string.Empty, false);
+            Require(healthy.Kind == RoaHudCanvas.ConnectionBannerKind.Hidden,
+                "healthy connection leaves a permanent banner on screen");
             CaptureIfRequested();
             Debug.Log("[ROA PROBE] Adaptive HUD OK: safe nameplates, readable desktop scale and Canvas owner.");
         }
@@ -63,6 +88,16 @@ namespace RealmOfAshes.EditorTools
                 Set(hud, "_weapon", "fists");
                 Set(hud, "_armorThreshold", 4);
                 Set(hud, "_condition", 0.72f);
+
+                if (string.Equals(Environment.GetEnvironmentVariable(
+                        "ROA_HUD_CAPTURE_CONNECTION"), "1", StringComparison.Ordinal))
+                {
+                    RoaSocketClient socket = host.AddComponent<RoaSocketClient>();
+                    hud.Socket = socket;
+                    Set(socket, "_reconnectAttempt", 3);
+                    Set(socket, "_reconnectScheduled", true);
+                    Set(socket, "_reconnectAt", Time.realtimeSinceStartup + 4.2f);
+                }
 
                 RoaHudCanvas canvasOwner = host.AddComponent<RoaHudCanvas>();
                 canvasOwner.Configure(hud, null, null, null, null, null);
@@ -120,12 +155,12 @@ namespace RealmOfAshes.EditorTools
             }
         }
 
-        private static void Set<T>(RoaHud hud, string fieldName, T value)
+        private static void Set<T>(object target, string fieldName, T value)
         {
-            FieldInfo field = typeof(RoaHud).GetField(fieldName,
+            FieldInfo field = target.GetType().GetField(fieldName,
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Require(field != null, "HUD capture field missing: " + fieldName);
-            field.SetValue(hud, value);
+            field.SetValue(target, value);
         }
 
         private static void Require(bool condition, string message)

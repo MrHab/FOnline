@@ -1,4 +1,5 @@
 using System.Text;
+using RealmOfAshes.Net;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -8,6 +9,30 @@ namespace RealmOfAshes.Game
     /// <summary>Single adaptive owner for the always-visible gameplay HUD.</summary>
     public sealed partial class RoaHudCanvas : MonoBehaviour
     {
+        public enum ConnectionBannerKind
+        {
+            Hidden,
+            Interrupted,
+            Connecting,
+            Synchronizing,
+            Restored,
+            Rejected
+        }
+
+        public readonly struct ConnectionBannerState
+        {
+            public readonly ConnectionBannerKind Kind;
+            public readonly string Title;
+            public readonly string Detail;
+
+            public ConnectionBannerState(ConnectionBannerKind kind, string title, string detail)
+            {
+                Kind = kind;
+                Title = title;
+                Detail = detail;
+            }
+        }
+
         private static readonly Color Ink = new Color(0.90f, 0.78f, 0.43f, 1f);
         private static readonly Color MutedInk = new Color(0.73f, 0.66f, 0.43f, 1f);
         private static readonly Color Panel = new Color(0.055f, 0.06f, 0.052f, 0.91f);
@@ -26,6 +51,14 @@ namespace RealmOfAshes.Game
         private GameObject _quickPanel;
         private GameObject _logPanel;
         private GameObject _systemPanel;
+        private GameObject _connectionPanel;
+        private Image _connectionBack;
+        private Outline _connectionOutline;
+        private Image _connectionDot;
+        private Text _connectionTitle;
+        private Text _connectionDetail;
+        private bool _connectionInterrupted;
+        private float _connectionRestoredUntil;
         private GameObject _consolePanel;
         private RawImage _playerFrame;
         private Text _nameText;
@@ -99,6 +132,7 @@ namespace RealmOfAshes.Game
             AppendOccupiedScreenRect(_quickPanel, output);
             AppendOccupiedScreenRect(_logPanel, output);
             AppendOccupiedScreenRect(_systemPanel, output);
+            AppendOccupiedScreenRect(_connectionPanel, output);
             AppendOccupiedScreenRect(_consolePanel, output);
             AppendOccupiedScreenRect(_economyRoot, output);
             AppendOccupiedScreenRect(_interactionPrompt, output);
@@ -161,6 +195,9 @@ namespace RealmOfAshes.Game
             if (_canvas == null) return;
             UpdateSafeArea();
             bool worldHud = !RoaGameBootstrap.BlocksWorldHud;
+            bool gameplayScreen = RoaGameBootstrap.Active != null
+                ? RoaGameBootstrap.Active.InGame
+                : _hud != null && _hud.HasState;
             // До входа в мир (экран аккаунта) HUD не показывается — как в web,
             // где #character-screen перекрывает всё.
             if (RoaGameBootstrap.Active != null && RoaGameBootstrap.Active.FrontendVisible) worldHud = false;
@@ -180,6 +217,7 @@ namespace RealmOfAshes.Game
             _logPanel.SetActive(worldHud && !mobile && !string.IsNullOrEmpty(latestCombat)
                 && Time.unscaledTime < _combatLogUntil);
             _consolePanel.SetActive(worldHud && _hud != null && _hud.HasState);
+            RefreshConnectionStatus(gameplayScreen);
             RefreshSystemStatus(worldHud && !mobile);
             RefreshEconomyFeedback(worldHud);
             RefreshInteractionPrompt(worldHud);
@@ -194,6 +232,7 @@ namespace RealmOfAshes.Game
         {
             return _canvas != null && _safeRoot != null && _playerPanel != null
                 && _mapPanel != null && _quickPanel != null && _logPanel != null && _systemPanel != null
+                && _connectionPanel != null && _connectionTitle != null && _connectionDetail != null
                 && _economyRoot != null && _consolePanel != null && _interactionPrompt != null
                 && _slotButtons[0] != null && _slotTexts[0] != null;
         }
@@ -223,6 +262,7 @@ namespace RealmOfAshes.Game
             BuildQuickbar();
             BuildInteractionPrompt();
             BuildSystemStatus();
+            BuildConnectionStatus();
             BuildEconomyFeedback();
             BuildCombatLog();
             if (Application.isMobilePlatform) ApplyMobileLayout();
@@ -539,6 +579,124 @@ namespace RealmOfAshes.Game
             _systemText.verticalOverflow = VerticalWrapMode.Truncate;
             _systemText.lineSpacing = 1.1f;
             _systemPanel.SetActive(false);
+        }
+
+        private void BuildConnectionStatus()
+        {
+            RectTransform panel = PanelRect("ConnectionStatus", _safeRoot, new Vector2(0.5f, 1f),
+                                            new Vector2(0.5f, 1f), new Vector2(0f, -14f),
+                                            new Vector2(430f, 58f));
+            _connectionPanel = panel.gameObject;
+            _connectionBack = panel.GetComponent<Image>();
+            _connectionOutline = panel.GetComponent<Outline>();
+
+            if (_ledCircle == null) _ledCircle = BuildCircleTexture();
+            RectTransform dot = Rect("State", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                                     new Vector2(0.5f, 0.5f), new Vector2(21f, -29f),
+                                     new Vector2(11f, 11f));
+            _connectionDot = dot.gameObject.AddComponent<Image>();
+            _connectionDot.sprite = Sprite.Create(_ledCircle,
+                new UnityEngine.Rect(0f, 0f, _ledCircle.width, _ledCircle.height),
+                new Vector2(0.5f, 0.5f));
+            _connectionDot.preserveAspect = true;
+            _connectionDot.raycastTarget = false;
+
+            _connectionTitle = Label("Title", panel, new Vector2(40f, -7f),
+                                     new Vector2(374f, 22f), 12,
+                                     TextAnchor.MiddleLeft, ConsoleAccent, FontStyle.Bold);
+            _connectionDetail = Label("Detail", panel, new Vector2(40f, -30f),
+                                      new Vector2(374f, 18f), 10,
+                                      TextAnchor.MiddleLeft, MutedInk);
+            _connectionPanel.SetActive(false);
+        }
+
+        public static ConnectionBannerState DescribeConnection(
+            RoaSocketClient.ConnectionPhase phase, int reconnectAttempt,
+            float retryRemainingSeconds, string lastError, bool restored)
+        {
+            if (phase == RoaSocketClient.ConnectionPhase.Joined)
+            {
+                return restored
+                    ? new ConnectionBannerState(ConnectionBannerKind.Restored,
+                        "СВЯЗЬ ВОССТАНОВЛЕНА", "Мир снова синхронизирован с сервером")
+                    : new ConnectionBannerState(ConnectionBannerKind.Hidden, string.Empty, string.Empty);
+            }
+
+            int attempt = Mathf.Max(1, reconnectAttempt);
+            switch (phase)
+            {
+                case RoaSocketClient.ConnectionPhase.Disconnected:
+                    int seconds = Mathf.Max(0, Mathf.CeilToInt(retryRemainingSeconds));
+                    string retry = seconds > 0
+                        ? "Повтор через " + seconds + " с · попытка " + attempt
+                        : "Ожидаем повторное подключение · попытка " + attempt;
+                    return new ConnectionBannerState(ConnectionBannerKind.Interrupted,
+                        "СВЯЗЬ С ПУСТОШЬЮ ПОТЕРЯНА", retry);
+                case RoaSocketClient.ConnectionPhase.Connecting:
+                    return new ConnectionBannerState(ConnectionBannerKind.Connecting,
+                        "ВОССТАНАВЛИВАЕМ СВЯЗЬ", "Подключение к серверу · попытка " + attempt);
+                case RoaSocketClient.ConnectionPhase.Connected:
+                case RoaSocketClient.ConnectionPhase.Joining:
+                    return new ConnectionBannerState(ConnectionBannerKind.Synchronizing,
+                        "СИНХРОНИЗИРУЕМ МИР", "Сервер отвечает · восстанавливаем персонажа");
+                case RoaSocketClient.ConnectionPhase.Rejected:
+                    return new ConnectionBannerState(ConnectionBannerKind.Rejected,
+                        "СЕССИЯ ОТКЛОНЕНА", string.IsNullOrWhiteSpace(lastError)
+                            ? "Вернитесь к выбору персонажа" : lastError.Trim());
+                default:
+                    return new ConnectionBannerState(ConnectionBannerKind.Hidden,
+                        string.Empty, string.Empty);
+            }
+        }
+
+        private void RefreshConnectionStatus(bool gameplayScreen)
+        {
+            RoaSocketClient socket = _hud != null ? _hud.Socket : null;
+            if (!gameplayScreen || socket == null)
+            {
+                _connectionInterrupted = false;
+                _connectionRestoredUntil = 0f;
+                _connectionPanel.SetActive(false);
+                return;
+            }
+
+            RoaSocketClient.ConnectionPhase phase = socket.Phase;
+            if (phase != RoaSocketClient.ConnectionPhase.Joined)
+            {
+                _connectionInterrupted = true;
+                _connectionRestoredUntil = 0f;
+            }
+            else if (_connectionInterrupted)
+            {
+                _connectionInterrupted = false;
+                _connectionRestoredUntil = Time.unscaledTime + 2.4f;
+            }
+
+            bool restored = phase == RoaSocketClient.ConnectionPhase.Joined
+                && Time.unscaledTime < _connectionRestoredUntil;
+            ConnectionBannerState state = DescribeConnection(phase, socket.ReconnectAttempt,
+                socket.ReconnectDelayRemainingSeconds, socket.LastError, restored);
+            bool visible = state.Kind != ConnectionBannerKind.Hidden;
+            _connectionPanel.SetActive(visible);
+            if (!visible) return;
+
+            Color accent;
+            if (state.Kind == ConnectionBannerKind.Restored)
+                accent = new Color(0.46f, 0.84f, 0.42f, 1f);
+            else if (state.Kind == ConnectionBannerKind.Rejected)
+                accent = new Color(1f, 0.36f, 0.28f, 1f);
+            else
+                accent = new Color(1f, 0.72f, 0.25f, 1f);
+
+            _connectionBack.color = new Color(0.035f, 0.04f, 0.035f, 0.94f);
+            _connectionOutline.effectColor = new Color(accent.r, accent.g, accent.b, 0.82f);
+            float pulse = state.Kind == ConnectionBannerKind.Restored
+                ? 1f
+                : 0.83f + 0.17f * Mathf.Sin(Time.unscaledTime * 4.6f);
+            _connectionDot.color = new Color(accent.r, accent.g, accent.b, Mathf.Clamp01(pulse));
+            _connectionTitle.color = accent;
+            _connectionTitle.text = state.Title;
+            _connectionDetail.text = state.Detail;
         }
 
         private void UpdateSafeArea(bool force = false)

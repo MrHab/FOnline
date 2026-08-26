@@ -110,11 +110,15 @@ namespace RealmOfAshes.Game
             int absorbed = Mathf.Max(0, Mathf.RoundToInt(payload["absorbed"]?.ToObject<float>() ?? 0f));
             string name = payload["enemyName"]?.ToString() ?? "Противник";
             string type = payload["damageType"]?.ToString() ?? "ballistic";
-            Player.View?.PlayHit();
+            bool critical = payload["critical"]?.ToObject<bool>() == true;
+            bool hasSource = payload["x"] != null && payload["z"] != null;
+            Vector3 source = hasSource
+                ? RoaCoords.ToUnity(payload["x"].ToObject<float>(), payload["z"].ToObject<float>())
+                : Vector3.zero;
+            if (hasSource) Player.View?.PlayHit(source, damage, critical);
+            else Player.View?.PlayHit();
             Audio?.PlayHurt(damage);
-            if (payload["x"] != null && payload["z"] != null)
-                Fx?.PlayDamagePulse(damage, Player.transform.position, RoaCoords.ToUnity(
-                    payload["x"].ToObject<float>(), payload["z"].ToObject<float>()));
+            if (hasSource) Fx?.PlayDamagePulse(damage, Player.transform.position, source);
             else Fx?.PlayDamagePulse(damage);
             Float("-" + damage, Player.transform.position, new Color(1f, 0.36f, 0.29f));
             AddLog(name + " атакует (" + type + "): -" + damage + " HP"
@@ -141,10 +145,11 @@ namespace RealmOfAshes.Game
             string type = payload["damageType"]?.ToString() ?? "ballistic";
             bool critical = payload["critical"]?.ToObject<bool>() == true;
 
-            Player.View?.PlayHit();
+            bool hasSource = TryDamageSource(payload, attackerId, out Vector3 source);
+            if (hasSource) Player.View?.PlayHit(source, damage, critical);
+            else Player.View?.PlayHit();
             Audio?.PlayHurt(damage);
-            if (TryDamageSource(payload, attackerId, out Vector3 source))
-                Fx?.PlayDamagePulse(damage, Player.transform.position, source);
+            if (hasSource) Fx?.PlayDamagePulse(damage, Player.transform.position, source);
             else Fx?.PlayDamagePulse(damage);
             Float("-" + damage, Player.transform.position,
                 critical ? new Color(1f, 0.72f, 0.2f) : new Color(1f, 0.36f, 0.29f));

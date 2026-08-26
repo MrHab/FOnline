@@ -26,14 +26,18 @@ async function main() {
   const playerController = fs.readFileSync(path.join(UNITY_GAME, 'RoaPlayerController.cs'), 'utf8');
   const characterView = fs.readFileSync(path.join(UNITY_GAME, 'RoaCharacterView.cs'), 'utf8');
   const footIk = fs.readFileSync(path.join(UNITY_GAME, 'RoaFootIk.cs'), 'utf8');
+  const hitReaction = fs.readFileSync(path.join(UNITY_GAME, 'RoaHitReaction.cs'), 'utf8');
   const presentationLod = fs.readFileSync(path.join(UNITY_GAME, 'RoaActorPresentationLod.cs'), 'utf8');
   const groundShadow = fs.readFileSync(path.join(UNITY_GAME, 'RoaActorGroundShadow.cs'), 'utf8');
   const groundingProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaGroundingProbe.cs'), 'utf8');
+  const hitProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaHitReactionProbe.cs'), 'utf8');
+  const characterPreviewProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaCharacterPreviewProbe.cs'), 'utf8');
   const auditRunner = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaClientAuditRunner.cs'), 'utf8');
   const enemies = fs.readFileSync(path.join(UNITY_GAME, 'RoaEnemies.cs'), 'utf8');
   const ikChain = fs.readFileSync(path.join(UNITY_GAME, 'RoaIkChain.cs'), 'utf8');
   const weaponView = fs.readFileSync(path.join(UNITY_GAME, 'RoaWeaponView.cs'), 'utf8');
   const remotePlayers = fs.readFileSync(path.join(UNITY_GAME, 'RoaRemotePlayers.cs'), 'utf8');
+  const combat = fs.readFileSync(path.join(UNITY_GAME, 'RoaCombat.cs'), 'utf8');
   const locationLoader = fs.readFileSync(path.join(UNITY_WORLD, 'RoaLocationLoader.cs'), 'utf8');
 
   assert(playerController.includes('Vector3 actual = (transform.position - before) / frameDt;')
@@ -86,6 +90,21 @@ async function main() {
     && weaponView.includes('1f - Mathf.Exp(-rate * Mathf.Clamp(dt, 0f, 0.1f))')
     && !weaponView.includes('ObstructionProbes'),
   'Unity weapon obstruction lost distance-aware owner filtering or frame-rate independent smoothing');
+  assert(hitReaction.includes('public sealed class RoaHitReaction')
+    && hitReaction.includes('public static float Envelope(float elapsed)')
+    && hitReaction.includes('public static PoseSample Sample(Vector2 localSource, float weight)')
+    && hitReaction.includes('actor.InverseTransformDirection(delta.normalized)')
+    && characterView.includes('bool fullBody = !_hitReaction.Ready')
+    && characterView.includes('if (locomoting && _presentationTier == RoaActorPresentationTier.Near)')
+    && characterView.includes('_hitReaction.Apply(Time.deltaTime)')
+    && characterView.indexOf('_hitReaction.Apply(Time.deltaTime)') < characterView.indexOf('_weapon.Apply(_aimPoint, _hasAim)')
+    && combat.includes('Player.View?.PlayHit(source, damage, critical)')
+    && remotePlayers.includes('remote.View.PlayHit(source, damage, critical)')
+    && hitProbe.includes('[РЕАКЦИЯ НА УРОН] готово:')
+    && auditRunner.includes('typeof(RoaHitReactionProbe)')
+    && characterPreviewProbe.includes('ROA_UNITY_HIT_CAPTURE'),
+  'Unity directional hit reaction lost locomotion preservation, source wiring, IK order or visual probe');
+
   assert(remotePlayers.includes('RoaCombatFx.TryShotEndpoints(payload, out start, out end)')
     && remotePlayers.includes('remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil)')
     && remotePlayers.includes('remote.TargetYawDeg = RoaCoords.AngleToYawDeg'),

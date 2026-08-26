@@ -73,6 +73,7 @@ namespace RealmOfAshes.Game
 
         private readonly RoaCharacterPose _pose = new RoaCharacterPose();
         private readonly RoaFootIk _footIk = new RoaFootIk();
+        private readonly RoaHitReaction _hitReaction = new RoaHitReaction();
         private readonly RoaActorGroundShadow _groundShadow = new RoaActorGroundShadow();
 
         private bool _locomoting;
@@ -189,6 +190,8 @@ namespace RealmOfAshes.Game
         public bool GroundShadowVisible { get { return _groundShadow.Visible; } }
         public RoaActorPresentationTier PresentationTier { get { return _presentationTier; } }
         public bool ProceduralPresentationActive { get { return _presentationTier == RoaActorPresentationTier.Near; } }
+        public bool HitReactionActive { get { return _hitReaction.Active; } }
+        public Vector2 HitReactionDirection { get { return _hitReaction.LocalSourceDirection; } }
 
         /// <summary>Текущая просадка корня, м. Для диагностики.</summary>
         public float KneeFlex { get { return _pose.KneeFlex; } }
@@ -252,6 +255,7 @@ namespace RealmOfAshes.Game
 
         private void ResetProceduralPresentation()
         {
+            _hitReaction.Reset();
             transform.localRotation = Quaternion.identity;
             if (_modelRoot == null) return;
             Vector3 local = _modelRoot.localPosition;
@@ -323,7 +327,29 @@ namespace RealmOfAshes.Game
 
         public void PlayHit()
         {
-            if (_dead || !Ready || !_clips.Contains("hurt")) return;
+            PlayHitInternal(Vector3.zero, false, 12, false);
+        }
+
+        public void PlayHit(Vector3 sourceWorld, int damage, bool critical)
+        {
+            PlayHitInternal(sourceWorld, true, damage, critical);
+        }
+
+        private void PlayHitInternal(Vector3 sourceWorld, bool hasSource, int damage, bool critical)
+        {
+            if (_dead || !Ready) return;
+            if (_presentationTier == RoaActorPresentationTier.Near)
+                _hitReaction.Trigger(transform, sourceWorld, hasSource, damage, critical);
+
+            // Во время движения ноги продолжают текущий gait; направленный
+            // процедурный слой даёт реакцию без полнотелого скольжения hurt-клипа.
+            bool fullBody = !_hitReaction.Ready || _presentationTier != RoaActorPresentationTier.Near
+                || !_locomoting;
+            if (!fullBody || !_clips.Contains("hurt"))
+            {
+                _hurtUntil = 0f;
+                return;
+            }
             _hurtUntil = Time.time + 0.36f;
             _currentClip = "hurt";
             _animation[_currentClip].wrapMode = WrapMode.Once;
@@ -364,7 +390,11 @@ namespace RealmOfAshes.Game
         {
             if (_dead == dead && (!dead || _currentClip == "death")) return;
             _dead = dead;
-            if (dead) _footIk.Reset();
+            if (dead)
+            {
+                _footIk.Reset();
+                _hitReaction.Reset();
+            }
             if (!Ready || _animation == null) return;
 
             if (dead && _clips.Contains("death"))
@@ -520,6 +550,7 @@ namespace RealmOfAshes.Game
             // Индекс костей по имени: по нему работают поза хвата и доворот корпуса.
             foreach (Transform bone in GetComponentsInChildren<Transform>(true))
                 if (!_bones.ContainsKey(bone.name)) _bones[bone.name] = bone;
+            _hitReaction.Bind(_modelRoot != null ? _modelRoot : transform);
 
             PrepareAppearance();
             ApplyAppearanceVisuals(false);
@@ -754,7 +785,10 @@ namespace RealmOfAshes.Game
 
             string clip = SelectClip(actuallyMoving, crouching, _backward, fast);
 
-            // Реакция на попадание и собственный удар перебивают локомоцию.
+            // Ближний LOD сохраняет gait даже если игрок начал двигаться уже
+            // после попадания. На дальнем LOD остаётся дешёвый полнотелый клип.
+            if (locomoting && _presentationTier == RoaActorPresentationTier.Near)
+                _hurtUntil = 0f;
             bool hurt = Time.time < _hurtUntil && _clips.Contains("hurt");
             bool attacking = !hurt && Time.time < _attackUntil;
             if (!hurt && !attacking)
@@ -830,6 +864,10 @@ namespace RealmOfAshes.Game
             {
                 transform.localRotation = Quaternion.Euler(0f, 0f, InjuryRootRollDeg());
             }
+
+            // Поверх клипа и направленной позы, но до оружейного IK: корпус
+            // отшатывается, а кисти затем снова точно садятся на рукояти.
+            _hitReaction.Apply(Time.deltaTime);
 
             // Хват и оружие поверх позы: кисть считается от таза и позвоночника,
             // которые направленная поза уже развернула.

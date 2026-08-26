@@ -355,7 +355,41 @@ namespace RealmOfAshes.Game
 
         private void HandlePlayerDamaged(JObject payload)
         {
+            string id = payload?["playerId"]?.ToString() ?? payload?["targetId"]?.ToString();
+            bool fatal = payload?["killed"]?.ToObject<bool>() == true
+                || (payload?["hp"] != null && payload["hp"].ToObject<int>() <= 0);
+            if (!fatal && !string.IsNullOrEmpty(id)
+                && _remotes.TryGetValue(id, out Remote remote) && remote.View != null)
+            {
+                int damage = Mathf.Max(0,
+                    Mathf.RoundToInt(payload["damage"]?.ToObject<float>() ?? 0f));
+                bool critical = payload["critical"]?.ToObject<bool>() == true;
+                if (TryDamageSource(payload, out Vector3 source))
+                    remote.View.PlayHit(source, damage, critical);
+                else remote.View.PlayHit();
+            }
             ApplyVitals(payload, true);
+        }
+
+        private bool TryDamageSource(JObject payload, out Vector3 source)
+        {
+            source = Vector3.zero;
+            if (payload?["sourceX"] != null && payload["sourceZ"] != null)
+            {
+                source = RoaCoords.ToUnity(payload["sourceX"].ToObject<float>(),
+                                           payload["sourceZ"].ToObject<float>());
+                return true;
+            }
+
+            string attackerId = payload?["attackerId"]?.ToString();
+            if (!string.IsNullOrEmpty(attackerId)
+                && _remotes.TryGetValue(attackerId, out Remote attacker)
+                && attacker.Root != null)
+            {
+                source = attacker.Root.transform.position;
+                return true;
+            }
+            return false;
         }
 
         private void HandlePlayerHealed(JObject payload)

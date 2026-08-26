@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using GLTFast;
 using RealmOfAshes.Game;
@@ -102,7 +103,8 @@ namespace RealmOfAshes.EditorTools
                 idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
                 animation.Sample();
 
-                Check(preview.RenderNow(), "камера не выполнила off-screen render");
+                Check(preview.RenderNow(), "камера не выполнила первый off-screen render");
+                Check(preview.RenderNow(), "камера не выполнила прогретый off-screen render");
                 RenderTexture.active = preview.Texture;
                 readback = new Texture2D(preview.Texture.width, preview.Texture.height,
                     TextureFormat.RGBA32, false);
@@ -124,6 +126,47 @@ namespace RealmOfAshes.EditorTools
                 {
                     System.IO.File.WriteAllBytes(capturePath, readback.EncodeToPNG());
                     Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] кадр: " + capturePath);
+                }
+
+                string hitCapturePath = Environment.GetEnvironmentVariable("ROA_UNITY_HIT_CAPTURE");
+                if (!string.IsNullOrWhiteSpace(hitCapturePath))
+                {
+                    FieldInfo field = typeof(RoaCharacterView).GetField("_hitReaction",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    RoaHitReaction reaction = field?.GetValue(loaded) as RoaHitReaction;
+                    Check(reaction != null && reaction.Ready,
+                        "направленная реакция не привязана к настоящему GLB");
+                    FieldInfo spineField = typeof(RoaHitReaction).GetField("_spine02",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    Transform hitSpine = spineField?.GetValue(reaction) as Transform;
+                    Check(hitSpine != null, "реакция не нашла spine_02 настоящего GLB");
+                    bool skinnedBone = false;
+                    foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    {
+                        renderer.updateWhenOffscreen = true;
+                        renderer.forceMatrixRecalculationPerRender = true;
+                        foreach (Transform bone in renderer.bones)
+                            if (bone == hitSpine) skinnedBone = true;
+                    }
+                    Check(skinnedBone, "spine_02 реакции не входит в skinned mesh");
+                    Quaternion beforeHit = hitSpine.localRotation;
+                    loaded.PlayHit(loaded.transform.position + loaded.transform.right * 3f, 46, true);
+                    reaction.Apply(RoaHitReaction.ImpactSeconds);
+                    float appliedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
+                    Check(loaded.HitReactionActive && loaded.HitReactionDirection.x > 0.98f,
+                        "настоящий персонаж не отреагировал на удар справа");
+                    Check(appliedAngle > 3f, "поза настоящего GLB не получила заметный импульс");
+                    Check(preview.RenderNow(), "камера не приняла позу попадания");
+                    Check(preview.RenderNow(), "камера не отрисовала прогретую позу попадания");
+                    float retainedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
+                    Check(retainedAngle > 3f, "render-submit сбросил позу попадания");
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] угол реакции spine_02: "
+                        + appliedAngle.ToString("0.0") + "° → " + retainedAngle.ToString("0.0") + "°");
+                    RenderTexture.active = preview.Texture;
+                    readback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
+                    readback.Apply(false, false);
+                    System.IO.File.WriteAllBytes(hitCapturePath, readback.EncodeToPNG());
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] реакция на урон: " + hitCapturePath);
                 }
 
                 Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] готово: GLB=male_medium, 320×360, "

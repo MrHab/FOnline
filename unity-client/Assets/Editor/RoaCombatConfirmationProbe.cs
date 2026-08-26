@@ -49,6 +49,11 @@ namespace RealmOfAshes.EditorTools
                         && Vector3.Angle(contactDirection, axe.Strike.Direction) < 0.1f
                         && Vector3.Distance(contactSpine, axe.SpineStrike) < 0.001f,
                         "shared contact phase no longer reaches the authored strike pose");
+                Require(RoaEnemies.ShouldDeferMeleeState(10f, 10.2f, 40, 20, false)
+                        && RoaEnemies.ShouldDeferMeleeState(10f, 10.2f, 40, 40, true)
+                        && !RoaEnemies.ShouldDeferMeleeState(10.21f, 10.2f, 40, 20, false)
+                        && !RoaEnemies.ShouldDeferMeleeState(10f, 10.2f, 40, 40, false),
+                        "PvE target damage/death hold is not selective or bounded");
 
                 RoaCombatFeedbackCanvas.FloatingFrame floatingStart =
                     RoaCombatFeedbackCanvas.EvaluateFloating(0f);
@@ -61,6 +66,14 @@ namespace RealmOfAshes.EditorTools
                         "floating combat text does not pop, rise, fade and expire deterministically");
 
                 root = new GameObject("Combat confirmation probe");
+                RoaEnemies holdProbe = root.AddComponent<RoaEnemies>();
+                holdProbe.BeginMeleePresentationHold("target", contactSeconds);
+                Require(holdProbe.MeleePresentationHoldCount == 1,
+                        "PvE target hold was not registered for the active swing");
+                holdProbe.CompleteMeleePresentationHold("target");
+                Require(holdProbe.MeleePresentationHoldCount == 0,
+                        "PvE target hold survived the contact result");
+
                 var cameraRoot = new GameObject("Combat feedback camera", typeof(Camera));
                 cameraRoot.transform.SetParent(root.transform, false);
                 Camera camera = cameraRoot.GetComponent<Camera>();
@@ -145,7 +158,8 @@ namespace RealmOfAshes.EditorTools
                     + ", canvasPools=" + floatingPool + "/" + markerPool
                     + ", pooledImpact=" + fx.ActiveImpactCount
                     + ", meleeContact=" + Mathf.RoundToInt(contactSeconds * 1000f)
-                    + "ms, ack35Wait=" + Mathf.RoundToInt(fastAckDelay * 1000f) + "ms");
+                    + "ms, ack35Wait=" + Mathf.RoundToInt(fastAckDelay * 1000f)
+                    + "ms, targetHold=damage/death");
             }
             catch (Exception error)
             {

@@ -88,6 +88,18 @@ namespace RealmOfAshes.Game
 
         private readonly Dictionary<string, Enemy> _enemies = new Dictionary<string, Enemy>();
 
+        private sealed class MeleePresentationHold
+        {
+            public float ReleaseAt;
+            public JObject PendingSnapshot;
+            public JObject PendingKilled;
+            public bool SawDeadFrame;
+        }
+
+        private readonly Dictionary<string, MeleePresentationHold> _meleePresentationHolds =
+            new Dictionary<string, MeleePresentationHold>();
+        private readonly List<string> _dueMeleePresentationHolds = new List<string>();
+
         public void ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)
         {
             _movementFx = movementFx;
@@ -96,6 +108,95 @@ namespace RealmOfAshes.Game
 
         /// <summary>Сколько сущностей в комнате сейчас. Для диагностики.</summary>
         public int Count { get { return _enemies.Count; } }
+        public int MeleePresentationHoldCount { get { return _meleePresentationHolds.Count; } }
+
+        /// <summary>
+        /// Удержать только раннее уменьшение HP/смерть выбранной PvE-цели до
+        /// контактной позы уже начатого локального замаха. Движение и прочие
+        /// снимки продолжают применяться как обычно.
+        /// </summary>
+        public void BeginMeleePresentationHold(string enemyId, float seconds)
+        {
+            if (string.IsNullOrEmpty(enemyId)) return;
+            _meleePresentationHolds[enemyId] = new MeleePresentationHold
+            {
+                ReleaseAt = Time.unscaledTime + Mathf.Clamp(seconds, 0.05f, 0.35f)
+            };
+        }
+
+        /// <summary>
+        /// ACK дошёл до контактной фазы и содержит полное состояние цели —
+        /// ранние копии больше не нужны, следующий ApplyPublicEnemyHit применит
+        /// точную направленную реакцию или смерть.
+        /// </summary>
+        public void CompleteMeleePresentationHold(string enemyId)
+        {
+            if (!string.IsNullOrEmpty(enemyId)) _meleePresentationHolds.Remove(enemyId);
+        }
+
+        public static bool ShouldDeferMeleeState(float now, float releaseAt,
+                                                 int currentHp, int nextHp, bool dead)
+        {
+            return now < releaseAt && (dead || (currentHp > 0 && nextHp < currentHp));
+        }
+
+        private bool MeleePresentationHeld(string enemyId)
+        {
+            return !string.IsNullOrEmpty(enemyId)
+                && _meleePresentationHolds.TryGetValue(enemyId, out MeleePresentationHold hold)
+                && Time.unscaledTime < hold.ReleaseAt;
+        }
+
+        private bool TryDeferMeleeSnapshot(string enemyId, JObject row,
+                                           out JObject presentationRow)
+        {
+            presentationRow = row;
+            if (row == null
+                || !_meleePresentationHolds.TryGetValue(enemyId, out MeleePresentationHold hold)
+                || !_enemies.TryGetValue(enemyId, out Enemy enemy)) return false;
+            if (Time.unscaledTime >= hold.ReleaseAt)
+            {
+                _meleePresentationHolds.Remove(enemyId);
+                return false;
+            }
+
+            int nextHp = row["hp"]?.ToObject<int>() ?? enemy.Hp;
+            bool dead = row["dead"]?.ToObject<bool>() == true;
+            if (!ShouldDeferMeleeState(Time.unscaledTime, hold.ReleaseAt,
+                                       enemy.Hp, nextHp, dead)) return false;
+
+            hold.PendingSnapshot = (JObject)row.DeepClone();
+            presentationRow = (JObject)row.DeepClone();
+            presentationRow["hp"] = enemy.Hp;
+            presentationRow["dead"] = enemy.Dead;
+            return true;
+        }
+
+        private void ReleaseDueMeleePresentationHolds()
+        {
+            if (_meleePresentationHolds.Count == 0) return;
+            _dueMeleePresentationHolds.Clear();
+            float now = Time.unscaledTime;
+            foreach (KeyValuePair<string, MeleePresentationHold> entry in _meleePresentationHolds)
+                if (now >= entry.Value.ReleaseAt) _dueMeleePresentationHolds.Add(entry.Key);
+            foreach (string enemyId in _dueMeleePresentationHolds)
+                ReleaseMeleePresentationHold(enemyId);
+            _dueMeleePresentationHolds.Clear();
+        }
+
+        private void ReleaseMeleePresentationHold(string enemyId)
+        {
+            if (!_meleePresentationHolds.TryGetValue(enemyId, out MeleePresentationHold hold)) return;
+            _meleePresentationHolds.Remove(enemyId);
+
+            bool snapshotKilled = hold.PendingSnapshot?["dead"]?.ToObject<bool>() == true;
+            if (hold.PendingSnapshot != null)
+                ApplySnapshotRow(enemyId, hold.PendingSnapshot);
+            if (hold.PendingKilled != null)
+                ApplyEnemyKilledNow(hold.PendingKilled);
+            else if (hold.SawDeadFrame && !snapshotKilled)
+                ApplyEnemyKilledNow(new JObject { ["enemyId"] = enemyId });
+        }
 
         public struct ConeTarget
         {
@@ -510,6 +611,20 @@ namespace RealmOfAshes.Game
         private void HandleEnemyKilled(JObject payload)
         {
             string id = payload?["enemyId"]?.ToString();
+            if (string.IsNullOrEmpty(id) || !_enemies.ContainsKey(id)) return;
+            if (MeleePresentationHeld(id))
+            {
+                _meleePresentationHolds[id].PendingKilled = (JObject)payload.DeepClone();
+                return;
+            }
+
+            _meleePresentationHolds.Remove(id);
+            ApplyEnemyKilledNow(payload);
+        }
+
+        private void ApplyEnemyKilledNow(JObject payload)
+        {
+            string id = payload?["enemyId"]?.ToString();
             if (string.IsNullOrEmpty(id) || !_enemies.TryGetValue(id, out Enemy enemy)) return;
             enemy.Dead = true;
             enemy.Moving = false;
@@ -624,6 +739,9 @@ namespace RealmOfAshes.Game
         private void ApplySnapshotRow(string id, JObject row, bool confirmedHit,
                                       Vector3 hitSource, int hitDamage, bool hitCritical)
         {
+            if (!confirmedHit && TryDeferMeleeSnapshot(id, row, out JObject presentationRow))
+                row = presentationRow;
+
             Enemy enemy;
             if (!_enemies.TryGetValue(id, out enemy))
             {
@@ -924,9 +1042,20 @@ namespace RealmOfAshes.Game
                 enemy.LastPacketTime = Time.time;
 
                 int flags = data["flags"]?.ToObject<int>() ?? 0;
-                enemy.Moving = (flags & EnemyFrameFlags.Moving) != 0;
-                enemy.Dead = (flags & EnemyFrameFlags.Dead) != 0;
-
+                bool deadFrame = (flags & EnemyFrameFlags.Dead) != 0;
+                bool deferredDeadFrame = deadFrame && MeleePresentationHeld(id);
+                if (deferredDeadFrame)
+                {
+                    _meleePresentationHolds[id].SawDeadFrame = true;
+                    deadFrame = false;
+                }
+                else if (deadFrame)
+                {
+                    _meleePresentationHolds.Remove(id);
+                }
+                enemy.Moving = !deferredDeadFrame && !deadFrame
+                    && (flags & EnemyFrameFlags.Moving) != 0;
+                enemy.Dead = deadFrame;
                 enemy.Velocity = enemy.Moving
                     ? RoaCoords.VelocityToUnity(Value(data, "vx"), Value(data, "vz"))
                     : Vector3.zero;
@@ -974,6 +1103,8 @@ namespace RealmOfAshes.Game
 
         private void Update()
         {
+            ReleaseDueMeleePresentationHolds();
+
             foreach (Enemy enemy in _enemies.Values)
             {
                 if (enemy.Root == null) continue;
@@ -1079,6 +1210,7 @@ namespace RealmOfAshes.Game
             Enemy enemy;
             if (!_enemies.TryGetValue(id, out enemy)) return;
 
+            _meleePresentationHolds.Remove(id);
             if (enemy.Root != null) Destroy(enemy.Root);
             _enemies.Remove(id);
         }
@@ -1172,6 +1304,8 @@ namespace RealmOfAshes.Game
                 if (enemy.Root != null) Destroy(enemy.Root);
 
             _enemies.Clear();
+            _meleePresentationHolds.Clear();
+            _dueMeleePresentationHolds.Clear();
         }
     }
 }

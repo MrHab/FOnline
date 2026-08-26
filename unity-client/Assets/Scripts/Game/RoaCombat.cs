@@ -652,9 +652,9 @@ namespace RealmOfAshes.Game
             float angle = RoaCoords.YawDegToAngle(Player.transform.eulerAngles.y);
 
             // Замах проигрывается сразу, не дожидаясь ответа сервера: иначе
-            // удар отставал бы от нажатия на величину задержки. Серверное
-            // состояние применится сразу, а видимый результат ближнего удара
-            // дождётся фактического контакта оружия.
+            // удар отставал бы от нажатия на величину задержки. Состояние
+            // игрока применяется сразу; HP/смерть выбранной PvE-цели и видимый
+            // результат ближнего удара ждут фактического контакта оружия.
             bool meleeAttack = !HasAmmoWeapon();
             float attackVisualStartedAt = Time.unscaledTime;
             if (Player.View != null) Player.View.PlayAttack();
@@ -702,6 +702,8 @@ namespace RealmOfAshes.Game
             }
             else if (!string.IsNullOrEmpty(enemyId))
             {
+                if (meleeAttack)
+                    Enemies.BeginMeleePresentationHold(enemyId, RoaMeleeGrip.StrikeContactSeconds());
                 RoaCoords.ToServer(enemyPosition, out targetX, out targetZ);
                 SendAuthoritativeHit(enemyId, selfX, selfZ, targetX, targetZ, angle,
                     enemyPosition, attackToken);
@@ -1049,6 +1051,11 @@ namespace RealmOfAshes.Game
             int damage = Mathf.Max(0, Mathf.RoundToInt(ack["damage"]?.ToObject<float>() ?? 0f));
             bool critical = ack["critical"]?.ToObject<bool>() ?? false;
             JObject enemy = ack["enemy"] as JObject;
+            string resultWeapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
+            string resolvedEnemyId = enemy?["id"]?.ToString();
+            if (string.IsNullOrEmpty(RoaWeaponData.Get(resultWeapon).AmmoType)
+                && !string.IsNullOrEmpty(resolvedEnemyId))
+                Enemies.CompleteMeleePresentationHold(resolvedEnemyId);
             if (enemy != null)
             {
                 if (hit) Enemies.ApplyPublicEnemyHit(enemy, sourcePosition, damage, critical);
@@ -1067,7 +1074,7 @@ namespace RealmOfAshes.Game
             if (!hit)
             {
                 float chance = ack["chance"]?.ToObject<float>() ?? 0f;
-                string missWeapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
+                string missWeapon = resultWeapon;
                 if (!string.IsNullOrEmpty(RoaWeaponData.Get(missWeapon).AmmoType))
                 {
                     float targetScale = Mathf.Max(0.72f, enemy?["scale"]?.ToObject<float>() ?? 1f);
@@ -1081,7 +1088,7 @@ namespace RealmOfAshes.Game
             }
 
             bool dead = enemy?["dead"]?.ToObject<bool>() ?? false;
-            string weapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
+            string weapon = resultWeapon;
             if (string.IsNullOrEmpty(RoaWeaponData.Get(weapon).AmmoType))
                 Audio?.PlayMeleeImpact(targetPosition, critical);
             Audio?.PlayHitConfirm(critical);

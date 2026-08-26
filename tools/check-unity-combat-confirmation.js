@@ -90,6 +90,27 @@ assert(combat.includes('HitConfirmationLimit = 12')
 assert(enemies.includes('public void ApplyPublicEnemyHit(')
   && enemies.includes('enemy.CharacterView.PlayHit(hitSource, hitDamage, hitCritical);'),
 'NPCs no longer receive an authoritative directional hit reaction');
+assert(enemies.includes('public void BeginMeleePresentationHold(')
+  && enemies.includes('public void CompleteMeleePresentationHold(')
+  && enemies.includes('TryDeferMeleeSnapshot(id, row, out JObject presentationRow)')
+  && enemies.includes('presentationRow["hp"] = enemy.Hp;')
+  && enemies.includes('presentationRow["dead"] = enemy.Dead;')
+  && enemies.includes('_meleePresentationHolds[id].PendingKilled')
+  && enemies.includes('_meleePresentationHolds[id].SawDeadFrame = true;')
+  && enemies.includes('ReleaseDueMeleePresentationHolds();'),
+'Early PvE damage/death is not held until the authored melee contact');
+const targetedMelee = combat.slice(combat.indexOf('else if (!string.IsNullOrEmpty(enemyId))'),
+  combat.indexOf('private bool TryScreenPointToWorld('));
+assert(targetedMelee.includes('Enemies.BeginMeleePresentationHold(enemyId,')
+  && targetedMelee.indexOf('Enemies.BeginMeleePresentationHold(enemyId,')
+    < targetedMelee.indexOf('SendAuthoritativeHit(enemyId,'),
+'Targeted PvE melee does not start its bounded presentation hold before the request');
+const presentEnemyResult = combat.slice(combat.indexOf('private void PresentHitResult('),
+  combat.indexOf('private void HandlePlayerHitResult('));
+assert(presentEnemyResult.includes('Enemies.CompleteMeleePresentationHold(resolvedEnemyId);')
+  && presentEnemyResult.indexOf('Enemies.CompleteMeleePresentationHold(resolvedEnemyId);')
+    < presentEnemyResult.indexOf('Enemies.ApplyPublicEnemyHit(enemy,'),
+'Authoritative melee result does not release the PvE target at contact');
 assert(polish.includes('public void PlayConfirmedHit(')
   && polish.includes('impact.Scale = killed ? 1.6f : critical ? 1.35f : 1.16f;')
   && motion.includes('Mathf.Max(0.5f, fx.Scale)'),
@@ -105,6 +126,9 @@ assert(audio.includes('BuildUiTone("HitConfirm"')
 assert(probe.includes('RoaCombatConfirmation.Expired(0.39f, false)')
   && probe.includes('RoaCombat.MeleePresentationDelay(10f, 10.035f)')
   && probe.includes('RoaMeleeGrip.StrikeContactPhase')
+  && probe.includes('RoaEnemies.ShouldDeferMeleeState(10f, 10.2f, 40, 20, false)')
+  && probe.includes('holdProbe.MeleePresentationHoldCount == 1')
+  && probe.includes('holdProbe.MeleePresentationHoldCount == 0')
   && probe.includes('RoaCombatFeedbackCanvas.EvaluateFloating(0.82f)')
   && probe.includes('feedback.InputTransparent')
   && probe.includes('accepted feedback did not project to a visible Canvas position')
@@ -123,4 +147,4 @@ for (const file of [
 assert(packageJson.scripts['check:unity-combat-confirmation'],
   'package.json has no narrow combat confirmation check');
 
-console.log('Unity combat confirmation OK: contact-synchronized melee plus authoritative Canvas marker/text/audio/impact, directional reaction and bounded pools');
+console.log('Unity combat confirmation OK: contact-synchronized melee and bounded PvE target state plus authoritative Canvas marker/text/audio/impact, directional reaction and bounded pools');

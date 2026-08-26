@@ -42,6 +42,9 @@ namespace RealmOfAshes.Game
 
         private const int PuffCapacityValue = 96;
         private const int ScuffCapacityValue = 24;
+        private const int DustTextureSizeValue = 64;
+        private const float PuffLiftMin = 0.16f;
+        private const float PuffLiftMax = 0.58f;
 
         private RoaAudio _audio;
         private ParticleSystem _puffs;
@@ -55,6 +58,7 @@ namespace RealmOfAshes.Game
         public bool Ready { get { return _puffs != null && _scuffs != null; } }
         public int PuffCapacity { get { return _puffs != null ? _puffs.main.maxParticles : 0; } }
         public int ScuffCapacity { get { return _scuffs != null ? _scuffs.main.maxParticles : 0; } }
+        public int DustTextureSize { get { return _softParticle != null ? _softParticle.width : 0; } }
         public int ActiveParticleCount
         {
             get { return (_puffs != null ? _puffs.particleCount : 0)
@@ -95,10 +99,10 @@ namespace RealmOfAshes.Game
             return new EmissionPlan(
                 Mathf.Clamp(count, 1, 7),
                 crouching ? 0 : 1,
-                Mathf.Lerp(0.42f, 0.74f, pace) * (crouching ? 0.72f : 1f),
-                Mathf.Lerp(0.10f, 0.23f, pace) * (crouching ? 0.68f : 1f),
-                Mathf.Lerp(0.26f, 0.48f, pace),
-                Mathf.Lerp(0.17f, 0.38f, pace) * (crouching ? 0.48f : 1f));
+                Mathf.Lerp(0.46f, 0.82f, pace) * (crouching ? 0.72f : 1f),
+                Mathf.Lerp(0.14f, 0.29f, pace) * (crouching ? 0.64f : 1f),
+                Mathf.Lerp(0.30f, 0.52f, pace),
+                Mathf.Lerp(0.30f, 0.58f, pace) * (crouching ? 0.46f : 1f));
         }
 
         public static Vector3 FootOffset(Vector3 planarVelocity, bool rightFoot)
@@ -206,12 +210,13 @@ namespace RealmOfAshes.Game
                 float lateral = SignedRandom() * Mathf.Lerp(0.035f, 0.13f, pace);
                 float rear = Mathf.Lerp(0.015f, 0.16f, pace) * Next01();
                 Vector3 position = origin + side * lateral - forward * rear;
-                Vector3 velocity = side * SignedRandom() * Mathf.Lerp(0.05f, 0.24f, pace)
-                    - forward * Mathf.Lerp(0.025f, 0.18f, pace) * Next01()
-                    + Vector3.up * Mathf.Lerp(0.07f, 0.32f, Next01());
+                Vector3 velocity = side * SignedRandom() * Mathf.Lerp(0.06f, 0.27f, pace)
+                    - forward * Mathf.Lerp(0.03f, 0.21f, pace) * Next01()
+                    + Vector3.up * Mathf.Lerp(PuffLiftMin, PuffLiftMax, Next01())
+                        * Mathf.Lerp(0.84f, 1.08f, pace);
                 Color tint = Color.Lerp(
-                    new Color(0.46f, 0.35f, 0.22f, plan.Alpha),
-                    new Color(0.76f, 0.59f, 0.36f, plan.Alpha * 0.86f), Next01());
+                    new Color(0.60f, 0.48f, 0.34f, plan.Alpha),
+                    new Color(0.88f, 0.71f, 0.46f, plan.Alpha * 0.92f), Next01());
 
                 var emit = new ParticleSystem.EmitParams
                 {
@@ -219,6 +224,7 @@ namespace RealmOfAshes.Game
                     velocity = velocity,
                     startLifetime = plan.Lifetime * Mathf.Lerp(0.78f, 1.18f, Next01()),
                     startSize = plan.PuffSize * Mathf.Lerp(0.72f, 1.24f, Next01()),
+                    rotation = SignedRandom() * 180f,
                     startColor = tint
                 };
                 _puffs.Emit(emit, 1);
@@ -232,7 +238,7 @@ namespace RealmOfAshes.Game
                     velocity = Vector3.zero,
                     startLifetime = Mathf.Lerp(0.28f, 0.44f, pace),
                     startSize = plan.ScuffSize,
-                    startColor = new Color(0.52f, 0.38f, 0.22f, plan.Alpha * 0.60f)
+                    startColor = new Color(0.66f, 0.49f, 0.30f, plan.Alpha * 0.72f)
                 };
                 _scuffs.Emit(scuff, 1);
             }
@@ -264,7 +270,7 @@ namespace RealmOfAshes.Game
             main.startSpeed = 0f;
             main.startLifetime = 0.6f;
             main.startSize = 0.16f;
-            main.gravityModifier = 0.025f;
+            main.gravityModifier = 0.015f;
 
             var emission = system.emission;
             emission.enabled = false;
@@ -300,8 +306,8 @@ namespace RealmOfAshes.Game
                 alphaKeys = new[]
                 {
                     new GradientAlphaKey(0f, 0f),
-                    new GradientAlphaKey(1f, 0.08f),
-                    new GradientAlphaKey(0.58f, 0.52f),
+                    new GradientAlphaKey(1f, 0.06f),
+                    new GradientAlphaKey(0.76f, 0.58f),
                     new GradientAlphaKey(0f, 1f)
                 }
             };
@@ -318,8 +324,8 @@ namespace RealmOfAshes.Game
                 },
                 alphaKeys = new[]
                 {
-                    new GradientAlphaKey(0.72f, 0f),
-                    new GradientAlphaKey(0.32f, 0.55f),
+                    new GradientAlphaKey(0.86f, 0f),
+                    new GradientAlphaKey(0.40f, 0.55f),
                     new GradientAlphaKey(0f, 1f)
                 }
             };
@@ -328,9 +334,9 @@ namespace RealmOfAshes.Game
         private static AnimationCurve PuffSizeCurve()
         {
             return new AnimationCurve(
-                new Keyframe(0f, 0.58f),
-                new Keyframe(0.28f, 1f),
-                new Keyframe(1f, 1.42f));
+                new Keyframe(0f, 0.48f),
+                new Keyframe(0.22f, 1f),
+                new Keyframe(1f, 1.58f));
         }
 
         private static AnimationCurve ScuffSizeCurve()
@@ -342,7 +348,7 @@ namespace RealmOfAshes.Game
 
         private static Texture2D CreateSoftParticle()
         {
-            const int size = 48;
+            const int size = DustTextureSizeValue;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false, true)
             {
                 name = "ProceduralMovementDust",
@@ -355,9 +361,10 @@ namespace RealmOfAshes.Game
             {
                 float nx = ((x + 0.5f) / size - 0.5f) * 2f;
                 float ny = ((y + 0.5f) / size - 0.5f) * 2f;
-                float radial = Mathf.Clamp01(1f - Mathf.Sqrt(nx * nx + ny * ny));
-                float grain = 0.82f + 0.18f * Mathf.Sin((x * 17.13f + y * 31.71f) * 0.37f);
-                float alpha = Mathf.Pow(radial, 1.65f) * grain;
+                float radial = Mathf.Clamp01(1f - nx * nx - ny * ny);
+                float body = Mathf.SmoothStep(0f, 1f, radial);
+                float grain = 0.92f + 0.08f * Mathf.Sin((x * 17.13f + y * 31.71f) * 0.37f);
+                float alpha = Mathf.Pow(body, 1.12f) * grain;
                 pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
             }
             texture.SetPixels32(pixels);
@@ -374,6 +381,9 @@ namespace RealmOfAshes.Game
                 ?? Shader.Find("Unlit/Transparent");
             var material = new Material(shader) { name = name };
             if (material.HasProperty("_Surface")) material.SetFloat("_Surface", 1f);
+            if (material.HasProperty("_Blend")) material.SetFloat("_Blend", 0f);
+            if (material.HasProperty("_Mode")) material.SetFloat("_Mode", 2f);
+            if (material.HasProperty("_AlphaClip")) material.SetFloat("_AlphaClip", 0f);
             if (material.HasProperty("_SrcBlend")) material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
             if (material.HasProperty("_DstBlend")) material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
             if (material.HasProperty("_ZWrite")) material.SetFloat("_ZWrite", 0f);
@@ -384,6 +394,9 @@ namespace RealmOfAshes.Game
             if (material.HasProperty("_Color")) material.SetColor("_Color", Color.white);
             if (material.HasProperty("_ColorMode")) material.SetFloat("_ColorMode", 0f);
             material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.EnableKeyword("_ALPHABLEND_ON");
+            material.DisableKeyword("_ALPHATEST_ON");
+            material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
             material.SetOverrideTag("RenderType", "Transparent");
             material.renderQueue = (int)RenderQueue.Transparent;
             return material;

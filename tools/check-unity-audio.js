@@ -92,6 +92,9 @@ assert(controller.includes('footPosition.y = FeetY() + 0.025f;')
 assert(movementFx.includes('public sealed class RoaMovementFx')
   && movementFx.includes('ParticleSystemRenderMode.HorizontalBillboard')
   && movementFx.includes('PuffCapacityValue = 96')
+  && movementFx.includes('DustTextureSizeValue = 64')
+  && movementFx.includes('PuffLiftMax = 0.58f')
+  && movementFx.includes('material.EnableKeyword("_ALPHABLEND_ON")')
   && movementFx.includes('Application.isMobilePlatform')
   && movementFx.includes('FootOffset(planar, cue.RightFoot)'),
 'Movement FX lost its pooled dust, ground scuff, mobile budget or alternating feet');
@@ -118,6 +121,8 @@ assert(movementProbe.includes('[ПЫЛЬ ШАГОВ] готово:')
   && movementProbe.includes('crouch.ScuffCount == 0')
   && movementProbe.includes('TryPlanActorStep(ref actorState')
   && movementProbe.includes('fx.ActorStepCount == 1')
+  && movementProbe.includes('maxLift > 0.045f')
+  && movementProbe.includes('maxAlpha > 0.24f')
   && movementProbe.includes('серверная коррекция позиции ошибочно выглядит как шаг'),
 'Unity movement FX probe no longer covers pace, visibility, teleport protection and shared actor pools');
 assert(systemCanvas.includes('"Звук: выключен"')

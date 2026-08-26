@@ -44,7 +44,8 @@ namespace RealmOfAshes.EditorTools
                 RoaMovementFx.EmissionPlan crouch = RoaMovementFx.PlanFor(2f, true, false);
                 RoaMovementFx.EmissionPlan mobile = RoaMovementFx.PlanFor(6.4f, false, true);
                 Require(run.PuffCount > walk.PuffCount && run.PuffSize > walk.PuffSize
-                        && run.Alpha > walk.Alpha,
+                        && run.Lifetime > 0.75f && run.PuffSize > 0.27f
+                        && run.Alpha > walk.Alpha && run.Alpha > 0.54f,
                     "бег не усиливает визуальный контакт с землёй");
                 Require(crouch.PuffCount == 1 && crouch.ScuffCount == 0
                         && crouch.Alpha < walk.Alpha,
@@ -96,7 +97,8 @@ namespace RealmOfAshes.EditorTools
                     Crouching = false,
                     RightFoot = true
                 });
-                Require(fx.Ready && fx.PuffCapacity == 96 && fx.ScuffCapacity == 24,
+                Require(fx.Ready && fx.PuffCapacity == 96 && fx.ScuffCapacity == 24
+                        && fx.DustTextureSize == 64,
                     "пулы пыли и следов не готовы");
                 foreach (ParticleSystem system in host.GetComponentsInChildren<ParticleSystem>(true))
                     system.Simulate(0.02f, false, false, true);
@@ -126,6 +128,25 @@ namespace RealmOfAshes.EditorTools
                         && r.sharedMaterial.shader != null
                         && r.sharedMaterial.shader.name.IndexOf("Particle", StringComparison.OrdinalIgnoreCase) >= 0),
                     "материал пыли не использует цвет частиц");
+                ParticleSystem puffSystem = Array.Find(
+                    host.GetComponentsInChildren<ParticleSystem>(true),
+                    system => system.name == "MovementDustPuffs");
+                Require(puffSystem != null, "пул воздушной пыли не найден");
+                foreach (ParticleSystem system in host.GetComponentsInChildren<ParticleSystem>(true))
+                    system.Simulate(0.14f, false, false, true);
+                var particles = new ParticleSystem.Particle[puffSystem.main.maxParticles];
+                int particleCount = puffSystem.GetParticles(particles);
+                float maxLift = 0f;
+                float maxSize = 0f;
+                float maxAlpha = 0f;
+                for (int i = 0; i < particleCount; i++)
+                {
+                    maxLift = Mathf.Max(maxLift, particles[i].position.y);
+                    maxSize = Mathf.Max(maxSize, particles[i].GetCurrentSize(puffSystem));
+                    maxAlpha = Mathf.Max(maxAlpha, particles[i].GetCurrentColor(puffSystem).a / 255f);
+                }
+                Require(maxLift > 0.045f && maxSize > 0.18f && maxAlpha > 0.24f,
+                    "пыль остаётся плоской или теряется на тёмной земле");
                 CaptureIfRequested(host, fx);
 
                 Debug.Log("[ПЫЛЬ ШАГОВ] готово: walk=" + walk.PuffCount

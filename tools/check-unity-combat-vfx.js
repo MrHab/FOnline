@@ -15,6 +15,8 @@ const presentation = [
   'RoaCombatPresentationFx.Damage.cs'
 ].map(file => read(game, file)).join('\n');
 const fallback = read(game, 'RoaCombatFx.cs');
+const worldOverlay = read(game, 'RoaWorldOverlayCanvas.cs');
+const groundItems = read(game, 'RoaGroundItems.cs');
 const combat = read(game, 'RoaCombat.cs');
 const character = read(game, 'RoaCharacterView.cs');
 const weapon = read(game, 'RoaWeaponView.cs');
@@ -65,6 +67,27 @@ assert(presentation.includes('CreateDamageVignette()')
   && !presentation.includes('GUI.DrawTexture'),
   'Directional Canvas damage feedback is incomplete or returned to IMGUI');
 
+assert(worldOverlay.includes('private const int InitialGroundPool = 8;')
+  && worldOverlay.includes('private const int InitialSpeechPool = 6;')
+  && worldOverlay.includes('RoaUiScale.Apply(root.GetComponent<CanvasScaler>())')
+  && worldOverlay.includes('TryResolveLocalRect(')
+  && worldOverlay.includes('RoaItemData.Name(row.ItemId)')
+  && worldOverlay.includes('"[E] ПОДНЯТЬ · "')
+  && worldOverlay.includes('raycastTarget = false')
+  && !worldOverlay.includes('AddComponent<GraphicRaycaster>'),
+  'Pooled input-transparent world overlay lost localization, collision layout or fixed bounds');
+assert(fallback.includes('public bool CanvasDriven { get; set; }')
+  && fallback.includes('private void OnGUI()\n        {\n            if (CanvasDriven) return;')
+  && groundItems.includes('public bool CanvasDriven { get; set; }')
+  && groundItems.includes('public void CollectOverlayLabels(')
+  && groundItems.includes('public bool TryGetOverlayStatus(')
+  && groundItems.includes('private void OnGUI()\n        {\n            if (CanvasDriven) return;'),
+  'Active loot or speech IMGUI path is not gated behind the shared Canvas');
+assert(bootstrap.includes('gameObject.AddComponent<RoaWorldOverlayCanvas>()')
+  && bootstrap.includes('worldOverlay.Configure(GroundItems, Enemies, movementFxCamera);')
+  && bootstrap.includes('GroundItems.CanvasDriven = true;')
+  && bootstrap.includes('CombatFx.CanvasDriven = true;'),
+  'Bootstrap does not replace active ground labels and NPC speech with the world Canvas');
 assert(fallback.includes('public RoaCombatPresentationFx Polish;')
   && fallback.includes('Polish.PlayShot(start, end, weaponId, profile);')
   && fallback.includes('Polish.PlayMiss(point, source, weaponId, profile);')
@@ -152,7 +175,10 @@ assert(probe.includes('moving tapered tracer geometry')
   && probe.includes('speculative shots created a false impact before server confirmation')
   && probe.includes('miss endpoint is not deterministic or remains inside the target silhouette')
   && probe.includes('shock, heat, fireball, smoke or ember layer')
-  && probe.includes('damage Canvas, direction marker or input transparency'),
+  && probe.includes('damage Canvas, direction marker or input transparency')
+  && probe.includes('ground overlay exposes raw ids or marks more than the nearest item as actionable')
+  && probe.includes('world overlay labels overlap at a shared world position')
+  && probe.includes('world overlay grew beyond its fixed runtime pools'),
   'Unity editor probe does not inspect the new VFX structure');
 
 for (const file of [
@@ -161,7 +187,8 @@ for (const file of [
   'RoaCombatPresentationFx.Explosion.cs.meta',
   'RoaCombatPresentationFx.Factory.cs.meta',
   'RoaCombatPresentationFx.Damage.cs.meta',
-  'RoaOffhandWeaponView.cs.meta'
+  'RoaOffhandWeaponView.cs.meta',
+  'RoaWorldOverlayCanvas.cs.meta'
 ]) {
   assert(/guid:\s*[0-9a-f]{32}/i.test(read(game, file)), `${file} has no valid GUID`);
 }
@@ -169,4 +196,4 @@ for (const file of [
 assert(/guid:\s*[0-9a-f]{32}/i.test(read('unity-client', 'Assets', 'Editor', 'RoaDualWieldProbe.cs.meta')),
   'RoaDualWieldProbe.cs.meta has no valid GUID');
 
-console.log('Unity combat VFX OK: collision-gated fire, contact animation, dual IK, speculative tracers, authoritative hit/miss impacts, explosions and directional damage Canvas');
+console.log('Unity combat VFX OK: collision-gated fire, contact animation, dual IK, authoritative hit/miss impacts, explosions, directional damage and pooled world overlays');

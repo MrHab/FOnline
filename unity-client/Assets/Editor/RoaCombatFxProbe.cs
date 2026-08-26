@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
@@ -83,7 +84,7 @@ namespace RealmOfAshes.EditorTools
                 Debug.Log("[БОЕВЫЕ ЭФФЕКТЫ] готово: laser=" + laser.TracerLife.ToString("0.00")
                     + "s, plasma=" + plasma.TracerLife.ToString("0.00")
                     + "s, Z=" + start.z.ToString("0.0") + "→" + end.z.ToString("0.0")
-                    + ", runtime=speculative-shot/confirmed-miss-hit/layered-explosion/clear");
+                    + ", runtime=speculative-shot/confirmed-miss-hit/layered-explosion/world-overlay/clear");
             }
             catch (Exception error)
             {
@@ -195,6 +196,7 @@ namespace RealmOfAshes.EditorTools
                         && Array.TrueForAll(feedback, image => !image.raycastTarget),
                         "damage Canvas, direction marker or input transparency is incomplete");
                 CaptureDamageIfRequested(feedback, screenDirection);
+                VerifyWorldOverlay(root, camera);
 
                 fx.Clear();
                 Require(fx.ActiveTracerCount == 0 && fx.ActiveFlashCount == 0
@@ -206,6 +208,105 @@ namespace RealmOfAshes.EditorTools
                 UnityEngine.Object.DestroyImmediate(root);
                 UnityEngine.Object.DestroyImmediate(cameraRoot);
             }
+        }
+
+        private static void VerifyWorldOverlay(GameObject root, Camera camera)
+        {
+            RoaWorldOverlayCanvas overlay = root.AddComponent<RoaWorldOverlayCanvas>();
+            overlay.Configure(null, null, camera);
+            var ground = new List<RoaWorldOverlayCanvas.GroundLabel>
+            {
+                new RoaWorldOverlayCanvas.GroundLabel
+                {
+                    Id = "ground-ammo", ItemId = "ammo9", Quantity = 3,
+                    World = new Vector3(1.25f, 0.5f, 0f), DistanceSquared = 0.25f
+                },
+                new RoaWorldOverlayCanvas.GroundLabel
+                {
+                    Id = "ground-scrap", ItemId = "scrap", Quantity = 2,
+                    World = new Vector3(1.25f, 0.5f, 0f), DistanceSquared = 0.5f
+                }
+            };
+            var speech = new List<RoaCombatFx.SpeechBubble>
+            {
+                new RoaCombatFx.SpeechBubble
+                {
+                    Id = "npc-a", Text = "Держись ближе к укрытию.",
+                    World = new Vector3(1.25f, 0.5f, 0f), Opacity = 1f
+                },
+                new RoaCombatFx.SpeechBubble
+                {
+                    Id = "npc-b", Text = "Слышу движение впереди.",
+                    World = new Vector3(1.25f, 0.5f, 0f), Opacity = 0.8f
+                }
+            };
+
+            overlay.PresentNow(ground, speech, "Рядом ничего нет", 1f);
+            Require(overlay.CanvasReady && overlay.InputTransparent
+                    && overlay.GroundPoolSize == 8 && overlay.SpeechPoolSize == 6,
+                    "world overlay Canvas, fixed pools or input transparency is incomplete");
+            Require(overlay.ActiveGroundCount == 2 && overlay.ActiveSpeechCount == 2
+                    && overlay.StatusVisible,
+                    "world overlay did not present ground labels, speech and status together");
+
+            Text[] activeText = Array.FindAll(root.GetComponentsInChildren<Text>(true),
+                item => item.gameObject.activeInHierarchy);
+            string localizedAmmo = RoaItemData.Name("ammo9");
+            Require(Array.Exists(activeText, item => item.text.Contains(localizedAmmo))
+                    && !Array.Exists(activeText, item => item.text.Contains("ammo9"))
+                    && Array.FindAll(activeText, item => item.text.Contains("ПОДНЯТЬ")).Length == 1,
+                    "ground overlay exposes raw ids or marks more than the nearest item as actionable");
+            Require(Array.Exists(activeText, item => item.text == "Держись ближе к укрытию.")
+                    && Array.Exists(activeText, item => item.text == "Слышу движение впереди.")
+                    && Array.Exists(activeText, item => item.text == "Рядом ничего нет"),
+                    "world overlay lost NPC speech or short pickup status");
+
+            RectTransform[] views = Array.FindAll(root.GetComponentsInChildren<RectTransform>(true),
+                item => item.gameObject.activeInHierarchy
+                    && (item.gameObject.name == "GroundItemLabel"
+                        || item.gameObject.name == "WorldSpeechBubble"));
+            Require(views.Length == 4 && views[0].anchoredPosition.x > 0f,
+                    "world overlay did not project visible world points into the Canvas");
+            for (int i = 0; i < views.Length; i++)
+            {
+                Rect a = CenteredRect(views[i]);
+                for (int j = i + 1; j < views.Length; j++)
+                    Require(!a.Overlaps(CenteredRect(views[j])),
+                            "world overlay labels overlap at a shared world position");
+            }
+
+            var overflowGround = new List<RoaWorldOverlayCanvas.GroundLabel>();
+            var overflowSpeech = new List<RoaCombatFx.SpeechBubble>();
+            for (int i = 0; i < 14; i++)
+            {
+                float x = -3f + (i % 7);
+                float z = i < 7 ? -1.5f : 1.5f;
+                overflowGround.Add(new RoaWorldOverlayCanvas.GroundLabel
+                {
+                    Id = "ground-overflow-" + i, ItemId = "scrap", Quantity = 1,
+                    World = new Vector3(x, 0.5f, z), DistanceSquared = i + 1f
+                });
+                overflowSpeech.Add(new RoaCombatFx.SpeechBubble
+                {
+                    Id = "speech-overflow-" + i, Text = "Реплика " + i,
+                    World = new Vector3(x, 0.5f, z), Opacity = 1f
+                });
+            }
+            overlay.PresentNow(overflowGround, overflowSpeech, string.Empty, 0f);
+            Require(overlay.GroundPoolSize == 8 && overlay.SpeechPoolSize == 6
+                    && overlay.ActiveGroundCount <= 8 && overlay.ActiveSpeechCount <= 6,
+                    "world overlay grew beyond its fixed runtime pools");
+            overlay.Clear();
+            Require(overlay.ActiveGroundCount == 0 && overlay.ActiveSpeechCount == 0
+                    && !overlay.StatusVisible,
+                    "world overlay pools did not clear cleanly");
+        }
+
+        private static Rect CenteredRect(RectTransform transform)
+        {
+            Vector2 size = transform.rect.size;
+            Vector2 center = transform.anchoredPosition;
+            return new Rect(center - size * 0.5f, size);
         }
 
         private static void CaptureDamageIfRequested(RawImage[] feedback, Vector2 screenDirection)

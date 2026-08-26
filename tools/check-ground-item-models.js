@@ -13,6 +13,7 @@ const MANIFEST_FILE = path.join(RUNTIME_DIR, 'manifest.json');
 const ITEMS_SOURCE = path.join(ROOT, 'public', 'js', 'game', '03_items_inventory_core.js');
 const RUNTIME_SOURCE = path.join(ROOT, 'public', 'js', 'game', '05e_ground_items_world_sync.js');
 const UNITY_GROUND_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaGroundItems.cs');
+const UNITY_OVERLAY_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaWorldOverlayCanvas.cs');
 const UNITY_INTERACTION_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInteraction.cs');
 const UNITY_INVENTORY_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaInventory.cs');
 const UNITY_MOBILE_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaMobileControls.cs');
@@ -140,6 +141,16 @@ const unityGround = fs.readFileSync(UNITY_GROUND_SOURCE, 'utf8');
   'public int LoadedVisualCountForItem(string itemId)'
 ].forEach(marker => assert(unityGround.includes(marker), `Нет Unity runtime-маркера физического лута: ${marker}`));
 
+const unityOverlay = fs.readFileSync(UNITY_OVERLAY_SOURCE, 'utf8');
+assert(unityGround.includes('public void CollectOverlayLabels(')
+  && unityGround.includes('public bool TryGetOverlayStatus(')
+  && unityGround.includes('public bool CanvasDriven { get; set; }'),
+  'Unity ground items no longer publish visible pickup labels and status to the shared Canvas');
+assert(unityOverlay.includes('RoaItemData.Name(row.ItemId)')
+  && unityOverlay.includes('bool nearest = i == 0;')
+  && unityOverlay.includes('"[E] ПОДНЯТЬ · "')
+  && unityOverlay.includes('TryResolveLocalRect('),
+  'Unity world overlay lost localized nearest-item action or collision-free placement');
 const unityInteraction = fs.readFileSync(UNITY_INTERACTION_SOURCE, 'utf8');
 assert(unityInteraction.includes('GetComponent<RoaGroundItems>()')
   && unityInteraction.includes('private bool TryPickupGroundBeforeInteract()')
@@ -159,6 +170,10 @@ assert(unityMobile.includes('_groundItems?.RequestPickupNearest()'),
 const unityBootstrap = fs.readFileSync(UNITY_BOOTSTRAP_SOURCE, 'utf8');
 assert(unityBootstrap.includes('MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GlobalMap, GroundItems);'),
   'Bootstrap Unity больше не передаёт GroundItems мобильному управлению');
+assert(unityBootstrap.includes('gameObject.AddComponent<RoaWorldOverlayCanvas>()')
+  && unityBootstrap.includes('worldOverlay.Configure(GroundItems, Enemies, movementFxCamera);')
+  && unityBootstrap.includes('GroundItems.CanvasDriven = true;'),
+  'Bootstrap Unity больше не заменяет IMGUI-подписи лута общим Canvas');
 assert(unityBootstrap.includes('Interaction.GroundItems = GroundItems;'),
   'Bootstrap Unity больше не связывает единый приоритет E с наземными предметами');
 assert(unityBootstrap.includes('Inventory.GroundItems = GroundItems;'),
@@ -167,5 +182,5 @@ assert(unityBootstrap.includes('Inventory.GroundItems = GroundItems;'),
 console.log(
   `Физические предметы OK: ${EXPECTED_LIBRARY_IDS.length} собственных + `
   + `${WEAPON_IDS.length} оружия + ${EQUIPMENT_IDS.length} экипировки; `
-  + `${vertices} экспортированных вершин, ${triangles} треугольников`
+  + `${vertices} экспортированных вершин, ${triangles} треугольников; Canvas-подписи локализованы и не перекрываются`
 );

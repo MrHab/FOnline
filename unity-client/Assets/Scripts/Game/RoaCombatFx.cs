@@ -88,6 +88,7 @@ namespace RealmOfAshes.Game
 
         public RoaAudio Audio;
         public RoaCombatPresentationFx Polish;
+        public bool CanvasDriven { get; set; }
 
         private RoaSocketClient _socket;
         private RoaEnemies _enemies;
@@ -444,6 +445,7 @@ namespace RealmOfAshes.Game
 
         private void OnGUI()
         {
+            if (CanvasDriven) return;
             RoaUiTheme.Apply();
             if (RoaGameBootstrap.BlocksWorldHud) return;
             if (_enemies == null || UnityEngine.Camera.main == null) return;

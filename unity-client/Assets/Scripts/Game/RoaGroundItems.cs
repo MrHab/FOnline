@@ -95,6 +95,9 @@ namespace RealmOfAshes.Game
         private float _statusUntil;
         private Material _markerMaterial;
 
+        /// <summary>Основной Unity HUD показывает подписи через общий uGUI overlay.</summary>
+        public bool CanvasDriven { get; set; }
+
         /// <summary>Сколько предметов лежит в комнате. Для диагностики.</summary>
         public int Count { get { return _items.Count; } }
 
@@ -521,6 +524,43 @@ namespace RealmOfAshes.Game
             }
         }
 
+        public void CollectOverlayLabels(List<RoaWorldOverlayCanvas.GroundLabel> labels)
+        {
+            if (labels == null || Player == null || !Player.gameObject.activeInHierarchy) return;
+            Vector3 origin = Player.transform.position;
+            float rangeSquared = PickupRange * PickupRange;
+            foreach (GroundItem item in _items.Values)
+            {
+                if (item == null || (Fog != null && !Fog.IsVisible(item.Position))) continue;
+                Vector3 delta = item.Position - origin;
+                delta.y = 0f;
+                float distanceSquared = delta.sqrMagnitude;
+                if (distanceSquared > rangeSquared) continue;
+                labels.Add(new RoaWorldOverlayCanvas.GroundLabel
+                {
+                    Id = item.Id,
+                    ItemId = item.ItemId,
+                    Quantity = Mathf.Max(1, item.Qty),
+                    World = item.Position + Vector3.up * 0.5f,
+                    DistanceSquared = distanceSquared
+                });
+            }
+        }
+
+        public bool TryGetOverlayStatus(out string text, out float opacity)
+        {
+            text = _status;
+            float remaining = _statusUntil - Time.time;
+            if (remaining <= 0f || string.IsNullOrWhiteSpace(text))
+            {
+                text = string.Empty;
+                opacity = 0f;
+                return false;
+            }
+            opacity = remaining >= 0.35f ? 1f : Mathf.Clamp01(remaining / 0.35f);
+            return true;
+        }
+
         public bool HasPickupCandidate()
         {
             if (Player == null) return false;
@@ -597,6 +637,7 @@ namespace RealmOfAshes.Game
 
         private void OnGUI()
         {
+            if (CanvasDriven) return;
             RoaUiTheme.Apply();
             if (RoaGameBootstrap.BlocksWorldHud) return;
             UnityEngine.Camera cam = UnityEngine.Camera.main;

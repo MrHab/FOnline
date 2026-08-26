@@ -244,6 +244,12 @@ namespace RealmOfAshes.Game
             }
             if (GroundItems != null) GroundItems.Fog = Fog;
 
+            var worldOverlay = GetComponent<RoaWorldOverlayCanvas>();
+            if (worldOverlay == null) worldOverlay = gameObject.AddComponent<RoaWorldOverlayCanvas>();
+            worldOverlay.Configure(GroundItems, Enemies, movementFxCamera);
+            if (GroundItems != null) GroundItems.CanvasDriven = true;
+            if (CombatFx != null) CombatFx.CanvasDriven = true;
+
             if (GlobalMap == null) GlobalMap = GetComponent<RoaGlobalMap>();
             if (GlobalMap == null) GlobalMap = gameObject.AddComponent<RoaGlobalMap>();
             GlobalMap.Configure(this, Socket, CameraRig, BaseUrl);

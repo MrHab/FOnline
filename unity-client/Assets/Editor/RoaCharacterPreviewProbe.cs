@@ -169,6 +169,65 @@ namespace RealmOfAshes.EditorTools
                     Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] реакция на урон: " + hitCapturePath);
                 }
 
+                string deathCapturePath = Environment.GetEnvironmentVariable("ROA_UNITY_DEATH_CAPTURE");
+                if (!string.IsNullOrWhiteSpace(deathCapturePath))
+                {
+                    foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    {
+                        renderer.updateWhenOffscreen = true;
+                        renderer.forceMatrixRecalculationPerRender = true;
+                    }
+                    loaded.SetDead(true);
+                    AnimationState death = animation["death"];
+                    Check(death != null, "death-клип недоступен");
+                    death.enabled = true;
+                    death.weight = 1f;
+                    death.wrapMode = WrapMode.ClampForever;
+                    death.time = Mathf.Min(RoaCharacterView.DeathPoseHoldSeconds,
+                        Mathf.Max(0f, death.length - 0.001f));
+                    animation.Sample();
+                    loaded.ApplyDeathFallForDiagnostics(RoaCharacterView.DeathFallSeconds);
+                    loaded.GroundDeathForDiagnostics(loaded.transform.parent.position.y);
+                    Check(loaded.Dead && loaded.CurrentClip == "death",
+                        "настоящий персонаж не перешёл в позу смерти");
+                    Check(loaded.DeathFallWeight > 0.999f
+                            && Quaternion.Angle(Quaternion.identity, loaded.transform.localRotation) > 75f,
+                        "финальный кадр death-клипа не доведён до земли");
+                    Check(preview.RenderNow(), "камера не обновила геометрию позы смерти");
+                    Check(preview.RenderNow(), "камера не прогрела геометрию позы смерти");
+                    bool hasDeathBounds = false;
+                    Bounds deathBounds = default;
+                    foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    {
+                        if (!renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                        if (!hasDeathBounds) deathBounds = renderer.bounds;
+                        else deathBounds.Encapsulate(renderer.bounds);
+                        hasDeathBounds = true;
+                    }
+                    float deathGroundY = loaded.transform.position.y;
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] границы смерти: "
+                        + deathBounds.size.ToString("F2") + ", minY="
+                        + (deathBounds.min.y - deathGroundY).ToString("0.00") + " м, rootY="
+                        + loaded.DeathGroundOffsetY.ToString("0.00") + ", bones="
+                        + loaded.DeathGroundContactBones);
+                    Check(hasDeathBounds && Mathf.Max(deathBounds.size.x, deathBounds.size.z) > 1.1f,
+                        "финальная поза не образует читаемый лежащий силуэт");
+                    Check(loaded.DeathGroundContactBones == 6
+                            && loaded.DeathGroundOffsetY > 0.3f
+                            && loaded.DeathGroundOffsetY < 1.35f,
+                        "поза смерти не заземлена по опорным костям");
+                    camera.transform.position = deathBounds.center + new Vector3(2.8f, 2.4f, 3.6f);
+                    camera.transform.LookAt(deathBounds.center);
+                    camera.fieldOfView = 34f;
+                    Check(preview.RenderNow(), "камера не приняла позу смерти");
+                    Check(preview.RenderNow(), "камера не отрисовала прогретую позу смерти");
+                    RenderTexture.active = preview.Texture;
+                    readback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
+                    readback.Apply(false, false);
+                    System.IO.File.WriteAllBytes(deathCapturePath, readback.EncodeToPNG());
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] поза смерти: " + deathCapturePath);
+                }
+
                 Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] готово: GLB=male_medium, 320×360, "
                     + "варианты=лицо/волосы/цвет, слой=31, свет=3, пикселей=" + nonBackground);
             }

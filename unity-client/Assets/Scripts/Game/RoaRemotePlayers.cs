@@ -52,7 +52,19 @@ namespace RealmOfAshes.Game
             public RoaMovementFx.ActorStepState StepFx;
         }
 
+        private const float DeathVisualLifetime = 3.2f;
+
+        private sealed class DeathVisual
+        {
+            public GameObject Root;
+            public float RemoveAt;
+        }
+
         private readonly Dictionary<string, Remote> _remotes = new Dictionary<string, Remote>();
+        private readonly List<DeathVisual> _deathVisuals = new List<DeathVisual>();
+
+        public int DeathVisualCount { get { return _deathVisuals.Count; } }
+        public static float DeathVisualSeconds { get { return DeathVisualLifetime; } }
 
         public void ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)
         {
@@ -180,6 +192,7 @@ namespace RealmOfAshes.Game
                 + (string.IsNullOrEmpty(player.Name) ? player.Id : player.Name)
                 + "; в комнате: " + _remotes.Count);
             _ = LoadRemoteVisuals(remote);
+            if (player.Dead || player.Hp <= 0) BeginRemoteDeath(player.Id, Time.unscaledTime);
         }
 
         private void HandleSnapshot(List<PublicPlayer> players)
@@ -188,6 +201,11 @@ namespace RealmOfAshes.Game
             foreach (PublicPlayer player in players)
             {
                 if (player == null || string.IsNullOrEmpty(player.Id)) continue;
+                if (player.Dead || player.Hp <= 0)
+                {
+                    BeginRemoteDeath(player.Id, Time.unscaledTime);
+                    continue;
+                }
                 if (_remotes.TryGetValue(player.Id, out Remote remote))
                 {
                     remote.Player = player;
@@ -334,7 +352,7 @@ namespace RealmOfAshes.Game
             remote.Player = player;
             if (remote.View != null) remote.View.SetInjuries(player.Injuries);
             if (remote.View != null && remote.View.Ready) _ = ApplyRemoteEquipment(remote);
-            if (player.Dead || player.Hp <= 0) HandlePlayerLeft(player.Id);
+            if (player.Dead || player.Hp <= 0) BeginRemoteDeath(player.Id, Time.unscaledTime);
         }
 
         private void HandlePlayerRespawned(JObject payload)
@@ -358,7 +376,13 @@ namespace RealmOfAshes.Game
             string id = payload?["playerId"]?.ToString() ?? payload?["targetId"]?.ToString();
             bool fatal = payload?["killed"]?.ToObject<bool>() == true
                 || (payload?["hp"] != null && payload["hp"].ToObject<int>() <= 0);
-            if (!fatal && !string.IsNullOrEmpty(id)
+            if (fatal)
+            {
+                ApplyVitals(payload);
+                BeginRemoteDeath(id, Time.unscaledTime);
+                return;
+            }
+            if (!string.IsNullOrEmpty(id)
                 && _remotes.TryGetValue(id, out Remote remote) && remote.View != null)
             {
                 int damage = Mathf.Max(0,
@@ -368,7 +392,7 @@ namespace RealmOfAshes.Game
                     remote.View.PlayHit(source, damage, critical);
                 else remote.View.PlayHit();
             }
-            ApplyVitals(payload, true);
+            ApplyVitals(payload);
         }
 
         private bool TryDamageSource(JObject payload, out Vector3 source)
@@ -394,10 +418,10 @@ namespace RealmOfAshes.Game
 
         private void HandlePlayerHealed(JObject payload)
         {
-            ApplyVitals(payload, false);
+            ApplyVitals(payload);
         }
 
-        private void ApplyVitals(JObject payload, bool removeDead)
+        private void ApplyVitals(JObject payload)
         {
             if (payload == null) return;
             string id = payload["playerId"]?.ToString() ?? payload["targetId"]?.ToString();
@@ -409,8 +433,53 @@ namespace RealmOfAshes.Game
                 remote.Player.Injuries = (JObject)injuries.DeepClone();
                 if (remote.View != null) remote.View.SetInjuries(remote.Player.Injuries);
             }
-            if (removeDead && (payload["killed"]?.ToObject<bool>() == true || remote.Player.Hp <= 0))
-                HandlePlayerLeft(id);
+        }
+
+        private bool BeginRemoteDeath(string id, float now)
+        {
+            if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote)) return false;
+            _remotes.Remove(id);
+            if (remote.Player != null)
+            {
+                remote.Player.Dead = true;
+                remote.Player.Hp = 0;
+            }
+            remote.Moving = false;
+            remote.Velocity = Vector3.zero;
+            remote.View?.SetDead(true);
+            if (remote.Root == null) return true;
+
+            remote.Root.name = "RemoteDeath:" + id;
+            foreach (Collider collider in remote.Root.GetComponentsInChildren<Collider>(true))
+                collider.enabled = false;
+            _deathVisuals.Add(new DeathVisual
+            {
+                Root = remote.Root,
+                RemoveAt = now + DeathVisualLifetime
+            });
+            return true;
+        }
+
+        private void UpdateDeathVisuals(float now)
+        {
+            for (int i = _deathVisuals.Count - 1; i >= 0; i--)
+            {
+                DeathVisual visual = _deathVisuals[i];
+                if (visual.Root != null && now < visual.RemoveAt) continue;
+                if (visual.Root != null) DisposeRemoteRoot(visual.Root);
+                _deathVisuals.RemoveAt(i);
+            }
+        }
+
+        private static void DisposeRemoteRoot(GameObject root)
+        {
+            if (root == null) return;
+#if UNITY_EDITOR
+            if (!Application.isPlaying) Object.DestroyImmediate(root);
+            else Object.Destroy(root);
+#else
+            Object.Destroy(root);
+#endif
         }
 
         /// <summary>
@@ -511,14 +580,18 @@ namespace RealmOfAshes.Game
                         remote.Moving, presentationVisible, remote.Crouching, observer);
                 }
             }
+            UpdateDeathVisuals(Time.unscaledTime);
         }
 
         public void Clear()
         {
             foreach (Remote remote in _remotes.Values)
-                if (remote.Root != null) Destroy(remote.Root);
-
+                if (remote.Root != null) DisposeRemoteRoot(remote.Root);
             _remotes.Clear();
+
+            for (int i = 0; i < _deathVisuals.Count; i++)
+                if (_deathVisuals[i].Root != null) DisposeRemoteRoot(_deathVisuals[i].Root);
+            _deathVisuals.Clear();
         }
 
         public void CollectMinimapMarkers(List<RoaMinimap.Marker> markers)

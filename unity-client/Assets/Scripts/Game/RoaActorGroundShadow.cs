@@ -61,18 +61,24 @@ namespace RealmOfAshes.Game
         }
 
         public void UpdatePose(Vector3 actorPosition, float groundY, Vector3 groundNormal,
-                               float actorYawDeg, bool dead, bool crouching)
+                               float actorYawDeg, bool dead, bool crouching,
+                               float deathSide = 0f, float deathWeight = 0f)
         {
             if (!Ready || !_requestedActive) return;
             if (groundNormal.sqrMagnitude < 0.5f) groundNormal = Vector3.up;
             groundNormal.Normalize();
 
             Transform shadow = _node.transform;
-            shadow.position = new Vector3(actorPosition.x, groundY + 0.016f, actorPosition.z);
             Quaternion yaw = Quaternion.AngleAxis(actorYawDeg, Vector3.up);
+            Vector3 center = actorPosition;
+            if (dead && deathWeight > 0f)
+                center += yaw * Vector3.right * (deathSide * 0.68f * Mathf.Clamp01(deathWeight));
+            shadow.position = new Vector3(center.x, groundY + 0.016f, center.z);
             shadow.rotation = Quaternion.FromToRotation(Vector3.up, groundNormal) * yaw;
-            float width = dead ? 1.32f : (crouching ? 1.08f : 1f);
-            float depth = dead ? 1.12f : (crouching ? 1.04f : 1f);
+            float width = dead ? Mathf.Lerp(1.32f, 2.05f, deathWeight)
+                : (crouching ? 1.08f : 1f);
+            float depth = dead ? Mathf.Lerp(1.12f, 1.28f, deathWeight)
+                : (crouching ? 1.04f : 1f);
             shadow.localScale = new Vector3(width, 1f, depth);
         }
 

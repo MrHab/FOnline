@@ -31,6 +31,7 @@ async function main() {
   const groundShadow = fs.readFileSync(path.join(UNITY_GAME, 'RoaActorGroundShadow.cs'), 'utf8');
   const groundingProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaGroundingProbe.cs'), 'utf8');
   const hitProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaHitReactionProbe.cs'), 'utf8');
+  const remoteDeathProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaRemoteDeathProbe.cs'), 'utf8');
   const characterPreviewProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaCharacterPreviewProbe.cs'), 'utf8');
   const auditRunner = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaClientAuditRunner.cs'), 'utf8');
   const enemies = fs.readFileSync(path.join(UNITY_GAME, 'RoaEnemies.cs'), 'utf8');
@@ -71,7 +72,7 @@ async function main() {
     && groundShadow.includes('Shader.Find("Sprites/Default")')
     && groundShadow.includes('mesh.colors = new[] { Color.white')
     && groundShadow.includes('Quaternion.FromToRotation(Vector3.up, groundNormal)')
-    && characterView.includes('_groundShadow.UpdatePose(transform.position, groundY, normal'),
+    && characterView.includes('_groundShadow.UpdatePose(actorPosition, groundY, normal'),
   'Unity humanoids lost the shared slope-aware procedural contact shadow');
   assert(groundingProbe.includes('[КОНТАКТ С ЗЕМЛЁЙ] готово:')
     && groundingProbe.includes('ik.GroundProbeCount == 2')
@@ -104,6 +105,28 @@ async function main() {
     && auditRunner.includes('typeof(RoaHitReactionProbe)')
     && characterPreviewProbe.includes('ROA_UNITY_HIT_CAPTURE'),
   'Unity directional hit reaction lost locomotion preservation, source wiring, IK order or visual probe');
+  assert(remotePlayers.includes('private const float DeathVisualLifetime = 3.2f;')
+    && remotePlayers.includes('_remotes.Remove(id);')
+    && remotePlayers.includes('remote.View?.SetDead(true);')
+    && remotePlayers.includes('collider.enabled = false;')
+    && remotePlayers.includes('UpdateDeathVisuals(Time.unscaledTime);')
+    && remotePlayers.includes('BeginRemoteDeath(player.Id, Time.unscaledTime)')
+    && characterView.includes('if (_dead) SetDead(true);')
+    && remoteDeathProbe.includes('[СМЕРТЬ ИГРОКА] готово:')
+    && remoteDeathProbe.includes('view.ApplyDeathFallForDiagnostics(RoaCharacterView.DeathFallSeconds)')
+    && characterView.includes('DeathFallWeightAt(float elapsed)')
+    && characterView.includes('ApplyDeathFallForDiagnostics(deathElapsed)')
+    && characterView.includes('FreezeDeathPose(deathElapsed)')
+    && characterView.includes('death.time = Mathf.Min(DeathPoseHoldSecondsValue')
+    && characterView.includes('GroundDeathForDiagnostics(deathGroundY)')
+    && characterView.includes('DeathContactBones')
+    && groundShadow.includes('deathSide * 0.68f')
+    && groundingProbe.includes('не следует за падением')
+    && auditRunner.includes('typeof(RoaRemoteDeathProbe)')
+    && characterPreviewProbe.includes('ROA_UNITY_DEATH_CAPTURE')
+    && characterPreviewProbe.includes('финальный кадр death-клипа не доведён до земли')
+    && characterPreviewProbe.includes('loaded.DeathGroundContactBones == 6'),
+  'Unity remote player death lost non-targetable retained visual, expiry, late-load recovery or visual probe');
 
   assert(remotePlayers.includes('RoaCombatFx.TryShotEndpoints(payload, out start, out end)')
     && remotePlayers.includes('remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil)')

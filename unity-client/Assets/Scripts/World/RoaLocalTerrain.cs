@@ -41,6 +41,8 @@ namespace RealmOfAshes.World
         public int DistantRidgeCount { get { return _groundDressing != null ? _groundDressing.RidgeCount : 0; } }
         public int DetailVertexCount { get { return _groundDressing != null ? _groundDressing.VertexCount : 0; } }
         public int MicroDetailTextureSize { get { return _microDetail != null ? _microDetail.width : 0; } }
+        public int AlbedoTextureSize { get { return _albedo != null ? _albedo.width : 0; } }
+        public int PathConnectionCount { get; private set; }
 
         public void Initialize(LocationDefinition location, JArray stateMap)
         {
@@ -53,7 +55,7 @@ namespace RealmOfAshes.World
             float edgeBorder = settlement ? 40f : 32f;
             _visualWidth = worldWidth + edgeBorder * 2f;
             _visualDepth = worldDepth + edgeBorder * 2f;
-            _textureSize = Application.isMobilePlatform ? 256 : 512;
+            _textureSize = AlbedoResolution(Application.isMobilePlatform);
 
             _mesh = BuildReliefMesh(_visualWidth, _visualDepth, settlement ? 48 : 12,
                 location != null ? location.Seed : 1L, settlement);
@@ -87,6 +89,11 @@ namespace RealmOfAshes.World
             ApplyMap(stateMap, true);
         }
 
+        public static int AlbedoResolution(bool mobile)
+        {
+            return mobile ? 512 : 1024;
+        }
+
         /// <summary>Repaints the visual surface when the server publishes a new map.</summary>
         public bool ApplyMap(JArray stateMap, bool force = false)
         {
@@ -97,6 +104,7 @@ namespace RealmOfAshes.World
             ReadMapSize(stateMap, out int mapWidth, out int mapDepth);
             AuthoritativeMapWidth = mapWidth;
             AuthoritativeMapDepth = mapDepth;
+            PathConnectionCount = 0;
             BuildTileMovementColliders(stateMap, mapWidth, mapDepth);
             if (_groundDressing != null)
                 _groundDressing.Build(_location, stateMap, mapWidth, mapDepth, _visualWidth, _visualDepth);
@@ -315,13 +323,7 @@ namespace RealmOfAshes.World
                     }
                     else if (type == Path)
                     {
-                        PaintEllipse(pixels, center.x, center.z, 2.32f, 1.56f, rotation,
-                            Hex(0xd4b175), 0.46f, tx * 103 + tz * 199);
-                        if (Hash01(tx, tz, 397) > 0.34f)
-                        {
-                            float length = 1.15f + Hash01(tx, tz, 399) * 0.42f;
-                            PaintTrack(pixels, center.x, center.z, length, rotation, Hex(0x3f2e1d), 0.22f);
-                        }
+                        PaintPathTile(pixels, stateMap, tx, tz, mapWidth, mapDepth, center);
                     }
                     else if (type == Dark)
                     {
@@ -345,6 +347,48 @@ namespace RealmOfAshes.World
                     }
                 }
             }
+        }
+
+        private void PaintPathTile(Color32[] pixels, JArray stateMap, int tx, int tz,
+                                   int mapWidth, int mapDepth, Vector3 center)
+        {
+            PaintEllipse(pixels, center.x, center.z, 2.32f, 2.08f, 0f,
+                Hex(0xc7a66f), 0.34f, tx * 103 + tz * 199);
+
+            if (TileType(stateMap, tx + 1, tz, mapWidth, mapDepth) == Path)
+                PaintPathConnection(pixels, center,
+                    RoaCoords.TileToWorld(tx + 1, tz, mapWidth, mapDepth), tx, tz, 1);
+            if (TileType(stateMap, tx, tz + 1, mapWidth, mapDepth) == Path)
+                PaintPathConnection(pixels, center,
+                    RoaCoords.TileToWorld(tx, tz + 1, mapWidth, mapDepth), tx, tz, 2);
+        }
+
+        private void PaintPathConnection(Color32[] pixels, Vector3 from, Vector3 to,
+                                         int tx, int tz, int salt)
+        {
+            PathConnectionCount++;
+            PaintLine(pixels, from.x, from.z, to.x, to.z, 0.92f,
+                Hex(0xc9a66b), 0.42f);
+            Vector2 direction = new Vector2(to.x - from.x, to.z - from.z).normalized;
+            Vector2 side = new Vector2(-direction.y, direction.x) * 0.29f;
+            PaintLine(pixels, from.x + side.x, from.z + side.y,
+                to.x + side.x, to.z + side.y, 0.055f,
+                Hex(0x493521), 0.24f);
+            PaintLine(pixels, from.x - side.x, from.z - side.y,
+                to.x - side.x, to.z - side.y, 0.055f,
+                Hex(0x493521), 0.24f);
+            float t = 0.24f + Hash01(tx, tz, 430 + salt) * 0.52f;
+            PaintEllipse(pixels, Mathf.Lerp(from.x, to.x, t), Mathf.Lerp(from.z, to.z, t),
+                0.34f, 0.18f, Mathf.Atan2(direction.y, direction.x),
+                Hex(0x71583a), 0.34f, tx * 131 + tz * 17 + salt);
+        }
+
+        private static int TileType(JArray stateMap, int tx, int tz, int mapWidth, int mapDepth)
+        {
+            if (stateMap == null || tx < 0 || tz < 0 || tx >= mapWidth || tz >= mapDepth
+                || tz >= stateMap.Count) return -1;
+            JArray row = stateMap[tz] as JArray;
+            return row != null && tx < row.Count ? row[tx]?.ToObject<int>() ?? Grass : -1;
         }
 
         private void PaintSettlementLayers(Color32[] pixels)
@@ -384,31 +428,19 @@ namespace RealmOfAshes.World
 
         private void PaintAmbientAge(Color32[] pixels)
         {
-            int count = Application.isMobilePlatform ? 46 : 110;
+            int count = Application.isMobilePlatform ? 70 : 150;
             int seed = unchecked((int)(_location != null ? _location.Seed : 1L));
             for (int i = 0; i < count; i++)
             {
                 float x = (Hash01(i, seed, 7701) - 0.5f) * _visualWidth * 0.62f;
                 float z = (Hash01(i, seed, 7703) - 0.5f) * _visualDepth * 0.62f;
-                float size = 0.30f + Hash01(i, seed, 7705) * 0.85f;
+                float size = 0.18f + Hash01(i, seed, 7705) * 0.54f;
                 Color32 color = Hash01(i, seed, 7707) > 0.48f ? Hex(0x665938) : Hex(0xb19b79);
                 PaintEllipse(pixels, x, z, size, size * 0.55f,
-                    Hash01(i, seed, 7709) * Mathf.PI, color, 0.38f, seed + i);
+                    Hash01(i, seed, 7709) * Mathf.PI, color, 0.30f, seed + i);
             }
         }
 
-        private void PaintTrack(Color32[] pixels, float centerX, float centerZ, float length,
-            float rotation, Color32 color, float opacity)
-        {
-            float dx = Mathf.Cos(rotation) * length * 0.5f;
-            float dz = Mathf.Sin(rotation) * length * 0.5f;
-            PaintLine(pixels, centerX - dx, centerZ - dz, centerX + dx, centerZ + dz,
-                0.055f, color, opacity);
-            PaintLine(pixels, centerX - dx - Mathf.Sin(rotation) * 0.16f,
-                centerZ - dz + Mathf.Cos(rotation) * 0.16f,
-                centerX + dx - Mathf.Sin(rotation) * 0.16f,
-                centerZ + dz + Mathf.Cos(rotation) * 0.16f, 0.055f, color, opacity);
-        }
 
         private void PaintLine(Color32[] pixels, float x1, float z1, float x2, float z2,
             float width, Color32 color, float opacity)
@@ -598,7 +630,7 @@ namespace RealmOfAshes.World
             {
                 float broad = ValueNoise(x * 0.16f, y * 0.16f, seed + 9011);
                 float grain = Hash01(x, y, seed + 9013);
-                float value = Mathf.Clamp01(0.5f + (broad - 0.5f) * 0.075f + (grain - 0.5f) * 0.030f);
+                float value = Mathf.Clamp01(0.5f + (broad - 0.5f) * 0.14f + (grain - 0.5f) * 0.06f);
                 byte channel = (byte)Mathf.RoundToInt(value * 255f);
                 pixels[y * size + x] = new Color32(channel, channel, channel, 255);
             }
@@ -607,7 +639,7 @@ namespace RealmOfAshes.World
             material.SetTexture("_DetailAlbedoMap", _microDetail);
             material.SetTextureScale("_DetailAlbedoMap", new Vector2(
                 Mathf.Max(1f, _visualWidth / 4.2f), Mathf.Max(1f, _visualDepth / 4.2f)));
-            if (material.HasProperty("_DetailAlbedoMapScale")) material.SetFloat("_DetailAlbedoMapScale", 0.36f);
+            if (material.HasProperty("_DetailAlbedoMapScale")) material.SetFloat("_DetailAlbedoMapScale", 0.48f);
             material.EnableKeyword("_DETAIL_MULX2");
         }
 

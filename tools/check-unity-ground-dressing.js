@@ -14,7 +14,7 @@ const audit = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
 
 [
   'public static int SurfaceBudget(bool mobile)',
-  'return mobile ? 42 : 84;',
+  'return mobile ? 60 : 120;',
   'public static int RidgeBudget(bool mobile)',
   'return mobile ? 16 : 28;',
   'public static bool SupportsTile(int type)',
@@ -24,6 +24,7 @@ const audit = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
   'AppendStoneCluster(',
   'AppendStone(',
   'AppendDistantRidge(',
+  'CreateRenderNode("Scrub", _scrubMesh, _scrubMaterial, !mobile)',
   'new GameObject("GroundDressing")',
   'new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer))',
 ].forEach(marker => assert(dressing.includes(marker), `Нет Unity-маркера оформления земли: ${marker}`));
@@ -42,6 +43,11 @@ assert(!/AddComponent<[^>]*Collider/.test(dressing)
   'public int MicroDetailTextureSize',
   'ApplyMicroDetail(_material, location != null ? location.Seed : 1L);',
   'material.EnableKeyword("_DETAIL_MULX2")',
+  'public static int AlbedoResolution(bool mobile)',
+  'return mobile ? 512 : 1024;',
+  'PaintPathConnection(',
+  'TileType(stateMap, tx + 1, tz, mapWidth, mapDepth) == Path',
+  'public int PathConnectionCount',
 ].forEach(marker => assert(terrain.includes(marker), `RoaLocalTerrain не подключает оформление: ${marker}`));
 
 [
@@ -50,7 +56,10 @@ assert(!/AddComponent<[^>]*Collider/.test(dressing)
   'terrain.ApplyMap(water)',
   'ROA_GROUND_DRESSING_CAPTURE',
   'expectedDetailSize = Application.isMobilePlatform ? 64 : 128',
-  'RoaGroundDressing.StoneClusterPieceCount >= 3',
+  'RoaGroundDressing.StoneClusterPieceCount >= 4',
+  'RoaGroundDressing.ScrubBladeCount >= 6',
+  'terrain.PathConnectionCount == 17',
+  'terrain.AlbedoTextureSize == RoaLocalTerrain.AlbedoResolution(',
   'декор земли снова сливается в почти чёрные точки',
   '[ОФОРМЛЕНИЕ ЗЕМЛИ] готово:',
 ].forEach(marker => assert(probe.includes(marker), `Проба оформления земли неполна: ${marker}`));

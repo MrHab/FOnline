@@ -48,12 +48,21 @@ namespace RealmOfAshes.EditorTools
                 Require(RoaGroundDressing.SurfaceBudget(true) < RoaGroundDressing.SurfaceBudget(false)
                         && RoaGroundDressing.RidgeBudget(true) < RoaGroundDressing.RidgeBudget(false),
                     "мобильный бюджет оформления не снижен");
+                Require(RoaLocalTerrain.AlbedoResolution(false) == 1024
+                        && RoaLocalTerrain.AlbedoResolution(true) == 512,
+                    "земля снова потеряла разрешение, необходимое для цельных дорог");
 
                 LocationDefinition location = Location("probe_wasteland", 18, 18, 24371L);
                 JArray map = MixedMap(18, 18);
                 host = new GameObject("Ground dressing probe");
                 RoaLocalTerrain terrain = host.AddComponent<RoaLocalTerrain>();
                 terrain.Initialize(location, map);
+                Require(terrain.AlbedoTextureSize == RoaLocalTerrain.AlbedoResolution(
+                            Application.isMobilePlatform),
+                    "runtime-земля не использует заявленное разрешение");
+                Require(terrain.PathConnectionCount == 17,
+                    "вертикальная дорога распалась на плитки: связей=" + terrain.PathConnectionCount);
+                int initialPathConnections = terrain.PathConnectionCount;
 
                 int budget = RoaGroundDressing.SurfaceBudget(Application.isMobilePlatform);
                 Require(terrain.SurfaceDetailClusterCount > budget / 2
@@ -68,7 +77,7 @@ namespace RealmOfAshes.EditorTools
                         && terrain.GroundRenderer.sharedMaterial.IsKeywordEnabled("_DETAIL_MULX2"),
                     "повторяемая микротекстура земли не подключена");
                 Require(terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 4
-                        && terrain.DetailVertexCount < 2200,
+                        && terrain.DetailVertexCount < 4400,
                     "геометрический бюджет оформления нарушен: " + terrain.DetailVertexCount);
                 int initialVertices = terrain.DetailVertexCount;
 
@@ -81,9 +90,9 @@ namespace RealmOfAshes.EditorTools
                         && generator.StoneClusterCount > budget / 4,
                     "ландшафт потерял разнообразие кустов или групп камней: "
                     + generator.ScrubClusterCount + "/" + generator.StoneClusterCount);
-                Require(RoaGroundDressing.ScrubBladeCount >= 4
-                        && RoaGroundDressing.StoneClusterPieceCount >= 3
-                        && terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 14,
+                Require(RoaGroundDressing.ScrubBladeCount >= 6
+                        && RoaGroundDressing.StoneClusterPieceCount >= 4
+                        && terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 22,
                     "детали земли остались слишком мелкими или схематичными");
                 int initialScrubCount = generator.ScrubClusterCount;
                 int initialStoneCount = generator.StoneClusterCount;
@@ -125,7 +134,8 @@ namespace RealmOfAshes.EditorTools
                 Debug.Log("[ОФОРМЛЕНИЕ ЗЕМЛИ] готово: поверхность=" + budget
                     + ", дальний рельеф=" + RoaGroundDressing.RidgeBudget(Application.isMobilePlatform)
                     + ", кусты/камни=" + initialScrubCount + "/" + initialStoneCount
-                    + ", вершины=" + initialVertices + ", коллайдеры=0");
+                    + ", вершины=" + initialVertices + ", дорога=" + initialPathConnections
+                    + ", albedo=" + terrain.AlbedoTextureSize + ", коллайдеры=0");
             }
             finally
             {

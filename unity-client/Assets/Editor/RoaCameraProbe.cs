@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using RealmOfAshes.Game;
@@ -140,9 +141,30 @@ namespace RealmOfAshes.EditorTools
                 Check(!mapCanvas.RouteProgressVisible,
                     "полоса маршрута остаётся без активного пути");
 
+                var taskCards = new List<RoaInteraction.WorldTaskCard>
+                {
+                    new RoaInteraction.WorldTaskCard
+                    {
+                        Id = "task-1", Label = "Работа", Title = "Разведка",
+                        Reward = "100 XP", AcceptLabel = "Взять работу", CanAccept = true
+                    }
+                };
+                string workA = RoaGlobalMapCanvas.BuildWorkSignature("site-a|Станция", taskCards);
+                string workSame = RoaGlobalMapCanvas.BuildWorkSignature("site-a|Станция", taskCards);
+                taskCards[0].TrackLabel = "Отслеживать";
+                string workChanged = RoaGlobalMapCanvas.BuildWorkSignature("site-a|Станция", taskCards);
+                string cachedSignature = null;
+                Check(workA == workSame && workA != workChanged
+                      && RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workA)
+                      && !RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workSame)
+                      && RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workChanged)
+                      && RoaGlobalMapCanvas.BuildPartySignature(string.Empty)
+                         != RoaGlobalMapCanvas.BuildPartySignature("caravan-1"),
+                    "неизменная доска работ пересобирается или обновление списка теряется");
+
                 Debug.Log("[КАМЕРА] готово: zoom=8–28, distance=14, map drag="
                     + movement.x.ToString("0.00") + ":" + movement.z.ToString("0.00")
-                    + ", clamp=50:-60, touch=tap/drag/pinch, labels=canvas/activities, route=progress/contact");
+                    + ", clamp=50:-60, touch=tap/drag/pinch, labels=canvas/activities, route=progress/contact, lists=stable");
             }
             finally
             {

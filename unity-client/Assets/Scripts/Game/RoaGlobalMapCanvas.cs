@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.World;
 using UnityEngine;
@@ -64,9 +65,11 @@ namespace RealmOfAshes.Game
         private Button _contactAvoid;
         private RectTransform _workList;
         private readonly List<GameObject> _workRows = new List<GameObject>();
+        private string _workSignature;
         private Text _systemLog;
         private RectTransform _partyList;
         private readonly List<GameObject> _partyRows = new List<GameObject>();
+        private string _partySignature;
         private float _refreshAt;
         private readonly List<string> _logLines = new List<string>();
         private string _lastStatus = string.Empty;
@@ -77,6 +80,8 @@ namespace RealmOfAshes.Game
         public int MapLabelPoolSize { get { return _mapLabelPool.Count; } }
         public bool RouteProgressVisible { get { return _routeProgressTrack != null && _routeProgressTrack.gameObject.activeSelf; } }
         public float RouteProgressFill { get { return _routeProgressFill != null ? _routeProgressFill.anchorMax.x : 0f; } }
+        public int WorkListRebuildCount { get; private set; }
+        public int PartyListRebuildCount { get; private set; }
 
         private void Update()
         {
@@ -439,30 +444,40 @@ namespace RealmOfAshes.Game
 
         private void RefreshWorkBoard()
         {
+            JObject site = Map.PlayerSiteData();
+            var cards = new List<RoaInteraction.WorldTaskCard>();
+            string siteKey = "none";
+            if (site != null)
+            {
+                string currentSiteId = site["id"]?.ToString() ?? string.Empty;
+                siteKey = currentSiteId + "|" + (site["name"]?.ToString() ?? currentSiteId);
+                if (Interaction != null)
+                {
+                    foreach (RoaInteraction.WorldTaskCard card in Interaction.PipboyWorldTasks(true))
+                    {
+                        JToken issuer = null;
+                        foreach (JToken token in Map.WastelandState?["worldTasks"] as JArray ?? new JArray())
+                            if (token?["id"]?.ToString() == card.Id)
+                                issuer = token["issuerSiteId"] ?? token["siteId"];
+                        if (issuer?.ToString() == currentSiteId) cards.Add(card);
+                    }
+                }
+            }
+
+            if (!ListSignatureChanged(ref _workSignature, BuildWorkSignature(siteKey, cards))) return;
+            WorkListRebuildCount++;
             foreach (GameObject row in _workRows) Destroy(row);
             _workRows.Clear();
-            JObject site = Map.PlayerSiteData();
             if (site == null)
             {
                 AddNote(_workList, _workRows, "Доска работ доступна у поселения или точки мира.");
                 return;
             }
+
             string siteId = site["id"]?.ToString() ?? string.Empty;
             AddNote(_workList, _workRows, site["name"]?.ToString() ?? siteId, true);
-            int shown = 0;
-            if (Interaction != null)
-            {
-                foreach (RoaInteraction.WorldTaskCard card in Interaction.PipboyWorldTasks(true))
-                {
-                    JToken issuer = null;
-                    foreach (JToken token in Map.WastelandState?["worldTasks"] as JArray ?? new JArray())
-                        if (token?["id"]?.ToString() == card.Id) issuer = token["issuerSiteId"] ?? token["siteId"];
-                    if (issuer?.ToString() != siteId) continue;
-                    AddWorkRow(card);
-                    shown++;
-                }
-            }
-            if (shown == 0) AddNote(_workList, _workRows, "Работ на этой доске нет.");
+            foreach (RoaInteraction.WorldTaskCard card in cards) AddWorkRow(card);
+            if (cards.Count == 0) AddNote(_workList, _workRows, "Работ на этой доске нет.");
         }
 
         private void AddWorkRow(RoaInteraction.WorldTaskCard card)
@@ -513,12 +528,49 @@ namespace RealmOfAshes.Game
 
         private void RefreshParty()
         {
+            string attached = Map.AttachedPartyId;
+            if (!ListSignatureChanged(ref _partySignature, BuildPartySignature(attached))) return;
+            PartyListRebuildCount++;
             foreach (GameObject row in _partyRows) Destroy(row);
             _partyRows.Clear();
-            string attached = Map.AttachedPartyId;
-            string self = HudCanvas != null ? null : null;
             AddPartyRow("Вы", string.IsNullOrEmpty(attached) ? "Лидер" : "в отряде");
             if (!string.IsNullOrEmpty(attached)) AddPartyRow(attached, "караван");
+        }
+
+        public static string BuildWorkSignature(string siteKey, IList<RoaInteraction.WorldTaskCard> cards)
+        {
+            var value = new StringBuilder(192);
+            AppendSignature(value, siteKey);
+            if (cards == null) return value.ToString();
+            foreach (RoaInteraction.WorldTaskCard card in cards)
+            {
+                AppendSignature(value, card?.Id);
+                AppendSignature(value, card?.Label);
+                AppendSignature(value, card?.Title);
+                AppendSignature(value, card?.Reward);
+                AppendSignature(value, card?.AcceptLabel);
+                AppendSignature(value, card?.TrackLabel);
+                value.Append(card?.CanAccept == true ? '1' : '0').Append(';');
+            }
+            return value.ToString();
+        }
+
+        public static string BuildPartySignature(string attachedPartyId)
+        {
+            return string.IsNullOrEmpty(attachedPartyId) ? "self:leader" : "self:member|" + attachedPartyId;
+        }
+
+        public static bool ListSignatureChanged(ref string previous, string next)
+        {
+            if (string.Equals(previous, next, System.StringComparison.Ordinal)) return false;
+            previous = next;
+            return true;
+        }
+
+        private static void AppendSignature(StringBuilder target, string part)
+        {
+            part = part ?? string.Empty;
+            target.Append(part.Length).Append(':').Append(part).Append('|');
         }
 
         private void AddPartyRow(string name, string meta)

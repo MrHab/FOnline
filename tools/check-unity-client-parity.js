@@ -331,12 +331,19 @@ assert(unityGlobalMapCanvas.includes('MapOverlayLabels')
   && unityGlobalMapCanvas.includes('RouteProgressTrack')
   && unityGlobalMapCanvas.includes('SetRouteProgress(Map.TravelActive, Map.TravelProgress, Map.HasPendingContact)')
   && unityGlobalMapCanvas.includes('RouteProgressColor(bool contact)')
+  && unityGlobalMapCanvas.includes('ListSignatureChanged(ref _workSignature')
+  && unityGlobalMapCanvas.includes('ListSignatureChanged(ref _partySignature')
+  && unityGlobalMapCanvas.includes('BuildWorkSignature(string siteKey')
   && unityGlobalMap.includes('if (!IsActive || !InputEnabled || CanvasDriven) return;'),
   'Unity global-map labels are not rendered by a pooled, input-transparent and scale-aware Canvas');
 assert(unityCameraProbe.includes('route=progress/contact')
   && unityCameraProbe.includes('mapCanvas.RouteProgressFill - 0.42f')
   && unityCameraProbe.includes('полоса маршрута остаётся без активного пути'),
   'Unity camera probe does not cover route progress visibility and contact warning');
+assert(unityCameraProbe.includes('lists=stable')
+  && unityCameraProbe.includes('!RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workSame)')
+  && unityCameraProbe.includes('неизменная доска работ пересобирается'),
+  'Unity camera probe does not protect stable global-map lists from periodic rebuilds');
 assert(unityGlobalMap.includes('TravelDescriptorGraceSeconds = 2.5f')
   && unityGlobalMap.includes('bool preserveFreshTravel = preserveIdleSelection')
   && unityGlobalMap.includes('else if (!preserveFreshTravel) ClearTravel();')

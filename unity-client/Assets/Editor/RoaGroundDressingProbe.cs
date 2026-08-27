@@ -114,7 +114,15 @@ namespace RealmOfAshes.EditorTools
                         && generator.StoneClusterCount > budget / 4,
                     "ландшафт потерял разнообразие кустов или групп камней: "
                     + generator.ScrubClusterCount + "/" + generator.StoneClusterCount);
+                Require(generator.DryScrubClusterCount + generator.OliveScrubClusterCount
+                            == generator.ScrubClusterCount
+                        && generator.DryScrubClusterCount > budget / 8
+                        && generator.OliveScrubClusterCount > budget / 8,
+                    "кустарник потерял один из двух детерминированных тонов: "
+                    + generator.DryScrubClusterCount + "/" + generator.OliveScrubClusterCount);
                 Require(RoaGroundDressing.ScrubBladeCount >= 6
+                        && RoaGroundDressing.ScrubLobeCount == 3
+                        && RoaGroundDressing.ScrubToneCount == 2
                         && RoaGroundDressing.StoneClusterPieceCount >= 4
                         && terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 48,
                     "детали земли остались слишком мелкими или схематичными");
@@ -142,6 +150,14 @@ namespace RealmOfAshes.EditorTools
                         && scrubRenderer.GetComponent<MeshFilter>().sharedMesh.bounds.max.y < 0.52f
                         && scrubRenderer.sharedMaterial.shader.name.Contains("Unlit"),
                     "декор земли снова сливается в почти чёрные точки или вырос выше щиколотки");
+                Material[] scrubMaterials = scrubRenderer.sharedMaterials;
+                Require(scrubMaterials.Length == RoaGroundDressing.ScrubToneCount
+                        && scrubRenderer.GetComponent<MeshFilter>().sharedMesh.subMeshCount
+                            == RoaGroundDressing.ScrubToneCount
+                        && Array.TrueForAll(scrubMaterials, material => material != null
+                            && material.shader.name.Contains("Unlit"))
+                        && Mathf.Abs(scrubMaterials[0].color.r - scrubMaterials[1].color.r) > 0.10f,
+                    "сухой и оливковый кустарник снова слились в один повторяемый материал");
 
                 GameObject dressingObject = dressing.gameObject;
                 Require(!terrain.ApplyMap(map), "одинаковый авторитетный снимок пересобрал оформление");

@@ -16,6 +16,8 @@ namespace RealmOfAshes.World
         private const int Grass = 0;
         private const int Dark = 4;
         public const int ScrubBladeCount = 7;
+        public const int ScrubLobeCount = 3;
+        public const int ScrubToneCount = 2;
         public const float MinimumSurfaceSpacing = 0.72f;
         public const int StoneClusterPieceCount = 4;
 
@@ -23,10 +25,13 @@ namespace RealmOfAshes.World
         private Mesh _scrubMesh;
         private Mesh _stoneMesh;
         private Material _scrubMaterial;
+        private Material _secondaryScrubMaterial;
         private Material _stoneMaterial;
 
         public int SurfaceClusterCount { get; private set; }
         public int ScrubClusterCount { get; private set; }
+        public int DryScrubClusterCount { get; private set; }
+        public int OliveScrubClusterCount { get; private set; }
         public int StoneClusterCount { get; private set; }
         public int RidgeCount { get; private set; }
         public int VertexCount { get; private set; }
@@ -47,6 +52,11 @@ namespace RealmOfAshes.World
             return type == Grass || type == Dark;
         }
 
+        public static int ScrubToneIndex(int index, int seed)
+        {
+            return Hash01(index, seed, 8115) < 0.48f ? 0 : 1;
+        }
+
         public void Build(LocationDefinition location, JArray stateMap, int mapWidth, int mapDepth,
                           float visualWidth, float visualDepth)
         {
@@ -60,7 +70,8 @@ namespace RealmOfAshes.World
             float worldDepth = Mathf.Max(RoaCoords.Tile, location.WorldDepth);
 
             var scrubVertices = new List<Vector3>();
-            var scrubTriangles = new List<int>();
+            var dryScrubTriangles = new List<int>();
+            var oliveScrubTriangles = new List<int>();
             var stoneVertices = new List<Vector3>();
             var stoneTriangles = new List<int>();
 
@@ -86,8 +97,12 @@ namespace RealmOfAshes.World
                 float scale = 0.65f + Mathf.Pow(sizeRandom, 1.65f) * 0.72f;
                 if (Hash01(i, seed, 8113) < Mathf.Lerp(0.50f, 0.70f, patch))
                 {
-                    AppendScrub(scrubVertices, scrubTriangles, new Vector3(x, 0.004f, z), yaw, scale, i, seed);
+                    int tone = ScrubToneIndex(i, seed);
+                    AppendScrub(scrubVertices, tone == 0 ? dryScrubTriangles : oliveScrubTriangles,
+                        new Vector3(x, 0.004f, z), yaw, scale, i, seed);
                     ScrubClusterCount++;
+                    if (tone == 0) DryScrubClusterCount++;
+                    else OliveScrubClusterCount++;
                 }
                 else
                 {
@@ -107,11 +122,16 @@ namespace RealmOfAshes.World
             _root.transform.SetParent(transform, false);
             if (scrubVertices.Count > 0)
             {
-                _scrubMesh = CreateMesh("RuntimeGroundScrubMesh", scrubVertices, scrubTriangles);
-                _scrubMaterial = CreateMaterial("RuntimeGroundScrubMaterial",
-                    settlement ? new Color(0.42f, 0.35f, 0.14f) : new Color(0.38f, 0.35f, 0.16f),
+                _scrubMesh = CreateMesh("RuntimeGroundScrubMesh", scrubVertices,
+                    dryScrubTriangles, oliveScrubTriangles);
+                _scrubMaterial = CreateMaterial("RuntimeGroundDryScrubMaterial",
+                    settlement ? new Color(0.50f, 0.40f, 0.20f) : new Color(0.47f, 0.39f, 0.20f),
                     true, 0f);
-                CreateRenderNode("Scrub", _scrubMesh, _scrubMaterial, false);
+                _secondaryScrubMaterial = CreateMaterial("RuntimeGroundOliveScrubMaterial",
+                    settlement ? new Color(0.37f, 0.40f, 0.18f) : new Color(0.34f, 0.37f, 0.18f),
+                    true, 0f);
+                CreateRenderNode("Scrub", _scrubMesh,
+                    new[] { _scrubMaterial, _secondaryScrubMaterial }, false);
             }
             if (stoneVertices.Count > 0)
             {
@@ -184,15 +204,24 @@ namespace RealmOfAshes.World
         {
             for (int blade = 0; blade < ScrubBladeCount; blade++)
             {
-                float angle = yaw + Hash01(index, blade, seed + 8120) * Mathf.PI * 2f;
-                float length = (0.22f + Hash01(index, blade, seed + 8121) * 0.28f) * scale;
-                float height = (0.08f + Hash01(index, blade, seed + 8123) * 0.12f) * scale;
-                float width = (0.050f + Hash01(index, blade, seed + 8125) * 0.044f) * scale;
+                int lobe = blade % ScrubLobeCount;
+                float lobeAngle = yaw + lobe * (Mathf.PI * 2f / ScrubLobeCount)
+                    + (Hash01(index, lobe, seed + 8119) - 0.5f) * 0.74f;
+                float angle = lobeAngle + (Hash01(index, blade, seed + 8120) - 0.5f) * 0.82f;
+                float lobeWeight = 0.62f + Hash01(index, lobe, seed + 8117) * 0.38f;
+                float length = (0.18f + Hash01(index, blade, seed + 8121) * 0.24f)
+                    * scale * lobeWeight;
+                float height = (0.10f + Hash01(index, blade, seed + 8123) * 0.14f) * scale;
+                float width = (0.055f + Hash01(index, blade, seed + 8125) * 0.040f) * scale;
                 Vector3 direction = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                Vector3 sideOffset = new Vector3(-direction.z, 0f, direction.x)
+                Vector3 tangent = new Vector3(-direction.z, 0f, direction.x);
+                float rootSpread = (0.012f + Hash01(index, blade, seed + 8124) * 0.040f) * scale;
+                Vector3 sideOffset = tangent
                     * ((Hash01(index, blade, seed + 8126) - 0.5f) * 0.10f * scale);
-                Vector3 branchStart = center + direction * (0.018f * scale) + sideOffset;
-                Vector3 branchEnd = center + direction * length + Vector3.up * height;
+                Vector3 branchStart = center + direction * rootSpread + sideOffset;
+                float curl = (Hash01(index, blade, seed + 8128) - 0.5f) * 0.14f * scale;
+                Vector3 branchEnd = branchStart + direction * length + tangent * curl
+                    + Vector3.up * height;
                 AppendTaperedBranch(vertices, triangles, branchStart, branchEnd, width,
                     width * (0.42f + Hash01(index, blade, seed + 8127) * 0.22f));
             }
@@ -326,11 +355,16 @@ namespace RealmOfAshes.World
 
         private void CreateRenderNode(string name, Mesh mesh, Material material, bool castShadows)
         {
+            CreateRenderNode(name, mesh, new[] { material }, castShadows);
+        }
+
+        private void CreateRenderNode(string name, Mesh mesh, Material[] materials, bool castShadows)
+        {
             var node = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
             node.transform.SetParent(_root.transform, false);
             node.GetComponent<MeshFilter>().sharedMesh = mesh;
             MeshRenderer renderer = node.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = material;
+            renderer.sharedMaterials = materials;
             renderer.shadowCastingMode = castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
             renderer.receiveShadows = true;
         }
@@ -340,6 +374,18 @@ namespace RealmOfAshes.World
             var mesh = new Mesh { name = name };
             mesh.SetVertices(vertices);
             mesh.SetTriangles(triangles, 0, true);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static Mesh CreateMesh(string name, List<Vector3> vertices,
+                                       List<int> firstTriangles, List<int> secondTriangles)
+        {
+            var mesh = new Mesh { name = name, subMeshCount = ScrubToneCount };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(firstTriangles, 0, false);
+            mesh.SetTriangles(secondTriangles, 1, true);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
@@ -408,14 +454,18 @@ namespace RealmOfAshes.World
             DisposeObject(_scrubMesh);
             DisposeObject(_stoneMesh);
             DisposeObject(_scrubMaterial);
+            DisposeObject(_secondaryScrubMaterial);
             DisposeObject(_stoneMaterial);
             _root = null;
             _scrubMesh = null;
             _stoneMesh = null;
             _scrubMaterial = null;
+            _secondaryScrubMaterial = null;
             _stoneMaterial = null;
             SurfaceClusterCount = 0;
             ScrubClusterCount = 0;
+            DryScrubClusterCount = 0;
+            OliveScrubClusterCount = 0;
             StoneClusterCount = 0;
             RidgeCount = 0;
             VertexCount = 0;

@@ -19,6 +19,9 @@ namespace RealmOfAshes.EditorTools
             GameObject rig = null;
             GameObject flightRig = null;
             GameObject staleLockRig = null;
+            GameObject pointBlankRig = null;
+            GameObject pointBlankActor = null;
+            GameObject pointBlankPlayer = null;
             GameObject floor = null;
             GameObject step = null;
             var shadowA = new RoaActorGroundShadow();
@@ -134,6 +137,44 @@ namespace RealmOfAshes.EditorTools
                     "устаревший замок вытянул ногу за персонажем: extension="
                     + staleExtension.ToString("F3") + ", xz=" + staleHorizontal.ToString("F3"));
 
+                // Reproduce the reported melee overlap: another actor's lower-body
+                // collider sits directly above one foot. It must never become a step.
+                pointBlankRig = new GameObject("PointBlankFootRig");
+                pointBlankRig.transform.position = new Vector3(0f, 0f, 1.55f);
+                GameObject pointBlankModel = Node(pointBlankRig.transform,
+                    "character_root", Vector3.zero);
+                Transform pointBlankLeft = Leg(pointBlankModel.transform, "l", -0.20f);
+                Transform pointBlankRight = Leg(pointBlankModel.transform, "r", 0.20f);
+
+                pointBlankActor = new GameObject("PointBlankEnemyActor");
+                pointBlankActor.AddComponent<RoaCharacterView>();
+                GameObject lowerBody = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                lowerBody.name = "EnemyLowerBodyCollider";
+                lowerBody.transform.SetParent(pointBlankActor.transform, false);
+                lowerBody.transform.position = new Vector3(0.20f, 0.17f, 1.55f);
+                lowerBody.transform.localScale = new Vector3(0.30f, 0.34f, 0.34f);
+
+                pointBlankPlayer = new GameObject("PointBlankLocalPlayerController");
+                CharacterController playerController = pointBlankPlayer.AddComponent<CharacterController>();
+                playerController.height = 1.8f;
+                playerController.radius = 0.35f;
+                pointBlankPlayer.transform.position = new Vector3(-0.20f, 1f, 1.55f);
+                Require(RoaFootIk.IsActorCollider(playerController, pointBlankRig.transform),
+                    "CharacterController игрока снова разрешён как поверхность foot IK");
+
+                Physics.SyncTransforms();
+                var pointBlankIk = new RoaFootIk();
+                pointBlankIk.Bind(pointBlankRig.transform, pointBlankModel.transform);
+                pointBlankModel.transform.localPosition = Vector3.down * 0.04f;
+                Physics.SyncTransforms();
+                pointBlankIk.Apply(1f / 60f, false, false, false, "hurt", 0.04f);
+                Require(pointBlankIk.TryGetGroundPose(out float meleeGroundY, out _)
+                        && Mathf.Abs(meleeGroundY) < 0.025f
+                        && Mathf.Abs(pointBlankRight.position.y - pointBlankLeft.position.y) < 0.08f,
+                    "коллайдер актёра поднял стопу при ударе в упор: ground="
+                    + meleeGroundY.ToString("F3") + ", feet="
+                    + (pointBlankRight.position.y - pointBlankLeft.position.y).ToString("F3"));
+
                 Destroy(floor);
                 Destroy(step);
                 floor = null;
@@ -160,6 +201,9 @@ namespace RealmOfAshes.EditorTools
                 Destroy(rig);
                 Destroy(flightRig);
                 Destroy(staleLockRig);
+                Destroy(pointBlankRig);
+                Destroy(pointBlankActor);
+                Destroy(pointBlankPlayer);
                 Destroy(floor);
                 Destroy(step);
             }

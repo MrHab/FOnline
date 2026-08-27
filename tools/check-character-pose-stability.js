@@ -59,6 +59,9 @@ async function main() {
     && footIk.includes('EnsureSupportContact(dead);')
     && footIk.includes('BlendRateRelease = 18f')
     && footIk.includes('TargetReachReserve = 0.018f')
+    && footIk.includes('MaximumWalkableRise = 0.30f')
+    && footIk.includes('IsActorCollider(hit.collider, _actorRoot)')
+    && footIk.includes('collider is CharacterController')
     && footIk.includes('ConstrainFootTarget(side, target)')
     && footIk.includes('ConstrainFootTarget(support, target)'),
   'Unity foot IK no longer follows ground or prevents a dual-foot flight phase');
@@ -92,6 +95,8 @@ async function main() {
     && groundingProbe.includes('обе свободные стопы остаются в воздухе')
     && groundingProbe.includes('staleExtension < 0.995f && staleHorizontal < 0.16f')
     && groundingProbe.includes('устаревший замок вытянул ногу за персонажем')
+    && groundingProbe.includes('PointBlankEnemyActor')
+    && groundingProbe.includes('коллайдер актёра поднял стопу при ударе в упор')
     && groundingProbe.includes('SharedUsers == usersBefore')
     && auditRunner.includes('typeof(RoaGroundingProbe)')
     && auditRunner.includes('typeof(RoaLocomotionContactProbe)'),

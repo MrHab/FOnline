@@ -42,6 +42,7 @@ namespace RealmOfAshes.Game
         private const float GroundFollowRate = 22f;
         private const float GroundNormalRate = 14f;
         private const float MinGroundNormalY = 0.57f;
+        private const float MaximumWalkableRise = 0.30f;
         private const float MaximumUnsupportedLift = 0.075f;
         private const float DesktopMaxDistance = 20f;
         private const float MobileMaxDistance = 12f;
@@ -79,6 +80,7 @@ namespace RealmOfAshes.Game
 
         private Transform _ground;
         private Transform _modelRoot;
+        private Transform _actorRoot;
 
         private Vector3 _lastActorPos;
         private bool _hasLastActorPos;
@@ -161,6 +163,7 @@ namespace RealmOfAshes.Game
             Ready = false;
             _ground = ground;
             _modelRoot = modelRoot;
+            _actorRoot = ResolveActorRoot(ground);
             if (_ground == null || _modelRoot == null) return;
 
             BindSide(_left, "thigh_l", "calf_l", "foot_l");
@@ -437,15 +440,15 @@ namespace RealmOfAshes.Game
             GroundProbeCount++;
             int count = Physics.SphereCastNonAlloc(origin, GroundProbeRadius, Vector3.down, GroundHits,
                 GroundProbeDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-            Transform owner = _ground != null ? _ground.root : null;
 
             for (int i = 0; i < count; i++)
             {
                 RaycastHit hit = GroundHits[i];
                 if (hit.collider == null || hit.distance >= bestDistance) continue;
-                if (owner != null && hit.transform != null && hit.transform.IsChildOf(owner)) continue;
+                if (IsActorCollider(hit.collider, _actorRoot)) continue;
                 if (hit.normal.y < MinGroundNormalY) continue;
-                if (hit.point.y < fallbackY - 0.52f || hit.point.y > fallbackY + 0.42f) continue;
+                if (hit.point.y < fallbackY - 0.52f
+                    || hit.point.y > fallbackY + MaximumWalkableRise) continue;
                 bestDistance = hit.distance;
                 targetY = hit.point.y;
                 targetNormal = hit.normal.normalized;
@@ -467,6 +470,33 @@ namespace RealmOfAshes.Game
 
             surfaceY = side.GroundY;
             surfaceNormal = side.GroundNormal;
+        }
+
+        /// <summary>
+        /// Коллайдеры персонажей не являются опорой для стоп. Особенно заметен
+        /// этот случай в ближнем бою: нижняя полусфера CharacterController игрока
+        /// попадала под пробу NPC и выглядела как ступень высотой в несколько
+        /// десятков сантиметров, после чего IK складывал одну ногу к корпусу.
+        /// </summary>
+        public static bool IsActorCollider(Collider collider, Transform owner)
+        {
+            if (collider == null) return false;
+            Transform hit = collider.transform;
+            if (owner != null && hit != null && hit.IsChildOf(owner)) return true;
+            if (collider is CharacterController) return true;
+            if (hit == null) return false;
+            if (hit.GetComponentInParent<RoaPlayerController>() != null) return true;
+            if (hit.GetComponentInParent<RoaCharacterView>() != null) return true;
+            return hit.GetComponentInParent<RoaVisibilityGate>() != null;
+        }
+
+        private static Transform ResolveActorRoot(Transform ground)
+        {
+            if (ground == null) return null;
+            RoaPlayerController player = ground.GetComponentInParent<RoaPlayerController>();
+            if (player != null) return player.transform;
+            RoaVisibilityGate gate = ground.GetComponentInParent<RoaVisibilityGate>();
+            return gate != null ? gate.transform : ground;
         }
 
         private static void ApplyFootNormal(Side side, Vector3 normal, float weight)

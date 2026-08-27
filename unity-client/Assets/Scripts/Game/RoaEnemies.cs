@@ -140,6 +140,17 @@ namespace RealmOfAshes.Game
             return now < releaseAt && (dead || (currentHp > 0 && nextHp < currentHp));
         }
 
+        /// <summary>
+        /// Volatile enemy frames may arrive after the reliable kill event. They can
+        /// confirm death, but must never revive an already dead presentation merely
+        /// because an older frame did not carry the Dead bit.
+        /// </summary>
+        public static bool ResolveFrameDeadState(bool currentlyDead, bool frameReportsDead,
+                                                 bool deferFrameDeath)
+        {
+            return currentlyDead || (frameReportsDead && !deferFrameDeath);
+        }
+
         private bool MeleePresentationHeld(string enemyId)
         {
             return !string.IsNullOrEmpty(enemyId)
@@ -988,7 +999,7 @@ namespace RealmOfAshes.Game
             if (enemy.Animation == null) return;
 
             enemy.Animation.wrapMode = WrapMode.Loop;
-            PlayClip(enemy, "idle");
+            PlayClip(enemy, enemy.Dead ? "death" : "idle");
         }
 
         private static Task<GltfImport> LoadCached(string url)
@@ -1038,21 +1049,24 @@ namespace RealmOfAshes.Game
                 Enemy enemy;
                 if (!_enemies.TryGetValue(id, out enemy)) continue;
 
-                enemy.TargetPosition = RoaCoords.ToUnity(Value(data, "x"), Value(data, "z"));
                 enemy.LastPacketTime = Time.time;
 
                 int flags = data["flags"]?.ToObject<int>() ?? 0;
-                bool deadFrame = (flags & EnemyFrameFlags.Dead) != 0;
-                bool deferredDeadFrame = deadFrame && MeleePresentationHeld(id);
+                bool frameReportsDead = (flags & EnemyFrameFlags.Dead) != 0;
+                bool wasDead = enemy.Dead;
+                bool deferredDeadFrame = frameReportsDead && MeleePresentationHeld(id);
                 if (deferredDeadFrame)
                 {
                     _meleePresentationHolds[id].SawDeadFrame = true;
-                    deadFrame = false;
                 }
-                else if (deadFrame)
+                else if (frameReportsDead)
                 {
                     _meleePresentationHolds.Remove(id);
                 }
+                bool deadFrame = ResolveFrameDeadState(
+                    enemy.Dead, frameReportsDead, deferredDeadFrame);
+                if (!wasDead || frameReportsDead)
+                    enemy.TargetPosition = RoaCoords.ToUnity(Value(data, "x"), Value(data, "z"));
                 enemy.Moving = !deferredDeadFrame && !deadFrame
                     && (flags & EnemyFrameFlags.Moving) != 0;
                 enemy.Dead = deadFrame;
@@ -1061,7 +1075,7 @@ namespace RealmOfAshes.Game
                     : Vector3.zero;
 
                 // lookX/lookZ — абсолютная серверная точка, а не направление.
-                if ((flags & EnemyFrameFlags.HasLook) != 0)
+                if (!enemy.Dead && (flags & EnemyFrameFlags.HasLook) != 0)
                 {
                     enemy.LookPoint = RoaCoords.ToUnity(Value(data, "lookX"), Value(data, "lookZ"));
                     Vector3 look = enemy.LookPoint - enemy.TargetPosition;
@@ -1127,8 +1141,11 @@ namespace RealmOfAshes.Game
                     enemy.TargetYawDeg = Mathf.Atan2(
                         enemy.PresentationVelocity.x, enemy.PresentationVelocity.z) * Mathf.Rad2Deg;
 
-                Quaternion wanted = Quaternion.Euler(0f, enemy.TargetYawDeg + enemy.YawOffset, 0f);
-                t.rotation = Quaternion.Slerp(t.rotation, wanted, 1f - Mathf.Exp(-10f * Time.deltaTime));
+                if (!enemy.Dead)
+                {
+                    Quaternion wanted = Quaternion.Euler(0f, enemy.TargetYawDeg + enemy.YawOffset, 0f);
+                    t.rotation = Quaternion.Slerp(t.rotation, wanted, 1f - Mathf.Exp(-10f * Time.deltaTime));
+                }
 
                 if (enemy.CharacterView != null)
                 {

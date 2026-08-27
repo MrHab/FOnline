@@ -104,6 +104,13 @@ assert(enemies.includes('public void BeginMeleePresentationHold(')
   && enemies.includes('_meleePresentationHolds[id].SawDeadFrame = true;')
   && enemies.includes('ReleaseDueMeleePresentationHolds();'),
 'Early PvE damage/death is not held until the authored melee contact');
+assert(enemies.includes('public static bool ResolveFrameDeadState(')
+  && enemies.includes('return currentlyDead || (frameReportsDead && !deferFrameDeath);')
+  && enemies.includes('if (!wasDead || frameReportsDead)')
+  && enemies.includes('enemy.Moving = !deferredDeadFrame && !deadFrame')
+  && enemies.includes('if (!enemy.Dead && (flags & EnemyFrameFlags.HasLook) != 0)')
+  && enemies.includes('PlayClip(enemy, enemy.Dead ? "death" : "idle");'),
+'A stale volatile frame or delayed model load can restart locomotion after NPC death');
 const targetedMelee = combat.slice(combat.indexOf('else if (!string.IsNullOrEmpty(enemyId))'),
   combat.indexOf('private bool TryScreenPointToWorld('));
 assert(targetedMelee.includes('Enemies.BeginMeleePresentationHold(enemyId,')
@@ -132,6 +139,7 @@ assert(probe.includes('RoaCombatConfirmation.Expired(0.39f, false)')
   && probe.includes('RoaCombat.MeleePresentationDelay(10f, 10.035f)')
   && probe.includes('RoaMeleeGrip.StrikeContactPhase')
   && probe.includes('RoaEnemies.ShouldDeferMeleeState(10f, 10.2f, 40, 20, false)')
+  && probe.includes('RoaEnemies.ResolveFrameDeadState(true, false, false)')
   && probe.includes('holdProbe.MeleePresentationHoldCount == 1')
   && probe.includes('holdProbe.MeleePresentationHoldCount == 0')
   && probe.includes('RoaCombatFeedbackCanvas.EvaluateFloating(0.82f)')

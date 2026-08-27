@@ -54,6 +54,11 @@ namespace RealmOfAshes.EditorTools
                         && !RoaEnemies.ShouldDeferMeleeState(10.21f, 10.2f, 40, 20, false)
                         && !RoaEnemies.ShouldDeferMeleeState(10f, 10.2f, 40, 40, false),
                         "PvE target damage/death hold is not selective or bounded");
+                Require(RoaEnemies.ResolveFrameDeadState(true, false, false)
+                        && RoaEnemies.ResolveFrameDeadState(false, true, false)
+                        && !RoaEnemies.ResolveFrameDeadState(false, false, false)
+                        && !RoaEnemies.ResolveFrameDeadState(false, true, true),
+                        "a stale volatile frame can revive an NPC or bypass the melee death hold");
 
                 RoaCombatFeedbackCanvas.FloatingFrame floatingStart =
                     RoaCombatFeedbackCanvas.EvaluateFloating(0f);

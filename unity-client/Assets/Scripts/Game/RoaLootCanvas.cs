@@ -159,6 +159,7 @@ namespace RealmOfAshes.Game
             Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(4f, 4f), new Vector2(-4f, -32f));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scrollArea.gameObject.AddComponent<RectMask2D>();
 
             list = Child("List", scrollArea);

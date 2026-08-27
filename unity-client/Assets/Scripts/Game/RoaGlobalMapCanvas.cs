@@ -11,9 +11,9 @@ namespace RealmOfAshes.Game
     /// Сайдбар глобальной карты в структуре web (#global-map-window .global-map-side,
     /// 03_hud_minimap_inventory_progression.css:362; текст — renderGlobalMapPanel,
     /// 12b_global_map_panel_window.js): заголовок «Глобальная карта», справа панель
-    /// 340px с разделами МАРШРУТ (текст маршрута моноширинным), кнопки «Войти: …»
-    /// и «Стоп / Покинуть группу», ДОСКА РАБОТ (работы площадки под игроком),
-    /// СИСТЕМНЫЙ ЖУРНАЛ, ГРУППА. Контакт на маршруте — блок с «Войти / Обойти».
+    /// 340px с разделами МАРШРУТ (текст маршрута моноширинным), ДОСКА РАБОТ
+    /// (работы площадки под игроком),
+    /// СИСТЕМНЫЙ ЖУРНАЛ, ГРУППА. Контакт на маршруте — блок с «Вступить / Обойти».
     /// Логика и серверные запросы остаются в RoaGlobalMap (фасад CanvasDriven…).
     /// </summary>
     public sealed class RoaGlobalMapCanvas : MonoBehaviour
@@ -54,10 +54,6 @@ namespace RealmOfAshes.Game
         private readonly List<MapLabelSlot> _mapLabelPool = new List<MapLabelSlot>();
         private readonly List<RoaGlobalMap.OverlayLabel> _mapLabelFrames = new List<RoaGlobalMap.OverlayLabel>();
         private readonly List<Rect> _occupiedMapLabels = new List<Rect>();
-        private Button _enterButton;
-        private Text _enterLabel;
-        private Button _cancelButton;
-        private Text _cancelLabel;
         private RectTransform _contactBox;
         private Text _contactTitle;
         private Text _contactDetails;
@@ -173,17 +169,6 @@ namespace RealmOfAshes.Game
             _routeProgressImage.raycastTarget = false;
             _routeProgressTrack.gameObject.SetActive(false);
 
-            // .global-map-actions
-            RectTransform actions = Child("Actions", side);
-            Place(actions, 0f, 1f, 1f, 1f, new Vector2(10f, -y - 34f), new Vector2(-10f, -y));
-            _enterButton = UiButton(actions, "Войти", out _enterLabel, () => Map.EnterCurrent());
-            _enterLabel.fontSize = 10;
-            _enterLabel.horizontalOverflow = HorizontalWrapMode.Wrap;
-            Place((RectTransform)_enterButton.transform, 0f, 0f, 0.62f, 1f, Vector2.zero, new Vector2(-4f, 0f));
-            _cancelButton = UiButton(actions, "Стоп", out _cancelLabel, () => Map.CancelOrLeave());
-            Place((RectTransform)_cancelButton.transform, 0.62f, 0f, 1f, 1f, new Vector2(4f, 0f), Vector2.zero);
-            y += 34f + 9f;
-
             // Контакт на маршруте (global-encounter-panel): показывается поверх доски работ.
             _contactBox = Box(side, 110f, ref y);
             _contactTitle = Label("ContactTitle", _contactBox, 12, TextAnchor.UpperLeft, MonoBold, FontStyle.Bold);
@@ -192,7 +177,7 @@ namespace RealmOfAshes.Game
             _contactDetails.horizontalOverflow = HorizontalWrapMode.Wrap;
             _contactDetails.verticalOverflow = VerticalWrapMode.Truncate;
             Place(_contactDetails.rectTransform, 0f, 1f, 1f, 1f, new Vector2(9f, -66f), new Vector2(-9f, -28f));
-            _contactEnter = UiButton(_contactBox, "Войти", out _, () => Map.ResolveContact(true));
+            _contactEnter = UiButton(_contactBox, "Вступить", out _, () => Map.ResolveContact(true));
             Place((RectTransform)_contactEnter.transform, 0f, 0f, 0.5f, 0f, new Vector2(9f, 8f), new Vector2(-3f, 36f));
             _contactAvoid = UiButton(_contactBox, "Обойти", out _, () => Map.ResolveContact(false));
             Place((RectTransform)_contactAvoid.transform, 0.5f, 0f, 1f, 0f, new Vector2(3f, 8f), new Vector2(-9f, 36f));
@@ -354,6 +339,7 @@ namespace RealmOfAshes.Game
             RectTransform box = Box(side, height, ref y);
             var scroll = box.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scroll.scrollSensitivity = 24f;
             box.gameObject.AddComponent<RectMask2D>();
             RectTransform list = Child("List", box);
@@ -414,15 +400,6 @@ namespace RealmOfAshes.Game
                 _route.text = "<b><color=#efd078>" + Map.SelectedTitle + "</color></b>\n"
                     + where + "\n" + Map.SelectionSummary;
             }
-
-            // --- Кнопки ---
-            string enterLabel;
-            bool canEnter = Map.CanEnter(out enterLabel);
-            _enterLabel.text = enterLabel;
-            SetButton(_enterButton, _enterLabel, canEnter);
-            bool canCancel = (Map.TravelActive && !Map.ArrivalPending) || !string.IsNullOrEmpty(attached);
-            _cancelLabel.text = string.IsNullOrEmpty(attached) ? "Стоп" : "Покинуть группу";
-            SetButton(_cancelButton, _cancelLabel, canCancel && !Map.HasPendingContact);
 
             // --- Контакт на маршруте ---
             bool contact = Map.HasPendingContact;
@@ -534,7 +511,11 @@ namespace RealmOfAshes.Game
             foreach (GameObject row in _partyRows) Destroy(row);
             _partyRows.Clear();
             AddPartyRow("Вы", string.IsNullOrEmpty(attached) ? "Лидер" : "в отряде");
-            if (!string.IsNullOrEmpty(attached)) AddPartyRow(attached, "караван");
+            if (!string.IsNullOrEmpty(attached))
+            {
+                AddPartyRow(attached, "караван");
+                AddPartyLeaveAction();
+            }
         }
 
         public static string BuildWorkSignature(string siteKey, IList<RoaInteraction.WorldTaskCard> cards)
@@ -586,6 +567,15 @@ namespace RealmOfAshes.Game
             m.text = meta;
             Place(m.rectTransform, 0.5f, 0f, 1f, 1f, Vector2.zero, new Vector2(-2f, 0f));
             _partyRows.Add(row);
+        }
+
+        private void AddPartyLeaveAction()
+        {
+            Button leave = UiButton(_partyList, "Покинуть отряд", out _,
+                () => Map.RequestLeaveAttachedWorldParty());
+            leave.gameObject.name = "PartyLeave";
+            leave.gameObject.AddComponent<LayoutElement>().preferredHeight = 26f;
+            _partyRows.Add(leave.gameObject);
         }
 
         private void AddNote(RectTransform list, List<GameObject> rows, string text, bool bold = false)

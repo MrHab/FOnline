@@ -1154,6 +1154,7 @@ function assertServerWorldTransferFaultRecovery() {
   let persistCalls = 0;
   let removeTravelCalls = 0;
   let hostilityCalls = 0;
+  let activityEnsureCalls = 0;
   let refreshCalls = 0;
   let joinCalls = 0;
   let leaveCalls = 0;
@@ -1253,6 +1254,9 @@ function assertServerWorldTransferFaultRecovery() {
       applyRememberedEncounterHostilityForPlayer: () => {
         hostilityCalls++;
       },
+      ensureServerWorldActivityForRoom: () => {
+        activityEnsureCalls++;
+      },
       refreshRoomWorldState: () => {
         refreshCalls++;
       },
@@ -1300,6 +1304,8 @@ function assertServerWorldTransferFaultRecovery() {
       'failed world transfer destroyed an independent travel session');
     assert.strictEqual(hostilityCalls, 0,
       'failed world transfer changed target-room hostility');
+    assert.strictEqual(activityEnsureCalls, 0,
+      'failed world transfer created an activity before persistence');
     assert.strictEqual(refreshCalls, 0,
       'failed world transfer refreshed the target room before persistence');
     assert.strictEqual(transferEvents.length, 0,
@@ -1327,6 +1333,7 @@ function assertServerWorldTransferFaultRecovery() {
   assert.strictEqual(leaveCalls, 1, 'successful retry left the old room more than once');
   assert.strictEqual(removeTravelCalls, 1, 'successful retry did not clear independent travel exactly once');
   assert.strictEqual(hostilityCalls, 1, 'successful retry did not restore remembered hostility exactly once');
+  assert.strictEqual(activityEnsureCalls, 1, 'successful retry did not create the target activity exactly once');
   assert.strictEqual(refreshCalls, 1, 'successful retry did not refresh the target room exactly once');
   assert.strictEqual(
     transferEvents.filter(row => row.eventName === 'serverWorldTransfer').length,
@@ -1425,6 +1432,8 @@ function assertSocketAndClientContract() {
   assert(travelStart.includes('if (candidateExisting?.terminating) globalTravelSessions.delete(socket.id)')
     && travelStart.includes('candidateExisting && !candidateExisting.terminating'),
   'a completed route can remain authoritative and reject a new destination');
+  assert(travelStart.includes('serverGlobalTravelCurrentPoint(existing, Date.now())'),
+    'changing destination does not continue from the current authoritative route position');
   const enterWorld = serverSource.slice(
     serverSource.indexOf("socket.on('globalTravelEnterWorld'"),
     serverSource.indexOf("socket.on('globalTravelCancel'", serverSource.indexOf("socket.on('globalTravelEnterWorld'"))

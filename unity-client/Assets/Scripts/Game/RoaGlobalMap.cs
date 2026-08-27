@@ -270,6 +270,7 @@ namespace RealmOfAshes.Game
         private float _travelStartedRealtime;
         private bool _travelActive;
         private float _travelDescriptorGraceUntil;
+        private int _routeRequestVersion;
         private bool _arrivalPending;
         private float _arrivalRetryAt;
         private bool _contactArrival;
@@ -1320,18 +1321,6 @@ namespace RealmOfAshes.Game
             if (progress >= 1f && !_arrivalPending && Time.realtimeSinceStartup >= _arrivalRetryAt)
             {
                 if (TryOpenSelectedDestinationContact()) return;
-                bool toLocation = _selectedNode != null
-                    || (_selectedDynamic != null && !string.IsNullOrEmpty(_selectedDynamic.LocationId));
-                if (CanvasDriven && toLocation && !_pendingEntry)
-                {
-                    // Как pendingWorldDrop web: остаёмся на карте, вход — кнопкой «Войти».
-                    _pendingEntry = true;
-                    _playerPoint = CopyPoint(_selectedPoint);
-                    ClearTravel();
-                    RefreshMarkers();
-                    StatusText = "Вы на месте. Нажмите «Войти», чтобы перейти в локацию.";
-                    return;
-                }
                 RequestArrival();
             }
         }
@@ -1485,7 +1474,7 @@ namespace RealmOfAshes.Game
         }
         private void UpdateMouseMapSelection()
         {
-            if (!InputEnabled || _travelActive || _cameraPanning || Input.touchCount > 0
+            if (!InputEnabled || _cameraPanning || Input.touchCount > 0
                 || Time.unscaledTime < _suppressSyntheticMouseUntil
                 || !Input.GetMouseButtonDown(0)) return;
 
@@ -1566,6 +1555,7 @@ namespace RealmOfAshes.Game
             foreach (DynamicTarget target in _dynamicTargets)
             {
                 if (target == null || !target.CanEnter || target.Point == null) continue;
+                if (target.Kind != "party" && target.Kind != "zone") continue;
                 if (_ignoredRouteContacts.Contains(target.Kind + ":" + target.Id)) continue;
                 float touchRadius = Mathf.Max(2f, target.Radius) + 2.5f;
                 if (Distance(previousPoint, target.Point) <= touchRadius + 0.25f) continue;
@@ -1573,29 +1563,6 @@ namespace RealmOfAshes.Game
                 float distance = PointSegmentDistance(target.Point, previousPoint, nextPoint, out t);
                 if (distance > touchRadius || t < 0f || t > 1f || t >= bestT) continue;
                 best = target;
-                bestT = t;
-            }
-
-            foreach (GlobalMapNode node in _map.Nodes)
-            {
-                if (node == null || string.IsNullOrEmpty(node.EffectiveLocationId)) continue;
-                if (_ignoredRouteContacts.Contains("settlement:" + node.Id)) continue;
-                var center = new GlobalMapPoint { X = node.X, Y = node.Y };
-                const float touchRadius = 17.5f;
-                if (Distance(previousPoint, center) <= touchRadius + 0.25f) continue;
-                float t;
-                float distance = PointSegmentDistance(center, previousPoint, nextPoint, out t);
-                if (distance > touchRadius || t < 0f || t > 1f || t >= bestT) continue;
-                best = new DynamicTarget
-                {
-                    Kind = "settlement",
-                    Id = node.Id,
-                    Name = node.EffectiveLocationId,
-                    LocationId = node.EffectiveLocationId,
-                    Point = center,
-                    Radius = 15f,
-                    CanEnter = true
-                };
                 bestT = t;
             }
 
@@ -1615,16 +1582,6 @@ namespace RealmOfAshes.Game
             _selectedDynamic = best;
             _selectedNode = null;
             _selectedPoint = CopyPoint(best.Point);
-            if (CanvasDriven && !string.IsNullOrEmpty(best.LocationId))
-            {
-                // Как pendingWorldDrop web: прибыли к точке с локацией — ждём «Войти».
-                _pendingEntry = true;
-                _playerPoint = CopyPoint(_selectedPoint);
-                ClearTravel();
-                RefreshMarkers();
-                StatusText = "Вы на месте: " + best.Name + ". Нажмите «Войти», чтобы перейти в локацию.";
-                return true;
-            }
             StatusText = "Маршрут встретил: " + best.Name + ". Сервер подтверждает вход...";
             if (best.Kind == "party" || best.Kind == "zone")
             {
@@ -1657,7 +1614,7 @@ namespace RealmOfAshes.Game
         {
             if (contact == null || Socket == null || !IsLocalTravelLeader()) return false;
             _pendingContact = contact;
-            StatusText = "На маршруте: " + contact.Name + ". Войти или обойти?";
+            StatusText = "На маршруте: " + contact.Name + ". Вступить или обойти?";
             Socket.Emit("globalTravelEncounterDecision", new
             {
                 pending = true,
@@ -1736,17 +1693,20 @@ namespace RealmOfAshes.Game
 
         private bool SelectScreenPointAndMaybeTravel(Vector2 screenPoint)
         {
-            if (_travelActive || !SelectFromScreen(screenPoint)) return false;
-            if (CanvasDriven && !PlayerAtSelection)
-            {
-                // Один production-путь для мыши и touch: выбор цели сразу просит
-                // сервер построить маршрут, как selectGlobalMapDestination в web.
-                _pendingEntry = false;
-                if (_pendingContact == null && string.IsNullOrEmpty(AttachedPartyId)) StartTravel();
-            }
+            if (!SelectFromScreen(screenPoint)) return false;
+            if (!RouteClickAllowed(InputEnabled, _arrivalPending, _pendingContact != null,
+                                   !string.IsNullOrEmpty(AttachedPartyId))) return true;
+            _pendingEntry = false;
+            if (PlayerAtSelection) EnterCurrent();
+            else StartTravel();
             return true;
         }
 
+        public static bool RouteClickAllowed(bool inputEnabled, bool arrivalPending,
+                                             bool contactPending, bool attachedToParty)
+        {
+            return inputEnabled && !arrivalPending && !contactPending && !attachedToParty;
+        }
         private bool SelectFromScreen(Vector2 screenPoint)
         {
             Camera camera = Camera.main;
@@ -1801,7 +1761,7 @@ namespace RealmOfAshes.Game
         /// </summary>
         public bool RequestTravelToWorldParty(string partyId, Action<JObject> completed = null)
         {
-            if (!IsActive || _travelActive || _pendingContact != null || string.IsNullOrEmpty(partyId)) return false;
+            if (!IsActive || _arrivalPending || _pendingContact != null || string.IsNullOrEmpty(partyId)) return false;
             if (!string.IsNullOrEmpty(AttachedPartyId))
             {
                 StatusText = "Вы движетесь с отрядом. Сначала покиньте группу.";
@@ -2014,7 +1974,7 @@ namespace RealmOfAshes.Game
         /// <summary>Select an activity site and immediately request its server route.</summary>
         public bool RequestTravelToWorldSite(string siteId, Action<JObject> completed = null)
         {
-            if (!IsActive || _travelActive || _pendingContact != null || string.IsNullOrEmpty(siteId)) return false;
+            if (!IsActive || _arrivalPending || _pendingContact != null || string.IsNullOrEmpty(siteId)) return false;
             if (!string.IsNullOrEmpty(AttachedPartyId))
             {
                 StatusText = "Вы движетесь с отрядом. Сначала покиньте группу.";
@@ -2062,7 +2022,8 @@ namespace RealmOfAshes.Game
             RefreshMarkers();
             if (Distance(_playerPoint, _selectedPoint) <= 0.35f)
             {
-                StatusText = "Вы прибыли к цели. Можно войти в локацию.";
+                StatusText = "Вы прибыли к цели. Входим в локацию...";
+                EnterCurrent();
                 completed?.Invoke(new JObject { ["ok"] = true, ["alreadyThere"] = true });
                 return true;
             }
@@ -2102,7 +2063,7 @@ namespace RealmOfAshes.Game
 
         private void StartTravel(Action<JObject> completed = null)
         {
-            if (_travelActive || Socket == null) return;
+            if (Socket == null || _arrivalPending || _pendingContact != null) return;
             if (!string.IsNullOrEmpty(AttachedPartyId))
             {
                 StatusText = "Вы движетесь с отрядом. Сначала покиньте группу.";
@@ -2114,7 +2075,9 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            StatusText = "Сервер строит маршрут...";
+            bool rerouting = _travelActive;
+            int requestVersion = ++_routeRequestVersion;
+            StatusText = rerouting ? "Сервер меняет маршрут..." : "Сервер строит маршрут...";
             string locationId = _selectedDynamic != null && !string.IsNullOrEmpty(_selectedDynamic.LocationId)
                 ? _selectedDynamic.LocationId
                 : (_selectedNode != null ? _selectedNode.EffectiveLocationId : "wasteland");
@@ -2128,9 +2091,12 @@ namespace RealmOfAshes.Game
 
             Socket.EmitWithAck("globalTravelStart", payload, ack =>
             {
+                if (requestVersion != _routeRequestVersion) return;
                 if (!AckOk(ack))
                 {
-                    StatusText = AckError(ack, "Сервер не подтвердил маршрут.");
+                    StatusText = AckError(ack, rerouting
+                        ? "Сервер не подтвердил изменение маршрута."
+                        : "Сервер не подтвердил маршрут.");
                     completed?.Invoke(ack);
                     return;
                 }
@@ -2138,7 +2104,7 @@ namespace RealmOfAshes.Game
                 ApplyTravel(ack);
                 _travelDescriptorGraceUntil = Time.realtimeSinceStartup + TravelDescriptorGraceSeconds;
                 RefreshMarkers();
-                StatusText = "Маршрут запущен.";
+                StatusText = rerouting ? "Маршрут изменён." : "Маршрут запущен.";
                 completed?.Invoke(ack);
             });
         }
@@ -3029,7 +2995,7 @@ namespace RealmOfAshes.Game
                 {
                     GUI.enabled = !_contactDecisionPending;
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Войти", GUILayout.Height(32f))) ResolveTravelContact(true);
+                    if (GUILayout.Button("Вступить", GUILayout.Height(32f))) ResolveTravelContact(true);
                     if (!_pendingContact.Forced && GUILayout.Button("Обойти", GUILayout.Height(32f))) ResolveTravelContact(false);
                     GUILayout.EndHorizontal();
                     GUI.enabled = true;
@@ -3041,20 +3007,16 @@ namespace RealmOfAshes.Game
             {
                 float progress = Mathf.Clamp01((Time.realtimeSinceStartup - _travelStartedRealtime) / _travelDuration);
                 GUILayout.Label("Путь: " + Mathf.RoundToInt(progress * 100f) + "%");
-                if (!_arrivalPending && GUILayout.Button("Остановить маршрут")) CancelTravel();
+
             }
             else if (!string.IsNullOrEmpty(AttachedPartyId))
             {
                 GUILayout.Label("Вы следуете с отрядом " + AttachedPartyId + ". Собственный маршрут недоступен.", Wrapped());
                 if (GUILayout.Button("Покинуть отряд")) RequestLeaveAttachedWorldParty();
             }
-            else if (GUILayout.Button("Начать маршрут"))
-            {
-                StartTravel();
-            }
 
             GUILayout.Space(4f);
-            GUILayout.Label("ЛКМ — выбрать точку, колесо — масштаб, Esc — меню.");
+            GUILayout.Label("ЛКМ — задать или изменить маршрут, колесо — масштаб, Esc — меню.");
             GUILayout.EndScrollView();
             GUILayout.EndArea();
 

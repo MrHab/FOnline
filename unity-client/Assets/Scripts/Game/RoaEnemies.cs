@@ -1259,13 +1259,16 @@ namespace RealmOfAshes.Game
                 bool canDialogue = enemy.Snapshot["canDialogue"]?.ToObject<bool>() == true;
                 bool important = RoaActorNameplates.IsImportantNpc(canDialogue,
                     enemy.Snapshot["role"]?.ToString(), enemy.Snapshot["encounterRole"]?.ToString());
+                bool hostile = enemy.Snapshot["hostileToPlayer"]?.ToObject<bool>() != false;
                 rows.Add(new RoaActorNameplates.Entry
                 {
                     Name = important ? enemy.Snapshot["name"]?.ToString() ?? "Торговец" : string.Empty,
+                    Faction = RoaActorNameplates.NpcFactionLine(
+                        enemy.Snapshot["faction"]?.ToString(), hostile),
                     Hp = enemy.Hp,
                     MaxHp = Mathf.Max(1, enemy.Snapshot["maxHp"]?.ToObject<int>() ?? enemy.Hp),
                     World = enemy.Root.transform.position + Vector3.up * (2.05f * scale),
-                    Hostile = enemy.Snapshot["hostileToPlayer"]?.ToObject<bool>() != false,
+                    Hostile = hostile,
                     IsPlayer = false
                 });
             }

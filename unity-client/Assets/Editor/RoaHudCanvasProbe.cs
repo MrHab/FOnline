@@ -42,10 +42,16 @@ namespace RealmOfAshes.EditorTools
                 { Name = "Странник", Hp = 87, MaxHp = 100, IsSelf = true, IsPlayer = true };
             RoaActorNameplates.Presentation own = RoaActorNameplates.ResolvePresentation(
                 self, false, 19f, 20f);
+            var hostileNpc = new RoaActorNameplates.Entry
+                { Faction = RoaActorNameplates.NpcFactionLine("raiders", true), Hp = 100, MaxHp = 100, Hostile = true };
+            RoaActorNameplates.Presentation hostileNpcPresentation = RoaActorNameplates.ResolvePresentation(
+                hostileNpc, false, 6f, 20f);
             Require(!compact.ShowName && !compact.ShowHealthText && compact.Height <= 9f
                     && wounded.ShowHealthText && wounded.HealthText == "тяжело"
                     && own.ShowName && own.ShowHealthText && own.HealthText == "87/100"
-                    && Mathf.Approximately(own.Alpha, 1f),
+                    && Mathf.Approximately(own.Alpha, 1f)
+                    && hostileNpcPresentation.ShowFaction
+                    && hostileNpc.Faction == "ВРАГ · Рейдеры",
                 "compact health-bar/name hierarchy is not deterministic");
             Require(typeof(RoaHudCanvas).IsSubclassOf(typeof(MonoBehaviour)),
                     "adaptive HUD is not a Unity component");
@@ -55,6 +61,25 @@ namespace RealmOfAshes.EditorTools
                     "desktop UI reference no longer protects laptop readability");
             Require(mobileReference == new Vector2(1280f, 720f),
                     "mobile UI reference changed unexpectedly");
+            GameObject scaleProbe = new GameObject("UiScaleProbe", typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler));
+            UnityEngine.UI.CanvasScaler scaleProbeScaler = scaleProbe.GetComponent<UnityEngine.UI.CanvasScaler>();
+            RoaUiScale.Apply(scaleProbeScaler);
+            Require(scaleProbe.GetComponent<Canvas>().pixelPerfect
+                    && scaleProbeScaler.uiScaleMode == UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize
+                    && scaleProbeScaler.screenMatchMode == UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight,
+                "HUD scaling no longer keeps text pixel-aligned across fullscreen resolution changes");
+            UnityEngine.Object.DestroyImmediate(scaleProbe);
+            GameObject scrollProbe = new GameObject("UiScrollProbe", typeof(RectTransform),
+                typeof(UnityEngine.UI.ScrollRect));
+            UnityEngine.UI.ScrollRect wheelScroll = scrollProbe.GetComponent<UnityEngine.UI.ScrollRect>();
+            RoaUiScroll.Configure(wheelScroll);
+            UnityEngine.UI.Graphic wheelReceiver = scrollProbe.GetComponent<UnityEngine.UI.Graphic>();
+            Require(wheelScroll.vertical && !wheelScroll.horizontal
+                    && wheelScroll.viewport == scrollProbe.transform
+                    && wheelScroll.scrollSensitivity >= 18f
+                    && wheelReceiver != null && wheelReceiver.raycastTarget,
+                "mouse-wheel scrolling no longer has a raycastable viewport in generated interfaces");
+            UnityEngine.Object.DestroyImmediate(scrollProbe);
             RoaHudCanvas.LayoutProfile desktopHud = RoaHudCanvas.ResolveLayout(false);
             RoaHudCanvas.LayoutProfile mobileHud = RoaHudCanvas.ResolveLayout(true);
             float desktopConsoleTop = (desktopHud.ConsolePosition.y

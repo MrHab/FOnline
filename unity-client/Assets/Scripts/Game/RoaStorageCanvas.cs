@@ -492,6 +492,7 @@ namespace RealmOfAshes.Game
             scroll.content = column.Grid;
             scroll.viewport = viewport;
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scroll.scrollSensitivity = 30f;
             scroll.movementType = ScrollRect.MovementType.Clamped;
 

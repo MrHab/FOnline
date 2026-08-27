@@ -712,6 +712,7 @@ namespace RealmOfAshes.Game
             scrollImage.color = new Color(0f, 0f, 0f, 0.25f);
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             var mask = scrollArea.gameObject.AddComponent<RectMask2D>();
 
             _itemsGrid = Child("Grid", scrollArea);
@@ -781,6 +782,7 @@ namespace RealmOfAshes.Game
             image.color = new Color(0f, 0f, 0f, 0.22f);
             scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scrollArea.gameObject.AddComponent<RectMask2D>();
 
             RectTransform list = Child("List", scrollArea);

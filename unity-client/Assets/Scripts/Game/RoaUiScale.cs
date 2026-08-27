@@ -24,9 +24,14 @@ namespace RealmOfAshes.Game
 
         public static void Apply(CanvasScaler scaler)
         {
+            if (scaler == null) return;
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = Reference;
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
+            scaler.referencePixelsPerUnit = 100f;
+            Canvas canvas = scaler.GetComponent<Canvas>();
+            if (canvas != null) canvas.pixelPerfect = true;
         }
     }
 }

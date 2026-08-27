@@ -265,6 +265,7 @@ namespace RealmOfAshes.Game
             Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 38f), new Vector2(-14f, -48f));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scrollArea.gameObject.AddComponent<RectMask2D>();
             RectTransform list = Child("List", scrollArea);
             list.anchorMin = new Vector2(0f, 1f);

@@ -21,7 +21,20 @@ const {
   extractWorldActivity,
   worldActivityRewardCharacterIds
 } = require('../src/server/world-activity-runtime');
+const { createWorldActivityPointPositions } = require('../src/server/world-activity-layout');
 
+function checkCompactWorldActivityLayout() {
+  const blocked = new Set(['10:10', '11:11', '12:12', '13:13']);
+  const points = createWorldActivityPointPositions({
+    bounds: { minX: 10, minZ: 10, maxX: 29, maxZ: 29 },
+    count: 6,
+    resolveSafeTile: (tx, tz) => blocked.has(`${tx}:${tz}`) ? null : { tx, tz },
+    tileToWorld: (tx, tz) => ({ x: tx, z: tz })
+  });
+  assert.strictEqual(points.length, 6, 'compact 20x20 activity location must still receive every operation point');
+  assert.strictEqual(new Set(points.map(point => `${point.tx}:${point.tz}`)).size, 6,
+    'operation points must stay unique after compact-layout fallback');
+}
 function testMap() {
   return {
     grid: { cols: 4, rows: 4, cellPoints: 30, cellKm: 10 },
@@ -317,6 +330,7 @@ function checkSimulationContract() {
 }
 
 checkRuntime();
+checkCompactWorldActivityLayout();
 checkReconRuntime();
 checkOutpostDefenseRuntime();
 checkDistressSignalRuntime();

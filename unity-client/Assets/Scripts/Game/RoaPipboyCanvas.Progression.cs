@@ -106,6 +106,7 @@ namespace RealmOfAshes.Game
             Place_(scrollArea, 0f, 0f, 1f, 1f, new Vector2(4f, 30f), new Vector2(-4f, -120f));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scroll.scrollSensitivity = 28f;
             scrollArea.gameObject.AddComponent<RectMask2D>();
             _skillsGrid = Child("Grid", scrollArea);
@@ -432,6 +433,7 @@ namespace RealmOfAshes.Game
             Place_(scrollArea, minX, 0f, maxX, 1f, new Vector2(minX == 0f ? 4f : 0f, 30f), new Vector2(-4f, top));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scroll.scrollSensitivity = 28f;
             scrollArea.gameObject.AddComponent<RectMask2D>();
             RectTransform list = Child("List", scrollArea);

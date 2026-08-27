@@ -21,6 +21,7 @@ namespace RealmOfAshes.Game
         public struct Entry
         {
             public string Name;
+            public string Faction;
             public int Hp;
             public int MaxHp;
             public Vector3 World;
@@ -33,16 +34,18 @@ namespace RealmOfAshes.Game
         public readonly struct Presentation
         {
             public readonly bool ShowName;
+            public readonly bool ShowFaction;
             public readonly bool ShowHealthText;
             public readonly string HealthText;
             public readonly float Width;
             public readonly float Height;
             public readonly float Alpha;
 
-            public Presentation(bool showName, bool showHealthText, string healthText,
+            public Presentation(bool showName, bool showFaction, bool showHealthText, string healthText,
                                 float width, float height, float alpha)
             {
                 ShowName = showName;
+                ShowFaction = showFaction;
                 ShowHealthText = showHealthText;
                 HealthText = healthText;
                 Width = width;
@@ -71,6 +74,7 @@ namespace RealmOfAshes.Game
                                                        float distance, float maxDistance)
         {
             bool showName = !string.IsNullOrWhiteSpace(entry.Name);
+            bool showFaction = !entry.IsPlayer && !string.IsNullOrWhiteSpace(entry.Faction);
             float ratio = entry.Hp / (float)Mathf.Max(1, entry.MaxHp);
             bool exact = awareness || entry.IsSelf;
             bool showHealthText = exact || ratio < 0.995f;
@@ -81,10 +85,16 @@ namespace RealmOfAshes.Game
             float near = 1f - Mathf.SmoothStep(0.45f, 1f, t);
             float floor = entry.IsSelf ? 1f : entry.Hostile ? 0.68f : 0.34f;
             float alpha = Mathf.Lerp(floor, 1f, near);
-            float width = showName ? 148f : showHealthText ? 88f : 68f;
-            float height = showName ? 28f : showHealthText ? 18f : 9f;
-            return new Presentation(showName, showHealthText, healthText,
+            float width = showName || showFaction ? 164f : showHealthText ? 88f : 68f;
+            float healthHeight = showHealthText ? 12f : 7f;
+            float height = healthHeight + (showFaction ? 14f : 0f) + (showName ? 14f : 0f);
+            return new Presentation(showName, showFaction, showHealthText, healthText,
                 width, height, alpha);
+        }
+
+        public static string NpcFactionLine(string factionId, bool hostile)
+        {
+            return (hostile ? "ВРАГ" : "МИРНЫЙ") + " · " + RoaPipboy.FactionLabel(factionId);
         }
 
         private readonly List<Entry> _entries = new List<Entry>();
@@ -117,6 +127,7 @@ namespace RealmOfAshes.Game
             public RectTransform Rect;
             public Image Back;
             public Text Name;
+            public Text Faction;
             public Text Health;
             public Image HealthTrack;
             public Image HealthFill;
@@ -167,6 +178,7 @@ namespace RealmOfAshes.Game
                 name.rectTransform.offsetMin = new Vector2(6f, -1f);
                 name.rectTransform.offsetMax = new Vector2(-6f, -1f);
                 Text health = PlateText("Health", rect, 9, FontStyle.Bold);
+                Text faction = PlateText("Faction", rect, 9, FontStyle.Bold);
                 health.rectTransform.anchorMin = new Vector2(0f, 0f);
                 health.rectTransform.anchorMax = new Vector2(1f, 0.5f);
                 health.rectTransform.offsetMin = new Vector2(6f, 2f);
@@ -195,7 +207,7 @@ namespace RealmOfAshes.Game
                 fill.raycastTarget = false;
                 health.transform.SetAsLastSibling();
                 _pool.Add(new Plate { Root = root, Rect = rect, Back = back, Name = name,
-                    Health = health, HealthTrack = track, HealthFill = fill });
+                    Faction = faction, Health = health, HealthTrack = track, HealthFill = fill });
             }
             return _pool[index];
         }
@@ -333,23 +345,30 @@ namespace RealmOfAshes.Game
                     Presentation presentation = ResolvePresentation(entry, awareness, distance, maxDistance);
                     plate.Name.gameObject.SetActive(presentation.ShowName);
                     plate.Name.text = presentation.ShowName ? entry.Name : string.Empty;
+                    plate.Faction.gameObject.SetActive(presentation.ShowFaction);
+                    plate.Faction.text = presentation.ShowFaction ? entry.Faction : string.Empty;
                     plate.Health.gameObject.SetActive(presentation.ShowHealthText);
                     plate.Health.text = presentation.HealthText;
-                    float width = presentation.ShowName
-                        ? Mathf.Max(presentation.Width, plate.Name.preferredWidth + 14f)
+                    float identityWidth = Mathf.Max(
+                        presentation.ShowName ? plate.Name.preferredWidth : 0f,
+                        presentation.ShowFaction ? plate.Faction.preferredWidth : 0f);
+                    float width = presentation.ShowName || presentation.ShowFaction
+                        ? Mathf.Max(presentation.Width, identityWidth + 14f)
                         : presentation.Width;
                     plate.Rect.sizeDelta = new Vector2(width, presentation.Height);
                     plate.Rect.anchoredPosition = new Vector2(rect.x + rect.width * 0.5f, Screen.height - rect.yMax);
                     float alpha = presentation.Alpha;
                     Color nameColor = entry.IsPlayer ? NamePlayer : entry.Hostile ? NameHostile : NameInk;
                     plate.Name.color = new Color(nameColor.r, nameColor.g, nameColor.b, alpha);
+                    Color factionColor = entry.Hostile ? NameHostile : HealthInk;
+                    plate.Faction.color = new Color(factionColor.r, factionColor.g, factionColor.b, alpha);
                     float ratio = entry.Hp / (float)Mathf.Max(1, entry.MaxHp);
                     Color healthColor = ratio <= 0.34f ? HealthCritical : ratio <= 0.72f ? HealthHurt : HealthInk;
                     plate.HealthTrack.color = new Color(0.015f, 0.018f, 0.014f, alpha * 0.86f);
                     plate.HealthFill.color = new Color(healthColor.r, healthColor.g, healthColor.b, alpha);
                     plate.HealthFill.fillAmount = Mathf.Clamp01(ratio);
                     RectTransform trackRect = plate.HealthTrack.rectTransform;
-                    trackRect.sizeDelta = new Vector2(presentation.ShowName ? 64f : width - 4f,
+                    trackRect.sizeDelta = new Vector2(presentation.ShowName || presentation.ShowFaction ? 64f : width - 4f,
                         presentation.ShowHealthText ? 11f : 6f);
                     plate.Health.color = new Color(1f, 1f, 0.94f, alpha);
                     RectTransform healthRect = plate.Health.rectTransform;
@@ -357,6 +376,17 @@ namespace RealmOfAshes.Game
                     healthRect.pivot = new Vector2(0.5f, 0f);
                     healthRect.sizeDelta = new Vector2(trackRect.sizeDelta.x, 12f);
                     healthRect.anchoredPosition = Vector2.zero;
+                    float rowY = presentation.ShowHealthText ? 12f : 7f;
+                    RectTransform factionRect = plate.Faction.rectTransform;
+                    factionRect.anchorMin = factionRect.anchorMax = new Vector2(0.5f, 0f);
+                    factionRect.pivot = new Vector2(0.5f, 0f);
+                    factionRect.sizeDelta = new Vector2(width, 14f);
+                    factionRect.anchoredPosition = new Vector2(0f, rowY);
+                    RectTransform nameRect = plate.Name.rectTransform;
+                    nameRect.anchorMin = nameRect.anchorMax = new Vector2(0.5f, 0f);
+                    nameRect.pivot = new Vector2(0.5f, 0f);
+                    nameRect.sizeDelta = new Vector2(width, 14f);
+                    nameRect.anchoredPosition = new Vector2(0f, rowY + (presentation.ShowFaction ? 14f : 0f));
                 }
             }
             for (int i = used; i < _pool.Count; i++) if (_pool[i].Root.activeSelf) _pool[i].Root.SetActive(false);
@@ -404,9 +434,11 @@ namespace RealmOfAshes.Game
                 GUI.DrawTexture(new Rect(rect.x, rect.y, 2f, rect.height), Texture2D.whiteTexture);
                 GUI.color = previous;
 
+                string identity = string.IsNullOrEmpty(entry.Name)
+                    ? (entry.IsPlayer ? "Игрок" : entry.Faction)
+                    : (string.IsNullOrEmpty(entry.Faction) ? entry.Name : entry.Name + " · " + entry.Faction);
                 GUI.Label(new Rect(rect.x + 5f, rect.y + 1f, rect.width - 10f, 17f),
-                    string.IsNullOrEmpty(entry.Name) ? (entry.IsPlayer ? "Игрок" : "Персонаж") : entry.Name,
-                    _nameStyle);
+                    string.IsNullOrEmpty(identity) ? "Персонаж" : identity, _nameStyle);
                 _healthStyle.normal.textColor = HealthColor(entry.Hp, entry.MaxHp);
                 string health = awareness
                     ? Mathf.Max(0, entry.Hp) + "/" + Mathf.Max(1, entry.MaxHp)
@@ -418,8 +450,8 @@ namespace RealmOfAshes.Game
         public static bool TryResolveScreenRect(Vector2 point, IReadOnlyList<Rect> occupied,
                                                 int screenWidth, int screenHeight, out Rect resolved)
         {
-            const float width = 148f;
-            const float height = 32f;
+            const float width = 164f;
+            const float height = 46f;
             const float margin = 6f;
             float baseX = Mathf.Clamp(point.x - width * 0.5f, margin,
                                       Mathf.Max(margin, screenWidth - width - margin));
@@ -429,7 +461,7 @@ namespace RealmOfAshes.Game
             {
                 int step = attempt == 0 ? 0 : (attempt + 1) / 2;
                 float direction = attempt == 0 || attempt % 2 == 1 ? -1f : 1f;
-                float y = Mathf.Clamp(baseY + direction * step * 35f, margin,
+                float y = Mathf.Clamp(baseY + direction * step * 49f, margin,
                                       Mathf.Max(margin, screenHeight - height - margin));
                 var candidate = new Rect(baseX, y, width, height);
                 bool overlaps = false;

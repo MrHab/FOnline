@@ -133,6 +133,7 @@ const {
   extractWorldActivity,
   worldActivityRewardCharacterIds
 } = require('./src/server/world-activity-runtime');
+const { createWorldActivityPointPositions } = require('./src/server/world-activity-layout');
 const SERVER_PLAYABLE_WORLD_ACTIVITY_TYPES = new Set([
   'escort_caravan',
   'distress_signal',
@@ -15515,39 +15516,21 @@ function serverWorldActivityReconPoints(room, count = 5) {
   if (!room) return [];
   ensureRoomWorld(room);
   const bounds = normalizedLocationPlayableBounds(roomLocation(room));
-  const margin = 4;
-  const minX = bounds.minX + margin;
-  const maxX = bounds.maxX - margin;
-  const minZ = bounds.minZ + margin;
-  const maxZ = bounds.maxZ - margin;
-  const patterns = [[0.18, 0.22], [0.82, 0.2], [0.5, 0.5], [0.2, 0.82], [0.82, 0.78], [0.5, 0.16], [0.5, 0.84]];
-  const points = [];
-  const used = new Set();
-  const addPoint = (tx, tz) => {
-    const safe = findRoomSafeSpawnTile(room, tx, tz, {
-      maxRadius: 8,
-      radius: 0.42,
-      resourceClearance: 1.4,
-      containerClearance: 1.6,
-      minEnemyDistance: 3
-    });
-    if (!safe) return false;
-    const key = `${safe.tx}:${safe.tz}`;
-    if (used.has(key)) return false;
-    const position = tileToWorld(safe.tx, safe.tz);
-    if (points.some(point => Math.hypot(point.x - position.x, point.z - position.z) < 9)) return false;
-    used.add(key);
-    points.push({ id: `recon_${points.length + 1}`, label: `Точка наблюдения ${points.length + 1}`, x: position.x, z: position.z });
-    return true;
-  };
-  for (const [fx, fz] of patterns) {
-    if (points.length >= count) break;
-    addPoint(Math.round(minX + (maxX - minX) * fx), Math.round(minZ + (maxZ - minZ) * fz));
-  }
-  for (let tz = minZ; points.length < count && tz <= maxZ; tz += 5) {
-    for (let tx = minX; points.length < count && tx <= maxX; tx += 5) addPoint(tx, tz);
-  }
-  return points.slice(0, count);
+  return createWorldActivityPointPositions({
+    bounds,
+    count,
+    margin: 2,
+    resolveSafeTile: (tx, tz, safety) => findRoomSafeSpawnTile(room, tx, tz, {
+      ...safety,
+      radius: 0.42
+    }),
+    tileToWorld
+  }).map((point, index) => ({
+    id: `recon_${index + 1}`,
+    label: `Точка наблюдения ${index + 1}`,
+    x: point.x,
+    z: point.z
+  }));
 }
 function serverWorldActivityDistressPoints(room) {
   return serverWorldActivityReconPoints(room, 1).map((point, index) => ({
@@ -15667,8 +15650,14 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
       interactionPoints
     });
   } else if (task.type === 'assault_diversion') {
-    const interactionPoints = serverWorldActivityOperationPoints(room, Number(task.details?.sabotagePoints || 4));
-    if (interactionPoints.length < 5) return null;
+    const sabotagePoints = Math.max(
+      1,
+      Number(task.details?.sabotagePoints || 4),
+      Number(task.details?.targetSabotage || 3),
+      Number(task.details?.bonusSabotage || 4)
+    );
+    const interactionPoints = serverWorldActivityOperationPoints(room, sabotagePoints);
+    if (interactionPoints.length < sabotagePoints + 2) return null;
     room.worldActivity = createAssaultDiversion({
       ...common,
       title: task.title || 'Штурм или диверсия',
@@ -18674,7 +18663,8 @@ function transferPlayerToServerRoom(p, room, options = {}) {
   removePlayerFromIndependentGlobalTravelSessions(p.id);
   try {
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
-    refreshRoomWorldState(room);
+    ensureServerWorldActivityForRoom(room, Date.now());
+    refreshRoomWorldState(room, { force: true });
   } catch (error) {
     console.error('World transfer room refresh failed:', p.id, room.id, error);
   }
@@ -19767,6 +19757,10 @@ function rejectJoin(socket, ack, error, code = '') {
 
 function currentJoinedSocketAck(p, options = {}) {
   const room = p?.roomId ? rooms.get(p.roomId) : null;
+  if (room) {
+    ensureServerWorldActivityForRoom(room, Date.now());
+    refreshRoomWorldState(room, { force: true });
+  }
   const others = room
     ? [...players.values()]
       .filter(other => other.roomId === room.id && other.id !== p.id)
@@ -20140,7 +20134,8 @@ io.on('connection', (socket) => {
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
 
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
-    refreshRoomWorldState(room);
+    ensureServerWorldActivityForRoom(room, Date.now());
+    refreshRoomWorldState(room, { force: true });
     if (typeof ack === 'function') ack({ ok: true, id: socket.id, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', characterId, characterLeaseId, x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p)), Date.now()), combats: serverCombatAcksForPlayer(p), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
@@ -22397,7 +22392,8 @@ io.on('connection', (socket) => {
         return;
       }
       const others = [...players.values()].filter(v => v.roomId === currentRoom.id && v.id !== socket.id).map(publicPlayer);
-      refreshRoomWorldState(currentRoom);
+      ensureServerWorldActivityForRoom(currentRoom, Date.now());
+      refreshRoomWorldState(currentRoom, { force: true });
       if (typeof ack === 'function') ack({
         ok: true,
         roomId: currentRoom.id,
@@ -22521,7 +22517,8 @@ io.on('connection', (socket) => {
     }
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
-    refreshRoomWorldState(room);
+    ensureServerWorldActivityForRoom(room, Date.now());
+    refreshRoomWorldState(room, { force: true });
     if (typeof ack === 'function') ack({ ok: true, roomId: room.id, locationId: room.locationId, lastVisitedSettlementId: p.lastVisitedSettlementId || 'settlement', x: Number(p.x.toFixed(3)), z: Number(p.z.toFixed(3)), combat: serverCombatAck(p, serverWeaponDef(serverActiveWeaponId(p), p), Date.now()), combats: serverCombatAcksForPlayer(p), self: publicAuthoritativePlayerState(p), players: others, worldState: currentRoomWorldState(room), serverAuthoritativeEnemies: true });
     socket.to(room.id).emit('playerJoined', publicPlayer(p));
     emitEnemyBaselineForSocket(room, socket.id);
@@ -22544,7 +22541,8 @@ io.on('connection', (socket) => {
       return;
     }
     ensureRoomWorld(room);
-    refreshRoomWorldState(room);
+    ensureServerWorldActivityForRoom(room, Date.now());
+    refreshRoomWorldState(room, { force: true });
     ack({
       ok: true,
       reason: String(data?.reason || 'resync').slice(0, 32),

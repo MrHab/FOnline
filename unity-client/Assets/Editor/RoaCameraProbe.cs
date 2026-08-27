@@ -94,6 +94,12 @@ namespace RealmOfAshes.EditorTools
                 Check(RoaGlobalMap.MapScreenPointCanGesture(new Vector2(200f, 250f), 840, 500, false)
                       && !RoaGlobalMap.MapScreenPointCanGesture(new Vector2(640f, 250f), 840, 500, false),
                     "legacy-панель карты не блокирует касание по интерфейсу");
+                Check(RoaGlobalMap.RouteClickAllowed(true, false, false, false)
+                      && !RoaGlobalMap.RouteClickAllowed(false, false, false, false)
+                      && !RoaGlobalMap.RouteClickAllowed(true, true, false, false)
+                      && !RoaGlobalMap.RouteClickAllowed(true, false, true, false)
+                      && !RoaGlobalMap.RouteClickAllowed(true, false, false, true),
+                    "клик по карте не меняет маршрут или обходит обязательное решение встречи");
 
                 Rect sidebar = RoaGlobalMap.InformationPanelRect(840, 500);
                 var occupied = new[] { new Rect(216f, 228f, 220f, 44f) };
@@ -134,6 +140,12 @@ namespace RealmOfAshes.EditorTools
                       && mapLabelBackgrounds.All(image => !image.raycastTarget)
                       && mapLabelTexts.All(text => !text.raycastTarget && text.supportRichText),
                     "пул Canvas-подписей карты не ограничен, перехватывает ввод или теряет rich text");
+                string[] mapButtonLabels = canvasObject.GetComponentsInChildren<Button>(true)
+                    .Select(button => button.GetComponentInChildren<Text>(true)?.text ?? string.Empty)
+                    .ToArray();
+                Check(!mapButtonLabels.Contains("Войти") && !mapButtonLabels.Contains("Стоп")
+                      && mapButtonLabels.Contains("Вступить"),
+                    "глобальная карта вернула старые кнопки входа/остановки или потеряла решение контакта");
 
                 MethodInfo setRouteProgress = typeof(RoaGlobalMapCanvas).GetMethod("SetRouteProgress",
                     BindingFlags.Instance | BindingFlags.NonPublic);

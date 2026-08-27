@@ -74,6 +74,12 @@ requirePattern(server,
   /function publicWorldState\([\s\S]{0,900}activity: publicWorldActivity\(room\.worldActivity\)/,
   'activity is no longer part of the authoritative room snapshot');
 requirePattern(server,
+  /function transferPlayerToServerRoom\([\s\S]{0,2600}ensureServerWorldActivityForRoom\(room, Date\.now\(\)\)[\s\S]{0,160}refreshRoomWorldState\(room, \{ force: true \}\)/,
+  'entering an activity room no longer creates and broadcasts its objectives immediately');
+requirePattern(server,
+  /socket\.on\('requestWorldState'[\s\S]{0,700}ensureServerWorldActivityForRoom\(room, Date\.now\(\)\)[\s\S]{0,160}refreshRoomWorldState\(room, \{ force: true \}\)/,
+  'Unity activity resync no longer repairs a missing room activity');
+requirePattern(server,
   /socket\.on\('harvestResource'[\s\S]{0,4500}recordServerWorldActivityHarvest\(room, p, item, now\)/,
   'authoritative harvesting no longer advances the activity');
 requirePattern(server,
@@ -210,6 +216,14 @@ requireText(activityHub, 'Map.RequestTravelToWorldSite',
   'the Unity activity hub no longer starts a server route');
 requireText(globalMap, 'public bool RequestTravelToWorldSite',
   'the global map no longer exposes activity-site routing');
+requireText(globalMap, 'public static bool RouteClickAllowed',
+  'the live global map no longer allows a click to replace the active route');
+requireText(globalMap, 'bool rerouting = _travelActive;',
+  'route replacement no longer uses the authoritative travel-start path');
+requireText(globalMapCanvas, 'Вступить',
+  'the only explicit map-entry decision must belong to a route contact');
+requireText(globalMapCanvas, 'Покинуть отряд',
+  'removing the stop button must not trap an attached player in a world party');
 requireText(server, 'const remoteActivity = player.onGlobalMap',
   'the server no longer allows map acceptance for short activities');
 requireText(interaction, 'public JObject TrackedWorldTask',

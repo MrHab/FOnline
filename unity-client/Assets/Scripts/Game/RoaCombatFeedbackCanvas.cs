@@ -20,6 +20,22 @@ namespace RealmOfAshes.Game
             public float Scale;
         }
 
+        public readonly struct FloatingStyle
+        {
+            public readonly string Text;
+            public readonly int FontSize;
+            public readonly FontStyle FontStyle;
+            public readonly Vector2 Size;
+
+            public FloatingStyle(string text, int fontSize, FontStyle fontStyle, Vector2 size)
+            {
+                Text = text;
+                FontSize = fontSize;
+                FontStyle = fontStyle;
+                Size = size;
+            }
+        }
+
         private sealed class FloatingView
         {
             public GameObject Root;
@@ -28,6 +44,7 @@ namespace RealmOfAshes.Game
             public Text Label;
             public Vector3 World;
             public float Started;
+            public Vector2 Offset;
             public bool Active;
         }
 
@@ -46,7 +63,9 @@ namespace RealmOfAshes.Game
 
         private const int InitialFloatingPool = 16;
         private const int InitialMarkerPool = 12;
-        private const float FloatingLifetime = 1.1f;
+        private const float FloatingLifetime = 0.92f;
+        private const float FloatingStackWindow = 0.22f;
+        private const float FloatingStackWorldRadius = 1.2f;
 
         public Camera WorldCamera;
 
@@ -99,15 +118,17 @@ namespace RealmOfAshes.Game
         {
             EnsureCanvas();
             FloatingView view = AcquireFloating();
+            view.Offset = FloatingStackOffset(NearbyFloatingCount(world, view));
             view.World = world;
             view.Started = Time.unscaledTime;
             view.Active = true;
-            view.Label.text = text ?? string.Empty;
+            bool mobile = RoaGameBootstrap.Active?.MobileControls?.ControlsEnabled == true;
+            FloatingStyle style = ResolveFloatingStyle(text, mobile);
+            view.Label.text = style.Text;
             view.Label.color = color;
-            bool critical = !string.IsNullOrEmpty(text) && text.Contains("КРИТ");
-            bool miss = string.Equals(text, "мимо", System.StringComparison.OrdinalIgnoreCase);
-            view.Label.fontSize = critical ? 23 : miss ? 15 : 19;
-            view.Label.fontStyle = miss ? FontStyle.Normal : FontStyle.Bold;
+            view.Label.fontSize = style.FontSize;
+            view.Label.fontStyle = style.FontStyle;
+            view.Rect.sizeDelta = style.Size;
             view.Group.alpha = 1f;
             view.Root.SetActive(true);
         }
@@ -148,17 +169,50 @@ namespace RealmOfAshes.Game
         {
             if (elapsed < 0f || elapsed >= FloatingLifetime) return default;
             float t = Mathf.Clamp01(elapsed / FloatingLifetime);
-            float enter = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.14f));
-            float settle = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.14f, 0.42f, t));
-            float scale = Mathf.Lerp(0.74f, 1.12f, enter);
-            if (t > 0.14f) scale = Mathf.Lerp(1.12f, 1f, settle);
+            float enter = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.12f));
+            float settle = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.12f, 0.34f, t));
+            float scale = Mathf.Lerp(0.82f, 1.06f, enter);
+            if (t > 0.12f) scale = Mathf.Lerp(1.06f, 1f, settle);
             return new FloatingFrame
             {
                 Visible = true,
-                Alpha = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.52f, 1f, t)),
-                Rise = Mathf.Lerp(0f, 36f, 1f - (1f - t) * (1f - t)),
+                Alpha = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.44f, 1f, t)),
+                Rise = Mathf.Lerp(0f, 42f, 1f - (1f - t) * (1f - t)),
                 Scale = scale
             };
+        }
+
+        public static FloatingStyle ResolveFloatingStyle(string text, bool mobile)
+        {
+            string source = (text ?? string.Empty).Trim();
+            bool critical = source.IndexOf("КРИТ", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            bool miss = string.Equals(source, "мимо", System.StringComparison.OrdinalIgnoreCase)
+                || string.Equals(source, "промах", System.StringComparison.OrdinalIgnoreCase);
+            bool auxiliary = source.EndsWith(" XP", System.StringComparison.OrdinalIgnoreCase);
+            if (critical)
+            {
+                string value = source.Replace("КРИТ", string.Empty).Trim();
+                int tagSize = mobile ? 10 : 11;
+                source = string.IsNullOrEmpty(value)
+                    ? "КРИТ"
+                    : value + "  <size=" + tagSize + ">КРИТ</size>";
+                return new FloatingStyle(source, mobile ? 17 : 18, FontStyle.Bold,
+                    new Vector2(170f, 32f));
+            }
+            if (miss || auxiliary)
+                return new FloatingStyle(source, mobile ? 13 : 14, FontStyle.Normal,
+                    new Vector2(120f, 26f));
+            return new FloatingStyle(source, mobile ? 15 : 16, FontStyle.Bold,
+                new Vector2(132f, 28f));
+        }
+
+        public static Vector2 FloatingStackOffset(int nearbyIndex)
+        {
+            int index = Mathf.Max(0, nearbyIndex);
+            if (index == 0) return new Vector2(0f, 14f);
+            int ring = Mathf.Min(3, (index + 1) / 2);
+            float direction = index % 2 == 1 ? -1f : 1f;
+            return new Vector2(direction * (18f + ring * 8f), 14f + ring * 8f);
         }
 
         private void EnsureCanvas()
@@ -210,6 +264,7 @@ namespace RealmOfAshes.Game
             label.alignment = TextAnchor.MiddleCenter;
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
             label.verticalOverflow = VerticalWrapMode.Overflow;
+            label.supportRichText = true;
             label.raycastTarget = false;
             var outline = labelRoot.AddComponent<Outline>();
             outline.effectColor = new Color(0f, 0f, 0f, 0.88f);
@@ -261,6 +316,23 @@ namespace RealmOfAshes.Game
             return oldest;
         }
 
+        private int NearbyFloatingCount(Vector3 world, FloatingView reused)
+        {
+            int count = 0;
+            float now = Time.unscaledTime;
+            float radiusSq = FloatingStackWorldRadius * FloatingStackWorldRadius;
+            for (int i = 0; i < _floating.Count; i++)
+            {
+                FloatingView candidate = _floating[i];
+                if (candidate == reused || !candidate.Active
+                    || now - candidate.Started > FloatingStackWindow) continue;
+                Vector3 delta = candidate.World - world;
+                delta.y = 0f;
+                if (delta.sqrMagnitude <= radiusSq) count++;
+            }
+            return count;
+        }
+
         private MarkerView AcquireMarker()
         {
             MarkerView oldest = _markers[0];
@@ -296,7 +368,7 @@ namespace RealmOfAshes.Game
                     view.Group.alpha = 0f;
                     continue;
                 }
-                view.Rect.anchoredPosition = point + Vector2.up * frame.Rise;
+                view.Rect.anchoredPosition = point + view.Offset + Vector2.up * frame.Rise;
                 view.Rect.localScale = Vector3.one * frame.Scale;
                 view.Group.alpha = frame.Alpha;
             }

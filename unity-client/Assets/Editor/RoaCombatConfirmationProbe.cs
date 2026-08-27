@@ -64,6 +64,23 @@ namespace RealmOfAshes.EditorTools
                         && floatingFade.Alpha < floatingStart.Alpha
                         && !RoaCombatFeedbackCanvas.EvaluateFloating(1.11f).Visible,
                         "floating combat text does not pop, rise, fade and expire deterministically");
+                RoaCombatFeedbackCanvas.FloatingStyle criticalText =
+                    RoaCombatFeedbackCanvas.ResolveFloatingStyle("КРИТ 42", false);
+                RoaCombatFeedbackCanvas.FloatingStyle mobileCritical =
+                    RoaCombatFeedbackCanvas.ResolveFloatingStyle("−37  КРИТ", true);
+                RoaCombatFeedbackCanvas.FloatingStyle missText =
+                    RoaCombatFeedbackCanvas.ResolveFloatingStyle("мимо", false);
+                Require(criticalText.FontSize == 18 && criticalText.Text.StartsWith("42")
+                        && criticalText.Text.Contains("<size=11>КРИТ</size>")
+                        && mobileCritical.FontSize == 17
+                        && mobileCritical.Text.Contains("<size=10>КРИТ</size>")
+                        && missText.FontSize == 14 && missText.FontStyle == FontStyle.Normal,
+                    "floating text hierarchy is no longer compact or mobile-aware");
+                Vector2 stackA = RoaCombatFeedbackCanvas.FloatingStackOffset(1);
+                Vector2 stackB = RoaCombatFeedbackCanvas.FloatingStackOffset(2);
+                Require(stackA.x < 0f && stackB.x > 0f && stackA.y == stackB.y
+                        && RoaCombatFeedbackCanvas.FloatingStackOffset(0).y >= 14f,
+                    "simultaneous damage values are no longer separated from the target");
 
                 root = new GameObject("Combat confirmation probe");
                 RoaEnemies holdProbe = root.AddComponent<RoaEnemies>();
@@ -111,7 +128,8 @@ namespace RealmOfAshes.EditorTools
                 Text[] labels = Array.FindAll(root.GetComponentsInChildren<Text>(true),
                     label => label.gameObject.activeInHierarchy);
                 Require(markerSegments.Length == 8 && labels.Length == 1
-                        && labels[0].fontSize == 23 && labels[0].text == "КРИТ 42",
+                        && labels[0].fontSize == 18 && labels[0].text.StartsWith("42")
+                        && floatingRect.anchoredPosition.y > markerRect.anchoredPosition.y + 10f,
                         "Canvas marker corners or critical floating text styling is incomplete");
 
                 int floatingPool = feedback.FloatingPoolSize;

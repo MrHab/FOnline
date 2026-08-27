@@ -30,6 +30,63 @@ namespace RealmOfAshes.Game
             public bool IsSelf;
         }
 
+        public readonly struct Presentation
+        {
+            public readonly bool ShowName;
+            public readonly bool ShowHealthText;
+            public readonly string HealthText;
+            public readonly float Width;
+            public readonly float Height;
+            public readonly float Alpha;
+
+            public Presentation(bool showName, bool showHealthText, string healthText,
+                                float width, float height, float alpha)
+            {
+                ShowName = showName;
+                ShowHealthText = showHealthText;
+                HealthText = healthText;
+                Width = width;
+                Height = height;
+                Alpha = alpha;
+            }
+        }
+
+        public static bool IsImportantNpc(bool canDialogue, string role, string encounterRole)
+        {
+            if (!canDialogue) return false;
+            string value = string.IsNullOrWhiteSpace(role) ? encounterRole : role;
+            switch ((value ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "merchant":
+                case "trader":
+                case "quartermaster":
+                case "shopkeeper":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static Presentation ResolvePresentation(Entry entry, bool awareness,
+                                                       float distance, float maxDistance)
+        {
+            bool showName = !string.IsNullOrWhiteSpace(entry.Name);
+            float ratio = entry.Hp / (float)Mathf.Max(1, entry.MaxHp);
+            bool exact = awareness || entry.IsSelf;
+            bool showHealthText = exact || ratio < 0.995f;
+            string healthText = exact
+                ? Mathf.Max(0, entry.Hp) + "/" + Mathf.Max(1, entry.MaxHp)
+                : CompactHealthState(entry.Hp, entry.MaxHp);
+            float t = Mathf.Clamp01(distance / Mathf.Max(0.01f, maxDistance));
+            float near = 1f - Mathf.SmoothStep(0.45f, 1f, t);
+            float floor = entry.IsSelf ? 1f : entry.Hostile ? 0.68f : 0.34f;
+            float alpha = Mathf.Lerp(floor, 1f, near);
+            float width = showName ? 148f : showHealthText ? 88f : 68f;
+            float height = showName ? 28f : showHealthText ? 18f : 9f;
+            return new Presentation(showName, showHealthText, healthText,
+                width, height, alpha);
+        }
+
         private readonly List<Entry> _entries = new List<Entry>();
         private readonly List<Rect> _occupied = new List<Rect>();
         private GUIStyle _nameStyle;
@@ -61,6 +118,8 @@ namespace RealmOfAshes.Game
             public Image Back;
             public Text Name;
             public Text Health;
+            public Image HealthTrack;
+            public Image HealthFill;
         }
 
         private Canvas _canvas;
@@ -107,12 +166,36 @@ namespace RealmOfAshes.Game
                 name.rectTransform.anchorMax = new Vector2(1f, 1f);
                 name.rectTransform.offsetMin = new Vector2(6f, -1f);
                 name.rectTransform.offsetMax = new Vector2(-6f, -1f);
-                Text health = PlateText("Health", rect, 10, FontStyle.Normal);
+                Text health = PlateText("Health", rect, 9, FontStyle.Bold);
                 health.rectTransform.anchorMin = new Vector2(0f, 0f);
                 health.rectTransform.anchorMax = new Vector2(1f, 0.5f);
                 health.rectTransform.offsetMin = new Vector2(6f, 2f);
                 health.rectTransform.offsetMax = new Vector2(-6f, 1f);
-                _pool.Add(new Plate { Root = root, Rect = rect, Back = back, Name = name, Health = health });
+                var trackObject = new GameObject("HealthTrack", typeof(RectTransform), typeof(Image));
+                trackObject.transform.SetParent(rect, false);
+                var trackRect = (RectTransform)trackObject.transform;
+                trackRect.anchorMin = trackRect.anchorMax = new Vector2(0.5f, 0f);
+                trackRect.pivot = new Vector2(0.5f, 0f);
+                trackRect.sizeDelta = new Vector2(64f, 6f);
+                trackRect.anchoredPosition = new Vector2(0f, 1f);
+                Image track = trackObject.GetComponent<Image>();
+                track.color = new Color(0.015f, 0.018f, 0.014f, 0.82f);
+                track.raycastTarget = false;
+                var fillObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+                fillObject.transform.SetParent(trackRect, false);
+                var fillRect = (RectTransform)fillObject.transform;
+                fillRect.anchorMin = Vector2.zero;
+                fillRect.anchorMax = Vector2.one;
+                fillRect.offsetMin = new Vector2(1f, 1f);
+                fillRect.offsetMax = new Vector2(-1f, -1f);
+                Image fill = fillObject.GetComponent<Image>();
+                fill.type = Image.Type.Filled;
+                fill.fillMethod = Image.FillMethod.Horizontal;
+                fill.fillOrigin = 0;
+                fill.raycastTarget = false;
+                health.transform.SetAsLastSibling();
+                _pool.Add(new Plate { Root = root, Rect = rect, Back = back, Name = name,
+                    Health = health, HealthTrack = track, HealthFill = fill });
             }
             return _pool[index];
         }
@@ -216,8 +299,10 @@ namespace RealmOfAshes.Game
             if (show && camera != null)
             {
                 _entries.Clear();
-                Enemies?.CollectNameplates(_entries, Player.transform.position, MaxDistance);
-                RemotePlayers?.CollectNameplates(_entries, Player.transform.position, MaxDistance);
+                bool mobile = RoaGameBootstrap.Active?.MobileControls?.ControlsEnabled == true;
+                float maxDistance = Mathf.Min(MaxDistance, mobile ? 14f : 20f);
+                Enemies?.CollectNameplates(_entries, Player.transform.position, maxDistance);
+                RemotePlayers?.CollectNameplates(_entries, Player.transform.position, maxDistance);
                 // Свой персонаж: ник и здоровье над головой, как у остальных игроков.
                 if (Hud != null && Hud.HasState)
                     _entries.Add(new Entry
@@ -244,21 +329,34 @@ namespace RealmOfAshes.Game
 
                     Plate plate = AcquirePlate(used++);
                     plate.Root.SetActive(true);
-                    plate.Name.text = string.IsNullOrEmpty(entry.Name) ? (entry.IsPlayer ? "Игрок" : "Персонаж") : entry.Name;
-                    // white-space: nowrap — плашка растёт под имя, центр остаётся над точкой.
-                    float width = Mathf.Max(rect.width, plate.Name.preferredWidth + 14f);
-                    plate.Rect.sizeDelta = new Vector2(width, rect.height);
-                    plate.Rect.anchoredPosition = new Vector2(rect.x + rect.width * 0.5f, Screen.height - rect.yMax);
                     float distance = Vector3.Distance(origin, entry.World);
-                    float alpha = Mathf.Lerp(0.55f, 1f, 1f - Mathf.Clamp01(distance / MaxDistance));
+                    Presentation presentation = ResolvePresentation(entry, awareness, distance, maxDistance);
+                    plate.Name.gameObject.SetActive(presentation.ShowName);
+                    plate.Name.text = presentation.ShowName ? entry.Name : string.Empty;
+                    plate.Health.gameObject.SetActive(presentation.ShowHealthText);
+                    plate.Health.text = presentation.HealthText;
+                    float width = presentation.ShowName
+                        ? Mathf.Max(presentation.Width, plate.Name.preferredWidth + 14f)
+                        : presentation.Width;
+                    plate.Rect.sizeDelta = new Vector2(width, presentation.Height);
+                    plate.Rect.anchoredPosition = new Vector2(rect.x + rect.width * 0.5f, Screen.height - rect.yMax);
+                    float alpha = presentation.Alpha;
                     Color nameColor = entry.IsPlayer ? NamePlayer : entry.Hostile ? NameHostile : NameInk;
                     plate.Name.color = new Color(nameColor.r, nameColor.g, nameColor.b, alpha);
                     float ratio = entry.Hp / (float)Mathf.Max(1, entry.MaxHp);
                     Color healthColor = ratio <= 0.34f ? HealthCritical : ratio <= 0.72f ? HealthHurt : HealthInk;
-                    plate.Health.color = new Color(healthColor.r, healthColor.g, healthColor.b, alpha);
-                    plate.Health.text = awareness || entry.IsSelf
-                        ? Mathf.Max(0, entry.Hp) + "/" + Mathf.Max(1, entry.MaxHp)
-                        : HealthState(entry.Hp, entry.MaxHp);
+                    plate.HealthTrack.color = new Color(0.015f, 0.018f, 0.014f, alpha * 0.86f);
+                    plate.HealthFill.color = new Color(healthColor.r, healthColor.g, healthColor.b, alpha);
+                    plate.HealthFill.fillAmount = Mathf.Clamp01(ratio);
+                    RectTransform trackRect = plate.HealthTrack.rectTransform;
+                    trackRect.sizeDelta = new Vector2(presentation.ShowName ? 64f : width - 4f,
+                        presentation.ShowHealthText ? 11f : 6f);
+                    plate.Health.color = new Color(1f, 1f, 0.94f, alpha);
+                    RectTransform healthRect = plate.Health.rectTransform;
+                    healthRect.anchorMin = healthRect.anchorMax = new Vector2(0.5f, 0f);
+                    healthRect.pivot = new Vector2(0.5f, 0f);
+                    healthRect.sizeDelta = new Vector2(trackRect.sizeDelta.x, 12f);
+                    healthRect.anchoredPosition = Vector2.zero;
                 }
             }
             for (int i = used; i < _pool.Count; i++) if (_pool[i].Root.activeSelf) _pool[i].Root.SetActive(false);
@@ -376,6 +474,18 @@ namespace RealmOfAshes.Game
             if (ratio >= 0.5f) return "ранен";
             if (ratio >= 0.3f) return "сильное ранение";
             if (ratio >= 0.1f) return "критическое ранение";
+            return "при смерти";
+        }
+
+        private static string CompactHealthState(int hp, int maxHp)
+        {
+            if (hp <= 0) return "при смерти";
+            float ratio = hp / (float)Mathf.Max(1, maxHp);
+            if (ratio >= 0.995f) return string.Empty;
+            if (ratio >= 0.8f) return "царапина";
+            if (ratio >= 0.5f) return "ранен";
+            if (ratio >= 0.3f) return "тяжело";
+            if (ratio >= 0.1f) return "критично";
             return "при смерти";
         }
 

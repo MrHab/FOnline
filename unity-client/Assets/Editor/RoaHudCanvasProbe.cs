@@ -27,6 +27,26 @@ namespace RealmOfAshes.EditorTools
                                                             800, 480, out Rect second),
                     "overlapping nameplate was not relocated");
             Require(!first.Overlaps(second), "relocated nameplates still overlap");
+            Require(RoaActorNameplates.IsImportantNpc(true, "merchant", string.Empty)
+                    && RoaActorNameplates.IsImportantNpc(true, string.Empty, "quartermaster")
+                    && !RoaActorNameplates.IsImportantNpc(true, "guard", string.Empty)
+                    && !RoaActorNameplates.IsImportantNpc(false, "merchant", string.Empty),
+                "Unity nameplates no longer match the important-NPC role filter");
+            var healthyExtra = new RoaActorNameplates.Entry { Hp = 100, MaxHp = 100 };
+            RoaActorNameplates.Presentation compact = RoaActorNameplates.ResolvePresentation(
+                healthyExtra, false, 6f, 20f);
+            var woundedExtra = new RoaActorNameplates.Entry { Hp = 42, MaxHp = 100 };
+            RoaActorNameplates.Presentation wounded = RoaActorNameplates.ResolvePresentation(
+                woundedExtra, false, 6f, 20f);
+            var self = new RoaActorNameplates.Entry
+                { Name = "Странник", Hp = 87, MaxHp = 100, IsSelf = true, IsPlayer = true };
+            RoaActorNameplates.Presentation own = RoaActorNameplates.ResolvePresentation(
+                self, false, 19f, 20f);
+            Require(!compact.ShowName && !compact.ShowHealthText && compact.Height <= 9f
+                    && wounded.ShowHealthText && wounded.HealthText == "тяжело"
+                    && own.ShowName && own.ShowHealthText && own.HealthText == "87/100"
+                    && Mathf.Approximately(own.Alpha, 1f),
+                "compact health-bar/name hierarchy is not deterministic");
             Require(typeof(RoaHudCanvas).IsSubclassOf(typeof(MonoBehaviour)),
                     "adaptive HUD is not a Unity component");
             Vector2 desktopReference = RoaUiScale.ReferenceFor(false);

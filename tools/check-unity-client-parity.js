@@ -83,6 +83,8 @@ const offlineProbe = read('unity-client/Assets/Editor/RoaOfflineResilienceProbe.
 const auditRunner = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
 const hudCanvas = read('unity-client/Assets/Scripts/Game/RoaHudCanvas.cs');
 const hudProbe = read('unity-client/Assets/Editor/RoaHudCanvasProbe.cs');
+const nameplates = read('unity-client/Assets/Scripts/Game/RoaActorNameplates.cs');
+const enemies = read('unity-client/Assets/Scripts/Game/RoaEnemies.cs');
 
 assert(uiScale.includes('return mobile ? new Vector2(1280f, 720f) : new Vector2(1600f, 900f);'),
   'Unity UI must keep readable 1600x900 desktop and 1280x720 mobile references');
@@ -125,6 +127,19 @@ assert(hudCanvas.includes('public static LayoutProfile ResolveLayout(bool mobile
   && hudProbe.includes('weapon console again obscures too much of the combat view')
   && hudProbe.includes('quickbar overlaps the compact weapon console'),
   'Unity HUD no longer guarantees a compact, non-overlapping desktop/mobile combat stack');
+assert(nameplates.includes('public static bool IsImportantNpc(')
+  && nameplates.includes('case "merchant":')
+  && nameplates.includes('case "quartermaster":')
+  && nameplates.includes('public static Presentation ResolvePresentation(')
+  && nameplates.includes('mobile ? 14f : 20f')
+  && nameplates.includes('fill.type = Image.Type.Filled')
+  && nameplates.includes('plate.HealthFill.fillAmount = Mathf.Clamp01(ratio)')
+  && nameplates.includes('CompactHealthState(entry.Hp, entry.MaxHp)')
+  && enemies.includes('RoaActorNameplates.IsImportantNpc(canDialogue,')
+  && enemies.includes('Name = important ?')
+  && !enemies.includes('if (enemy.Snapshot["canDialogue"]?.ToObject<bool>() != true) continue;')
+  && hudProbe.includes('compact health-bar/name hierarchy is not deterministic'),
+  'Unity actor nameplates lost the role-filtered name and compact health hierarchy');
 
 // Browser -> server. Literal calls are supplemented by the browser's single
 // audited guarded emitter, exactly like check-socket-event-contract.js.

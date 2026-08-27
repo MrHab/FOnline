@@ -1250,15 +1250,18 @@ namespace RealmOfAshes.Game
             {
                 if (enemy == null || enemy.Dead || enemy.Root == null || enemy.Snapshot == null) continue;
                 if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
-                if (enemy.Snapshot["canDialogue"]?.ToObject<bool>() != true) continue;
                 Vector3 delta = enemy.Root.transform.position - origin;
+
                 delta.y = 0f;
                 if (delta.sqrMagnitude > maxSq) continue;
                 float scale = Mathf.Clamp(Value(enemy.Snapshot, "scale"), 0.75f, 1.25f);
                 if (scale <= 0.01f) scale = 1f;
+                bool canDialogue = enemy.Snapshot["canDialogue"]?.ToObject<bool>() == true;
+                bool important = RoaActorNameplates.IsImportantNpc(canDialogue,
+                    enemy.Snapshot["role"]?.ToString(), enemy.Snapshot["encounterRole"]?.ToString());
                 rows.Add(new RoaActorNameplates.Entry
                 {
-                    Name = enemy.Snapshot["name"]?.ToString() ?? "Персонаж",
+                    Name = important ? enemy.Snapshot["name"]?.ToString() ?? "Торговец" : string.Empty,
                     Hp = enemy.Hp,
                     MaxHp = Mathf.Max(1, enemy.Snapshot["maxHp"]?.ToObject<int>() ?? enemy.Hp),
                     World = enemy.Root.transform.position + Vector3.up * (2.05f * scale),

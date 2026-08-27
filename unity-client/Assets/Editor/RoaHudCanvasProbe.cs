@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using RealmOfAshes.Net;
 using UnityEditor;
@@ -16,6 +17,11 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/Probe/Adaptive HUD")]
         public static void Run()
         {
+            Require(RoaEnemies.ReadBoolean(JValue.CreateNull(), true)
+                    && !RoaEnemies.ReadBoolean(JValue.CreateNull())
+                    && RoaEnemies.ReadBoolean(new JValue(true))
+                    && !RoaEnemies.ReadBoolean(new JValue(false), true),
+                "explicit JSON null is no longer safe for optional NPC flags");
             var occupied = new List<Rect>();
             Require(RoaActorNameplates.TryResolveScreenRect(new Vector2(-20f, -10f), occupied,
                                                             800, 480, out Rect first),

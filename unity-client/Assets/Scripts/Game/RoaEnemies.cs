@@ -151,6 +151,21 @@ namespace RealmOfAshes.Game
             return currentlyDead || (frameReportsDead && !deferFrameDeath);
         }
 
+        /// <summary>
+        /// Server snapshots may contain an explicit JSON null for optional flags.
+        /// Newtonsoft treats that token differently from a missing C# value and
+        /// throws when it is converted directly to bool, so all NPC flags pass
+        /// through this boundary before entering the per-frame presentation code.
+        /// </summary>
+        public static bool ReadBoolean(JToken token, bool fallback = false)
+        {
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+                return fallback;
+            if (token.Type == JTokenType.Boolean) return token.Value<bool>();
+            if (token.Type == JTokenType.Integer) return token.Value<long>() != 0L;
+            return bool.TryParse(token.ToString(), out bool value) ? value : fallback;
+        }
+
         private bool MeleePresentationHeld(string enemyId)
         {
             return !string.IsNullOrEmpty(enemyId)
@@ -172,7 +187,7 @@ namespace RealmOfAshes.Game
             }
 
             int nextHp = row["hp"]?.ToObject<int>() ?? enemy.Hp;
-            bool dead = row["dead"]?.ToObject<bool>() == true;
+            bool dead = ReadBoolean(row["dead"]);
             if (!ShouldDeferMeleeState(Time.unscaledTime, hold.ReleaseAt,
                                        enemy.Hp, nextHp, dead)) return false;
 
@@ -200,7 +215,7 @@ namespace RealmOfAshes.Game
             if (!_meleePresentationHolds.TryGetValue(enemyId, out MeleePresentationHold hold)) return;
             _meleePresentationHolds.Remove(enemyId);
 
-            bool snapshotKilled = hold.PendingSnapshot?["dead"]?.ToObject<bool>() == true;
+            bool snapshotKilled = ReadBoolean(hold.PendingSnapshot?["dead"]);
             if (hold.PendingSnapshot != null)
                 ApplySnapshotRow(enemyId, hold.PendingSnapshot);
             if (hold.PendingKilled != null)
@@ -421,7 +436,7 @@ namespace RealmOfAshes.Game
                 Enemy enemy = entry.Value;
                 if (enemy == null || enemy.Dead || enemy.Root == null) continue;
                 if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
-                if (enemy.Snapshot?["hostileToPlayer"]?.ToObject<bool>() == false) continue;
+                if (!ReadBoolean(enemy.Snapshot?["hostileToPlayer"], true)) continue;
                 Vector3 delta = enemy.Root.transform.position - origin;
                 delta.y = 0f;
                 float sq = delta.sqrMagnitude;
@@ -495,12 +510,12 @@ namespace RealmOfAshes.Game
             {
                 if (enemy.Root == null || enemy.Snapshot == null) continue;
 
-                bool dead = enemy.Snapshot["dead"]?.ToObject<bool>() ?? enemy.Dead;
-                bool hostile = enemy.Snapshot["hostileToPlayer"]?.ToObject<bool>() ?? true;
-                bool canDialogue = enemy.Snapshot["canDialogue"]?.ToObject<bool>() ?? false;
+                bool dead = ReadBoolean(enemy.Snapshot["dead"], enemy.Dead);
+                bool hostile = ReadBoolean(enemy.Snapshot["hostileToPlayer"], true);
+                bool canDialogue = ReadBoolean(enemy.Snapshot["canDialogue"]);
                 bool hasTrade = !string.IsNullOrEmpty(enemy.Snapshot["traderProfile"]?.ToString())
                     || !string.IsNullOrEmpty(enemy.Snapshot["traderId"]?.ToString())
-                    || enemy.Snapshot["personalTrade"]?.ToObject<bool>() == true;
+                    || ReadBoolean(enemy.Snapshot["personalTrade"]);
 
                 if (!dead && (hostile || (!canDialogue && !hasTrade))) continue;
 
@@ -588,7 +603,7 @@ namespace RealmOfAshes.Game
 
         private void HandleEnemyShot(JObject payload)
         {
-            if (payload?["enemyShooter"]?.ToObject<bool>() != true) return;
+            if (!ReadBoolean(payload?["enemyShooter"])) return;
             PlayEnemyAttack(payload["shooterId"]?.ToString(), payload);
         }
 
@@ -769,8 +784,8 @@ namespace RealmOfAshes.Game
 
             enemy.TargetPosition = position;
             enemy.Velocity = RoaCoords.VelocityToUnity(Value(row, "vx"), Value(row, "vz"));
-            enemy.Moving = row["moving"]?.ToObject<bool>() ?? false;
-            enemy.Dead = row["dead"]?.ToObject<bool>() ?? false;
+            enemy.Moving = ReadBoolean(row["moving"]);
+            enemy.Dead = ReadBoolean(row["dead"]);
             enemy.LastPacketTime = Time.time;
             enemy.ActivityRevision = row["activityRevision"]?.ToObject<int>() ?? enemy.ActivityRevision;
             enemy.Hp = nextHp;
@@ -1246,11 +1261,11 @@ namespace RealmOfAshes.Game
 
         public static RoaMinimap.MarkerKind ClassifyMinimapActor(JObject snapshot)
         {
-            bool hostile = snapshot?["hostileToPlayer"]?.ToObject<bool>() ?? true;
+            bool hostile = ReadBoolean(snapshot?["hostileToPlayer"], true);
             if (hostile) return RoaMinimap.MarkerKind.Enemy;
 
-            bool hasService = snapshot?["serviceAvailable"]?.ToObject<bool>() == true
-                || snapshot?["personalTrade"]?.ToObject<bool>() == true
+            bool hasService = ReadBoolean(snapshot?["serviceAvailable"])
+                || ReadBoolean(snapshot?["personalTrade"])
                 || !string.IsNullOrWhiteSpace(snapshot?["traderProfile"]?.ToString())
                 || !string.IsNullOrWhiteSpace(snapshot?["traderId"]?.ToString())
                 || !string.IsNullOrWhiteSpace(snapshot?["tradeProfile"]?.ToString());
@@ -1273,10 +1288,10 @@ namespace RealmOfAshes.Game
                 if (delta.sqrMagnitude > maxSq) continue;
                 float scale = Mathf.Clamp(Value(enemy.Snapshot, "scale"), 0.75f, 1.25f);
                 if (scale <= 0.01f) scale = 1f;
-                bool canDialogue = enemy.Snapshot["canDialogue"]?.ToObject<bool>() == true;
+                bool canDialogue = ReadBoolean(enemy.Snapshot["canDialogue"]);
                 bool important = RoaActorNameplates.IsImportantNpc(canDialogue,
                     enemy.Snapshot["role"]?.ToString(), enemy.Snapshot["encounterRole"]?.ToString());
-                bool hostile = enemy.Snapshot["hostileToPlayer"]?.ToObject<bool>() != false;
+                bool hostile = ReadBoolean(enemy.Snapshot["hostileToPlayer"], true);
                 rows.Add(new RoaActorNameplates.Entry
                 {
                     Name = important ? enemy.Snapshot["name"]?.ToString() ?? "Торговец" : string.Empty,

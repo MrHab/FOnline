@@ -52,6 +52,30 @@ namespace RealmOfAshes.EditorTools
                         && RoaLocalTerrain.AlbedoResolution(true) == 512,
                     "земля снова потеряла разрешение, необходимое для цельных дорог");
 
+                float macroMin = 1f;
+                float macroMax = 0f;
+                float macroStep = 0f;
+                const int macroSeed = 24371;
+                for (int z = -24; z <= 24; z += 2)
+                for (int x = -24; x <= 24; x += 2)
+                {
+                    float value = RoaLocalTerrain.SurfaceMacroSample(x, z, macroSeed);
+                    macroMin = Mathf.Min(macroMin, value);
+                    macroMax = Mathf.Max(macroMax, value);
+                    macroStep = Mathf.Max(macroStep, Mathf.Abs(value
+                        - RoaLocalTerrain.SurfaceMacroSample(x + 1f, z, macroSeed)));
+                }
+                float repeatedMacro = RoaLocalTerrain.SurfaceMacroSample(7.25f, -11.5f, macroSeed);
+                Require(Mathf.Approximately(repeatedMacro,
+                        RoaLocalTerrain.SurfaceMacroSample(7.25f, -11.5f, macroSeed)),
+                    "макровариация поверхности перестала быть детерминированной");
+                Require(Mathf.Abs(repeatedMacro
+                        - RoaLocalTerrain.SurfaceMacroSample(7.25f, -11.5f, macroSeed + 1)) > 0.01f,
+                    "разные локации получили одинаковый крупный рисунок земли");
+                Require(macroMax - macroMin > 0.18f && macroStep < 0.16f,
+                    "крупный рисунок земли слишком ровный либо снова распался на клетки: диапазон="
+                    + (macroMax - macroMin).ToString("0.00") + ", шаг=" + macroStep.ToString("0.00"));
+
                 LocationDefinition location = Location("probe_wasteland", 18, 18, 24371L);
                 JArray map = MixedMap(18, 18);
                 host = new GameObject("Ground dressing probe");
@@ -141,6 +165,7 @@ namespace RealmOfAshes.EditorTools
                     + ", дальний рельеф=" + RoaGroundDressing.RidgeBudget(Application.isMobilePlatform)
                     + ", кусты/камни=" + initialScrubCount + "/" + initialStoneCount
                     + ", вершины=" + initialVertices + ", дорога=" + initialPathConnections
+                    + ", макро=" + (macroMax - macroMin).ToString("0.00")
                     + ", albedo=" + terrain.AlbedoTextureSize + ", коллайдеры=0");
             }
             finally

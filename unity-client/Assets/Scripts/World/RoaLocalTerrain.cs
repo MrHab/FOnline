@@ -284,16 +284,41 @@ namespace RealmOfAshes.World
 
             for (int y = 0; y < _textureSize; y++)
             {
+                float worldZ = (y / (_textureSize - 1f) - 0.5f) * _visualDepth;
                 for (int x = 0; x < _textureSize; x++)
                 {
-                    float broad = ValueNoise(x * 0.035f, y * 0.035f, seed + 31);
-                    float grain = ValueNoise(x * 0.19f, y * 0.19f, seed + 73);
-                    Color32 color = Lerp(low, high, 0.28f + broad * 0.58f);
-                    color = Lerp(color, dust, grain * 0.18f);
+                    float worldX = (x / (_textureSize - 1f) - 0.5f) * _visualWidth;
+                    float macro = SurfaceMacroSample(worldX, worldZ, seed);
+                    float mottle = ValueNoise((worldX + macro * 2.1f) * 0.23f,
+                        (worldZ - macro * 1.7f) * 0.21f, seed + 73);
+                    float grain = ValueNoise(worldX * 1.15f, worldZ * 1.15f, seed + 79);
+                    float tone = 0.47f + (macro - 0.5f) * 0.44f + (mottle - 0.5f) * 0.14f;
+                    Color32 color = Lerp(low, high, tone);
+                    color = Lerp(color, dust, 0.055f + grain * 0.075f);
                     pixels[y * _textureSize + x] = color;
                 }
             }
             return pixels;
+        }
+
+        /// <summary>
+        /// Continuous large-scale surface variation in world metres. Rotated coordinates
+        /// and a low-frequency domain warp prevent the tile-sized square cells produced
+        /// by sampling noise in texture pixels. The result is resolution-independent.
+        /// </summary>
+        public static float SurfaceMacroSample(float worldX, float worldZ, int seed)
+        {
+            float rotatedX = worldX * 0.82f + worldZ * 0.41f;
+            float rotatedZ = worldZ * 0.86f - worldX * 0.37f;
+            float warpX = (ValueNoise(rotatedX * 0.028f, rotatedZ * 0.028f, seed + 41) - 0.5f) * 9f;
+            float warpZ = (ValueNoise(rotatedX * 0.031f, rotatedZ * 0.031f, seed + 47) - 0.5f) * 9f;
+            float broad = ValueNoise((rotatedX + warpX) * 0.052f,
+                (rotatedZ + warpZ) * 0.046f, seed + 53);
+            float wash = ValueNoise((rotatedX - warpZ * 0.38f) * 0.105f,
+                (rotatedZ + warpX * 0.28f) * 0.082f, seed + 59);
+            float streak = ValueNoise((rotatedX + rotatedZ * 0.22f) * 0.15f,
+                (rotatedZ - rotatedX * 0.08f) * 0.038f, seed + 61);
+            return Mathf.Clamp01(broad * 0.58f + wash * 0.28f + streak * 0.14f);
         }
 
         private void PaintAuthoritativeTiles(Color32[] pixels, JArray stateMap, int mapWidth, int mapDepth)

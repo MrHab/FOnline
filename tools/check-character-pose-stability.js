@@ -57,7 +57,10 @@ async function main() {
     && footIk.includes('ApplyFootNormal(side, contactNormal, normalWeight)')
     && footIk.includes('MaximumUnsupportedLift = 0.075f')
     && footIk.includes('EnsureSupportContact(dead);')
-    && footIk.includes('ReachableSupportTarget(support, target)'),
+    && footIk.includes('BlendRateRelease = 18f')
+    && footIk.includes('TargetReachReserve = 0.018f')
+    && footIk.includes('ConstrainFootTarget(side, target)')
+    && footIk.includes('ConstrainFootTarget(support, target)'),
   'Unity foot IK no longer follows ground or prevents a dual-foot flight phase');
   assert(footIk.includes('DesktopMaxDistance = 20f')
     && footIk.includes('MobileMaxDistance = 12f')
@@ -87,6 +90,8 @@ async function main() {
     && groundingProbe.includes('rightFoot.position.y > leftFoot.position.y + 0.12f')
     && groundingProbe.includes('flightIk.SupportSafetyActive')
     && groundingProbe.includes('обе свободные стопы остаются в воздухе')
+    && groundingProbe.includes('staleExtension < 0.995f && staleHorizontal < 0.16f')
+    && groundingProbe.includes('устаревший замок вытянул ногу за персонажем')
     && groundingProbe.includes('SharedUsers == usersBefore')
     && auditRunner.includes('typeof(RoaGroundingProbe)')
     && auditRunner.includes('typeof(RoaLocomotionContactProbe)'),

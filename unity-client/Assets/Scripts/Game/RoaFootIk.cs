@@ -27,9 +27,10 @@ namespace RealmOfAshes.Game
         private const float TwistLimit = 0.55f;
         private const float TurnTwistLimit = 0.6f;
 
-        /// <summary>Замок хватает быстро (24), отпускает мягко (6).</summary>
+        /// <summary>Замок хватает быстро (24), отпускает за короткую часть шага (18).</summary>
         private const float BlendRateLock = 24f;
-        private const float BlendRateRelease = 6f;
+        private const float BlendRateRelease = 18f;
+        private const float TargetReachReserve = 0.018f;
 
         /// <summary>Скачок позиции, после которого замки сбрасываются, м.</summary>
         private const float TeleportReset = 1.6f;
@@ -268,17 +269,17 @@ namespace RealmOfAshes.Game
             Side support = leftLift <= rightLift ? _left : _right;
             Vector3 target = support.Foot.position;
             target.y = support.GroundY + support.RestHeight;
-            target = ReachableSupportTarget(support, target);
+            target = ConstrainFootTarget(support, target);
             SolveLegChain(support, target);
             ApplyFootNormal(support, support.GroundNormal, 0.72f);
             SupportSafetyActive = true;
         }
 
-        private static Vector3 ReachableSupportTarget(Side side, Vector3 target)
+        private static Vector3 ConstrainFootTarget(Side side, Vector3 target)
         {
             if (side.Thigh == null || side.Calf == null || side.Foot == null) return target;
             float reach = Vector3.Distance(side.Thigh.position, side.Calf.position)
-                + Vector3.Distance(side.Calf.position, side.Foot.position) - 0.002f;
+                + Vector3.Distance(side.Calf.position, side.Foot.position) - TargetReachReserve;
             float vertical = target.y - side.Thigh.position.y;
             float horizontalLimitSquared = reach * reach - vertical * vertical;
             if (horizontalLimitSquared <= 0f)
@@ -418,7 +419,7 @@ namespace RealmOfAshes.Game
                 hasTarget = true;
             }
 
-            if (hasTarget) SolveLegChain(side, target);
+            if (hasTarget) SolveLegChain(side, ConstrainFootTarget(side, target));
 
             float contact = 1f - Mathf.Clamp01(Mathf.Max(0f, height) / (Lift * 3f));
             float normalWeight = Mathf.Clamp01(Mathf.Max(side.Blend, contact * 0.72f));

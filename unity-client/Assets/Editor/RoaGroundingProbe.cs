@@ -18,6 +18,7 @@ namespace RealmOfAshes.EditorTools
             GameObject ownerB = null;
             GameObject rig = null;
             GameObject flightRig = null;
+            GameObject staleLockRig = null;
             GameObject floor = null;
             GameObject step = null;
             var shadowA = new RoaActorGroundShadow();
@@ -109,6 +110,30 @@ namespace RealmOfAshes.EditorTools
                         && Mathf.Min(flightLeft.position.y, flightRight.position.y) < 0.17f,
                     "обе свободные стопы остаются в воздухе в фазе полёта клипа");
 
+                staleLockRig = new GameObject("StaleFootLockRig");
+                staleLockRig.transform.position = new Vector3(0f, 0f, -1.1f);
+                GameObject staleModel = Node(staleLockRig.transform, "character_root", Vector3.zero);
+                Transform staleLeft = Leg(staleModel.transform, "l", -0.20f);
+                Leg(staleModel.transform, "r", 0.20f);
+                var staleIk = new RoaFootIk();
+                staleIk.Bind(staleLockRig.transform, staleModel.transform);
+                for (int frame = 0; frame < 20; frame++)
+                    staleIk.Apply(1f / 60f, false, false, false, "idle", 0f);
+                Require(staleIk.LockedCount == 2, "стопы не зафиксировались перед проверкой старого замка");
+                staleLockRig.transform.position += Vector3.forward * 0.55f;
+                Physics.SyncTransforms();
+                staleIk.Apply(1f / 60f, true, false, false, "run", 0f);
+                Transform staleThigh = staleLeft.parent.parent;
+                float staleReach = Vector3.Distance(staleThigh.position, staleLeft.parent.position)
+                    + Vector3.Distance(staleLeft.parent.position, staleLeft.position);
+                float staleExtension = Vector3.Distance(staleThigh.position, staleLeft.position) / staleReach;
+                float staleHorizontal = Vector2.Distance(
+                    new Vector2(staleThigh.position.x, staleThigh.position.z),
+                    new Vector2(staleLeft.position.x, staleLeft.position.z));
+                Require(staleExtension < 0.995f && staleHorizontal < 0.16f,
+                    "устаревший замок вытянул ногу за персонажем: extension="
+                    + staleExtension.ToString("F3") + ", xz=" + staleHorizontal.ToString("F3"));
+
                 Destroy(floor);
                 Destroy(step);
                 floor = null;
@@ -134,6 +159,7 @@ namespace RealmOfAshes.EditorTools
                 Destroy(ownerB);
                 Destroy(rig);
                 Destroy(flightRig);
+                Destroy(staleLockRig);
                 Destroy(floor);
                 Destroy(step);
             }

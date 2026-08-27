@@ -33,6 +33,46 @@ namespace RealmOfAshes.Game
             }
         }
 
+        public readonly struct LayoutProfile
+        {
+            public readonly float PlayerScale;
+            public readonly Vector2 PlayerPosition;
+            public readonly float ConsoleScale;
+            public readonly Vector2 ConsolePosition;
+            public readonly float MapScale;
+            public readonly Vector2 MapPosition;
+            public readonly float QuickbarScale;
+            public readonly Vector2 QuickbarPosition;
+
+            public LayoutProfile(float playerScale, Vector2 playerPosition,
+                                 float consoleScale, Vector2 consolePosition,
+                                 float mapScale, Vector2 mapPosition,
+                                 float quickbarScale, Vector2 quickbarPosition)
+            {
+                PlayerScale = playerScale;
+                PlayerPosition = playerPosition;
+                ConsoleScale = consoleScale;
+                ConsolePosition = consolePosition;
+                MapScale = mapScale;
+                MapPosition = mapPosition;
+                QuickbarScale = quickbarScale;
+                QuickbarPosition = quickbarPosition;
+            }
+        }
+
+        public static LayoutProfile ResolveLayout(bool mobile)
+        {
+            return mobile
+                ? new LayoutProfile(0.78f, new Vector2(64f, -6f),
+                    0.62f, new Vector2(0f, 44f),
+                    0.68f, new Vector2(-62f, -8f),
+                    0.62f, new Vector2(0f, 208f))
+                : new LayoutProfile(1f, new Vector2(12f, -12f),
+                    0.86f, new Vector2(0f, 16f),
+                    1f, new Vector2(-16f, -16f),
+                    0.86f, new Vector2(0f, 242f));
+        }
+
         private static readonly Color Ink = new Color(0.90f, 0.78f, 0.43f, 1f);
         private static readonly Color MutedInk = new Color(0.73f, 0.66f, 0.43f, 1f);
         private static readonly Color Panel = new Color(0.055f, 0.06f, 0.052f, 0.91f);
@@ -206,7 +246,7 @@ namespace RealmOfAshes.Game
             _playerPanel.SetActive(worldHud && _hud != null && _hud.HasState);
             _mapPanel.SetActive(worldHud && _minimap != null);
             _quickPanel.SetActive(worldHud && _quickbar != null && _quickbar.CanvasVisible);
-            bool mobile = Application.isMobilePlatform; // web device-mobile: журнал боя и системный журнал скрыты
+            bool mobile = MobileHudMode; // mobile HUD and touch controls use one authoritative mode
             string latestCombat = _combat != null && _combat.LogLines.Count > 0
                 ? _combat.LogLines[_combat.LogLines.Count - 1] : string.Empty;
             if (latestCombat != _lastCombatLine)
@@ -265,7 +305,6 @@ namespace RealmOfAshes.Game
             BuildConnectionStatus();
             BuildEconomyFeedback();
             BuildCombatLog();
-            if (Application.isMobilePlatform) ApplyMobileLayout();
             if (FindAnyObjectByType<EventSystem>() == null)
             {
                 var events = new GameObject("HudEventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
@@ -536,27 +575,33 @@ namespace RealmOfAshes.Game
         /// <summary>
         /// Мобильный ландшафт по web (02_mobile_fullscreen_touch.css, 13:647, 17:197):
         /// рамка игрока ≈47vw слева сверху, оружейная консоль по центру внизу в
-        /// масштабе 0.66 над зоной джойстика, миникарта меньше, системный журнал и
+        /// масштабе 0.62 над зоной джойстика, миникарта меньше, системный журнал и
         /// лог боя скрыты — место занимают сенсорные кнопки.
         /// </summary>
-        private void ApplyMobileLayout()
+        private bool MobileHudMode
         {
-            var player = (RectTransform)_playerPanel.transform;
-            player.localScale = Vector3.one * 0.86f;
-            player.anchoredPosition = new Vector2(72f, -6f); // left: 62px web — после левой колонки сенсорных иконок
+            get { return _mobile != null ? _mobile.ControlsEnabled : Application.isMobilePlatform; }
+        }
 
-            var console = (RectTransform)_consolePanel.transform;
-            console.localScale = Vector3.one * 0.74f;
-            console.anchoredPosition = new Vector2(0f, 66f);
+        private void ApplyAdaptiveLayout(bool mobile)
+        {
+            LayoutProfile layout = ResolveLayout(mobile);
+            ApplyPanelLayout((RectTransform)_playerPanel.transform,
+                layout.PlayerScale, layout.PlayerPosition);
+            ApplyPanelLayout((RectTransform)_consolePanel.transform,
+                layout.ConsoleScale, layout.ConsolePosition);
+            ApplyPanelLayout((RectTransform)_mapPanel.transform,
+                layout.MapScale, layout.MapPosition);
+            ApplyPanelLayout((RectTransform)_quickPanel.transform,
+                layout.QuickbarScale, layout.QuickbarPosition);
+        }
 
-            var map = (RectTransform)_mapPanel.transform;
-            map.localScale = Vector3.one * 0.78f;
-            map.anchoredPosition = new Vector2(-70f, -8f); // правее — колонка сенсорных кнопок
-
-            var quick = (RectTransform)_quickPanel.transform;
-            quick.localScale = Vector3.one * 0.7f;
-            quick.anchoredPosition = new Vector2(0f, 246f);
-
+        private static void ApplyPanelLayout(RectTransform panel, float scale, Vector2 position)
+        {
+            panel.localScale = Vector3.one * scale;
+            RoaHudDragHandle drag = panel.GetComponent<RoaHudDragHandle>();
+            if (drag != null) drag.SetBasePosition(position);
+            else panel.anchoredPosition = position;
         }
 
         private void BuildSystemStatus()
@@ -702,7 +747,7 @@ namespace RealmOfAshes.Game
         private void UpdateSafeArea(bool force = false)
         {
             Rect area = Screen.safeArea;
-            bool mobile = _mobile != null && _mobile.ControlsEnabled;
+            bool mobile = MobileHudMode;
             if (!force && area == _lastSafeArea && mobile == _lastMobile) return;
             _lastSafeArea = area;
             _lastMobile = mobile;
@@ -716,7 +761,7 @@ namespace RealmOfAshes.Game
             _safeRoot.anchorMax = max;
             _safeRoot.offsetMin = Vector2.zero;
             _safeRoot.offsetMax = Vector2.zero;
-            ((RectTransform)_quickPanel.transform).anchoredPosition = new Vector2(0f, mobile ? 76f : 14f);
+            ApplyAdaptiveLayout(mobile);
             ((RectTransform)_logPanel.transform).anchoredPosition = new Vector2(12f, mobile ? 142f : 12f);
             ((RectTransform)_systemPanel.transform).anchoredPosition = new Vector2(-16f, mobile ? -184f : -228f);
             ApplyInteractionPromptLayout(mobile);

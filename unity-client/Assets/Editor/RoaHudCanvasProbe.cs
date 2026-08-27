@@ -35,6 +35,22 @@ namespace RealmOfAshes.EditorTools
                     "desktop UI reference no longer protects laptop readability");
             Require(mobileReference == new Vector2(1280f, 720f),
                     "mobile UI reference changed unexpectedly");
+            RoaHudCanvas.LayoutProfile desktopHud = RoaHudCanvas.ResolveLayout(false);
+            RoaHudCanvas.LayoutProfile mobileHud = RoaHudCanvas.ResolveLayout(true);
+            float desktopConsoleTop = (desktopHud.ConsolePosition.y
+                + 253f * desktopHud.ConsoleScale) / desktopReference.y;
+            float mobileConsoleTop = (mobileHud.ConsolePosition.y
+                + 253f * mobileHud.ConsoleScale) / mobileReference.y;
+            Require(desktopConsoleTop < 0.27f && mobileConsoleTop < 0.29f,
+                    "weapon console again obscures too much of the combat view");
+            Require(desktopHud.QuickbarPosition.y > desktopHud.ConsolePosition.y
+                        + 253f * desktopHud.ConsoleScale
+                    && mobileHud.QuickbarPosition.y > mobileHud.ConsolePosition.y
+                        + 253f * mobileHud.ConsoleScale,
+                    "quickbar overlaps the compact weapon console");
+            Require(mobileHud.PlayerScale < desktopHud.PlayerScale
+                    && mobileHud.MapScale < desktopHud.MapScale,
+                    "mobile identity or minimap panels did not release combat space");
             RoaHudCanvas.ConnectionBannerState interrupted = RoaHudCanvas.DescribeConnection(
                 RoaSocketClient.ConnectionPhase.Disconnected, 3, 4.2f, string.Empty, false);
             Require(interrupted.Kind == RoaHudCanvas.ConnectionBannerKind.Interrupted
@@ -60,7 +76,7 @@ namespace RealmOfAshes.EditorTools
             Require(healthy.Kind == RoaHudCanvas.ConnectionBannerKind.Hidden,
                 "healthy connection leaves a permanent banner on screen");
             CaptureIfRequested();
-            Debug.Log("[ROA PROBE] Adaptive HUD OK: safe nameplates, readable desktop scale and Canvas owner.");
+            Debug.Log("[ROA PROBE] Adaptive HUD OK: safe nameplates, compact combat stack, shared mobile mode and Canvas owner.");
         }
 
         private static void CaptureIfRequested()

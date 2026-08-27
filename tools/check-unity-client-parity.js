@@ -116,6 +116,16 @@ assert(hudProbe.includes('offline banner lost retry countdown or attempt number'
   && hudProbe.includes('healthy connection leaves a permanent banner on screen'),
   'Unity HUD probe must cover interrupted, reconnecting, restored, and healthy connection states');
 
+assert(hudCanvas.includes('public static LayoutProfile ResolveLayout(bool mobile)')
+  && hudCanvas.includes('bool mobile = MobileHudMode;')
+  && hudCanvas.includes('ApplyAdaptiveLayout(mobile);')
+  && hudCanvas.includes('drag.SetBasePosition(position);')
+  && hudCanvas.includes('0.62f, new Vector2(0f, 44f)')
+  && hudCanvas.includes('0.86f, new Vector2(0f, 16f)')
+  && hudProbe.includes('weapon console again obscures too much of the combat view')
+  && hudProbe.includes('quickbar overlaps the compact weapon console'),
+  'Unity HUD no longer guarantees a compact, non-overlapping desktop/mobile combat stack');
+
 // Browser -> server. Literal calls are supplemented by the browser's single
 // audited guarded emitter, exactly like check-socket-event-contract.js.
 const webEmits = uniqueSorted([

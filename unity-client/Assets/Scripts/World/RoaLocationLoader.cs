@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 
 namespace RealmOfAshes.World
 {
@@ -52,6 +53,9 @@ namespace RealmOfAshes.World
         private JObject _colliderModels;
         private GameObject _currentRoot;
         private RoaLocalTerrain _groundSurface;
+        private Scene _unityLocationScene;
+        private GameObject _unityLocationRoot;
+        private AsyncOperation _unitySceneUnload;
 
         public LocationDefinition Current { get; private set; }
         public Renderer CurrentGroundRenderer { get; private set; }
@@ -116,6 +120,7 @@ namespace RealmOfAshes.World
                 Destroy(_currentRoot);
             }
             _currentRoot = null;
+            ReleaseUnityLocationScene();
             _groundSurface = null;
             CurrentGroundRenderer = null;
             _objectRoots.Clear();
@@ -158,6 +163,12 @@ namespace RealmOfAshes.World
 
             IsLoading = true;
             Progress = 0f;
+
+            while (_unitySceneUnload != null && !_unitySceneUnload.isDone) yield return null;
+            _unitySceneUnload = null;
+            ReleaseUnityLocationScene();
+            while (_unitySceneUnload != null && !_unitySceneUnload.isDone) yield return null;
+            _unitySceneUnload = null;
             StepText = "Подготавливаю графику и модели мира...";
 
             if (_colliderModels == null)
@@ -171,7 +182,31 @@ namespace RealmOfAshes.World
             _currentRoot = new GameObject("Location:" + definition.Id);
             Current = definition;
 
-            BuildGround(definition, authoritativeMap, _currentRoot.transform);
+            RoaUnityLocationScene unityScene = null;
+            string unitySceneName = UnitySceneName(definition.Id);
+            if (!string.IsNullOrEmpty(unitySceneName))
+            {
+                AsyncOperation load = SceneManager.LoadSceneAsync(unitySceneName, LoadSceneMode.Additive);
+                if (load != null)
+                {
+                    while (!load.isDone) yield return null;
+                    _unityLocationScene = SceneManager.GetSceneByName(unitySceneName);
+                    unityScene = FindUnityLocationScene(_unityLocationScene, definition.Id);
+                    if (unityScene != null)
+                    {
+                        _unityLocationRoot = unityScene.gameObject;
+                        unityScene.RebuildIndex();
+                    }
+                    else
+                    {
+                        Debug.LogError("[ROA] Unity location scene '" + unitySceneName
+                            + "' has no matching RoaUnityLocationScene for " + definition.Id + ".");
+                    }
+                }
+            }
+
+            if (unityScene == null)
+                BuildGround(definition, authoritativeMap, _currentRoot.transform);
 
             int built = 0;
             int skipped = 0;
@@ -184,10 +219,20 @@ namespace RealmOfAshes.World
                 done++;
                 Progress = total > 0 ? done / (float)total : 1f;
                 StepText = "Загружаю ассеты " + done + "/" + total + "...";
-                if (entry == null || string.IsNullOrEmpty(entry.Url)) { skipped++; continue; }
+                if (entry == null) { skipped++; continue; }
 
                 // Живые сущности приходят от сервера — здесь не создаём.
                 if (entry.IsLiveEntity()) { skipped++; continue; }
+
+                if (unityScene != null && unityScene.TryGetObject(entry.Id, out GameObject sceneObject))
+                {
+                    _objectRoots[entry.Id] = sceneObject;
+                    _objectEntries[entry.Id] = entry;
+                    built++;
+                    continue;
+                }
+
+                if (string.IsNullOrEmpty(entry.Url)) { skipped++; continue; }
 
                 Task<GameObject> task = InstantiateModel(entry, _currentRoot.transform);
                 while (!task.IsCompleted) yield return null;
@@ -241,6 +286,35 @@ namespace RealmOfAshes.World
             }
 
             onDone?.Invoke(true, summary);
+        }
+
+        private static string UnitySceneName(string locationId)
+        {
+            return string.Equals(locationId, "settlement", StringComparison.Ordinal)
+                ? "OldKlimCaravan"
+                : null;
+        }
+
+        private static RoaUnityLocationScene FindUnityLocationScene(Scene scene, string locationId)
+        {
+            if (!scene.IsValid() || !scene.isLoaded) return null;
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int i = 0; i < roots.Length; i++)
+            {
+                RoaUnityLocationScene marker = roots[i].GetComponentInChildren<RoaUnityLocationScene>(true);
+                if (marker != null && string.Equals(marker.LocationId, locationId, StringComparison.Ordinal))
+                    return marker;
+            }
+            return null;
+        }
+
+        private void ReleaseUnityLocationScene()
+        {
+            if (_unityLocationRoot != null) _unityLocationRoot.SetActive(false);
+            _unityLocationRoot = null;
+            if (_unityLocationScene.IsValid() && _unityLocationScene.isLoaded)
+                _unitySceneUnload = SceneManager.UnloadSceneAsync(_unityLocationScene);
+            _unityLocationScene = default;
         }
 
         /// <summary>
@@ -318,7 +392,8 @@ namespace RealmOfAshes.World
         /// </summary>
         public bool ApplyWorldMap(JArray authoritativeMap)
         {
-            return _groundSurface != null && _groundSurface.ApplyMap(authoritativeMap);
+            if (_groundSurface != null) return _groundSurface.ApplyMap(authoritativeMap);
+            return _unityLocationScene.IsValid() && _unityLocationScene.isLoaded;
         }
 
         /// <summary>

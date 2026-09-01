@@ -21,6 +21,7 @@ namespace RealmOfAshes.Game
             Container,
             Resource,
             Objective,
+            Threat,
             Extraction
         }
 
@@ -218,6 +219,7 @@ namespace RealmOfAshes.Game
                 case MarkerKind.GroundItem: color = new Color(0.90f, 0.84f, 0.50f); size = 3f; break;
                 case MarkerKind.Container: color = new Color(0.90f, 0.71f, 0.35f); size = 4f; break;
                 case MarkerKind.Objective: color = new Color(0.95f, 0.78f, 0.25f); size = 6f; break;
+                case MarkerKind.Threat: color = new Color(0.96f, 0.24f, 0.16f); size = 8f; break;
                 case MarkerKind.Extraction: color = new Color(0.42f, 0.82f, 0.40f); size = 7f; break;
                 default: color = new Color(0.78f, 0.62f, 0.30f); size = 3f; break;
             }

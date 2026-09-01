@@ -18,6 +18,10 @@ namespace RealmOfAshes.EditorTools
             try
             {
                 RoaRemotePlayers players = host.AddComponent<RoaRemotePlayers>();
+                Require(RoaEnemies.ResolveSnapshotDeadState(true, false)
+                        && RoaEnemies.ResolveSnapshotDeadState(false, true)
+                        && !RoaEnemies.ResolveSnapshotDeadState(false, false),
+                        "устаревший snapshot снова оживляет уже мёртвого NPC");
                 root = new GameObject("Remote:probe");
                 root.transform.SetParent(host.transform, false);
                 BoxCollider collider = root.AddComponent<BoxCollider>();

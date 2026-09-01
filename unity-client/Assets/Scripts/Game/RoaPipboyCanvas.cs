@@ -21,7 +21,7 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed partial class RoaPipboyCanvas : MonoBehaviour
     {
-        public enum Page { Status, Items, Skills, Perks, Craft, Quests, World, Factions, Friends, Clan, Radio }
+        public enum Page { Status, Items, Skills, Perks, Craft, Quests, Contracts, World, Factions, Friends, Clan, Radio }
 
         // Палитра фосфорного экрана — из .pipboy-screen (13_fallout_weapon_console.css:1004).
         private static readonly Color ScreenInk = new Color(0.624f, 0.859f, 0.478f, 1f);      // #9fdb7a
@@ -92,8 +92,9 @@ namespace RealmOfAshes.Game
         private readonly List<GameObject> _craftRows = new List<GameObject>();
         private readonly HashSet<string> _pendingRecipes = new HashSet<string>();
 
-        // QUESTS / WORLD / FACTIONS / FRIENDS / CLAN / RADIO
+        // QUESTS / CONTRACTS / WORLD / FACTIONS / FRIENDS / CLAN / RADIO
         private RectTransform _questsList;
+        private RectTransform _contractsList;
         private RectTransform _worldList;
         private RectTransform _factionsList;
         private RectTransform _friendsList;
@@ -103,6 +104,7 @@ namespace RealmOfAshes.Game
         private Text _socialStatus;
         private InputField _clanNameInput;
         private readonly List<GameObject> _questRows = new List<GameObject>();
+        private readonly List<GameObject> _contractRows = new List<GameObject>();
         private readonly List<GameObject> _worldRows = new List<GameObject>();
         private readonly List<GameObject> _factionRows = new List<GameObject>();
         private readonly List<GameObject> _friendRows = new List<GameObject>();
@@ -121,8 +123,8 @@ namespace RealmOfAshes.Game
         private static readonly (Page page, string label)[] TabOrder =
         {
             (Page.Status, "Статус"), (Page.Items, "Инвентарь"), (Page.Skills, "Навыки"),
-            (Page.Perks, "Перки"), (Page.Craft, "Крафт"), (Page.Quests, "Задания"),
-            (Page.World, "Мир"), (Page.Factions, "Фракции"), (Page.Friends, "Друзья"),
+            (Page.Perks, "Перки"), (Page.Craft, "Крафт"), (Page.Quests, "Журнал"),
+            (Page.Contracts, "Контракты"), (Page.World, "Мир"), (Page.Factions, "Фракции"), (Page.Friends, "Друзья"),
             (Page.Clan, "Клан"), (Page.Radio, "Радио")
         };
 
@@ -248,6 +250,7 @@ namespace RealmOfAshes.Game
             BuildPerksPage(pageArea);
             BuildCraftPage(pageArea);
             BuildQuestsPage(pageArea);
+            BuildContractsPage(pageArea);
             BuildWorldPage(pageArea);
             BuildFactionsPage(pageArea);
             BuildFriendsPage(pageArea);
@@ -332,7 +335,7 @@ namespace RealmOfAshes.Game
 
             foreach ((Page page, string label) in TabOrder)
             {
-                Button button = TextButton("Tab:" + page, tabs, label, 13, out Text text);
+                Button button = TextButton("Tab:" + page, tabs, label, 12, out Text text);
                 var image = button.GetComponent<Image>();
                 image.color = new Color(0f, 0f, 0f, 0.30f);
                 Page target = page;
@@ -832,7 +835,8 @@ namespace RealmOfAshes.Game
                 case Page.Skills: RefreshSkills(self); break;
                 case Page.Perks: RefreshPerks(self); break;
                 case Page.Craft: RefreshCraft(); break;
-                case Page.Quests: RefreshQuests(self); break;
+                case Page.Quests: RefreshQuests(); break;
+                case Page.Contracts: RefreshContracts(); break;
                 case Page.World: RefreshWorld(); break;
                 case Page.Factions: RefreshFactions(self); break;
                 case Page.Friends: RefreshFriends(); break;
@@ -1690,17 +1694,17 @@ namespace RealmOfAshes.Game
         }
 
         // ------------------------------------------------------------------
-        // QUESTS — pipboy-quest-grid (03a_pipboy_social_world_tasks.js:1875)
+        // QUESTS — авторский сюжетный журнал
         // ------------------------------------------------------------------
 
         private void BuildQuestsPage(RectTransform parent)
         {
             RectTransform page = Page_(Page.Quests, parent);
-            SectionTitle(page, "QUESTS");
+            SectionTitle(page, "СЮЖЕТНЫЙ ЖУРНАЛ");
             _questsList = ListArea(page, out _);
         }
 
-        private void RefreshQuests(JObject self)
+        private void RefreshQuests()
         {
             RebuildRows(_questRows, _questsList, () =>
             {
@@ -1709,21 +1713,74 @@ namespace RealmOfAshes.Game
                     AddTextCard(_questRows, _questsList, "Заданий нет", "Нет связи с миром.");
                     return;
                 }
-                Interaction.EnsureWorldState();
-                // Как renderPipboyInfoPanels web: секции «Активные» и «Выполненные»,
-                // внутри — карточки работ пустоши (pipboyWorldTaskCard).
                 AddSectionTitle(_questRows, _questsList, "Активные");
-                List<RoaInteraction.WorldTaskCard> active = Interaction.PipboyWorldTasks(true);
-                if (active.Count == 0) AddTextCard(_questRows, _questsList, "Нет активных заданий.", "Возьмите работу у доски поселения.");
-                foreach (RoaInteraction.WorldTaskCard card in active) AddWorldTaskCard(card);
+                List<RoaInteraction.StoryQuestCard> active = Interaction.JournalQuests(false);
+                if (active.Count == 0)
+                    AddTextCard(_questRows, _questsList, "Нет активных сюжетных заданий.",
+                        "Новые сюжетные задания можно получить у именных персонажей.");
+                foreach (RoaInteraction.StoryQuestCard card in active) AddStoryQuestCard(card);
+
                 AddSectionTitle(_questRows, _questsList, "Выполненные");
-                List<RoaInteraction.WorldTaskCard> done = Interaction.PipboyWorldTasks(false);
-                if (done.Count == 0) AddTextCard(_questRows, _questsList, "Выполненных заданий пока нет.", string.Empty);
-                foreach (RoaInteraction.WorldTaskCard card in done) AddWorldTaskCard(card);
+                List<RoaInteraction.StoryQuestCard> done = Interaction.JournalQuests(true);
+                if (done.Count == 0)
+                    AddTextCard(_questRows, _questsList, "Завершённых сюжетных заданий пока нет.", string.Empty);
+                foreach (RoaInteraction.StoryQuestCard card in done) AddStoryQuestCard(card);
             });
         }
 
-        private void AddWorldTaskCard(RoaInteraction.WorldTaskCard card)
+        private void AddStoryQuestCard(RoaInteraction.StoryQuestCard card)
+        {
+            var body = new System.Text.StringBuilder();
+            if (!string.IsNullOrEmpty(card.Giver)) body.Append("Поручитель: ").Append(card.Giver).Append('.');
+            if (!string.IsNullOrEmpty(card.Description))
+            {
+                if (body.Length > 0) body.Append('\n');
+                body.Append(card.Description);
+            }
+            if (!string.IsNullOrEmpty(card.Objective)) body.Append('\n').Append(card.Objective);
+            if (!string.IsNullOrEmpty(card.Reward)) body.Append('\n').Append(card.Reward);
+            if (!string.IsNullOrEmpty(card.Hint)) body.Append('\n').Append(card.Hint);
+            AddTextCard(_questRows, _questsList,
+                card.StateLabel.ToUpperInvariant() + "  " + card.Name, body.ToString());
+        }
+
+        // ------------------------------------------------------------------
+        // CONTRACTS — отдельная витрина повторяемых работ пустоши
+        // ------------------------------------------------------------------
+
+        private void BuildContractsPage(RectTransform parent)
+        {
+            RectTransform page = Page_(Page.Contracts, parent);
+            SectionTitle(page, "КОНТРАКТЫ");
+            _contractsList = ListArea(page, out _);
+        }
+
+        private void RefreshContracts()
+        {
+            RebuildRows(_contractRows, _contractsList, () =>
+            {
+                if (Interaction == null)
+                {
+                    AddTextCard(_contractRows, _contractsList, "Контрактов нет", "Нет связи с миром.");
+                    return;
+                }
+                Interaction.EnsureWorldState();
+                AddSectionTitle(_contractRows, _contractsList, "Доступные и принятые");
+                List<RoaInteraction.WorldTaskCard> active = Interaction.PipboyWorldTasks(true);
+                if (active.Count == 0)
+                    AddTextCard(_contractRows, _contractsList, "Активных контрактов нет.",
+                        "Проверьте доску контрактов у поселения или точки мира.");
+                foreach (RoaInteraction.WorldTaskCard card in active) AddContractCard(card);
+
+                AddSectionTitle(_contractRows, _contractsList, "Завершённые");
+                List<RoaInteraction.WorldTaskCard> done = Interaction.PipboyWorldTasks(false);
+                if (done.Count == 0)
+                    AddTextCard(_contractRows, _contractsList, "Завершённых контрактов пока нет.", string.Empty);
+                foreach (RoaInteraction.WorldTaskCard card in done) AddContractCard(card);
+            });
+        }
+
+        private void AddContractCard(RoaInteraction.WorldTaskCard card)
         {
             var body = new System.Text.StringBuilder();
             if (!string.IsNullOrEmpty(card.Text)) body.Append(card.Text);
@@ -1740,7 +1797,8 @@ namespace RealmOfAshes.Game
             if (card.CanCancel) actions.Add(("Отменить", () => Interaction.PipboyWorldTaskAction(id, "cancel")));
             if (card.CanClaim) actions.Add(("Забрать награду", () => Interaction.PipboyWorldTaskAction(id, "claim")));
 
-            AddTextCard(_questRows, _questsList, card.Label.ToUpperInvariant() + "  " + card.Title, body.ToString(), actions);
+            AddTextCard(_contractRows, _contractsList,
+                card.Label.ToUpperInvariant() + "  " + card.Title, body.ToString(), actions);
         }
 
         // ------------------------------------------------------------------
@@ -1892,8 +1950,8 @@ namespace RealmOfAshes.Game
             Place_(kick.rectTransform, 0f, 1f, 0.68f, 1f, new Vector2(29f, -22f), new Vector2(0f, -9f));
             Text title = Label("Name", rect, 15, TextAnchor.UpperLeft, SlotName, FontStyle.Bold);
             title.text = name.ToUpperInvariant();
-            title.verticalOverflow = VerticalWrapMode.Truncate;
-            Place_(title.rectTransform, 0f, 1f, 0.68f, 1f, new Vector2(29f, -42f), new Vector2(0f, -23f));
+            title.verticalOverflow = VerticalWrapMode.Overflow;
+            Place_(title.rectTransform, 0f, 1f, 0.68f, 1f, new Vector2(29f, -43f), new Vector2(0f, -22f));
             Text rel = Label("Relation", rect, 12, TextAnchor.UpperLeft, SpecialValue, FontStyle.Bold);
             rel.text = relation.ToUpperInvariant();
             Place_(rel.rectTransform, 0f, 1f, 0.68f, 1f, new Vector2(29f, -58f), new Vector2(0f, -43f));
@@ -2052,9 +2110,6 @@ namespace RealmOfAshes.Game
             _factionsList = ListArea(page, out _);
         }
 
-        private static readonly string[] FactionIds =
-            { "old_klim", "scrap_union", "relay_order", "caravans", "neutral", "raiders", "mutants", "wild" };
-
         private void RefreshFactions(JObject self)
         {
             Pipboy.EnsureWorldData();
@@ -2069,30 +2124,24 @@ namespace RealmOfAshes.Game
                 }
 
                 string playerFaction = Pipboy.WorldFactionId();
-                int allied = 0, hostile = 0;
-                foreach (string id in FactionIds)
-                {
-                    if (id == playerFaction) continue;
-                    int relation = Pipboy.FactionRelation(id, playerFaction);
-                    if (relation >= 25) allied++;
-                    else if (relation <= -50) hostile++;
-                }
+                int currentReputation = string.IsNullOrEmpty(playerFaction)
+                    ? 0
+                    : (self?["worldFactionReputation"]?[playerFaction]?.ToObject<int>() ?? 0);
                 AddDashboard(_factionRows, _factionsList,
                     ("Текущая сторона", string.IsNullOrEmpty(playerFaction) ? "Независимый странник" : RoaPipboy.FactionLabel(playerFaction)),
-                    ("Союзные", allied.ToString()),
-                    ("Враждебные", hostile.ToString()),
-                    ("Всего фракций", FactionIds.Length.ToString()));
+                    ("Основных фракций", RoaPipboy.PrimaryFactionIds.Length.ToString()),
+                    ("Репутация стороны", string.IsNullOrEmpty(playerFaction) ? "—" : currentReputation.ToString()),
+                    ("Другие группы", "без репутации"));
+                AddTextCard(_factionRows, _factionsList, "Независимые и угрозы", RoaPipboy.FactionGroupsExplanation);
 
-                foreach (string id in FactionIds)
+                foreach (string id in RoaPipboy.PrimaryFactionIds)
                 {
-                    int relation = Pipboy.FactionRelation(id, playerFaction);
                     int sites, parties, contested;
                     Pipboy.FactionStats(id, out sites, out parties, out contested);
                     int reputation = self?["worldFactionReputation"]?[id]?.ToObject<int>() ?? 0;
                     bool joinable = RoaPipboy.IsJoinableFaction(id);
-                    string kicker = joinable ? "фракция" : id == "neutral" ? "нейтралы" : "угроза";
-                    string relationText = id == playerFaction ? "Ваша фракция"
-                        : RoaPipboy.RelationLabel(id, playerFaction, relation) + (joinable ? " · репутация " + reputation : string.Empty);
+                    string relationText = (id == playerFaction ? "Ваша фракция" : "Доступна для вступления")
+                        + " · репутация " + reputation;
 
                     string actionLabel = null;
                     System.Action onAction = null;
@@ -2102,7 +2151,7 @@ namespace RealmOfAshes.Game
                         actionLabel = string.IsNullOrEmpty(playerFaction) ? "Вступить во фракцию" : "Сменить сторону";
                         onAction = () => Interaction.SubmitWorldFactionJoin(factionId, null);
                     }
-                    AddFactionCard(_factionRows, _factionsList, kicker, RoaPipboy.FactionLabel(id), relationText,
+                    AddFactionCard(_factionRows, _factionsList, "основная фракция", RoaPipboy.FactionLabel(id), relationText,
                         FactionTint(id), sites, parties, contested, actionLabel, onAction);
                 }
             });

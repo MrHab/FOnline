@@ -22,6 +22,7 @@ namespace RealmOfAshes.Game
             public bool InventoryOpen;
             public bool TargetSelected;
             public bool Crouching;
+            public bool PingAvailable;
             public string FireMode;
             public bool JoystickActive;
             public Vector2 JoystickBase;
@@ -200,6 +201,8 @@ namespace RealmOfAshes.Game
             SetLabel("Crouch", state.Crouching ? "ВСТАТЬ" : "ПРИСЕСТЬ");
             SetLabel("Mode", string.IsNullOrWhiteSpace(state.FireMode)
                 ? "РЕЖИМ" : state.FireMode.ToUpperInvariant());
+            SetSelected("Player", state.PingAvailable, false);
+            SetLabel("Player", state.PingAvailable ? "МЕТКА" : "ИГРОК");
 
             bool joystickVisible = _gameplayButtonsVisible && state.JoystickActive;
             _joystickOuter.gameObject.SetActive(joystickVisible);
@@ -310,6 +313,7 @@ namespace RealmOfAshes.Game
                 InventoryOpen = Controls.InventoryOpen,
                 TargetSelected = Controls.TargetSelected,
                 Crouching = Controls.Crouching,
+                PingAvailable = Controls.PingAvailable,
                 FireMode = Controls.CurrentFireMode,
                 JoystickActive = joystick,
                 JoystickBase = new Vector2(guiBase.x, Screen.height - guiBase.y),
@@ -376,7 +380,7 @@ namespace RealmOfAshes.Game
             CreateButton("Mode", "РЕЖИМ", "RealmUi/mobile/right/mode",
                 () => Controls?.TriggerFireMode());
             CreateButton("Player", "ИГРОК", "RealmUi/mobile/right/radial_menu",
-                () => Controls?.TriggerPlayerPanel());
+                () => Controls?.TriggerPlayerOrPing());
             CreateJoystick();
             Hide();
         }

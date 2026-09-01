@@ -426,6 +426,12 @@
       fire.addEventListener('pointerdown', e => {
         if (hudEditMode) return;
         if (!isMobileControlsEnabled() || !gameStarted) return;
+        if (paused || anyWindowOpen()) {
+          e.preventDefault(); e.stopPropagation();
+          touchFireHeld = false;
+          setTouchButtonActive('touch-fire', false);
+          return;
+        }
         e.preventDefault(); e.stopPropagation();
         try { fire.setPointerCapture(e.pointerId); } catch (_) {}
         touchFireHeld = true;

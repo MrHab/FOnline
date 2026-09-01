@@ -18,7 +18,7 @@ namespace RealmOfAshes.World
         public const int ScrubBladeCount = 7;
         public const int ScrubLobeCount = 3;
         public const int ScrubToneCount = 2;
-        public const float MinimumSurfaceSpacing = 0.72f;
+        public const float MinimumSurfaceSpacing = 1.35f;
         public const int StoneClusterPieceCount = 4;
 
         private GameObject _root;
@@ -27,6 +27,10 @@ namespace RealmOfAshes.World
         private Material _scrubMaterial;
         private Material _secondaryScrubMaterial;
         private Material _stoneMaterial;
+        private RoaEnvironmentPalette _palette;
+        private readonly HashSet<Mesh> _countedMeshes = new HashSet<Mesh>();
+        private readonly Dictionary<Material, Material> _authoredMaterialRemap
+            = new Dictionary<Material, Material>();
 
         public int SurfaceClusterCount { get; private set; }
         public int ScrubClusterCount { get; private set; }
@@ -36,15 +40,22 @@ namespace RealmOfAshes.World
         public int RidgeCount { get; private set; }
         public int VertexCount { get; private set; }
         public float MinimumClusterSpacing { get; private set; }
+        public bool UsesAuthoredPrefabs { get; private set; }
+        public int AuthoredPrefabCount { get; private set; }
+        public int AuthoredRendererCount { get; private set; }
+        public int AuthoredShadowCasterCount { get; private set; }
+        public int GroundAccentCount { get; private set; }
+        public float MaximumDecorationHeight { get; private set; }
+        public int CompatibleMaterialCount { get { return _authoredMaterialRemap.Count; } }
 
         public static int SurfaceBudget(bool mobile)
         {
-            return mobile ? 60 : 120;
+            return mobile ? 24 : 40;
         }
 
         public static int RidgeBudget(bool mobile)
         {
-            return mobile ? 16 : 28;
+            return mobile ? 8 : 12;
         }
 
         public static bool SupportsTile(int type)
@@ -68,6 +79,11 @@ namespace RealmOfAshes.World
             int seed = unchecked((int)location.Seed);
             float worldWidth = Mathf.Max(RoaCoords.Tile, location.WorldWidth);
             float worldDepth = Mathf.Max(RoaCoords.Tile, location.WorldDepth);
+
+            _palette = Resources.Load<RoaEnvironmentPalette>(RoaEnvironmentPalette.ResourceKey);
+            UsesAuthoredPrefabs = _palette != null && _palette.Ready;
+            _root = new GameObject("GroundDressing");
+            _root.transform.SetParent(transform, false);
 
             var scrubVertices = new List<Vector3>();
             var dryScrubTriangles = new List<int>();
@@ -98,28 +114,58 @@ namespace RealmOfAshes.World
                 if (Hash01(i, seed, 8113) < Mathf.Lerp(0.50f, 0.70f, patch))
                 {
                     int tone = ScrubToneIndex(i, seed);
-                    AppendScrub(scrubVertices, tone == 0 ? dryScrubTriangles : oliveScrubTriangles,
-                        new Vector3(x, 0.004f, z), yaw, scale, i, seed);
+                    if (UsesAuthoredPrefabs)
+                    {
+                        float radius = Mathf.Lerp(0.60f, 0.95f, sizeRandom);
+                        AppendAuthoredPrefab(_palette.PickDryScrub(i + tone * 19, seed),
+                            new Vector3(x, 0.006f, z), yaw, radius, 0.72f,
+                            tone == 0 ? "DryScrub" : "OliveScrub", false);
+                    }
+                    else
+                    {
+                        AppendScrub(scrubVertices, tone == 0 ? dryScrubTriangles : oliveScrubTriangles,
+                            new Vector3(x, 0.004f, z), yaw, scale, i, seed);
+                    }
                     ScrubClusterCount++;
                     if (tone == 0) DryScrubClusterCount++;
                     else OliveScrubClusterCount++;
                 }
                 else
                 {
-                    AppendStoneCluster(stoneVertices, stoneTriangles,
-                        new Vector3(x, -0.012f, z), yaw, scale, i, seed);
+                    if (UsesAuthoredPrefabs)
+                    {
+                        float radius = Mathf.Lerp(0.48f, 0.78f, sizeRandom);
+                        AppendAuthoredPrefab(_palette.PickStone(i, seed),
+                            new Vector3(x, -0.008f, z), yaw, radius, 0.58f,
+                            "StoneCluster", false);
+                    }
+                    else
+                    {
+                        AppendStoneCluster(stoneVertices, stoneTriangles,
+                            new Vector3(x, -0.012f, z), yaw, scale, i, seed);
+                    }
                     StoneClusterCount++;
+                }
+                if (UsesAuthoredPrefabs && Hash01(i, seed, 8189) < 0.18f)
+                {
+                    float accentRadius = 0.85f + Hash01(i, seed, 8191) * 0.55f;
+                    AppendAuthoredPrefab(_palette.PickGroundAccent(i, seed),
+                        new Vector3(x, -0.014f, z), yaw + 0.47f, accentRadius, 0.075f,
+                        "GroundAccent", false);
+                    GroundAccentCount++;
                 }
                 if (!float.IsInfinity(nearest)) minimumSpacing = Mathf.Min(minimumSpacing, nearest);
                 accepted.Add(point);
                 SurfaceClusterCount++;
             }
             MinimumClusterSpacing = float.IsInfinity(minimumSpacing) ? 0f : minimumSpacing;
-            AppendDistantRidge(stoneVertices, stoneTriangles, worldWidth, worldDepth,
-                Mathf.Max(worldWidth, visualWidth), Mathf.Max(worldDepth, visualDepth), seed, mobile);
+            if (UsesAuthoredPrefabs)
+                AppendAuthoredRidges(worldWidth, worldDepth, Mathf.Max(worldWidth, visualWidth),
+                    Mathf.Max(worldDepth, visualDepth), seed, mobile);
+            else
+                AppendDistantRidge(stoneVertices, stoneTriangles, worldWidth, worldDepth,
+                    Mathf.Max(worldWidth, visualWidth), Mathf.Max(worldDepth, visualDepth), seed, mobile);
 
-            _root = new GameObject("GroundDressing");
-            _root.transform.SetParent(transform, false);
             if (scrubVertices.Count > 0)
             {
                 _scrubMesh = CreateMesh("RuntimeGroundScrubMesh", scrubVertices,
@@ -141,7 +187,7 @@ namespace RealmOfAshes.World
                     false, 0.035f);
                 CreateRenderNode("StonesAndDistantRidge", _stoneMesh, _stoneMaterial, false);
             }
-            VertexCount = scrubVertices.Count + stoneVertices.Count;
+            VertexCount += scrubVertices.Count + stoneVertices.Count;
         }
 
         private static bool SupportsPosition(LocationDefinition location, JArray stateMap,
@@ -319,6 +365,269 @@ namespace RealmOfAshes.World
             triangles.Add(offset + a); triangles.Add(offset + d); triangles.Add(offset + c);
         }
 
+        private void AppendAuthoredRidges(float worldWidth, float worldDepth,
+                                          float visualWidth, float visualDepth,
+                                          int seed, bool mobile)
+        {
+            int count = RidgeBudget(mobile);
+            float playableX = worldWidth * 0.5f;
+            float playableZ = worldDepth * 0.5f;
+            float outerX = visualWidth * 0.5f - 3f;
+            float outerZ = visualDepth * 0.5f - 3f;
+            for (int i = 0; i < count; i++)
+            {
+                int side = i & 3;
+                float along = Hash01(i, seed, 8141) * 2f - 1f;
+                float depth = 0.28f + Hash01(i, seed, 8143) * 0.58f;
+                float x;
+                float z;
+                if (side == 0 || side == 1)
+                {
+                    x = along * Mathf.Max(4f, outerX - 2f);
+                    z = Mathf.Lerp(playableZ + 5f, outerZ, depth) * (side == 0 ? 1f : -1f);
+                }
+                else
+                {
+                    x = Mathf.Lerp(playableX + 5f, outerX, depth) * (side == 2 ? 1f : -1f);
+                    z = along * Mathf.Max(4f, outerZ - 2f);
+                }
+
+                float radius = 1.65f + Hash01(i, seed, 8147) * 1.45f;
+                float height = 1.10f + Hash01(i, seed, 8149) * 1.20f;
+                AppendAuthoredPrefab(_palette.PickDistantRidge(i, seed),
+                    new Vector3(x, -0.075f, z), Hash01(i, seed, 8153) * Mathf.PI * 2f,
+                    radius, height, "DistantRidge", true);
+                RidgeCount++;
+            }
+        }
+
+        private void AppendAuthoredPrefab(GameObject prefab, Vector3 localBase,
+                                           float yawRadians, float targetRadius,
+                                           float maximumHeight, string role, bool distant)
+        {
+            if (prefab == null || _root == null) return;
+
+            GameObject instance = Instantiate(prefab, _root.transform);
+            instance.name = "Authored_" + role + "_" + AuthoredPrefabCount.ToString("D3");
+            instance.transform.localPosition = localBase;
+            instance.transform.localRotation = Quaternion.Euler(0f, yawRadians * Mathf.Rad2Deg, 0f);
+
+            StripGameplayComponents(instance);
+            Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
+            if (!TryRendererBounds(renderers, out Bounds bounds))
+            {
+                DisposeObject(instance);
+                return;
+            }
+
+            float horizontalRadius = Mathf.Max(0.001f, Mathf.Max(bounds.extents.x, bounds.extents.z));
+            float height = Mathf.Max(0.001f, bounds.size.y);
+            float scale = targetRadius / horizontalRadius;
+            scale = Mathf.Min(scale, maximumHeight / height);
+            scale = Mathf.Clamp(scale, 0.025f, distant ? 4f : 2.2f);
+            instance.transform.localScale *= scale;
+
+            renderers = instance.GetComponentsInChildren<Renderer>(true);
+            if (TryRendererBounds(renderers, out bounds))
+            {
+                float desiredGroundY = _root.transform.TransformPoint(localBase).y;
+                instance.transform.position += Vector3.up * (desiredGroundY - bounds.min.y);
+                if (TryRendererBounds(renderers, out bounds))
+                    MaximumDecorationHeight = Mathf.Max(MaximumDecorationHeight, bounds.size.y);
+            }
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null) continue;
+                renderer.sharedMaterials = BuildCompatibleMaterials(renderer.sharedMaterials);
+                bool castContactShadow = !distant
+                    && string.Equals(role, "StoneCluster", StringComparison.Ordinal);
+                renderer.shadowCastingMode = castContactShadow
+                    ? ShadowCastingMode.On : ShadowCastingMode.Off;
+                if (castContactShadow) AuthoredShadowCasterCount++;
+                renderer.receiveShadows = true;
+                renderer.lightProbeUsage = LightProbeUsage.BlendProbes;
+                renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+                AuthoredRendererCount++;
+
+                Mesh mesh = null;
+                if (renderer is SkinnedMeshRenderer skinned) mesh = skinned.sharedMesh;
+                else
+                {
+                    MeshFilter filter = renderer.GetComponent<MeshFilter>();
+                    if (filter != null) mesh = filter.sharedMesh;
+                }
+                if (mesh != null && _countedMeshes.Add(mesh)) VertexCount += mesh.vertexCount;
+            }
+
+            AuthoredPrefabCount++;
+        }
+
+        private Material[] BuildCompatibleMaterials(Material[] sourceMaterials)
+        {
+            if (sourceMaterials == null || sourceMaterials.Length == 0)
+                return Array.Empty<Material>();
+            var compatible = new Material[sourceMaterials.Length];
+            for (int i = 0; i < sourceMaterials.Length; i++)
+                compatible[i] = CompatibleMaterial(sourceMaterials[i]);
+            return compatible;
+        }
+
+        private Material CompatibleMaterial(Material source)
+        {
+            if (source == null) return null;
+            string shaderName = source.shader != null ? source.shader.name : string.Empty;
+            if (shaderName.StartsWith("Universal Render Pipeline/", StringComparison.Ordinal))
+                return source;
+            if (_authoredMaterialRemap.TryGetValue(source, out Material cached)) return cached;
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            if (shader == null) return source;
+            var material = new Material(shader)
+            {
+                name = "RuntimeMEP_" + source.name,
+                enableInstancing = true
+            };
+
+            Texture albedo = TextureProperty(source, "_BaseMap", "_MainTex");
+            Color tint = ColorProperty(source, "_BaseColor", "_Color", Color.white);
+            bool alphaClip = source.IsKeywordEnabled("_ALPHATEST_ON")
+                || string.Equals(source.GetTag("RenderType", false, string.Empty),
+                    "TransparentCutout", StringComparison.OrdinalIgnoreCase);
+            if (alphaClip)
+                tint = Color.Lerp(tint, new Color(0.76f, 0.66f, 0.43f, tint.a), 0.30f);
+            SetTexture(material, "_BaseMap", albedo);
+            SetTexture(material, "_MainTex", albedo);
+            CopyTextureTransform(source, material, "_BaseMap", "_MainTex");
+            SetColor(material, "_BaseColor", tint);
+            SetColor(material, "_Color", tint);
+
+            Texture normal = TextureProperty(source, "_BumpMap");
+            if (normal != null)
+            {
+                SetTexture(material, "_BumpMap", normal);
+                if (material.HasProperty("_BumpScale")) material.SetFloat("_BumpScale",
+                    FloatProperty(source, "_BumpScale", 1f));
+                material.EnableKeyword("_NORMALMAP");
+            }
+            Texture occlusion = TextureProperty(source, "_OcclusionMap");
+            if (occlusion != null)
+            {
+                SetTexture(material, "_OcclusionMap", occlusion);
+                if (material.HasProperty("_OcclusionStrength")) material.SetFloat("_OcclusionStrength",
+                    FloatProperty(source, "_OcclusionStrength", 1f));
+            }
+
+            float smoothness = Mathf.Clamp(FloatProperty(source, "_Smoothness",
+                FloatProperty(source, "_Glossiness", 0.04f)), 0f, 0.35f);
+            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
+            if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", 0f);
+
+            ConfigureOpaqueSurface(material, alphaClip,
+                FloatProperty(source, "_Cutoff", 0.5f));
+            _authoredMaterialRemap[source] = material;
+            return material;
+        }
+
+        private static void ConfigureOpaqueSurface(Material material, bool alphaClip, float cutoff)
+        {
+            if (material.HasProperty("_Surface")) material.SetFloat("_Surface", 0f);
+            if (material.HasProperty("_Blend")) material.SetFloat("_Blend", 0f);
+            if (material.HasProperty("_AlphaClip")) material.SetFloat("_AlphaClip", alphaClip ? 1f : 0f);
+            if (material.HasProperty("_Cutoff")) material.SetFloat("_Cutoff", Mathf.Clamp01(cutoff));
+            if (material.HasProperty("_SrcBlend")) material.SetFloat("_SrcBlend", (float)BlendMode.One);
+            if (material.HasProperty("_DstBlend")) material.SetFloat("_DstBlend", (float)BlendMode.Zero);
+            if (material.HasProperty("_ZWrite")) material.SetFloat("_ZWrite", 1f);
+            if (alphaClip)
+            {
+                material.EnableKeyword("_ALPHATEST_ON");
+                material.SetOverrideTag("RenderType", "TransparentCutout");
+                material.renderQueue = (int)RenderQueue.AlphaTest;
+                if (material.HasProperty("_Cull")) material.SetFloat("_Cull", (float)CullMode.Off);
+                material.doubleSidedGI = true;
+            }
+            else
+            {
+                material.DisableKeyword("_ALPHATEST_ON");
+                material.SetOverrideTag("RenderType", "Opaque");
+                material.renderQueue = (int)RenderQueue.Geometry;
+            }
+        }
+
+        private static Texture TextureProperty(Material material, params string[] names)
+        {
+            if (material == null || names == null) return null;
+            for (int i = 0; i < names.Length; i++)
+                if (material.HasProperty(names[i]) && material.GetTexture(names[i]) != null)
+                    return material.GetTexture(names[i]);
+            return null;
+        }
+
+        private static Color ColorProperty(Material material, string first, string second, Color fallback)
+        {
+            if (material != null && material.HasProperty(first)) return material.GetColor(first);
+            if (material != null && material.HasProperty(second)) return material.GetColor(second);
+            return fallback;
+        }
+
+        private static float FloatProperty(Material material, string name, float fallback)
+        {
+            return material != null && material.HasProperty(name) ? material.GetFloat(name) : fallback;
+        }
+
+        private static void SetTexture(Material material, string name, Texture texture)
+        {
+            if (texture != null && material.HasProperty(name)) material.SetTexture(name, texture);
+        }
+
+        private static void SetColor(Material material, string name, Color color)
+        {
+            if (material.HasProperty(name)) material.SetColor(name, color);
+        }
+
+        private static void CopyTextureTransform(Material source, Material target,
+                                                 string targetName, params string[] sourceNames)
+        {
+            if (!target.HasProperty(targetName)) return;
+            for (int i = 0; i < sourceNames.Length; i++)
+            {
+                string sourceName = sourceNames[i];
+                if (!source.HasProperty(sourceName)) continue;
+                target.SetTextureScale(targetName, source.GetTextureScale(sourceName));
+                target.SetTextureOffset(targetName, source.GetTextureOffset(sourceName));
+                return;
+            }
+        }
+
+        private static bool TryRendererBounds(Renderer[] renderers, out Bounds bounds)
+        {
+            bounds = default;
+            bool found = false;
+            if (renderers == null) return false;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null || !renderer.enabled) continue;
+                if (!found) { bounds = renderer.bounds; found = true; }
+                else bounds.Encapsulate(renderer.bounds);
+            }
+            return found;
+        }
+
+        private static void StripGameplayComponents(GameObject instance)
+        {
+            Collider[] colliders = instance.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] == null) continue;
+                colliders[i].enabled = false;
+                DisposeObject(colliders[i]);
+            }
+            Rigidbody[] bodies = instance.GetComponentsInChildren<Rigidbody>(true);
+            for (int i = 0; i < bodies.Length; i++) DisposeObject(bodies[i]);
+        }
+
         private void AppendDistantRidge(List<Vector3> vertices, List<int> triangles,
                                         float worldWidth, float worldDepth,
                                         float visualWidth, float visualDepth, int seed, bool mobile)
@@ -456,12 +765,17 @@ namespace RealmOfAshes.World
             DisposeObject(_scrubMaterial);
             DisposeObject(_secondaryScrubMaterial);
             DisposeObject(_stoneMaterial);
+            foreach (KeyValuePair<Material, Material> pair in _authoredMaterialRemap)
+                if (pair.Value != null && pair.Value != pair.Key) DisposeObject(pair.Value);
+            _authoredMaterialRemap.Clear();
             _root = null;
             _scrubMesh = null;
             _stoneMesh = null;
             _scrubMaterial = null;
             _secondaryScrubMaterial = null;
             _stoneMaterial = null;
+            _palette = null;
+            _countedMeshes.Clear();
             SurfaceClusterCount = 0;
             ScrubClusterCount = 0;
             DryScrubClusterCount = 0;
@@ -470,6 +784,12 @@ namespace RealmOfAshes.World
             RidgeCount = 0;
             VertexCount = 0;
             MinimumClusterSpacing = 0f;
+            UsesAuthoredPrefabs = false;
+            AuthoredPrefabCount = 0;
+            AuthoredRendererCount = 0;
+            AuthoredShadowCasterCount = 0;
+            GroundAccentCount = 0;
+            MaximumDecorationHeight = 0f;
         }
 
         private void OnDestroy()

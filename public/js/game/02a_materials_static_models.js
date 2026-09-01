@@ -680,7 +680,7 @@
   // Fingerprint of all canonical wasteland GLBs. Specific authored libraries
   // keep their own version above; this value protects every remaining model
   // from a stale immutable response after an in-place asset rebuild.
-  const STATIC_MODEL_GLB_ASSET_VERSION = '41b8f46d026123af';
+  const STATIC_MODEL_GLB_ASSET_VERSION = '65a947da938a3e7f';
   const PRIORITY_ENVIRONMENT_STATIC_MODEL_KEYS = new Set([
     'carWreck', 'deadTreeA', 'deadTreeB', 'deadTreeC',
     'dryBush', 'rubbleRock', 'scrapHeap', 'wastelandShack'
@@ -776,34 +776,13 @@
     utilityPole: '/assets/models/wasteland/utility_pole.glb',
     roadblockBarricade: '/assets/models/wasteland/roadblock_barricade.glb',
     dryBush: '/assets/models/wasteland/dry_bush.glb',
-    asphaltSlab: '/assets/models/wasteland/asphalt_slab.glb',
-    oldKlimTradeHall: '/assets/models/wasteland/old_klim_trade_hall.glb',
-    oldKlimTradeHallRoof: '/assets/models/wasteland/old_klim_trade_hall_roof.glb',
-    oldKlimCliffStraight: '/assets/models/wasteland/old_klim_cliff_straight.glb',
-    oldKlimCliffCorner: '/assets/models/wasteland/old_klim_cliff_corner.glb',
-    oldKlimCliffEnd: '/assets/models/wasteland/old_klim_cliff_end.glb',
-    oldKlimLoadingCanopy: '/assets/models/wasteland/old_klim_loading_canopy.glb',
-    oldKlimCaravan: '/assets/models/wasteland/old_klim_caravan.glb',
-    oldKlimScrubBlueA: '/assets/models/wasteland/old_klim_scrub_blue_a.glb',
-    oldKlimScrubBlueB: '/assets/models/wasteland/old_klim_scrub_blue_b.glb',
-    oldKlimScrubAmber: '/assets/models/wasteland/old_klim_scrub_amber.glb',
-    oldKlimRockScatterA: '/assets/models/wasteland/old_klim_rock_scatter_a.glb',
-    oldKlimRockScatterB: '/assets/models/wasteland/old_klim_rock_scatter_b.glb',
-    oldKlimRockScatterC: '/assets/models/wasteland/old_klim_rock_scatter_c.glb'
+    asphaltSlab: '/assets/models/wasteland/asphalt_slab.glb'
   };
 
-  const OLD_KLIM_AUTHORED_PALETTE_MODEL_KEYS = new Set([
-    'oldKlimTradeHall', 'oldKlimTradeHallRoof',
-    'oldKlimCliffStraight', 'oldKlimCliffCorner', 'oldKlimCliffEnd',
-    'oldKlimLoadingCanopy', 'oldKlimCaravan',
-    'oldKlimScrubBlueA', 'oldKlimScrubBlueB', 'oldKlimScrubAmber',
-    'oldKlimRockScatterA', 'oldKlimRockScatterB', 'oldKlimRockScatterC'
-  ]);
-  const OLD_KLIM_INSTANCED_MODEL_KEYS = new Set([
-    'oldKlimCliffStraight', 'oldKlimCliffCorner', 'oldKlimCliffEnd',
-    'oldKlimScrubBlueA', 'oldKlimScrubBlueB', 'oldKlimScrubAmber',
-    'oldKlimRockScatterA', 'oldKlimRockScatterB', 'oldKlimRockScatterC'
-  ]);
+  // Old Klim presentation now lives in the additive Unity scene. These sets
+  // remain as empty compatibility hooks for the retired browser renderer.
+  const OLD_KLIM_AUTHORED_PALETTE_MODEL_KEYS = new Set();
+  const OLD_KLIM_INSTANCED_MODEL_KEYS = new Set();
   const AUTHORED_STATIC_INSTANCED_MODEL_KEYS = new Set([
     ...OLD_KLIM_INSTANCED_MODEL_KEYS,
     // The caravan yard repeats this multi-primitive GLB five times. Keeping the
@@ -811,9 +790,7 @@
     // dozens of draws without changing authored collision or LOS semantics.
     'cargoStack'
   ]);
-  const OLD_KLIM_CLIFF_MODEL_KEYS = new Set([
-    'oldKlimCliffStraight', 'oldKlimCliffCorner', 'oldKlimCliffEnd'
-  ]);
+  const OLD_KLIM_CLIFF_MODEL_KEYS = new Set();
   const OLD_KLIM_STATIC_MODEL_KEYS = new Set(OLD_KLIM_AUTHORED_PALETTE_MODEL_KEYS);
 
   function staticModelFileName(value = '') {
@@ -1694,6 +1671,25 @@ varying float vInstanceOpacity;`
     };
   }
 
+  function authoredObjectCollisionTransforms(row = {}, x = 0, z = 0, angle = 0) {
+    const parts = Array.isArray(row.collisionParts) ? row.collisionParts : [];
+    if (!parts.length) return [];
+    const scale = authoredObjectScale(row);
+    return parts.map(part => {
+      const center = part?.center && typeof part.center === 'object' ? part.center : {};
+      const size = part?.size && typeof part.size === 'object' ? part.size : {};
+      const width = Number(size.x ?? size.width ?? part?.width);
+      const depth = Number(size.z ?? size.depth ?? part?.depth);
+      const centerX = Number(center.x ?? part?.x ?? 0);
+      const centerZ = Number(center.z ?? part?.z ?? 0);
+      if (![width, depth, centerX, centerZ].every(Number.isFinite) || width <= 0 || depth <= 0) return null;
+      return staticBoundsCollisionTransform({
+        center: { x: centerX, z: centerZ },
+        size: { x: width, z: depth }
+      }, x, z, angle, { scaleX: scale.x, scaleZ: scale.z });
+    }).filter(Boolean);
+  }
+
   function authoredObjectTags(row = {}) {
     return (Array.isArray(row.tags) ? row.tags : [])
       .map(tag => String(tag || '').toLowerCase())
@@ -1935,6 +1931,17 @@ varying float vInstanceOpacity;`
 
   function addAuthoredObjectCollision(row = {}, x = 0, z = 0, angle = 0) {
     if (!authoredObjectBlocksMovement(row)) return null;
+    const authoredParts = authoredObjectCollisionTransforms(row, x, z, angle);
+    if (authoredParts.length) {
+      return authoredParts.map((collider, partIndex) => addStaticCollisionBox(
+        collider.x,
+        collider.z,
+        collider.halfX * 2,
+        collider.halfZ * 2,
+        `${row.id || row.model || 'authored-object'}:${partIndex}`,
+        collider.rotationY
+      )).filter(Boolean);
+    }
     const key = staticModelKeyFromLocationObject(row);
     const scale = authoredObjectScale(row);
     const modelRef = key || row.url || row.file || '';

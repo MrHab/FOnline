@@ -22,10 +22,27 @@ namespace RealmOfAshes.EditorTools
             repeated[0]["title"] = "Новый сигнал";
             Require(stable != Signature(repeated, false, false, 4.04f, 12d),
                 "a visible title change does not rebuild the activity cards");
+            var helpTasks = new List<JObject> { (JObject)tasks[0].DeepClone() };
+            helpTasks[0]["liveEvent"] = new JObject
+            {
+                ["helpSignal"] = new JObject
+                {
+                    ["active"] = true,
+                    ["requestedByName"] = "Разведчик",
+                    ["expiresAt"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 60000
+                }
+            };
+            Require(stable != Signature(helpTasks, false, false, 4.01f, 12d),
+                "a live request for help does not refresh the activity card");
             Require(stable != Signature(tasks, true, false, 4.01f, 12d),
                 "travel state does not refresh disabled activity actions");
             Require(stable != Signature(tasks, false, true, 4.01f, 12d),
                 "accepted state does not refresh the activity card");
+            var sparseTasks = new List<JObject> { (JObject)tasks[0].DeepClone() };
+            sparseTasks[0]["liveEvent"] = false;
+            sparseTasks[0]["liveRegion"] = JValue.CreateNull();
+            Require(!string.IsNullOrEmpty(Signature(sparseTasks, false, false, 4.01f, 12d)),
+                "optional live fields crash the compact activity launcher");
 
             RoaActivityHubPresentation.TransitionSample openStart =
                 RoaActivityHubPresentation.Sample(true, 0f);
@@ -54,6 +71,24 @@ namespace RealmOfAshes.EditorTools
             Require(RoaActivityHubPresentation.DeadlineLabel(tasks[0], 12d) == "ещё 6 ч"
                     && RoaActivityHubPresentation.DeadlineLabel(tasks[0], 17.5d) == "меньше часа",
                 "activity deadline urgency is unclear");
+
+            GameObject host = null;
+            try
+            {
+                host = new GameObject("Activity hub quick-join probe");
+                RoaActivityHubCanvas hub = host.AddComponent<RoaActivityHubCanvas>();
+                var ensureBuilt = typeof(RoaActivityHubCanvas).GetMethod("EnsureBuilt",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                Require(ensureBuilt != null, "activity hub build entry point is missing");
+                ensureBuilt.Invoke(hub, null);
+                Transform quick = host.transform.Find("ActivityHubCanvas/ActivityHub/Button:БЫСТРАЯ ВЫЛАЗКА");
+                Require(quick != null && quick.GetComponent<UnityEngine.UI.Button>() != null,
+                    "global activity hub has no one-click quick sortie button");
+            }
+            finally
+            {
+                if (host != null) UnityEngine.Object.DestroyImmediate(host);
+            }
 
             Debug.Log("[ЦЕНТР АКТИВНОСТЕЙ] готово: стабильные карточки, плавное сворачивание, "
                 + "маршрут и срок читаются в компактном режиме");

@@ -16,6 +16,9 @@ const requireText = (source, fragment, label) => {
 const requirePattern = (source, pattern, label) => {
   if (!pattern.test(source)) fail(label);
 };
+const requireContract = (condition, label) => {
+  if (!condition) fail(label);
+};
 
 const socket = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 const enemies = read('unity-client/Assets/Scripts/Game/RoaEnemies.cs');
@@ -25,6 +28,93 @@ const pipboy = read('unity-client/Assets/Scripts/Game/RoaPipboy.cs');
 const staging = read('unity-client/Assets/Scripts/Game/RoaCaravanStagingCanvas.cs');
 const simulation = read('src/server/wasteland-sim.js');
 const server = read('server.js');
+const {
+  WORLD_OPERATION_SCHEMA,
+  createSupplyOperation,
+  transitionWorldOperation,
+  worldOperationStage
+} = require(path.join(root, 'src/server/wasteland-world-tasks.js'));
+
+const preparingOperation = createSupplyOperation({
+  partyId: 'contract_caravan',
+  issuerFactionId: 'old_klim',
+  sourceSiteId: 'settlement',
+  destinationSiteId: 'dryWaterPump',
+  demand: { water: 12 },
+  cargo: { water: 12 },
+  goal: {
+    summary: 'Пополнение запасов воды.',
+    targetSiteId: 'dryWaterPump'
+  },
+  assignment: {
+    leaderId: 'contract_caravan_merchant',
+    leaderName: 'Караванщик',
+    leaderRole: 'Глава каравана'
+  }
+}, 24);
+const travelingOperation = transitionWorldOperation(preparingOperation, 'traveling', 25);
+const completedOperation = transitionWorldOperation(travelingOperation, 'completed', 26, {
+  outcome: {
+    result: 'delivered',
+    reason: 'caravan_arrived',
+    siteId: 'dryWaterPump',
+    cargo: { water: 12 },
+    deliveredUnits: 12,
+    npcLosses: 0
+  }
+});
+
+requireContract(WORLD_OPERATION_SCHEMA === 'realm.worldOperation.v1',
+  'the faction caravan operation schema changed without updating its public contract');
+requireContract(preparingOperation?.schema === WORLD_OPERATION_SCHEMA
+  && preparingOperation?.kind === 'supply_delivery'
+  && preparingOperation?.phase === 'preparing'
+  && preparingOperation?.status === 'active'
+  && preparingOperation?.sourceSiteId === 'settlement'
+  && preparingOperation?.destinationSiteId === 'dryWaterPump'
+  && preparingOperation?.goal?.reason === 'site_shortage'
+  && preparingOperation?.goal?.summary === 'Пополнение запасов воды.'
+  && preparingOperation?.assignment?.assigneeId === 'contract_caravan'
+  && preparingOperation?.assignment?.leaderName === 'Караванщик'
+  && preparingOperation?.assignment?.leaderRole === 'Глава каравана',
+  'a preparing faction caravan no longer keeps its reason, route, assignment and generic leader');
+requireContract(travelingOperation?.phase === 'traveling'
+  && travelingOperation?.status === 'active'
+  && travelingOperation?.departureHour === 25
+  && travelingOperation?.revision === preparingOperation.revision + 1
+  && worldOperationStage(travelingOperation)?.key === 'active',
+  'a departing faction caravan no longer advances its public phase, revision and departure time');
+requireContract(completedOperation?.phase === 'completed'
+  && completedOperation?.status === 'completed'
+  && completedOperation?.completedHour === 26
+  && completedOperation?.outcome?.result === 'delivered'
+  && completedOperation?.outcome?.siteId === 'dryWaterPump'
+  && completedOperation?.outcome?.deliveredUnits === 12
+  && completedOperation?.outcome?.npcLosses === 0
+  && worldOperationStage(completedOperation)?.key === 'completed',
+  'a completed faction caravan no longer publishes its bounded delivery outcome');
+
+requirePattern(simulation,
+  /function partyLeaderPublicMember\(party = \{\}\)[\s\S]{0,350}kind === 'caravan'[\s\S]{0,250}name: 'Караванщик'[\s\S]{0,120}role: 'Глава каравана'[\s\S]{0,120}type: 'npc'[\s\S]{0,80}leader: true/,
+  'public caravan groups no longer use the generic NPC leader Караванщик');
+requirePattern(simulation,
+  /function publicParty\(party = \{\}\)[\s\S]{0,450}const leader = partyLeaderPublicMember\(party\)/,
+  'the public world-party contract no longer resolves its generic NPC leader');
+requireText(simulation, 'leaderName: leader.name,',
+  'the public world-party contract no longer exposes the caravan leader name');
+requireText(simulation, 'groupMembers: [leader, ...npcMembers, ...playerMembers].slice(0, 30),',
+  'the public world-party roster no longer places its NPC leader before guards and players');
+requirePattern(simulation,
+  /const runtimeOperation = taskType === 'escort_caravan'[\s\S]{0,180}publicCaravanWorldOperation\(task, targetParty\)/,
+  'public caravan tasks no longer resolve their runtime operation phase');
+requireText(simulation,
+  'const details = runtimeOperation ? { ...publicDetails, operation: runtimeOperation } : publicDetails;',
+  'public caravan task details no longer expose the runtime operation');
+requireText(simulation, '...(runtimeOperation ? { operation: runtimeOperation } : {}),',
+  'public caravan tasks no longer expose the runtime operation at top level');
+requirePattern(simulation,
+  /const operationStage = runtimeOperation \? worldOperationStage\(runtimeOperation\) : null;[\s\S]{0,260}stage: operationStage\.key, stageLabel: operationStage\.label/,
+  'the public activity stage no longer follows the caravan operation phase');
 
 requireText(socket, '_connection.On("encounterFactionHostile"',
   'RoaSocketClient no longer registers encounterFactionHostile');

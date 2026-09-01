@@ -133,6 +133,32 @@ namespace RealmOfAshes.EditorTools
                     && RoaActivityFeedback.SamplePulse(0.4f) > 0.7f
                     && RoaActivityFeedback.SamplePulse(RoaActivityFeedback.PulseSeconds) == 0f,
                 "objective pulse envelope is not bounded");
+            Require(RoaActivityFeedback.GlobalMapResultSeconds <= 8f
+                    && RoaActivityFeedback.GlobalMapResultSeconds < RoaActivityFeedback.ResultSeconds,
+                "activity result blocks the global map for too long");
+            Require(!RoaWorldActivityCanvas.UseFocusedActivityHud(false, false)
+                    && RoaWorldActivityCanvas.UseFocusedActivityHud(true, false)
+                    && RoaWorldActivityCanvas.UseFocusedActivityHud(false, true)
+                    && RoaWorldActivityCanvas.ActivityHudSize(false) == new Vector2(330f, 210f)
+                    && RoaWorldActivityCanvas.ActivityHudSize(true) == new Vector2(330f, 144f)
+                    && RoaWorldActivityCanvas.ActivityHudSize(
+                        RoaWorldActivityCanvas.ActivityHudDensity.Glance) == new Vector2(330f, 100f)
+                    && RoaWorldActivityCanvas.ResolveActivityHudDensity(false, false,
+                        false, false, false, false)
+                        == RoaWorldActivityCanvas.ActivityHudDensity.Glance
+                    && RoaWorldActivityCanvas.ResolveActivityHudDensity(true, false,
+                        false, false, false, false)
+                        == RoaWorldActivityCanvas.ActivityHudDensity.Glance
+                    && RoaWorldActivityCanvas.ResolveActivityHudDensity(false, false,
+                        false, false, true, false)
+                        == RoaWorldActivityCanvas.ActivityHudDensity.Context
+                    && RoaWorldActivityCanvas.ResolveActivityHudDensity(false, false,
+                        true, false, false, false)
+                        == RoaWorldActivityCanvas.ActivityHudDensity.Detailed,
+                "activity HUD density no longer releases the world or expands contextually");
+            Require(RoaWorldActivityCanvas.FocusedObjectiveIndex(objectiveViews) >= 0
+                    && objectiveViews[RoaWorldActivityCanvas.FocusedObjectiveIndex(objectiveViews)].IsCurrent,
+                "focused activity HUD does not select the current objective");
 
             GameObject audioHost = null;
             GameObject canvasHost = null;
@@ -146,9 +172,84 @@ namespace RealmOfAshes.EditorTools
                 ensureBuilt.Invoke(activityCanvas, null);
                 Transform objectiveRows = canvasHost.transform.Find(
                     "WorldActivityCanvas/WorldActivityHud/ObjectiveRows");
+                Transform compactHud = canvasHost.transform.Find(
+                    "WorldActivityCanvas/WorldActivityHud");
+                Transform activityFlow = compactHud?.Find("ActivityFlow");
+                Transform resultFlow = canvasHost.transform.Find(
+                    "WorldActivityCanvas/WorldActivityResult/ResultFlow");
                 Require(objectiveRows != null && objectiveRows.childCount == 3
                         && activityCanvas.ObjectiveRowPoolSize == 3,
                     "activity Canvas does not prebuild the bounded three-row objective pool");
+                RectTransform compactHudRect = compactHud as RectTransform;
+                Require(compactHudRect != null
+                        && compactHudRect.anchorMin == new Vector2(0f, 1f)
+                        && compactHudRect.anchorMax == new Vector2(0f, 1f)
+                        && compactHudRect.sizeDelta.x <= 330f
+                        && compactHudRect.sizeDelta == new Vector2(330f, 100f)
+                        && activityFlow != null && activityFlow.childCount == 4
+                        && resultFlow != null && resultFlow.childCount == 4,
+                    "persistent activity HUD is not a glance card docked below player status");
+                var applyDensity = typeof(RoaWorldActivityCanvas).GetMethod("ApplyHudDensityLayout",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                Require(applyDensity != null, "activity HUD density layout entry point is missing");
+                applyDensity.Invoke(activityCanvas, new object[] {
+                    RoaWorldActivityCanvas.ActivityHudDensity.Glance });
+                Transform phaseTransform = compactHud.Find("Phase");
+                Require(compactHudRect.sizeDelta == new Vector2(330f, 100f)
+                        && activityCanvas.FocusedHud
+                        && phaseTransform != null && !phaseTransform.gameObject.activeSelf
+                        && ((RectTransform)objectiveRows).rect.height <= 24f,
+                    "glance activity HUD is not reduced to one readable objective row");
+                applyDensity.Invoke(activityCanvas, new object[] {
+                    RoaWorldActivityCanvas.ActivityHudDensity.Context });
+                Require(compactHudRect.sizeDelta == new Vector2(330f, 144f)
+                        && activityCanvas.HudDensity == RoaWorldActivityCanvas.ActivityHudDensity.Context,
+                    "nearby action or important message does not expand the activity HUD context");
+                applyDensity.Invoke(activityCanvas, new object[] {
+                    RoaWorldActivityCanvas.ActivityHudDensity.Detailed });
+                Require(compactHudRect.sizeDelta == new Vector2(330f, 210f)
+                        && !activityCanvas.FocusedHud && phaseTransform.gameObject.activeSelf,
+                    "manual activity details do not restore the full tactical card");
+                Transform helpButton = canvasHost.transform.Find(
+                    "WorldActivityCanvas/WorldActivityHud/Btn:ActivityHelp");
+                Transform detailsButton = canvasHost.transform.Find(
+                    "WorldActivityCanvas/WorldActivityHud/Btn:ActivityDetails");
+                Transform continueButton = canvasHost.transform.Find(
+                    "WorldActivityCanvas/WorldActivityResult/Btn:ActivityContinue");
+                Transform reviveButton = canvasHost.transform.Find(
+                    "WorldActivityCanvas/WorldActivityHud/Btn:ActivityRevive");
+                Transform pingToggle = canvasHost.transform.Find(
+                    "WorldActivityCanvas/WorldActivityHud/Btn:ActivityPingToggle");
+                Transform pingMenu = canvasHost.transform.Find(
+                    "WorldActivityCanvas/PingRadial");
+                Transform movePing = canvasHost.transform.Find(
+                    "WorldActivityCanvas/PingRadial/Btn:ActivityPing:Move");
+                Transform dangerPing = canvasHost.transform.Find(
+                    "WorldActivityCanvas/PingRadial/Btn:ActivityPing:Danger");
+                Transform lootPing = canvasHost.transform.Find(
+                    "WorldActivityCanvas/PingRadial/Btn:ActivityPing:Loot");
+                Require(detailsButton != null && detailsButton.GetComponent<Button>() != null
+                        && ((RectTransform)detailsButton).rect.width >= 44f
+                        && ((RectTransform)detailsButton).rect.height >= 44f,
+                    "activity glance card has no explicit details control");
+                Require(helpButton != null && helpButton.GetComponent<Button>() != null,
+                    "running activity has no live help action");
+                Require(continueButton != null && continueButton.GetComponent<Button>() != null,
+                    "successful result has no continue-with-squad action");
+                Require(reviveButton != null && reviveButton.GetComponent<Button>() != null,
+                    "temporary squad has no nearby-teammate revive action");
+                Require(pingToggle != null && pingToggle.GetComponent<Button>() != null
+                        && pingMenu != null && !pingMenu.gameObject.activeSelf,
+                    "squad pings are not collapsed behind a contextual control");
+                Require(movePing != null && dangerPing != null && lootPing != null
+                        && ((RectTransform)movePing).rect.height >= 44f,
+                    "temporary squad quick pings are missing or unreadably small");
+                Require(RoaWorldActivityCanvas.ResolvePingRadialType(new Vector2(0f, 70f), false) == "danger"
+                        && RoaWorldActivityCanvas.ResolvePingRadialType(new Vector2(-70f, -50f), false) == "move"
+                        && RoaWorldActivityCanvas.ResolvePingRadialType(new Vector2(70f, -50f), false) == "loot"
+                        && RoaWorldActivityCanvas.ResolvePingRadialType(Vector2.zero, true) == "move"
+                        && string.IsNullOrEmpty(RoaWorldActivityCanvas.ResolvePingRadialType(Vector2.zero, false)),
+                    "desktop/mobile radial ping directions are ambiguous");
                 foreach (Image image in canvasHost.GetComponentsInChildren<Image>(true))
                 {
                     bool interactive = image.GetComponent<Button>() != null;

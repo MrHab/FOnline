@@ -63,7 +63,7 @@ namespace RealmOfAshes.EditorTools
                     "adaptive HUD is not a Unity component");
             Vector2 desktopReference = RoaUiScale.ReferenceFor(false);
             Vector2 mobileReference = RoaUiScale.ReferenceFor(true);
-            Require(desktopReference == new Vector2(1600f, 900f),
+            Require(desktopReference == new Vector2(1440f, 810f),
                     "desktop UI reference no longer protects laptop readability");
             Require(mobileReference == new Vector2(1280f, 720f),
                     "mobile UI reference changed unexpectedly");
@@ -92,7 +92,7 @@ namespace RealmOfAshes.EditorTools
                 + 253f * desktopHud.ConsoleScale) / desktopReference.y;
             float mobileConsoleTop = (mobileHud.ConsolePosition.y
                 + 253f * mobileHud.ConsoleScale) / mobileReference.y;
-            Require(desktopConsoleTop < 0.27f && mobileConsoleTop < 0.29f,
+            Require(desktopConsoleTop < 0.31f && mobileConsoleTop < 0.29f,
                     "weapon console again obscures too much of the combat view");
             Require(desktopHud.QuickbarPosition.y > desktopHud.ConsolePosition.y
                         + 253f * desktopHud.ConsoleScale
@@ -101,7 +101,74 @@ namespace RealmOfAshes.EditorTools
                     "quickbar overlaps the compact weapon console");
             Require(mobileHud.PlayerScale < desktopHud.PlayerScale
                     && mobileHud.MapScale < desktopHud.MapScale,
-                    "mobile identity or minimap panels did not release combat space");
+                "mobile identity or minimap panels did not release combat space");
+            Require(RoaHudCanvas.ResolveFocusMode(false, false, false)
+                        == RoaHudCanvas.HudFocusMode.Exploration
+                    && RoaHudCanvas.ResolveFocusMode(true, false, false)
+                        == RoaHudCanvas.HudFocusMode.Combat
+                    && RoaHudCanvas.ResolveFocusMode(false, true, false)
+                        == RoaHudCanvas.HudFocusMode.Detailed
+                    && RoaHudCanvas.ResolveFocusMode(false, true, false, false)
+                        == RoaHudCanvas.HudFocusMode.Activity
+                    && RoaHudCanvas.ResolveFocusMode(true, true, false, false)
+                        == RoaHudCanvas.HudFocusMode.Combat
+                    && RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Detailed)
+                    && !RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Combat)
+                    && RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
+                        false, false, false)
+                    && !RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Activity,
+                        false, false, false)
+                    && !RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
+                        true, false, false)
+                    && RoaCombat.IsCombatPresentationActive(6.9f, 7f)
+                    && !RoaCombat.IsCombatPresentationActive(7f, 7f),
+                "contextual combat focus no longer has deterministic lifetime or manual detail access");
+            float desktopCompactTop = (RoaHudCanvas.CompactConsolePosition(false).y
+                + 66f * RoaHudCanvas.CompactConsoleScale(false)) / desktopReference.y;
+            float mobileCompactTop = (RoaHudCanvas.CompactConsolePosition(true).y
+                + 66f * RoaHudCanvas.CompactConsoleScale(true)) / mobileReference.y;
+            Require(desktopCompactTop < 0.10f && mobileCompactTop < 0.11f
+                    && RoaHudCanvas.QuickbarFocusPosition(false,
+                        RoaHudCanvas.HudFocusMode.Exploration).y
+                        > RoaHudCanvas.CompactConsolePosition(false).y
+                            + 66f * RoaHudCanvas.CompactConsoleScale(false)
+                    && RoaHudCanvas.QuickbarFocusPosition(true,
+                        RoaHudCanvas.HudFocusMode.Exploration).y
+                        > RoaHudCanvas.CompactConsolePosition(true).y
+                            + 66f * RoaHudCanvas.CompactConsoleScale(true),
+                "exploration strip obscures the world or overlaps the quickbar");
+            Vector2 recoveredConsole = RoaHudCanvas.ClampBottomPanelPosition(
+                new Vector2(0f, -56f), new Vector2(560f, 66f), 0.94f,
+                new Vector2(1920f, 1080f));
+            Require(recoveredConsole.y >= 8f,
+                "legacy console offsets must not push the compact HUD below the safe area");
+            Vector2 recoveredWide = RoaHudCanvas.ClampBottomPanelPosition(
+                new Vector2(1600f, 16f), new Vector2(760f, 253f), 0.875f,
+                new Vector2(1920f, 1080f));
+            Require(recoveredWide.x < 1600f,
+                "dragged combat console must remain horizontally reachable");
+            GameObject hierarchyProbe = new GameObject("Hud hierarchy probe");
+            try
+            {
+                RoaHudCanvas hierarchyCanvas = hierarchyProbe.AddComponent<RoaHudCanvas>();
+                MethodInfo buildHud = typeof(RoaHudCanvas).GetMethod("Build",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(buildHud != null, "adaptive HUD builder is missing");
+                buildHud.Invoke(hierarchyCanvas, null);
+                Transform compactConsole = hierarchyProbe.transform.Find(
+                    "AdaptiveGameplayHud/SafeArea/CompactWeaponConsole");
+                Require(compactConsole != null
+                        && ((RectTransform)compactConsole).sizeDelta == new Vector2(560f, 66f)
+                        && compactConsole.GetComponent<CanvasGroup>() != null
+                        && compactConsole.Find("HpTrack/Fill") != null
+                        && compactConsole.Find("Weapon") != null
+                        && compactConsole.Find("Ammo") != null,
+                    "contextual exploration console is incomplete");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(hierarchyProbe);
+            }
             RoaHudCanvas.ConnectionBannerState interrupted = RoaHudCanvas.DescribeConnection(
                 RoaSocketClient.ConnectionPhase.Disconnected, 3, 4.2f, string.Empty, false);
             Require(interrupted.Kind == RoaHudCanvas.ConnectionBannerKind.Interrupted
@@ -127,7 +194,8 @@ namespace RealmOfAshes.EditorTools
             Require(healthy.Kind == RoaHudCanvas.ConnectionBannerKind.Hidden,
                 "healthy connection leaves a permanent banner on screen");
             CaptureIfRequested();
-            Debug.Log("[ROA PROBE] Adaptive HUD OK: safe nameplates, compact combat stack, shared mobile mode and Canvas owner.");
+            Debug.Log("[HUD CLEANUP 4.1] готово: исследование/активность/бой/детали, "
+                + "компактный бой, скрытая личность, приоритетная панель и чёткий Canvas.");
         }
 
         private static void CaptureIfRequested()

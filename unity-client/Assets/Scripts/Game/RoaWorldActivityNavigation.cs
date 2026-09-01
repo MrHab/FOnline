@@ -162,8 +162,10 @@ namespace RealmOfAshes.Game
             float scale = Mathf.Max(0.01f, _activityCanvas.scaleFactor);
             Rect safe = TopLeftSafeScreenRect(Screen.safeArea, Screen.height);
             _occupiedWorldLabels.Clear();
-            _occupiedWorldLabels.Add(ActivityHudScreenRect(Screen.width, scale));
-            _occupiedWorldLabels.Add(ActivityNavigationScreenRect(Screen.width, scale));
+            bool mobileHud = Bootstrap?.MobileControls?.ControlsEnabled == true;
+            _occupiedWorldLabels.Add(ActivityHudScreenRect(
+                Screen.width, scale, mobileHud, _hudDensity,
+                Bootstrap?.HudCanvas?.IdentityVisible == true));
             Bootstrap.HudCanvas?.CollectOccupiedScreenRects(_occupiedWorldLabels);
 
             int visible = 0;
@@ -207,6 +209,17 @@ namespace RealmOfAshes.Game
             Vector3 player = Bootstrap.PlayerView.transform.position;
             string kind = _activity["kind"]?.ToString() ?? string.Empty;
             bool extractionOpen = _activity["extractionOpen"]?.ToObject<bool>() == true;
+
+            JObject activeLane = ActiveEncounterLane(_activity);
+            if (activeLane != null)
+            {
+                float laneX = activeLane["x"]?.ToObject<float>() ?? 0f;
+                float laneZ = activeLane["z"]?.ToObject<float>() ?? 0f;
+                Vector3 laneWorld = RoaCoords.ToUnity(laneX, 0.08f, laneZ);
+                string laneLabel = activeLane["label"]?.ToString() ?? "НАПРАВЛЕНИЕ";
+                output.Add(new WorldLabelFrame("attack_lane", "АТАКА · " + laneLabel,
+                    laneWorld, Danger, FlatDistance(player, laneWorld), 5, false));
+            }
 
             if (extractionOpen && kind != "outpost_defense" && kind != "distress_signal"
                 && TryActivityExtractionTarget(out Vector3 extraction, out _))
@@ -284,16 +297,42 @@ namespace RealmOfAshes.Game
 
         public static Rect ActivityHudScreenRect(int screenWidth, float canvasScale)
         {
+            return ActivityHudScreenRect(screenWidth, canvasScale, false,
+                ActivityHudDensity.Glance);
+        }
+
+        public static Rect ActivityHudScreenRect(int screenWidth, float canvasScale, bool mobile)
+        {
+            return ActivityHudScreenRect(screenWidth, canvasScale, mobile,
+                ActivityHudDensity.Glance);
+        }
+
+        public static Rect ActivityHudScreenRect(int screenWidth, float canvasScale, bool mobile,
+                                                 bool focused)
+        {
+            return ActivityHudScreenRect(screenWidth, canvasScale, mobile,
+                focused ? ActivityHudDensity.Context : ActivityHudDensity.Detailed);
+        }
+
+        public static Rect ActivityHudScreenRect(int screenWidth, float canvasScale, bool mobile,
+                                                 ActivityHudDensity density)
+        {
+            return ActivityHudScreenRect(screenWidth, canvasScale, mobile, density, false);
+        }
+
+        public static Rect ActivityHudScreenRect(int screenWidth, float canvasScale, bool mobile,
+                                                 ActivityHudDensity density, bool reserveIdentity)
+        {
             float scale = Mathf.Max(0.01f, canvasScale);
-            return new Rect(screenWidth * 0.5f - 205f * scale, 18f * scale,
-                410f * scale, 260f * scale);
+            Vector2 size = ActivityHudSize(density);
+            Vector2 position = ActivityHudPosition(mobile, reserveIdentity);
+            return new Rect(position.x * scale, -position.y * scale,
+                size.x * scale, size.y * scale);
         }
 
         public static Rect ActivityNavigationScreenRect(int screenWidth, float canvasScale)
         {
-            float scale = Mathf.Max(0.01f, canvasScale);
-            return new Rect(screenWidth * 0.5f - 170f * scale, 282f * scale,
-                340f * scale, 36f * scale);
+            return Rect.zero;
         }
 
         public static bool TryResolveWorldLabelRect(Vector2 anchor, Rect safeArea,
@@ -392,35 +431,9 @@ namespace RealmOfAshes.Game
 
         private void RefreshActivityNavigation()
         {
-            if (_navigationRoot == null || _root == null || !_root.activeSelf || Bootstrap?.PlayerView == null)
-            {
-                HideActivityNavigation();
-                return;
-            }
-
-            if (!TryActivityNavigationTarget(out Vector3 target, out float reach, out string label, out Color color))
-            {
-                HideActivityNavigation();
-                return;
-            }
-
-            Vector3 player = Bootstrap.PlayerView.transform.position;
-            Vector3 delta = target - player;
-            delta.y = 0f;
-            float distance = delta.magnitude;
-            bool inReach = distance <= Mathf.Max(0.5f, reach);
-            _navigationText = NavigationDistanceLabel(label, distance, inReach);
-            _navigationLabel.text = _navigationText;
-            _navigationLabel.color = inReach ? Safe : Ink;
-            _navigationStripe.color = color;
-            Text arrowText = _navigationArrow != null ? _navigationArrow.GetComponent<Text>() : null;
-            if (arrowText != null) arrowText.color = color;
-
-            Camera camera = Camera.main;
-            Vector3 right = camera != null ? Vector3.ProjectOnPlane(camera.transform.right, Vector3.up) : Vector3.right;
-            Vector3 screenUp = camera != null ? Vector3.ProjectOnPlane(camera.transform.up, Vector3.up) : Vector3.forward;
-            _navigationArrow.localEulerAngles = new Vector3(0f, 0f, CalculateNavigationArrowAngle(delta, right, screenUp));
-            _navigationRoot.SetActive(true);
+            // The world marker and minimap already point to the active target. Keeping a
+            // second persistent strip repeats the same information and blocks the playfield.
+            HideActivityNavigation();
         }
 
         private bool TryActivityNavigationTarget(out Vector3 target, out float reach, out string label, out Color color)
@@ -513,6 +526,15 @@ namespace RealmOfAshes.Game
                 && TryActivityExtractionTarget(out Vector3 extraction, out _))
                 markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Extraction, extraction));
 
+            JObject activeLane = ActiveEncounterLane(_activity);
+            if (activeLane != null)
+            {
+                float laneX = activeLane["x"]?.ToObject<float>() ?? 0f;
+                float laneZ = activeLane["z"]?.ToObject<float>() ?? 0f;
+                markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Threat,
+                    RoaCoords.ToUnity(laneX, 0f, laneZ)));
+            }
+
             if (_activity["interactionPoints"] is JArray points)
             {
                 foreach (JToken token in points)
@@ -524,6 +546,18 @@ namespace RealmOfAshes.Game
                     float x = point["x"]?.ToObject<float>() ?? 0f;
                     float z = point["z"]?.ToObject<float>() ?? 0f;
                     markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Objective, RoaCoords.ToUnity(x, 0f, z)));
+                }
+            }
+            if (_activity["pings"] is JArray pings)
+            {
+                foreach (JToken token in pings)
+                {
+                    JObject ping = token as JObject;
+                    if (ping == null) continue;
+                    float x = ping["x"]?.ToObject<float>() ?? 0f;
+                    float z = ping["z"]?.ToObject<float>() ?? 0f;
+                    markers.Add(new RoaMinimap.Marker(RoaMinimap.MarkerKind.Objective,
+                        RoaCoords.ToUnity(x, 0f, z)));
                 }
             }
             if (kind == "resource_expedition") Bootstrap.Interaction?.CollectActivityResourceMarkers(markers);

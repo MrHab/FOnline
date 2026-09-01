@@ -1,7 +1,8 @@
 'use strict';
 
 const NPC_CAPS_INVENTORY_VERSION = 1;
-const NPC_INVENTORY_VERSION = 2;
+const NPC_PERSONAL_INVENTORY_VERSION = 2;
+const NPC_INVENTORY_VERSION = 3;
 
 const FACTION_ALIASES = Object.freeze({
   caravan: 'caravans',
@@ -277,6 +278,16 @@ function setRowQty(rows = [], itemId = '', qty = 0) {
   return out;
 }
 
+function buildNpcEquipmentInventory(equipment = {}, itemIds = null) {
+  const allowed = id => !itemIds || itemIds.has(id);
+  const rows = [];
+  for (const rawId of Object.values(equipment && typeof equipment === 'object' ? equipment : {})) {
+    const id = String(rawId || '').trim();
+    if (id && id !== 'fists' && allowed(id)) rows.push({ id, qty: 1 });
+  }
+  return mergeRows(rows, allowed);
+}
+
 function startingNpcCaps(context = {}) {
   const role = String(context.role || '').toLowerCase();
   const seed = String(context.seed || `${context.faction || 'neutral'}:${role}:npc`);
@@ -324,7 +335,7 @@ function buildFactionPersonalInventory(context = {}) {
   const equipment = context.equipment && typeof context.equipment === 'object' ? context.equipment : {};
   const weaponDefs = context.weaponDefs || {};
   const doctrine = doctrineForFaction(faction);
-  const rows = [];
+  const rows = buildNpcEquipmentInventory(equipment, context.itemIds);
   const allowed = id => !context.itemIds || context.itemIds.has(id);
   const add = (id, qty) => {
     const count = Math.max(0, Math.floor(Number(qty || 0)));
@@ -498,11 +509,13 @@ function transferCorpseLoot(looter = {}, corpse = {}, context = {}) {
 
 module.exports = {
   NPC_CAPS_INVENTORY_VERSION,
+  NPC_PERSONAL_INVENTORY_VERSION,
   NPC_INVENTORY_VERSION,
   FACTION_DOCTRINES,
   normalizeFaction,
   buildFactionSupplyCatalog,
   chooseFactionEquipment,
+  buildNpcEquipmentInventory,
   buildFactionPersonalInventory,
   startingNpcCaps,
   materializeNpcCapsInventory,

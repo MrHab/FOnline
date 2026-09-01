@@ -27,6 +27,7 @@ assert((canvas.match(/CreateButton\("/g) || []).length === 11
   'Mobile Canvas no longer has eleven bounded buttons or correct raycast ownership');
 assert(canvas.includes('SetLabel("Target", state.TargetSelected ? "ЦЕЛЬ ✓" : "ЦЕЛЬ")')
   && canvas.includes('SetLabel("Crouch", state.Crouching ? "ВСТАТЬ" : "ПРИСЕСТЬ")')
+  && canvas.includes('SetLabel("Player", state.PingAvailable ? "МЕТКА" : "ИГРОК")')
   && canvas.includes('state.FireMode.ToUpperInvariant()')
   && canvas.includes('state.InputSuppressed ? "ЗАКРЫТЬ" : "МЕНЮ"')
   && canvas.includes('bool joystickVisible = _gameplayButtonsVisible && state.JoystickActive;'),
@@ -50,7 +51,7 @@ assert(controls.includes('public bool CanvasDriven { get; set; }')
 for (const action of [
   'TriggerMenu', 'TriggerInventory', 'TriggerPipboy', 'TriggerMap',
   'TriggerTargetCycle', 'TriggerCrouch', 'TriggerReload', 'TriggerFireMode',
-  'TriggerPlayerPanel', 'TriggerInteract'
+  'TriggerPlayerPanel', 'TriggerPlayerOrPing', 'TriggerInteract'
 ]) {
   assert(controls.includes(`public void ${action}(`), `Mobile action is not shared: ${action}`);
 }
@@ -63,7 +64,8 @@ assert(probe.includes('mobile Canvas control leaves the device safe area')
   && probe.includes('left shortcut rail can no longer steal the floating joystick finger')
   && probe.includes('mobile Canvas pointer-down does not start held fire')
   && probe.includes('suppressed mobile input does not collapse to one clear close action')
-  && probe.includes('hidden mobile Canvas leaves held fire latched'),
+  && probe.includes('hidden mobile Canvas leaves held fire latched')
+  && probe.includes('mobile contextual player button does not open activity pings'),
   'Unity mobile probe does not cover safe layout, live states and held input cleanup');
 assert(/guid:\s*[0-9a-f]{32}/i.test(read(game, 'RoaMobileControlsCanvas.cs.meta')),
   'RoaMobileControlsCanvas.cs.meta has no valid GUID');

@@ -223,13 +223,15 @@ function seedSmokeWorldPartyTask() {
   const journalRecoveryTaskId = 'smoke_journal_recovery_task';
   const partyId = 'smoke_world_party';
   const settlement = state.sites?.settlement || { x: 255, y: 615 };
+  const autonomyVersion = Math.max(1, ...Object.values(state.parties || {})
+    .map(party => Math.max(0, Math.floor(Number(party?.autonomyVersion || 0)))));
   state.parties[partyId] = {
     id: partyId,
     name: 'Smoke Patrol',
     kind: 'patrol',
     faction: 'old_klim',
     state: 'moving',
-    // Keep the fixture between settlement and oldKlimFarm, outside both site
+    // Keep the fixture between settlement and the released road outpost, outside both site
     // footprints. Otherwise a slower test run can materialize an onsite zone
     // and legitimately keep the attached player in a local room.
     x: Number(settlement.x || 255) + 60,
@@ -239,9 +241,11 @@ function seedSmokeWorldPartyTask() {
     strength: 30,
     members: 4,
     homeSiteId: 'settlement',
-    destinationSiteId: 'oldKlimFarm',
-    route: ['oldKlimFarm', 'settlement'],
+    destinationSiteId: 'roadOutpost',
+    route: ['roadOutpost', 'settlement'],
     routeIndex: 0,
+    autonomyVersion,
+    nextDecisionHour: Number(state.worldHour || 0) + 100,
     cargo: {},
     playerMembers: []
   };
@@ -752,6 +756,16 @@ async function assertEditorAndWorldDataApis() {
     fail('wasteland API did not reuse the serialized process cache', JSON.stringify(cachedWasteland.headers));
   }
   const worldSites = Array.isArray(wastelandData.sim.sites) ? wastelandData.sim.sites : [];
+  const releasedLocationIds = Array.isArray(wastelandData.sim.locationRelease?.locationIds)
+    ? wastelandData.sim.locationRelease.locationIds.map(value => String(value || '')).filter(Boolean)
+    : [];
+  const releasedLocationIdSet = new Set(releasedLocationIds);
+  if (releasedLocationIds.length < 6 || releasedLocationIds.length > 8
+    || releasedLocationIdSet.size !== releasedLocationIds.length
+    || worldSites.some(site => !releasedLocationIdSet.has(String(site?.id || '')))
+    || worldSites.length !== releasedLocationIds.length) {
+    fail('wasteland API did not expose exactly the current Unity location release', wasteland.body);
+  }
   const worldLocationIds = worldSites.map(site => String(site?.locationId || '')).filter(Boolean);
   if (new Set(worldLocationIds).size !== worldLocationIds.length) {
     fail('multiple global sites still lead to one local location id');
@@ -760,9 +774,10 @@ async function assertEditorAndWorldDataApis() {
   if (new Set(worldPointKeys).size !== worldPointKeys.length) {
     fail('multiple global locations still occupy the same world point');
   }
-  const locationInstances = worldSites.filter(site => site?.templateLocationId);
+  const locationInstances = Object.values(publicLocationsData.locations || {})
+    .filter(location => location?.worldSiteInstance);
   if (locationInstances.length < 80) {
-    fail('district world sites were not materialized as unique locations');
+    fail('hidden district world sites were not preserved as materialized locations');
   }
   const worldNames = worldSites.map(site => String(site?.name || '')).filter(Boolean);
   const worldDescriptions = worldSites.map(site => String(site?.description || site?.note || '')).filter(Boolean);
@@ -790,17 +805,19 @@ async function assertEditorAndWorldDataApis() {
       && (!loc.worldSiteInstance || loc.worldSiteId !== site.id || loc.templateLocationId !== site.templateLocationId)) {
       fail(`world location instance is not linked to its site: ${site.id}`, JSON.stringify(loc));
     }
-    if (site.templateLocationId) {
-      instanceSeeds.push(Number(loc.seed || 0));
-      instanceBounds.push(`${loc.playableBounds?.width || 0}x${loc.playableBounds?.height || 0}`);
-      if (loc.runtimeMode !== 'worldSiteInstance'
-        || !loc.description
-        || !loc.playableBounds
-        || (Array.isArray(loc.objects) && loc.objects.length > 0)
-        || !Array.isArray(loc.containers)
-        || loc.containers.length < 1) {
-        fail(`world location instance still clones template content: ${site.id}`, JSON.stringify(loc));
-      }
+  }
+  for (const loc of locationInstances) {
+    instanceSeeds.push(Number(loc.seed || 0));
+    instanceBounds.push(`${loc.playableBounds?.width || 0}x${loc.playableBounds?.height || 0}`);
+    if (loc.runtimeMode !== 'worldSiteInstance'
+      || !loc.worldSiteId
+      || !loc.templateLocationId
+      || !loc.description
+      || !loc.playableBounds
+      || (Array.isArray(loc.objects) && loc.objects.length > 0)
+      || !Array.isArray(loc.containers)
+      || loc.containers.length < 1) {
+      fail(`hidden world location instance is incomplete: ${loc.id || 'unknown'}`, JSON.stringify(loc));
     }
   }
   if (new Set(instanceSeeds).size !== instanceSeeds.length || new Set(instanceBounds).size !== instanceBounds.length) {

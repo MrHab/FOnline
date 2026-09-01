@@ -181,6 +181,8 @@ namespace RealmOfAshes.Net
         [JsonProperty("ap")] public float Ap;
         [JsonProperty("maxAp")] public int MaxAp;
         [JsonProperty("dead")] public bool Dead;
+        [JsonProperty("downed")] public bool Downed;
+        [JsonProperty("downedUntil")] public long DownedUntil;
         [JsonProperty("level")] public int Level;
         [JsonProperty("weapon")] public string Weapon;
         [JsonProperty("equipment")] public JObject Equipment;

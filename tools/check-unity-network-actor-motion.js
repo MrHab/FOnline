@@ -27,13 +27,17 @@ assert(motion.includes('public static float OneWayLatencySeconds')
   && motion.includes('PresentationSpeedLimit(networkVelocity)')
   && motion.includes('maxVisibleStep = speedLimit * dt')
   && motion.includes('if (error >= safeSnapDistance)')
-  && motion.includes('VisualVelocity = Vector3.zero')
+  && motion.includes('Vector3 snapVelocity = networkMoving ? networkVelocity : Vector3.zero;')
+  && motion.includes('VisualVelocity = snapVelocity')
+  && motion.includes('Moving = snapSpeed >= PresentationMoveSpeed')
   && motion.includes('Moving = visualSpeed >= PresentationMoveSpeed'),
   'Shared actor motion lost bounded prediction, adaptive correction, teleport snap or displayed velocity');
 
 for (const [name, source] of [['remote players', remotes], ['enemies', enemies]]) {
   assert(source.includes('RoaNetworkActorMotion.Step(')
-    && source.includes('PresentationVelocity = motion.VisualVelocity;')
+    && (source.includes('PresentationVelocity = motion.VisualVelocity;')
+      || (source.includes('PresentationVelocity = motionLocked || contactConstrained')
+        && source.includes('? Vector3.zero : motion.VisualVelocity;')))
     && source.includes('PresentationMoving = motion.Moving')
     && source.includes('RoaNetworkActorMotion.OneWayLatencySeconds(')
     && source.includes('Socket != null ? Socket.PingMs : -1f')
@@ -47,19 +51,31 @@ for (const [name, source] of [['remote players', remotes], ['enemies', enemies]]
     && source.includes('PresentationMoving'),
     `${name} animation or footsteps still use stale packet velocity`);
 }
+assert(enemies.includes('CombatMotionLocked(enemy.Dead, enemy.ThreatActive,')
+  && enemies.includes('enemy.ActionUntil, enemy.ReactionUntil, Time.time)')
+  && enemies.includes('ResolvePresentationContact(presentedPosition,')
+  && enemies.includes('t.position, motionLocked ? t.position : enemy.TargetPosition,')
+  && enemies.includes('if (contactConstrained) enemy.SmoothVelocity = Vector3.zero;')
+  && enemies.includes('enemy.PresentationMoving = motion.Moving && !motionLocked'),
+  'enemy contact/action constraints no longer wrap the shared motion sample');
 
 assert(remotes.includes('movement.Seq <= remote.LastSeq')
   && socket.includes('if (frame.Seq <= _lastEnemyFrameSeq) return;'),
   'Out-of-order movement packets are no longer rejected before presentation');
 assert(enemies.includes('enemy.Root.transform.position = enemy.TargetPosition;')
   && enemies.includes('enemy.SmoothVelocity = Vector3.zero;')
-  && enemies.includes('else if (!enemy.PresentationMoving) wanted = "idle";'),
-  'Enemy death or non-humanoid clips can still slide against their visible position');
+  && enemies.includes('public float MaxExtrapolationSeconds = 0.22f;')
+  && enemies.includes('Mathf.Min(MaxExtrapolationSeconds, 0.22f)')
+  && enemies.includes('RoaCharacterView.ResolveCombatPresentationPhase(')
+  && enemies.includes('CombatPresentationPhase.Idle ? "idle"'),
+  'Enemy death, melee stop prediction, or non-humanoid clips can still slide against their visible position');
 
 assert(probe.includes('OneWayLatencySeconds(160f, 0.25f)')
   && probe.includes('cappedLatency - 0.125f')
   && probe.includes('PredictPosition(')
   && probe.includes('teleport.Snapped')
+  && probe.includes('movingTeleport.Snapped && movingTeleport.Moving')
+  && probe.includes('movingTeleport.VisualVelocity.z - 4f')
   && probe.includes('stopCorrection.Moving')
   && probe.includes('nearTeleport.VisualVelocity.magnitude <= 5.51f')
   && probe.includes('Simulate(30)')
@@ -76,4 +92,4 @@ for (const file of [
   assert(/guid:\s*[0-9a-f]{32}/i.test(read(file)), `${file} has no valid GUID`);
 }
 
-console.log('Unity network actors OK: bounded prediction, adaptive catch-up, teleport snap and animation from displayed motion');
+console.log('Unity network actors OK: bounded prediction, adaptive catch-up, motion-preserving snap and animation from displayed motion');

@@ -61,12 +61,53 @@ namespace RealmOfAshes.EditorTools
                     new Vector2(100f, -50f), 100f, 720f, Vector3.right, Vector3.forward);
                 Check(movement.x < 0f && movement.z < 0f,
                     "drag карты не движет anchor против движения указателя");
+                Vector2 rightMouseDelta = RoaGlobalMap.RightMousePanDelta(
+                    new Vector2(100f, -50f));
+                Vector3 rightMouseMovement = RoaGlobalMap.CameraPanMovement(
+                    rightMouseDelta, 100f, 720f, Vector3.right, Vector3.forward);
+                Check(Mathf.Approximately(rightMouseMovement.x, movement.x)
+                      && Mathf.Approximately(rightMouseMovement.z, -movement.z),
+                    "ПКМ не инвертирует только вертикальную ось обзора");
+                Vector3 keyboardMovement = RoaGlobalMap.KeyboardCameraPanMovement(
+                    Vector2.one, 100f, 0.5f, Vector3.right, Vector3.forward);
+                Check(keyboardMovement.x > 0f && keyboardMovement.z > 0f
+                      && Mathf.Abs(keyboardMovement.magnitude - 14f) < 0.001f,
+                    "WASD не движет камеру относительно её текущих осей");
                 Vector3 clamped = RoaGlobalMap.ClampCameraPan(
                     new Vector3(80f, 3f, -90f), 100f, 120f);
                 Check(Mathf.Approximately(clamped.x, 50f)
                       && Mathf.Approximately(clamped.z, -60f)
                       && Mathf.Approximately(clamped.y, 3f),
                     "anchor карты вышел за границы или потерял высоту");
+
+                Check(Mathf.Approximately(RoaGlobalMap.StrategicDefaultPitchDeg, 55f)
+                      && Mathf.Approximately(RoaGlobalMap.StrategicDefaultYawDeg, 45f),
+                    "глобальная камера потеряла стандартный наклон 55/45");
+                Vector2 orbit = RoaGlobalMap.StrategicCameraOrbit(55f, 45f,
+                    new Vector2(10f, -20f));
+                Check(Mathf.Abs(orbit.x - 58.6f) < 0.001f
+                      && Mathf.Abs(orbit.y - 46.8f) < 0.001f,
+                    "drag с зажатым колесом не меняет pitch/yaw камеры");
+                Vector2 orbitMinimum = RoaGlobalMap.StrategicCameraOrbit(55f, 45f,
+                    new Vector2(0f, 1000f));
+                Vector2 orbitMaximum = RoaGlobalMap.StrategicCameraOrbit(55f, 45f,
+                    new Vector2(0f, -1000f));
+                Vector2 orbitWrapped = RoaGlobalMap.StrategicCameraOrbit(55f, 359f,
+                    new Vector2(20f, 0f));
+                Check(Mathf.Approximately(orbitMinimum.x,
+                          RoaGlobalMap.StrategicMinimumPitchDeg)
+                      && Mathf.Approximately(orbitMaximum.x,
+                          RoaGlobalMap.StrategicMaximumPitchDeg)
+                      && Mathf.Abs(orbitWrapped.y - 2.6f) < 0.001f,
+                    "орбита глобальной камеры не ограничивает наклон или не замыкает yaw");
+                float strategicNear = RoaGlobalMap.StrategicMinimumCameraDistance(90f);
+                float strategicFar = RoaGlobalMap.StrategicMaximumCameraDistance(90f);
+                float closestHeight = strategicNear * Mathf.Sin(
+                    RoaGlobalMap.StrategicMinimumPitchDeg * Mathf.Deg2Rad);
+                Check(Mathf.Abs(strategicNear - 18f) < 0.001f
+                      && Mathf.Abs(strategicFar - 150f) < 0.001f
+                      && closestHeight >= RoaGlobalMap.StrategicMinimumCameraClearance,
+                    "ближний zoom глобальной карты не расширен или опускает камеру в землю");
 
                 Vector2 touchStart = new Vector2(100f, 100f);
                 Check(!RoaGlobalMap.TouchDragReached(touchStart, new Vector2(108f, 106f), 14f),
@@ -79,6 +120,12 @@ namespace RealmOfAshes.EditorTools
                       && !RoaGlobalMap.TouchTapEligible(0.2f, touchStart, new Vector2(120f, 100f), false)
                       && !RoaGlobalMap.TouchTapEligible(0.2f, touchStart, touchStart, true),
                     "долгое, сдвинутое или отменённое касание ошибочно выбирает маршрут");
+                Check(RoaGlobalMap.MouseTapEligible(0.3f, touchStart,
+                          new Vector2(106f, 104f), false)
+                      && !RoaGlobalMap.MouseTapEligible(0.3f, touchStart,
+                          new Vector2(112f, 100f), false)
+                      && !RoaGlobalMap.MouseTapEligible(0.9f, touchStart, touchStart, false),
+                    "ЛКМ не отделяет короткий выбор маршрута от перетаскивания карты");
 
                 float pinchIn = RoaGlobalMap.PinchZoomDistance(100f, 100f, 200f, 8f, 220f);
                 float pinchOut = RoaGlobalMap.PinchZoomDistance(100f, 100f, 50f, 8f, 220f);
@@ -87,6 +134,31 @@ namespace RealmOfAshes.EditorTools
                 Check(Mathf.Approximately(RoaGlobalMap.PinchZoomDistance(100f, 100f, 10000f, 8f, 220f), 8f)
                       && Mathf.Approximately(RoaGlobalMap.PinchZoomDistance(100f, 100f, 1f, 8f, 220f), 220f),
                     "pinch карты вышел за границы камеры");
+                Check(RoaGlobalMap.DetailTierForDistance(20f, 20f, 120f)
+                        == RoaGlobalMap.MapDetailTier.Near
+                      && RoaGlobalMap.DetailTierForDistance(52f, 20f, 120f)
+                        == RoaGlobalMap.MapDetailTier.Medium
+                      && RoaGlobalMap.DetailTierForDistance(90f, 20f, 120f)
+                        == RoaGlobalMap.MapDetailTier.Far,
+                    "масштаб карты не переключает ближний, средний и дальний LOD");
+
+                Check(!RoaGlobalMap.ThreatZoneShouldDisplay("caravan", 0.03f, 0.05f, false)
+                      && !RoaGlobalMap.ThreatZoneShouldDisplay("patrol", -0.05f, -0.35f, false)
+                      && RoaGlobalMap.ThreatZoneShouldDisplay("monster", 0.14f, 0.9f, true)
+                      && !RoaGlobalMap.ThreatZoneShouldDisplay("caravan", 0.03f, 0.05f, true)
+                      && !RoaGlobalMap.ThreatZoneShouldDisplay("resource", 0.11f, 0.88f, true)
+                      && !RoaGlobalMap.ThreatZoneShouldDisplay("pointofinterest", 0.07f, 0.55f, true),
+                    "фоновые зоны караванов, патрулей и объектов снова отображаются как угрозы");
+                Check(RoaGlobalMap.MarkerSemanticLabel("site", "resource", false) == "РЕСУРС"
+                      && RoaGlobalMap.MarkerSemanticLabel("party", "caravan", false) == "КАРАВАН"
+                      && RoaGlobalMap.MarkerSemanticLabel("party", "patrol", true) == "УГРОЗА"
+                      && RoaGlobalMap.MarkerPresentationPriority("site", "resource", false, "critical")
+                         > RoaGlobalMap.MarkerPresentationPriority("site", "outpost", false, "stable")
+                      && RoaGlobalMap.MarkerSemanticColor("party", "caravan", false, string.Empty).g
+                         > RoaGlobalMap.MarkerSemanticColor("party", "caravan", false, string.Empty).r
+                      && RoaGlobalMap.ThreatZoneColor(0.9f, 0.14f).r
+                         > RoaGlobalMap.ThreatZoneColor(0.1f, 0.02f).g,
+                    "семантика, приоритеты или цвета маркеров не различают цель и угрозу");
 
                 Check(RoaGlobalMap.MapScreenPointCanGesture(new Vector2(420f, 250f), 840, 500, true)
                       && !RoaGlobalMap.MapScreenPointCanGesture(new Vector2(-1f, 250f), 840, 500, true),
@@ -140,11 +212,29 @@ namespace RealmOfAshes.EditorTools
                       && mapLabelBackgrounds.All(image => !image.raycastTarget)
                       && mapLabelTexts.All(text => !text.raycastTarget && text.supportRichText),
                     "пул Canvas-подписей карты не ограничен, перехватывает ввод или теряет rich text");
+                RectTransform hoverCard = canvasObject.GetComponentsInChildren<RectTransform>(true)
+                    .FirstOrDefault(rect => rect.gameObject.name == "MapHoverCard");
+                Check(hoverCard != null && !mapCanvas.HoverCardVisible
+                      && hoverCard.GetComponent<Image>() != null
+                      && !hoverCard.GetComponent<Image>().raycastTarget,
+                    "карточка предпросмотра точки отсутствует или перекрывает ввод карты");
+                Text mapLegend = canvasObject.GetComponentsInChildren<Text>(true)
+                    .FirstOrDefault(text => text.gameObject.name == "MapLegend");
+                Check(mapLegend != null && mapLegend.supportRichText
+                      && mapLegend.text.Contains("РЕСУРС")
+                      && mapLegend.text.Contains("УГРОЗА")
+                      && mapLegend.text.Contains("ПОСЕЛЕНИЕ"),
+                    "легенда карты не объясняет игроку семантику маркеров");
                 string[] mapButtonLabels = canvasObject.GetComponentsInChildren<Button>(true)
                     .Select(button => button.GetComponentInChildren<Text>(true)?.text ?? string.Empty)
                     .ToArray();
                 Check(!mapButtonLabels.Contains("Войти") && !mapButtonLabels.Contains("Стоп")
-                      && mapButtonLabels.Contains("Вступить"),
+                      && mapButtonLabels.Contains("Вступить")
+                      && mapButtonLabels.Contains("ПОДРОБНО")
+                      && mapButtonLabels.Contains("ФРАКЦИИ")
+                      && mapButtonLabels.Contains("СОБЫТИЯ")
+                      && mapButtonLabels.Contains("ОТРЯДЫ")
+                      && !mapCanvas.DetailsExpanded,
                     "глобальная карта вернула старые кнопки входа/остановки или потеряла решение контакта");
 
                 MethodInfo setRouteProgress = typeof(RoaGlobalMapCanvas).GetMethod("SetRouteProgress",
@@ -187,11 +277,11 @@ namespace RealmOfAshes.EditorTools
                       && RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workChanged)
                       && RoaGlobalMapCanvas.BuildPartySignature(string.Empty)
                          != RoaGlobalMapCanvas.BuildPartySignature("caravan-1"),
-                    "неизменная доска работ пересобирается или обновление списка теряется");
+                    "неизменная доска контрактов пересобирается или обновление списка теряется");
 
-                Debug.Log("[КАМЕРА] готово: zoom=8–21.5, distance=11.5, fov=52, actor>=4.5%, map drag="
+                Debug.Log("[GLOBAL MAP UX 4.2] готово: zoom=8–21.5, distance=11.5, fov=52, actor>=4.5%, map drag="
                     + movement.x.ToString("0.00") + ":" + movement.z.ToString("0.00")
-                    + ", clamp=50:-60, touch=tap/drag/pinch, labels=canvas/activities, route=progress/contact, lists=stable");
+                    + ", clamp=50:-60, orbit=55/45+MMB, WASD=camera-relative, RMB=Y-inverted, mapZoom=18–150, pointer=tap/drag/pinch-pan, labels=canvas/activities, route=progress/contact, lists=stable");
             }
             finally
             {

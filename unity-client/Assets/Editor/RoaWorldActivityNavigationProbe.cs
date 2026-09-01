@@ -59,13 +59,25 @@ namespace RealmOfAshes.EditorTools
                 Rect safe = RoaWorldActivityCanvas.TopLeftSafeScreenRect(
                     new Rect(10f, 20f, 1260f, 680f), 720);
                 Rect hud = RoaWorldActivityCanvas.ActivityHudScreenRect(1280, 1f);
+                Rect mobileHud = RoaWorldActivityCanvas.ActivityHudScreenRect(1280, 1f, true);
+                Rect combatHud = RoaWorldActivityCanvas.ActivityHudScreenRect(1280, 1f, false, true);
+                Rect detailHud = RoaWorldActivityCanvas.ActivityHudScreenRect(1280, 1f,
+                    false, RoaWorldActivityCanvas.ActivityHudDensity.Detailed, true);
                 Rect navigationRect = RoaWorldActivityCanvas.ActivityNavigationScreenRect(1280, 1f);
-                var reserved = new List<Rect> { hud, navigationRect };
-                Require(Mathf.Approximately(safe.yMin, 20f) && !hud.Overlaps(navigationRect),
-                    "safe-area conversion or activity HUD reservations are invalid");
+                var reserved = new List<Rect> { hud };
+                Require(Mathf.Approximately(safe.yMin, 20f)
+                        && Mathf.Approximately(hud.xMin, 12f)
+                        && Mathf.Approximately(mobileHud.xMin, 76f)
+                        && Mathf.Approximately(hud.yMin, 12f)
+                        && Mathf.Approximately(mobileHud.yMin, 12f)
+                        && Mathf.Approximately(detailHud.yMin, 96f)
+                        && hud.width <= 330f && hud.height == 100f
+                        && mobileHud.height == 100f && combatHud.height == 144f
+                        && combatHud.height > hud.height && navigationRect == Rect.zero,
+                    "safe-area conversion or compact activity HUD reservation is invalid");
                 Require(RoaWorldActivityCanvas.TryResolveWorldLabelRect(
                         new Vector2(640f, 120f), safe, reserved, 190f, 38f, out Rect firstLabel)
-                        && !firstLabel.Overlaps(hud) && !firstLabel.Overlaps(navigationRect),
+                        && !firstLabel.Overlaps(hud),
                     "world objective label cannot escape the activity HUD");
                 reserved.Add(firstLabel);
                 Require(RoaWorldActivityCanvas.TryResolveWorldLabelRect(
@@ -79,7 +91,8 @@ namespace RealmOfAshes.EditorTools
                 Require(ensureBuilt != null, "activity HUD builder is missing");
                 ensureBuilt.Invoke(canvas, null);
                 Transform navigation = host.transform.Find("WorldActivityCanvas/WorldActivityNavigation");
-                Require(navigation != null, "activity navigation strip was not built");
+                Require(navigation != null && !navigation.gameObject.activeSelf,
+                    "duplicate activity navigation strip is visible by default");
                 Transform worldLabels = host.transform.Find("WorldActivityCanvas/WorldObjectiveLabels");
                 Require(worldLabels != null && worldLabels.childCount == 4
                         && canvas.WorldLabelPoolSize == 4,

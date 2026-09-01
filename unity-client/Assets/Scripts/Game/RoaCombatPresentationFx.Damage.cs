@@ -129,11 +129,11 @@ namespace RealmOfAshes.Game
 
         private void DestroyDamageCanvas()
         {
-            if (_damageCanvas != null) Destroy(_damageCanvas.gameObject);
+            if (_damageCanvas != null) DestroyOwnedObject(_damageCanvas.gameObject);
             _damageCanvas = null;
             _damageOverlay = null;
             _damageDirection = null;
-            if (_damageDirectionTexture != null) Destroy(_damageDirectionTexture);
+            DestroyOwnedObject(_damageDirectionTexture);
             _damageDirectionTexture = null;
         }
 

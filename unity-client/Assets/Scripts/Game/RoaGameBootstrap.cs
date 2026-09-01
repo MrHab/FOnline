@@ -279,7 +279,9 @@ namespace RealmOfAshes.Game
             if (Inventory != null) Inventory.GroundItems = GroundItems;
             if (Combat != null)
             {
+                Combat.Bootstrap = this;
                 Combat.Pipboy = Pipboy;
+                Combat.GlobalMap = GlobalMap;
                 Combat.RemotePlayers = RemotePlayers;
                 Combat.Inventory = Inventory;
                 Combat.Fx = CombatFx;
@@ -336,6 +338,7 @@ namespace RealmOfAshes.Game
             PipboyCanvas.Interaction = Interaction;
             PipboyCanvas.Fog = Fog;
             PipboyCanvas.Quickbar = Quickbar;
+            if (Combat != null) Combat.PipboyCanvas = PipboyCanvas;
             if (Inventory != null) Inventory.CanvasDriven = true;
             if (Pipboy != null) Pipboy.CanvasDriven = true;
 
@@ -370,7 +373,7 @@ namespace RealmOfAshes.Game
             storage.Interaction = Interaction;
             storage.Inventory = Inventory;
 
-            // Диалог NPC и доска работ в web-виде.
+            // Диалог NPC и доска контрактов в web-виде.
             var dialogue = GetComponent<RoaDialogueCanvas>();
             if (dialogue == null) dialogue = gameObject.AddComponent<RoaDialogueCanvas>();
             dialogue.Interaction = Interaction;
@@ -413,6 +416,7 @@ namespace RealmOfAshes.Game
             if (WorldActivityCanvas == null) WorldActivityCanvas = GetComponent<RoaWorldActivityCanvas>();
             if (WorldActivityCanvas == null) WorldActivityCanvas = gameObject.AddComponent<RoaWorldActivityCanvas>();
             WorldActivityCanvas.Configure(Socket, this);
+            if (HudCanvas != null) HudCanvas.SetWorldActivity(WorldActivityCanvas);
             if (Minimap != null) Minimap.WorldActivity = WorldActivityCanvas;
 
             if (FirstRunCoach == null) FirstRunCoach = GetComponent<RoaFirstRunCoach>();
@@ -739,6 +743,7 @@ namespace RealmOfAshes.Game
         public bool GameMenuActionPending { get { return _gameMenuActionPending; } }
         public bool InGame { get { return _stage == Stage.InWorld || _stage == Stage.GlobalMap; } }
         public bool OnGlobalMap { get { return _stage == Stage.GlobalMap; } }
+        public bool GlobalMapBlocksCombat { get { return _stage == Stage.LoadingGlobalMap || _stage == Stage.GlobalMap; } }
 
         public void MenuOpenGameMenu(bool open) { SetGameMenuOpen(open); }
         public void MenuOpenGraphics(bool open) { SetGraphicsOpen(open); }
@@ -1728,6 +1733,7 @@ namespace RealmOfAshes.Game
             if (Pipboy != null) Pipboy.SetPlayer(_controller);
             if (ActorNameplates != null) ActorNameplates.SetPlayer(_controller);
             if (Minimap != null) Minimap.SetPlayer(_controller);
+            if (Enemies != null) Enemies.SetLocalPlayer(_controller);
 
             // Скорость зависит от SPECIAL: без этого персонаж бежал бы со скоростью
             // по умолчанию, и походка разошлась бы с web-клиентом.

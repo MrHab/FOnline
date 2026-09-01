@@ -93,6 +93,9 @@ namespace RealmOfAshes.Game
             root.transform.SetParent(transform, false);
             Material coreMaterial = CreateTransparentMaterial(Color.white, true);
             Renderer core = CreateSphere(root.transform, "ImpactCore", coreMaterial);
+            Material dustMaterial = CreateTransparentMaterial(new Color(0.58f, 0.46f, 0.32f), false);
+            Renderer dust = CreateSphere(root.transform, "ImpactDust", dustMaterial);
+            dust.transform.localPosition = new Vector3(0f, -0.98f, 0f);
             Material sparkMaterial = CreateTransparentMaterial(Color.white, true);
             var sparks = new LineRenderer[ImpactSparkCount];
             for (int i = 0; i < sparks.Length; i++)
@@ -103,6 +106,8 @@ namespace RealmOfAshes.Game
                 Root = root,
                 Core = core,
                 CoreMaterial = coreMaterial,
+                Dust = dust,
+                DustMaterial = dustMaterial,
                 Sparks = sparks,
                 SparkMaterial = sparkMaterial,
                 Velocities = new Vector3[ImpactSparkCount]
@@ -159,7 +164,7 @@ namespace RealmOfAshes.Game
             if (collider != null)
             {
                 collider.enabled = false;
-                UnityEngine.Object.Destroy(collider);
+                DestroyOwnedObject(collider);
             }
             Renderer renderer = sphere.GetComponent<Renderer>();
             renderer.sharedMaterial = material;
@@ -321,18 +326,19 @@ namespace RealmOfAshes.Game
             for (int i = 0; i < _tracers.Count; i++)
             {
                 DestroyMaterial(_tracers[i].Material);
-                if (_tracers[i].Root != null) Destroy(_tracers[i].Root);
+                DestroyOwnedObject(_tracers[i].Root);
             }
             for (int i = 0; i < _flashes.Count; i++)
             {
                 DestroyMaterial(_flashes[i].Material);
-                if (_flashes[i].Root != null) Destroy(_flashes[i].Root);
+                DestroyOwnedObject(_flashes[i].Root);
             }
             for (int i = 0; i < _impacts.Count; i++)
             {
                 DestroyMaterial(_impacts[i].CoreMaterial);
                 DestroyMaterial(_impacts[i].SparkMaterial);
-                if (_impacts[i].Root != null) Destroy(_impacts[i].Root);
+                DestroyMaterial(_impacts[i].DustMaterial);
+                DestroyOwnedObject(_impacts[i].Root);
             }
             _tracers.Clear();
             _flashes.Clear();
@@ -341,7 +347,7 @@ namespace RealmOfAshes.Game
 
         private void DestroyMaterial(Material material)
         {
-            if (material != null) Destroy(material);
+            DestroyOwnedObject(material);
         }
     }
 }

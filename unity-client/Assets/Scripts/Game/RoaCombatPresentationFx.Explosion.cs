@@ -133,7 +133,7 @@ namespace RealmOfAshes.Game
             DestroyMaterial(fx.GlowMaterial);
             DestroyMaterial(fx.SmokeMaterial);
             DestroyMaterial(fx.EmberMaterial);
-            if (fx.Root != null) Destroy(fx.Root);
+            DestroyOwnedObject(fx.Root);
         }
     }
 }

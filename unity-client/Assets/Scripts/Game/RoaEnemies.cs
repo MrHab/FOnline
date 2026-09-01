@@ -17,6 +17,7 @@ namespace RealmOfAshes.Game
     /// Кадр НЕ создаёт и не удаляет никого — появление и смерть приходят только
     /// снимком (docs/wiki/SOCKET_EVENTS.md).
     /// </summary>
+    [DefaultExecutionOrder(-80)]
     public sealed class RoaEnemies : MonoBehaviour
     {
         [Tooltip("Origin сервера — отсюда грузятся модели существ.")]
@@ -26,7 +27,9 @@ namespace RealmOfAshes.Game
         public float SmoothTime = 0.12f;
 
         [Tooltip("Сколько секунд продолжать движение по последней скорости без новых пакетов.")]
-        public float MaxExtrapolationSeconds = 0.4f;
+        // Server AI publishes at 5 Hz. A 0.4 s horizon could carry a melee NPC
+        // almost a metre beyond its final engagement slot before the stop frame.
+        public float MaxExtrapolationSeconds = 0.22f;
 
         [Tooltip("Коррекция больше этой дистанции считается телепортом или спавном.")]
         public float SnapDistance = 4f;
@@ -38,9 +41,15 @@ namespace RealmOfAshes.Game
 
         private RoaMovementFx _movementFx;
         private Camera _worldCamera;
+        private RoaPlayerController _localPlayer;
+
+        public const float LocalPlayerBodyRadius = 0.35f;
+        public const float ActorContactMargin = 0.08f;
 
         /// <summary>Порог перехода на бег для существ, м/с.</summary>
         private const float RunSpeedThreshold = 2.4f;
+        private const float MeleeFollowThroughSeconds = 0.22f;
+        private const float RangedRecoverySeconds = 0.10f;
 
         /// <summary>
         /// Кеш хранит ЗАДАЧУ загрузки, а не результат: в комнате несколько
@@ -72,6 +81,7 @@ namespace RealmOfAshes.Game
             public bool Dead;
             public float LastPacketTime;
             public float ActionUntil;
+            public float ReactionUntil;
             public int ActivityRevision;
             public int Hp;
             public JObject Snapshot;
@@ -84,6 +94,11 @@ namespace RealmOfAshes.Game
             public bool ThreatActive;
             public bool ThreatRanged;
             public bool ThreatTargetsLocalPlayer;
+            public CapsuleCollider BodyCollider;
+            public Rigidbody BodyRigidbody;
+            public float BodyRadius;
+            public float ContactFallbackAngleDeg;
+            public float ActivityPhase01;
         }
 
         private readonly Dictionary<string, Enemy> _enemies = new Dictionary<string, Enemy>();
@@ -104,6 +119,274 @@ namespace RealmOfAshes.Game
         {
             _movementFx = movementFx;
             _worldCamera = worldCamera;
+        }
+
+        public void SetLocalPlayer(RoaPlayerController player)
+        {
+            _localPlayer = player;
+        }
+
+        public struct BodyProfile
+        {
+            public float Radius;
+            public float Height;
+            public float CenterY;
+
+            public BodyProfile(float radius, float height, float centerY)
+            {
+                Radius = radius;
+                Height = height;
+                CenterY = centerY;
+            }
+        }
+
+        /// <summary>
+        /// Lightweight collision silhouette used only by Unity presentation.
+        /// Exact movement authority stays on the server; this body lets the local
+        /// CharacterController classify point-blank contact as another actor.
+        /// </summary>
+        public static BodyProfile PresentationBodyProfile(string modelKey, bool unifiedHumanoid)
+        {
+            if (unifiedHumanoid) return new BodyProfile(0.38f, 1.82f, 0.91f);
+            switch (modelKey ?? string.Empty)
+            {
+                case "enemySuperMutant": return new BodyProfile(0.52f, 2.38f, 1.19f);
+                case "enemyRadscorpion": return new BodyProfile(0.58f, 0.72f, 0.36f);
+                case "enemyMutantAnt": return new BodyProfile(0.38f, 0.48f, 0.24f);
+                case "enemyAshWolf": return new BodyProfile(0.44f, 0.92f, 0.46f);
+                case "enemyGecko":
+                case "enemyFireGecko": return new BodyProfile(0.43f, 1.10f, 0.55f);
+                case "brahmin":
+                case "friendlyBrahmin": return new BodyProfile(0.62f, 1.55f, 0.78f);
+                default: return new BodyProfile(0.40f, 1.78f, 0.89f);
+            }
+        }
+
+        public static CapsuleCollider InstallPresentationBody(GameObject root, BodyProfile profile,
+                                                               out Rigidbody rigidbody)
+        {
+            rigidbody = null;
+            if (root == null) return null;
+            CapsuleCollider capsule = root.GetComponent<CapsuleCollider>();
+            if (capsule == null) capsule = root.AddComponent<CapsuleCollider>();
+            capsule.direction = 1;
+            capsule.radius = Mathf.Max(0.12f, profile.Radius);
+            capsule.height = Mathf.Max(capsule.radius * 2f, profile.Height);
+            capsule.center = new Vector3(0f, profile.CenterY, 0f);
+            capsule.isTrigger = false;
+
+            rigidbody = root.GetComponent<Rigidbody>();
+            if (rigidbody == null) rigidbody = root.AddComponent<Rigidbody>();
+            rigidbody.isKinematic = true;
+            rigidbody.useGravity = false;
+            rigidbody.detectCollisions = true;
+            rigidbody.interpolation = RigidbodyInterpolation.None;
+            rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
+            return capsule;
+        }
+
+        public static void SetPresentationBodyAlive(CapsuleCollider capsule, Rigidbody rigidbody,
+                                                    bool alive)
+        {
+            if (capsule != null) capsule.enabled = alive;
+            if (rigidbody != null) rigidbody.detectCollisions = alive;
+        }
+
+        public static float StableContactAngle(string id)
+        {
+            uint hash = 2166136261u;
+            unchecked
+            {
+                foreach (char c in id ?? string.Empty)
+                {
+                    hash ^= c;
+                    hash *= 16777619u;
+                }
+            }
+            return (hash / (float)uint.MaxValue) * 360f;
+        }
+
+        public static float StableActivityPhase01(string id)
+        {
+            return StableContactAngle("activity:" + (id ?? string.Empty)) / 360f;
+        }
+
+        public static Vector3 ResolvePresentationContact(Vector3 actorPosition,
+                                                         Vector3 playerPosition,
+                                                         float minimumDistance,
+                                                         float fallbackAngleDeg)
+        {
+            float minimum = Mathf.Max(0f, minimumDistance);
+            Vector2 delta = new Vector2(actorPosition.x - playerPosition.x,
+                                        actorPosition.z - playerPosition.z);
+            if (delta.sqrMagnitude >= minimum * minimum) return actorPosition;
+            if (delta.sqrMagnitude < 0.000001f)
+            {
+                float angle = fallbackAngleDeg * Mathf.Deg2Rad;
+                delta = new Vector2(Mathf.Sin(angle), Mathf.Cos(angle));
+            }
+            else delta.Normalize();
+            actorPosition.x = playerPosition.x + delta.x * minimum;
+            actorPosition.z = playerPosition.z + delta.y * minimum;
+            return actorPosition;
+        }
+
+        public static bool CombatMotionLocked(bool dead, bool threatActive,
+                                              float actionUntil, float now)
+        {
+            return CombatMotionLocked(dead, threatActive, actionUntil, 0f, now);
+        }
+
+        public static bool CombatMotionLocked(bool dead, bool threatActive,
+                                              float actionUntil, float reactionUntil,
+                                              float now)
+        {
+            return dead || threatActive || now < actionUntil || now < reactionUntil;
+        }
+
+        public static bool AttackPresentationBlocked(bool dead, float reactionUntil, float now)
+        {
+            return dead || now < reactionUntil;
+        }
+
+        public static float AttackRootLockSeconds(float remainingSeconds, bool ranged)
+        {
+            return Mathf.Max(0f, remainingSeconds)
+                + (ranged ? RangedRecoverySeconds : MeleeFollowThroughSeconds);
+        }
+
+        public static bool AnimateAttackAtTelegraph(bool ranged)
+        {
+            return !ranged;
+        }
+
+        public static bool AnimateAttackAtImpact(bool ranged, bool windupAnimated)
+        {
+            return ranged || !windupAnimated;
+        }
+
+        public static int ResolveFrameHealth(int currentHp, int frameHp,
+                                             bool dead, bool deferDamage)
+        {
+            if (dead) return 0;
+            if (deferDamage && frameHp < currentHp) return Mathf.Max(0, currentHp);
+            return Mathf.Max(0, frameHp);
+        }
+
+        public static bool IsCombatAiState(string aiState)
+        {
+            switch ((aiState ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "attack":
+                case "chase":
+                case "pressure":
+                case "tactical":
+                case "combat":
+                case "factioncombat":
+                case "reload":
+                case "retreat":
+                case "stagger":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static string NpcIntentLabel(string aiState, bool hostile,
+                                            bool localThreat, bool threatRanged = false)
+        {
+            if (localThreat) return threatRanged ? "ЦЕЛИТСЯ В ВАС" : "АТАКУЕТ ВАС";
+            switch ((aiState ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "pressure": return "ИЩЕТ МОМЕНТ";
+                case "reload": return "ПЕРЕЗАРЯЖАЕТСЯ";
+                case "retreat": return "ОТСТУПАЕТ";
+                case "chase": return "СБЛИЖАЕТСЯ";
+                case "investigate": return "ИЩЕТ";
+                case "stagger": return "ОГЛУШЁН";
+                case "alarm": return "ТРЕВОГА";
+                case "attack": return "АТАКУЕТ";
+                case "combat":
+                case "factioncombat":
+                case "tactical": return "В БОЮ";
+                default: return hostile ? "ВРАГ" : "МИРНЫЙ";
+            }
+        }
+
+        public static string NpcCombatFactionLine(string factionId, bool hostile,
+                                                  string aiState, bool localThreat,
+                                                  bool threatRanged = false,
+                                                  string activityType = "",
+                                                  string activityPhase = "")
+        {
+            string label = RoaPipboy.FactionLabel(factionId);
+            string intent = NpcIntentLabel(aiState, hostile, localThreat, threatRanged);
+            if (!hostile && !localThreat && intent == "МИРНЫЙ")
+            {
+                string activity = NpcActivityLabel(activityType, activityPhase);
+                if (!string.IsNullOrEmpty(activity)) intent = activity;
+            }
+            return intent
+                + " · " + label;
+        }
+
+        public static string NpcActivityLabel(string activityType, string activityPhase)
+        {
+            string phase = (activityPhase ?? string.Empty).Trim().ToLowerInvariant();
+            if (phase == "travel") return "ИДЁТ К МЕСТУ";
+            switch ((activityType ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "work":
+                case "craft": return "РАБОТАЕТ";
+                case "shop":
+                case "merchant":
+                case "trade": return "ТОРГУЕТ";
+                case "guard": return "НА ПОСТУ";
+                case "patrol": return "ПАТРУЛИРУЕТ";
+                case "social":
+                case "socialize": return "ОБЩАЕТСЯ";
+                case "eat": return "ЕСТ";
+                case "rest":
+                case "sleep": return "ОТДЫХАЕТ";
+                case "dialogue": return "РАЗГОВАРИВАЕТ";
+                default: return string.Empty;
+            }
+        }
+
+        public static string ResolveNpcActivityVisual(string activityType,
+                                                       string activityPhase,
+                                                       string visualAction,
+                                                       string aiState,
+                                                       bool moving,
+                                                       bool dead,
+                                                       bool hostile = false)
+        {
+            string state = (aiState ?? string.Empty).Trim().ToLowerInvariant();
+            string phase = (activityPhase ?? string.Empty).Trim().ToLowerInvariant();
+            if (dead || moving || hostile || phase == "travel" || IsCombatAiState(state)
+                || state == "alarm" || state == "investigate") return string.Empty;
+
+            string action = (visualAction ?? string.Empty).Trim().ToLowerInvariant();
+            string type = (activityType ?? string.Empty).Trim().ToLowerInvariant();
+            string source = !string.IsNullOrEmpty(action) && action != "idle" ? action : type;
+            switch (source)
+            {
+                case "work":
+                case "craft": return "work";
+                case "shop":
+                case "merchant":
+                case "trade": return "shop";
+                case "guard":
+                case "patrol": return "guard";
+                case "social":
+                case "socialize":
+                case "dialogue": return "social";
+                case "eat": return "eat";
+                case "rest":
+                case "sleep": return "rest";
+                default: return string.Empty;
+            }
         }
 
         /// <summary>Сколько сущностей в комнате сейчас. Для диагностики.</summary>
@@ -149,6 +432,11 @@ namespace RealmOfAshes.Game
                                                  bool deferFrameDeath)
         {
             return currentlyDead || (frameReportsDead && !deferFrameDeath);
+        }
+
+        public static bool ResolveSnapshotDeadState(bool currentlyDead, bool snapshotReportsDead)
+        {
+            return currentlyDead || snapshotReportsDead;
         }
 
         /// <summary>
@@ -604,18 +892,18 @@ namespace RealmOfAshes.Game
         private void HandleEnemyShot(JObject payload)
         {
             if (!ReadBoolean(payload?["enemyShooter"])) return;
-            PlayEnemyAttack(payload["shooterId"]?.ToString(), payload);
+            PlayEnemyAttack(payload["shooterId"]?.ToString(), payload, true);
         }
 
         private void HandleEnemyMelee(JObject payload)
         {
-            PlayEnemyAttack(payload?["enemyId"]?.ToString(), payload);
+            PlayEnemyAttack(payload?["enemyId"]?.ToString(), payload, false);
         }
 
-        private void PlayEnemyAttack(string id, JObject payload)
+        private void PlayEnemyAttack(string id, JObject payload, bool ranged)
         {
             if (string.IsNullOrEmpty(id) || !_enemies.TryGetValue(id, out Enemy enemy)) return;
-            if (enemy.Dead) return;
+            if (AttackPresentationBlocked(enemy.Dead, enemy.ReactionUntil, Time.time)) return;
             if (enemy.Snapshot != null)
             {
                 if (payload?["weapon"] != null) enemy.Snapshot["weapon"] = payload["weapon"].DeepClone();
@@ -626,7 +914,11 @@ namespace RealmOfAshes.Game
             enemy.ThreatActive = false;
             enemy.ThreatRemaining = 0f;
             enemy.ActionUntil = Mathf.Max(enemy.ActionUntil, Time.time + 0.45f);
-            if (!windupAnimated)
+            enemy.Moving = false;
+            enemy.PresentationMoving = false;
+            enemy.Velocity = Vector3.zero;
+            enemy.PresentationVelocity = Vector3.zero;
+            if (AnimateAttackAtImpact(ranged, windupAnimated))
             {
                 enemy.Clip = string.Empty;
                 if (enemy.CharacterView != null) enemy.CharacterView.PlayAttack();
@@ -652,20 +944,33 @@ namespace RealmOfAshes.Game
         {
             string id = payload?["enemyId"]?.ToString();
             if (string.IsNullOrEmpty(id) || !_enemies.TryGetValue(id, out Enemy enemy)) return;
+            bool newlyDead = !enemy.Dead;
+            if (newlyDead && enemy.CharacterView != null
+                && payload?["sourceX"] != null && payload["sourceZ"] != null)
+            {
+                enemy.CharacterView.PrepareDeath(RoaCoords.ToUnity(
+                    Value(payload, "sourceX"), Value(payload, "sourceZ")));
+            }
             enemy.Dead = true;
             enemy.Moving = false;
             enemy.PresentationMoving = false;
             enemy.Velocity = Vector3.zero;
             enemy.PresentationVelocity = Vector3.zero;
             enemy.ActionUntil = 0f;
+            enemy.ReactionUntil = 0f;
             enemy.ThreatActive = false;
             enemy.ThreatRemaining = 0f;
             if (payload["x"] != null && payload["z"] != null)
             {
                 enemy.TargetPosition = RoaCoords.ToUnity(Value(payload, "x"), Value(payload, "z"));
                 if (enemy.Root != null) enemy.Root.transform.position = enemy.TargetPosition;
-                enemy.SmoothVelocity = Vector3.zero;
             }
+            else if (enemy.Root != null)
+            {
+                enemy.TargetPosition = enemy.Root.transform.position;
+            }
+            enemy.SmoothVelocity = Vector3.zero;
+            SetPresentationBodyAlive(enemy.BodyCollider, enemy.BodyRigidbody, false);
             if (enemy.Snapshot != null)
             {
                 enemy.Snapshot["dead"] = true;
@@ -782,17 +1087,48 @@ namespace RealmOfAshes.Game
             int previousHp = enemy.Hp;
             int nextHp = row["hp"]?.ToObject<int>() ?? previousHp;
 
-            enemy.TargetPosition = position;
-            enemy.Velocity = RoaCoords.VelocityToUnity(Value(row, "vx"), Value(row, "vz"));
-            enemy.Moving = ReadBoolean(row["moving"]);
-            enemy.Dead = ReadBoolean(row["dead"]);
+            bool wasDead = enemy.Dead;
+            bool snapshotDead = ReadBoolean(row["dead"]);
+            bool resolvedDead = ResolveSnapshotDeadState(wasDead, snapshotDead);
+            bool acceptPosition = !wasDead || snapshotDead;
+            if (acceptPosition) enemy.TargetPosition = position;
+            enemy.Velocity = resolvedDead
+                ? Vector3.zero
+                : RoaCoords.VelocityToUnity(Value(row, "vx"), Value(row, "vz"));
+            enemy.Moving = !resolvedDead && ReadBoolean(row["moving"]);
+            enemy.Dead = resolvedDead;
             enemy.LastPacketTime = Time.time;
             enemy.ActivityRevision = row["activityRevision"]?.ToObject<int>() ?? enemy.ActivityRevision;
-            enemy.Hp = nextHp;
+            enemy.Hp = resolvedDead ? 0 : nextHp;
             enemy.Snapshot = (JObject)row.DeepClone();
+            enemy.Snapshot["dead"] = resolvedDead;
+            enemy.Snapshot["moving"] = enemy.Moving;
+            if (resolvedDead) enemy.Snapshot["hp"] = 0;
+            SetPresentationBodyAlive(enemy.BodyCollider, enemy.BodyRigidbody, !resolvedDead);
+
+            if (resolvedDead)
+            {
+                enemy.Moving = false;
+                enemy.PresentationMoving = false;
+                enemy.Velocity = Vector3.zero;
+                enemy.PresentationVelocity = Vector3.zero;
+                enemy.SmoothVelocity = Vector3.zero;
+                enemy.ActionUntil = 0f;
+                enemy.ReactionUntil = 0f;
+                enemy.ThreatActive = false;
+                enemy.ThreatRemaining = 0f;
+                if (acceptPosition && enemy.Root != null)
+                    enemy.Root.transform.position = enemy.TargetPosition;
+            }
+            else if (previousHp > 0 && nextHp > 0 && nextHp < previousHp)
+            {
+                enemy.ReactionUntil = Mathf.Max(enemy.ReactionUntil, Time.time + 0.28f);
+            }
 
             if (enemy.CharacterView != null)
             {
+                if (resolvedDead && !wasDead && confirmedHit)
+                    enemy.CharacterView.PrepareDeath(hitSource);
                 enemy.CharacterView.SetDead(enemy.Dead);
                 if (!enemy.Dead && previousHp > 0 && nextHp > 0 && nextHp < previousHp)
                 {
@@ -841,6 +1177,7 @@ namespace RealmOfAshes.Game
             string name = row["name"]?.ToString();
             var root = new GameObject("Enemy:" + (string.IsNullOrEmpty(name) ? id : name));
             root.transform.SetParent(transform, false);
+            BodyProfile bodyProfile = PresentationBodyProfile(key, unifiedHumanoid);
 
             var enemy = new Enemy
             {
@@ -849,8 +1186,13 @@ namespace RealmOfAshes.Game
                 UnifiedHumanoid = unifiedHumanoid,
                 YawOffset = unifiedHumanoid ? 0f : RoaEnemyModels.YawOffset(key),
                 Snapshot = (JObject)row.DeepClone(),
-                LastPacketTime = Time.time
+                LastPacketTime = Time.time,
+                BodyRadius = bodyProfile.Radius,
+                ContactFallbackAngleDeg = StableContactAngle(id),
+                ActivityPhase01 = StableActivityPhase01(id)
             };
+            enemy.BodyCollider = InstallPresentationBody(root, bodyProfile,
+                out enemy.BodyRigidbody);
 
             _enemies[id] = enemy;
             if (unifiedHumanoid)
@@ -1069,7 +1411,11 @@ namespace RealmOfAshes.Game
                 int flags = data["flags"]?.ToObject<int>() ?? 0;
                 bool frameReportsDead = (flags & EnemyFrameFlags.Dead) != 0;
                 bool wasDead = enemy.Dead;
+                int previousHp = enemy.Hp;
+                int frameHp = data["hp"]?.ToObject<int>() ?? previousHp;
                 bool deferredDeadFrame = frameReportsDead && MeleePresentationHeld(id);
+                bool deferredDamageFrame = MeleePresentationHeld(id)
+                    && frameHp < previousHp;
                 if (deferredDeadFrame)
                 {
                     _meleePresentationHolds[id].SawDeadFrame = true;
@@ -1085,9 +1431,42 @@ namespace RealmOfAshes.Game
                 enemy.Moving = !deferredDeadFrame && !deadFrame
                     && (flags & EnemyFrameFlags.Moving) != 0;
                 enemy.Dead = deadFrame;
+                enemy.Hp = ResolveFrameHealth(previousHp, frameHp, deadFrame,
+                    deferredDamageFrame);
                 enemy.Velocity = enemy.Moving
                     ? RoaCoords.VelocityToUnity(Value(data, "vx"), Value(data, "vz"))
                     : Vector3.zero;
+                SetPresentationBodyAlive(enemy.BodyCollider, enemy.BodyRigidbody, !enemy.Dead);
+                if (!wasDead && enemy.Dead)
+                {
+                    enemy.Moving = false;
+                    enemy.PresentationMoving = false;
+                    enemy.Velocity = Vector3.zero;
+                    enemy.PresentationVelocity = Vector3.zero;
+                    enemy.SmoothVelocity = Vector3.zero;
+                    enemy.ActionUntil = 0f;
+                    enemy.ReactionUntil = 0f;
+                    if (enemy.Root != null) enemy.Root.transform.position = enemy.TargetPosition;
+                }
+                else if (!deferredDamageFrame && previousHp > 0
+                    && enemy.Hp > 0 && enemy.Hp < previousHp)
+                {
+                    enemy.ReactionUntil = Mathf.Max(enemy.ReactionUntil,
+                        Time.time + 0.28f);
+                    if (enemy.CharacterView != null) enemy.CharacterView.PlayHit();
+                }
+
+                if (enemy.Snapshot != null)
+                {
+                    enemy.Snapshot["hp"] = enemy.Hp;
+                    enemy.Snapshot["dead"] = enemy.Dead;
+                    enemy.Snapshot["moving"] = enemy.Moving;
+                    enemy.Snapshot["looted"] = (flags & EnemyFrameFlags.Searched) != 0;
+                    enemy.Snapshot["hostileToPlayer"] =
+                        (flags & EnemyFrameFlags.HostileToViewer) != 0;
+                    if (data["aiState"] != null)
+                        enemy.Snapshot["aiState"] = data["aiState"].ToString();
+                }
 
                 // lookX/lookZ — абсолютная серверная точка, а не направление.
                 if (!enemy.Dead && (flags & EnemyFrameFlags.HasLook) != 0)
@@ -1112,18 +1491,32 @@ namespace RealmOfAshes.Game
                 enemy.ThreatTargetsLocalPlayer = threat
                     && string.Equals(data["attackTargetId"]?.ToString(), Socket?.Session?.Id,
                         StringComparison.Ordinal);
+                if (threat)
+                {
+                    enemy.Moving = false;
+                    enemy.Velocity = Vector3.zero;
+                }
 
                 if (threat && enemy.ThreatView == null && enemy.Root != null)
                     enemy.ThreatView = enemy.Root.AddComponent<RoaEnemyThreatTelegraph>();
 
                 if (started)
                 {
-                    enemy.AttackWindupUntil = Time.time + enemy.ThreatRemaining + 0.18f;
+                    // Небольшой запас поглощает джиттер между volatile frame и
+                    // надёжным enemyMelee, не запуская второй замах после контакта.
+                    enemy.AttackWindupUntil = Time.time + enemy.ThreatRemaining + 0.36f;
                     enemy.ActionUntil = Mathf.Max(enemy.ActionUntil,
-                        Time.time + enemy.ThreatRemaining + 0.08f);
+                        Time.time + AttackRootLockSeconds(
+                            enemy.ThreatRemaining, enemy.ThreatRanged));
                     enemy.Clip = string.Empty;
-                    if (enemy.CharacterView != null) enemy.CharacterView.PlayAttack();
-                    else PlayClip(enemy, "attack");
+                    if (!AttackPresentationBlocked(enemy.Dead, enemy.ReactionUntil, Time.time)
+                        && AnimateAttackAtTelegraph(enemy.ThreatRanged))
+                    {
+                        if (enemy.CharacterView != null)
+                            enemy.CharacterView.PlayAttack(
+                                RoaMeleeGrip.SwingSecondsForImpact(enemy.ThreatRemaining));
+                        else PlayClip(enemy, "attack", enemy.ThreatRemaining);
+                    }
                     if (enemy.ThreatTargetsLocalPlayer)
                         RoaAudio.Active?.PlayThreatWarning(enemy.ThreatRanged);
                 }
@@ -1140,15 +1533,46 @@ namespace RealmOfAshes.Game
 
                 float sincePacket = Time.time - enemy.LastPacketTime
                     + RoaNetworkActorMotion.OneWayLatencySeconds(
-                        Socket != null ? Socket.PingMs : -1f, MaxExtrapolationSeconds);
+                        Socket != null ? Socket.PingMs : -1f,
+                        Mathf.Min(MaxExtrapolationSeconds, 0.22f));
                 Transform t = enemy.Root.transform;
+                bool motionLocked = CombatMotionLocked(enemy.Dead, enemy.ThreatActive,
+                    enemy.ActionUntil, enemy.ReactionUntil, Time.time);
                 RoaNetworkActorMotion.Sample motion = RoaNetworkActorMotion.Step(
-                    t.position, enemy.TargetPosition, enemy.Velocity, enemy.Moving,
+                    t.position, motionLocked ? t.position : enemy.TargetPosition,
+                    motionLocked ? Vector3.zero : enemy.Velocity,
+                    enemy.Moving && !motionLocked,
                     sincePacket, Time.deltaTime, SmoothTime,
-                    MaxExtrapolationSeconds, SnapDistance, ref enemy.SmoothVelocity);
-                t.position = motion.Position;
-                enemy.PresentationVelocity = motion.VisualVelocity;
-                enemy.PresentationMoving = motion.Moving && !enemy.Dead;
+                    Mathf.Min(MaxExtrapolationSeconds, 0.22f), SnapDistance,
+                    ref enemy.SmoothVelocity);
+                Vector3 presentedPosition = motion.Position;
+                bool contactConstrained = false;
+                Vector3 contactNormal = Vector3.zero;
+                if (!enemy.Dead && _localPlayer != null
+                    && Mathf.Abs(_localPlayer.transform.position.y - presentedPosition.y) < 1.8f)
+                {
+                    Vector3 scale = t.lossyScale;
+                    float worldRadius = enemy.BodyRadius
+                        * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+                    Vector3 separated = ResolvePresentationContact(presentedPosition,
+                        _localPlayer.transform.position,
+                        LocalPlayerBodyRadius + worldRadius + ActorContactMargin,
+                        enemy.ContactFallbackAngleDeg);
+                    contactConstrained = (separated - presentedPosition).sqrMagnitude > 0.000001f;
+                    presentedPosition = separated;
+                    if (contactConstrained)
+                    {
+                        contactNormal = presentedPosition - _localPlayer.transform.position;
+                        contactNormal.y = 0f;
+                        if (contactNormal.sqrMagnitude > 0.0001f) contactNormal.Normalize();
+                    }
+                }
+                if (contactConstrained) enemy.SmoothVelocity = Vector3.zero;
+                t.position = presentedPosition;
+                enemy.PresentationVelocity = motionLocked || contactConstrained
+                    ? Vector3.zero : motion.VisualVelocity;
+                enemy.PresentationMoving = motion.Moving && !motionLocked
+                    && !contactConstrained && !enemy.Dead;
                 if (motion.Snapped) enemy.StepFx = default(RoaMovementFx.ActorStepState);
 
                 // Поворот следует видимому пути, а не устаревшей скорости пакета.
@@ -1166,7 +1590,16 @@ namespace RealmOfAshes.Game
                 {
                     enemy.CharacterView.SetDead(enemy.Dead);
                     enemy.CharacterView.UpdateLocomotion(enemy.PresentationVelocity, enemy.TargetYawDeg,
-                        enemy.PresentationMoving, false);
+                        enemy.PresentationMoving, false, contactNormal,
+                        contactConstrained ? 1f : 0f);
+                    bool hostile = ReadBoolean(enemy.Snapshot?["hostileToPlayer"], true);
+                    enemy.CharacterView.SetActivityPresentation(ResolveNpcActivityVisual(
+                        enemy.Snapshot?["activityType"]?.ToString(),
+                        enemy.Snapshot?["activityPhase"]?.ToString(),
+                        enemy.Snapshot?["visualAction"]?.ToString(),
+                        enemy.Snapshot?["aiState"]?.ToString(),
+                        enemy.PresentationMoving, enemy.Dead, hostile),
+                        enemy.ActivityPhase01);
                 }
                 else UpdateClip(enemy);
 
@@ -1208,27 +1641,47 @@ namespace RealmOfAshes.Game
             if (enemy.CharacterView != null) return;
             if (enemy.Animation == null) return;
 
-            string wanted;
-            if (enemy.Dead) wanted = "death";
-            else if (Time.time < enemy.ActionUntil && enemy.Animation.GetClip("attack") != null) wanted = "attack";
-            else if (!enemy.PresentationMoving) wanted = "idle";
-            else wanted = enemy.PresentationVelocity.magnitude > RunSpeedThreshold ? "run" : "walk";
+            bool reacting = Time.time < enemy.ReactionUntil
+                && enemy.Animation.GetClip("hurt") != null;
+            bool attacking = Time.time < enemy.ActionUntil
+                && enemy.Animation.GetClip("attack") != null;
+            RoaCharacterView.CombatPresentationPhase phase =
+                RoaCharacterView.ResolveCombatPresentationPhase(
+                    enemy.Dead, reacting, attacking, enemy.PresentationMoving);
+            string wanted = phase == RoaCharacterView.CombatPresentationPhase.Death ? "death"
+                : phase == RoaCharacterView.CombatPresentationPhase.Reaction ? "hurt"
+                : phase == RoaCharacterView.CombatPresentationPhase.Attack ? "attack"
+                : phase == RoaCharacterView.CombatPresentationPhase.Idle ? "idle"
+                : enemy.PresentationVelocity.magnitude > RunSpeedThreshold ? "run" : "walk";
 
             PlayClip(enemy, wanted);
         }
 
-        private static void PlayClip(Enemy enemy, string clip)
+        private static void PlayClip(Enemy enemy, string clip, float durationSeconds = 0f)
         {
             if (enemy.Animation == null || enemy.Clip == clip) return;
             if (enemy.Animation.GetClip(clip) == null) return;
 
             enemy.Clip = clip;
+            AnimationState state = enemy.Animation[clip];
 
-            // Смерть проигрывается один раз и замирает в последней позе.
-            enemy.Animation[clip].wrapMode = clip == "death"
+            // Одноразовые клипы всегда начинаются с нулевого кадра. Без этого
+            // повторная атака могла CrossFade-нуться в уже закончившееся состояние,
+            // а смерть сохраняла вес предыдущей ходьбы за ClampForever.
+            state.wrapMode = clip == "death"
                 ? WrapMode.ClampForever
-                : (clip == "attack" ? WrapMode.Once : WrapMode.Loop);
-            enemy.Animation.CrossFade(clip, 0.15f);
+                : (clip == "attack" || clip == "hurt" ? WrapMode.Once : WrapMode.Loop);
+            state.speed = clip == "attack" && durationSeconds > 0.01f
+                ? Mathf.Clamp(state.length / Mathf.Max(0.08f, durationSeconds), 0.42f, 2.6f)
+                : 1f;
+            if (clip == "death")
+            {
+                state.time = 0f;
+                enemy.Animation.Play(clip, PlayMode.StopAll);
+                return;
+            }
+            if (clip == "attack" || clip == "hurt") state.time = 0f;
+            enemy.Animation.CrossFade(clip, clip == "hurt" ? 0.08f : 0.12f);
         }
 
         private static float Value(JObject row, string key)
@@ -1295,8 +1748,13 @@ namespace RealmOfAshes.Game
                 rows.Add(new RoaActorNameplates.Entry
                 {
                     Name = important ? enemy.Snapshot["name"]?.ToString() ?? "Торговец" : string.Empty,
-                    Faction = RoaActorNameplates.NpcFactionLine(
-                        enemy.Snapshot["faction"]?.ToString(), hostile),
+                    Faction = NpcCombatFactionLine(
+                        enemy.Snapshot["faction"]?.ToString(), hostile,
+                        enemy.Snapshot["aiState"]?.ToString(),
+                        enemy.ThreatActive && enemy.ThreatTargetsLocalPlayer,
+                        enemy.ThreatRanged,
+                        enemy.Snapshot["activityType"]?.ToString(),
+                        enemy.Snapshot["activityPhase"]?.ToString()),
                     Hp = enemy.Hp,
                     MaxHp = Mathf.Max(1, enemy.Snapshot["maxHp"]?.ToObject<int>() ?? enemy.Hp),
                     World = enemy.Root.transform.position + Vector3.up * (2.05f * scale),

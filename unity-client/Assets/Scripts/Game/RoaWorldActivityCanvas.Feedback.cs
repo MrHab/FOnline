@@ -16,6 +16,8 @@ namespace RealmOfAshes.Game
         private float _feedbackPulseStartedAt = -100f;
         private RoaActivityFeedbackCue _pendingActivityCue;
         private RoaActivityFeedbackCue _pendingResultCue;
+        private bool _resultLayoutInitialized;
+        private bool _resultCompactOnMap;
 
         public RoaActivityFeedbackCue LastFeedbackCue { get; private set; }
 
@@ -73,8 +75,48 @@ namespace RealmOfAshes.Game
         private void UpdateResultCardAnimation(bool visible)
         {
             if (_resultGroup == null || _resultRect == null) return;
+            bool compact = Bootstrap != null && Bootstrap.OnGlobalMap;
+            ApplyResultCardLayout(compact);
+            float lifetime = compact
+                ? RoaActivityFeedback.GlobalMapResultSeconds
+                : RoaActivityFeedback.ResultSeconds;
             ApplyCardAnimation(_resultGroup, _resultRect, _resultBasePosition,
-                visible, Time.unscaledTime - _resultStartedAt, RoaActivityFeedback.ResultSeconds);
+                visible, Time.unscaledTime - _resultStartedAt, lifetime);
+            _resultGroup.blocksRaycasts = visible;
+            _resultGroup.interactable = visible;
+        }
+
+        private void ApplyResultCardLayout(bool compact)
+        {
+            if (_resultLayoutInitialized && _resultCompactOnMap == compact) return;
+            _resultLayoutInitialized = true;
+            _resultCompactOnMap = compact;
+
+            _resultRect.anchoredPosition = compact ? new Vector2(0f, -22f) : new Vector2(0f, -76f);
+            _resultRect.sizeDelta = compact ? new Vector2(410f, 166f) : new Vector2(470f, 214f);
+            _resultBasePosition = _resultRect.anchoredPosition;
+            if (compact)
+            {
+                Place(_resultTitle.rectTransform, 14f, -24f, -14f, -6f);
+                RectTransform resultFlow = _resultFlowSlots.Count > 0
+                    ? _resultFlowSlots[0].Background.transform.parent as RectTransform : null;
+                if (resultFlow != null) Place(resultFlow, 14f, -44f, -14f, -29f);
+                Place(_resultName.rectTransform, 14f, -66f, -14f, -47f);
+                Place(_resultGrade.rectTransform, 14f, -84f, -14f, -68f);
+                Place(_resultReward.rectTransform, 14f, -128f, -14f, -86f);
+                Place((RectTransform)_resultContinue.transform, 14f, -158f, -14f, -132f);
+            }
+            else
+            {
+                Place(_resultTitle.rectTransform, 16f, -27f, -16f, -8f);
+                RectTransform resultFlow = _resultFlowSlots.Count > 0
+                    ? _resultFlowSlots[0].Background.transform.parent as RectTransform : null;
+                if (resultFlow != null) Place(resultFlow, 16f, -46f, -16f, -31f);
+                Place(_resultName.rectTransform, 16f, -72f, -16f, -50f);
+                Place(_resultGrade.rectTransform, 16f, -95f, -16f, -76f);
+                Place(_resultReward.rectTransform, 16f, -164f, -16f, -99f);
+                Place((RectTransform)_resultContinue.transform, 16f, -202f, -16f, -169f);
+            }
         }
 
         private static void ApplyCardAnimation(CanvasGroup group, RectTransform rect, Vector2 origin,

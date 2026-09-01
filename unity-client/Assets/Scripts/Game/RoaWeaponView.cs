@@ -127,15 +127,36 @@ namespace RealmOfAshes.Game
         /// </summary>
         public void PlayAttack()
         {
+            PlayAttack(0f);
+        }
+
+        /// <param name="meleeSwingSeconds">
+        /// Полная длительность замаха. Ноль сохраняет локальный быстрый удар;
+        /// NPC передаёт рассчитанную длительность для контакта по серверному
+        /// дедлайну. Для огнестрела параметр намеренно игнорируется.
+        /// </param>
+        public void PlayAttack(float meleeSwingSeconds)
+        {
             if (!Ready) return;
             if (_melee != null)
             {
-                StartSwing(0f);
+                StartSwing(meleeSwingSeconds);
                 return;
             }
 
             _recoilSide = -_recoilSide;
             _recoilStartedAt = Time.time;
+        }
+
+        /// <summary>
+        /// Stop the transient attack layer without unequipping the weapon.
+        /// Hit and death presentation own a higher priority than recoil or a
+        /// melee swing, so their pose must not keep bending the same bones.
+        /// </summary>
+        public void CancelAttackPose()
+        {
+            _swingStartedAt = -1f;
+            _recoilStartedAt = -100f;
         }
 
         public void PlayBlockedContact()

@@ -7,8 +7,11 @@ const os = require('os');
 const path = require('path');
 const {
   NPC_CAPS_INVENTORY_VERSION,
+  NPC_PERSONAL_INVENTORY_VERSION,
+  NPC_INVENTORY_VERSION,
   buildFactionSupplyCatalog,
   chooseFactionEquipment,
+  buildNpcEquipmentInventory,
   buildFactionPersonalInventory,
   materializeNpcCapsInventory,
   prepareNpcWeapon,
@@ -32,7 +35,8 @@ const WEAPONS = {
 };
 const ITEM_IDS = new Set([
   ...Object.keys(WEAPONS), 'ammo9', 'ammo556', 'shotgunShell', 'energyCell',
-  'silver', 'water', 'food', 'stim', 'medkit', 'scrap', 'leather', 'boots', 'backpack'
+  'silver', 'water', 'food', 'stim', 'medkit', 'scrap', 'leather', 'ballisticVest',
+  'combatArmor', 'helmet', 'assaultHelmet', 'boots', 'reinforcedBoots', 'backpack'
 ]);
 
 const factionState = {
@@ -93,8 +97,20 @@ const personal = buildFactionPersonalInventory({
 const issuedWeapon = WEAPONS[klimEquipment.weapon];
 assert(rowQty(personal, 'silver') > 0, 'Every humanoid NPC must receive personal money');
 assert(issuedWeapon && issuedWeapon.ammoType, 'Test guard must receive a ranged faction weapon');
+for (const itemId of Object.values(klimEquipment).filter(id => id && id !== 'fists')) {
+  assert(rowQty(personal, itemId) > 0, `Equipped NPC item ${itemId} must exist in personal inventory`);
+}
 assert(rowQty(personal, issuedWeapon.ammoType) >= issuedWeapon.magSize * 3, 'Combat NPC must receive several magazines');
 assert(personal.some(row => ['knife', 'axe'].includes(row.id)), 'Ranged NPC must receive an available melee backup');
+assert(NPC_PERSONAL_INVENTORY_VERSION > NPC_CAPS_INVENTORY_VERSION, 'Full NPC loadout migration must follow the wallet-only schema');
+assert(NPC_INVENTORY_VERSION > NPC_PERSONAL_INVENTORY_VERSION, 'Physical equipment repair must have its own migration version');
+
+const equipmentOnlyRepair = buildNpcEquipmentInventory(klimEquipment, ITEM_IDS);
+for (const itemId of Object.values(klimEquipment).filter(id => id && id !== 'fists')) {
+  assert(rowQty(equipmentOnlyRepair, itemId) > 0, `Equipment-only migration must restore ${itemId}`);
+}
+assert.strictEqual(rowQty(equipmentOnlyRepair, 'silver'), 0, 'Equipment-only migration must not replenish spent money');
+assert.strictEqual(rowQty(equipmentOnlyRepair, issuedWeapon.ammoType), 0, 'Equipment-only migration must not replenish spent ammunition');
 
 const migratedLegacyWallet = materializeNpcCapsInventory({
   id: 'legacy_merchant',
@@ -300,11 +316,11 @@ assert.strictEqual(simulation.syncOnsitePartyActors({
     actorId: 'legacy_guard', hp: 40, maxHp: 40,
     equipment: { weapon: 'rifle' },
     inventory: [{ id: 'rifle', qty: 1 }, { id: 'ammo556', qty: 20 }, { id: 'silver', qty: 12 }],
-    inventoryVersion: 2
+    inventoryVersion: NPC_INVENTORY_VERSION
   }]
 }), true, 'Migrated local party inventory was not written back into the global onsite actor');
 const migratedOnsiteActor = simulation.worldZoneById('npc_onsite_inventory_migration_zone').details.actors[0];
-assert.strictEqual(migratedOnsiteActor.inventoryVersion, 2, 'Onsite actor inventory migration version was not persisted');
+assert.strictEqual(migratedOnsiteActor.inventoryVersion, NPC_INVENTORY_VERSION, 'Onsite actor inventory migration version was not persisted');
 assert.strictEqual(rowQty(migratedOnsiteActor.inventory, 'silver'), 12, 'Onsite actor personal money was lost during migration');
 
 const serverSource = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
@@ -319,8 +335,13 @@ assert(serverSource.includes('actor.personalTrade !== true'), 'Personal barter s
 assert(serverSource.includes('serverNpcPersonalInventory(npcProfile, role, faction, equipment, factionSupply)'),
   'Every newly spawned sapient NPC must receive faction-backed personal inventory');
 assert(serverSource.includes('persistedInventoryVersion < NPC_INVENTORY_VERSION')
+  && serverSource.includes('buildNpcEquipmentInventory(equipment, SERVER_ITEM_IDS)'),
+  'Version 2 global-party actors must repair missing physical equipment once');
+assert(serverSource.includes('persistedInventoryVersion < NPC_PERSONAL_INVENTORY_VERSION')
   && serverSource.includes('serverInventoryEnsureMinimumRows(enemyInventory, personalInventory)'),
-  'Legacy global-party actors with incomplete inventory must receive missing mandatory faction items once');
+  'Pre-version-2 global-party actors must still receive missing mandatory faction items once');
+assert(serverSource.includes('if (!hasPersistedInventory) enemyInventory = serverInventoryEnsureMinimumRows(enemyInventory, personalInventory);'),
+  'Fresh NPC equipment and faction inventory must be reconciled without duplicating equipped items');
 assert(serverSource.includes('Number.isFinite(explicitCaps) && explicitCaps > 0'),
   'A non-trader caps value of zero must not erase mandatory personal money from sapient NPC inventory');
 assert(serverSource.includes('inventoryVersion: Math.max(0, Math.floor(Number(enemy.inventoryVersion || 0)))'),
@@ -338,7 +359,8 @@ assert(serverSource.includes('inventory: naturalCreature ? stripServerCreatureIn
   'NPC inventory changes must be exposed in authoritative snapshots');
 assert(!roomActorSnapshotSource.includes('traderCaps:') && !roomActorSnapshotSource.includes('caps:'),
   'NPC room snapshots must persist currency only through inventory');
-const publicEnemySource = serverSource.match(/function publicEnemy\(e\) \{[\s\S]*?\n\}/)?.[0] || '';
+const publicEnemySource = serverSource.match(/function publicEnemy\([^)]*\) \{[\s\S]*?\n\}/)?.[0] || '';
+assert(publicEnemySource, 'NPC public snapshot source must be covered by the inventory regression');
 assert(!publicEnemySource.includes('traderCaps:'),
   'Public NPC snapshots must not expose a shadow caps wallet');
 assert(!serverSource.includes('caps: actor.caps'),

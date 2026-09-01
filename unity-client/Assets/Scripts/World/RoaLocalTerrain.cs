@@ -43,6 +43,9 @@ namespace RealmOfAshes.World
         public int MicroDetailTextureSize { get { return _microDetail != null ? _microDetail.width : 0; } }
         public int AlbedoTextureSize { get { return _albedo != null ? _albedo.width : 0; } }
         public int PathConnectionCount { get; private set; }
+        public bool UsesAuthoredEnvironment { get { return _groundDressing != null && _groundDressing.UsesAuthoredPrefabs; } }
+        public int AuthoredEnvironmentPrefabCount { get { return _groundDressing != null ? _groundDressing.AuthoredPrefabCount : 0; } }
+        public int GroundAccentCount { get { return _groundDressing != null ? _groundDressing.GroundAccentCount : 0; } }
 
         public void Initialize(LocationDefinition location, JArray stateMap)
         {
@@ -332,12 +335,8 @@ namespace RealmOfAshes.World
                 for (int tx = 0; tx < mapWidth && tx < row.Count; tx++)
                 {
                     int type = row[tx]?.ToObject<int>() ?? Grass;
-                    Vector3 center = RoaCoords.TileToWorld(tx, tz, mapWidth, mapDepth);
+                    Vector3 center = JitteredTileCenter(tx, tz, mapWidth, mapDepth);
                     float rotation = Hash01(tx, tz, 381) * Mathf.PI * 2f;
-                    float jitterX = (Hash01(tx, tz, 371) - 0.5f) * 0.18f;
-                    float jitterZ = (Hash01(tx, tz, 373) - 0.5f) * 0.18f;
-                    center.x += jitterX;
-                    center.z += jitterZ;
 
                     if (type == Water)
                     {
@@ -377,34 +376,34 @@ namespace RealmOfAshes.World
         private void PaintPathTile(Color32[] pixels, JArray stateMap, int tx, int tz,
                                    int mapWidth, int mapDepth, Vector3 center)
         {
-            PaintEllipse(pixels, center.x, center.z, 2.56f, 2.28f, 0f,
-                Hex(0x80623f), 0.24f, tx * 101 + tz * 197);
-            PaintEllipse(pixels, center.x, center.z, 2.30f, 2.04f, 0f,
-                Hex(0xd0b47d), 0.48f, tx * 103 + tz * 199);
+            PaintEllipse(pixels, center.x, center.z, 2.46f, 2.18f, 0f,
+                Hex(0x73583a), 0.16f, tx * 101 + tz * 197);
+            PaintEllipse(pixels, center.x, center.z, 2.18f, 1.92f, 0f,
+                Hex(0xb99764), 0.34f, tx * 103 + tz * 199);
 
             if (TileType(stateMap, tx + 1, tz, mapWidth, mapDepth) == Path)
                 PaintPathConnection(pixels, center,
-                    RoaCoords.TileToWorld(tx + 1, tz, mapWidth, mapDepth), tx, tz, 1);
+                    JitteredTileCenter(tx + 1, tz, mapWidth, mapDepth), tx, tz, 1);
             if (TileType(stateMap, tx, tz + 1, mapWidth, mapDepth) == Path)
                 PaintPathConnection(pixels, center,
-                    RoaCoords.TileToWorld(tx, tz + 1, mapWidth, mapDepth), tx, tz, 2);
+                    JitteredTileCenter(tx, tz + 1, mapWidth, mapDepth), tx, tz, 2);
         }
         private void PaintPathConnection(Color32[] pixels, Vector3 from, Vector3 to,
                                          int tx, int tz, int salt)
         {
             PathConnectionCount++;
-            PaintLine(pixels, from.x, from.z, to.x, to.z, 1.10f,
-                Hex(0x7b5d3b), 0.25f);
-            PaintLine(pixels, from.x, from.z, to.x, to.z, 0.90f,
-                Hex(0xd2b57b), 0.58f);
+            PaintLine(pixels, from.x, from.z, to.x, to.z, 1.12f,
+                Hex(0x705538), 0.18f);
+            PaintLine(pixels, from.x, from.z, to.x, to.z, 0.88f,
+                Hex(0xb79561), 0.42f);
             Vector2 direction = new Vector2(to.x - from.x, to.z - from.z).normalized;
             Vector2 side = new Vector2(-direction.y, direction.x) * 0.29f;
             PaintLine(pixels, from.x + side.x, from.z + side.y,
-                to.x + side.x, to.z + side.y, 0.070f,
-                Hex(0x493521), 0.38f);
+                to.x + side.x, to.z + side.y, 0.090f,
+                Hex(0x675035), 0.16f);
             PaintLine(pixels, from.x - side.x, from.z - side.y,
-                to.x - side.x, to.z - side.y, 0.070f,
-                Hex(0x493521), 0.38f);
+                to.x - side.x, to.z - side.y, 0.090f,
+                Hex(0x675035), 0.16f);
             float t = 0.24f + Hash01(tx, tz, 430 + salt) * 0.52f;
             PaintEllipse(pixels, Mathf.Lerp(from.x, to.x, t), Mathf.Lerp(from.z, to.z, t),
                 0.34f, 0.18f, Mathf.Atan2(direction.y, direction.x),
@@ -416,6 +415,14 @@ namespace RealmOfAshes.World
                 || tz >= stateMap.Count) return -1;
             JArray row = stateMap[tz] as JArray;
             return row != null && tx < row.Count ? row[tx]?.ToObject<int>() ?? Grass : -1;
+        }
+
+        private static Vector3 JitteredTileCenter(int tx, int tz, int mapWidth, int mapDepth)
+        {
+            Vector3 center = RoaCoords.TileToWorld(tx, tz, mapWidth, mapDepth);
+            center.x += (Hash01(tx, tz, 371) - 0.5f) * 0.18f;
+            center.z += (Hash01(tx, tz, 373) - 0.5f) * 0.18f;
+            return center;
         }
 
         private void PaintSettlementLayers(Color32[] pixels)

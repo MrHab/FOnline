@@ -33,6 +33,7 @@ async function main() {
   const groundingProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaGroundingProbe.cs'), 'utf8');
   const hitProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaHitReactionProbe.cs'), 'utf8');
   const remoteDeathProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaRemoteDeathProbe.cs'), 'utf8');
+  const npcCombatProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaNpcCombatBehaviorProbe.cs'), 'utf8');
   const characterPreviewProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaCharacterPreviewProbe.cs'), 'utf8');
   const auditRunner = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaClientAuditRunner.cs'), 'utf8');
   const enemies = fs.readFileSync(path.join(UNITY_GAME, 'RoaEnemies.cs'), 'utf8');
@@ -62,9 +63,40 @@ async function main() {
     && footIk.includes('MaximumWalkableRise = 0.30f')
     && footIk.includes('IsActorCollider(hit.collider, _actorRoot)')
     && footIk.includes('collider is CharacterController')
+    && footIk.includes('public void Suspend(string clip)')
+    && footIk.includes('public void StabilizeAction(')
+    && footIk.includes('StationaryActionLiftLimit = 0.18f')
+    && footIk.includes('MovingActionLiftLimit = 0.32f')
+    && footIk.includes('ActionSafetyActive = true;')
+    && footIk.includes('Suspended = true;')
     && footIk.includes('ConstrainFootTarget(side, target)')
     && footIk.includes('ConstrainFootTarget(support, target)'),
   'Unity foot IK no longer follows ground or prevents a dual-foot flight phase');
+  assert(characterView.includes('public static bool ShouldSuspendFootIk(')
+    && characterView.includes('action == "hurt"')
+    && characterView.includes('|| hitReactionActive')
+    && characterView.includes('|| combatStabilizing')
+    && characterView.includes('|| contactStabilizing')
+    && characterView.includes('_weapon.IsMeleeEquipped')
+    && characterView.includes('_weapon.CancelAttackPose()')
+    && characterView.includes('_footIk.StabilizeAction(Time.deltaTime, _locomoting,')
+    && characterView.includes('FootActionSafetyActive')
+    && characterView.includes('_animation.Play(_currentClip, PlayMode.StopAll)')
+    && characterView.includes('_animation.Stop();')
+    && enemies.includes('ResolveSnapshotDeadState(wasDead, snapshotDead)')
+    && enemies.includes('enemy.Moving = !resolvedDead')
+    && enemies.includes('enemy.Snapshot["dead"] = resolvedDead;')
+    && enemies.includes('InstallPresentationBody(root, bodyProfile,')
+    && enemies.includes('ResolvePresentationContact(presentedPosition,')
+    && enemies.includes('contactConstrained ? 1f : 0f)')
+    && enemies.includes('CombatMotionLocked(enemy.Dead, enemy.ThreatActive,')
+    && enemies.includes('enemy.ActionUntil, enemy.ReactionUntil, Time.time)')
+    && enemies.includes('enemy.Hp = ResolveFrameHealth(previousHp, frameHp, deadFrame,')
+    && npcCombatProbe.includes('RoaFootIk.IsActorCollider(capsule, null)')
+    && npcCombatProbe.includes('RoaCharacterView.ShouldSuspendFootIk(false, "run", true, true)')
+    && npcCombatProbe.includes('false, false, false, true)')
+    && auditRunner.includes('typeof(RoaNpcCombatBehaviorProbe)'),
+  'Unity combat pose no longer suspends leg IK or keeps death authoritative over stale movement');
   assert(footIk.includes('DesktopMaxDistance = 20f')
     && footIk.includes('MobileMaxDistance = 12f')
     && footIk.includes('public static bool ShouldRun(')
@@ -97,6 +129,9 @@ async function main() {
     && groundingProbe.includes('устаревший замок вытянул ногу за персонажем')
     && groundingProbe.includes('PointBlankEnemyActor')
     && groundingProbe.includes('коллайдер актёра поднял стопу при ударе в упор')
+    && groundingProbe.includes('ActionFootGuardRig')
+    && groundingProbe.includes('actionIk.ActionSafetyActive')
+    && groundingProbe.includes('actionHighest < 0.33f')
     && groundingProbe.includes('SharedUsers == usersBefore')
     && auditRunner.includes('typeof(RoaGroundingProbe)')
     && auditRunner.includes('typeof(RoaLocomotionContactProbe)'),
@@ -105,6 +140,9 @@ async function main() {
     && characterView.includes('TryGetFootContactLifts(out float left, out float right)')
     && characterPreviewProbe.includes('for (int frame = 0; frame < 32; frame++)')
     && characterPreviewProbe.includes('maximumMinimumLift <= 0.085f')
+    && characterPreviewProbe.includes('loaded.FootIkSuppressed && highestHitFoot < 0.36f')
+    && characterPreviewProbe.includes('hurt.time = Mathf.Min(0.14f')
+    && characterPreviewProbe.includes('animation.IsPlaying("death") && !animation.IsPlaying("run")')
     && characterPreviewProbe.includes('обе стопы настоящего бегового клипа одновременно оторвались'),
   'Real GLB run-cycle probe no longer bounds simultaneous foot lift');
   assert(ikChain.includes('Vector3? pole')
@@ -140,6 +178,7 @@ async function main() {
     && remotePlayers.includes('BeginRemoteDeath(player.Id, Time.unscaledTime)')
     && characterView.includes('if (_dead) SetDead(true);')
     && remoteDeathProbe.includes('[СМЕРТЬ ИГРОКА] готово:')
+    && remoteDeathProbe.includes('RoaEnemies.ResolveSnapshotDeadState(true, false)')
     && remoteDeathProbe.includes('view.ApplyDeathSettleForDiagnostics(RoaCharacterView.DeathSettleSeconds)')
     && characterView.includes('DeathSettleWeightAt(float elapsed)')
     && characterView.includes('ApplyDeathSettleForDiagnostics(deathElapsed)')

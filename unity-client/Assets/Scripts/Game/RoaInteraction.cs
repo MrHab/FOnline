@@ -233,7 +233,7 @@ namespace RealmOfAshes.Game
                 string action;
                 if (_candidateKind == TargetKind.Resource) action = "добыть";
                 else if (_candidateKind == TargetKind.CraftingStation) action = "открыть станок";
-                else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть работы";
+                else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть контракты";
                 else if (_candidateKind == TargetKind.Transition) action = "перейти";
                 else if (_candidateKind == TargetKind.Storage) action = "открыть хранилище";
                 else if (_candidateKind == TargetKind.Container) action = "открыть";
@@ -390,12 +390,103 @@ namespace RealmOfAshes.Game
             return rows;
         }
 
+        public sealed class StoryQuestCard
+        {
+            public string Id;
+            public string Giver;
+            public string Name;
+            public string State;
+            public string StateLabel;
+            public string Description;
+            public string Objective;
+            public string Reward;
+            public string Hint;
+        }
+
+        /// <summary>
+        /// Сюжетный журнал строится только из авторских определений /api/quests и
+        /// серверных npcQuests. Доступные и закрытые задания остаются у именных NPC.
+        /// </summary>
+        public List<StoryQuestCard> JournalQuests(bool completed)
+        {
+            var rows = new List<StoryQuestCard>();
+            foreach (JProperty property in _quests.Properties())
+            {
+                string id = property.Name;
+                JObject definition = property.Value as JObject;
+                if (definition == null) continue;
+                string state = QuestState(id);
+                bool isDone = state == "done";
+                bool isCurrent = state == "active" || state == "ready";
+                if (completed ? !isDone : !isCurrent) continue;
+
+                JObject panel = definition["panel"] as JObject;
+                string description = panel?[state]?.ToString();
+                if (string.IsNullOrEmpty(description))
+                    description = panel?[isDone ? "done" : "active"]?.ToString() ?? string.Empty;
+                string giver = definition["title"]?.ToString() ?? string.Empty;
+                rows.Add(new StoryQuestCard
+                {
+                    Id = id,
+                    Giver = giver,
+                    Name = definition["name"]?.ToString() ?? id,
+                    State = state,
+                    StateLabel = QuestStateLabel(state),
+                    Description = description,
+                    Objective = StoryQuestObjective(definition),
+                    Reward = StoryQuestReward(definition),
+                    Hint = state == "ready" && !string.IsNullOrEmpty(giver)
+                        ? "Вернитесь к персонажу: " + giver + "."
+                        : string.Empty
+                });
+            }
+            return rows;
+        }
+
+        private static string StoryQuestObjective(JObject definition)
+        {
+            JObject requirements = definition?["requirements"] as JObject;
+            JObject items = requirements?["items"] as JObject;
+            JObject labels = requirements?["labels"] as JObject;
+            var parts = new List<string>();
+            if (items != null)
+            {
+                foreach (JProperty item in items.Properties())
+                {
+                    int qty = Mathf.Max(0, item.Value?.ToObject<int>() ?? 0);
+                    if (qty <= 0) continue;
+                    string label = labels?[item.Name]?.ToString();
+                    if (string.IsNullOrEmpty(label)) label = RoaItemData.Name(item.Name);
+                    parts.Add(label + " ×" + qty);
+                }
+            }
+            return parts.Count > 0 ? "Цель: " + string.Join(", ", parts) + "." : string.Empty;
+        }
+
+        private static string StoryQuestReward(JObject definition)
+        {
+            JObject reward = definition?["reward"] as JObject;
+            var parts = new List<string>();
+            int xp = Mathf.Max(0, reward?["xp"]?.ToObject<int>() ?? 0);
+            int silver = Mathf.Max(0, reward?["silver"]?.ToObject<int>() ?? 0);
+            if (xp > 0) parts.Add(xp + " XP");
+            if (silver > 0) parts.Add(silver + " крышек");
+            foreach (JToken token in reward?["items"] as JArray ?? new JArray())
+            {
+                JObject row = token as JObject;
+                string id = row?["id"]?.ToString() ?? token?.ToString() ?? string.Empty;
+                int qty = Mathf.Max(1, row?["qty"]?.ToObject<int>() ?? 1);
+                if (!string.IsNullOrEmpty(id)) parts.Add(RoaItemData.Name(id) + " ×" + qty);
+            }
+            return parts.Count > 0 ? "Награда: " + string.Join(", ", parts) + "." : string.Empty;
+        }
+
         public void NpcQuestAction(string questId, string action) { SubmitQuest(questId, action); }
         public void NpcRequestTrade() { RequestTrade(); }
         public void NpcRob() { RobEncounterActor(); }
         public void DialogueClose() { ClosePanel(true); }
 
-        // Доска работ.
+        // Доска контрактов.
         public bool JobBoardLoading { get { return _worldRequestPending && !(_world?["worldTasks"] is JArray); } }
         public bool JobBoardRefreshing { get { return _worldRequestPending; } }
 
@@ -405,9 +496,8 @@ namespace RealmOfAshes.Game
             {
                 string trackedId = _self?["worldTaskTrackedId"]?.ToString() ?? string.Empty;
                 if (string.IsNullOrEmpty(trackedId)) return null;
-                foreach (JToken token in _world?["worldTasks"] as JArray ?? new JArray())
+                foreach (JObject task in WorldTaskRowsForPlayer())
                 {
-                    JObject task = token as JObject;
                     if (task?["id"]?.ToString() == trackedId && task?["status"]?.ToString() == "active") return task;
                 }
                 return null;
@@ -436,8 +526,8 @@ namespace RealmOfAshes.Game
                 Owner = owner,
                 OwnerLabel = FactionLabel(owner),
                 Joinable = IsJoinableFaction(owner),
-                IsMember = current == owner,
-                JoinLabel = current == owner ? "Фракция выбрана"
+                IsMember = IsJoinableFaction(owner) && current == owner,
+                JoinLabel = IsJoinableFaction(owner) && current == owner ? "Фракция выбрана"
                     : (IsJoinableFaction(current) ? "Сменить сторону" : "Вступить во фракцию")
             };
         }
@@ -456,18 +546,20 @@ namespace RealmOfAshes.Game
             public bool RewardEligible;
             public string RewardText;
             public int SlotsLeft;
+            public bool StatusOnly;
         }
 
         public List<JobBoardTask> JobBoardTasks()
         {
             var rows = new List<JobBoardTask>();
             string boardSiteId = _active?["boardSiteId"]?.ToString() ?? _locationId;
-            foreach (JToken token in _world?["worldTasks"] as JArray ?? new JArray())
+            foreach (JObject task in WorldTaskRowsForPlayer())
             {
-                JObject task = token as JObject;
                 if (task == null || !TaskBelongsToBoard(task, boardSiteId)) continue;
                 string taskId = task["id"]?.ToString() ?? string.Empty;
-                JObject reward = task["reward"] as JObject;
+                bool statusOnly = task["statusOnly"]?.ToObject<bool>() == true
+                    || task["actionMode"]?.ToString() == "status_only"
+                    || task["type"]?.ToString() == "patrol_mission";
                 rows.Add(new JobBoardTask
                 {
                     Row = task,
@@ -480,25 +572,30 @@ namespace RealmOfAshes.Game
                     Tracked = _self?["worldTaskTrackedId"]?.ToString() == taskId,
                     Claimed = SelfArrayContains("worldTaskRewardClaims", taskId),
                     RewardEligible = WorldTaskRewardEligible(taskId),
-                    RewardText = "Награда: " + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP, "
-                        + (reward?["caps"]?.ToObject<int>() ?? 0) + " крышек, репутация "
-                        + (reward?["reputation"]?.ToObject<int>() ?? 0),
-                    SlotsLeft = task["joinPartySlotsLeft"]?.ToObject<int>() ?? -1
+                    RewardText = statusOnly
+                        ? "Поручение выполняет патруль НПС."
+                        : WorldTaskRewardText(task),
+                    SlotsLeft = task["joinPartySlotsLeft"]?.ToObject<int>() ?? -1,
+                    StatusOnly = statusOnly
                 });
             }
             return rows;
         }
 
-        public void JobBoardAction(JobBoardTask task, string action) { if (task?.Row != null) WorldTaskAction(task.Row, action); }
+        public void JobBoardAction(JobBoardTask task, string action)
+        {
+            if (task?.Row == null || (task.StatusOnly && action == "accept")) return;
+            WorldTaskAction(task.Row, action);
+        }
         public void JobBoardJoinOwner() { string owner = JobBoardSite().Owner; if (!string.IsNullOrEmpty(owner)) JoinWorldFaction(owner); }
         public void JobBoardRefresh() { if (!_worldRequestPending) StartCoroutine(LoadWastelandState()); }
 
-        // --- Фасад для страницы QUESTS PIP-ASH (pipboyWorldTaskCard, 03a:1309). ---
+        // --- Фасад для страницы CONTRACTS PIP-ASH (pipboyWorldTaskCard, 03a:1309). ---
 
         public sealed class WorldTaskCard
         {
             public string Id;
-            public string Label;        // Работа / Взято / Метка / Выполнено / Решено миром / Провалено
+            public string Label;        // Контракт / Взято / Метка / Выполнено / Решено миром / Провалено
             public string Title;
             public string Text;         // текст + «Осталось около N ч.»
             public string Route;        // Где взять / Цель / Координаты
@@ -514,30 +611,36 @@ namespace RealmOfAshes.Game
             public bool Tracked;
         }
 
-        /// <summary>Работы пустоши для PIP-ASH: active — 8 активных, иначе 6 завершённых.</summary>
+        /// <summary>Контракты пустоши для PIP-ASH: active — 8 активных, иначе 6 завершённых.</summary>
         public List<WorldTaskCard> PipboyWorldTasks(bool active)
         {
             var rows = new List<WorldTaskCard>();
+            var seenOffers = new HashSet<string>();
             float worldHour = _world?["worldHour"]?.ToObject<float>() ?? 0f;
-            foreach (JToken token in _world?["worldTasks"] as JArray ?? new JArray())
+            foreach (JObject task in WorldTaskRowsForPlayer())
             {
-                JObject task = token as JObject;
                 if (task == null) continue;
                 string status = task["status"]?.ToString() ?? "active";
                 if (active ? status != "active" : status == "active") continue;
-                if (rows.Count >= (active ? 8 : 6)) break;
 
                 string id = task["id"]?.ToString() ?? string.Empty;
                 string type = (task["type"]?.ToString() ?? string.Empty).ToLowerInvariant();
+                bool statusOnly = type == "patrol_mission"
+                    || task["statusOnly"]?.ToObject<bool>() == true
+                    || task["actionMode"]?.ToString() == "status_only";
                 bool accepted = SelfArrayContains("worldTaskAccepted", id);
                 bool tracked = _self?["worldTaskTrackedId"]?.ToString() == id;
+                string semanticKey = WorldTaskSemanticKey(task);
+                if (active && accepted && !string.IsNullOrEmpty(semanticKey)) seenOffers.Add(semanticKey);
+                if (active && !accepted && !string.IsNullOrEmpty(semanticKey) && !seenOffers.Add(semanticKey)) continue;
+                if (rows.Count >= (active ? 8 : 6)) break;
                 var card = new WorldTaskCard { Id = id, Accepted = accepted, Tracked = tracked };
                 card.Label = tracked ? "Метка"
                     : status == "completed" ? "Выполнено"
                     : status == "resolved" ? "Решено миром"
                     : status == "expired" ? "Провалено"
-                    : accepted ? "Взято" : "Работа";
-                card.Title = task["title"]?.ToString() ?? "Работа пустоши";
+                    : accepted ? "Взято" : "Контракт";
+                card.Title = task["title"]?.ToString() ?? "Контракт пустоши";
 
                 float expires = task["expiresHour"]?.ToObject<float>() ?? worldHour;
                 int hoursLeft = status == "active" ? Mathf.Max(0, Mathf.CeilToInt(expires - worldHour)) : 0;
@@ -563,13 +666,7 @@ namespace RealmOfAshes.Game
                     route.Add("Координаты: " + Mathf.RoundToInt(px.ToObject<float>()) + ":" + Mathf.RoundToInt(py.ToObject<float>()) + ".");
                 card.Route = string.Join(" ", route);
 
-                JObject reward = task["reward"] as JObject;
-                var parts = new List<string>();
-                int xp = reward?["xp"]?.ToObject<int>() ?? 0, caps = reward?["caps"]?.ToObject<int>() ?? 0, rep = reward?["reputation"]?.ToObject<int>() ?? 0;
-                if (xp > 0) parts.Add(xp + " XP");
-                if (caps > 0) parts.Add(caps + " крышек");
-                if (rep > 0) parts.Add("репутация +" + rep);
-                card.Reward = parts.Count > 0 ? "Награда: " + string.Join(", ", parts) + "." : string.Empty;
+                card.Reward = statusOnly ? string.Empty : WorldTaskRewardText(task);
 
                 string joinName = task["joinPartyName"]?.ToString();
                 card.JoinHint = task["actionMode"]?.ToString() == "join_party" && !string.IsNullOrEmpty(joinName)
@@ -578,12 +675,21 @@ namespace RealmOfAshes.Game
 
                 if (status == "active" && !accepted)
                 {
+                    if (statusOnly)
+                    {
+                        card.Label = "Операция фракции";
+                        card.CanAccept = false;
+                        card.AcceptLabel = null;
+                        card.AcceptHint = "Поручение выполняет патруль НПС. Его статус можно смотреть на карте активностей.";
+                        rows.Add(card);
+                        continue;
+                    }
                     // worldTaskAcceptancePlaceStatus + worldTaskAccessStatus
                     string boardSiteId = task["issuerSiteId"]?.ToString() ?? task["boardSiteId"]?.ToString() ?? task["siteId"]?.ToString() ?? string.Empty;
                     JObject site = WorldSite(boardSiteId);
-                    string siteName = task["issuerSiteName"]?.ToString() ?? site?["name"]?.ToString() ?? "доска работ";
+                    string siteName = task["issuerSiteName"]?.ToString() ?? site?["name"]?.ToString() ?? "доска контрактов";
                     bool placeOk = !string.IsNullOrEmpty(boardSiteId) && PlayerAtSite(boardSiteId, site);
-                    string placeText = string.IsNullOrEmpty(boardSiteId) ? "Доска работ не найдена."
+                    string placeText = string.IsNullOrEmpty(boardSiteId) ? "Доска контрактов не найдена."
                         : placeOk ? "Вы у доски: " + siteName + "." : "Взять можно у доски: " + siteName + ".";
                     bool accessOk = true;
                     string accessText = string.Empty;
@@ -604,10 +710,10 @@ namespace RealmOfAshes.Game
                             accessText = "Нужно вступить во фракцию: " + FactionLabel(factionId) + ".";
                         }
                         else if (!string.IsNullOrEmpty(factionId) && mine == factionId)
-                            accessText = "Фракционная работа: " + FactionLabel(factionId) + ".";
+                            accessText = "Фракционный контракт: " + FactionLabel(factionId) + ".";
                     }
                     card.CanAccept = placeOk && accessOk;
-                    card.AcceptLabel = !placeOk ? "Нужна доска" : !accessOk ? "Недоступно" : "Взять работу";
+                    card.AcceptLabel = !placeOk ? "Нужна доска" : !accessOk ? "Недоступно" : "Взять контракт";
                     card.AcceptHint = (placeText + " " + accessText).Trim();
                 }
                 if (status == "active" && accepted)
@@ -623,11 +729,86 @@ namespace RealmOfAshes.Game
 
         public void PipboyWorldTaskAction(string taskId, string action) { SubmitWorldTaskAction(taskId, action); }
 
-        /// <summary>Страница QUESTS открыта вне доски — подтянуть состояние пустоши, если его ещё нет.</summary>
+        /// <summary>Страница CONTRACTS открыта вне доски — подтянуть состояние пустоши, если его ещё нет.</summary>
         public void EnsureWorldState()
         {
             if (_world?["worldTasks"] is JArray || _worldRequestPending) return;
             StartCoroutine(LoadWastelandState());
+        }
+
+        /// <summary>
+        /// Персональные записи идут первыми: принятый или отслеживаемый контракт
+        /// не должен исчезнуть, если его публичный дубль убран из общей витрины.
+        /// </summary>
+        private List<JObject> WorldTaskRowsForPlayer()
+        {
+            var rows = new List<JObject>();
+            var ids = new HashSet<string>();
+            foreach (JToken token in _self?["worldTaskRecords"] as JArray ?? new JArray())
+            {
+                JObject task = token as JObject;
+                string id = task?["id"]?.ToString() ?? string.Empty;
+                if (task != null && (string.IsNullOrEmpty(id) || ids.Add(id))) rows.Add(task);
+            }
+            foreach (JToken token in _world?["worldTasks"] as JArray ?? new JArray())
+            {
+                JObject task = token as JObject;
+                string id = task?["id"]?.ToString() ?? string.Empty;
+                if (task != null && (string.IsNullOrEmpty(id) || ids.Add(id))) rows.Add(task);
+            }
+            return rows;
+        }
+
+        private static string WorldTaskSemanticKey(JObject task)
+        {
+            if (task == null) return string.Empty;
+            string direct = task["contractKey"]?.ToString() ?? task["key"]?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(direct)) return direct.Trim().ToLowerInvariant();
+
+            JObject details = task["details"] as JObject;
+            JObject operation = task["operation"] as JObject ?? details?["operation"] as JObject;
+            string type = task["type"]?.ToString() ?? "contract";
+            string objective = task["objective"]?.ToString()
+                ?? details?["objective"]?.ToString()
+                ?? details?["activityKind"]?.ToString()
+                ?? operation?["goal"]?["kind"]?.ToString()
+                ?? operation?["kind"]?.ToString()
+                ?? type;
+            string faction = task["joinPartyFaction"]?.ToString()
+                ?? task["faction"]?.ToString()
+                ?? details?["factionId"]?.ToString()
+                ?? string.Empty;
+            string actionMode = task["actionMode"]?.ToString() ?? string.Empty;
+            string reason = details?["supportReason"]?.ToString()
+                ?? details?["resourceSupport"]?["reason"]?.ToString()
+                ?? string.Empty;
+
+            var mechanics = new List<string>();
+            JObject demand = details?["demand"] as JObject
+                ?? details?["supportDemand"] as JObject
+                ?? details?["resourceSupport"]?["demand"] as JObject;
+            if (demand != null)
+            {
+                var demandParts = new List<string>();
+                foreach (JProperty item in demand.Properties())
+                    if ((item.Value?.ToObject<float>() ?? 0f) > 0f)
+                        demandParts.Add(item.Name.ToLowerInvariant() + ":" + item.Value.ToString());
+                demandParts.Sort(StringComparer.Ordinal);
+                mechanics.AddRange(demandParts);
+            }
+            JArray resourceTypes = details?["resourceTypes"] as JArray;
+            if (resourceTypes != null)
+            {
+                var resourceParts = new List<string>();
+                foreach (JToken token in resourceTypes)
+                    if (!string.IsNullOrEmpty(token?.ToString())) resourceParts.Add(token.ToString().ToLowerInvariant());
+                resourceParts.Sort(StringComparer.Ordinal);
+                mechanics.AddRange(resourceParts);
+            }
+            return string.Join("|", new[]
+            {
+                type, objective, faction, actionMode, reason, string.Join(",", mechanics)
+            }).Trim().ToLowerInvariant();
         }
 
         /// <summary>worldTaskPlayerAtSite web: текущая локация совпадает с locationId площадки или с её id.</summary>
@@ -646,6 +827,33 @@ namespace RealmOfAshes.Game
             JObject site = boardSite ?? WorldSite(task["siteId"]?.ToString() ?? string.Empty);
             string owner = (site?["owner"]?.ToString() ?? string.Empty).ToLowerInvariant();
             return IsJoinableFaction(owner) ? owner : string.Empty;
+        }
+
+        private string WorldTaskReputationFactionId(JObject task)
+        {
+            if (task == null) return string.Empty;
+            string explicitId = (task["reward"]?["reputationFactionId"]?.ToString()
+                ?? task["details"]?["rewardFactionId"]?.ToString()
+                ?? task["reputationFactionId"]?.ToString()
+                ?? string.Empty).ToLowerInvariant();
+            if (!string.IsNullOrEmpty(explicitId)) return IsJoinableFaction(explicitId) ? explicitId : string.Empty;
+            string issuerId = task["issuerSiteId"]?.ToString() ?? task["boardSiteId"]?.ToString() ?? task["siteId"]?.ToString() ?? string.Empty;
+            return WorldTaskFactionId(task, WorldSite(issuerId));
+        }
+
+        private string WorldTaskRewardText(JObject task)
+        {
+            JObject reward = task?["reward"] as JObject;
+            var parts = new List<string>();
+            int xp = reward?["xp"]?.ToObject<int>() ?? 0;
+            int caps = reward?["caps"]?.ToObject<int>() ?? 0;
+            int reputation = reward?["reputation"]?.ToObject<int>() ?? 0;
+            if (xp > 0) parts.Add(xp + " XP");
+            if (caps > 0) parts.Add(caps + " крышек");
+            string reputationFactionId = WorldTaskReputationFactionId(task);
+            if (reputation > 0 && !string.IsNullOrEmpty(reputationFactionId))
+                parts.Add("репутация " + FactionLabel(reputationFactionId) + " +" + reputation);
+            return parts.Count > 0 ? "Награда: " + string.Join(", ", parts) + "." : string.Empty;
         }
 
         // --- Фасад для канва-окон лута и хранилища (RoaLootCanvas). ---
@@ -1558,7 +1766,7 @@ namespace RealmOfAshes.Game
             _active = (JObject)board.DeepClone();
             _panel = PanelKind.JobBoard;
             _scroll = Vector2.zero;
-            Show("Получаем работы пустоши…", 4f);
+            Show("Получаем контракты пустоши…", 4f);
             if (!_worldRequestPending) StartCoroutine(LoadWastelandState());
         }
 
@@ -1994,7 +2202,7 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Выполнить тот же серверный маршрут мировой работы, что использует окно доски заданий.
+        /// Выполнить тот же серверный маршрут контракта, что использует окно доски контрактов.
         /// Публичный вход также позволяет проверять production-путь в собранном клиенте.
         /// </summary>
         public bool SubmitWorldTaskAction(string taskId, string action, Action<JObject> completed = null)
@@ -2002,7 +2210,7 @@ namespace RealmOfAshes.Game
             if (_worldRequestPending || Socket == null || string.IsNullOrEmpty(taskId)
                 || string.IsNullOrEmpty(action)) return false;
             _worldRequestPending = true;
-            Show("Сервер обновляет работу…", 3f);
+            Show("Сервер обновляет контракт…", 3f);
             Socket.EmitWithAck("worldTaskAction", new Dictionary<string, object>
             {
                 ["taskId"] = taskId,
@@ -2019,10 +2227,10 @@ namespace RealmOfAshes.Game
                     return;
                 }
 
-                if (action == "accept") Show("Работа принята.");
-                else if (action == "cancel") Show("Работа отменена.");
+                if (action == "accept") Show("Контракт принят.");
+                else if (action == "cancel") Show("Контракт отменён.");
                 else if (action == "track") Show(string.IsNullOrEmpty(ack["trackedId"]?.ToString())
-                    ? "Метка снята." : "Работа отслеживается.");
+                    ? "Метка снята." : "Контракт отслеживается.");
                 else if (action == "deliver") Show("Припасы доставлены.");
                 else if (action == "claim")
                 {
@@ -2030,7 +2238,32 @@ namespace RealmOfAshes.Game
                     Show("Награда: " + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP, "
                         + (reward?["caps"]?.ToObject<int>() ?? 0) + " крышек.");
                 }
-                else Show("Работа обновлена.");
+                else Show("Контракт обновлён.");
+                completed?.Invoke(ack);
+            });
+            return true;
+        }
+
+        /// <summary>
+        /// Просит авторитетный сервер подобрать наиболее срочную короткую вылазку.
+        /// Сервер сам принимает и помечает задачу; клиент только применяет ack и строит маршрут.
+        /// </summary>
+        public bool SubmitQuickWorldActivity(Action<JObject> completed = null)
+        {
+            if (_worldRequestPending || Socket == null) return false;
+            _worldRequestPending = true;
+            Show("Ищем активную вылазку…", 3f);
+            Socket.EmitWithAck("worldActivityQuickJoin", new Dictionary<string, object>(), ack =>
+            {
+                _worldRequestPending = false;
+                ApplyActionAck(ack);
+                if (ack?["sim"] is JObject sim) _world = (JObject)sim.DeepClone();
+                if (ack?["ok"]?.ToObject<bool>() != true)
+                    Show(ack?["error"]?.ToString() ?? "Сервер не нашёл доступную вылазку.");
+                else
+                    Show(ack?["joinSource"]?.ToString() == "help_signal"
+                        ? "Найден отряд, которому нужна помощь."
+                        : "Вылазка подобрана. Маршрут отмечен.");
                 completed?.Invoke(ack);
             });
             return true;
@@ -2276,7 +2509,7 @@ namespace RealmOfAshes.Game
             string action;
             if (_candidateKind == TargetKind.Resource) action = "добыть";
             else if (_candidateKind == TargetKind.CraftingStation) action = "создать предмет";
-            else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть работы";
+            else if (_candidateKind == TargetKind.JobBoard) action = "посмотреть контракты";
             else if (_candidateKind == TargetKind.Transition) action = "перейти";
             else if (_candidateKind == TargetKind.Container || _candidateKind == TargetKind.Storage) action = "открыть";
             else if (_candidateKind == TargetKind.TradeMachine) action = "торговать";
@@ -2608,7 +2841,7 @@ namespace RealmOfAshes.Game
         {
             if (_worldRequestPending && !(_world?["worldTasks"] is JArray))
             {
-                GUILayout.Label("Получаем актуальные работы…");
+                GUILayout.Label("Получаем актуальные контракты…");
                 return;
             }
 
@@ -2634,16 +2867,18 @@ namespace RealmOfAshes.Game
             }
 
             GUILayout.Space(8f);
-            GUILayout.Label("<b>Работы пустоши</b>", Rich());
+            GUILayout.Label("<b>Контракты пустоши</b>", Rich());
             bool any = false;
-            foreach (JToken token in _world?["worldTasks"] as JArray ?? new JArray())
+            foreach (JObject task in WorldTaskRowsForPlayer())
             {
-                JObject task = token as JObject;
                 if (task == null || !TaskBelongsToBoard(task, boardSiteId)) continue;
                 any = true;
                 string taskId = task["id"]?.ToString() ?? string.Empty;
                 string status = task["status"]?.ToString() ?? "active";
                 string type = task["type"]?.ToString() ?? string.Empty;
+                bool statusOnly = task["statusOnly"]?.ToObject<bool>() == true
+                    || task["actionMode"]?.ToString() == "status_only"
+                    || type == "patrol_mission";
                 bool accepted = SelfArrayContains("worldTaskAccepted", taskId);
                 bool tracked = _self?["worldTaskTrackedId"]?.ToString() == taskId;
                 bool claimed = SelfArrayContains("worldTaskRewardClaims", taskId);
@@ -2654,17 +2889,19 @@ namespace RealmOfAshes.Game
                     + (tracked ? "  [отслеживается]" : string.Empty), Rich());
                 string text = task["text"]?.ToString();
                 if (!string.IsNullOrEmpty(text)) GUILayout.Label(text, Wrap());
-                JObject reward = task["reward"] as JObject;
-                GUILayout.Label("Награда: " + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP, "
-                    + (reward?["caps"]?.ToObject<int>() ?? 0) + " крышек, репутация "
-                    + (reward?["reputation"]?.ToObject<int>() ?? 0), Dim());
+                if (statusOnly) GUILayout.Label("Поручение выполняет патруль НПС.", Dim());
+                else
+                {
+                    string rewardText = WorldTaskRewardText(task);
+                    if (!string.IsNullOrEmpty(rewardText)) GUILayout.Label(rewardText, Dim());
+                }
                 int slots = task["joinPartySlotsLeft"]?.ToObject<int>() ?? -1;
                 if (slots >= 0) GUILayout.Label("Свободных мест в группе: " + slots, Dim());
 
                 GUI.enabled = !_worldRequestPending;
                 GUILayout.BeginHorizontal();
-                if (status == "active" && !accepted && GUILayout.Button("Взять")) WorldTaskAction(task, "accept");
-                if (status == "active" && accepted)
+                if (status == "active" && !accepted && !statusOnly && GUILayout.Button("Взять")) WorldTaskAction(task, "accept");
+                if (status == "active" && accepted && !statusOnly)
                 {
                     if (GUILayout.Button(tracked ? "Снять метку" : "Отслеживать")) WorldTaskAction(task, "track");
                     if (type == "deliver_supplies" && GUILayout.Button("Доставить")) WorldTaskAction(task, "deliver");
@@ -2676,11 +2913,11 @@ namespace RealmOfAshes.Game
                 GUI.enabled = true;
 
                 if (status == "completed" && claimed) GUILayout.Label("Награда уже получена.", Dim());
-                else if (status == "completed" && !rewardEligible) GUILayout.Label("Работа завершена; участие не подтверждено.", Dim());
+                else if (status == "completed" && !rewardEligible) GUILayout.Label("Контракт завершён; участие не подтверждено.", Dim());
                 GUILayout.EndVertical();
             }
 
-            if (!any) GUILayout.Label("У этой доски сейчас нет работ.");
+            if (!any) GUILayout.Label("На этой доске сейчас нет контрактов.");
             GUILayout.Space(6f);
             GUI.enabled = !_worldRequestPending;
             if (GUILayout.Button("Обновить список")) StartCoroutine(LoadWastelandState());
@@ -2866,12 +3103,15 @@ namespace RealmOfAshes.Game
 
         private string QuestState(string id)
         {
-            return _self?["npcQuests"]?[id]?.ToString() ?? "available";
+            return _self?["npcQuests"]?[id]?.ToString()
+                ?? _quests?[id]?["initialState"]?.ToString()
+                ?? "available";
         }
 
         private static string QuestStateLabel(string state)
         {
             if (state == "active") return "в работе";
+            if (state == "ready") return "готово к сдаче";
             if (state == "done") return "выполнено";
             if (state == "locked") return "закрыто";
             return "доступно";
@@ -2957,7 +3197,7 @@ namespace RealmOfAshes.Game
         {
             if (kind == TargetKind.Storage) return "Хранилище";
             if (kind == TargetKind.CraftingStation) return RoaCraftingData.StationLabel(station);
-            if (kind == TargetKind.JobBoard) return "Доска работ";
+            if (kind == TargetKind.JobBoard) return "Доска контрактов";
             return "Торговый автомат";
         }
 
@@ -3061,8 +3301,7 @@ namespace RealmOfAshes.Game
 
         private static bool IsJoinableFaction(string factionId)
         {
-            return factionId == "old_klim" || factionId == "scrap_union"
-                || factionId == "relay_order" || factionId == "caravans";
+            return RoaPipboy.IsJoinableFaction(factionId);
         }
 
         private static string FactionLabel(string factionId)

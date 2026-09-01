@@ -33,6 +33,33 @@ assert(globalMap.includes('_savedFieldOfView = CameraRig.CurrentFieldOfView;')
   && globalMap.includes('CameraRig.SetFieldOfView(RoaCameraRig.StrategicFieldOfView);')
   && globalMap.includes('CameraRig.SetFieldOfView(_savedFieldOfView);'),
   'Global map no longer preserves its independent strategic field of view');
+assert(globalMap.includes('public const float StrategicDefaultPitchDeg = 55f;')
+  && globalMap.includes('public const float StrategicDefaultYawDeg = 45f;')
+  && globalMap.includes('public const float StrategicMinimumPitchDeg = 38f;')
+  && globalMap.includes('public const float StrategicMaximumPitchDeg = 82f;')
+  && globalMap.includes('public static Vector2 StrategicCameraOrbit(')
+  && globalMap.includes('CameraRig.PitchDeg = StrategicDefaultPitchDeg;')
+  && globalMap.includes('CameraRig.YawDeg = StrategicDefaultYawDeg;')
+  && globalMap.includes('_savedPitch = CameraRig.PitchDeg;')
+  && globalMap.includes('_savedYaw = CameraRig.YawDeg;')
+  && globalMap.includes('CameraRig.PitchDeg = _savedPitch;')
+  && globalMap.includes('CameraRig.YawDeg = _savedYaw;')
+  && cameraProbe.includes('orbit=55/45+MMB'),
+  'Global map no longer starts at its angled view or safely clamps and restores middle-button orbit');
+assert(globalMap.includes('private bool UpdateKeyboardCameraPan()')
+  && globalMap.includes('Input.GetKey(KeyCode.W)')
+  && globalMap.includes('Input.GetKey(KeyCode.A)')
+  && globalMap.includes('Input.GetKey(KeyCode.S)')
+  && globalMap.includes('Input.GetKey(KeyCode.D)')
+  && globalMap.includes('KeyboardCameraPanMovement(input, CameraRig.Distance,')
+  && globalMap.includes('ApplyCameraPanDelta(RightMousePanDelta(delta));')
+  && globalMap.includes('return new Vector2(pointerDelta.x, -pointerDelta.y);')
+  && globalMap.includes('CameraRig.MinDistance = StrategicMinimumCameraDistance(span);')
+  && globalMap.includes('CameraRig.MaxDistance = StrategicMaximumCameraDistance(span);')
+  && cameraProbe.includes('WASD=camera-relative')
+  && cameraProbe.includes('RMB=Y-inverted')
+  && cameraProbe.includes('mapZoom=18–150'),
+  'Global map lost camera-relative WASD, vertical-only RMB inversion or its closer safe zoom');
 assert(scene.includes('  Distance: 11.5')
   && scene.includes('  MaxDistance: 21.5')
   && scene.includes('  field of view: 52')

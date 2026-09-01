@@ -205,6 +205,15 @@ namespace RealmOfAshes.EditorTools
                     BindingFlags.Instance | BindingFlags.NonPublic);
                 Transform hitSpine = spineField?.GetValue(reaction) as Transform;
                 Check(hitSpine != null, "реакция не нашла spine_02 настоящего GLB");
+                Transform hitLeftFoot = null;
+                Transform hitRightFoot = null;
+                foreach (Transform node in loaded.GetComponentsInChildren<Transform>(true))
+                {
+                    if (node.name == "foot_l") hitLeftFoot = node;
+                    else if (node.name == "foot_r") hitRightFoot = node;
+                }
+                Check(hitLeftFoot != null && hitRightFoot != null,
+                    "реальные стопы не найдены для проверки удара в упор");
                 bool skinnedBone = false;
                 foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
@@ -276,6 +285,9 @@ namespace RealmOfAshes.EditorTools
 
                 // Re-sample the authored frame, then execute the same complete LateUpdate
                 // order as gameplay. The impact must survive the subsequent weapon layer.
+                AnimationState hurt = animation["hurt"];
+                Check(hurt != null, "hurt-клип недоступен для проверки ног");
+                hurt.time = Mathf.Min(0.14f, hurt.length * 0.42f);
                 animation.Sample();
                 runtimeLateUpdate.Invoke(loaded, null);
                 float retainedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
@@ -283,6 +295,13 @@ namespace RealmOfAshes.EditorTools
                     "оружейный хват стёр реакцию позвоночника на попадание");
                 Check(weapon.SupportHandSolved,
                     "левая рука потеряла цевьё после реакции на попадание");
+                float hitGroundY = loaded.transform.parent != null
+                    ? loaded.transform.parent.position.y : loaded.transform.position.y;
+                float highestHitFoot = Mathf.Max(hitLeftFoot.position.y, hitRightFoot.position.y) - hitGroundY;
+                float hitFootSplit = Mathf.Abs(hitLeftFoot.position.y - hitRightFoot.position.y);
+                Check(loaded.FootIkSuppressed && highestHitFoot < 0.36f && hitFootSplit < 0.26f,
+                    "нога улетела вверх при ударе в упор: max="
+                    + highestHitFoot.ToString("0.000") + ", split=" + hitFootSplit.ToString("0.000"));
                 Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] вооружённая реакция spine_02: "
                     + appliedAngle.ToString("0.0") + "° → " + retainedAngle.ToString("0.0")
                     + "°, muzzle=" + muzzle.ToString("F2"));
@@ -388,6 +407,14 @@ namespace RealmOfAshes.EditorTools
                 idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
                 animation.Sample();
                 runtimeLateUpdate.Invoke(loaded, null);
+                loaded.SetDead(true);
+                Check(loaded.Dead && loaded.CurrentClip == "death"
+                        && animation.IsPlaying("death") && !animation.IsPlaying("run"),
+                    "смерть не остановила ходьбу на реальном GLB");
+                loaded.SetDead(false);
+                animation.Play("idle");
+                idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
+                animation.Sample();
                 string deathCapturePath = Environment.GetEnvironmentVariable("ROA_UNITY_DEATH_CAPTURE");
                 if (!string.IsNullOrWhiteSpace(deathCapturePath))
                 {

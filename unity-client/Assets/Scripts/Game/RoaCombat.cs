@@ -29,8 +29,11 @@ namespace RealmOfAshes.Game
         public RoaRemotePlayers RemotePlayers;
         public RoaPlayerController Player;
         public RoaInteraction Interaction;
+        public RoaGameBootstrap Bootstrap;
         public RoaPipboy Pipboy;
+        public RoaPipboyCanvas PipboyCanvas;
         public RoaInventory Inventory;
+        public RoaGlobalMap GlobalMap;
         public RoaCombatFx Fx;
         public RoaAudio Audio;
         public RoaHud Hud;
@@ -79,6 +82,10 @@ namespace RealmOfAshes.Game
         {
             get { return Mathf.Max(0f, _reloadVisualEndsAt - Time.unscaledTime); }
         }
+        public bool CombatPresentationActive
+        {
+            get { return IsCombatPresentationActive(Time.unscaledTime, _combatPresentationUntil); }
+        }
         public bool HasUsableRound
         {
             get
@@ -95,6 +102,17 @@ namespace RealmOfAshes.Game
             }
         }
 
+        public void NotifyCombatPresentation(float seconds = CombatPresentationSeconds)
+        {
+            _combatPresentationUntil = Mathf.Max(_combatPresentationUntil,
+                Time.unscaledTime + Mathf.Max(0.25f, seconds));
+        }
+
+        public static bool IsCombatPresentationActive(float now, float until)
+        {
+            return now < until;
+        }
+
         private float _nextRequestAt;
         private string _pendingAttackToken = string.Empty;
         private float _attackRequestTimeoutAt = -100f;
@@ -104,6 +122,8 @@ namespace RealmOfAshes.Game
         private bool _reloadRequestInFlight;
         private float _reloadVisualEndsAt = -100f;
         private const float ReloadVisualSeconds = 0.82f;
+        private float _combatPresentationUntil = -100f;
+        private const float CombatPresentationSeconds = 7f;
         private int _shotSeq;
         private string _fireMode = "single";
         private string _modeWeapon = string.Empty;
@@ -171,6 +191,7 @@ namespace RealmOfAshes.Game
             _attackRequestTimeoutAt = -100f;
             _meleePresentationToken = string.Empty;
             _meleeVisualStartedAt = -100f;
+            _combatPresentationUntil = -100f;
             if (Socket == null) return;
             Socket.OnEnemyAttack -= HandleEnemyAttack;
             Socket.OnEnemyAttackMiss -= HandleEnemyAttackMiss;
@@ -182,6 +203,7 @@ namespace RealmOfAshes.Game
         private void HandleEnemyAttack(JObject payload)
         {
             if (payload == null || Player == null) return;
+            NotifyCombatPresentation();
             int damage = Mathf.Max(0, Mathf.RoundToInt(payload["damage"]?.ToObject<float>() ?? 0f));
             int absorbed = Mathf.Max(0, Mathf.RoundToInt(payload["absorbed"]?.ToObject<float>() ?? 0f));
             string name = payload["enemyName"]?.ToString() ?? "Противник";
@@ -214,6 +236,7 @@ namespace RealmOfAshes.Game
             if (!string.IsNullOrEmpty(payload["enemyId"]?.ToString())) return;
             string attackerId = payload["attackerId"]?.ToString();
             if (string.IsNullOrEmpty(attackerId)) return;
+            NotifyCombatPresentation();
 
             int damage = Mathf.Max(0, Mathf.RoundToInt(payload["damage"]?.ToObject<float>() ?? 0f));
             int absorbed = Mathf.Max(0, Mathf.RoundToInt(payload["absorbed"]?.ToObject<float>() ?? 0f));
@@ -251,6 +274,7 @@ namespace RealmOfAshes.Game
         private void HandleEnemyAttackMiss(JObject payload)
         {
             if (Player == null) return;
+            NotifyCombatPresentation();
             string name = payload?["enemyName"]?.ToString() ?? "Противник";
             Float("Промах", Player.transform.position, new Color(0.85f, 0.82f, 0.7f));
             AddLog(name + " промахивается.");
@@ -319,10 +343,21 @@ namespace RealmOfAshes.Game
 
         private bool InputAllowed()
         {
-            return InputEnabled
-                && (Interaction == null || !Interaction.IsPanelOpen)
-                && (Pipboy == null || !Pipboy.PointerOverUi)
-                && (Inventory == null || !Inventory.IsOpen);
+            return InputEnabled && !UiBlocksAttack(
+                Interaction != null && Interaction.IsPanelOpen,
+                PipboyCanvas != null && PipboyCanvas.IsOpen,
+                Pipboy != null && Pipboy.PointerOverUi,
+                Inventory != null && Inventory.IsOpen,
+                (GlobalMap != null && GlobalMap.IsActive)
+                    || (Bootstrap != null && Bootstrap.GlobalMapBlocksCombat));
+        }
+
+        public static bool UiBlocksAttack(bool interactionOpen, bool pipboyCanvasOpen,
+                                          bool pipboyOpen, bool inventoryOpen,
+                                          bool globalMapOpen)
+        {
+            return interactionOpen || pipboyCanvasOpen || pipboyOpen
+                || inventoryOpen || globalMapOpen;
         }
 
         private void UpdateHoverTarget(bool enabled)
@@ -604,6 +639,7 @@ namespace RealmOfAshes.Game
         }
         private void AttackAt(Vector3 cursor)
         {
+            NotifyCombatPresentation();
             string weapon = ActiveWeapon();
             if (_reloadRequestInFlight)
             {
@@ -1283,6 +1319,7 @@ namespace RealmOfAshes.Game
 
         private void CycleFireMode()
         {
+            NotifyCombatPresentation(2.5f);
             List<string> modes = AvailableModes();
             if (modes.Count <= 1)
             {
@@ -1403,6 +1440,7 @@ namespace RealmOfAshes.Game
 
         private void Reload()
         {
+            NotifyCombatPresentation(3.5f);
             if (Socket == null || Socket.Session == null) return;
             if (_reloadRequestInFlight)
             {

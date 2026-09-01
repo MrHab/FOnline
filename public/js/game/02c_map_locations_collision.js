@@ -1576,7 +1576,18 @@
       const rot = row.rotation && typeof row.rotation === 'object' ? row.rotation : {};
       const angle = Number(rot.y ?? row.rotationY ?? 0);
       let collisionBoxes = [];
-      if (modelRef && typeof staticModelCollisionTransforms === 'function') {
+      if (typeof authoredObjectCollisionTransforms === 'function') {
+        try {
+          collisionBoxes = authoredObjectCollisionTransforms(row, worldX, worldZ, angle).filter(box => box
+            && Number.isFinite(Number(box.x))
+            && Number.isFinite(Number(box.z))
+            && Number(box.halfX) > 0
+            && Number(box.halfZ) > 0);
+        } catch (_) {
+          collisionBoxes = [];
+        }
+      }
+      if (!collisionBoxes.length && modelRef && typeof staticModelCollisionTransforms === 'function') {
         try {
           collisionBoxes = staticModelCollisionTransforms(modelRef, worldX, worldZ, angle, {
             scaleX: Number(scale.x || 1),

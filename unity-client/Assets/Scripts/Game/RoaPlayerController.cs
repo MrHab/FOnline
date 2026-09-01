@@ -70,6 +70,7 @@ namespace RealmOfAshes.Game
         private Vector3 _requestedVelocity;
         private float _collisionPressure;
         private bool _colliding;
+        private bool _actorContact;
         private float _yawDeg;
         private bool _crouching;
         private float _baseSpeed = DefaultSpeed;
@@ -80,6 +81,7 @@ namespace RealmOfAshes.Game
         public bool Colliding { get { return _colliding; } }
         public Vector3 CollisionNormal { get { return _collisionNormal; } }
         public float CollisionPressure { get { return _collisionPressure; } }
+        public bool ActorContact { get { return _actorContact; } }
 
         /// <summary>Touch UI disables cursor aiming and supplies an explicit target.</summary>
         public bool PointerAimEnabled { get; private set; } = true;
@@ -98,6 +100,7 @@ namespace RealmOfAshes.Game
         public bool HasBrokenLeg { get; private set; }
         public bool HasConcussion { get; private set; }
         public bool HasInfection { get; private set; }
+        public bool Downed { get; private set; }
 
         private void Awake()
         {
@@ -124,12 +127,13 @@ namespace RealmOfAshes.Game
 
         private void Update()
         {
-            if (!InputEnabled || (Pipboy != null && Pipboy.IsOpen) || (Inventory != null && Inventory.IsOpen))
+            if (!InputEnabled || Downed || (Pipboy != null && Pipboy.IsOpen) || (Inventory != null && Inventory.IsOpen))
             {
                 _velocity = Vector3.zero;
                 _visualVelocity = Vector3.zero;
                 _requestedVelocity = Vector3.zero;
                 _colliding = false;
+                _actorContact = false;
                 _collisionNormal = Vector3.zero;
                 _collisionPressure = 0f;
                 Moving = false;
@@ -267,6 +271,7 @@ namespace RealmOfAshes.Game
             float frameDt = Mathf.Max(0.001f, Time.deltaTime);
             Vector3 before = transform.position;
             _colliding = false;
+            _actorContact = false;
             _collisionNormal = Vector3.zero;
             _collisionPressure = 0f;
 
@@ -292,6 +297,14 @@ namespace RealmOfAshes.Game
         private void OnControllerColliderHit(ControllerColliderHit hit)
         {
             if (hit == null || hit.normal.y > 0.55f) return;
+            // A living actor blocks displacement, but it is not a wall: feeding
+            // this contact into the compression pose bends the pelvis while foot
+            // IK tries to keep both soles planted and can fold a leg upward.
+            if (RoaFootIk.IsActorCollider(hit.collider, transform))
+            {
+                _actorContact = true;
+                return;
+            }
             float pressure = RoaLocomotionPresentation.ContactPressure(
                 _requestedVelocity, hit.normal);
             if (pressure <= 0.001f) return;
@@ -320,6 +333,13 @@ namespace RealmOfAshes.Game
         public void ApplySpecial(JObject self)
         {
             if (self == null) return;
+
+            bool downed = self.Value<bool?>("downed") == true;
+            if (Downed != downed)
+            {
+                Downed = downed;
+                if (View != null) View.SetDead(Downed);
+            }
 
             JObject special = self["special"] as JObject;
             var ranks = self["talentRanks"] as JObject;
@@ -436,6 +456,7 @@ namespace RealmOfAshes.Game
             _velocity = Vector3.zero;
             _visualVelocity = Vector3.zero;
             _colliding = false;
+            _actorContact = false;
             _collisionNormal = Vector3.zero;
             _collisionPressure = 0f;
             _requestedVelocity = Vector3.zero;

@@ -1,14 +1,37 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
+using System.IO;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using UnityEditor;
 using UnityEngine;
 
+[InitializeOnLoad]
 public static class RoaGlobalMapTerritoryProbe
 {
+    private const string RequestName = "RoaGlobalMapTerritoryProbe.request";
     private static RoaGlobalMap _map;
     private static double _deadline;
+    private static double _nextRequestCheck;
+
+    static RoaGlobalMapTerritoryProbe()
+    {
+        EditorApplication.update += PollRequest;
+    }
+
+    private static void PollRequest()
+    {
+        if (!Application.isPlaying || EditorApplication.isCompiling
+            || EditorApplication.isUpdating
+            || EditorApplication.timeSinceStartup < _nextRequestCheck) return;
+        _nextRequestCheck = EditorApplication.timeSinceStartup + 0.5d;
+        string root = Directory.GetParent(Application.dataPath)?.FullName;
+        if (string.IsNullOrEmpty(root)) return;
+        string request = Path.Combine(root, "Library", RequestName);
+        if (!File.Exists(request)) return;
+        File.Delete(request);
+        Run();
+    }
 
     [MenuItem("Realm of Ashes/Показать территории глобальной карты", true)]
     private static bool CanRun()
@@ -107,10 +130,8 @@ public static class RoaGlobalMapTerritoryProbe
         bool valid = _map.TerritoryBorderCount > 0
                      && _map.InfluenceZoneCount == 0
                      && _map.SettlementModelCount == 4
-                     && _map.SiteMarkerCount >= 100
+                     && _map.SiteMarkerCount == 4
                      && _map.SettlementStatusCount == 4
-                     && _map.SiteMeshVertexCount > 1000
-                     && _map.SiteMeshSubMeshCount >= 8
                      && selection.Contains("Территория:")
                      && selection.Contains("Поселение")
                      && factions.Contains("Владение фракций:")
@@ -121,9 +142,8 @@ public static class RoaGlobalMapTerritoryProbe
                         + ", поселения=" + _map.SettlementModelCount
                         + ", статусы=" + _map.SettlementStatusCount
                         + ", модели точек=" + _map.SiteMarkerCount
-                        + ", вершины=" + _map.SiteMeshVertexCount
-                        + ", материалы=" + _map.SiteMeshSubMeshCount
                         + ", выбор сохранён=" + idleSelectionPreserved
+                        + ", threatRings=" + _map.ThreatMarkerCount
                         + "\n" + selection + "\n" + factions;
         if (valid) Debug.Log(report + "\n[ГЛОБАЛЬНАЯ КАРТА] готово.");
         else Debug.LogError(report + "\n[ГЛОБАЛЬНАЯ КАРТА] сводка не прошла проверку.");

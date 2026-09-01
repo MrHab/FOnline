@@ -75,6 +75,12 @@
     if (hudEditMode) { e.preventDefault(); e.stopPropagation(); return; }
     if (isProgressionWindowOpen()) { e.preventDefault(); e.stopPropagation(); return; }
     if (!gameStarted || paused) return;
+    if (anyWindowOpen()) {
+      stopAutoFire();
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (e.button === 2) {
       e.preventDefault();
       e.stopPropagation();

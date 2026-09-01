@@ -63,6 +63,20 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
+        /// Подогнать полный замах так, чтобы фаза Strike пришлась на
+        /// авторитетный серверный дедлайн. Это используется NPC: телеграф
+        /// начинается раньше урона, а сама модель должна коснуться цели ровно
+        /// при приходе enemyMelee/enemyAttack, а не закончить короткий замах
+        /// посреди предупреждения.
+        /// </summary>
+        public static float SwingSecondsForImpact(float impactDelaySeconds)
+        {
+            float impact = Mathf.Clamp(impactDelaySeconds,
+                StrikeContactSeconds(0.18f), 0.82f);
+            return Mathf.Clamp(impact / StrikeContactPhase, 0.18f, 1.42f);
+        }
+
+        /// <summary>
         /// Перевод авторских координат стойки в пространство корня модели Unity.
         ///
         /// Преобразований два, и они частично гасят друг друга:

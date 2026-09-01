@@ -66,6 +66,11 @@ namespace RealmOfAshes.EditorTools
                 Require(RoaEnemies.ClassifyMinimapActor(JObject.Parse("{\"hostileToPlayer\":true}"))
                         == RoaMinimap.MarkerKind.Enemy,
                         "враждебный актёр не получил красный маркер");
+                Require(RoaEnemies.ClassifyMinimapActor(JObject.Parse("{\"hostileToPlayer\":null}"))
+                        == RoaMinimap.MarkerKind.Enemy
+                        && RoaEnemies.ClassifyMinimapActor(new JObject())
+                        == RoaMinimap.MarkerKind.Enemy,
+                        "неполный серверный снимок не применил безопасную враждебность по умолчанию");
                 Require(RoaEnemies.ClassifyMinimapActor(JObject.Parse("{\"hostileToPlayer\":false,\"canDialogue\":true}"))
                         == RoaMinimap.MarkerKind.FriendlyNpc,
                         "мирный актёр помечен как враг или сервис");

@@ -17,6 +17,8 @@ namespace RealmOfAshes.Game
         public float TargetRange = 28f;
         public bool InputSuppressed;
         public Action MenuRequested;
+        public Action PingRequested;
+        public bool PingAvailable;
 
         private RoaCombat _combat;
         private RoaInteraction _interaction;
@@ -111,6 +113,7 @@ namespace RealmOfAshes.Game
             if (_player != null) _player.SetVirtualCrouch(false);
             _selectedId = string.Empty;
             _targets.Clear();
+            PingAvailable = false;
             _combat?.ClearMobileAimTarget();
         }
 
@@ -414,6 +417,13 @@ namespace RealmOfAshes.Game
         public void TriggerPlayerPanel()
         {
             if (!InputSuppressed && !IsPanelOpen()) _pipboy?.OpenSocial();
+        }
+
+        public void TriggerPlayerOrPing()
+        {
+            if (InputSuppressed || IsPanelOpen()) return;
+            if (PingAvailable && PingRequested != null) PingRequested.Invoke();
+            else TriggerPlayerPanel();
         }
 
         /// <summary>Uses desktop E priority: an interaction target first, then nearby ground loot.</summary>

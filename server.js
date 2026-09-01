@@ -14,6 +14,11 @@ const {
   worldSiteLocationSeed
 } = require('./src/server/wasteland-sim');
 const {
+  RELEASED_LOCATION_IDS,
+  isReleasedLocationId,
+  publicLocationRelease
+} = require('./src/server/location-release');
+const {
   normalizeGlobalInfrastructure,
   planInfrastructureRoute,
   pointAtRouteProgress,
@@ -23,12 +28,15 @@ const {
   loadModelColliderCatalog,
   modelColliderCatalogEntry,
   modelColliderRadius,
+  transformedBounds,
   transformedModelBlockers
 } = require('./src/server/model-colliders');
 const {
+  NPC_PERSONAL_INVENTORY_VERSION,
   NPC_INVENTORY_VERSION,
   buildFactionSupplyCatalog,
   chooseFactionEquipment,
+  buildNpcEquipmentInventory,
   buildFactionPersonalInventory,
   prepareNpcWeapon,
   consumeNpcAmmo,
@@ -59,7 +67,17 @@ const {
   targetInsideVisionArc,
   npcAttackHitChance,
   npcAttackTelegraph,
-  segmentIntersectsRotatedBlocker
+  applyNpcHitStagger,
+  npcHitStaggerActive,
+  finalizeNpcDeathState,
+  segmentIntersectsRotatedBlocker,
+  actorCircleMoveAllowed,
+  npcMeleeFormationSlot,
+  reconcileNpcMeleeSlotReservations,
+  npcMeleeApproachSpeed,
+  releaseNpcMeleeCommit,
+  tryReserveNpcMeleeCommit,
+  completeNpcMeleeCommit
 } = require('./src/server/enemy-ai');
 const {
   HAND_EQUIPMENT_SLOTS: SERVER_HAND_EQUIPMENT_SLOTS,
@@ -72,6 +90,10 @@ const {
   globalExitDirectionFromTile,
   directedGlobalExitPoint
 } = require('./src/server/global-exit-direction');
+const {
+  sanitizePendingLocationTransition,
+  stagePendingLocationTransition
+} = require('./src/server/global-arrival-transition');
 const {
   createDevAccessMiddleware,
   createDevAccessPolicy,
@@ -126,6 +148,11 @@ const {
   createAssaultDiversion,
   publicWorldActivity,
   recordWorldActivityParticipant,
+  requestWorldActivityHelp,
+  recordWorldActivityHelpResponse,
+  requestWorldActivityRally,
+  createWorldActivityPing,
+  setWorldActivityParticipantDowned,
   applyWorldActivityHarvest,
   applyWorldActivityInteraction,
   applyWorldActivityEnemyKill,
@@ -133,7 +160,21 @@ const {
   extractWorldActivity,
   worldActivityRewardCharacterIds
 } = require('./src/server/world-activity-runtime');
-const { createWorldActivityPointPositions } = require('./src/server/world-activity-layout');
+const {
+  createWorldActivityPointPositions,
+  createWorldActivityEncounterLayout,
+  selectWorldActivityEncounterWave
+} = require('./src/server/world-activity-layout');
+const {
+  WORLD_ACTIVITY_DIRECTOR_SCHEMA,
+  planWorldActivityDirector
+} = require('./src/server/world-activity-director');
+const {
+  QUICK_WORLD_ACTIVITY_TYPES,
+  helpSignalForTask,
+  selectQuickWorldActivityTask,
+  selectRoomWorldActivityTask
+} = require('./src/server/world-activity-matchmaking');
 const SERVER_PLAYABLE_WORLD_ACTIVITY_TYPES = new Set([
   'escort_caravan',
   'distress_signal',
@@ -1258,6 +1299,7 @@ function safeSaveState(state) {
   // locationStates, враги, хранилище, быстрые слоты и runtime оружия.
   normalizePersistedGameStateNaturalCreatures(state);
   sanitizePersistedEconomyState(state);
+  sanitizePersistedPlayerFactionState(state);
   return state;
 }
 
@@ -1384,7 +1426,10 @@ function listStoredUserCharacters(store = {}, userId = '') {
       appearance: sanitizeCharacterAppearance(
         row.summary?.appearance || row.state?.characterProfile?.appearance || {}
       ),
-      factionId: row.summary?.factionId || savedCharacterWorldFaction(userId, row.id || row.state?.characterProfile?.serverCharacterId || ''),
+      factionId: serverWorldFactionKey(
+        row.summary?.factionId
+        || savedCharacterWorldFaction(userId, row.id || row.state?.characterProfile?.serverCharacterId || '')
+      ),
       locationId: row.summary?.locationId || row.state?.currentLocationId || 'settlement',
       createdAt: Number(row.createdAt || row.summary?.createdAt || Date.now()),
       updatedAt: Number(row.updatedAt || row.summary?.savedAt || Date.now())
@@ -1645,6 +1690,7 @@ app.get('/api/locations', (_, res) => {
   res.json({
     ok: true,
     dir: path.relative(__dirname, LOCATIONS_DIR).replace(/\\/g, '/'),
+    locationRelease: publicLocationRelease(),
     locations
   });
 });
@@ -3367,7 +3413,7 @@ const SERVER_FACTION_ALLIES = new Set([
   'caravan|klim_patrol',
   'klim_patrol|caravan'
 ]);
-const SERVER_JOINABLE_WORLD_FACTIONS = new Set(['old_klim', 'scrap_union', 'relay_order', 'caravans']);
+const SERVER_JOINABLE_WORLD_FACTIONS = new Set(['old_klim', 'scrap_union', 'relay_order']);
 const SERVER_DEFAULT_FACTION_RELATIONS = {
   old_klim: { caravans: 70, scrap_union: 35, relay_order: 55, raiders: -100, mutants: -80, wild: -55, neutral: 20 },
   caravans: { old_klim: 70, scrap_union: 55, relay_order: 55, raiders: -100, mutants: -80, wild: -45, neutral: 20 },
@@ -3384,11 +3430,10 @@ function serverFactionKey(faction = '') {
 }
 
 function serverWorldFactionKey(faction = '') {
-  const key = serverFactionKey(faction);
-  if (key === 'caravan' || key === 'caravans') return 'caravans';
-  if (key === 'klim_patrol' || key === 'old_klim') return 'old_klim';
-  if (key === 'scrap' || key === 'scrap_town' || key === 'scrap_union') return 'scrap_union';
-  if (key === 'relay' || key === 'relay_station' || key === 'relay_order') return 'relay_order';
+  let key = serverFactionKey(faction);
+  if (key === 'klim_patrol' || key === 'old_klim') key = 'old_klim';
+  else if (key === 'scrap' || key === 'scrap_town' || key === 'scrap_union') key = 'scrap_union';
+  else if (key === 'relay' || key === 'relay_station' || key === 'relay_order') key = 'relay_order';
   return SERVER_JOINABLE_WORLD_FACTIONS.has(key) ? key : '';
 }
 
@@ -3402,6 +3447,104 @@ function sanitizeServerWorldFactionReputation(input = {}) {
   }
   return out;
 }
+
+const SERVER_PLAYER_FACTION_MODEL_VERSION = 2;
+
+function sanitizeArchivedIndependentReputation(...sources) {
+  const out = {};
+  for (const source of sources) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) continue;
+    for (const [rawFaction, rawValue] of Object.entries(source)) {
+      const key = serverFactionKey(rawFaction);
+      if (key !== 'caravan' && key !== 'caravans') continue;
+      out.caravans = Math.max(
+        Number(out.caravans || 0),
+        clamp(Math.floor(Number(rawValue || 0)), 0, 9999)
+      );
+    }
+  }
+  return out;
+}
+
+function sanitizePersistedPlayerFactionState(state = {}) {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) return state;
+  const profile = state.characterProfile && typeof state.characterProfile === 'object'
+    ? state.characterProfile
+    : (state.characterProfile = {});
+  const rawFactionId = profile.worldFactionId || profile.factionId || '';
+  const factionId = serverWorldFactionKey(rawFactionId);
+  profile.factionId = factionId;
+  profile.worldFactionId = factionId;
+  if (!factionId) {
+    delete profile.factionJoinedAt;
+    delete profile.factionName;
+  }
+
+  const rawStateReputation = state.worldFactionReputation && typeof state.worldFactionReputation === 'object'
+    ? state.worldFactionReputation
+    : {};
+  const rawProfileReputation = profile.worldFactionReputation && typeof profile.worldFactionReputation === 'object'
+    ? profile.worldFactionReputation
+    : {};
+  const archived = sanitizeArchivedIndependentReputation(
+    state.archivedWorldFactionReputation,
+    profile.archivedWorldFactionReputation,
+    rawStateReputation,
+    rawProfileReputation
+  );
+  const reputation = sanitizeServerWorldFactionReputation({
+    ...rawProfileReputation,
+    ...rawStateReputation
+  });
+  state.worldFactionReputation = reputation;
+  profile.worldFactionReputation = { ...reputation };
+  if (Object.keys(archived).length) {
+    state.archivedWorldFactionReputation = archived;
+    profile.archivedWorldFactionReputation = { ...archived };
+  } else {
+    delete state.archivedWorldFactionReputation;
+    delete profile.archivedWorldFactionReputation;
+  }
+  state.worldFactionModelVersion = SERVER_PLAYER_FACTION_MODEL_VERSION;
+  return state;
+}
+
+function migrateStoredPlayerFactionModel() {
+  let changed = 0;
+  for (const store of Object.values(savesDb.characters || {})) {
+    for (const row of Object.values(store || {})) {
+      if (!row?.state || typeof row.state !== 'object') continue;
+      const before = JSON.stringify({
+        profile: row.state.characterProfile,
+        reputation: row.state.worldFactionReputation,
+        archived: row.state.archivedWorldFactionReputation,
+        version: row.state.worldFactionModelVersion,
+        summaryFactionId: row.summary?.factionId,
+        summaryFactionName: row.summary?.factionName
+      });
+      sanitizePersistedPlayerFactionState(row.state);
+      if (row.summary && typeof row.summary === 'object') {
+        row.summary.factionId = serverWorldFactionKey(
+          row.state.characterProfile?.worldFactionId || row.state.characterProfile?.factionId || ''
+        );
+        if (!row.summary.factionId) delete row.summary.factionName;
+      }
+      const after = JSON.stringify({
+        profile: row.state.characterProfile,
+        reputation: row.state.worldFactionReputation,
+        archived: row.state.archivedWorldFactionReputation,
+        version: row.state.worldFactionModelVersion,
+        summaryFactionId: row.summary?.factionId,
+        summaryFactionName: row.summary?.factionName
+      });
+      if (before !== after) changed += 1;
+    }
+  }
+  if (changed > 0) persistSaves();
+  return changed;
+}
+
+migrateStoredPlayerFactionModel();
 
 const SERVER_ALWAYS_HOSTILE_FACTION_GROUPS = new Set([
   'raiders',
@@ -3722,7 +3865,9 @@ const WASTELAND_SIM = createWastelandSimulation({
   getGlobalMap: () => GLOBAL_MAP,
   getOnlinePlayerCount: () => players.size,
   itemIds: SERVER_ITEM_IDS,
-  traderProfiles: SERVER_TRADER_PROFILES
+  traderProfiles: SERVER_TRADER_PROFILES,
+  publicSiteIds: RELEASED_LOCATION_IDS,
+  locationRelease: publicLocationRelease()
 });
 
 function reconcileSavedWorldPartyMembers() {
@@ -5197,8 +5342,14 @@ function serverNpcConsumeCombatAmmo(enemy = {}, weapon = null, target = null, no
 function serverNpcAttackRange(enemy = {}, target = null) {
   const weapon = serverNpcWeaponDef(enemy);
   if (weapon?.ammoType) return Math.max(3.5, Number(weapon.range || 10) * 0.86);
-  const actorRadius = Math.max(0.35, Number(enemy.scale || 1) * 0.42);
-  const targetRadius = Math.max(0.35, Number(target?.scale || 1) * 0.42);
+  const actorRadius = enemyBodyRadius(enemy);
+  const targetIsNpc = !!(target && (
+    target.typeIndex !== undefined || target.modelKey || target.species
+    || target.visual || target.npcProfile
+  ));
+  const targetRadius = targetIsNpc
+    ? enemyBodyRadius(target)
+    : Math.max(PLAYER_COLLISION_RADIUS, Number(target?.scale || 1) * 0.42);
   return Math.max(1.25, Math.min(2.45, actorRadius + targetRadius + Number(weapon.range || 1.35) * 0.45));
 }
 
@@ -6311,14 +6462,24 @@ function serverWorldTaskRequiredFaction(task = {}, state = {}) {
 }
 
 function serverWorldTaskReputationFaction(task = {}, state = {}) {
-  const frozenFactionId = serverWorldFactionKey(task?.details?.rewardFactionId || '');
-  if (SERVER_JOINABLE_WORLD_FACTIONS.has(frozenFactionId)) return frozenFactionId;
+  const details = task?.details && typeof task.details === 'object' ? task.details : {};
+  if (Object.prototype.hasOwnProperty.call(details, 'rewardFactionId')) {
+    const rawFrozenFactionId = String(details.rewardFactionId || '').trim();
+    if (!rawFrozenFactionId) return '';
+    const frozenFactionId = serverWorldFactionKey(rawFrozenFactionId);
+    if (SERVER_JOINABLE_WORLD_FACTIONS.has(frozenFactionId)) return frozenFactionId;
+    // Legacy hostile markers described the target, not the reputation payer,
+    // so they may fall through to the issuer. Independent markers stay frozen.
+    const hostileGroup = serverCombatFactionGroup(rawFrozenFactionId);
+    if (!SERVER_ALWAYS_HOSTILE_FACTION_GROUPS.has(hostileGroup)) return '';
+  }
   const party = task.partyId ? state?.parties?.[task.partyId] : null;
   const issuer = serverWorldTaskSite(state, task.issuerSiteId || task.siteId || '');
-  const target = serverWorldTaskSite(state, task.siteId || '');
+  // Group work rewards standing only with the accompanied group. Ordinary
+  // work rewards standing only with the issuer; targets never receive it.
   const candidates = isWorldPartyTask(task)
-    ? [party?.faction, issuer?.owner, issuer?.faction, target?.owner, target?.faction, task.faction]
-    : [issuer?.owner, issuer?.faction, target?.owner, target?.faction, task.faction, party?.faction];
+    ? [party?.faction]
+    : [issuer?.owner, issuer?.faction];
   for (const candidate of candidates) {
     const factionId = serverWorldFactionKey(candidate || '');
     if (SERVER_JOINABLE_WORLD_FACTIONS.has(factionId)) return factionId;
@@ -6357,6 +6518,7 @@ function sanitizeServerWorldActivityResult(value = null) {
     ? String(value.grade).toLowerCase()
     : status === 'completed' ? 'completed' : 'failed';
   const reward = value.reward && typeof value.reward === 'object' ? value.reward : {};
+  const reputationFactionId = serverWorldFactionKey(reward.reputationFactionId || '');
   return {
     id: String(value.id || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 180),
     taskId: String(value.taskId || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 120),
@@ -6367,8 +6529,8 @@ function sanitizeServerWorldActivityResult(value = null) {
     reward: {
       xp: Math.max(0, Math.floor(Number(reward.xp || 0))),
       caps: Math.max(0, Math.floor(Number(reward.caps || 0))),
-      reputation: Math.max(0, Math.floor(Number(reward.reputation || 0))),
-      reputationFactionId: String(reward.reputationFactionId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
+      reputation: reputationFactionId ? Math.max(0, Math.floor(Number(reward.reputation || 0))) : 0,
+      reputationFactionId
     },
     rewardClaimed: value.rewardClaimed === true,
     reason: String(value.reason || '').replace(/[^a-zA-Z0-9_:-]/g, '').slice(0, 64),
@@ -6401,6 +6563,59 @@ function setServerWorldActivityResult(player = {}, task = {}, options = {}) {
   player.lastWorldActivityResult = next;
   return true;
 }
+
+function performServerWorldActivityQuickJoin(player = {}, data = {}) {
+  if (!player?.onGlobalMap) {
+    return { ok: false, error: 'Быстрая вылазка доступна на глобальной карте.' };
+  }
+  const sim = WASTELAND_SIM.publicState();
+  const globalMap = serverAuthoritativeGlobalMapState(player);
+  const acceptedTaskIds = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []);
+  const acceptedRows = typeof WASTELAND_SIM.publicWorldTasks === 'function'
+    ? WASTELAND_SIM.publicWorldTasks(acceptedTaskIds)
+    : [];
+  const publicRows = [
+    ...(Array.isArray(sim?.worldActivities) ? sim.worldActivities : []),
+    ...(Array.isArray(sim?.worldTasks) ? sim.worldTasks : [])
+  ];
+  const candidateRows = [...new Map([...acceptedRows, ...publicRows]
+    .filter(row => row?.id)
+    .map(row => [String(row.id), row])).values()];
+  const task = selectQuickWorldActivityTask(candidateRows, {
+    acceptedTaskIds,
+    playerX: globalMap.playerX,
+    playerY: globalMap.playerY,
+    worldHour: sim?.worldHour,
+    now: Date.now(),
+    preference: data.preference
+  });
+  if (!task) return { ok: false, error: 'Сейчас нет доступной короткой вылазки.' };
+  const taskId = String(task.id || '');
+  const accepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(taskId);
+  let actionResult = null;
+  if (!accepted) {
+    actionResult = performServerWorldTaskAction(player, { action: 'accept', taskId });
+    if (!actionResult?.ok) return actionResult;
+  } else {
+    player.worldTaskTrackedId = taskId;
+  }
+  const signal = helpSignalForTask(task, Date.now());
+  player.worldActivityJoinSourceTaskId = taskId;
+  player.worldActivityJoinSource = signal ? 'help_signal' : 'quick_join';
+  const nextSim = actionResult?.sim || WASTELAND_SIM.publicState();
+  const nextTask = (nextSim?.worldActivities || nextSim?.worldTasks || [])
+    .find(row => String(row?.id || '') === taskId) || task;
+  return {
+    ok: true,
+    action: 'quick_join',
+    taskId,
+    joinSource: player.worldActivityJoinSource,
+    task: nextTask,
+    sim: nextSim,
+    self: publicAuthoritativePlayerState(player)
+  };
+}
+
 function performServerWorldTaskAction(player = {}, data = {}) {
   const action = String(data.action || '').toLowerCase();
   const { id, state, task } = serverWorldTaskById(data.taskId || data.worldTaskId || '');
@@ -6412,6 +6627,12 @@ function performServerWorldTaskAction(player = {}, data = {}) {
 
   if (action === 'accept') {
     if (task.status !== 'active') return { ok: false, error: 'Эта работа уже недоступна.' };
+    if (String(task.type || '') === 'patrol_mission') {
+      return { ok: false, error: 'Это поручение уже выполняет фракционный патруль. Присоединяйтесь через отдельную заявку патруля.' };
+    }
+    if (!WASTELAND_SIM.isWorldTaskInPublicRelease(task)) {
+      return { ok: false, error: 'Эта точка пока не входит в текущий набор доступных локаций.' };
+    }
     if (accepted) return { ok: false, error: 'Эта работа уже взята.' };
     const issuer = serverWorldTaskSite(state, task.issuerSiteId || task.siteId || '');
     const remoteActivityTypes = new Set([
@@ -6442,6 +6663,10 @@ function performServerWorldTaskAction(player = {}, data = {}) {
       if (!joined?.ok) return { ok: false, error: joined?.error || 'Группа больше не принимает участников.' };
     }
     player.worldTaskAccepted.push(id);
+    if (helpSignalForTask(task, Date.now())) {
+      player.worldActivityJoinSourceTaskId = id;
+      player.worldActivityJoinSource = 'help_signal';
+    }
     if (remoteActivity || !player.worldTaskTrackedId) player.worldTaskTrackedId = id;
     if (isWorldPartyTask(task)) {
       syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
@@ -6462,6 +6687,10 @@ function performServerWorldTaskAction(player = {}, data = {}) {
       });
     }
     player.worldTaskAccepted = player.worldTaskAccepted.filter(value => value !== id);
+    if (String(player.worldActivityJoinSourceTaskId || '') === id) {
+      player.worldActivityJoinSourceTaskId = '';
+      player.worldActivityJoinSource = '';
+    }
     if (player.worldTaskTrackedId === id) player.worldTaskTrackedId = '';
     if (isWorldPartyTask(task)) {
       syncServerPlayerWorldPartyAttachment(player, state, { persist: false, emit: false });
@@ -6510,8 +6739,10 @@ function performServerWorldTaskAction(player = {}, data = {}) {
     }
     const caps = Math.max(0, Math.floor(Number(task.reward?.caps || 0)));
     const xp = Math.max(0, Math.floor(Number(task.reward?.xp || 0)));
-    const reputation = Math.max(0, Math.floor(Number(task.reward?.reputation || 0)));
     const reputationFactionId = serverWorldTaskReputationFaction(task, state);
+    const reputation = reputationFactionId
+      ? Math.max(0, Math.floor(Number(task.reward?.reputation || 0)))
+      : 0;
     if (serverInventoryQty(player.inventory || [], 'silver') + caps > serverItemStackLimit('silver')) return { ok: false, error: 'Достигнут предел крышек в рюкзаке.' };
     if (caps > 0) serverInventoryAdd(player, 'silver', caps);
     if (xp > 0) serverGrantXp(player, xp);
@@ -9065,10 +9296,13 @@ function serverDropPvpLootForMode(room, target, killer, loc, now = Date.now()) {
   return [];
 }
 
-function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now()) {
+function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now(), options = {}) {
   if (!room || !enemy || !p || enemy.dead || Number(enemy.hp || 0) > 0) return false;
-  enemy.dead = true;
-  enemy.diedAt = now;
+  const sourceX = Number.isFinite(Number(options.sourceX))
+    ? Number(options.sourceX) : Number(p.x || enemy.x || 0);
+  const sourceZ = Number.isFinite(Number(options.sourceZ))
+    ? Number(options.sourceZ) : Number(p.z || enemy.z || 0);
+  finalizeNpcDeathState(enemy, now);
   enemy.looted = false;
   enemy.killerId = p.id;
   enemy.npcLootProtectedUntil = now + 15000;
@@ -9083,6 +9317,10 @@ function serverFinishEnemyKilledByPlayer(room, enemy, p, now = Date.now()) {
     xp: enemy.xp || 0,
     x: Number(enemy.x.toFixed(2)),
     z: Number(enemy.z.toFixed(2)),
+    sourceX: Number(sourceX.toFixed(2)),
+    sourceZ: Number(sourceZ.toFixed(2)),
+    damage: Math.max(0, Math.round(Number(options.damage || 0))),
+    critical: !!options.critical,
     t: now
   });
   recordServerWorldActivityEnemyKill(room, enemy, p, now);
@@ -9189,8 +9427,12 @@ function serverPlayerNearTransitionTo(p = {}, targetLocationId = '') {
 }
 
 function serverPendingTransitionMatches(p = {}, locationId = '', data = {}) {
-  const ticket = p.pendingLocationTransition;
-  if (!ticket || Date.now() > Number(ticket.expiresAt || 0)) return false;
+  const ticket = sanitizePendingLocationTransition(p.pendingLocationTransition);
+  if (!ticket) {
+    p.pendingLocationTransition = null;
+    return false;
+  }
+  p.pendingLocationTransition = ticket;
   if (normalizeLocationId(ticket.targetLocationId || '') !== normalizeLocationId(locationId)) return false;
   const requestedRoomId = sanitizeEncounterRoomId(data.roomId || data.encounterRoomId || '', locationId);
   if (ticket.roomId && requestedRoomId && ticket.roomId !== requestedRoomId) return false;
@@ -9842,7 +10084,10 @@ function setEnemyChaseTarget(room, enemy, player, now = Date.now(), opts = {}) {
   if (!room || !enemy || !player || enemy.dead || player.dead) return false;
   const targetId = player.id || player.characterId || '';
   if (!targetId) return false;
-  if (enemy.targetId !== targetId) clearEnemyTacticalGoal(enemy);
+  if (enemy.targetId !== targetId) {
+    clearEnemyTacticalGoal(enemy);
+    cancelEnemyMeleeCommit(room, enemy, now);
+  }
   enemy.targetId = targetId;
   enemy.aiState = 'chase';
   enemy.lastKnownX = Number(player.x || 0);
@@ -10173,6 +10418,8 @@ function addRoomNoise(room, x, z, radius = ENEMY_HEARING_SHOT_RANGE, sourceId = 
 function clearEnemyTarget(enemy) {
   if (!enemy) return;
   enemy.targetId = '';
+  enemy.meleeCommitUntil = 0;
+  enemy.meleeCommitTargetId = '';
   enemy.aiState = 'idle';
   enemy.lastKnownX = null;
   enemy.lastKnownZ = null;
@@ -10186,6 +10433,8 @@ function clearEnemyTarget(enemy) {
   enemy.searchUntil = 0;
   enemy.lookX = null;
   enemy.lookZ = null;
+  enemy.vx = 0;
+  enemy.vz = 0;
   clearEnemyTacticalGoal(enemy);
   invalidateEnemyPath(enemy);
 }
@@ -10550,6 +10799,21 @@ function roomEnemyCollisionMoveAllowed(room, currentX, currentZ, nextX, nextZ, r
   const currentPenalty = roomEnemyCollisionPenalty(room, currentX, currentZ, radius);
   return currentPenalty > 0.001 && nextPenalty < currentPenalty - 0.0005;
 }
+
+function roomPlayerCollisionMoveAllowed(room, enemy, nextX, nextZ) {
+  const roomPlayers = Array.isArray(room?.enemyAiPlayers) ? room.enemyAiPlayers : [];
+  if (!enemy || !roomPlayers.length) return true;
+  const actorRadius = enemyBodyRadius(enemy);
+  for (const player of roomPlayers) {
+    if (!player || player.dead || Number(player.hp || 0) <= 0) continue;
+    if (!actorCircleMoveAllowed(
+      enemy.x, enemy.z, nextX, nextZ, actorRadius,
+      player.x, player.z, PLAYER_COLLISION_RADIUS, 0.08
+    )) return false;
+  }
+  return true;
+}
+
 function isEnemyBodyBlockedAt(room, enemy, x, z) {
   if (!room || !room.enemies || !enemy) return false;
   const nx = Number(x);
@@ -10575,7 +10839,9 @@ function isEnemyBodyBlockedAt(room, enemy, x, z) {
   return false;
 }
 function isEnemyStepOpen(room, enemy, x, z, radius = 0.32) {
-  return isRoomWalkableWorld(room, x, z, radius) && !isEnemyBodyBlockedAt(room, enemy, x, z);
+  return isRoomWalkableWorld(room, x, z, radius)
+    && !isEnemyBodyBlockedAt(room, enemy, x, z)
+    && roomPlayerCollisionMoveAllowed(room, enemy, x, z);
 }
 function stableEnemyUnit(id = '') {
   let h = 2166136261;
@@ -10586,49 +10852,117 @@ function stableEnemyUnit(id = '') {
   }
   return (h >>> 0) / 4294967295;
 }
+
+function activeMeleeFormationActorIds(room, targetId) {
+  const wanted = String(targetId || '');
+  const ids = new Set();
+  if (!wanted) return ids;
+  if (room?.enemyMeleeFormationActorsByTargetId instanceof Map) {
+    for (const id of room.enemyMeleeFormationActorsByTargetId.get(wanted) || [])
+      ids.add(String(id || ''));
+    return ids;
+  }
+  if (!(room?.enemies instanceof Map)) return ids;
+  for (const actor of room.enemies.values()) {
+    if (!actor || actor.dead || !actor.id) continue;
+    if (String(actor.targetId || '') !== wanted
+      && String(actor.factionTargetId || '') !== wanted) continue;
+    ids.add(String(actor.id));
+  }
+  return ids;
+}
+
+function roomMeleeFormationReservation(room, enemy, target) {
+  const targetId = String(target?.id || '');
+  const actorId = String(enemy?.id || '');
+  if (!room || !targetId || !actorId) return { index: 0, count: 1, anchorAngle: 0 };
+  if (!(room.enemyMeleeFormationReservations instanceof Map))
+    room.enemyMeleeFormationReservations = new Map();
+
+  let state = room.enemyMeleeFormationReservations.get(targetId);
+  if (!state || !(state.slots instanceof Map)) {
+    state = {
+      slots: new Map(),
+      anchorAngle: Math.atan2(Number(enemy.z || 0) - Number(target.z || 0),
+        Number(enemy.x || 0) - Number(target.x || 0)),
+      lastSeenAt: Date.now()
+    };
+  }
+  const activeIds = activeMeleeFormationActorIds(room, targetId);
+  activeIds.add(actorId);
+  state.slots = reconcileNpcMeleeSlotReservations(state.slots, activeIds, actorId);
+  if (!Number.isFinite(Number(state.anchorAngle)))
+    state.anchorAngle = Math.atan2(Number(enemy.z || 0) - Number(target.z || 0),
+      Number(enemy.x || 0) - Number(target.x || 0));
+  state.lastSeenAt = Date.now();
+  room.enemyMeleeFormationReservations.set(targetId, state);
+
+  const index = Math.max(0, Number(state.slots.get(actorId) || 0));
+  let highest = index;
+  for (const slot of state.slots.values()) highest = Math.max(highest, Number(slot || 0));
+  return {
+    index,
+    count: Math.max(1, highest + 1),
+    anchorAngle: Number(state.anchorAngle || 0)
+  };
+}
+
+function cancelEnemyMeleeCommit(room, enemy, now = Date.now(), cooldownMs = 0) {
+  if (!enemy) return;
+  const targetId = String(enemy.meleeCommitTargetId || '');
+  const active = targetId && room?.enemyMeleeCommitActiveByTargetId instanceof Map
+    ? room.enemyMeleeCommitActiveByTargetId.get(targetId)
+    : null;
+  releaseNpcMeleeCommit(enemy, active, now, { cooldownMs });
+}
+
+function reserveEnemyMeleeCommit(room, enemy, target, now = Date.now()) {
+  const targetId = String(target?.id || '');
+  const actorId = String(enemy?.id || '');
+  if (!room || !targetId || !actorId) return false;
+  const time = Number(now || Date.now());
+  if (String(enemy.meleeCommitTargetId || '') === targetId
+    && time < Number(enemy.meleeCommitUntil || 0)) return true;
+  cancelEnemyMeleeCommit(room, enemy, time);
+  if (time < Number(enemy.meleeCommitCooldownUntil || 0)) return false;
+
+  const group = room.enemyMeleeFormationActorsByTargetId instanceof Map
+    ? room.enemyMeleeFormationActorsByTargetId.get(targetId) || []
+    : [actorId];
+  if (!(room.enemyMeleeCommitActiveByTargetId instanceof Map))
+    room.enemyMeleeCommitActiveByTargetId = new Map();
+  let active = room.enemyMeleeCommitActiveByTargetId.get(targetId);
+  if (!(active instanceof Set)) {
+    active = new Set();
+    room.enemyMeleeCommitActiveByTargetId.set(targetId, active);
+  }
+  return tryReserveNpcMeleeCommit(enemy, targetId, Math.max(1, group.length),
+    active, time);
+}
+
+function finishEnemyMeleeCommit(room, enemy, now = Date.now()) {
+  const time = Number(now || Date.now());
+  const targetId = String(enemy?.meleeCommitTargetId || '');
+  const active = targetId && room?.enemyMeleeCommitActiveByTargetId instanceof Map
+    ? room.enemyMeleeCommitActiveByTargetId.get(targetId)
+    : null;
+  completeNpcMeleeCommit(enemy, active, time,
+    stableEnemyUnit(`${enemy?.id || 'enemy'}:melee-commit`));
+}
+
 function enemyMeleeGoalNearTarget(room, enemy, target) {
   if (!target) return null;
   const ex = Number(enemy.x || 0);
   const ez = Number(enemy.z || 0);
   const tx = Number(target.x || 0);
   const tz = Number(target.z || 0);
-  const targetId = String(target.id || '');
-  const attackers = [];
-  const seenAttackers = new Set();
-  const addAttacker = other => {
-    if (!other || seenAttackers.has(other) || other.dead || other.hostileToPlayer === false) return;
-    if (other.id && room?.enemies instanceof Map && room.enemies.get(other.id) !== other) return;
-    const sameTarget = String(other.targetId || '') === targetId;
-    const nearTarget = Math.hypot(Number(other.x || 0) - tx, Number(other.z || 0) - tz) < 7.5;
-    if (!sameTarget && !((other.aiState === 'chase' || other.aiState === 'attack') && nearTarget)) return;
-    seenAttackers.add(other);
-    attackers.push(other);
-  };
-  if (room && room.enemies && targetId) {
-    const cached = room.enemyAttackersByTargetId instanceof Map
-      ? (room.enemyAttackersByTargetId.get(targetId) || [])
-      : [];
-    for (const other of cached) addAttacker(other);
-    for (const other of roomEnemySpatialCandidates(room, tx, tz, 7.5)) addAttacker(other);
-  }
-  if (!seenAttackers.has(enemy)) attackers.push(enemy);
-  attackers.sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
-  const count = Math.max(1, attackers.length);
-  const idx = Math.max(0, attackers.findIndex(e => e === enemy));
+  const reservation = roomMeleeFormationReservation(room, enemy, target);
   const slot = stableEnemyUnit(enemy.id);
-  const fromTargetAngle = Math.atan2(ez - tz, ex - tx);
-  let angle = fromTargetAngle;
-  if (count >= 3) {
-    const ringStep = (Math.PI * 2) / Math.min(count, 8);
-    const ringSeed = stableEnemyUnit(`${targetId}:surround`) * 0.45;
-    angle = -Math.PI * 0.5 + ringSeed + (idx % Math.min(count, 8)) * ringStep;
-  } else if (count === 2) {
-    angle = fromTargetAngle + (idx === 0 ? -0.95 : 0.95);
-  } else {
-    const side = slot < 0.5 ? -1 : 1;
-    angle = fromTargetAngle + (0.24 + Math.abs(slot - 0.5) * 0.7) * side;
-  }
-  const radius = clamp(serverNpcAttackRange(enemy, target) * 0.78, 1.05, 1.65) + (slot % 0.18);
+  const contactRadius = enemyBodyRadius(enemy) + PLAYER_COLLISION_RADIUS + 0.12;
+  const formation = npcMeleeFormationSlot(reservation.index, reservation.count,
+    contactRadius, serverNpcAttackRange(enemy, target), slot);
+  const angle = reservation.anchorAngle + formation.angle;
+  const radius = formation.radius;
   const offsets = [0, 0.22, -0.22, 0.48, -0.48, 0.78, -0.78, 1.15, -1.15, Math.PI];
   for (const offset of offsets) {
     const a = angle + offset;
@@ -10636,7 +10970,9 @@ function enemyMeleeGoalNearTarget(room, enemy, target) {
     const gz = tz + Math.sin(a) * radius;
     if (isRoomWalkableWorld(room, gx, gz, 0.28) && !isEnemyBodyBlockedAt(room, enemy, gx, gz)) return { x: gx, z: gz };
   }
-  return { x: tx, z: tz };
+  // If every ring slot is blocked, holding position is safer than falling back
+  // to the target centre and visually merging both characters.
+  return { x: ex, z: ez };
 }
 function enemyFactionMeleeGoalNearTarget(room, enemy, target, attackRange = 1.35) {
   if (!target) return null;
@@ -10644,22 +10980,32 @@ function enemyFactionMeleeGoalNearTarget(room, enemy, target, attackRange = 1.35
   const ez = Number(enemy.z || 0);
   const tx = Number(target.x || 0);
   const tz = Number(target.z || 0);
-  if (!Number.isFinite(Number(enemy.factionGoalAngle))) {
-    const dx = ex - tx;
-    const dz = ez - tz;
-    const dist = Math.hypot(dx, dz);
-    const baseAngle = dist > 0.15 ? Math.atan2(dz, dx) : stableEnemyUnit(`${enemy.id}:${target.id}:angle`) * Math.PI * 2;
-    enemy.factionGoalAngle = baseAngle + (stableEnemyUnit(`${enemy.id}:${target.id}:spread`) - 0.5) * 0.8;
-  }
-  const radius = Math.max(0.85, Math.min(1.45, Number(attackRange || 1.35) * 0.82));
+  const reservation = roomMeleeFormationReservation(room, enemy, target);
+  const contactRadius = enemyBodyRadius(enemy) + enemyBodyRadius(target) + 0.12;
+  const formation = npcMeleeFormationSlot(reservation.index, reservation.count,
+    contactRadius, attackRange, stableEnemyUnit(enemy.id));
+  const radius = formation.radius;
   const offsets = [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, Math.PI];
   for (const offset of offsets) {
-    const angle = Number(enemy.factionGoalAngle || 0) + offset;
+    const angle = reservation.anchorAngle + formation.angle + offset;
     const gx = tx + Math.cos(angle) * radius;
     const gz = tz + Math.sin(angle) * radius;
     if (isRoomWalkableWorld(room, gx, gz, 0.28) && !isEnemyBodyBlockedAt(room, enemy, gx, gz)) return { x: gx, z: gz };
   }
-  return { x: tx, z: tz };
+  return { x: ex, z: ez };
+}
+
+function moveEnemyTowardsMeleeSlot(room, enemy, goal, baseSpeed, dt, opts = {}) {
+  const gx = Number(goal?.x ?? enemy?.x ?? 0);
+  const gz = Number(goal?.z ?? enemy?.z ?? 0);
+  const distance = Math.hypot(gx - Number(enemy?.x || 0), gz - Number(enemy?.z || 0));
+  const speed = npcMeleeApproachSpeed(baseSpeed, distance);
+  if (speed <= 0.001) {
+    enemy.vx = 0;
+    enemy.vz = 0;
+    return distance;
+  }
+  return moveEnemyTowards(room, enemy, gx, gz, speed, dt, opts);
 }
 
 function clearEnemyTacticalGoal(enemy) {
@@ -10919,6 +11265,7 @@ function updateEnemyCombatRetreat(room, enemy, target, dt, now = Date.now()) {
     invalidateEnemyPath(enemy);
   }
   enemy.aiState = 'retreat';
+  cancelEnemyMeleeCommit(room, enemy, now);
   setEnemyLookAt(enemy, target);
   clearEnemyTacticalGoal(enemy);
   moveEnemyTowards(room, enemy, enemy.retreatGoalX, enemy.retreatGoalZ, Math.max(0.9, Number(enemy.speed || 1.6) * 1.05), dt, {
@@ -11037,6 +11384,14 @@ function moveEnemyTowards(room, enemy, tx, tz, speed, dt, opts = {}) {
 
   const moveTarget = waypoint || { x: targetX, z: targetZ };
   const result = moveEnemyDirectStep(room, enemy, moveTarget.x, moveTarget.z, speed, dt, opts);
+  if (!waypoint && result.moved
+    && Math.hypot(targetX - Number(enemy.x || 0), targetZ - Number(enemy.z || 0)) <= 0.035) {
+    // The position snapshot already carries the final centimetres. Advertising
+    // the old velocity for another network frame would extrapolate a melee NPC
+    // through its target after it had actually stopped on the server.
+    enemy.vx = 0;
+    enemy.vz = 0;
+  }
   if (result.moved) {
     enemy.pathStuckSince = 0;
   } else if (!enemy.pathStuckSince) {
@@ -11520,8 +11875,21 @@ function refreshWastelandWarehouseRoomsForLocation(locationId = '') {
 const SERVER_CRAFT_RECIPE_COSTS = {
   ammo9craft: { ore: 1, wood: 1 },
   ammo556craft: { ore: 2, wood: 1 },
+  energycellcraft: { ore: 2, wood: 1 },
+  napalmcraft: { oil: 2, scrap: 1, wood: 1 },
+  shellcraft: { ore: 2, wood: 1 },
+  rocketammocraft: { ore: 5, wood: 1, oil: 1, silver: 4 },
+  stimcraft: { medicine: 2, chemicals: 1 },
+  medkitcraft: { medicine: 4, chemicals: 1, scrap: 1 },
+  doctorbagcraft: { medicine: 5, electronics: 1, scrap: 2 },
+  antibioticscraft: { medicine: 3, chemicals: 2 },
   repairkitcraft: { ore: 2, wood: 2 },
   knifecraft: { ore: 2, wood: 1 },
+  pistolcraft: { weaponParts: 1, scrap: 4, ammoParts: 2 },
+  revolvercraft: { ore: 4, scrap: 4, wood: 2 },
+  sawedoffcraft: { scrap: 5, wood: 3 },
+  smgcraft: { scrap: 8, weaponParts: 3, wood: 2 },
+  riflecraft: { weaponParts: 2, scrap: 5, wood: 2 },
   assaultcraft: { ore: 6, wood: 3 },
   machineguncraft: { ore: 10, wood: 4 },
   lasercraft: { ore: 5, wood: 2 },
@@ -11529,20 +11897,48 @@ const SERVER_CRAFT_RECIPE_COSTS = {
   plasmacraft: { ore: 10, wood: 2, silver: 10 },
   shotguncraft: { ore: 7, wood: 4 },
   rocketcrafter: { ore: 14, wood: 4, silver: 14 },
-  energycellcraft: { ore: 2, wood: 1 },
-  napalmcraft: { oil: 2, scrap: 1, wood: 1 },
-  shellcraft: { ore: 2, wood: 1 },
-  rocketammocraft: { ore: 5, wood: 1, oil: 1, silver: 4 },
+  leathercraft: { scrap: 5, chemicals: 1 },
+  metalarmorcraft: { scrap: 12, ore: 4 },
+  ballisticvestcraft: { scrap: 10, ammoParts: 5, chemicals: 2 },
+  combatarmorcraft: { scrap: 18, electronics: 6, chemicals: 4 },
+  hazmatsuitcraft: { chemicals: 10, scrap: 6 },
+  heavyarmorcraft: { scrap: 26, ore: 10, electronics: 6 },
+  energysuitcraft: { electronics: 16, chemicals: 8, scrap: 10 },
+  prewarhelmetcraft: { scrap: 6, electronics: 3 },
+  weldedhelmetcraft: { scrap: 4 },
+  helmetcraft: { scrap: 4 },
+  tacticalhelmetcraft: { scrap: 6, electronics: 2 },
+  assaulthelmetcraft: { scrap: 8, electronics: 3 },
+  bootscraft: { scrap: 3, chemicals: 1 },
+  scoutbootscraft: { scrap: 4, chemicals: 2 },
+  assaultbootscraft: { scrap: 5, wood: 1 },
+  reinforcedbootscraft: { scrap: 6, ore: 2 },
+  backpackcraft: { scrap: 5, chemicals: 1 },
   pickaxecraft: { ore: 2, wood: 2 },
   axecraft: { ore: 1, wood: 3 },
-  handpumpcraft: { ore: 3, wood: 1, scrap: 2 }
+  handpumpcraft: { ore: 3, wood: 1, scrap: 2 },
+  weaponpartscraft: { ore: 6, scrap: 5 },
+  electronicscraft: { scrap: 3, chemicals: 1 }
 };
 
 const SERVER_CRAFT_RECIPE_OUTPUTS = {
   ammo9craft: { id: 'ammo9', qty: 8 },
   ammo556craft: { id: 'ammo556', qty: 5 },
+  energycellcraft: { id: 'energyCell', qty: 8 },
+  napalmcraft: { id: 'napalm', qty: 12 },
+  shellcraft: { id: 'shotgunShell', qty: 6 },
+  rocketammocraft: { id: 'rocketAmmo', qty: 2 },
+  stimcraft: { id: 'stim', qty: 3 },
+  medkitcraft: { id: 'medkit', qty: 2 },
+  doctorbagcraft: { id: 'doctorBag', qty: 1 },
+  antibioticscraft: { id: 'antibiotics', qty: 2 },
   repairkitcraft: { id: 'repairKit', qty: 1 },
   knifecraft: { id: 'knife', qty: 1 },
+  pistolcraft: { id: 'pistol', qty: 1 },
+  revolvercraft: { id: 'revolver', qty: 1 },
+  sawedoffcraft: { id: 'sawedOffShotgun', qty: 1 },
+  smgcraft: { id: 'smg', qty: 1 },
+  riflecraft: { id: 'rifle', qty: 1 },
   assaultcraft: { id: 'assaultRifle', qty: 1 },
   machineguncraft: { id: 'machineGun', qty: 1 },
   lasercraft: { id: 'laserPistol', qty: 1 },
@@ -11550,13 +11946,28 @@ const SERVER_CRAFT_RECIPE_OUTPUTS = {
   plasmacraft: { id: 'plasmaRifle', qty: 1 },
   shotguncraft: { id: 'shotgun', qty: 1 },
   rocketcrafter: { id: 'rocketLauncher', qty: 1 },
-  energycellcraft: { id: 'energyCell', qty: 8 },
-  napalmcraft: { id: 'napalm', qty: 12 },
-  shellcraft: { id: 'shotgunShell', qty: 6 },
-  rocketammocraft: { id: 'rocketAmmo', qty: 2 },
+  leathercraft: { id: 'leather', qty: 1 },
+  metalarmorcraft: { id: 'metalArmor', qty: 1 },
+  ballisticvestcraft: { id: 'ballisticVest', qty: 1 },
+  combatarmorcraft: { id: 'combatArmor', qty: 1 },
+  hazmatsuitcraft: { id: 'hazmatSuit', qty: 1 },
+  heavyarmorcraft: { id: 'heavyArmor', qty: 1 },
+  energysuitcraft: { id: 'energySuit', qty: 1 },
+  prewarhelmetcraft: { id: 'preWarHelmet', qty: 1 },
+  weldedhelmetcraft: { id: 'weldedHelmet', qty: 1 },
+  helmetcraft: { id: 'helmet', qty: 1 },
+  tacticalhelmetcraft: { id: 'tacticalHelmet', qty: 1 },
+  assaulthelmetcraft: { id: 'assaultHelmet', qty: 1 },
+  bootscraft: { id: 'boots', qty: 1 },
+  scoutbootscraft: { id: 'scoutBoots', qty: 1 },
+  assaultbootscraft: { id: 'assaultBoots', qty: 1 },
+  reinforcedbootscraft: { id: 'reinforcedBoots', qty: 1 },
+  backpackcraft: { id: 'backpack', qty: 1 },
   pickaxecraft: { id: 'pickaxe', qty: 1 },
   axecraft: { id: 'axe', qty: 1 },
-  handpumpcraft: { id: 'handPump', qty: 1 }
+  handpumpcraft: { id: 'handPump', qty: 1 },
+  weaponpartscraft: { id: 'weaponParts', qty: 2 },
+  electronicscraft: { id: 'electronics', qty: 2 }
 };
 
 const SERVER_CRAFT_RECIPE_STATIONS = {
@@ -11565,8 +11976,17 @@ const SERVER_CRAFT_RECIPE_STATIONS = {
   shellcraft: 'ammo_bench',
   rocketammocraft: 'ammo_bench',
   napalmcraft: 'chem_station',
+  stimcraft: 'chem_station',
+  medkitcraft: 'chem_station',
+  doctorbagcraft: 'chem_station',
+  antibioticscraft: 'chem_station',
   repairkitcraft: 'repair_bench',
   knifecraft: 'weapon_bench',
+  pistolcraft: 'weapon_bench',
+  revolvercraft: 'weapon_bench',
+  sawedoffcraft: 'weapon_bench',
+  smgcraft: 'weapon_bench',
+  riflecraft: 'weapon_bench',
   assaultcraft: 'weapon_bench',
   machineguncraft: 'weapon_bench',
   lasercraft: 'energy_bench',
@@ -11575,9 +11995,28 @@ const SERVER_CRAFT_RECIPE_STATIONS = {
   shotguncraft: 'weapon_bench',
   rocketcrafter: 'weapon_bench',
   energycellcraft: 'energy_bench',
+  leathercraft: 'repair_bench',
+  metalarmorcraft: 'repair_bench',
+  ballisticvestcraft: 'repair_bench',
+  combatarmorcraft: 'repair_bench',
+  hazmatsuitcraft: 'chem_station',
+  heavyarmorcraft: 'repair_bench',
+  energysuitcraft: 'energy_bench',
+  prewarhelmetcraft: 'energy_bench',
+  weldedhelmetcraft: 'tool_bench',
+  helmetcraft: 'repair_bench',
+  tacticalhelmetcraft: 'repair_bench',
+  assaulthelmetcraft: 'repair_bench',
+  bootscraft: 'tool_bench',
+  scoutbootscraft: 'tool_bench',
+  assaultbootscraft: 'tool_bench',
+  reinforcedbootscraft: 'repair_bench',
+  backpackcraft: 'tool_bench',
   pickaxecraft: 'tool_bench',
   axecraft: 'tool_bench',
-  handpumpcraft: 'tool_bench'
+  handpumpcraft: 'tool_bench',
+  weaponpartscraft: 'weapon_bench',
+  electronicscraft: 'energy_bench'
 };
 
 const SERVER_CRAFT_STATION_TOKENS = {
@@ -12636,11 +13075,44 @@ function locationObjectCollisionSize(row = {}) {
   return { width: fp.sx * TILE, depth: fp.sz * TILE, exact: false };
 }
 
+function locationObjectCollisionParts(row = {}) {
+  const parts = Array.isArray(row.collisionParts) ? row.collisionParts : [];
+  if (!parts.length) return [];
+  const pos = locationObjectPosition(row);
+  const scale = locationObjectScale(row);
+  const rotationY = locationObjectRotationY(row);
+  return parts.map(part => {
+    const center = part?.center && typeof part.center === 'object' ? part.center : {};
+    const size = part?.size && typeof part.size === 'object' ? part.size : {};
+    const width = Number(size.x ?? size.width ?? part?.width);
+    const depth = Number(size.z ?? size.depth ?? part?.depth);
+    const centerX = Number(center.x ?? part?.x ?? 0);
+    const centerZ = Number(center.z ?? part?.z ?? 0);
+    if (![width, depth, centerX, centerZ].every(Number.isFinite) || width <= 0 || depth <= 0) return null;
+    return transformedBounds({
+      center: { x: centerX, z: centerZ },
+      size: { x: width, z: depth }
+    }, {
+      x: pos.x,
+      z: pos.z,
+      rotationY,
+      scaleX: scale.x,
+      scaleZ: scale.z
+    });
+  }).filter(Boolean);
+}
+
 function roomStaticCollisionBlockersFromObject(row = {}) {
   if (!row || typeof row !== 'object') return [];
   if (!locationObjectBlocksMovement(row)) return [];
   const pos = locationObjectPosition(row);
   if (!Number.isFinite(pos.x) || !Number.isFinite(pos.z)) return [];
+  const authoredParts = locationObjectCollisionParts(row);
+  if (authoredParts.length) return authoredParts.map((part, partIndex) => ({
+    id: `${String(row.id || row.model || '').slice(0, 56)}:${partIndex}`,
+    ...part,
+    modelRef: 'authored:collisionParts'
+  }));
   const scale = locationObjectScale(row);
   const rotationY = locationObjectRotationY(row);
   const modelRef = locationObjectModelRef(row);
@@ -13956,15 +14428,49 @@ function npcHasLiveFactionFoes(room, enemy) {
 function rebuildRoomEnemyAiLookupCaches(room) {
   const factionGroups = new Set();
   const attackersByTargetId = new Map();
+  const formationActorsByTargetId = new Map();
+  const meleeCommitActiveByTargetId = new Map();
+  const now = Date.now();
   if (room?.enemies instanceof Map) {
     for (const enemy of room.enemies.values()) {
       if (!enemy || enemy.dead) continue;
       const faction = serverCombatFactionGroup(enemy.faction || '');
       if (faction) factionGroups.add(faction);
       const targetId = String(enemy.targetId || '');
-      if (!targetId || enemy.hostileToPlayer === false) continue;
-      if (!attackersByTargetId.has(targetId)) attackersByTargetId.set(targetId, []);
-      attackersByTargetId.get(targetId).push(enemy);
+      const factionTargetId = String(enemy.factionTargetId || '');
+      const melee = !serverNpcWeaponDef(enemy)?.ammoType;
+      if (melee) {
+        for (const id of new Set([targetId, factionTargetId].filter(Boolean))) {
+          if (!formationActorsByTargetId.has(id)) formationActorsByTargetId.set(id, []);
+          formationActorsByTargetId.get(id).push(String(enemy.id || ''));
+        }
+        const commitTargetId = String(enemy.meleeCommitTargetId || '');
+        if (commitTargetId && now < Number(enemy.meleeCommitUntil || 0)) {
+          if (!meleeCommitActiveByTargetId.has(commitTargetId))
+            meleeCommitActiveByTargetId.set(commitTargetId, new Set());
+          meleeCommitActiveByTargetId.get(commitTargetId).add(String(enemy.id || ''));
+        } else if (Number(enemy.meleeCommitUntil || 0) > 0) {
+          enemy.meleeCommitUntil = 0;
+          enemy.meleeCommitTargetId = '';
+        }
+      }
+      if (targetId && enemy.hostileToPlayer !== false) {
+        if (!attackersByTargetId.has(targetId)) attackersByTargetId.set(targetId, []);
+        attackersByTargetId.get(targetId).push(enemy);
+      }
+    }
+  }
+  room.enemyMeleeFormationActorsByTargetId = formationActorsByTargetId;
+  room.enemyMeleeCommitActiveByTargetId = meleeCommitActiveByTargetId;
+  if (room?.enemyMeleeFormationReservations instanceof Map) {
+    for (const [targetId, state] of room.enemyMeleeFormationReservations.entries()) {
+      if (!state || !(state.slots instanceof Map)) {
+        room.enemyMeleeFormationReservations.delete(targetId);
+        continue;
+      }
+      const activeIds = activeMeleeFormationActorIds(room, targetId);
+      state.slots = reconcileNpcMeleeSlotReservations(state.slots, activeIds);
+      if (state.slots.size === 0) room.enemyMeleeFormationReservations.delete(targetId);
     }
   }
   room.enemyLiveFactionGroups = factionGroups;
@@ -14014,7 +14520,8 @@ function npcSocialLookTarget(room, enemy) {
 function npcRoutineCombatActive(room, enemy) {
   if (!enemy || enemy.dead) return false;
   if (enemy.targetId || enemy.factionTargetId) return true;
-  if (['combat', 'attack', 'chase', 'reload', 'retreat'].includes(String(enemy.aiState || '').toLowerCase())) return true;
+  if (['combat', 'attack', 'chase', 'pressure', 'tactical', 'reload', 'retreat', 'stagger']
+    .includes(String(enemy.aiState || '').toLowerCase())) return true;
   return npcHasLiveFactionFoes(room, enemy);
 }
 
@@ -15512,10 +16019,45 @@ function serverWorldActivityAcceptedPlayers(room, taskId = '') {
 }
 
 
-function serverWorldActivityReconPoints(room, count = 5) {
+function serverWorldActivityFocusScore(room, tx, tz) {
+  const offsets = [
+    [-5, 0], [-4, -3], [-3, -4], [0, -5], [3, -4], [4, -3], [5, 0], [4, 3],
+    [3, 4], [0, 5], [-3, 4], [-4, 3], [-3, 0], [0, -3], [3, 0], [0, 3]
+  ];
+  let cover = 0;
+  let hazards = 0;
+  for (const [dx, dz] of offsets) {
+    const sampleTx = tx + dx;
+    const sampleTz = tz + dz;
+    if (!isRoomTerrainWalkableTile(room, sampleTx, sampleTz)) {
+      hazards += 1;
+      continue;
+    }
+    const point = tileToWorld(sampleTx, sampleTz);
+    if (!isRoomWalkableWorld(room, point.x, point.z, 0.38)) cover += 1;
+  }
+  // Four to six pieces of nearby authored geometry produce useful flanks
+  // without turning the operation center into an enclosed collision pocket.
+  return 30 - Math.abs(5 - cover) * 4 - hazards * 3;
+}
+
+function serverWorldActivityEncounterLayout(room, task = {}) {
+  if (!room) return null;
+  ensureRoomWorld(room);
+  return createWorldActivityEncounterLayout({
+    bounds: normalizedLocationPlayableBounds(roomLocation(room)),
+    seed: `${task.id || task.type || 'activity'}:${room.locationId || room.id}`,
+    resolveSafeTile: (tx, tz, safety) => findRoomSafeSpawnTile(room, tx, tz, safety),
+    scoreFocusTile: (tx, tz) => serverWorldActivityFocusScore(room, tx, tz),
+    tileToWorld
+  });
+}
+
+function serverWorldActivityReconPoints(room, count = 5, encounter = null) {
   if (!room) return [];
   ensureRoomWorld(room);
-  const bounds = normalizedLocationPlayableBounds(roomLocation(room));
+  const bounds = encounter?.objectiveBounds
+    || normalizedLocationPlayableBounds(roomLocation(room));
   return createWorldActivityPointPositions({
     bounds,
     count,
@@ -15532,15 +16074,15 @@ function serverWorldActivityReconPoints(room, count = 5) {
     z: point.z
   }));
 }
-function serverWorldActivityDistressPoints(room) {
-  return serverWorldActivityReconPoints(room, 1).map((point, index) => ({
+function serverWorldActivityDistressPoints(room, encounter = null) {
+  return serverWorldActivityReconPoints(room, 1, encounter).map((point, index) => ({
     ...point,
     id: `distress_signal_${index + 1}`,
     label: 'Источник сигнала'
   }));
 }
-function serverWorldActivityOperationPoints(room, sabotageCount = 4) {
-  return serverWorldActivityReconPoints(room, Math.max(6, sabotageCount + 2)).map((point, index) => {
+function serverWorldActivityOperationPoints(room, sabotageCount = 4, encounter = null) {
+  return serverWorldActivityReconPoints(room, Math.max(6, sabotageCount + 2), encounter).map((point, index) => {
     if (index === 0) return { ...point, id: 'approach_assault', label: 'Позиция штурма' };
     if (index === 1) return { ...point, id: 'approach_diversion', label: 'Маршрут диверсии' };
     return {
@@ -15584,32 +16126,53 @@ function ensureServerWorldActivityResourceCapacity(room, task) {
 }
 function ensureServerWorldActivityForRoom(room, now = Date.now()) {
   if (!room) return null;
-  const current = room.worldActivity;
-  if (current) {
-    if (['completed', 'partial', 'failed', 'expired'].includes(String(current.status || ''))) {
-      if (now - Number(current.completedAt || now) < 20000) return current;
-      room.worldActivity = null;
-      room.lastWorldActivitySpawnedTier = 0;
-    } else {
-      const state = WASTELAND_SIM.state();
-      const task = (Array.isArray(state?.worldTasks) ? state.worldTasks : [])
-        .find(row => String(row?.id || '') === String(current.taskId || '') && row.status === 'active');
-      if (task) return current;
-      room.worldActivity = null;
-      room.lastWorldActivitySpawnedTier = 0;
-    }
-  }
   const state = WASTELAND_SIM.state();
   const tasks = Array.isArray(state?.worldTasks) ? state.worldTasks : [];
   const roomPlayers = livePlayersInRoom(room);
-  const task = tasks.find(row => (
+  const preferredTask = selectRoomWorldActivityTask(tasks.filter(row => (
     serverWorldActivityTaskMatchesRoom(row, room)
     && roomPlayers.some(player => sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(String(row.id || '')))
-  ));
+  )), roomPlayers, { now });
+  const current = room.worldActivity;
+  if (current) {
+    if (['completed', 'partial', 'failed', 'expired'].includes(String(current.status || ''))) {
+      const replacesFinished = preferredTask
+        && String(preferredTask.id || '') !== String(current.taskId || '');
+      if (!replacesFinished && now - Number(current.completedAt || now) < 75000) return current;
+      room.worldActivity = null;
+      room.lastWorldActivitySpawnedTier = 0;
+      room.worldActivityCombatStarted = false;
+      room.lastWorldActivityCombatSpawnAt = 0;
+    } else {
+      const task = (Array.isArray(state?.worldTasks) ? state.worldTasks : [])
+        .find(row => String(row?.id || '') === String(current.taskId || '') && row.status === 'active');
+      const hasAcceptedPlayer = roomPlayers.some(player => sanitizeServerWorldTaskIds(player.worldTaskAccepted || [])
+        .includes(String(current.taskId || '')));
+      const preferredChanged = preferredTask
+        && String(preferredTask.id || '') !== String(current.taskId || '');
+      if (task && hasAcceptedPlayer && !preferredChanged) {
+        registerServerWorldActivityAcceptedPlayers(room, current, now);
+        return current;
+      }
+      // Empty/stale room activities must never mask the operation tracked by a
+      // newly arrived player. An activity with a live accepted group remains
+      // authoritative until that group leaves or completes it.
+      if (task && hasAcceptedPlayer) {
+        registerServerWorldActivityAcceptedPlayers(room, current, now);
+        return current;
+      }
+      room.worldActivity = null;
+      room.lastWorldActivitySpawnedTier = 0;
+      room.worldActivityCombatStarted = false;
+      room.lastWorldActivityCombatSpawnAt = 0;
+    }
+  }
+  const task = preferredTask;
   if (!task) return null;
   if (task.type === 'resource_expedition' && !ensureServerWorldActivityResourceCapacity(room, task)) {
     return null;
   }
+  const encounter = serverWorldActivityEncounterLayout(room, task);
   const common = {
     taskId: task.id,
     roomId: room.id,
@@ -15617,10 +16180,13 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
     siteId: task.siteId,
     title: task.title,
     durationMs: Math.max(180000, Number(task.details?.durationSeconds || (task.type === 'resource_expedition' ? 480 : 360)) * 1000),
-    now
+    now,
+    helpSignal: task.details?.helpSignal,
+    encounter
   };
   if (task.type === 'recon_expedition') {
-    const interactionPoints = serverWorldActivityReconPoints(room, Math.max(3, Number(task.details?.maxPoints || 5)));
+    const interactionPoints = serverWorldActivityReconPoints(room,
+      Math.max(3, Number(task.details?.maxPoints || 5)), encounter);
     if (interactionPoints.length < Math.max(1, Number(task.details?.targetPoints || 3))) return null;
     room.worldActivity = createReconExpedition({
       ...common,
@@ -15639,7 +16205,7 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
       threat: 25
     });
   } else if (task.type === 'distress_signal') {
-    const interactionPoints = serverWorldActivityDistressPoints(room);
+    const interactionPoints = serverWorldActivityDistressPoints(room, encounter);
     if (!interactionPoints.length) return null;
     room.worldActivity = createDistressSignal({
       ...common,
@@ -15656,7 +16222,7 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
       Number(task.details?.targetSabotage || 3),
       Number(task.details?.bonusSabotage || 4)
     );
-    const interactionPoints = serverWorldActivityOperationPoints(room, sabotagePoints);
+    const interactionPoints = serverWorldActivityOperationPoints(room, sabotagePoints, encounter);
     if (interactionPoints.length < sabotagePoints + 2) return null;
     room.worldActivity = createAssaultDiversion({
       ...common,
@@ -15679,17 +16245,39 @@ function ensureServerWorldActivityForRoom(room, now = Date.now()) {
     });
   }
   room.lastWorldActivitySpawnedTier = 0;
-  for (const player of serverWorldActivityAcceptedPlayers(room, task.id)) {
-    recordWorldActivityParticipant(room.worldActivity, {
+  room.worldActivityCombatStarted = false;
+  room.lastWorldActivityCombatSpawnAt = 0;
+  registerServerWorldActivityAcceptedPlayers(room, room.worldActivity, now);
+  updateServerWorldActivityDirector(room, now, { immediate: true });
+  syncServerWorldActivityProgress(room.worldActivity);
+  return room.worldActivity;
+}
+
+function registerServerWorldActivityAcceptedPlayers(room, activity, now = Date.now()) {
+  if (!room || !activity) return false;
+  let changed = false;
+  for (const player of serverWorldActivityAcceptedPlayers(room, activity.taskId)) {
+    const source = String(player.worldActivityJoinSourceTaskId || '') === String(activity.taskId || '')
+      ? String(player.worldActivityJoinSource || '')
+      : 'direct';
+    const participant = {
       socketId: player.id,
       userId: player.userId || '',
       characterId: player.characterId || '',
       name: player.name || '',
+      joinedVia: source || 'direct',
       joinedAt: now,
       lastActiveAt: now
-    });
+    };
+    if (source === 'help_signal' && activity.helpSignal) {
+      const response = recordWorldActivityHelpResponse(activity, participant);
+      changed = response.changed || changed;
+    } else {
+      changed = recordWorldActivityParticipant(activity, participant) || changed;
+    }
   }
-  return room.worldActivity;
+  if (changed) syncServerWorldActivityProgress(activity);
+  return changed;
 }
 
 function spawnServerWorldActivityWave(room, threatTier = 0) {
@@ -15697,9 +16285,10 @@ function spawnServerWorldActivityWave(room, threatTier = 0) {
   const tier = clamp(Math.floor(Number(threatTier || 0)), 0, 3);
   if (!room || !activity || !['active', 'extracting'].includes(String(activity.status || ''))
     || tier <= Number(room.lastWorldActivitySpawnedTier || 0)) return 0;
-  const typeName = ['outpost_defense', 'distress_signal', 'assault_diversion'].includes(activity.kind)
-    ? 'Рейдер'
-    : tier >= 3 ? 'Рейдер' : tier >= 2 ? 'Гекко' : 'Пепельный волк';
+  // Combat objectives are paced by updateServerWorldActivityDirector. Threat
+  // waves remain ambient pressure for gathering and recon only.
+  if (['outpost_defense', 'distress_signal', 'assault_diversion'].includes(activity.kind)) return 0;
+  const typeName = tier >= 3 ? 'Рейдер' : tier >= 2 ? 'Гекко' : 'Пепельный волк';
   const count = tier + 1;
   let spawned = 0;
   for (let index = 0; index < count; index += 1) {
@@ -15722,11 +16311,378 @@ function spawnServerWorldActivityWave(room, threatTier = 0) {
   return spawned;
 }
 
+function serverWorldActivityAliveHostiles(room, activityId = '') {
+  if (!room || !(room.enemies instanceof Map)) return 0;
+  let count = 0;
+  for (const enemy of room.enemies.values()) {
+    if (!enemy || enemy.dead) continue;
+    if (String(enemy.worldActivityId || '') !== String(activityId || '')) continue;
+    count += 1;
+  }
+  return count;
+}
+
+function serverWorldActivityExpectedPointIds(activity) {
+  const kind = String(activity?.kind || '');
+  const objective = id => (Array.isArray(activity?.objectives) ? activity.objectives : [])
+    .find(row => String(row?.id || '') === id) || null;
+  if (kind === 'recon_expedition') {
+    const maximum = Math.max(1, Math.floor(Number(objective('recon_points')?.maxTarget || 1)));
+    return Array.from({ length: maximum }, (_, index) => ({
+      id: `recon_${index + 1}`,
+      label: `Точка наблюдения ${index + 1}`
+    }));
+  }
+  if (kind === 'distress_signal' && Number(objective('distress_signal')?.current || 0) < 1) {
+    return [{ id: 'distress_signal_1', label: 'Источник сигнала' }];
+  }
+  if (kind === 'assault_diversion' && !activity.approach) {
+    return [
+      { id: 'approach_assault', label: 'Позиция штурма' },
+      { id: 'approach_diversion', label: 'Маршрут диверсии' }
+    ];
+  }
+  if (kind === 'assault_diversion' && activity.approach === 'diversion') {
+    const maximum = Math.max(1, Math.floor(Number(objective('sabotage')?.maxTarget || 1)));
+    return Array.from({ length: maximum }, (_, index) => ({
+      id: `sabotage_${index + 1}`,
+      label: `Объект диверсии ${index + 1}`
+    }));
+  }
+  return [];
+}
+
+function serverWorldActivityPointUnavailable(activity) {
+  const expected = serverWorldActivityExpectedPointIds(activity);
+  if (!expected.length) return false;
+  return expected.some(row => {
+    const point = (Array.isArray(activity?.interactionPoints) ? activity.interactionPoints : [])
+      .find(candidate => String(candidate?.id || '') === row.id);
+    return !point || !['pending', 'completed'].includes(String(point.status || ''));
+  });
+}
+
+function recoverServerWorldActivityPoints(room, activity, now = Date.now()) {
+  if (!room || !activity || !['active', 'extracting'].includes(String(activity.status || ''))) return 0;
+  const expected = serverWorldActivityExpectedPointIds(activity);
+  if (!expected.length) return 0;
+  const candidates = serverWorldActivityReconPoints(room, 8, activity.encounter);
+  const points = Array.isArray(activity.interactionPoints) ? activity.interactionPoints : [];
+  activity.interactionPoints = points;
+  let changed = 0;
+  let cursor = 0;
+  const recoveredPosition = () => {
+    const used = activity.interactionPoints.map(row => ({ x: Number(row?.x || 0), z: Number(row?.z || 0) }));
+    for (let attempts = 0; attempts < candidates.length; attempts += 1) {
+      const candidate = candidates[cursor % candidates.length];
+      cursor += 1;
+      if (!candidate) continue;
+      if (used.every(row => Math.hypot(row.x - candidate.x, row.z - candidate.z) >= 1.25)) return candidate;
+    }
+    return candidates[cursor++ % Math.max(1, candidates.length)] || { x: 0, z: 0 };
+  };
+
+  for (const expectedPoint of expected) {
+    let point = activity.interactionPoints.find(row => String(row?.id || '') === expectedPoint.id);
+    if (!point) {
+      if (activity.interactionPoints.length >= 8) continue;
+      const position = recoveredPosition();
+      point = {
+        id: expectedPoint.id,
+        label: expectedPoint.label,
+        x: Number(position.x || 0),
+        z: Number(position.z || 0),
+        status: 'pending',
+        completedAt: 0
+      };
+      activity.interactionPoints.push(point);
+      changed += 1;
+      continue;
+    }
+    if (point.status !== 'completed' && point.status !== 'pending') {
+      point.status = 'pending';
+      point.completedAt = 0;
+      changed += 1;
+    }
+    if (point.status !== 'pending') continue;
+    const tile = worldToTile(Number(point.x || 0), Number(point.z || 0));
+    const exactSafe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, { maxRadius: 0, radius: 0.42 });
+    if (exactSafe) continue;
+    const safe = findRoomSafeSpawnTile(room, tile.tx, tile.tz, { maxRadius: 8, radius: 0.42 });
+    const position = safe ? tileToWorld(safe.tx, safe.tz) : recoveredPosition();
+    if (!position) continue;
+    point.x = Number(position.x || 0);
+    point.z = Number(position.z || 0);
+    changed += 1;
+  }
+  if (changed > 0) {
+    activity.lastProgressAt = Math.max(Number(activity.startedAt || 0), Number(now || Date.now()));
+    activity.revision += 1;
+  }
+  return changed;
+}
+
+function updateServerWorldActivityEncounter(activity) {
+  const encounter = activity?.encounter;
+  if (!encounter) return false;
+  const wave = selectWorldActivityEncounterWave(activity, encounter);
+  const activeLaneId = String(wave?.lane?.id || '');
+  const waveNumber = Math.max(0, Math.floor(Number(wave?.waveNumber || 0)));
+  const waveCount = Math.max(1, Math.floor(Number(wave?.waveCount || encounter.waveCount || 3)));
+  if (String(encounter.activeLaneId || '') === activeLaneId
+    && Number(encounter.waveNumber || 0) === waveNumber
+    && Number(encounter.waveCount || 0) === waveCount) return false;
+  encounter.activeLaneId = activeLaneId;
+  encounter.waveNumber = waveNumber;
+  encounter.waveCount = waveCount;
+  encounter.revision = Math.max(1, Math.floor(Number(encounter.revision || 1))) + 1;
+  activity.revision += 1;
+  return true;
+}
+
+function spawnServerWorldActivityCombatants(room, activity, count = 0) {
+  const requested = clamp(Math.floor(Number(count || 0)), 0, 4);
+  if (!room || !activity || requested <= 0) return { count: 0, laneId: '' };
+  const lanes = Array.isArray(activity.encounter?.lanes) ? activity.encounter.lanes : [];
+  const activeLaneId = String(activity.encounter?.activeLaneId || '');
+  const orderedLanes = lanes.slice().sort((left, right) => (
+    Number(String(right?.id || '') === activeLaneId) - Number(String(left?.id || '') === activeLaneId)
+  ));
+  let spawned = 0;
+  let usedLaneId = activeLaneId;
+  for (let index = 0; index < requested; index += 1) {
+    room.worldActivityCombatSpawnSequence = Math.max(0,
+      Math.floor(Number(room.worldActivityCombatSpawnSequence || 0))) + 1;
+    let enemy = null;
+    let lane = null;
+    for (const candidate of orderedLanes.length ? orderedLanes : [null]) {
+      enemy = spawnServerEnemy(room, {
+        force: true,
+        allowSafeLocation: true,
+        typeName: 'Рейдер',
+        tx: candidate?.tx,
+        tz: candidate?.tz,
+        maxSpawnSearchRadius: candidate ? 6 : undefined,
+        requirePreferredSpawn: !!candidate,
+        minPlayerDistance: 9,
+        minEnemyDistance: 1.35,
+        role: 'world_activity_hostile',
+        hostileToPlayer: true,
+        canDialogue: false,
+        npcSeed: `${activity.id}:director:${room.worldActivityCombatSpawnSequence}`
+      });
+      if (!enemy) continue;
+      lane = candidate;
+      break;
+    }
+    if (!enemy) continue;
+    enemy.worldActivityId = activity.id;
+    enemy.worldActivityThreatTier = activity.threatTier;
+    enemy.worldActivityLaneId = String(lane?.id || activeLaneId || '').slice(0, 24);
+    enemy.worldActivityWaveNumber = Math.max(0, Math.floor(Number(activity.encounter?.waveNumber || 0)));
+    if (lane?.id) usedLaneId = lane.id;
+    spawned += 1;
+  }
+  if (spawned > 0 && activity.encounter && usedLaneId
+    && String(activity.encounter.activeLaneId || '') !== String(usedLaneId)) {
+    activity.encounter.activeLaneId = String(usedLaneId);
+    activity.encounter.revision = Math.max(1,
+      Math.floor(Number(activity.encounter.revision || 1))) + 1;
+    activity.revision += 1;
+  }
+  return { count: spawned, laneId: usedLaneId };
+}
+
+function updateServerWorldActivityDirector(room, now = Date.now(), options = {}) {
+  const activity = room?.worldActivity;
+  if (!room || !activity) return { changed: false, spawned: 0, recoveredPoints: 0 };
+  const pointWasUnavailable = serverWorldActivityPointUnavailable(activity);
+  const recoveredPoints = recoverServerWorldActivityPoints(room, activity, now);
+  const liveHostiles = serverWorldActivityAliveHostiles(room, activity.id);
+  const basePlan = planWorldActivityDirector(activity, {
+    liveHostiles,
+    participantCount: activity.participants?.length || 1,
+    objectiveUnavailable: pointWasUnavailable || (liveHostiles <= 0 && room.worldActivityCombatStarted === true),
+    combatStarted: room.worldActivityCombatStarted === true
+  }, now);
+  const encounterChanged = updateServerWorldActivityEncounter(activity);
+  const spawnReady = options.immediate === true
+    || now - Number(room.lastWorldActivityCombatSpawnAt || 0) >= 2200;
+  const spawnResult = basePlan.spawnCount > 0 && spawnReady
+    ? spawnServerWorldActivityCombatants(room, activity, basePlan.spawnCount)
+    : { count: 0, laneId: '' };
+  const spawned = Math.max(0, Number(spawnResult.count || 0));
+  if (spawned > 0) {
+    room.worldActivityCombatStarted = true;
+    room.lastWorldActivityCombatSpawnAt = now;
+  }
+  const recovered = recoveredPoints > 0 || (basePlan.recoveryNeeded && spawned > 0);
+  const previousRecoveryCount = Math.max(0, Math.floor(Number(activity.director?.recoveryCount || 0)));
+  const nextDirector = {
+    schema: WORLD_ACTIVITY_DIRECTOR_SCHEMA,
+    cue: basePlan.cue,
+    warning: recovered ? 'target_recovered' : basePlan.warning,
+    stalled: recovered ? false : basePlan.stalled,
+    recoveryCount: previousRecoveryCount + (recovered ? 1 : 0),
+    updatedAt: now
+  };
+  const previousSignature = activity.director
+    ? `${activity.director.cue}|${activity.director.warning}|${activity.director.stalled}|${activity.director.recoveryCount}`
+    : '';
+  const nextSignature = `${nextDirector.cue}|${nextDirector.warning}|${nextDirector.stalled}|${nextDirector.recoveryCount}`;
+  const directorChanged = previousSignature !== nextSignature;
+  if (directorChanged) {
+    activity.director = nextDirector;
+    activity.revision += 1;
+  }
+  return {
+    changed: directorChanged || encounterChanged || recoveredPoints > 0 || spawned > 0,
+    spawned,
+    recoveredPoints,
+    plan: basePlan
+  };
+}
+
 function emitServerWorldActivityState(room, reason = 'worldActivity') {
   if (!room) return null;
   const state = refreshRoomWorldState(room, { force: true });
   if (room.sockets?.size) io.to(room.id).emit('worldState', { reason, state });
   return state;
+}
+
+function syncServerWorldActivityProgress(activity = null) {
+  if (!activity || !activity.taskId || !WASTELAND_SIM?.syncWorldActivityProgress) return false;
+  const required = (Array.isArray(activity.objectives) ? activity.objectives : []).filter(row => row?.required);
+  const progress = required.reduce((sum, row) => sum + Math.max(0, Number(row.current || 0)), 0);
+  const goal = required.reduce((sum, row) => sum + Math.max(0, Number(row.target || 0)), 0);
+  const synced = WASTELAND_SIM.syncWorldActivityProgress(activity.taskId, {
+    progress,
+    goal: Math.max(1, goal),
+    participantCount: Array.isArray(activity.participants) ? activity.participants.length : 0,
+    participantNames: (Array.isArray(activity.participants) ? activity.participants : []).map(row => row?.name || ''),
+    helpSignal: activity.helpSignal,
+    updatedAt: Date.now()
+  });
+  if (synced?.ok) invalidateWastelandPublicCache();
+  return !!synced?.ok;
+}
+
+function performServerWorldActivityHelpSignal(player = {}, data = {}) {
+  const room = rooms.get(String(player.roomId || '')) || null;
+  const activity = room ? ensureServerWorldActivityForRoom(room, Date.now()) : null;
+  if (!activity || !['active', 'extracting'].includes(String(activity.status || ''))) {
+    return { ok: false, error: 'Сейчас нет активной вылазки, из которой можно вызвать помощь.' };
+  }
+  const accepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []).includes(String(activity.taskId || ''));
+  if (!accepted) return { ok: false, error: 'Сигнал может передать только участник этой вылазки.' };
+  const result = requestWorldActivityHelp(activity, {
+    socketId: player.id,
+    userId: player.userId || '',
+    characterId: player.characterId || '',
+    name: player.name || '',
+    message: String(data.message || '').slice(0, 160),
+    now: Date.now()
+  });
+  if (!result.ok) return { ...result, activity: publicWorldActivity(activity) };
+  syncServerWorldActivityProgress(activity);
+  invalidateWastelandPublicCache();
+  emitServerWorldActivityState(room, 'worldActivityHelpRequested');
+  io.emit('worldActivityFeedChanged', {
+    reason: 'help_signal',
+    taskId: activity.taskId,
+    siteId: activity.siteId,
+    expiresAt: result.helpSignal?.expiresAt || 0
+  });
+  return {
+    ok: true,
+    action: 'help_signal',
+    taskId: activity.taskId,
+    activity: publicWorldActivity(activity),
+    self: publicAuthoritativePlayerState(player)
+  };
+}
+
+function performServerWorldActivityPing(player = {}, data = {}) {
+  const room = rooms.get(String(player.roomId || '')) || null;
+  const activity = room ? ensureServerWorldActivityForRoom(room, Date.now()) : null;
+  if (!activity || !['active', 'extracting'].includes(String(activity.status || ''))) {
+    return { ok: false, error: 'Сейчас нет активной вылазки.' };
+  }
+  const participates = activity.participants.some(row => (
+    (player.characterId && row.characterId === player.characterId) || row.socketId === player.id
+  ));
+  if (!participates) return { ok: false, error: 'Метки доступны только участникам временного отряда.' };
+  const requestedX = Number(data.x);
+  const requestedZ = Number(data.z);
+  const x = Number.isFinite(requestedX) ? requestedX : Number(player.x || 0);
+  const z = Number.isFinite(requestedZ) ? requestedZ : Number(player.z || 0);
+  if (Math.hypot(x - Number(player.x || 0), z - Number(player.z || 0)) > 32) {
+    return { ok: false, error: 'Метка слишком далеко от отряда.' };
+  }
+  const result = createWorldActivityPing(activity, {
+    socketId: player.id,
+    userId: player.userId || '',
+    characterId: player.characterId || '',
+    name: player.name || '',
+    type: String(data.type || '').slice(0, 16),
+    label: String(data.label || '').slice(0, 48),
+    x,
+    z,
+    now: Date.now()
+  });
+  if (!result.ok) return { ...result, activity: publicWorldActivity(activity) };
+  emitServerWorldActivityState(room, 'worldActivityPing');
+  return { ok: true, ping: result.ping, activity: publicWorldActivity(activity) };
+}
+
+function performServerWorldActivityRally(player = {}, data = {}) {
+  const room = rooms.get(String(player.roomId || '')) || null;
+  const activity = room ? ensureServerWorldActivityForRoom(room, Date.now()) : null;
+  const taskId = String(data.taskId || '');
+  if (!activity || activity.status !== 'completed' || (taskId && taskId !== String(activity.taskId || ''))) {
+    return { ok: false, error: 'Сбор прежнего временного отряда уже закрыт.' };
+  }
+  const sim = WASTELAND_SIM.publicState();
+  const globalMap = serverAuthoritativeGlobalMapState(player);
+  const selectedId = String(activity.rally?.nextTaskId || '');
+  const candidates = sim?.worldActivities || sim?.worldTasks || [];
+  const nextTask = (selectedId ? candidates.find(row => String(row?.id || '') === selectedId) : null)
+    || selectQuickWorldActivityTask(candidates, {
+      acceptedTaskIds: [],
+      playerX: globalMap.playerX,
+      playerY: globalMap.playerY,
+      worldHour: sim?.worldHour,
+      now: Date.now()
+    });
+  if (!nextTask) return { ok: false, error: 'Для отряда пока нет следующей вылазки.' };
+  const rally = requestWorldActivityRally(activity, {
+    socketId: player.id,
+    userId: player.userId || '',
+    characterId: player.characterId || '',
+    name: player.name || '',
+    nextTaskId: nextTask.id,
+    now: Date.now()
+  });
+  if (!rally.ok) return rally;
+  const nextTaskId = String(nextTask.id || '');
+  player.worldTaskAccepted = sanitizeServerWorldTaskIds(player.worldTaskAccepted || []);
+  if (!player.worldTaskAccepted.includes(nextTaskId)) player.worldTaskAccepted.push(nextTaskId);
+  player.worldTaskTrackedId = nextTaskId;
+  player.worldActivityJoinSourceTaskId = nextTaskId;
+  player.worldActivityJoinSource = 'quick_join';
+  emitServerWorldActivityState(room, rally.ready ? 'worldActivityRallyReady' : 'worldActivityRally');
+  return {
+    ok: true,
+    action: 'continue_together',
+    taskId: activity.taskId,
+    nextTaskId,
+    nextTask,
+    voteCount: rally.voteCount,
+    ready: rally.ready,
+    activity: publicWorldActivity(activity),
+    sim,
+    self: publicAuthoritativePlayerState(player)
+  };
 }
 
 function updateServerWorldActivity(room, now = Date.now()) {
@@ -15741,14 +16697,20 @@ function updateServerWorldActivity(room, now = Date.now()) {
   const tick = tickWorldActivity(activity, now);
   if (tick.expired) {
     const failed = WASTELAND_SIM.failWorldActivityTask(activity.taskId, {
-      reason: 'time_expired'
+      reason: 'time_expired',
+      participantCount: Array.isArray(activity.participants) ? activity.participants.length : 0,
+      objectiveCurrent: (Array.isArray(activity.objectives) ? activity.objectives : [])
+        .filter(row => row?.required)
+        .reduce((sum, row) => sum + Math.max(0, Number(row.current || 0)), 0)
     });
     if (failed?.ok) invalidateWastelandPublicCache();
     settleServerWorldActivityPlayers([activity.taskId]);
   }
 
   const spawned = spawnServerWorldActivityWave(room, activity.threatTier);
-  const changed = activity !== previous || tick.expired || tick.threatTierAdvanced || spawned > 0;
+  const directed = updateServerWorldActivityDirector(room, now);
+  const changed = activity !== previous || tick.expired || tick.threatTierAdvanced
+    || spawned > 0 || directed.changed;
   if (changed) emitServerWorldActivityState(room, tick.expired ? 'worldActivityExpired' : 'worldActivity');
   return changed;
 }
@@ -15768,7 +16730,9 @@ function recordServerWorldActivityHarvest(room, player, item = null, now = Date.
     now
   });
   if (progress.changed) {
+    syncServerWorldActivityProgress(activity);
     spawnServerWorldActivityWave(room, activity.threatTier);
+    updateServerWorldActivityDirector(room, now, { immediate: true });
     emitServerWorldActivityState(room, progress.extractionOpened ? 'worldActivityExtractionOpen' : 'worldActivityProgress');
   }
   return { ...progress, activity: publicWorldActivity(activity) };
@@ -15790,7 +16754,9 @@ function recordServerWorldActivityEnemyKill(room, enemy, player = null, now = Da
   });
   if (!progress.changed) return { ...progress, activity: publicWorldActivity(activity) };
   enemy.worldActivityKillCredited = true;
+  syncServerWorldActivityProgress(activity);
   spawnServerWorldActivityWave(room, activity.threatTier);
+  updateServerWorldActivityDirector(room, now);
   emitServerWorldActivityState(room, progress.extractionOpened ? 'worldActivityExtractionOpen' : 'worldActivityProgress');
   return { ...progress, activity: publicWorldActivity(activity) };
 }
@@ -15818,7 +16784,9 @@ function performServerWorldActivityInteraction(player = {}, task = {}, taskId = 
     now: Date.now()
   });
   if (!progress.changed) return { ok: false, error: 'Разведданные из этой точки уже получены.' };
+  syncServerWorldActivityProgress(activity);
   spawnServerWorldActivityWave(room, activity.threatTier);
+  updateServerWorldActivityDirector(room, Date.now(), { immediate: true });
   emitServerWorldActivityState(room, progress.extractionOpened ? 'worldActivityExtractionOpen' : 'worldActivityProgress');
   return {
     ok: true,
@@ -15942,6 +16910,90 @@ function maybeClaimClearedWastelandSite(room, killedEnemy, player) {
     return false;
   }
 }
+
+const WORLD_ACTIVITY_DOWNED_MS = 20000;
+const WORLD_ACTIVITY_REVIVE_DISTANCE = 3.5;
+
+function serverTryDownWorldActivityPlayer(player, room, now = Date.now()) {
+  const activity = room?.worldActivity;
+  if (!player || !room || !activity || player.downed
+    || !['active', 'extracting'].includes(String(activity.status || ''))) return false;
+  const participates = activity.participants.some(row => (
+    (player.characterId && row.characterId === player.characterId) || row.socketId === player.id
+  ));
+  if (!participates) return false;
+  player.hp = 1;
+  player.dead = true;
+  player.downed = true;
+  player.downedUntil = now + WORLD_ACTIVITY_DOWNED_MS;
+  player.diedAt = 0;
+  player.input = { forward: 0, right: 0 };
+  player.vx = 0;
+  player.vz = 0;
+  player.moving = false;
+  setWorldActivityParticipantDowned(activity, {
+    socketId: player.id,
+    userId: player.userId || '',
+    characterId: player.characterId || '',
+    downed: true,
+    downedUntil: player.downedUntil,
+    now
+  });
+  emitAuthoritativePlayerState(player, { reason: 'worldActivityDowned' });
+  emitServerWorldActivityState(room, 'worldActivityPlayerDowned');
+  return true;
+}
+
+function performServerWorldActivityRevive(healer = {}, data = {}) {
+  const room = rooms.get(String(healer.roomId || '')) || null;
+  const activity = room?.worldActivity || null;
+  if (!room || !activity || !['active', 'extracting'].includes(String(activity.status || ''))) {
+    return { ok: false, error: 'Сейчас нет активной вылазки.' };
+  }
+  const target = players.get(String(data.targetId || '').slice(0, 96));
+  if (!target || target.roomId !== room.id || !target.downed || Number(target.downedUntil || 0) <= Date.now()) {
+    return { ok: false, error: 'Раненый союзник уже недоступен.' };
+  }
+  const member = candidate => activity.participants.some(row => (
+    (candidate.characterId && row.characterId === candidate.characterId) || row.socketId === candidate.id
+  ));
+  if (!member(healer) || !member(target)) return { ok: false, error: 'Поднять можно только участника временного отряда.' };
+  const distance = Math.hypot(Number(target.x || 0) - Number(healer.x || 0), Number(target.z || 0) - Number(healer.z || 0));
+  if (distance > WORLD_ACTIVITY_REVIVE_DISTANCE) return { ok: false, error: 'Подойдите ближе к раненому союзнику.' };
+  const now = Date.now();
+  serverApplyDerivedVitals(target);
+  target.dead = false;
+  target.downed = false;
+  target.downedUntil = 0;
+  target.hp = Math.max(1, Math.ceil(Number(target.maxHp || 100) * 0.3));
+  target.input = { forward: 0, right: 0 };
+  target.lastServerDamageAt = now;
+  setWorldActivityParticipantDowned(activity, {
+    socketId: target.id,
+    userId: target.userId || '',
+    characterId: target.characterId || '',
+    downed: false,
+    now
+  });
+  const payload = {
+    roomId: room.id,
+    locationId: room.locationId,
+    healerId: healer.id,
+    healerName: healer.name || 'Выживший',
+    targetId: target.id,
+    targetName: target.name || 'Выживший',
+    hp: Math.round(target.hp),
+    maxHp: Math.round(target.maxHp),
+    downed: false,
+    revived: true,
+    t: now
+  };
+  io.to(room.id).emit('playerHealed', payload);
+  emitAuthoritativePlayerState(target, { reason: 'worldActivityRevived' });
+  emitServerWorldActivityState(room, 'worldActivityPlayerRevived');
+  return { ok: true, revived: true, target: publicPlayer(target), activity: publicWorldActivity(activity) };
+}
+
 function serverRespawnPlayer(p, oldRoom, cause = {}) {
   if (!p || !p.id) return;
   const socket = io.sockets.sockets.get(p.id);
@@ -16015,6 +17067,8 @@ function serverRespawnPlayer(p, oldRoom, cause = {}) {
   serverApplyDerivedVitals(p);
   p.hp = Math.ceil(p.maxHp * 0.55);
   p.dead = false;
+  p.downed = false;
+  p.downedUntil = 0;
   p.crouching = false;
   p.lastRespawnAt = now;
   p.lastServerDamageAt = now;
@@ -16085,7 +17139,8 @@ function spawnServerEnemy(room, opts = {}) {
   const type = forced ? { ...baseType } : applyServerEnemyVariant(baseType, rollServerEnemyVariant(rng));
   const roomPlayers = livePlayersInRoom(room);
   let chosen = null;
-  if (Number.isFinite(Number(opts.tx)) && Number.isFinite(Number(opts.tz))) {
+  const preferredSpawnRequested = Number.isFinite(Number(opts.tx)) && Number.isFinite(Number(opts.tz));
+  if (preferredSpawnRequested) {
     const safe = findRoomSafeSpawnTile(room, Number(opts.tx), Number(opts.tz), {
       maxRadius: Number(opts.maxSpawnSearchRadius ?? (forced ? 10 : 6)),
       radius: 0.46,
@@ -16094,6 +17149,7 @@ function spawnServerEnemy(room, opts = {}) {
     });
     if (safe) chosen = tileToWorld(safe.tx, safe.tz);
   }
+  if (!chosen && preferredSpawnRequested && opts.requirePreferredSpawn === true) return null;
   for (let tries = 0; !chosen && tries < 160; tries++) {
     const tx = 2 + Math.floor(rng() * (MAP_W - 4));
     const tz = 2 + Math.floor(rng() * (MAP_H - 4));
@@ -16144,15 +17200,22 @@ function spawnServerEnemy(room, opts = {}) {
       : createServerNpcProfile(npcSeed, { ...opts, role, faction }, loc));
   if (!naturalCreature && npcProfile) {
     const personalInventory = serverNpcPersonalInventory(npcProfile, role, faction, equipment, factionSupply);
-    if (!hasPersistedInventory) enemyInventory = serverInventoryMergeRows(enemyInventory, personalInventory);
-    else if (persistedInventoryVersion < NPC_INVENTORY_VERSION) {
+    if (!hasPersistedInventory) enemyInventory = serverInventoryEnsureMinimumRows(enemyInventory, personalInventory);
+    else if (persistedInventoryVersion < NPC_PERSONAL_INVENTORY_VERSION) {
       enemyInventory = serverInventoryEnsureMinimumRows(enemyInventory, personalInventory);
+    } else if (persistedInventoryVersion < NPC_INVENTORY_VERSION) {
+      // Version 2 already tracks spent money, ammunition and supplies. Repair
+      // only its missing physical equipment so migration cannot replenish use.
+      enemyInventory = serverInventoryEnsureMinimumRows(
+        enemyInventory,
+        buildNpcEquipmentInventory(equipment, SERVER_ITEM_IDS)
+      );
     }
   }
   const explicitCaps = Number(opts.caps ?? opts.traderCaps);
   if (!naturalCreature && Number.isFinite(explicitCaps) && explicitCaps > 0) {
     if (!hasPersistedInventory) enemyInventory = serverInventorySetRows(enemyInventory, 'silver', explicitCaps);
-    else if (persistedInventoryVersion < NPC_INVENTORY_VERSION) {
+    else if (persistedInventoryVersion < NPC_PERSONAL_INVENTORY_VERSION) {
       enemyInventory = serverInventoryEnsureMinimumRows(enemyInventory, [{ id: 'silver', qty: explicitCaps }]);
     }
   } else if (naturalCreature) {
@@ -16177,6 +17240,11 @@ function spawnServerEnemy(room, opts = {}) {
     maxHp: type.hp,
     dead: false,
     attackTimer: 0.6 + rng() * 0.9,
+    meleeCommitUntil: 0,
+    meleeCommitCooldownUntil: 0,
+    meleeCommitTargetId: '',
+    hitStaggerUntil: 0,
+    nextHitStaggerAt: 0,
     wanderTimer: 0,
     vx: 0,
     vz: 0,
@@ -16649,12 +17717,9 @@ function setupWorldZoneBattleRoom(room, explicitZone = null) {
       enemy.stationary = false;
     }
     if (actor.dead || enemy.hp <= 0) {
-      enemy.dead = true;
-      enemy.hp = 0;
-      enemy.aiState = 'dead';
-      enemy.vx = 0;
-      enemy.vz = 0;
-      enemy.diedAt = Date.now() - Math.max(1000, Math.round(Math.max(0, Number(zone.worldHour || 0) - Number(actor.diedHour || 0)) * 60000));
+      const diedAt = Date.now() - Math.max(1000,
+        Math.round(Math.max(0, Number(zone.worldHour || 0) - Number(actor.diedHour || 0)) * 60000));
+      finalizeNpcDeathState(enemy, diedAt);
       serverPrepareNpcCorpseLoot(enemy);
     }
   });
@@ -17237,6 +18302,13 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
   const oneFactionCrowd = liveFactionGroups.size <= 1;
   for (const actor of actors) {
     if (!actor || actor.dead) continue;
+    if (npcHitStaggerActive(actor, now)) {
+      actor.aiState = 'stagger';
+      actor.vx = 0;
+      actor.vz = 0;
+      engaged.add(actor.id);
+      continue;
+    }
     // The dominant settlement case has one live faction and therefore cannot
     // contain a faction foe. Mixed authored encounters keep the established
     // sparse spatial lookup without introducing an O(F²) faction pre-pass.
@@ -17295,11 +18367,16 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
         speedMul: 0.9,
         separationWeight: 0.22
       })) continue;
-      const goal = enemyFactionMeleeGoalNearTarget(room, actor, foe, meleeGoalRange) || foe;
-      moveEnemyTowards(room, actor, goal.x, goal.z, Math.max(0.8, Number(actor.speed || 1.6) * 0.9), dt, {
+      const goal = !ranged
+        ? (enemyFactionMeleeGoalNearTarget(room, actor, foe, meleeGoalRange) || foe)
+        : foe;
+      const moveOptions = {
         ignoreSeparationIds: foe.id,
         separationWeight: 0.28
-      });
+      };
+      const baseSpeed = Math.max(0.8, Number(actor.speed || 1.6) * 0.9);
+      if (!ranged) moveEnemyTowardsMeleeSlot(room, actor, goal, baseSpeed, dt, moveOptions);
+      else moveEnemyTowards(room, actor, goal.x, goal.z, baseSpeed, dt, moveOptions);
       continue;
     }
     clearEnemyTacticalGoal(actor);
@@ -17337,20 +18414,15 @@ function updateEncounterFactionCombat(room, dt, roomPlayers = [], roomPlayersByI
     if (ranged) serverNpcConsumeCombatAmmo(actor, weapon, foe, now);
     foe.aiState = foe.hp <= 0 ? 'dead' : 'factionCombat';
     if (foe.hp <= 0 && !foe.dead) {
-      foe.dead = true;
-      foe.diedAt = now;
+      finalizeNpcDeathState(foe, now);
       foe.killerId = actor.id;
       serverPrepareNpcCorpseLoot(foe);
-      foe.targetId = '';
-      foe.factionTargetId = '';
-      foe.factionGoalAngle = null;
       clearEnemyTacticalGoal(foe);
-      foe.vx = 0;
-      foe.vz = 0;
-      foe.aiState = 'dead';
       invalidateEnemyPath(foe);
       recordServerWorldActivityEnemyKill(room, foe, null, now);
       maybeReportEncounterOutcome(room, 'faction_combat', foe, null);
+    } else if (!foe.dead) {
+      applyNpcHitStagger(foe, dmg, now);
     }
   }
   return engaged;
@@ -17500,6 +18572,9 @@ function updateServerEnemies(room, dt, opts = {}) {
   const roomPlayers = Array.isArray(opts.players)
     ? opts.players.filter(p => p && Number(p.hp || 1) > 0 && !p.dead)
     : livePlayersInRoom(room).filter(p => Number(p.hp || 1) > 0 && !p.dead);
+  // Reused by every movement probe in this AI pass. NPCs and players now obey
+  // the same non-penetration rule without repeatedly rebuilding the room list.
+  room.enemyAiPlayers = roomPlayers;
   const roomPlayersById = new Map(roomPlayers.map(player => [String(player.id || ''), player]));
   const factionCombatActors = updateEncounterFactionCombat(room, dt, roomPlayers, roomPlayersById);
   rebuildRoomEnemyAiLookupCaches(room);
@@ -17524,6 +18599,12 @@ function updateServerEnemies(room, dt, opts = {}) {
       if (serverShouldRemoveCorpse(enemy, now)) {
         if (roomEnemyDelete(room, enemy.id)) enemyStructureChanged = true;
       }
+      continue;
+    }
+    if (npcHitStaggerActive(enemy, now)) {
+      enemy.aiState = 'stagger';
+      enemy.vx = 0;
+      enemy.vz = 0;
       continue;
     }
     ensureEnemyHome(enemy);
@@ -17696,6 +18777,8 @@ function updateServerEnemies(room, dt, opts = {}) {
       const tooCloseForRanged = ranged && visibleDistance < serverNpcRangedComfortMin(enemy, target);
       const canAttack = visibleTarget && visibleDistance <= attackRange && !tooCloseForRanged && hasLine;
       if (!canAttack) {
+        if (!ranged && Number(enemy.meleeCommitUntil || 0) > 0)
+          cancelEnemyMeleeCommit(room, enemy, now, 180);
         enemy.attackTimer = Math.max(0.25, Number(enemy.attackTimer || 0.5));
         if (ranged && visibleTarget) {
           const handled = updateRangedNpcTacticalMovement(room, enemy, target, weapon, dt, {
@@ -17706,7 +18789,13 @@ function updateServerEnemies(room, dt, opts = {}) {
           });
           if (!handled) moveEnemyTowards(room, enemy, chaseX, chaseZ, enemy.speed, dt);
         } else {
-          moveEnemyTowards(room, enemy, chaseX, chaseZ, enemy.speed, dt);
+          const goal = { x: chaseX, z: chaseZ };
+          if (visibleTarget) {
+            moveEnemyTowardsMeleeSlot(room, enemy, goal, enemy.speed, dt, {
+              ignoreSeparationIds: target.id,
+              separationWeight: 0.28
+            });
+          } else moveEnemyTowards(room, enemy, chaseX, chaseZ, enemy.speed, dt);
         }
         if (!visibleTarget && Math.hypot(chaseX - enemy.x, chaseZ - enemy.z) < 0.8) {
           beginEnemySearchAt(room, enemy, chaseX, chaseZ, now, { scatter: false, pointCount: 3 });
@@ -17719,8 +18808,14 @@ function updateServerEnemies(room, dt, opts = {}) {
         enemy.aiState = 'attack';
         const readiness = serverNpcCombatWeaponReady(enemy, weapon, now);
         if (!readiness.ready) {
+          if (!ranged) cancelEnemyMeleeCommit(room, enemy, now, 180);
           enemy.aiState = readiness.reloading ? 'reload' : 'chase';
           enemy.attackTimer = Math.max(0.2, Number(enemy.attackTimer || 0));
+          continue;
+        }
+        if (!ranged && !reserveEnemyMeleeCommit(room, enemy, target, now)) {
+          enemy.aiState = 'pressure';
+          enemy.attackTimer = Math.max(0.18, Number(enemy.attackTimer || 0));
           continue;
         }
         enemy.attackTimer -= dt;
@@ -17736,6 +18831,7 @@ function updateServerEnemies(room, dt, opts = {}) {
               serverNpcConsumeCombatAmmo(enemy, weapon, target, now);
             } else {
               emitServerNpcMelee(room, enemy, target, weapon, { hit: false });
+              finishEnemyMeleeCommit(room, enemy, now);
             }
             io.to(target.id).emit('enemyAttackMiss', {
               locationId: room.locationId,
@@ -17757,12 +18853,17 @@ function updateServerEnemies(room, dt, opts = {}) {
           const mitigation = serverMitigateDamage(raw, target, damageType);
           const damage = mitigation.damage;
           if (ranged) emitServerNpcShot(room, enemy, target, weapon, { hit: true });
-          else emitServerNpcMelee(room, enemy, target, weapon, { hit: true });
+          else {
+            emitServerNpcMelee(room, enemy, target, weapon, { hit: true });
+            finishEnemyMeleeCommit(room, enemy, now);
+          }
           serverApplyDerivedVitals(target);
           const secondChance = serverTrySecondChance(target, damage, now);
           if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - damage);
           const newInjuries = serverApplyInjuriesFromHit(target, damage, damageType, attackProfile.injurySource || enemy.name);
           target.lastServerDamageAt = now;
+          const downed = !secondChance && Number(target.hp || 0) <= 0
+            && serverTryDownWorldActivityPlayer(target, room, now);
           io.to(target.id).emit('enemyAttack', {
             locationId: room.locationId,
             enemyId: enemy.id,
@@ -17775,6 +18876,7 @@ function updateServerEnemies(room, dt, opts = {}) {
             protection: Number((mitigation.protection * 100).toFixed(1)),
             threshold: mitigation.threshold,
             secondChance,
+            downed,
             injuries: sanitizeInjuries(target.injuries || {}),
             newInjuries,
             hp: Math.round(target.hp),
@@ -17791,11 +18893,16 @@ function updateServerEnemies(room, dt, opts = {}) {
             characterId: target.characterId || '',
             enemyId: enemy.id,
             enemyName: enemy.name,
+            sourceX: Number(enemy.x.toFixed(2)),
+            sourceZ: Number(enemy.z.toFixed(2)),
             damage,
             damageType,
             injurySource: attackProfile.injurySource || enemy.name,
             absorbed: mitigation.absorbed,
             secondChance,
+            downed,
+            killed: false,
+            critical: false,
             injuries: sanitizeInjuries(target.injuries || {}),
             newInjuries,
             hp: Math.round(target.hp),
@@ -17872,8 +18979,10 @@ function updateServerEnemies(room, dt, opts = {}) {
   }
   completeDepartedOnsiteParties(room);
   } finally {
+    room.enemyAiPlayers = null;
     room.enemyLiveFactionGroups = null;
     room.enemyAttackersByTargetId = null;
+    room.enemyMeleeFormationActorsByTargetId = null;
     rebuildRoomEnemySpatialIndex(room, 0);
   }
   return enemyStructureChanged;
@@ -18115,6 +19224,9 @@ function getOrCreateRoom(roomId = 'settlement', locationId = '') {
       worldActivity: null,
       lastWorldActivityTickAt: 0,
       lastWorldActivitySpawnedTier: 0,
+      lastWorldActivityCombatSpawnAt: 0,
+      worldActivityCombatSpawnSequence: 0,
+      worldActivityCombatStarted: false,
       enemySpawnTimer: 0,
       enemySpatialIndex: null,
       enemySpatialSourceSize: -1,
@@ -18793,7 +19905,7 @@ function syncWorldCaravanArrivalTransfers(state = null) {
     if (!task || task.type !== 'escort_caravan' || task.status !== 'completed') continue;
     const details = task.details && typeof task.details === 'object' ? task.details : {};
     const locationId = normalizeLocationId(details.arrivalLocationId || simState.sites?.[details.arrivalSiteId || task.targetSiteId || '']?.locationId || task.locationId || 'settlement');
-    if (!LOCATIONS[locationId]) continue;
+    if (!LOCATIONS[locationId] || !isReleasedLocationId(locationId)) continue;
     let room = null;
     let publicTask = null;
     for (const p of players.values()) {
@@ -18922,6 +20034,7 @@ function syncWorldCaravanPlayerTransfers() {
 }
 
 function publicPlayer(p) {
+  const worldFactionId = serverWorldFactionKey(p.worldFactionId || p.factionId || '');
   return {
     id: p.id,
     characterId: p.characterId || '',
@@ -18929,8 +20042,8 @@ function publicPlayer(p) {
     controlType: normalizeControlType(p.controlType || '', p.deviceType || 'desktop'),
     name: p.name,
     appearance: sanitizeCharacterAppearance(p.appearance || {}),
-    factionId: p.worldFactionId || p.factionId || '',
-    worldFactionId: p.worldFactionId || p.factionId || '',
+    factionId: worldFactionId,
+    worldFactionId,
     x: Number(p.x.toFixed(3)),
     z: Number(p.z.toFixed(3)),
     vx: Number(clampPlayerVelocity(p.vx || 0).toFixed(3)),
@@ -18943,7 +20056,9 @@ function publicPlayer(p) {
     maxHp: Math.round(Number(p.maxHp || 100)),
     maxAp: Math.round(Number(p.maxAp || 0)),
     ap: Number(Number.isFinite(Number(p.ap)) ? Number(p.ap).toFixed(1) : 0),
-    dead: !!p.dead,
+    dead: !!p.dead && !p.downed,
+    downed: !!p.downed,
+    downedUntil: p.downed ? Math.max(0, Number(p.downedUntil || 0)) : 0,
     weapon: serverActiveWeaponId(p),
     equipment: sanitizeEquipment(p.equipment, { weapon: p.weapon || 'pistol' }),
     injuries: sanitizeInjuries(p.injuries || {}),
@@ -18980,7 +20095,7 @@ function serverAuthoritativeGlobalMapState(p = {}) {
     pendingEncounterWorldZoneId: '',
     pendingEncounterWorldPartyId: '',
     pendingEncounterWorldPoint: null,
-    pendingWorldDrop: null,
+    pendingWorldDrop: sanitizePendingLocationTransition(p.pendingLocationTransition, serverNow),
     currentWorldSiteId: siteId,
     attachedPartyId,
     attachedPartyTaskId,
@@ -19128,7 +20243,7 @@ function publicTravelPartyMember(p, leaderId = '') {
     id: p.id,
     characterId: p.characterId || '',
     name: p.name || 'Игрок',
-    factionId: p.worldFactionId || p.factionId || '',
+    factionId: serverWorldFactionKey(p.worldFactionId || p.factionId || ''),
     leader: p.id === leaderId,
     locationId: p.locationId || 'settlement',
     roomId: p.roomId || ''
@@ -19331,7 +20446,8 @@ function serverGlobalDestinationAtPoint(point = null, preferredLocationId = '', 
   const simState = serverGlobalSimState();
   for (const site of Object.values(simState?.sites || {})) {
     const locationId = normalizeLocationId(site?.locationId || '');
-    if (!site || String(site.type || '').toLowerCase() === 'settlement' || !LOCATIONS[locationId]) continue;
+    if (!site || String(site.type || '').toLowerCase() === 'settlement' || !LOCATIONS[locationId]
+      || !isReleasedLocationId(site.id || '') || !isReleasedLocationId(locationId)) continue;
     const center = sanitizeServerGlobalMapPoint(site);
     const distance = serverGlobalPointDistance(target, center);
     if (!center || distance > SERVER_GLOBAL_LOCATION_RADIUS + 1) continue;
@@ -19341,7 +20457,7 @@ function serverGlobalDestinationAtPoint(point = null, preferredLocationId = '', 
   for (const node of (Array.isArray(GLOBAL_MAP?.nodes) ? GLOBAL_MAP.nodes : [])) {
     if (String(node?.kind || 'settlement').toLowerCase() !== 'settlement') continue;
     const locationId = normalizeLocationId(node?.locationId || node?.id || '');
-    if (!LOCATIONS[locationId]) continue;
+    if (!LOCATIONS[locationId] || !isReleasedLocationId(locationId)) continue;
     const center = sanitizeServerGlobalMapPoint(node);
     const distance = serverGlobalPointDistance(target, center);
     if (!center || distance > SERVER_GLOBAL_LOCATION_RADIUS + 1) continue;
@@ -19475,7 +20591,9 @@ function serverResolveGlobalTravelContact(session = null, data = {}, leader = {}
   if (siteId) {
     const site = serverGlobalSite(siteId, simState);
     const locationId = normalizeLocationId(site?.locationId || '');
-    const point = site && LOCATIONS[locationId] ? sanitizeServerGlobalMapPoint(site) : null;
+    const point = site && LOCATIONS[locationId] && isReleasedLocationId(site.id || '') && isReleasedLocationId(locationId)
+      ? sanitizeServerGlobalMapPoint(site)
+      : null;
     if (point && serverGlobalPointDistance(expectedPoint, point) <= SERVER_GLOBAL_LOCATION_RADIUS + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {
       const loc = LOCATIONS[locationId] || {};
       return {
@@ -19487,7 +20605,8 @@ function serverResolveGlobalTravelContact(session = null, data = {}, leader = {}
     }
   }
   const requestedLocationId = normalizeLocationId(data.targetLocationId || '');
-  if (requestedLocationId && requestedLocationId !== 'wasteland' && LOCATIONS[requestedLocationId]) {
+  if (requestedLocationId && requestedLocationId !== 'wasteland' && LOCATIONS[requestedLocationId]
+    && isReleasedLocationId(requestedLocationId)) {
     const node = serverGlobalMapNode(requestedLocationId);
     const locationSite = node ? null : serverGlobalSiteForLocation(requestedLocationId, simState);
     const point = sanitizeServerGlobalMapPoint(node || locationSite || null);
@@ -19606,19 +20725,23 @@ function handleServerGlobalTravelArrival(socket, data = {}, ack) {
     member.currentWorldSiteId = resolution.siteId || '';
     member.lastWorldEntryOrigin = sanitizeServerGlobalMapPoint(session.fromPoint || null);
     member.lastWorldEntryRadius = clamp(Number(resolution.radius || SERVER_GLOBAL_LOCATION_RADIUS), 2, 40);
-    member.pendingLocationTransition = stayOnWorldMap ? null : {
-      targetLocationId,
-      roomId: resolution.encounterRoomId || '',
-      worldZoneId: resolution.worldZoneId || '',
-      partyId: resolution.partyId || '',
-      siteId: resolution.siteId || '',
-      encounterId: resolution.encounterId || '',
-      pvpMode: resolution.pvpMode || 'pvp',
-      worldPoint: resolution.point,
-      entryKey: payload.entryKey,
-      expiresAt: now + 15000
-    };
-    member.onGlobalMap = stayOnWorldMap;
+    if (stayOnWorldMap) {
+      member.pendingLocationTransition = null;
+      member.onGlobalMap = true;
+    } else {
+      stagePendingLocationTransition(member, {
+        targetLocationId,
+        roomId: resolution.encounterRoomId || '',
+        worldZoneId: resolution.worldZoneId || '',
+        partyId: resolution.partyId || '',
+        siteId: resolution.siteId || '',
+        encounterId: resolution.encounterId || '',
+        encounter: !!resolution.encounter,
+        pvpMode: resolution.pvpMode || 'pvp',
+        worldPoint: resolution.point,
+        entryKey: payload.entryKey
+      }, now);
+    }
     arrivingMembers.push(member);
   }
   persistActivePlayerStates(arrivingMembers);
@@ -19982,6 +21105,7 @@ io.on('connection', (socket) => {
     const savedStorageFaction = serverStorageFactionKey(locationCapitalFaction(room.locationId));
     const savedGlobalMap = savedState.globalMap && typeof savedState.globalMap === 'object' ? savedState.globalMap : {};
     const savedGlobalWorldPoint = sanitizeServerGlobalMapPoint({ x: savedGlobalMap.playerX, y: savedGlobalMap.playerY });
+    const savedPendingLocationTransition = sanitizePendingLocationTransition(savedGlobalMap.pendingWorldDrop);
     const p = {
       id: socket.id,
       token,
@@ -20049,6 +21173,7 @@ io.on('connection', (socket) => {
       globalMap: savedGlobalMap,
       onGlobalMap: !!savedGlobalMap.onWorldMap && !!savedGlobalWorldPoint,
       globalWorldPoint: savedGlobalWorldPoint,
+      pendingLocationTransition: savedPendingLocationTransition,
       attachedPartyId: worldTransferId(savedGlobalMap.attachedPartyId || ''),
       attachedPartyTaskId: worldTransferRecordId(savedGlobalMap.attachedPartyTaskId || ''),
       currentWorldSiteId: String(savedGlobalMap.currentWorldSiteId || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64),
@@ -20091,7 +21216,7 @@ io.on('connection', (socket) => {
       leaveCurrentRoom(socket, 'resumeGlobalMap', { leaderId: socket.id });
       p.roomId = '';
       p.globalWorldPoint = point;
-      if (!p.attachedPartyTaskId) {
+      if (!p.attachedPartyTaskId && !p.pendingLocationTransition) {
         const startedAt = Date.now();
         globalTravelSessions.set(socket.id, {
           id: `travel_${socket.id}_${startedAt}`,
@@ -20783,6 +21908,80 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('worldActivityQuickJoin', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    try {
+      const result = performServerWorldActivityQuickJoin(p, data);
+      if (!result?.ok) return fail(result?.error || 'Не удалось подобрать вылазку.');
+      p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);
+      persistActivePlayerState(p);
+      if (typeof ack === 'function') ack(result);
+    } catch (error) {
+      console.error('worldActivityQuickJoin failed:', error);
+      fail('Сервер не смог подобрать вылазку.');
+    }
+  });
+
+  socket.on('worldActivityHelpSignal', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    try {
+      const result = performServerWorldActivityHelpSignal(p, data);
+      if (!result?.ok) return fail(result?.error || 'Сигнал помощи не передан.');
+      if (typeof ack === 'function') ack(result);
+    } catch (error) {
+      console.error('worldActivityHelpSignal failed:', error);
+      fail('Сервер не смог передать сигнал помощи.');
+    }
+  });
+
+  socket.on('worldActivityPing', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || p.dead || p.downed || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    try {
+      const result = performServerWorldActivityPing(p, data);
+      if (!result?.ok) return fail(result?.error || 'Не удалось поставить метку.');
+      if (typeof ack === 'function') ack(result);
+    } catch (error) {
+      console.error('worldActivityPing failed:', error);
+      fail('Сервер не смог поставить метку отряда.');
+    }
+  });
+
+  socket.on('worldActivityRevive', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error }); };
+    if (!p || p.dead || p.downed || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    try {
+      const result = performServerWorldActivityRevive(p, data);
+      if (!result?.ok) return fail(result?.error || 'Не удалось поднять союзника.');
+      if (typeof ack === 'function') ack(result);
+    } catch (error) {
+      console.error('worldActivityRevive failed:', error);
+      fail('Сервер не смог поднять союзника.');
+    }
+  });
+
+  socket.on('worldActivityContinue', (data = {}, ack) => {
+    const p = players.get(socket.id);
+    const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
+    if (!p || p.dead || Number(p.hp || 0) <= 0) return fail('Игрок недоступен.');
+    try {
+      const result = performServerWorldActivityRally(p, data);
+      if (!result?.ok) return fail(result?.error || 'Не удалось продолжить с отрядом.');
+      p.worldTaskRecordFingerprint = serverWorldTaskRecordFingerprint(p);
+      persistActivePlayerState(p);
+      if (typeof ack === 'function') ack(result);
+    } catch (error) {
+      console.error('worldActivityContinue failed:', error);
+      fail('Сервер не смог собрать отряд на следующую вылазку.');
+    }
+  });
+
   socket.on('worldTaskAction', (data = {}, ack) => {
     const p = players.get(socket.id);
     const fail = error => { if (typeof ack === 'function') ack({ ok: false, error, self: p ? publicAuthoritativePlayerState(p) : null }); };
@@ -21186,8 +22385,18 @@ io.on('connection', (socket) => {
       const raw = Math.max(1, Math.round(baseRaw * falloff * (1 + ambushLevel * 0.14)));
       const dmgInfo = serverMitigateEnemyDamage(raw, enemy, 'explosive');
       enemy.hp = Math.max(0, Number(enemy.hp || 0) - dmgInfo.damage);
-      if (enemy.hp > 0) aggroEnemyFromHit(room, enemy, p, now);
-      const killed = serverFinishEnemyKilledByPlayer(room, enemy, p, now);
+      if (enemy.hp > 0) {
+        aggroEnemyFromHit(room, enemy, p, now);
+        applyNpcHitStagger(enemy, dmgInfo.damage, now, {
+          critical: explosionCritical.critical
+        });
+      }
+      const killed = serverFinishEnemyKilledByPlayer(room, enemy, p, now, {
+        sourceX: impactX,
+        sourceZ: impactZ,
+        damage: dmgInfo.damage,
+        critical: explosionCritical.critical
+      });
       enemyHits.push({
         enemyId: enemy.id,
         enemyName: enemy.name,
@@ -21220,6 +22429,8 @@ io.on('connection', (socket) => {
       if (!secondChance) target.hp = Math.max(0, Number(target.hp || target.maxHp) - dmgInfo.damage);
       const newInjuries = serverApplyInjuriesFromHit(target, dmgInfo.damage, 'explosive', isSelf ? 'self explosion' : (p.name || 'rocket explosion'), { selfDamage: isSelf });
       target.lastServerDamageAt = now;
+      const downed = !secondChance && Number(target.hp || 0) <= 0
+        && serverTryDownWorldActivityPlayer(target, room, now);
       const killed = Number(target.hp || 0) <= 0 && !secondChance;
       let droppedItems = [];
       if (killed) {
@@ -21250,6 +22461,7 @@ io.on('connection', (socket) => {
         criticalMultiplier: explosionCritical.multiplier,
         hit: true,
         killed,
+        downed,
         secondChance,
         injuries: sanitizeInjuries(target.injuries || {}),
         newInjuries,
@@ -21417,8 +22629,16 @@ io.on('connection', (socket) => {
     const damage = hits.reduce((sum, row) => sum + Number(row.damage || 0), 0);
     const rawDamage = hits.reduce((sum, row) => sum + Number(row.rawDamage || 0), 0);
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
-    if (enemy.hp > 0) aggroEnemyFromHit(room, enemy, p, now);
-    const killed = anyHit ? serverFinishEnemyKilledByPlayer(room, enemy, p, now) : false;
+    if (enemy.hp > 0) {
+      aggroEnemyFromHit(room, enemy, p, now);
+      applyNpcHitStagger(enemy, damage, now, { critical: criticalHits > 0 });
+    }
+    const killed = anyHit ? serverFinishEnemyKilledByPlayer(room, enemy, p, now, {
+      sourceX: origin.x,
+      sourceZ: origin.z,
+      damage,
+      critical: criticalHits > 0
+    }) : false;
     refreshRoomWorldState(room);
     if (typeof ack === 'function') ack({
       ok: true,
@@ -21566,6 +22786,8 @@ io.on('connection', (socket) => {
     const absorbed = hits.reduce((sum, row) => sum + Number(row.absorbed || 0), 0);
     const secondChance = hits.some(row => row.secondChance);
     target.lastServerDamageAt = now;
+    const downed = anyHit && Number(target.hp || 0) <= 0
+      && serverTryDownWorldActivityPlayer(target, room, now);
     const killed = anyHit && Number(target.hp || 0) <= 0;
     let droppedItems = [];
     if (killed) {
@@ -21598,6 +22820,7 @@ io.on('connection', (socket) => {
       hit: anyHit,
       hits,
       killed,
+      downed,
       secondChance,
       injuries: sanitizeInjuries(target.injuries || {}),
       newInjuries,
@@ -22373,7 +23596,12 @@ io.on('connection', (socket) => {
     const hasWorldEventPayload = !!String(data.worldZoneId || data.zoneId || data.encounterId || '').trim();
     const sameLocation = normalizeLocationId(p.locationId || '') === locationId && !!p.roomId;
     const localTransition = serverNearbyTransitionTo(p, locationId);
-    if ((hasWorldEventPayload || requestedRoomId || data.siteId || data.worldSiteId) && !transitionTicket) {
+    const ticketedRuntimeLocation = !!transitionTicket && !!(baseLoc.randomTemplate || baseLoc.encounterOnly);
+    if (!sameLocation && locationId !== 'wasteland' && !isReleasedLocationId(locationId) && !ticketedRuntimeLocation) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Эта локация пока закрыта и не входит в текущий набор мира.' });
+      return;
+    }
+    if ((hasWorldEventPayload || requestedRoomId || data.siteId || data.worldSiteId) && !transitionTicket && !sameLocation) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Параметры встречи не подтверждены сервером.' });
       return;
     }
@@ -22381,7 +23609,7 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: false, error: 'Переход не подтверждён сервером. Подойдите к выходу или завершите путь на глобальной карте.' });
       return;
     }
-    if ((baseLoc.randomTemplate || baseLoc.encounterOnly) && !transitionTicket) {
+    if ((baseLoc.randomTemplate || baseLoc.encounterOnly) && !transitionTicket && !sameLocation) {
       if (typeof ack === 'function') ack({ ok: false, error: 'Временная встреча требует серверного билета.' });
       return;
     }
@@ -22516,6 +23744,10 @@ io.on('connection', (socket) => {
       }
     }
     applyRememberedEncounterHostilityForPlayer(room, p, Date.now());
+    // Commit the consumed arrival ticket before replying. If the response is
+    // lost and the client reconnects, the durable save already describes the
+    // entered room instead of resurrecting a stale world-map transition.
+    persistActivePlayerStates([p]);
     const others = [...players.values()].filter(v => v.roomId === room.id && v.id !== socket.id).map(publicPlayer);
     ensureServerWorldActivityForRoom(room, Date.now());
     refreshRoomWorldState(room, { force: true });
@@ -22609,8 +23841,30 @@ setInterval(() => {
 setInterval(() => {
   // 1) Сначала двигаем игроков.
   for (const p of players.values()) {
-    if (p.dead) continue;
     const playerTickNow = Date.now();
+    if (p.downed) {
+      p.input = { forward: 0, right: 0 };
+      p.vx = 0;
+      p.vz = 0;
+      p.moving = false;
+      if (playerTickNow >= Number(p.downedUntil || 0)) {
+        const downedRoom = rooms.get(String(p.roomId || '')) || null;
+        if (downedRoom?.worldActivity) {
+          setWorldActivityParticipantDowned(downedRoom.worldActivity, {
+            socketId: p.id,
+            userId: p.userId || '',
+            characterId: p.characterId || '',
+            downed: false,
+            now: playerTickNow
+          });
+        }
+        p.downed = false;
+        p.downedUntil = 0;
+        serverRespawnPlayer(p, downedRoom, { bleedOut: true });
+      }
+      continue;
+    }
+    if (p.dead) continue;
     expireLegacyPlayerInput(p, playerTickNow);
     serverRegenPlayerAp(p, playerTickNow);
     updateServerPlayerMedicalEffects(p, playerTickNow);
@@ -22701,7 +23955,7 @@ setInterval(() => {
     if (!p.roomId || !socketIsLive(p.id)) continue;
     // Мёртвый игрок не должен снова попасть в полный snapshot старой комнаты
     // между событием смерти и респавном. Иначе клиент может заново создать старую модель.
-    if (p.dead || Number(p.hp || 0) <= 0) continue;
+    if ((p.dead && !p.downed) || Number(p.hp || 0) <= 0) continue;
     if (!byRoom.has(p.roomId)) byRoom.set(p.roomId, []);
     byRoom.get(p.roomId).push(p);
   }

@@ -36,11 +36,13 @@ const {
 } = require('./wasteland-stockpile');
 const {
   FACTION_CAPITAL_SITES,
+  factionCategory,
   factionGroup,
   factionLabel,
   isCapitalProtectedSite,
   isFactionCapitalSite,
   isJoinableWorldFaction,
+  isTerritorialWorldFaction,
   protectFactionCapitalSite
 } = require('./wasteland-factions');
 const {
@@ -67,7 +69,27 @@ const {
   nearestRoadClearLandPoint
 } = require('./wasteland-district-sites');
 const { localizeLegacyWorldText } = require('./wasteland-localization');
-const { normalizeWorldTask } = require('./wasteland-world-tasks');
+const {
+  createPatrolOperation,
+  createSupplyOperation,
+  normalizeWorldOperation,
+  normalizeWorldTask,
+  transitionWorldOperation,
+  worldOperationStage
+} = require('./wasteland-world-tasks');
+const {
+  PUBLIC_LIVE_ACTIVITY_LIMIT,
+  activityCause,
+  applyActivityOutcome,
+  buildLiveEvent,
+  deriveLiveRegion,
+  liveActivityPriority,
+  normalizeLiveRegions
+} = require('./wasteland-live-regions');
+const {
+  dedupeActiveWorldContracts,
+  worldContractSemanticKey
+} = require('./world-contracts');
 const {
   WORLD_PARTY_SPEED_PROFILE_VERSION,
   boostedWorldPartySpeedKmh,
@@ -75,6 +97,7 @@ const {
   normalizeWorldPartySpeedKmh
 } = require('./wasteland-party-speed');
 const {
+  PATROL_DUTY_WORLD_HOURS,
   normalizePartyPlayerMember,
   normalizePartyPlayerMembers,
   normalizedWorldPartyMemberKey,
@@ -104,6 +127,23 @@ const MAX_EVENT_COUNT = 90;
 const MAX_WORLD_TASK_COUNT = 80;
 const MAX_WORLD_TASK_HISTORY_COUNT = 400;
 const MAX_WORLD_ZONE_COUNT = 80;
+const LIVE_ACTIVITY_TYPES = new Set([
+  'escort_caravan',
+  'patrol_mission',
+  'join_patrol',
+  'distress_signal',
+  'recon_expedition',
+  'resource_expedition',
+  'outpost_defense',
+  'assault_diversion'
+]);
+const SITE_ACTIVITY_TYPES = new Set([
+  'distress_signal',
+  'recon_expedition',
+  'resource_expedition',
+  'outpost_defense',
+  'assault_diversion'
+]);
 const WORLD_SIM_MAX_STEP_HOURS = 1;
 const WORLD_SIM_MAX_CATCHUP_STEPS = 360;
 const FACTION_ECONOMY_PLAN_INTERVAL_HOURS = 1;
@@ -172,6 +212,9 @@ const PARTY_DECISION_MAX_HOURS = 2.2;
 const PARTY_SITE_EXIT_GRACE_HOURS = 0.5;
 const PARTY_ONSITE_DEPARTURE_REAL_MINUTES = 1;
 const PARTY_DYNAMIC_HUNT_DISTANCE_KM = 48;
+const PATROL_MISSION_DURATION_HOURS = 48;
+const PATROL_PARTICIPATION_DURATION_HOURS = 24;
+const PATROL_PARTICIPATION_COOLDOWN_HOURS = 8;
 const PUBLIC_PARTY_MOTION_LOOKAHEAD_MS = 7500;
 const CARAVAN_PUBLIC_THREAT_RISK = 48;
 const PARTY_CLASH_ENGAGE_DISTANCE_KM = 5;
@@ -1208,7 +1251,7 @@ function siteWorkSummary(site = {}) {
 
 function claimableWorldFaction(faction = '') {
   const group = factionGroup(faction || '');
-  return isJoinableWorldFaction(group) ? group : 'neutral';
+  return isTerritorialWorldFaction(group) ? group : 'neutral';
 }
 
 function capitalSiteIdForFaction(faction = '') {
@@ -1337,7 +1380,7 @@ function buildSiteSupportDispatch(state = {}, site = {}, faction = '') {
   const factionId = claimableWorldFaction(faction || site.owner || '');
   const capitalId = capitalSiteIdForFaction(factionId);
   const capital = capitalId ? state.sites?.[capitalId] : null;
-  if (!capital || !isJoinableWorldFaction(factionId)) {
+  if (!capital || !isTerritorialWorldFaction(factionId)) {
     return { ok: false, reason: 'no_capital', capitalId, workers: [], crew: 0 };
   }
   const stock = capital.stockpile || (capital.stockpile = emptyStockpile());
@@ -1392,7 +1435,7 @@ function buildSiteSupportDispatch(state = {}, site = {}, faction = '') {
 function dispatchSiteSupportFromCapital(state = {}, site = {}, faction = '', opts = {}) {
   if (!site || !state?.sites || !state?.parties) return { ok: false, reason: 'bad_state' };
   const factionId = claimableWorldFaction(faction || site.owner || '');
-  if (!isJoinableWorldFaction(factionId)) {
+  if (!isTerritorialWorldFaction(factionId)) {
     site.workers = [];
     site.workSummary = '';
     site.supportDispatch = null;
@@ -1466,7 +1509,7 @@ function dispatchSiteSupportFromCapital(state = {}, site = {}, faction = '', opt
 
 function siteHasLegacyClaimScavengers(site = {}, defaults = {}) {
   if (!site || !isContestedWorldSite(site)) return false;
-  if (!isJoinableWorldFaction(site.owner || '')) return false;
+  if (!isTerritorialWorldFaction(site.owner || '')) return false;
   if (site.supportDispatch && typeof site.supportDispatch === 'object') return false;
   const defaultOwner = defaults && defaults.owner ? factionGroup(defaults.owner) : '';
   const owner = factionGroup(site.owner || '');
@@ -1761,6 +1804,7 @@ function defaultState(globalMap = {}) {
     worldTasks: [],
     worldTaskHistory: [],
     worldZones: [],
+    liveRegions: {},
     stats: {
       caravansArrived: 0,
       caravansLost: 0,
@@ -1821,6 +1865,7 @@ function normalizeState(input, globalMap = {}) {
     worldTasks: Array.isArray(src.worldTasks) ? src.worldTasks : [],
     worldTaskHistory: Array.isArray(src.worldTaskHistory) ? src.worldTaskHistory : [],
     worldZones: Array.isArray(src.worldZones) ? src.worldZones.slice(0, MAX_WORLD_ZONE_COUNT) : [],
+    liveRegions: normalizeLiveRegions(src.liveRegions),
     stats: { ...base.stats, ...(src.stats && typeof src.stats === 'object' ? src.stats : {}) }
   };
   for (const [id, faction] of Object.entries(state.factions)) {
@@ -1831,6 +1876,7 @@ function normalizeState(input, globalMap = {}) {
       ? String(defaults.name || currentName || id).slice(0, 96)
       : currentName.slice(0, 96);
     faction.color = String(faction.color || defaults.color || '#9fd7ff').slice(0, 16);
+    faction.category = factionCategory(id);
     faction.relations = {
       ...(defaults.relations || {}),
       ...(faction.relations && typeof faction.relations === 'object' ? faction.relations : {})
@@ -2081,6 +2127,26 @@ function normalizeState(input, globalMap = {}) {
     party.stagingUntilHour = Number.isFinite(Number(party.stagingUntilHour)) ? Number(party.stagingUntilHour) : 0;
     party.stagingMinPlayers = Math.max(0, Math.floor(Number(party.stagingMinPlayers || 0)));
     party.stagingJoinClosed = !!party.stagingJoinClosed;
+    const partyGoal = party.goal && typeof party.goal === 'object' ? party.goal : null;
+    party.goal = partyGoal ? {
+      kind: safeId(partyGoal.kind || 'world_operation', 'world_operation'),
+      reason: safeId(partyGoal.reason || 'world_need', 'world_need'),
+      summary: String(partyGoal.summary || '').slice(0, 220),
+      targetSiteId: safeId(partyGoal.targetSiteId || '', ''),
+      sinceHour: Number.isFinite(Number(partyGoal.sinceHour)) ? Number(partyGoal.sinceHour) : Number(state.worldHour || 0)
+    } : null;
+    const partyAssignment = party.assignment && typeof party.assignment === 'object' ? party.assignment : null;
+    party.assignment = partyAssignment ? {
+      operationId: safeId(partyAssignment.operationId || '', ''),
+      taskId: safeId(partyAssignment.taskId || '', ''),
+      phase: safeId(partyAssignment.phase || 'preparing', 'preparing'),
+      acceptedHour: Number.isFinite(Number(partyAssignment.acceptedHour)) ? Number(partyAssignment.acceptedHour) : Number(state.worldHour || 0),
+      revision: Math.max(1, Math.floor(Number(partyAssignment.revision || 1))),
+      lockDestination: partyAssignment.lockDestination !== false
+    } : null;
+    party.lastOperation = party.lastOperation && typeof party.lastOperation === 'object'
+      ? normalizeWorldOperation(party.lastOperation, state.worldHour)
+      : null;
     party.recoverUntilHour = Number.isFinite(Number(party.recoverUntilHour)) ? Number(party.recoverUntilHour) : 0;
     party.homeSiteId = safeId(party.homeSiteId || defaults.homeSiteId || 'settlement', 'settlement');
     party.destinationSiteId = safeId(party.destinationSiteId || defaults.destinationSiteId || '', '');
@@ -2170,7 +2236,7 @@ function normalizeState(input, globalMap = {}) {
   for (const site of Object.values(state.sites)) {
     if (!site?.needsCapitalSupport) continue;
     delete site.needsCapitalSupport;
-    if (!isJoinableWorldFaction(site.owner || '')) continue;
+    if (!isTerritorialWorldFaction(site.owner || '')) continue;
     if (site.supportDispatch && site.supportDispatch.status === 'moving') continue;
     dispatchSiteSupportFromCapital(state, site, site.owner, { reason: 'legacy_claim_migration' });
   }
@@ -2222,6 +2288,17 @@ function createWastelandSimulation(options = {}) {
   const gameDayRealMs = Math.max(60000, Number(options.gameDayRealMs || DEFAULT_GAME_DAY_REAL_MS));
   const saveIntervalMs = Math.max(3000, Number(options.saveIntervalMs || 15000));
   const getGlobalMap = typeof options.getGlobalMap === 'function' ? options.getGlobalMap : () => ({});
+  const configuredPublicSiteIds = options.publicSiteIds instanceof Set
+    ? [...options.publicSiteIds]
+    : Array.isArray(options.publicSiteIds)
+      ? options.publicSiteIds
+      : null;
+  const publicSiteIdSet = configuredPublicSiteIds === null
+    ? null
+    : new Set(configuredPublicSiteIds.map(value => safeId(value || '', '')).filter(Boolean));
+  const locationRelease = options.locationRelease && typeof options.locationRelease === 'object'
+    ? clone(options.locationRelease)
+    : null;
   // Караван — это не только снабжение, но и содержание для игроков: его ищут,
   // охраняют и грабят. Поэтому число караванов должно расти с числом людей в
   // сети, иначе на многолюдном сервере активность есть только на бумаге.
@@ -2235,6 +2312,52 @@ function createWastelandSimulation(options = {}) {
   let dirty = false;
   let lastSaveAt = 0;
   let partyMovementTracks = new Map();
+
+  function taskLocationIdForSite(site = {}) {
+    return safeId(site?.locationId || worldSiteLocationId(site?.id || ''), '');
+  }
+
+  function siteIsInPublicRelease(siteOrId = null) {
+    if (publicSiteIdSet === null) return true;
+    const id = safeId(typeof siteOrId === 'object' ? siteOrId?.id : siteOrId, '');
+    return !!id && publicSiteIdSet.has(id);
+  }
+
+  function publicRecordSiteIds(value, output = new Set(), depth = 0) {
+    if (!value || depth > 8) return output;
+    if (Array.isArray(value)) {
+      value.forEach(row => publicRecordSiteIds(row, output, depth + 1));
+      return output;
+    }
+    if (typeof value !== 'object') return output;
+    for (const [key, row] of Object.entries(value)) {
+      if (/siteId$/i.test(key) && typeof row === 'string') {
+        const id = safeId(row || '', '');
+        if (id) output.add(id);
+      }
+      if (row && typeof row === 'object') publicRecordSiteIds(row, output, depth + 1);
+    }
+    return output;
+  }
+
+  function publicRecordStaysInsideRelease(value = {}) {
+    if (publicSiteIdSet === null) return true;
+    return [...publicRecordSiteIds(value)].every(siteIsInPublicRelease);
+  }
+
+  function worldTaskIsInPublicRelease(taskOrId = null) {
+    const task = typeof taskOrId === 'object'
+      ? taskOrId
+      : state.worldTasks.find(row => String(row?.id || '') === String(taskOrId || ''));
+    if (!task || !publicRecordStaysInsideRelease(task)) return false;
+    const party = task.partyId ? state.parties?.[task.partyId] : null;
+    return !party || publicRecordStaysInsideRelease({
+      homeSiteId: party.homeSiteId || '',
+      destinationSiteId: party.destinationSiteId || '',
+      stagingSiteId: party.stagingSiteId || '',
+      onsiteSiteId: party.onsiteSiteId || ''
+    });
+  }
 
   function save(force = false) {
     const now = Date.now();
@@ -2283,12 +2406,25 @@ function createWastelandSimulation(options = {}) {
   }
 
   function worldTaskRewardFactionId(task = {}) {
+    const details = task?.details && typeof task.details === 'object' ? task.details : {};
+    if (Object.prototype.hasOwnProperty.call(details, 'rewardFactionId')) {
+      const rawFrozenFactionId = String(details.rewardFactionId || '').trim();
+      if (!rawFrozenFactionId) return '';
+      const frozenFactionId = factionGroup(rawFrozenFactionId);
+      if (isJoinableWorldFaction(frozenFactionId)) return frozenFactionId;
+      // Old saves sometimes froze the hunted hostile group instead of the
+      // issuer. Those markers may be repaired below. An explicit independent
+      // marker is intentional and must never turn into political reputation.
+      if (factionCategory(frozenFactionId) !== 'hostile') return '';
+    }
     const party = task.partyId ? state.parties?.[task.partyId] : null;
     const issuer = task.issuerSiteId ? state.sites?.[task.issuerSiteId] : null;
-    const target = task.siteId ? state.sites?.[task.siteId] : null;
+    // Group work builds standing only with the group being accompanied.
+    // Ordinary work builds standing only with its issuer. A hostile target or
+    // a friendly destination must never become the reputation recipient.
     const candidates = isWorldPartyTask(task)
-      ? [party?.faction, issuer?.owner, issuer?.faction, target?.owner, target?.faction, task.faction]
-      : [issuer?.owner, issuer?.faction, target?.owner, target?.faction, task.faction, party?.faction];
+      ? [party?.faction]
+      : [issuer?.owner, issuer?.faction];
     for (const candidate of candidates) {
       const factionId = factionGroup(candidate || '');
       if (isJoinableWorldFaction(factionId)) return factionId;
@@ -2302,20 +2438,34 @@ function createWastelandSimulation(options = {}) {
       ...(Array.isArray(state.worldTasks) ? state.worldTasks : []),
       ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
     ]) {
-      if (!task || task.status !== 'completed' || Number(task.reward?.reputation || 0) <= 0) continue;
+      if (!task || Number(task.reward?.reputation || 0) <= 0) continue;
       task.details = task.details && typeof task.details === 'object' ? task.details : {};
-      const frozenFactionId = factionGroup(task.details.rewardFactionId || '');
-      if (isJoinableWorldFaction(frozenFactionId)) {
-        if (task.details.rewardFactionId !== frozenFactionId) {
-          task.details.rewardFactionId = frozenFactionId;
+      const rewardFactionId = worldTaskRewardFactionId(task);
+      if (rewardFactionId) {
+        const legacyRewardFactionId = Object.prototype.hasOwnProperty.call(task.details, 'rewardFactionId')
+          ? factionGroup(task.details.rewardFactionId || '')
+          : '';
+        if (legacyRewardFactionId && legacyRewardFactionId !== rewardFactionId
+          && !isJoinableWorldFaction(legacyRewardFactionId)
+          && !task.details.legacyRewardFactionId) {
+          task.details.legacyRewardFactionId = legacyRewardFactionId;
+        }
+        if (task.details.rewardFactionId !== rewardFactionId) {
+          task.details.rewardFactionId = rewardFactionId;
           changed += 1;
         }
-        continue;
+      } else {
+        const rawLegacyRewardFactionId = String(task.details.rewardFactionId || '').trim();
+        const legacyRewardFactionId = rawLegacyRewardFactionId
+          ? factionGroup(rawLegacyRewardFactionId)
+          : '';
+        if (legacyRewardFactionId && !task.details.legacyRewardFactionId) {
+          task.details.legacyRewardFactionId = legacyRewardFactionId;
+        }
+        task.details.rewardFactionId = '';
+        task.reward = { ...(task.reward || {}), reputation: 0 };
+        changed += 1;
       }
-      const rewardFactionId = worldTaskRewardFactionId(task);
-      if (!rewardFactionId) continue;
-      task.details.rewardFactionId = rewardFactionId;
-      changed += 1;
     }
     if (changed > 0) {
       dirty = true;
@@ -2326,14 +2476,44 @@ function createWastelandSimulation(options = {}) {
 
   backfillCompletedWorldTaskRewardFactions();
 
+  function applyWorldTaskReputationPolicy(task = {}) {
+    if (!task || !task.reward || Number(task.reward.reputation || 0) <= 0) return task;
+    task.details = task.details && typeof task.details === 'object' ? task.details : {};
+    const rewardFactionId = worldTaskRewardFactionId(task);
+    if (rewardFactionId) {
+      const legacyRewardFactionId = Object.prototype.hasOwnProperty.call(task.details, 'rewardFactionId')
+        ? factionGroup(task.details.rewardFactionId || '')
+        : '';
+      if (legacyRewardFactionId && legacyRewardFactionId !== rewardFactionId
+        && !isJoinableWorldFaction(legacyRewardFactionId)
+        && !task.details.legacyRewardFactionId) {
+        task.details.legacyRewardFactionId = legacyRewardFactionId;
+      }
+      task.details.rewardFactionId = rewardFactionId;
+    } else {
+      const rawLegacyRewardFactionId = String(task.details.rewardFactionId || '').trim();
+      const legacyRewardFactionId = rawLegacyRewardFactionId
+        ? factionGroup(rawLegacyRewardFactionId)
+        : '';
+      if (legacyRewardFactionId && !task.details.legacyRewardFactionId) {
+        task.details.legacyRewardFactionId = legacyRewardFactionId;
+      }
+      task.details.rewardFactionId = '';
+      task.reward = { ...task.reward, reputation: 0 };
+    }
+    return task;
+  }
+
   function worldTaskIssuerSiteId(type = '', site = null, data = {}) {
     const explicit = safeId(data.issuerSiteId || data.boardSiteId || '', '');
-    if (explicit && state.sites[explicit]) return explicit;
+    const releasedTarget = publicSiteIdSet !== null && siteIsInPublicRelease(site);
+    if (explicit && state.sites[explicit] && (!releasedTarget || siteIsInPublicRelease(explicit))) return explicit;
     if (site && isSettlementServiceSite(site)) return site.id;
-    if (site?.protectedBySiteId && state.sites[site.protectedBySiteId]) return site.protectedBySiteId;
+    if (site?.protectedBySiteId && state.sites[site.protectedBySiteId]
+      && (!releasedTarget || siteIsInPublicRelease(site.protectedBySiteId))) return site.protectedBySiteId;
     const targetOwner = site?.owner || 'old_klim';
     const candidates = Object.values(state.sites)
-      .filter(row => row && isSettlementServiceSite(row))
+      .filter(row => row && isSettlementServiceSite(row) && (!releasedTarget || siteIsInPublicRelease(row)))
       .map(row => {
         const dist = site ? pointDistanceKm(site, row, getGlobalMap()) : 0;
         const sameOwner = factionGroup(row.owner) === factionGroup(targetOwner) ? 0 : 1;
@@ -2348,13 +2528,22 @@ function createWastelandSimulation(options = {}) {
   function archiveWorldTask(task = null) {
     const archived = normalizeWorldTask(task, state.worldHour);
     if (!archived || archived.status === 'active') return false;
-    state.worldTaskHistory = [
+    const historicalTasks = [
       archived,
       ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
         .filter(row => row && String(row.id || '') !== archived.id)
-    ]
-      .sort((a, b) => Number(b.completedHour || b.createdHour || 0) - Number(a.completedHour || a.createdHour || 0))
-      .slice(0, MAX_WORLD_TASK_HISTORY_COUNT);
+    ];
+    const liveOperationTasks = historicalTasks
+      .filter(row => normalizeWorldOperation(row?.details?.operation || {}, state.worldHour)?.status === 'active')
+      .sort((a, b) => Number(b.details?.operation?.updatedHour || b.completedHour || 0)
+        - Number(a.details?.operation?.updatedHour || a.completedHour || 0));
+    const completedTasks = historicalTasks
+      .filter(row => normalizeWorldOperation(row?.details?.operation || {}, state.worldHour)?.status !== 'active')
+      .sort((a, b) => Number(b.completedHour || b.createdHour || 0) - Number(a.completedHour || a.createdHour || 0));
+    state.worldTaskHistory = [
+      ...liveOperationTasks,
+      ...completedTasks.slice(0, Math.max(0, MAX_WORLD_TASK_HISTORY_COUNT - liveOperationTasks.length))
+    ];
     dirty = true;
     return true;
   }
@@ -2385,6 +2574,13 @@ function createWastelandSimulation(options = {}) {
       existing.priority = clamp(Math.max(Number(existing.priority || 0), Number(data.priority || 1)), 0, 5);
       existing.text = String(data.text || existing.text || '').slice(0, 320);
       existing.issuerSiteId = worldTaskIssuerSiteId(taskType, site, data);
+      existing.partyId = safeId(data.partyId || existing.partyId || '', '');
+      existing.targetFaction = safeId(data.targetFaction || existing.targetFaction || '', '');
+      existing.objective = String(data.objective || existing.objective || '').slice(0, 80);
+      if (data.details && typeof data.details === 'object') {
+        existing.details = { ...(existing.details || {}), ...clone(data.details) };
+      }
+      applyWorldTaskReputationPolicy(existing);
       dirty = true;
       return existing;
     }
@@ -2408,6 +2604,20 @@ function createWastelandSimulation(options = {}) {
       details: data.details || {}
     }, now);
     if (!task) return null;
+    applyWorldTaskReputationPolicy(task);
+    if (site && LIVE_ACTIVITY_TYPES.has(task.type)) {
+      const region = liveRegionForSite(site);
+      const cause = activityCause(task.type, region || {});
+      task.details = {
+        ...(task.details || {}),
+        liveEvent: {
+          cause: cause.key,
+          causeLabel: cause.label,
+          regionStateAtStart: region?.overallState || 'stable',
+          regionUrgencyAtStart: Number(region?.urgency || 0)
+        }
+      };
+    }
     state.worldTasks.unshift(task);
     compactWorldTasks();
     state.stats.worldTasksCreated = Number(state.stats.worldTasksCreated || 0) + 1;
@@ -2428,6 +2638,7 @@ function createWastelandSimulation(options = {}) {
       ? nextStatus
       : 'completed';
     task.completedHour = Number(state.worldHour || 0);
+    applyWorldTaskReputationPolicy(task);
     const trustedGroupReward = task.status === 'completed' && isWorldPartyTask(task)
       ? {
         ...partyRewardPlayerDetails(state.parties[task.partyId] || {}, task.id),
@@ -2444,6 +2655,10 @@ function createWastelandSimulation(options = {}) {
       ...trustedGroupReward,
       ...(rewardFactionId ? { rewardFactionId } : {})
     };
+    const finalizedOperation = finalizeWorldTaskOperation(task, reason, task.details);
+    if (!finalizedOperation && task.type === 'deliver_supplies') {
+      detachFinishedSupplyRequestOperation(task, reason);
+    }
     removeWorldTaskPartyMembers(task);
     if (task.status === 'completed') state.stats.worldTasksCompleted = Number(state.stats.worldTasksCompleted || 0) + 1;
     else if (task.status === 'failed') state.stats.worldTasksFailed = Number(state.stats.worldTasksFailed || 0) + 1;
@@ -2471,17 +2686,20 @@ function createWastelandSimulation(options = {}) {
 
 
   function ensureResourceExpeditionTasks() {
-    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'resource_expedition');
+    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'resource_expedition'
+      && worldTaskIsInPublicRelease(task));
     const totalActive = state.worldTasks.filter(task => task?.status === 'active').length;
     const openSlots = Math.max(0, Math.min(3 - active.length, MAX_WORLD_TASK_COUNT - totalActive));
     if (openSlots <= 0) return active;
     const activeSiteIds = new Set(active.map(task => String(task.siteId || '')).filter(Boolean));
     const sites = Object.values(state.sites || {})
       .filter(site => site
+        && siteIsInPublicRelease(site)
         && !site.districtInterest
         && siteTypeKey(site) === 'resource'
+        && liveRegionAllowsActivity(site, 'resource_expedition')
         && Object.keys(site.output || {}).length > 0
-        && worldSiteLocationId(site)
+        && taskLocationIdForSite(site)
         && !activeSiteIds.has(String(site.id || '')))
       .sort((left, right) => (
         Number(right.danger || 0) - Number(left.danger || 0)
@@ -2507,7 +2725,7 @@ function createWastelandSimulation(options = {}) {
           activityKind: 'resource_expedition',
           x: Number(site.x || 0),
           y: Number(site.y || 0),
-          locationId: worldSiteLocationId(site),
+          locationId: taskLocationIdForSite(site),
           resourceTypes: Object.keys(site.output || {}).slice(0, 12),
           targetUnits,
           bonusUnits,
@@ -2521,16 +2739,19 @@ function createWastelandSimulation(options = {}) {
   }
 
   function ensureReconExpeditionTasks() {
-    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'recon_expedition');
+    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'recon_expedition'
+      && worldTaskIsInPublicRelease(task));
     const totalActive = state.worldTasks.filter(task => task?.status === 'active').length;
     const openSlots = Math.max(0, Math.min(2 - active.length, MAX_WORLD_TASK_COUNT - totalActive));
     if (openSlots <= 0) return active;
     const activeSiteIds = new Set(active.map(task => String(task.siteId || '')).filter(Boolean));
     const sites = Object.values(state.sites || {})
       .filter(site => site
+        && siteIsInPublicRelease(site)
         && !site.districtInterest
         && siteTypeKey(site) === 'pointofinterest'
-        && worldSiteLocationId(site)
+        && liveRegionAllowsActivity(site, 'recon_expedition')
+        && taskLocationIdForSite(site)
         && !activeSiteIds.has(String(site.id || '')))
       .sort((left, right) => (
         Number(right.danger || 0) - Number(left.danger || 0)
@@ -2555,7 +2776,7 @@ function createWastelandSimulation(options = {}) {
           activityKind: 'recon_expedition',
           x: Number(site.x || 0),
           y: Number(site.y || 0),
-          locationId: worldSiteLocationId(site),
+          locationId: taskLocationIdForSite(site),
           targetPoints,
           bonusPoints,
           maxPoints,
@@ -2568,17 +2789,20 @@ function createWastelandSimulation(options = {}) {
   }
 
   function ensureOutpostDefenseTasks() {
-    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'outpost_defense');
+    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'outpost_defense'
+      && worldTaskIsInPublicRelease(task));
     const totalActive = state.worldTasks.filter(task => task?.status === 'active').length;
     const openSlots = Math.max(0, Math.min(1 - active.length, MAX_WORLD_TASK_COUNT - totalActive));
     if (openSlots <= 0) return active;
     const activeSiteIds = new Set(active.map(task => String(task.siteId || '')).filter(Boolean));
     const sites = Object.values(state.sites || {})
       .filter(site => site
+        && siteIsInPublicRelease(site)
         && !site.districtInterest
         && siteTypeKey(site) === 'outpost'
-        && isJoinableWorldFaction(factionGroup(site.owner || site.faction || ''))
-        && worldSiteLocationId(site)
+        && liveRegionAllowsActivity(site, 'outpost_defense')
+        && isTerritorialWorldFaction(factionGroup(site.owner || site.faction || ''))
+        && taskLocationIdForSite(site)
         && !activeSiteIds.has(String(site.id || '')))
       .sort((left, right) => (
         Number(left.security || siteDefaultSecurity(left)) - Number(right.security || siteDefaultSecurity(right))
@@ -2604,7 +2828,7 @@ function createWastelandSimulation(options = {}) {
           activityKind: 'outpost_defense',
           x: Number(site.x || 0),
           y: Number(site.y || 0),
-          locationId: worldSiteLocationId(site),
+          locationId: taskLocationIdForSite(site),
           targetKills,
           bonusKills,
           maxKills,
@@ -2617,7 +2841,8 @@ function createWastelandSimulation(options = {}) {
   }
 
   function ensureDistressSignalTasks() {
-    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'distress_signal');
+    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'distress_signal'
+      && worldTaskIsInPublicRelease(task));
     const totalActive = state.worldTasks.filter(task => task?.status === 'active').length;
     const openSlots = Math.max(0, Math.min(1 - active.length, MAX_WORLD_TASK_COUNT - totalActive));
     if (openSlots <= 0) return active;
@@ -2628,8 +2853,10 @@ function createWastelandSimulation(options = {}) {
       .filter(Boolean));
     const sites = Object.values(state.sites || {})
       .filter(site => site
+        && siteIsInPublicRelease(site)
         && siteTypeKey(site) === 'pointofinterest'
-        && worldSiteLocationId(site)
+        && liveRegionAllowsActivity(site, 'distress_signal')
+        && taskLocationIdForSite(site)
         && !occupiedSiteIds.has(String(site.id || '')))
       .sort((left, right) => (
         Number(right.danger || 0) - Number(left.danger || 0)
@@ -2655,7 +2882,7 @@ function createWastelandSimulation(options = {}) {
           activityKind: 'distress_signal',
           x: Number(site.x || 0),
           y: Number(site.y || 0),
-          locationId: worldSiteLocationId(site),
+          locationId: taskLocationIdForSite(site),
           targetKills,
           bonusKills,
           maxKills,
@@ -2668,16 +2895,19 @@ function createWastelandSimulation(options = {}) {
   }
 
   function ensureAssaultDiversionTasks() {
-    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'assault_diversion');
+    const active = state.worldTasks.filter(task => task?.status === 'active' && task.type === 'assault_diversion'
+      && worldTaskIsInPublicRelease(task));
     const totalActive = state.worldTasks.filter(task => task?.status === 'active').length;
     const openSlots = Math.max(0, Math.min(1 - active.length, MAX_WORLD_TASK_COUNT - totalActive));
     if (openSlots <= 0) return active;
     const activeSiteIds = new Set(active.map(task => String(task.siteId || '')).filter(Boolean));
     const sites = Object.values(state.sites || {})
       .filter(site => site
+        && siteIsInPublicRelease(site)
         && !site.districtInterest
         && siteTypeKey(site) === 'lair'
-        && worldSiteLocationId(site)
+        && liveRegionAllowsActivity(site, 'assault_diversion')
+        && taskLocationIdForSite(site)
         && !activeSiteIds.has(String(site.id || '')))
       .sort((left, right) => (
         Number(right.danger || 0) - Number(left.danger || 0)
@@ -2699,7 +2929,7 @@ function createWastelandSimulation(options = {}) {
           activityKind: 'assault_diversion',
           x: Number(site.x || 0),
           y: Number(site.y || 0),
-          locationId: worldSiteLocationId(site),
+          locationId: taskLocationIdForSite(site),
           targetKills: 5,
           bonusKills: 7,
           maxKills: 9,
@@ -2713,13 +2943,43 @@ function createWastelandSimulation(options = {}) {
     }
     return [...active, ...created];
   }
+
+  function repairSiteActivityLocationIds() {
+    let changed = 0;
+    for (const task of state.worldTasks || []) {
+      if (!task || !SITE_ACTIVITY_TYPES.has(String(task.type || ''))) continue;
+      const site = state.sites?.[task.siteId || ''];
+      const locationId = taskLocationIdForSite(site);
+      if (!site || !locationId || task.details?.locationId === locationId) continue;
+      task.details = { ...(task.details || {}), locationId };
+      changed += 1;
+    }
+    if (changed > 0) dirty = true;
+    return changed;
+  }
+
   function finishActiveWorldTasks(filter, status = 'completed', reason = '', details = {}) {
     const finished = [];
     if (typeof filter !== 'function') return finished;
     for (const task of state.worldTasks) {
       if (!task || task.status !== 'active') continue;
       if (!filter(task)) continue;
-      const row = finishWorldTask(task, status, reason, details);
+      let finishDetails = details && typeof details === 'object' ? { ...details } : {};
+      if (LIVE_ACTIVITY_TYPES.has(String(task.type || ''))) {
+        const success = ['completed', 'resolved'].includes(String(status || '').toLowerCase());
+        const outcomeSiteId = String(task.type || '') === 'escort_caravan'
+          ? safeId(task.details?.liveEvent?.impactSiteId || task.details?.destinationSiteId || finishDetails.siteId || task.siteId || '', '')
+          : safeId(finishDetails.siteId || task.siteId || '', '');
+        const liveRegion = applyLiveActivityOutcome(task, {
+          siteId: outcomeSiteId,
+          success,
+          grade: finishDetails.grade || (success ? 'completed' : 'failed'),
+          participantCount: finishDetails.participantCount || finishDetails.rewardPlayerCount || 0,
+          contribution: finishDetails.contribution || 0
+        });
+        if (liveRegion) finishDetails.liveRegionOutcome = liveRegion.aftermath || null;
+      }
+      const row = finishWorldTask(task, status, reason, finishDetails);
       if (row) finished.push(row);
     }
     return finished;
@@ -3236,7 +3496,7 @@ function createWastelandSimulation(options = {}) {
     if (!protectorId) return null;
     const protector = state.sites[protectorId] || null;
     if (!protector || !protector.owner) return null;
-    if (!isJoinableWorldFaction(protector.owner)) return null;
+    if (!isTerritorialWorldFaction(protector.owner)) return null;
     return protector;
   }
 
@@ -4310,6 +4570,40 @@ function createWastelandSimulation(options = {}) {
       dirty = true;
       return true;
     }
+    const kind = String(party.kind || '').toLowerCase();
+    const patrolDefenseRecord = kind === 'patrol' ? patrolWorldOperationForParty(party, true) : null;
+    const holdsAssignedDefense = !!(site
+      && patrolDefenseRecord
+      && patrolDefenseRecord.operation.goal?.kind === 'defend_site'
+      && safeId(patrolDefenseRecord.operation.destinationSiteId || '', '') === safeId(site.id || '', '')
+      && activeSiteConflict(site)
+      && !partyOnsiteHostileVisit(party, site));
+    if (holdsAssignedDefense) {
+      if (zone.details?.departureRequested) {
+        zone.details = {
+          ...(zone.details || {}),
+          departureRequested: false,
+          departureReason: '',
+          departureRequestedHour: 0
+        };
+      }
+      party.onsiteDepartureRequestedHour = 0;
+      party.onsiteUntilHour = Math.max(
+        Number(party.onsiteUntilHour || 0),
+        Number(state.worldHour || 0) + Math.max(0.25, Number(hours || 0))
+      );
+      if (patrolDefenseRecord.operation.phase !== 'holding') {
+        transitionActivePatrolOperation(
+          patrolDefenseRecord.task,
+          patrolDefenseRecord.operation,
+          'holding',
+          { destinationSiteId: site.id }
+        );
+      }
+      refreshOnsitePartyZoneActors(zone, party, site);
+      dirty = true;
+      return true;
+    }
     if (zone.details?.departureRequested === true) {
       const requestedHour = Number(zone.details?.departureRequestedHour || party.onsiteDepartureRequestedHour || state.worldHour || 0);
       party.onsiteDepartureRequestedHour = requestedHour;
@@ -4324,7 +4618,6 @@ function createWastelandSimulation(options = {}) {
       return true;
     }
     const hostileVisit = partyOnsiteHostileVisit(party, site);
-    const kind = String(party.kind || '').toLowerCase();
     const arrivedHour = Number(zone.details?.arrivedHour || 0);
     const lastRaidHour = Number(site?.lastRaidHour || -999);
     const recentlyCapturedByParty = site
@@ -4500,6 +4793,20 @@ function createWastelandSimulation(options = {}) {
           );
         }
       }
+    }
+    if (String(party.kind || '').toLowerCase() === 'caravan') {
+      settleLiveCaravanWorldOperation(party, false, reason || 'caravan_destroyed', {
+        partyId: party.id,
+        cargo: compactStockpile(party.cargo || {}),
+        guardLosses: Math.max(0, Math.floor(Number(party.members || 0)))
+      });
+    }
+    if (String(party.kind || '').toLowerCase() === 'patrol') {
+      settleLivePatrolWorldOperation(party, false, reason || 'patrol_destroyed', {
+        partyId: party.id,
+        siteId: party.lastSiteId || party.destinationSiteId || '',
+        npcLosses: Math.max(0, Math.floor(Number(party.members || 0)))
+      });
     }
     return true;
   }
@@ -4942,7 +5249,7 @@ function createWastelandSimulation(options = {}) {
 
   function registerCaravanRobbery(party = {}, context = {}) {
     const group = factionGroup(party.faction || '');
-    if (!isJoinableWorldFaction(group)) return;
+    if (!isTerritorialWorldFaction(group)) return;
     const keys = [...new Set([
       ...(Array.isArray(context.robberKeys) ? context.robberKeys : []),
       context.playerId ? String(context.playerId) : ''
@@ -4979,7 +5286,7 @@ function createWastelandSimulation(options = {}) {
   function worldTaskPayerSite(site = null) {
     if (!site) return null;
     const ownerGroup = factionGroup(site.owner || 'neutral');
-    if (!isJoinableWorldFaction(ownerGroup)) return site;
+    if (!isTerritorialWorldFaction(ownerGroup)) return site;
     return state.sites[capitalSiteIdForFaction(ownerGroup)] || site;
   }
 
@@ -5104,11 +5411,21 @@ function createWastelandSimulation(options = {}) {
       site.supplyDisruptedUntil = Math.max(Number(site.supplyDisruptedUntil || 0), Number(state.worldHour || 0) + (approach === 'diversion' ? 24 : 12));
       site.lastOperationHour = Number(state.worldHour || 0);
     }
+    const objectiveCurrent = Math.max(0, Math.floor(Number(data.objectiveCurrent || 0)));
+    const liveRegion = applyLiveActivityOutcome(task, {
+      success: true,
+      grade,
+      participantCount: rewardCharacterIds.length,
+      contribution: objectiveCurrent
+    });
     const finished = finishWorldTask(task, 'completed', 'player_activity_extraction', {
       activityKind,
       activityGrade: grade,
       rewardCharacterIds,
-      objectiveCurrent: Math.max(0, Math.floor(Number(data.objectiveCurrent || 0))),
+      objectiveCurrent,
+      participantCount: rewardCharacterIds.length,
+      communityContribution: objectiveCurrent,
+      liveRegionOutcome: liveRegion?.aftermath || null,
       ...(approach ? { approach } : {}),
       extractedHour: Number(Number(state.worldHour || 0).toFixed(2))
     });
@@ -5136,10 +5453,25 @@ function createWastelandSimulation(options = {}) {
     const supportedTypes = new Set(['resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal', 'assault_diversion']);
     if (!supportedTypes.has(task.type)) return { ok: false, error: 'Это задание нельзя завершить как локальную активность.' };
     const reason = String(data.reason || 'player_activity_failed').slice(0, 64);
+    const site = task.siteId ? state.sites[task.siteId] : null;
+    if (site) {
+      const securityLoss = task.type === 'outpost_defense' ? 8 : task.type === 'distress_signal' ? 5 : 3;
+      site.security = clamp(Number(site.security || siteDefaultSecurity(site)) - securityLoss, 0, 100);
+      if (task.type === 'resource_expedition') {
+        site.supplyDisruptedUntil = Math.max(Number(site.supplyDisruptedUntil || 0), Number(state.worldHour || 0) + 8);
+      }
+    }
+    const liveRegion = applyLiveActivityOutcome(task, {
+      success: false,
+      grade: 'failed',
+      participantCount: Math.max(0, Math.floor(Number(data.participantCount || 0))),
+      contribution: Math.max(0, Math.floor(Number(data.objectiveCurrent || 0)))
+    });
     const finished = finishWorldTask(task, 'failed', reason, {
       activityKind: task.type,
       activityGrade: 'failed',
       failureReason: reason,
+      liveRegionOutcome: liveRegion?.aftermath || null,
       failedHour: Number(Number(state.worldHour || 0).toFixed(2))
     });
     dirty = true;
@@ -5289,6 +5621,7 @@ function createWastelandSimulation(options = {}) {
           task.status = 'resolved';
           task.completedHour = now;
           task.details = { ...(task.details || {}), finishReason: 'world_task_group_unavailable' };
+          finalizeWorldTaskOperation(task, 'world_task_group_unavailable', task.details);
           removeWorldTaskPartyMembers(task);
           state.stats.worldTasksResolved = Number(state.stats.worldTasksResolved || 0) + 1;
           addEvent('world_task_group_unavailable', `Заявка снята: ${task.title}. Отряд уже недоступен.`, {
@@ -5302,10 +5635,24 @@ function createWastelandSimulation(options = {}) {
         }
       }
       if (Number(task.expiresHour || 0) > now) continue;
+      if (task.type === 'escort_caravan' && expireLiveCaravanEscortTask(task, now)) continue;
+      if (task.type === 'join_patrol' && expireLivePatrolParticipationTask(task, now)) continue;
       task.status = 'expired';
       task.completedHour = now;
       const consequenceApplied = applyExpiredWorldTaskConsequences(task);
-      task.details = { ...(task.details || {}), finishReason: 'expired', consequenceApplied };
+      const liveRegion = LIVE_ACTIVITY_TYPES.has(String(task.type || ''))
+        ? applyLiveActivityOutcome(task, { success: false, grade: 'failed' })
+        : null;
+      task.details = {
+        ...(task.details || {}),
+        finishReason: 'expired',
+        consequenceApplied,
+        ...(liveRegion ? { liveRegionOutcome: liveRegion.aftermath || null } : {})
+      };
+      const finalizedOperation = finalizeWorldTaskOperation(task, 'expired', task.details);
+      if (!finalizedOperation && task.type === 'deliver_supplies') {
+        detachFinishedSupplyRequestOperation(task, 'expired');
+      }
       removeWorldTaskPartyMembers(task);
       state.stats.worldTasksFailed = Number(state.stats.worldTasksFailed || 0) + 1;
       addEvent('world_task_expired', `Задание провалено: ${task.title}.`, {
@@ -5415,10 +5762,12 @@ function createWastelandSimulation(options = {}) {
       destroyed: 'разбит'
     }[String(party.state || '').toLowerCase()] || String(party.state || 'отряд'));
     parts.push(stateLabel);
+    const publicGoal = publicRecordStaysInsideRelease(party.goal || {}) ? party.goal : null;
+    if (publicGoal?.summary) parts.push(`цель: ${String(publicGoal.summary).slice(0, 140)}`);
     const destination = state.sites[party.destinationSiteId];
     const targetParty = state.parties[party.targetPartyId || ''];
     if (targetParty && partyTargetIsAvailable(targetParty)) parts.push(`к ${targetParty.name || targetParty.id}`);
-    else if (destination) parts.push(`к ${destination.name || destination.id}`);
+    else if (destination && siteIsInPublicRelease(destination)) parts.push(`к ${destination.name || destination.id}`);
     const cargo = compactStockpile(party.cargo || {});
     if (stockpileTotal(cargo) > 0) parts.push(`груз ${stockpileSummary(cargo)}`);
     if (String(party.kind || '') === 'caravan') {
@@ -5512,8 +5861,10 @@ function createWastelandSimulation(options = {}) {
 
   function publicParty(party = {}) {
     const threat = partyThreatInfo(party);
-    const destination = state.sites[party.destinationSiteId];
-    const home = state.sites[party.homeSiteId];
+    const rawDestination = state.sites[party.destinationSiteId];
+    const rawHome = state.sites[party.homeSiteId];
+    const destination = siteIsInPublicRelease(rawDestination) ? rawDestination : null;
+    const home = siteIsInPublicRelease(rawHome) ? rawHome : null;
     const targetParty = state.parties[party.targetPartyId || ''];
     const cargo = compactStockpile(party.cargo || {});
     const leader = partyLeaderPublicMember(party);
@@ -5522,6 +5873,21 @@ function createWastelandSimulation(options = {}) {
     const playerMemberLimit = worldPartyPlayerLimit(party);
     const npcMemberCount = Math.max(1, Math.round(Number(party.members || 1)));
     const movementRoutePoints = publicPartyMovementRoutePoints(party);
+    const partyKind = String(party.kind || '').toLowerCase();
+    const operationTask = (party.assignment?.taskId ? worldTaskById(party.assignment.taskId) : null)
+      || state.worldTasks.find(task => task && task.status === 'active'
+        && task.type === (partyKind === 'patrol' ? 'patrol_mission' : 'escort_caravan')
+        && task.partyId === party.id);
+    const operation = operationTask && worldTaskIsInPublicRelease(operationTask)
+      ? (partyKind === 'patrol'
+        ? publicPatrolWorldOperation(operationTask, party)
+        : publicCaravanWorldOperation(operationTask, party))
+      : null;
+    const operationStage = operation ? worldOperationStage(operation) : null;
+    const publicGoal = party.goal && publicRecordStaysInsideRelease(party.goal) ? clone(party.goal) : null;
+    const publicAssignment = party.assignment && publicRecordStaysInsideRelease(party.assignment)
+      ? clone(party.assignment)
+      : null;
     return {
       id: party.id,
       name: party.name,
@@ -5538,9 +5904,9 @@ function createWastelandSimulation(options = {}) {
       y: Number(Number(party.y || 0).toFixed(2)),
       speedKmh: Number(effectiveWorldPartySpeedKmh(party).toFixed(1)),
       movementRoutePoints,
-      homeSiteId: party.homeSiteId || '',
+      homeSiteId: home?.id || '',
       homeSiteName: home?.name || '',
-      destinationSiteId: party.destinationSiteId || '',
+      destinationSiteId: destination?.id || '',
       destinationSiteName: destination?.name || '',
       targetPartyId: partyTargetIsAvailable(targetParty) ? targetParty.id : '',
       targetPartyName: partyTargetIsAvailable(targetParty) ? (targetParty.name || targetParty.id) : '',
@@ -5548,13 +5914,19 @@ function createWastelandSimulation(options = {}) {
       decisionReason: party.decisionReason || '',
       decisionAtHour: party.decisionAtHour || 0,
       nextDecisionHour: party.nextDecisionHour || 0,
-      route: Array.isArray(party.route) ? party.route.slice(0, 16) : [],
+      route: Array.isArray(party.route) ? party.route.filter(siteIsInPublicRelease).slice(0, 16) : [],
       cargoCapacity: party.cargoCapacity || 0,
       cargo,
       cargoTotal: Math.floor(stockpileTotal(cargo)),
       cargoFillPercent: partyCargoFillPercent(party),
       cargoSummary: stockpileSummary(cargo),
       supplyRole: party.supplyRole || '',
+      goal: operation?.goal || publicGoal,
+      assignment: publicAssignment,
+      operation,
+      operationId: operation?.id || party.assignment?.operationId || '',
+      operationPhase: operation?.phase || party.assignment?.phase || '',
+      operationStageLabel: operationStage?.label || '',
       members: party.members,
       leader,
       leaderId: leader.id,
@@ -5568,12 +5940,12 @@ function createWastelandSimulation(options = {}) {
       playerMembers,
       groupMembers: [leader, ...npcMembers, ...playerMembers].slice(0, 30),
       groupMemberCount: npcMemberCount + playerMembers.length,
-      stagingSiteId: party.stagingSiteId || '',
+      stagingSiteId: siteIsInPublicRelease(party.stagingSiteId || '') ? party.stagingSiteId : '',
       stagingUntilHour: party.stagingUntilHour || 0,
       stagingMinPlayers: party.stagingMinPlayers || 0,
       stagingJoinClosed: !!party.stagingJoinClosed,
       onsiteZoneId: party.onsiteZoneId || '',
-      onsiteSiteId: party.onsiteSiteId || '',
+      onsiteSiteId: siteIsInPublicRelease(party.onsiteSiteId || '') ? party.onsiteSiteId : '',
       onsiteReason: party.onsiteReason || '',
       onsiteUntilHour: party.onsiteUntilHour || 0,
       onsiteDepartureRequested: Number(party.onsiteDepartureRequestedHour || 0) > 0,
@@ -5593,7 +5965,7 @@ function createWastelandSimulation(options = {}) {
       statusText: partyPublicStatusText(party, threat),
       threatSuppressedUntil: party.threatSuppressedUntil || 0,
       lastLoadedHour: party.lastLoadedHour || 0,
-      lastLoadedSiteId: party.lastLoadedSiteId || '',
+      lastLoadedSiteId: siteIsInPublicRelease(party.lastLoadedSiteId || '') ? party.lastLoadedSiteId : '',
       lastDeliveryHour: party.lastDeliveryHour || 0,
       reformAtHour: party.reformAtHour || 0
     };
@@ -5669,6 +6041,7 @@ function createWastelandSimulation(options = {}) {
   function partyMissionLocksDestination(party = {}) {
     const kind = String(party.kind || '').toLowerCase();
     return kind === 'support'
+      || (!!party.assignment?.operationId && party.assignment?.lockDestination !== false)
       || !!party.resourceExport
       || !!party.productionExport
       || !!party.interFactionTrade
@@ -5900,8 +6273,22 @@ function createWastelandSimulation(options = {}) {
       });
     }
     const retreat = partyRetreatDecision(party);
-    if (retreat) return applyPartyDecision(party, retreat);
     const kind = String(party.kind || '').toLowerCase();
+    if (retreat) {
+      if (kind === 'patrol') {
+        const currentPatrolMission = patrolWorldOperationForParty(party, true);
+        if (currentPatrolMission) {
+          settlePatrolWorldOperation(
+            currentPatrolMission.task,
+            currentPatrolMission.operation,
+            'cancelled',
+            'patrol_retreat',
+            { siteId: party.lastSiteId || '' }
+          );
+        }
+      }
+      return applyPartyDecision(party, retreat);
+    }
     let rows = [];
     if (kind === 'caravan') rows = caravanAutonomyDecisions(party);
     else if (kind === 'patrol') rows = patrolAutonomyDecisions(party);
@@ -5916,7 +6303,11 @@ function createWastelandSimulation(options = {}) {
       score: 36 - pointDistanceKm(party, home, getGlobalMap()) * 0.25 + partyDecisionTieBreak(party, home.id)
     });
     const decision = bestPartyDecision(rows);
-    if (decision) return applyPartyDecision(party, decision);
+    if (decision) {
+      const selectedTarget = applyPartyDecision(party, decision);
+      if (kind === 'patrol' && selectedTarget) ensurePatrolWorldOperation(party, decision, selectedTarget);
+      return selectedTarget;
+    }
     if (options.keepCurrent !== false) {
       const target = state.parties[party.targetPartyId || ''];
       if (partyTargetIsAvailable(target)) return target;
@@ -5973,6 +6364,13 @@ function createWastelandSimulation(options = {}) {
     const fallback = caravanFallbackDestination(party, destination);
     if (!fallback || fallback.id === destination.id) return destination;
     party.destinationSiteId = fallback.id;
+    const operationRecord = caravanWorldOperationForParty(party, true);
+    if (operationRecord?.task) {
+      const operationTask = operationRecord.task;
+      const operation = operationRecord.operation;
+      const source = state.sites[operation?.sourceSiteId || party.stagingSiteId || party.homeSiteId || ''] || {};
+      ensureCaravanWorldOperation(operationTask, party, source, fallback, caravanOperationRuntimePhase(party, operation || {}));
+    }
     addEvent('caravan_rerouted', `${party.name} развернулся: ${destination.name || destination.id} больше не безопасна для доставки. Новый пункт: ${fallback.name || fallback.id}.`, {
       partyId: party.id,
       fromSiteId: destination.id,
@@ -6007,6 +6405,1302 @@ function createWastelandSimulation(options = {}) {
     party.stagingJoinClosed = false;
   }
 
+  function worldTaskById(id = '') {
+    const key = safeId(id || '', '');
+    if (!key) return null;
+    return [
+      ...(Array.isArray(state.worldTasks) ? state.worldTasks : []),
+      ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
+    ].find(task => task && String(task.id || '') === key) || null;
+  }
+
+  function forEachWorldTaskCopy(id = '', visitor = null) {
+    const key = safeId(id || '', '');
+    if (!key || typeof visitor !== 'function') return 0;
+    const seen = new Set();
+    let count = 0;
+    for (const tasks of [state.worldTasks, state.worldTaskHistory]) {
+      for (const task of Array.isArray(tasks) ? tasks : []) {
+        if (!task || seen.has(task) || String(task.id || '') !== key) continue;
+        seen.add(task);
+        visitor(task);
+        count += 1;
+      }
+    }
+    return count;
+  }
+
+  function caravanWorldOperationForParty(party = {}, activeOnly = false) {
+    if (!party || String(party.kind || '').toLowerCase() !== 'caravan') return null;
+    const taskId = safeId(party.assignment?.taskId || '', '');
+    const operationId = safeId(party.assignment?.operationId || '', '');
+    const currentTasks = Array.isArray(state.worldTasks) ? state.worldTasks : [];
+    const allTasks = [
+      ...currentTasks,
+      ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
+    ];
+    const task = currentTasks.find(row => row && row.status === 'active'
+      && row.type === 'escort_caravan'
+      && ((taskId && row.id === taskId) || row.partyId === party.id))
+      || (taskId ? worldTaskById(taskId) : null)
+      || allTasks.find(row => row && row.type === 'escort_caravan'
+        && row.partyId === party.id
+        && (!operationId || safeId(row.details?.operation?.id || '', '') === operationId));
+    const operation = normalizeWorldOperation(task?.details?.operation || {}, state.worldHour);
+    if (!task || !operation) return null;
+    if (activeOnly && operation.status !== 'active') return null;
+    return { task, operation };
+  }
+
+  function caravanOperationArrivalSiteId(party = {}, operation = {}) {
+    if (party.returningFromTrade || String(operation.phase || '') === 'returning') {
+      return safeId(party.homeSiteId || '', '');
+    }
+    return safeId(operation.destinationSiteId || party.destinationSiteId || '', '');
+  }
+
+  function supplyTaskCargoMatch(task = {}, cargo = {}) {
+    const demand = compactStockpile(task?.details?.demand || {});
+    return Object.entries(demand).reduce((sum, [id, amount]) => (
+      sum + Math.min(Math.max(0, Number(amount || 0)), Math.max(0, Number(cargo?.[id] || 0)))
+    ), 0);
+  }
+
+  function supplyRequestAvailableForCaravan(task = null, party = {}, destination = null, cargo = {}) {
+    if (!task || task.status !== 'active' || task.type !== 'deliver_supplies' || task.siteId !== destination?.id) return false;
+    if (supplyTaskCargoMatch(task, cargo) <= 0) return false;
+    const assignedPartyId = safeId(task.details?.assignedPartyId || '', '');
+    if (!assignedPartyId || assignedPartyId === party.id) return true;
+    const assignedParty = state.parties[assignedPartyId];
+    return !assignedParty || assignedParty.destroyed || assignedParty.state === 'destroyed';
+  }
+
+  function matchingSupplyRequestForCaravan(party = {}, destination = null) {
+    if (!party || !destination) return null;
+    const cargo = compactStockpile(party.cargo || {});
+    return (Array.isArray(state.worldTasks) ? state.worldTasks : [])
+      .filter(task => supplyRequestAvailableForCaravan(task, party, destination, cargo))
+      .sort((left, right) => (
+        supplyTaskCargoMatch(right, cargo) - supplyTaskCargoMatch(left, cargo)
+        || Number(right.priority || 0) - Number(left.priority || 0)
+        || Number(left.createdHour || 0) - Number(right.createdHour || 0)
+      ))[0] || null;
+  }
+
+  function resolveSupplyRequestForDelivery(party = {}, site = {}, delivered = {}, operation = null) {
+    const cargo = compactStockpile(delivered || {});
+    const linkedRequestId = safeId(operation?.requestTaskId || '', '');
+    const candidates = (Array.isArray(state.worldTasks) ? state.worldTasks : [])
+      .filter(task => {
+        if (!task || task.status !== 'active' || task.type !== 'deliver_supplies' || task.siteId !== site.id) return false;
+        if (linkedRequestId && task.id !== linkedRequestId) return false;
+        const assignedPartyId = safeId(task.details?.assignedPartyId || '', '');
+        if (assignedPartyId && assignedPartyId !== party.id) return false;
+        return stockpileTotal(task.details?.demand || {}) <= 0 || supplyTaskCargoMatch(task, cargo) > 0;
+      })
+      .sort((left, right) => (
+        (left.id === linkedRequestId ? -1 : 0) - (right.id === linkedRequestId ? -1 : 0)
+        || supplyTaskCargoMatch(right, cargo) - supplyTaskCargoMatch(left, cargo)
+        || Number(right.priority || 0) - Number(left.priority || 0)
+        || Number(left.createdHour || 0) - Number(right.createdHour || 0)
+      ));
+    const requestTask = candidates[0] || null;
+    if (!requestTask) return null;
+    return finishWorldTask(requestTask, 'resolved', 'caravan_delivery', {
+      partyId: party.id,
+      operationId: operation?.id || party.assignment?.operationId || party.lastOperation?.id || '',
+      cargo: clone(cargo),
+      siteId: site.id
+    });
+  }
+
+  function caravanOperationGoal(party = {}, source = {}, destination = {}, requestTask = null) {
+    const cargo = compactStockpile(party.cargo || {});
+    const demand = compactStockpile(requestTask?.details?.demand || {});
+    if (requestTask) {
+      return {
+        kind: 'supply_delivery',
+        reason: 'site_shortage',
+        summary: `${destination.name || destination.id} запрашивает ${stockpileSummary(demand)}.`,
+        targetSiteId: destination.id || ''
+      };
+    }
+    if (party.interFactionTrade) {
+      return {
+        kind: 'supply_delivery',
+        reason: 'scheduled_trade',
+        summary: `Обмен грузом с ${destination.name || destination.id}: ${stockpileSummary(cargo)}.`,
+        targetSiteId: destination.id || ''
+      };
+    }
+    if (party.productionExport) {
+      return {
+        kind: 'supply_delivery',
+        reason: 'production_export',
+        summary: `Доставка товаров в ${destination.name || destination.id}: ${stockpileSummary(cargo)}.`,
+        targetSiteId: destination.id || ''
+      };
+    }
+    return {
+      kind: 'supply_delivery',
+      reason: cargoDemandAtSite(cargo, destination) > 0 ? 'site_shortage' : 'resource_export',
+      summary: `Пополнение запасов ${destination.name || destination.id}: ${stockpileSummary(cargo)}.`,
+      targetSiteId: destination.id || ''
+    };
+  }
+
+  function caravanOperationRuntimePhase(party = {}, operation = {}) {
+    const partyState = String(party.state || '').toLowerCase();
+    if (party.destroyed || partyState === 'destroyed') return 'failed';
+    if (partyState === 'engaged') return 'engaged';
+    if (party.returningFromTrade) return 'returning';
+    if (partyState === 'staging') return 'preparing';
+    if (partyState === 'onsite' && String(party.onsiteReason || '').toLowerCase() === 'staging') {
+      return party.stagingJoinClosed ? 'traveling' : 'preparing';
+    }
+    if (partyState === 'onsite' && String(party.onsiteSiteId || '') === String(operation.destinationSiteId || '')) return 'unloading';
+    if (partyState === 'moving') return 'traveling';
+    return String(operation.phase || 'preparing');
+  }
+
+  function bindPartyWorldOperation(party = {}, operation = null, task = null) {
+    if (!party || !operation) return;
+    party.goal = {
+      kind: operation.goal?.kind || operation.kind || 'supply_delivery',
+      reason: operation.goal?.reason || 'world_need',
+      summary: operation.goal?.summary || '',
+      targetSiteId: operation.goal?.targetSiteId || operation.destinationSiteId || '',
+      sinceHour: Number(operation.createdHour || state.worldHour || 0)
+    };
+    party.assignment = {
+      operationId: operation.id,
+      taskId: task?.id || operation.assignment?.taskId || '',
+      phase: operation.phase,
+      acceptedHour: Number(operation.assignment?.acceptedHour || operation.createdHour || state.worldHour || 0),
+      revision: Number(operation.revision || 1)
+    };
+  }
+
+  function detachFinishedSupplyRequestOperation(requestTask = {}, reason = '') {
+    const operationId = safeId(requestTask?.details?.operationId || '', '');
+    const escortTaskId = safeId(requestTask?.details?.escortTaskId || '', '');
+    const allTasks = [
+      ...(Array.isArray(state.worldTasks) ? state.worldTasks : []),
+      ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
+    ];
+    const escortTask = allTasks.find(task => task && task.type === 'escort_caravan'
+      && ((escortTaskId && task.id === escortTaskId)
+        || (operationId && safeId(task.details?.operation?.id || '', '') === operationId))
+      && normalizeWorldOperation(task.details?.operation || {}, state.worldHour)?.status === 'active');
+    const operation = normalizeWorldOperation(escortTask?.details?.operation || {}, state.worldHour);
+    if (!escortTask || !operation) return null;
+    const party = state.parties[operation.assignment?.assigneeId || escortTask.partyId || ''];
+    const source = state.sites[operation.sourceSiteId || party?.homeSiteId || ''] || {};
+    const destination = state.sites[operation.destinationSiteId || party?.destinationSiteId || ''] || {};
+    const goal = party
+      ? caravanOperationGoal(party, source, destination, null)
+      : { ...operation.goal, reason: 'request_finished' };
+    const phase = party ? caravanOperationRuntimePhase(party, operation) : operation.phase;
+    const detached = transitionWorldOperation(operation, phase, state.worldHour, {
+      requestTaskId: '',
+      demand: {},
+      goal
+    });
+    if (!detached) return null;
+    forEachWorldTaskCopy(escortTask.id, row => {
+      if (safeId(row.details?.operation?.id || '', '') !== operation.id) return;
+      row.details = {
+        ...(row.details || {}),
+        requestTaskId: '',
+        operationId: detached.id,
+        operation: detached
+      };
+    });
+    const assignmentStatus = reason === 'caravan_delivery'
+      ? 'delivered'
+      : requestTask.status === 'expired'
+        ? 'expired'
+        : requestTask.status === 'completed'
+          ? 'fulfilled_by_player'
+          : 'request_finished';
+    forEachWorldTaskCopy(requestTask.id, row => {
+      row.details = {
+        ...(row.details || {}),
+        operationId: detached.id,
+        assignedPartyId: '',
+        escortTaskId: '',
+        npcAssignment: {
+          ...(row.details?.npcAssignment || {}),
+          status: assignmentStatus,
+          phase: 'detached',
+          finishedHour: Number(state.worldHour || 0)
+        }
+      };
+    });
+    if (party) bindPartyWorldOperation(party, detached, escortTask);
+    dirty = true;
+    return detached;
+  }
+
+  function expireLiveCaravanEscortTask(task = {}, now = Number(state.worldHour || 0)) {
+    const operation = normalizeWorldOperation(task?.details?.operation || {}, now);
+    const party = state.parties[operation?.assignment?.assigneeId || task.partyId || ''];
+    if (!operation || operation.status !== 'active' || !party
+      || party.destroyed || party.state === 'destroyed'
+      || String(party.kind || '').toLowerCase() !== 'caravan') return false;
+    const phase = caravanOperationRuntimePhase(party, operation);
+    const continued = transitionWorldOperation(operation, phase, now, {
+      assignment: { leaseUntilHour: 0 }
+    });
+    task.status = 'expired';
+    task.completedHour = now;
+    task.details = {
+      ...(task.details || {}),
+      finishReason: 'escort_window_expired',
+      npcOperationContinues: true,
+      joinOpen: false,
+      joinClosed: true,
+      operation: continued
+    };
+    bindPartyWorldOperation(party, continued, task);
+    removeWorldTaskPartyMembers(task);
+    state.stats.worldTasksFailed = Number(state.stats.worldTasksFailed || 0) + 1;
+    addEvent('world_task_expired', `Срок присоединения к сопровождению истёк: ${task.title}. Караван продолжает рейс.`, {
+      taskId: task.id,
+      taskType: task.type,
+      siteId: task.siteId,
+      partyId: task.partyId,
+      operationId: continued.id
+    });
+    archiveWorldTask(task);
+    dirty = true;
+    return true;
+  }
+
+  function ensureCaravanWorldOperation(task = {}, party = {}, source = {}, destination = null, phase = 'preparing') {
+    if (!task || !party || !destination) return null;
+    const existing = normalizeWorldOperation(task.details?.operation || {}, state.worldHour);
+    const cargo = compactStockpile(party.cargo || {});
+    const linkedRequest = existing?.requestTaskId ? worldTaskById(existing.requestTaskId) : null;
+    const requestTask = supplyRequestAvailableForCaravan(linkedRequest, party, destination, cargo)
+      ? linkedRequest
+      : matchingSupplyRequestForCaravan(party, destination);
+    if (linkedRequest && linkedRequest !== requestTask
+      && String(linkedRequest.details?.assignedPartyId || '') === String(party.id || '')) {
+      forEachWorldTaskCopy(linkedRequest.id, row => {
+        row.details = {
+          ...(row.details || {}),
+          assignedPartyId: '',
+          escortTaskId: '',
+          npcAssignment: {
+            ...(row.details?.npcAssignment || {}),
+            status: row.status === 'active' ? 'caravan_rerouted' : 'request_finished',
+            phase: 'cancelled',
+            finishedHour: Number(state.worldHour || 0)
+          }
+        };
+      });
+    }
+    const leader = partyLeaderPublicMember(party);
+    const goal = caravanOperationGoal(party, source, destination, requestTask);
+    const patch = {
+      issuerFactionId: factionGroup(party.faction || source.owner || ''),
+      requestTaskId: requestTask?.id || '',
+      escortTaskId: task.id || '',
+      sourceSiteId: source.id || party.stagingSiteId || party.homeSiteId || '',
+      destinationSiteId: destination.id || party.destinationSiteId || '',
+      demand: compactStockpile(requestTask?.details?.demand || {}),
+      cargo,
+      goal,
+      assignment: {
+        taskId: task.id || '',
+        assigneeId: party.id || '',
+        leaderId: leader.id || '',
+        leaderName: leader.name || 'Караванщик',
+        leaderRole: leader.role || 'Глава каравана',
+        leaseUntilHour: Number(task.expiresHour || 0)
+      }
+    };
+    const operation = existing
+      ? transitionWorldOperation(existing, phase, state.worldHour, patch)
+      : createSupplyOperation({
+        ...patch,
+        partyId: party.id,
+        phase,
+        createdHour: Number(party.stagingStartedHour || state.worldHour || 0)
+      }, state.worldHour);
+    if (!operation) return null;
+    task.details = {
+      ...(task.details || {}),
+      destinationSiteId: operation.destinationSiteId,
+      operationId: operation.id,
+      requestTaskId: operation.requestTaskId || '',
+      operation,
+      liveEvent: {
+        ...(task.details?.liveEvent || {}),
+        causeLabel: operation.goal?.summary || task.details?.liveEvent?.causeLabel || '',
+        impactSiteId: operation.destinationSiteId
+      }
+    };
+    task.targetSiteId = operation.destinationSiteId;
+    task.targetSiteName = destination.name || operation.destinationSiteId;
+    forEachWorldTaskCopy(task.id, row => {
+      if (row !== task && safeId(row.details?.operation?.id || '', '') !== operation.id) return;
+      row.details = {
+        ...(row.details || {}),
+        destinationSiteId: operation.destinationSiteId,
+        operationId: operation.id,
+        requestTaskId: operation.requestTaskId || '',
+        operation,
+        liveEvent: {
+          ...(row.details?.liveEvent || {}),
+          causeLabel: operation.goal?.summary || row.details?.liveEvent?.causeLabel || '',
+          impactSiteId: operation.destinationSiteId
+        }
+      };
+      row.targetSiteId = operation.destinationSiteId;
+      row.targetSiteName = destination.name || operation.destinationSiteId;
+    });
+    if (requestTask) {
+      forEachWorldTaskCopy(requestTask.id, row => {
+        row.details = {
+          ...(row.details || {}),
+          operationId: operation.id,
+          assignedPartyId: party.id || '',
+          escortTaskId: task.id || '',
+          npcAssignment: {
+            status: row.status === 'active' ? 'active' : 'request_finished',
+            phase: operation.phase,
+            assignedHour: Number(operation.assignment?.acceptedHour || operation.createdHour || state.worldHour || 0),
+            sourceSiteId: operation.sourceSiteId,
+            destinationSiteId: operation.destinationSiteId,
+            leaderName: operation.assignment?.leaderName || 'Караванщик'
+          }
+        };
+      });
+    }
+    bindPartyWorldOperation(party, operation, task);
+    return operation;
+  }
+
+  function publicCaravanWorldOperation(task = {}, party = null) {
+    const operation = normalizeWorldOperation(task?.details?.operation || {}, state.worldHour);
+    if (!operation) return null;
+    if (!party || operation.status !== 'active') return operation;
+    const phase = caravanOperationRuntimePhase(party, operation);
+    return normalizeWorldOperation({ ...operation, phase }, state.worldHour);
+  }
+
+  function settleCaravanWorldOperation(task = {}, operation = null, phase = 'cancelled', reason = '', details = {}) {
+    const current = normalizeWorldOperation(operation || task?.details?.operation || {}, state.worldHour);
+    if (!current) return null;
+    if (current.status !== 'active') {
+      task.details = { ...(task.details || {}), npcOperationContinues: false, operation: current };
+      forEachWorldTaskCopy(task.id, row => {
+        if (safeId(row.details?.operation?.id || '', '') !== current.id) return;
+        row.details = { ...(row.details || {}), npcOperationContinues: false, operation: current };
+      });
+      return current;
+    }
+    const success = phase === 'completed';
+    const cargo = compactStockpile(details?.cargo || current.cargo || {});
+    const finished = transitionWorldOperation(current, phase, state.worldHour, {
+      cargo,
+      outcome: {
+        result: success ? 'delivered' : phase,
+        reason: safeId(reason || phase, phase),
+        siteId: safeId(details?.siteId || details?.arrivalSiteId || current.destinationSiteId || '', ''),
+        cargo,
+        deliveredUnits: success ? Math.floor(stockpileTotal(cargo)) : 0,
+        npcLosses: Math.max(0, Math.floor(Number(details?.guardLosses || 0)))
+      }
+    });
+    if (!finished) return null;
+    task.details = {
+      ...(task.details || {}),
+      npcOperationContinues: false,
+      npcOperationCompletedHour: Number(state.worldHour || 0),
+      operation: finished
+    };
+    forEachWorldTaskCopy(task.id, row => {
+      if (safeId(row.details?.operation?.id || '', '') !== current.id) return;
+      row.details = {
+        ...(row.details || {}),
+        npcOperationContinues: false,
+        npcOperationCompletedHour: Number(state.worldHour || 0),
+        operation: finished
+      };
+    });
+    if (current.requestTaskId) {
+      forEachWorldTaskCopy(current.requestTaskId, requestTask => {
+        const requestIsActive = requestTask.status === 'active';
+        requestTask.details = {
+          ...(requestTask.details || {}),
+          operationId: current.id,
+          ...(!success && requestIsActive ? { assignedPartyId: '', escortTaskId: '' } : {}),
+          npcAssignment: {
+            ...(requestTask.details?.npcAssignment || {}),
+            status: !requestIsActive ? 'request_finished' : success ? 'delivered' : phase,
+            phase: !requestIsActive ? 'cancelled' : phase,
+            finishedHour: Number(state.worldHour || 0)
+          }
+        };
+      });
+    }
+    const party = state.parties[current.assignment?.assigneeId || task.partyId || ''];
+    if (party && String(party.assignment?.operationId || '') === String(current.id || '')) {
+      party.lastOperation = finished;
+      party.goal = null;
+      party.assignment = null;
+    }
+    dirty = true;
+    return finished;
+  }
+
+  function settleLiveCaravanWorldOperation(party = {}, success = false, reason = '', details = {}) {
+    const record = caravanWorldOperationForParty(party, true);
+    if (!record) return null;
+    return settleCaravanWorldOperation(
+      record.task,
+      record.operation,
+      success ? 'completed' : 'failed',
+      reason,
+      details
+    );
+  }
+
+  function patrolWorldOperationForParty(party = {}, activeOnly = false) {
+    if (!party || String(party.kind || '').toLowerCase() !== 'patrol') return null;
+    const taskId = safeId(party.assignment?.taskId || '', '');
+    const operationId = safeId(party.assignment?.operationId || '', '');
+    const currentTasks = Array.isArray(state.worldTasks) ? state.worldTasks : [];
+    const allTasks = [
+      ...currentTasks,
+      ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
+    ];
+    const task = currentTasks.find(row => row && row.status === 'active'
+      && row.type === 'patrol_mission'
+      && ((taskId && row.id === taskId) || row.partyId === party.id))
+      || (taskId ? worldTaskById(taskId) : null)
+      || allTasks.find(row => row && row.type === 'patrol_mission'
+        && row.partyId === party.id
+        && (!operationId || safeId(row.details?.operation?.id || '', '') === operationId));
+    const operation = normalizeWorldOperation(task?.details?.operation || {}, state.worldHour);
+    if (!task || !operation) return null;
+    if (activeOnly && (task.status !== 'active' || operation.status !== 'active')) return null;
+    return { task, operation };
+  }
+
+  function patrolOperationGoal(party = {}, decision = {}) {
+    const targetParty = decision.targetParty && partyTargetIsAvailable(decision.targetParty)
+      ? decision.targetParty
+      : null;
+    const targetSite = !targetParty && decision.site && state.sites[decision.site.id]
+      ? state.sites[decision.site.id]
+      : (!targetParty ? state.sites[party.destinationSiteId || ''] : null);
+    const kind = safeId(decision.kind || party.decisionKind || 'patrol', 'patrol');
+    const reason = safeId(decision.reason || party.decisionReason || 'area_patrol', 'area_patrol');
+    const siteName = targetSite?.name || targetSite?.id || 'дороги';
+    if (kind === 'defend') {
+      return {
+        kind: 'defend_site',
+        reason,
+        summary: `Удержать ${siteName} и отбить нападение.`,
+        targetSiteId: targetSite?.id || ''
+      };
+    }
+    if (kind === 'intercept' && targetParty) {
+      return {
+        kind: 'intercept_hostile',
+        reason,
+        summary: `Перехватить ${targetParty.name || targetParty.id} до удара по фракционным точкам.`,
+        targetSiteId: ''
+      };
+    }
+    if (kind === 'return') {
+      return {
+        kind: 'return_to_base',
+        reason,
+        summary: `Вернуться на базу ${siteName} и доложить о маршруте.`,
+        targetSiteId: targetSite?.id || ''
+      };
+    }
+    if (reason === 'weak_friendly_site') {
+      return {
+        kind: 'reinforce_site',
+        reason,
+        summary: `Проверить ${siteName} и усилить охрану слабой точки.`,
+        targetSiteId: targetSite?.id || ''
+      };
+    }
+    return {
+      kind: 'patrol_route',
+      reason,
+      summary: `Проверить дорогу у ${siteName} и пресечь угрозы на маршруте.`,
+      targetSiteId: targetSite?.id || ''
+    };
+  }
+
+  function patrolOperationReasonLabel(reason = '') {
+    return {
+      area_patrol: 'Плановый контроль территории.',
+      local_activity: 'Плановая проверка фракционного маршрута.',
+      weak_friendly_site: 'Союзной точке не хватает охраны.',
+      friendly_site_attacked: 'Союзная точка подверглась нападению.',
+      hostile_group_detected: 'Рядом обнаружен вражеский отряд.',
+      no_better_goal: 'Отряд возвращается на базу после выхода.'
+    }[safeId(reason || '', '')] || 'Фракция направила отряд по обстановке в мире.';
+  }
+
+  function patrolOperationPhaseForDecision(party = {}, decision = {}, goal = {}) {
+    if (String(party.state || '').toLowerCase() === 'engaged') return 'engaged';
+    if (goal.kind === 'defend_site' || String(decision.kind || '') === 'defend') {
+      const holdingAtTarget = String(party.state || '').toLowerCase() === 'onsite'
+        && safeId(party.onsiteSiteId || party.lastSiteId || '', '') === safeId(goal.targetSiteId || '', '');
+      return holdingAtTarget ? 'holding' : 'traveling';
+    }
+    if (goal.kind === 'return_to_base' || String(decision.kind || '') === 'return') return 'returning';
+    return 'patrolling';
+  }
+
+  function patrolOperationRuntimePhase(party = {}, operation = {}) {
+    if (!party || operation.status !== 'active') return operation.phase || 'patrolling';
+    if (String(party.state || '').toLowerCase() === 'engaged') return 'engaged';
+    if (operation.goal?.kind === 'defend_site') {
+      const holdingAtTarget = String(party.state || '').toLowerCase() === 'onsite'
+        && safeId(party.onsiteSiteId || party.lastSiteId || '', '') === safeId(operation.destinationSiteId || '', '');
+      return holdingAtTarget ? 'holding' : 'traveling';
+    }
+    if (operation.goal?.kind === 'return_to_base') return 'returning';
+    return 'patrolling';
+  }
+
+  function patrolMissionDurationHours(decision = {}, targetSite = null) {
+    if (String(decision.kind || '') === 'defend' && targetSite) {
+      const remaining = Number(targetSite.activeConflict?.expiresHour || 0) - Number(state.worldHour || 0);
+      return Math.max(18, Math.min(72, remaining + 12));
+    }
+    if (String(decision.kind || '') === 'intercept') return 30;
+    return PATROL_MISSION_DURATION_HOURS;
+  }
+
+  function patrolMissionPriority(decision = {}, party = {}) {
+    if (String(decision.kind || '') === 'defend') return 5;
+    if (String(decision.kind || '') === 'intercept') {
+      const threat = partyThreatInfo(party);
+      return threat.riskLevel >= 70 ? 5 : threat.riskLevel >= 48 ? 4 : 3;
+    }
+    if (String(decision.reason || '') === 'weak_friendly_site') return 3;
+    return 2;
+  }
+
+  function patrolFactionTaskForDecision(party = {}, decision = {}, targetSite = null) {
+    if (!party || String(decision.kind || '') !== 'defend' || !targetSite) return null;
+    if (activeSiteConflict(targetSite)) ensureSiteConflictTask(targetSite);
+    const candidates = state.worldTasks
+      .filter(task => task && task.status === 'active'
+        && task.type === 'defend_resource'
+        && task.siteId === targetSite.id)
+      .sort((left, right) => Number(right.priority || 0) - Number(left.priority || 0));
+    for (const task of candidates) {
+      const assignedPartyId = safeId(task.details?.assignedPartyId || '', '');
+      if (!assignedPartyId || assignedPartyId === party.id) return task;
+      const assignedParty = state.parties[assignedPartyId];
+      if (!assignedParty || assignedParty.destroyed || assignedParty.state === 'destroyed'
+        || !patrolWorldOperationForParty(assignedParty, true)) return task;
+    }
+    return null;
+  }
+
+  function bindPatrolWorldOperation(party = {}, operation = null, task = null) {
+    if (!party || !operation) return null;
+    party.goal = {
+      ...(operation.goal || {}),
+      sinceHour: Number(operation.createdHour || state.worldHour || 0)
+    };
+    party.assignment = {
+      operationId: operation.id || '',
+      taskId: task?.id || operation.assignment?.taskId || '',
+      phase: operation.phase || 'patrolling',
+      acceptedHour: Number(operation.assignment?.acceptedHour || operation.createdHour || state.worldHour || 0),
+      revision: Math.max(1, Number(operation.revision || 1)),
+      lockDestination: false
+    };
+    dirty = true;
+    return operation;
+  }
+
+  function mirrorPatrolWorldOperation(missionTask = {}, operation = null, party = null, details = {}) {
+    const normalized = normalizeWorldOperation(operation || missionTask?.details?.operation || {}, state.worldHour);
+    if (!missionTask || !normalized) return null;
+    const operationDetails = details && typeof details === 'object' ? details : {};
+    missionTask.details = {
+      ...(missionTask.details || {}),
+      ...operationDetails,
+      operationId: normalized.id,
+      operation: normalized
+    };
+    forEachWorldTaskCopy(missionTask.id, row => {
+      if (row === missionTask) return;
+      row.details = {
+        ...(row.details || {}),
+        ...operationDetails,
+        operationId: normalized.id,
+        operation: normalized
+      };
+    });
+    const participationTaskId = safeId(
+      operationDetails.participationTaskId || missionTask.details?.participationTaskId || normalized.escortTaskId || '',
+      ''
+    );
+    if (participationTaskId) {
+      forEachWorldTaskCopy(participationTaskId, row => {
+        row.details = {
+          ...(row.details || {}),
+          missionTaskId: missionTask.id || '',
+          operationId: normalized.id,
+          operation: normalized
+        };
+      });
+    }
+    const mirroredParticipationRows = new Set();
+    for (const tasks of [state.worldTasks, state.worldTaskHistory]) {
+      for (const row of Array.isArray(tasks) ? tasks : []) {
+        if (!row || mirroredParticipationRows.has(row) || row.type !== 'join_patrol') continue;
+        const sameMission = safeId(row.details?.missionTaskId || '', '') === safeId(missionTask.id || '', '');
+        const sameOperation = safeId(row.details?.operationId || row.details?.operation?.id || '', '') === normalized.id;
+        if (!sameMission && !sameOperation) continue;
+        mirroredParticipationRows.add(row);
+        row.details = {
+          ...(row.details || {}),
+          missionTaskId: missionTask.id || '',
+          operationId: normalized.id,
+          operation: normalized
+        };
+      }
+    }
+    if (party) bindPatrolWorldOperation(party, normalized, missionTask);
+    dirty = true;
+    return normalized;
+  }
+
+  function publicPatrolWorldOperation(task = {}, party = null) {
+    const missionTaskId = safeId(task?.details?.missionTaskId || '', '');
+    const missionTask = String(task?.type || '') === 'patrol_mission'
+      ? task
+      : (missionTaskId ? worldTaskById(missionTaskId) : null);
+    const operation = normalizeWorldOperation(
+      missionTask?.details?.operation || task?.details?.operation || {},
+      state.worldHour
+    );
+    if (!operation) return null;
+    const assignee = party || state.parties[operation.assignment?.assigneeId || task.partyId || ''];
+    if (!assignee || operation.status !== 'active') return operation;
+    const phase = patrolOperationRuntimePhase(assignee, operation);
+    return normalizeWorldOperation({ ...operation, phase }, state.worldHour);
+  }
+
+  function syncPatrolFactionTaskAssignment(requestTask = null, operation = null, missionTask = null, status = 'active') {
+    if (!requestTask || !operation) return null;
+    const partyId = safeId(operation.assignment?.assigneeId || missionTask?.partyId || '', '');
+    const active = status === 'active' && operation.status === 'active';
+    forEachWorldTaskCopy(requestTask.id, row => {
+      const requestStillActive = row.status === 'active';
+      row.details = {
+        ...(row.details || {}),
+        operationId: operation.id,
+        assignedPartyId: active ? partyId : (requestStillActive ? '' : (row.details?.assignedPartyId || partyId)),
+        patrolMissionTaskId: missionTask?.id || row.details?.patrolMissionTaskId || '',
+        participationTaskId: missionTask?.details?.participationTaskId || row.details?.participationTaskId || '',
+        npcAssignment: {
+          ...(row.details?.npcAssignment || {}),
+          status: active ? 'active' : status,
+          phase: operation.phase,
+          assignedHour: Number(operation.assignment?.acceptedHour || operation.createdHour || state.worldHour || 0),
+          finishedHour: active ? 0 : Number(state.worldHour || 0),
+          sourceSiteId: operation.sourceSiteId || '',
+          destinationSiteId: operation.destinationSiteId || '',
+          partyId,
+          leaderName: operation.assignment?.leaderName || 'Командир патруля'
+        }
+      };
+    });
+    dirty = true;
+    return requestTask;
+  }
+
+  function patrolParticipationTaskForMission(missionTask = {}, activeOnly = false) {
+    if (!missionTask) return null;
+    const linkedId = safeId(missionTask.details?.participationTaskId || '', '');
+    const linked = linkedId ? worldTaskById(linkedId) : null;
+    if (linked && linked.type === 'join_patrol' && (!activeOnly || linked.status === 'active')) return linked;
+    return state.worldTasks.find(task => task && task.type === 'join_patrol'
+      && task.partyId === missionTask.partyId
+      && safeId(task.details?.missionTaskId || '', '') === safeId(missionTask.id || '', '')
+      && (!activeOnly || task.status === 'active')) || null;
+  }
+
+  function ensurePatrolParticipationTask(party = {}, missionTask = {}, operation = null, threat = null) {
+    if (!party || !missionTask || !operation || operation.status !== 'active') return { task: null, operation };
+    const existing = patrolParticipationTaskForMission(missionTask, true)
+      || state.worldTasks.find(task => task && task.status === 'active'
+        && task.type === 'join_patrol'
+        && task.partyId === party.id
+        && safeId(task.details?.operationId || '', '') === operation.id);
+    const currentThreat = threat || partyThreatInfo(party);
+    const targetSite = state.sites[operation.destinationSiteId || ''];
+    const issuer = escortIssuerSiteFor(party, state.sites[party.homeSiteId || ''] || targetSite);
+    const playerLimit = worldPartyPlayerLimit(party);
+    const joinedPlayers = Array.isArray(party.playerMembers)
+      ? party.playerMembers.filter(member => member?.taskId === existing?.id).map(member => member.id).filter(Boolean)
+      : [];
+    const participationDetails = {
+      missionTaskId: missionTask.id,
+      operationId: operation.id,
+      destinationSiteId: operation.destinationSiteId || '',
+      targetPartyId: missionTask.details?.targetPartyId || '',
+      targetPartyName: missionTask.details?.targetPartyName || '',
+      goal: clone(operation.goal || {}),
+      liveEvent: {
+        ...(missionTask.details?.liveEvent || {}),
+        cause: 'security',
+        causeLabel: patrolOperationReasonLabel(operation.goal?.reason || ''),
+        impactSiteId: operation.destinationSiteId || ''
+      },
+      leaderName: operation.assignment?.leaderName || 'Командир патруля',
+      leaderRole: operation.assignment?.leaderRole || 'Глава отряда',
+      x: Number(Number(party.x || 0).toFixed(1)),
+      y: Number(Number(party.y || 0).toFixed(1)),
+      riskLevel: Number(currentThreat?.riskLevel || 0),
+      threatPartyId: currentThreat?.threatPartyId || '',
+      playerLimit,
+      joinedPlayers,
+      playerCount: joinedPlayers.length,
+      operation
+    };
+    if (existing) {
+      existing.siteId = issuer?.id || existing.siteId || party.homeSiteId || 'settlement';
+      existing.issuerSiteId = issuer?.id || existing.issuerSiteId || party.homeSiteId || 'settlement';
+      existing.targetFaction = currentThreat?.threatFaction || existing.targetFaction || '';
+      existing.text = `${operation.assignment?.leaderName || 'Командир патруля'} ведёт ${party.name || 'патруль'}. ${operation.goal?.summary || ''}`.slice(0, 320);
+      existing.details = { ...(existing.details || {}), ...participationDetails };
+      missionTask.details = {
+        ...(missionTask.details || {}),
+        participationTaskId: existing.id,
+        participationStatus: 'active'
+      };
+      const linkedOperation = operation.escortTaskId === existing.id
+        ? operation
+        : transitionWorldOperation(operation, operation.phase, state.worldHour, { escortTaskId: existing.id });
+      mirrorPatrolWorldOperation(missionTask, linkedOperation, party, { participationTaskId: existing.id });
+      return { task: existing, operation: linkedOperation };
+    }
+    if (Number(missionTask.details?.nextParticipationHour || 0) > Number(state.worldHour || 0)) {
+      mirrorPatrolWorldOperation(missionTask, operation, party);
+      return { task: null, operation };
+    }
+    const priority = patrolMissionPriority({
+      kind: missionTask.details?.decisionKind,
+      reason: missionTask.details?.decisionReason
+    }, party);
+    const task = createWorldTask('join_patrol', {
+      key: `join_patrol:${party.id}`,
+      title: `Выйти с патрулем: ${party.name}`,
+      text: `${operation.assignment?.leaderName || 'Командир патруля'} ведёт ${party.name || 'патруль'}. ${operation.goal?.summary || ''}`,
+      siteId: issuer?.id || party.homeSiteId || 'settlement',
+      issuerSiteId: issuer?.id || party.homeSiteId || 'settlement',
+      partyId: party.id,
+      targetFaction: currentThreat?.threatFaction || '',
+      objective: `join_${safeId(operation.goal?.kind || 'patrol', 'patrol')}`,
+      durationHours: PATROL_PARTICIPATION_DURATION_HOURS,
+      priority,
+      details: participationDetails
+    });
+    if (!task) return { task: null, operation };
+    const linkedOperation = transitionWorldOperation(operation, operation.phase, state.worldHour, {
+      escortTaskId: task.id
+    });
+    task.details = {
+      ...(task.details || {}),
+      ...participationDetails,
+      operation: linkedOperation
+    };
+    missionTask.details = {
+      ...(missionTask.details || {}),
+      participationTaskId: task.id,
+      participationStatus: 'active'
+    };
+    mirrorPatrolWorldOperation(missionTask, linkedOperation, party, { participationTaskId: task.id });
+    return { task, operation: linkedOperation };
+  }
+
+  function updatePatrolMissionPresentation(missionTask = {}, party = {}, operation = null, decision = {}, targetSite = null, targetParty = null) {
+    if (!missionTask || !operation) return null;
+    const leaderName = operation.assignment?.leaderName || 'Командир патруля';
+    missionTask.siteId = targetSite?.id || missionTask.siteId || party.homeSiteId || '';
+    missionTask.partyId = party.id || missionTask.partyId || '';
+    missionTask.targetFaction = targetParty?.faction || missionTask.targetFaction || '';
+    missionTask.objective = safeId(operation.goal?.kind || 'patrol_mission', 'patrol_mission');
+    missionTask.title = operation.goal?.kind === 'defend_site'
+      ? `Патруль обороняет: ${targetSite?.name || targetSite?.id || party.name}`
+      : `Поручение патрулю: ${party.name}`;
+    missionTask.text = `${leaderName}: ${operation.goal?.summary || 'Выполнить фракционное поручение.'}`.slice(0, 320);
+    missionTask.details = {
+      ...(missionTask.details || {}),
+      decisionKind: safeId(decision.kind || party.decisionKind || 'patrol', 'patrol'),
+      decisionReason: safeId(decision.reason || party.decisionReason || 'area_patrol', 'area_patrol'),
+      destinationSiteId: operation.destinationSiteId || '',
+      targetPartyId: targetParty?.id || '',
+      targetPartyName: targetParty?.name || '',
+      x: Number(Number(targetSite?.x ?? party.x ?? 0).toFixed(1)),
+      y: Number(Number(targetSite?.y ?? party.y ?? 0).toFixed(1)),
+      liveEvent: {
+        ...(missionTask.details?.liveEvent || {}),
+        cause: 'security',
+        causeLabel: patrolOperationReasonLabel(operation.goal?.reason || ''),
+        impactSiteId: operation.destinationSiteId || ''
+      },
+      operationId: operation.id,
+      operation
+    };
+    dirty = true;
+    return missionTask;
+  }
+
+  function ensurePatrolWorldOperation(party = {}, decision = {}, selectedTarget = null) {
+    if (!party || party.destroyed || party.state === 'destroyed'
+      || String(party.kind || '').toLowerCase() !== 'patrol') return null;
+    if (String(decision.kind || '') === 'retreat') return null;
+    const targetParty = decision.targetParty && partyTargetIsAvailable(decision.targetParty)
+      ? decision.targetParty
+      : (selectedTarget?.kind && state.parties[selectedTarget.id] ? selectedTarget : null);
+    const targetSite = !targetParty && decision.site && state.sites[decision.site.id]
+      ? state.sites[decision.site.id]
+      : (!targetParty && selectedTarget?.id ? state.sites[selectedTarget.id] : null);
+    if (!targetParty && !targetSite) return null;
+    const goal = patrolOperationGoal(party, { ...decision, targetParty, site: targetSite });
+    const phase = patrolOperationPhaseForDecision(party, decision, goal);
+    const requestTask = patrolFactionTaskForDecision(party, decision, targetSite);
+    const currentRecord = patrolWorldOperationForParty(party, true);
+    const sameMission = !!(currentRecord
+      && currentRecord.operation.goal?.kind === goal.kind
+      && safeId(currentRecord.operation.destinationSiteId || '', '') === safeId(targetSite?.id || '', '')
+      && safeId(currentRecord.task.details?.targetPartyId || '', '') === safeId(targetParty?.id || '', ''));
+    if (currentRecord && !sameMission) {
+      settlePatrolWorldOperation(
+        currentRecord.task,
+        currentRecord.operation,
+        'cancelled',
+        'patrol_reassigned',
+        { siteId: currentRecord.operation.destinationSiteId || '' }
+      );
+    }
+
+    const durationHours = patrolMissionDurationHours(decision, targetSite);
+    const priority = patrolMissionPriority(decision, party);
+    let missionTask = sameMission ? currentRecord.task : null;
+    let operation = sameMission ? currentRecord.operation : null;
+    if (!missionTask) {
+      const issuer = escortIssuerSiteFor(party, state.sites[party.homeSiteId || ''] || targetSite);
+      missionTask = createWorldTask('patrol_mission', {
+        key: `patrol_mission:${party.id}`,
+        title: `Поручение патрулю: ${party.name}`,
+        text: goal.summary,
+        siteId: targetSite?.id || party.homeSiteId || '',
+        issuerSiteId: issuer?.id || party.homeSiteId || '',
+        partyId: party.id,
+        targetFaction: targetParty?.faction || '',
+        objective: goal.kind,
+        durationHours,
+        priority,
+        reward: { xp: 0, caps: 0, reputation: 0 },
+        details: {
+          decisionKind: safeId(decision.kind || 'patrol', 'patrol'),
+          decisionReason: safeId(decision.reason || 'area_patrol', 'area_patrol'),
+          destinationSiteId: targetSite?.id || '',
+          targetPartyId: targetParty?.id || ''
+        }
+      });
+      if (!missionTask) return null;
+      const leader = partyLeaderPublicMember(party);
+      const partyOperationToken = safeId(party.id || 'party', 'party').slice(0, 24);
+      const missionOperationToken = safeId(missionTask.id || 'mission', 'mission').slice(-28);
+      operation = createPatrolOperation({
+        id: `patrol_${partyOperationToken}_${missionOperationToken}`,
+        partyId: party.id,
+        phase,
+        issuerFactionId: factionGroup(party.faction || issuer?.owner || ''),
+        requestTaskId: requestTask?.id || '',
+        sourceSiteId: party.lastSiteId || party.homeSiteId || '',
+        destinationSiteId: targetSite?.id || '',
+        goal,
+        assignment: {
+          taskId: missionTask.id,
+          assigneeId: party.id,
+          leaderId: leader.id,
+          leaderName: leader.name,
+          leaderRole: leader.role,
+          acceptedHour: Number(state.worldHour || 0)
+        },
+        createdHour: Number(state.worldHour || 0)
+      }, state.worldHour);
+      addEvent('patrol_mission_assigned', `${party.name}: ${goal.summary}`, {
+        partyId: party.id,
+        taskId: missionTask.id,
+        operationId: operation?.id || '',
+        siteId: targetSite?.id || '',
+        targetPartyId: targetParty?.id || '',
+        reason: goal.reason
+      });
+    } else {
+      missionTask.expiresHour = Math.max(Number(missionTask.expiresHour || 0), Number(state.worldHour || 0) + durationHours);
+      missionTask.priority = Math.max(Number(missionTask.priority || 0), priority);
+      operation = transitionWorldOperation(operation, phase, state.worldHour, {
+        requestTaskId: requestTask?.id || operation.requestTaskId || '',
+        sourceSiteId: operation.sourceSiteId || party.lastSiteId || party.homeSiteId || '',
+        destinationSiteId: targetSite?.id || '',
+        goal,
+        assignment: {
+          taskId: missionTask.id,
+          assigneeId: party.id,
+          leaderName: 'Командир патруля',
+          leaderRole: 'Глава отряда'
+        }
+      });
+    }
+    if (!operation) return null;
+    updatePatrolMissionPresentation(missionTask, party, operation, decision, targetSite, targetParty);
+    const participation = ensurePatrolParticipationTask(party, missionTask, operation);
+    operation = participation.operation || operation;
+    mirrorPatrolWorldOperation(missionTask, operation, party, {
+      participationTaskId: participation.task?.id || missionTask.details?.participationTaskId || ''
+    });
+    if (requestTask) syncPatrolFactionTaskAssignment(requestTask, operation, missionTask, 'active');
+    return { task: missionTask, operation, participationTask: participation.task };
+  }
+
+  function patrolParticipationRewardEligibility(party = {}, task = {}) {
+    const now = Number(state.worldHour || 0);
+    const taskDutyEndsHour = Number(task.details?.dutyEndsHour || 0);
+    const members = Array.isArray(party?.playerMembers)
+      ? party.playerMembers.filter(member => member?.taskId === task.id)
+      : [];
+    const eligibleMembers = members.filter(member => {
+      const joinedHour = Number(member?.joinedHour);
+      const dutyEndsHour = Number.isFinite(joinedHour)
+        ? joinedHour + PATROL_DUTY_WORLD_HOURS
+        : taskDutyEndsHour;
+      return Number.isFinite(dutyEndsHour) && dutyEndsHour > 0 && now + 0.0001 >= dutyEndsHour;
+    });
+    return {
+      members,
+      eligibleMembers,
+      participantCount: members.length,
+      rewardEligibleCount: eligibleMembers.length,
+      minimumDutyHours: PATROL_DUTY_WORLD_HOURS
+    };
+  }
+
+  function settlePatrolWorldOperation(missionTask = {}, operation = null, phase = 'cancelled', reason = '', details = {}) {
+    const current = normalizeWorldOperation(operation || missionTask?.details?.operation || {}, state.worldHour);
+    if (!current) return null;
+    if (current.status !== 'active') {
+      mirrorPatrolWorldOperation(missionTask, current, state.parties[current.assignment?.assigneeId || missionTask.partyId || '']);
+      return current;
+    }
+    const success = phase === 'completed';
+    const failed = phase === 'failed';
+    const siteId = safeId(details?.siteId || details?.arrivalSiteId || current.destinationSiteId || '', '');
+    const finished = transitionWorldOperation(current, phase, state.worldHour, {
+      outcome: {
+        result: success ? 'patrolled' : phase,
+        reason: safeId(reason || phase, phase),
+        siteId,
+        npcLosses: Math.max(0, Math.floor(Number(details?.npcLosses || details?.guardLosses || 0)))
+      }
+    });
+    if (!finished) return null;
+    const party = state.parties[current.assignment?.assigneeId || missionTask.partyId || ''];
+    const participationTask = patrolParticipationTaskForMission(missionTask, false);
+    missionTask.details = {
+      ...(missionTask.details || {}),
+      npcOperationContinues: false,
+      npcOperationCompletedHour: Number(state.worldHour || 0),
+      operation: finished
+    };
+    mirrorPatrolWorldOperation(missionTask, finished, null, {
+      participationTaskId: participationTask?.id || missionTask.details?.participationTaskId || '',
+      npcOperationContinues: false,
+      npcOperationCompletedHour: Number(state.worldHour || 0)
+    });
+
+    if (current.requestTaskId) {
+      const requestTask = worldTaskById(current.requestTaskId);
+      if (requestTask) {
+        syncPatrolFactionTaskAssignment(
+          requestTask,
+          finished,
+          missionTask,
+          success ? 'completed' : failed ? 'failed' : 'cancelled'
+        );
+      }
+    }
+
+    if (participationTask && participationTask.status === 'active') {
+      participationTask.details = {
+        ...(participationTask.details || {}),
+        npcOperationContinues: false,
+        npcOperationCompletedHour: Number(state.worldHour || 0),
+        operation: finished
+      };
+      const rewardEligibility = patrolParticipationRewardEligibility(party, participationTask);
+      const participationStatus = success && rewardEligibility.rewardEligibleCount > 0
+        ? 'completed'
+        : failed && rewardEligibility.participantCount > 0
+          ? 'failed'
+          : 'resolved';
+      if (success && rewardEligibility.rewardEligibleCount < rewardEligibility.participantCount && party) {
+        const eligibleMembers = new Set(rewardEligibility.eligibleMembers);
+        party.playerMembers = (Array.isArray(party.playerMembers) ? party.playerMembers : [])
+          .filter(member => member?.taskId !== participationTask.id || eligibleMembers.has(member));
+      }
+      finishWorldTask(
+        participationTask,
+        participationStatus,
+        success ? 'patrol_operation_completed' : failed ? 'patrol_destroyed' : 'patrol_operation_cancelled',
+        {
+          operationId: finished.id,
+          siteId,
+          participantCount: rewardEligibility.participantCount,
+          rewardEligibleCount: rewardEligibility.rewardEligibleCount,
+          minimumDutyHours: rewardEligibility.minimumDutyHours
+        }
+      );
+    }
+
+    if (missionTask.status === 'active') {
+      finishWorldTask(
+        missionTask,
+        success ? 'resolved' : failed ? 'failed' : 'resolved',
+        reason || (success ? 'patrol_operation_completed' : phase),
+        { operationId: finished.id, siteId }
+      );
+    } else {
+      archiveWorldTask(missionTask);
+    }
+    if (party && String(party.assignment?.operationId || '') === String(current.id || '')) {
+      party.lastOperation = finished;
+      party.goal = null;
+      party.assignment = null;
+    }
+    addEvent(success ? 'patrol_mission_completed' : failed ? 'patrol_mission_failed' : 'patrol_mission_cancelled',
+      success
+        ? `${party?.name || 'Патруль'} выполнил поручение.`
+        : failed
+          ? `${party?.name || 'Патруль'} не выполнил поручение.`
+          : `${party?.name || 'Патруль'} получил другое поручение.`, {
+        partyId: party?.id || missionTask.partyId || '',
+        taskId: missionTask.id || '',
+        operationId: finished.id,
+        siteId,
+        reason: reason || phase
+      });
+    dirty = true;
+    return finished;
+  }
+
+  function settleLivePatrolWorldOperation(party = {}, success = false, reason = '', details = {}) {
+    const record = patrolWorldOperationForParty(party, true);
+    if (!record) return null;
+    return settlePatrolWorldOperation(
+      record.task,
+      record.operation,
+      success ? 'completed' : 'failed',
+      reason,
+      details
+    );
+  }
+
+  function continuePatrolAfterParticipationTask(task = {}, reason = 'patrol_participation_finished') {
+    const party = state.parties[task.partyId || ''];
+    const record = patrolWorldOperationForParty(party, true);
+    if (!party || !record || party.destroyed || party.state === 'destroyed') return null;
+    const phase = patrolOperationRuntimePhase(party, record.operation);
+    const continued = transitionWorldOperation(record.operation, phase, state.worldHour);
+    task.details = {
+      ...(task.details || {}),
+      finishReason: reason,
+      npcOperationContinues: true,
+      operation: continued
+    };
+    record.task.details = {
+      ...(record.task.details || {}),
+      participationStatus: task.status || 'finished',
+      nextParticipationHour: Number(state.worldHour || 0) + PATROL_PARTICIPATION_COOLDOWN_HOURS
+    };
+    mirrorPatrolWorldOperation(record.task, continued, party, {
+      participationTaskId: task.id,
+      participationStatus: task.status || 'finished',
+      nextParticipationHour: Number(state.worldHour || 0) + PATROL_PARTICIPATION_COOLDOWN_HOURS
+    });
+    dirty = true;
+    return continued;
+  }
+
+  function expireLivePatrolParticipationTask(task = {}, now = Number(state.worldHour || 0)) {
+    if (!task || task.type !== 'join_patrol') return false;
+    const party = state.parties[task.partyId || ''];
+    const record = patrolWorldOperationForParty(party, true);
+    if (!party || !record || party.destroyed || party.state === 'destroyed') return false;
+    task.status = 'expired';
+    task.completedHour = now;
+    const continued = continuePatrolAfterParticipationTask(task, 'patrol_window_expired');
+    if (!continued) return false;
+    task.details = {
+      ...(task.details || {}),
+      finishReason: 'patrol_window_expired',
+      npcOperationContinues: true,
+      joinOpen: false,
+      joinClosed: true,
+      operation: continued
+    };
+    removeWorldTaskPartyMembers(task);
+    state.stats.worldTasksFailed = Number(state.stats.worldTasksFailed || 0) + 1;
+    addEvent('world_task_expired', `Срок участия истёк: ${task.title}. Патруль продолжает поручение.`, {
+      taskId: task.id,
+      taskType: task.type,
+      siteId: task.siteId,
+      partyId: task.partyId,
+      operationId: continued.id
+    });
+    archiveWorldTask(task);
+    dirty = true;
+    return true;
+  }
+
+  function transitionActivePatrolOperation(missionTask = {}, operation = null, phase = 'patrolling', details = {}) {
+    const current = normalizeWorldOperation(operation || missionTask?.details?.operation || {}, state.worldHour);
+    if (!current || current.status !== 'active') return current;
+    const party = state.parties[current.assignment?.assigneeId || missionTask.partyId || ''];
+    const next = transitionWorldOperation(current, phase, state.worldHour, details);
+    mirrorPatrolWorldOperation(missionTask, next, party);
+    if (current.requestTaskId) {
+      const requestTask = worldTaskById(current.requestTaskId);
+      if (requestTask) syncPatrolFactionTaskAssignment(requestTask, next, missionTask, 'active');
+    }
+    return next;
+  }
+
+  function updatePatrolWorldOperations() {
+    const missions = state.worldTasks.filter(task => task && task.status === 'active' && task.type === 'patrol_mission');
+    for (const missionTask of missions) {
+      const operation = normalizeWorldOperation(missionTask.details?.operation || {}, state.worldHour);
+      if (!operation || operation.status !== 'active') continue;
+      const party = state.parties[operation.assignment?.assigneeId || missionTask.partyId || ''];
+      if (!party || party.destroyed || party.state === 'destroyed') {
+        settlePatrolWorldOperation(missionTask, operation, 'failed', 'patrol_destroyed', {
+          siteId: operation.destinationSiteId || '',
+          npcLosses: Math.max(0, Math.floor(Number(party?.members || 0)))
+        });
+        continue;
+      }
+      const targetSite = state.sites[operation.destinationSiteId || ''];
+      const targetPartyId = safeId(missionTask.details?.targetPartyId || '', '');
+      const targetParty = targetPartyId ? state.parties[targetPartyId] : null;
+      if (operation.goal?.kind === 'defend_site') {
+        if (!targetSite) {
+          settlePatrolWorldOperation(missionTask, operation, 'cancelled', 'patrol_target_missing');
+          continue;
+        }
+        if (!activeSiteConflict(targetSite)) {
+          const defended = factionGroup(targetSite.owner || '') === factionGroup(operation.issuerFactionId || party.faction || '');
+          settlePatrolWorldOperation(
+            missionTask,
+            operation,
+            defended ? 'completed' : 'failed',
+            defended ? 'site_conflict_repelled' : 'site_conflict_lost',
+            { siteId: targetSite.id }
+          );
+          continue;
+        }
+      }
+      if (operation.goal?.kind === 'intercept_hostile' && targetPartyId) {
+        if (!targetParty || targetParty.destroyed || targetParty.state === 'destroyed') {
+          settlePatrolWorldOperation(missionTask, operation, 'completed', 'hostile_group_neutralized', {
+            siteId: party.lastSiteId || operation.destinationSiteId || ''
+          });
+          continue;
+        }
+      }
+      const runtimePhase = patrolOperationRuntimePhase(party, operation);
+      if (runtimePhase !== operation.phase) transitionActivePatrolOperation(missionTask, operation, runtimePhase);
+      const activeParticipation = patrolParticipationTaskForMission(missionTask, true);
+      if (activeParticipation) {
+        ensurePatrolParticipationTask(party, missionTask, normalizeWorldOperation(missionTask.details?.operation || operation, state.worldHour));
+      }
+    }
+  }
+
+  function finishPatrolOperationsForSite(site = {}, result = 'repelled') {
+    if (!site?.id) return 0;
+    let finishedCount = 0;
+    const missions = state.worldTasks.filter(task => task && task.status === 'active'
+      && task.type === 'patrol_mission'
+      && safeId(task.details?.operation?.destinationSiteId || '', '') === safeId(site.id || '', '')
+      && task.details?.operation?.goal?.kind === 'defend_site');
+    for (const missionTask of missions) {
+      const operation = normalizeWorldOperation(missionTask.details?.operation || {}, state.worldHour);
+      if (!operation || operation.status !== 'active') continue;
+      const party = state.parties[operation.assignment?.assigneeId || missionTask.partyId || ''];
+      const defended = result === 'repelled'
+        || factionGroup(site.owner || '') === factionGroup(operation.issuerFactionId || party?.faction || '');
+      if (settlePatrolWorldOperation(
+        missionTask,
+        operation,
+        defended ? 'completed' : 'failed',
+        defended ? 'site_conflict_repelled' : 'site_conflict_lost',
+        { siteId: site.id }
+      )) finishedCount += 1;
+    }
+    return finishedCount;
+  }
+
+  function finalizeWorldTaskOperation(task = {}, reason = '', details = {}) {
+    const operation = normalizeWorldOperation(task?.details?.operation || {}, state.worldHour);
+    if (!operation) return null;
+    if (operation.kind === 'patrol_mission') {
+      if (operation.status !== 'active') return operation;
+      const party = state.parties[operation.assignment?.assigneeId || task.partyId || ''];
+      const record = patrolWorldOperationForParty(party, true);
+      if (String(task.type || '') === 'join_patrol'
+        && party && !party.destroyed && party.state !== 'destroyed'
+        && record) {
+        return continuePatrolAfterParticipationTask(task, reason || task.status || 'patrol_participation_finished');
+      }
+      const authoritativeTask = record?.task || (String(task.type || '') === 'patrol_mission' ? task : null);
+      const authoritativeOperation = record?.operation || operation;
+      if (!authoritativeTask) return operation;
+      const success = ['completed', 'resolved'].includes(String(task.status || ''))
+        && !['world_task_group_unavailable', 'patrol_destroyed'].includes(String(reason || ''));
+      const failed = ['failed', 'expired'].includes(String(task.status || ''))
+        || ['world_task_group_unavailable', 'patrol_destroyed'].includes(String(reason || ''));
+      return settlePatrolWorldOperation(
+        authoritativeTask,
+        authoritativeOperation,
+        success ? 'completed' : failed ? 'failed' : 'cancelled',
+        reason || task.status || 'patrol_operation_finished',
+        details
+      );
+    }
+    const success = task.status === 'completed'
+      || (task.status === 'resolved' && ['caravan_arrived', 'caravan_delivery'].includes(String(reason || '')));
+    const failed = task.status === 'failed'
+      || task.status === 'expired'
+      || ['world_task_group_unavailable', 'caravan_destroyed'].includes(String(reason || ''));
+    const phase = success ? 'completed' : failed ? 'failed' : 'cancelled';
+    return settleCaravanWorldOperation(task, operation, phase, reason || task.status || phase, details);
+  }
+
   function updateCaravanStagingTask(party = {}, site = {}, destination = null, departed = false) {
     const task = state.worldTasks.find(row => row && row.status === 'active' && (
       row.id === party.stagingTaskId || row.key === `escort_caravan:${party.id}`
@@ -6020,8 +7714,17 @@ function createWastelandSimulation(options = {}) {
     const taskMembers = Array.isArray(party.playerMembers)
       ? party.playerMembers.filter(member => member?.taskId === task.id).slice(0, playerLimit)
       : [];
+    const destinationRegion = destination ? liveRegionForSite(destination) : null;
+    const liveCause = activityCause('escort_caravan', destinationRegion || {});
+    const operation = ensureCaravanWorldOperation(task, party, site, destination, departed ? 'traveling' : 'preparing');
     task.details = {
       ...(task.details || {}),
+      liveEvent: {
+        ...(task.details?.liveEvent || {}),
+        cause: liveCause.key,
+        causeLabel: operation?.goal?.summary || liveCause.label,
+        impactSiteId: destination?.id || party.destinationSiteId || ''
+      },
       initialNpcMembers: Math.max(1, Math.floor(Number(task.details?.initialNpcMembers || party.members || 1))),
       staging: !departed,
       joinOpen: !departed,
@@ -6036,6 +7739,12 @@ function createWastelandSimulation(options = {}) {
       departedHour: departed ? Number(state.worldHour || 0) : Number(task.details?.departedHour || 0),
       cargo: compactStockpile(party.cargo || {})
     };
+    if (operation) {
+      const leaderName = operation.assignment?.leaderName || 'Караванщик';
+      task.text = departed
+        ? `${leaderName} ведёт караван к ${destination?.name || party.destinationSiteId || 'месту назначения'}. ${operation.goal?.summary || ''}`.slice(0, 320)
+        : `${leaderName} готовит караван у ${site.name || site.id}. ${operation.goal?.summary || ''} Можно присоединиться до отправления.`.slice(0, 320);
+    }
     dirty = true;
     return task;
   }
@@ -6118,6 +7827,8 @@ function createWastelandSimulation(options = {}) {
     });
     if (zone) return true;
     const stagingTaskId = String(party.stagingTaskId || '');
+    const stagingTask = stagingTaskId ? worldTaskById(stagingTaskId) : null;
+    if (stagingTask) finalizeWorldTaskOperation(stagingTask, 'staging_unavailable', stagingTask.details || {});
     if (stagingTaskId) state.worldTasks = state.worldTasks.filter(task => String(task?.id || '') !== stagingTaskId);
     state.events = state.events.filter(event => !(event?.type === 'caravan_staging' && String(event?.partyId || '') === String(party.id || '')));
     clearCaravanStaging(party);
@@ -6250,6 +7961,14 @@ function createWastelandSimulation(options = {}) {
     const keys = Object.keys(cargo).filter(key => Number(cargo[key] || 0) > 0);
     party.cargo = cargo;
     if (!keys.length) return;
+    const operationRecord = String(party.kind || '').toLowerCase() === 'caravan'
+      ? caravanWorldOperationForParty(party, true)
+      : null;
+    const operationBeforeDelivery = operationRecord?.operation || null;
+    const operationArrivalSiteId = operationBeforeDelivery
+      ? caravanOperationArrivalSiteId(party, operationBeforeDelivery)
+      : '';
+    if (operationArrivalSiteId && operationArrivalSiteId !== safeId(site.id || '', '')) return false;
     const delivered = clone(cargo);
     addStockpile(site.stockpile, delivered);
     party.cargo = {};
@@ -6274,6 +7993,7 @@ function createWastelandSimulation(options = {}) {
       });
       const isTradeOutbound = party.interFactionTrade && site.id !== party.homeSiteId;
       if (isTradeOutbound && party.homeSiteId && state.sites[party.homeSiteId]) {
+        resolveSupplyRequestForDelivery(party, site, delivered, operationBeforeDelivery);
         const askingPrice = Math.max(20, Math.floor(stockpileTotal(delivered) * 1.35));
         // За чужой товар фракция платит из своего склада, а не печатает крышки.
         // Если крышек не хватает, караван увозит столько, сколько покупатель
@@ -6291,8 +8011,11 @@ function createWastelandSimulation(options = {}) {
         party.route = [party.homeSiteId];
         party.routeIndex = 0;
         party.returningFromTrade = true;
-        state.worldTasks
-          .filter(task => task && task.status === 'active' && task.type === 'escort_caravan' && task.partyId === party.id)
+        const returnSite = state.sites[party.homeSiteId] || {};
+        const returnTasks = (Array.isArray(state.worldTasks) ? state.worldTasks : [])
+          .filter(task => task && task.type === 'escort_caravan' && task.partyId === party.id
+            && normalizeWorldOperation(task.details?.operation || {}, state.worldHour)?.status === 'active');
+        returnTasks
           .forEach(task => {
             const taskMembers = Array.isArray(party.playerMembers)
               ? party.playerMembers.filter(member => member?.taskId === task.id).slice(0, worldPartyPlayerLimit(party, task))
@@ -6314,6 +8037,30 @@ function createWastelandSimulation(options = {}) {
               playerCount: taskMembers.length,
               joinedPlayers: taskMembers.map(row => row.id).filter(Boolean)
             };
+            const operation = normalizeWorldOperation(task.details.operation || {}, state.worldHour);
+            if (operation) {
+              task.details.operation = transitionWorldOperation(operation, 'returning', state.worldHour, {
+                goal: {
+                  ...operation.goal,
+                  reason: 'return_to_base',
+                  summary: `Возвращение в ${returnSite.name || party.homeSiteId} после обмена.`,
+                  targetSiteId: party.homeSiteId
+                }
+              });
+              task.details.liveEvent = {
+                ...(task.details.liveEvent || {}),
+                causeLabel: task.details.operation.goal?.summary || '',
+                impactSiteId: party.homeSiteId
+              };
+              forEachWorldTaskCopy(task.id, row => {
+                row.details = {
+                  ...(row.details || {}),
+                  ...task.details,
+                  operation: task.details.operation
+                };
+              });
+              bindPartyWorldOperation(party, task.details.operation, task);
+            }
             task.text = `${party.name} завершил обмен и возвращается домой. Награда будет доступна после возвращения каравана.`;
             task.targetSiteId = party.homeSiteId;
             task.targetSiteName = state.sites[party.homeSiteId]?.name || party.homeSiteId;
@@ -6334,22 +8081,31 @@ function createWastelandSimulation(options = {}) {
         const escortReward = partyRewardPlayerDetails(party, task.id);
         const hasPlayerEscorts = Number(escortReward.rewardPlayerCount || 0) > 0;
         if (hasPlayerEscorts) fundWorldTaskCapsRewardFromSite(task, site, escortReward.rewardPlayerCount);
+        const liveRegion = applyLiveActivityOutcome(task, {
+          siteId: site.id,
+          success: true,
+          grade: escortGrade.grade,
+          participantCount: escortReward.rewardPlayerCount || 0,
+          contribution: stockpileTotal(delivered)
+        });
         finishWorldTask(task, hasPlayerEscorts ? 'completed' : 'resolved', 'caravan_arrived', {
           partyId: party.id,
           siteId: site.id,
           arrivalSiteId: site.id,
           arrivalLocationId: site.locationId || '',
           cargo: clone(delivered),
+          liveRegionOutcome: liveRegion?.aftermath || null,
           ...escortGrade,
           ...escortReward
         });
       });
-      finishActiveWorldTasks(
-        task => task.type === 'deliver_supplies' && task.siteId === site.id,
-        'resolved',
-        'caravan_delivery',
-        { partyId: party.id, cargo: clone(delivered) }
-      );
+      settleLiveCaravanWorldOperation(party, true, 'caravan_arrived', {
+        partyId: party.id,
+        siteId: site.id,
+        arrivalSiteId: site.id,
+        cargo: clone(delivered)
+      });
+      resolveSupplyRequestForDelivery(party, site, delivered, operationBeforeDelivery);
       if (party.resourceExport) {
         addEvent('resource_export_delivered', `${party.name} разгрузился в ${site.name || site.id}.`, {
           partyId: party.id,
@@ -6930,6 +8686,52 @@ function createWastelandSimulation(options = {}) {
     return route;
   }
 
+  function completePatrolMissionArrival(party = {}, site = {}) {
+    if (!party || String(party.kind || '').toLowerCase() !== 'patrol' || !site) return false;
+    const record = patrolWorldOperationForParty(party, true);
+    if (!record) return false;
+    const operation = record.operation;
+    if (safeId(operation.destinationSiteId || '', '') !== safeId(site.id || '', '')) return false;
+    const goalKind = safeId(operation.goal?.kind || '', '');
+    const targetIsHostile = !!(site.owner && site.owner !== 'neutral' && hostile(party.faction, site.owner));
+    const goalRequiresFriendlySite = ['defend_site', 'reinforce_site', 'return_to_base'].includes(goalKind);
+    const targetIsFriendly = partySiteRelationScore(party, site) >= 1;
+    if (targetIsHostile || (goalRequiresFriendlySite && !targetIsFriendly)) {
+      settlePatrolWorldOperation(
+        record.task,
+        operation,
+        'failed',
+        targetIsHostile ? 'patrol_target_became_hostile' : 'patrol_target_no_longer_friendly',
+        { siteId: site.id, arrivalSiteId: site.id }
+      );
+      return false;
+    }
+    if (operation.goal?.kind === 'defend_site' && activeSiteConflict(site)) {
+      transitionActivePatrolOperation(record.task, operation, 'holding', { destinationSiteId: site.id });
+      addEvent('patrol_holding_site', `${party.name} занял позиции у ${site.name || site.id}.`, {
+        partyId: party.id,
+        taskId: record.task.id,
+        operationId: operation.id,
+        siteId: site.id
+      });
+      return false;
+    }
+    if (operation.goal?.kind === 'reinforce_site') {
+      site.security = clamp(Number(site.security ?? siteDefaultSecurity(site)) + 5, 0, 100);
+      site.controlPressure = clamp(Number(site.controlPressure || 0) - 2, -30, 30);
+      site.lastPatrolHour = Number(state.worldHour || 0);
+    } else if (operation.goal?.kind === 'patrol_route') {
+      site.security = clamp(Number(site.security ?? siteDefaultSecurity(site)) + 1, 0, 100);
+      site.lastPatrolHour = Number(state.worldHour || 0);
+      site.patrolCoveredUntil = Math.max(Number(site.patrolCoveredUntil || 0), Number(state.worldHour || 0) + 12);
+    }
+    settlePatrolWorldOperation(record.task, operation, 'completed', 'patrol_arrived', {
+      siteId: site.id,
+      arrivalSiteId: site.id
+    });
+    return true;
+  }
+
   function onPartyArrived(party, site) {
     if (!party || !site) return;
     const arrivalFrom = { x: Number(party.x || site.x || 0), y: Number(party.y || site.y || 0) };
@@ -6939,17 +8741,28 @@ function createWastelandSimulation(options = {}) {
     party.lastSiteId = site.id;
     party.siteVisitHours = { ...(party.siteVisitHours || {}), [site.id]: Number(state.worldHour || 0) };
     if (completeSiteSupportArrival(party, site)) return;
+    completePatrolMissionArrival(party, site);
     let onsiteReason = '';
     if (party.kind === 'caravan') {
+      const operationRecord = caravanWorldOperationForParty(party, true);
+      const operation = operationRecord?.operation || null;
+      const operationArrivalSiteId = operation ? caravanOperationArrivalSiteId(party, operation) : '';
+      const isOperationArrival = !operationArrivalSiteId || operationArrivalSiteId === safeId(site.id || '', '');
+      const mayLoadOperationCargo = !operation
+        || (safeId(operation.sourceSiteId || '', '') === safeId(site.id || '', '')
+          && ['preparing', 'loading'].includes(String(operation.phase || '')));
       const cargoBefore = stockpileTotal(party.cargo || {});
-      if (isHarvestSite(site)) collectResources(party, site);
+      if (isHarvestSite(site) && mayLoadOperationCargo) collectResources(party, site);
       const cargoAfter = stockpileTotal(party.cargo || {});
       if (isHarvestSite(site) && cargoAfter > cargoBefore && beginCaravanStagingOnsite(party, site, { arrivalFrom })) {
         return;
       }
       if (isHarvestSite(site) && cargoAfter > cargoBefore) onsiteReason = 'harvest';
       if (isSettlementServiceSite(site)) {
-        if (caravanCanDeliverToSite(party, site)) {
+        if (!isOperationArrival) {
+          onsiteReason = 'transit';
+        }
+        else if (caravanCanDeliverToSite(party, site)) {
           const beforeDelivery = stockpileTotal(party.cargo || {});
           const partyRemoved = deliverCargo(party, site);
           if (partyRemoved || !state.parties[party.id]) return;
@@ -7141,63 +8954,46 @@ function createWastelandSimulation(options = {}) {
       if (!party || party.destroyed || party.state === 'destroyed' || String(party.kind || '') !== 'patrol') continue;
       const threat = partyThreatInfo(party);
       const now = Number(state.worldHour || 0);
-      const home = state.sites[party.homeSiteId || 'settlement'];
-      if (threat.riskLevel < 36 || Number(threat.threatDistanceKm || 0) > 28) {
-        party.patrolWatchProgress = Math.max(0, Number(party.patrolWatchProgress || 0) - hours * 0.45);
-        if (now - Number(party.lastPatrolListingHour || -999) >= 16) {
-          party.lastPatrolListingHour = now;
-          createWorldTask('join_patrol', {
-            key: `join_patrol:${party.id}`,
-            title: `Выйти с патрулем: ${party.name}`,
-            text: `${party.name} выходит на плановый маршрут возле ${home?.name || 'поселения'}. Присоединитесь к группе и патрулируйте дорогу вместе с отрядом.`,
-            siteId: escortIssuerSiteFor(party, home)?.id || party.homeSiteId || 'settlement',
-            partyId: party.id,
-            targetFaction: threat.threatFaction || '',
-            objective: 'join_regular_patrol',
-            durationHours: 30,
-            priority: 2,
-            details: {
-              x: Number(Number(party.x || 0).toFixed(1)),
-              y: Number(Number(party.y || 0).toFixed(1)),
-              destinationSiteId: party.destinationSiteId || '',
-              riskLevel: threat.riskLevel
-            }
-          });
+      let record = patrolWorldOperationForParty(party, true);
+      const partyState = String(party.state || '').toLowerCase();
+      if (!record && !['onsite', 'forming', 'recovering', 'engaged'].includes(partyState)) {
+        const targetParty = state.parties[party.targetPartyId || ''];
+        const targetSite = state.sites[party.destinationSiteId || ''];
+        if (partyTargetIsAvailable(targetParty) || targetSite) {
+          ensurePatrolWorldOperation(party, {
+            ...(partyTargetIsAvailable(targetParty) ? { targetParty } : { site: targetSite }),
+            kind: party.decisionKind || (partyTargetIsAvailable(targetParty) ? 'intercept' : 'patrol'),
+            reason: party.decisionReason || 'area_patrol',
+            score: party.decisionScore || 0
+          }, partyTargetIsAvailable(targetParty) ? targetParty : targetSite);
+        } else {
+          refreshPartyDecision(party, true);
         }
+        record = patrolWorldOperationForParty(party, true);
+      }
+      if (record) ensurePatrolParticipationTask(party, record.task, record.operation, threat);
+
+      const threatIsClose = threat.riskLevel >= 36 && Number(threat.threatDistanceKm || 0) <= 28;
+      if (!threatIsClose) {
+        party.patrolWatchProgress = Math.max(0, Number(party.patrolWatchProgress || 0) - hours * 0.45);
         continue;
       }
       party.patrolWatchProgress = Number(party.patrolWatchProgress || 0) + Math.max(0, Number(hours || 0));
       if (party.patrolWatchProgress < 1.25) continue;
       party.patrolWatchProgress = 0;
       const lastEventHour = Number(party.lastPatrolTaskHour || -999);
-      if (Number(state.worldHour || 0) - lastEventHour < 8 && threat.riskLevel < 66) continue;
-      party.lastPatrolTaskHour = Number(state.worldHour || 0);
-      party.lastPatrolListingHour = Number(state.worldHour || 0);
-      const priority = threat.riskLevel >= 70 ? 5 : threat.riskLevel >= 52 ? 4 : 3;
+      if (now - lastEventHour < 8 && threat.riskLevel < 66) continue;
+      party.lastPatrolTaskHour = now;
+      party.lastPatrolListingHour = now;
+      party.nextDecisionHour = 0;
+      refreshPartyDecision(party, true);
       addEvent('patrol_threat', `${party.name}: рядом замечена угроза (${threat.threatName}, ${threat.threatDistanceKm} км).`, {
         partyId: party.id,
         threatPartyId: threat.threatPartyId,
         riskLevel: threat.riskLevel,
+        response: party.decisionKind || 'intercept',
         x: Number(Number(party.x || 0).toFixed(1)),
         y: Number(Number(party.y || 0).toFixed(1))
-      });
-      createWorldTask('join_patrol', {
-        key: `join_patrol:${party.id}`,
-        title: `Выйти с патрулем: ${party.name}`,
-        text: `${party.name} ведёт маршрут возле ${home?.name || 'поселения'}. Рядом ${threat.threatName || 'опасный отряд'}; риск ${threat.riskLevel}%. Присоединитесь к патрулю и помогите удержать дорогу.`,
-        siteId: escortIssuerSiteFor(party, home)?.id || party.homeSiteId || 'settlement',
-        partyId: party.id,
-        targetFaction: threat.threatFaction || '',
-        objective: 'join_active_patrol',
-        durationHours: 24,
-        priority,
-        details: {
-          x: Number(Number(party.x || 0).toFixed(1)),
-          y: Number(Number(party.y || 0).toFixed(1)),
-          destinationSiteId: party.destinationSiteId || '',
-          threatPartyId: threat.threatPartyId || '',
-          riskLevel: threat.riskLevel
-        }
       });
     }
   }
@@ -7696,7 +9492,7 @@ function createWastelandSimulation(options = {}) {
     state.factionEconomyPlanProgress %= FACTION_ECONOMY_PLAN_INTERVAL_HOURS;
     const factions = [...new Set(Object.values(state.sites || {})
       .map(site => factionGroup(site?.owner || 'neutral'))
-      .filter(isJoinableWorldFaction))];
+      .filter(isTerritorialWorldFaction))];
     let planned = 0;
     for (const faction of factions) {
       const available = factionEconomyAvailable(faction);
@@ -8235,7 +10031,7 @@ function createWastelandSimulation(options = {}) {
       addStockpile(source.stockpile, cargo);
       return null;
     }
-    const faction = isJoinableWorldFaction(source.owner || '') ? factionGroup(source.owner || '') : 'caravans';
+    const faction = isTerritorialWorldFaction(source.owner || '') ? factionGroup(source.owner || '') : 'caravans';
     const partyId = safeId(`trade_${source.id}_${Math.floor(now * 10)}`, `trade_${source.id}_${Date.now()}`);
     const party = {
       id: partyId,
@@ -8397,7 +10193,7 @@ function createWastelandSimulation(options = {}) {
   function resourceExportCargoForSite(source = {}) {
     if (!source || !isHarvestSite(source)) return {};
     const ownerGroup = factionGroup(source.owner || 'neutral');
-    if (!isJoinableWorldFaction(ownerGroup) && ownerGroup !== 'neutral' && ownerGroup !== 'caravans') return {};
+    if (!isTerritorialWorldFaction(ownerGroup) && ownerGroup !== 'neutral') return {};
     const stock = source.stockpile && typeof source.stockpile === 'object' ? source.stockpile : {};
     const outputKeys = Object.keys(source.output || {}).filter(Boolean);
     if (!outputKeys.length) return {};
@@ -8445,7 +10241,7 @@ function createWastelandSimulation(options = {}) {
 
   function chooseResourceExportDestination(source = {}, cargo = {}) {
     const ownerGroup = factionGroup(source.owner || 'neutral');
-    const faction = isJoinableWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
+    const faction = isTerritorialWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
     const fakeParty = { faction, cargo };
     // Добыча фракции стекается в её столицу. Раньше назначение выбиралось по
     // весам среди всех точек, и нефтяная качалка Ретранслятора все десять рейсов
@@ -8453,7 +10249,7 @@ function createWastelandSimulation(options = {}) {
     // пустой. Столицы всех трёх фракций — это мастерские со станком инструментов,
     // так что сырьё попадает туда, где его умеют пустить в дело, а уже столица
     // решает, что раздать своим и чем поделиться с соседями.
-    if (isJoinableWorldFaction(ownerGroup)) {
+    if (isTerritorialWorldFaction(ownerGroup)) {
       const capital = state.sites[capitalSiteIdForFaction(ownerGroup)];
       if (capital && capital.id !== source.id && isSettlementServiceSite(capital)) return capital;
     }
@@ -8531,7 +10327,7 @@ function createWastelandSimulation(options = {}) {
       return null;
     }
     const ownerGroup = factionGroup(source.owner || 'neutral');
-    const faction = isJoinableWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
+    const faction = isTerritorialWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
     const partyId = safeId(`resource_${source.id}_${Math.floor(now * 10)}`, `resource_${source.id}_${Date.now()}`);
     const party = {
       id: partyId,
@@ -8623,7 +10419,7 @@ function createWastelandSimulation(options = {}) {
   function productionExportCargoForSite(source = {}) {
     if (!source || !productionExportSite(source)) return {};
     const ownerGroup = factionGroup(source.owner || 'neutral');
-    if (!isJoinableWorldFaction(ownerGroup) && ownerGroup !== 'caravans') return {};
+    if (!isTerritorialWorldFaction(ownerGroup)) return {};
     const stock = source.stockpile && typeof source.stockpile === 'object' ? source.stockpile : {};
     const outputKeys = productionExportOutputKeys(source);
     if (!outputKeys.length) return {};
@@ -8686,7 +10482,7 @@ function createWastelandSimulation(options = {}) {
 
   function chooseProductionExportDestination(source = {}, cargo = {}) {
     const sourceFaction = factionGroup(source.owner || 'neutral');
-    const faction = isJoinableWorldFaction(sourceFaction) ? sourceFaction : 'caravans';
+    const faction = isTerritorialWorldFaction(sourceFaction) ? sourceFaction : 'caravans';
     const fakeParty = { faction, cargo };
     const globalMap = getGlobalMap();
     const capitalId = capitalSiteIdForFaction(faction);
@@ -8731,7 +10527,7 @@ function createWastelandSimulation(options = {}) {
       return null;
     }
     const ownerGroup = factionGroup(source.owner || 'neutral');
-    const faction = isJoinableWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
+    const faction = isTerritorialWorldFaction(ownerGroup) ? ownerGroup : 'caravans';
     const partyId = safeId(`production_${source.id}_${Math.floor(now * 10)}`, `production_${source.id}_${Date.now()}`);
     const party = {
       id: partyId,
@@ -9025,6 +10821,7 @@ function createWastelandSimulation(options = {}) {
       `site_conflict_${result}`,
       { conflictId: conflict?.id || siteConflictTaskKey(site), ...details }
     );
+    finishPatrolOperationsForSite(site, result);
     dirty = true;
   }
 
@@ -9046,7 +10843,7 @@ function createWastelandSimulation(options = {}) {
     }
     takeStockpile(site.stockpile || (site.stockpile = emptyStockpile()), lost);
     site.owner = newOwner;
-    if (isJoinableWorldFaction(newOwner)) {
+    if (isTerritorialWorldFaction(newOwner)) {
       site.workers = [];
       site.workSummary = '';
       dispatchSiteSupportFromCapital(state, site, newOwner, { reason: 'conflict_capture' });
@@ -9557,11 +11354,13 @@ function createWastelandSimulation(options = {}) {
     updatePatrolThreats(hours);
     updateVisibleLairs(hours);
     resolvePartyContacts();
+    updatePatrolWorldOperations();
     completeJoinedPatrolTasks();
     updateSiteControl(hours);
     applyOutpostProtection(hours);
     resolveResourceRaids(hours);
     resolveSiteConflicts(hours);
+    updatePatrolWorldOperations();
     produceAtResourceSites(hours);
     ensureResourceExpeditionTasks();
     ensureReconExpeditionTasks();
@@ -9808,6 +11607,83 @@ function createWastelandSimulation(options = {}) {
       disrupted,
       recentlySupplied
     };
+  }
+
+  function liveRegionForSite(site = null) {
+    if (!site) return null;
+    return deriveLiveRegion(site, {
+      worldHour: state.worldHour,
+      market: siteMarketIntel(site),
+      control: siteControlIntel(site),
+      stored: state.liveRegions?.[site.id]
+    });
+  }
+
+  function applyLiveActivityOutcome(task = {}, data = {}) {
+    const siteId = safeId(data.siteId || task.siteId || '', '');
+    if (!siteId || !state.sites[siteId] || !LIVE_ACTIVITY_TYPES.has(String(task.type || ''))) return null;
+    state.liveRegions = state.liveRegions && typeof state.liveRegions === 'object' ? state.liveRegions : {};
+    const next = applyActivityOutcome(state.liveRegions[siteId], {
+      siteId,
+      kind: task.type,
+      worldHour: state.worldHour,
+      success: data.success !== false,
+      grade: data.grade,
+      participantCount: data.participantCount,
+      contribution: data.contribution,
+      durationHours: data.durationHours
+    });
+    state.liveRegions[siteId] = next;
+    dirty = true;
+    return liveRegionForSite(state.sites[siteId]);
+  }
+
+  function liveRegionAllowsActivity(site = null, kind = '') {
+    if (!site) return false;
+    const stored = state.liveRegions?.[site.id];
+    if (!stored || Number(stored.cooldownUntil || 0) <= Number(state.worldHour || 0)) return true;
+    return String(stored.lastActivityKind || '') !== String(kind || '');
+  }
+
+  function syncWorldActivityProgress(taskId = '', data = {}) {
+    const id = String(taskId || '').trim();
+    const task = state.worldTasks.find(row => row && row.status === 'active' && String(row.id || '') === id);
+    if (!task || !LIVE_ACTIVITY_TYPES.has(String(task.type || ''))) return { ok: false, error: 'activity_not_found' };
+    const goal = Math.max(1, Math.floor(Number(data.goal || task.details?.community?.goal || 1)));
+    const progress = Math.max(0, Math.floor(Number(data.progress || 0)));
+    const participantNames = [...new Set((Array.isArray(data.participantNames) ? data.participantNames : [])
+      .map(value => String(value || '').trim().slice(0, 48))
+      .filter(Boolean))].slice(0, 8);
+    const helpSignal = data.helpSignal && typeof data.helpSignal === 'object'
+      ? {
+        active: data.helpSignal.active !== false,
+        requestedByCharacterId: String(data.helpSignal.requestedByCharacterId || '').slice(0, 180),
+        requestedByName: String(data.helpSignal.requestedByName || 'Выживший').slice(0, 48),
+        message: String(data.helpSignal.message || 'Отряду нужна помощь.').slice(0, 160),
+        requestedAt: Math.max(0, Number(data.helpSignal.requestedAt || 0)),
+        expiresAt: Math.max(0, Number(data.helpSignal.expiresAt || 0)),
+        responderCharacterIds: [...new Set((Array.isArray(data.helpSignal.responderCharacterIds)
+          ? data.helpSignal.responderCharacterIds : [])
+          .map(value => String(value || '').slice(0, 180)).filter(Boolean))].slice(0, 24),
+        responderNames: [...new Set((Array.isArray(data.helpSignal.responderNames)
+          ? data.helpSignal.responderNames : [])
+          .map(value => String(value || '').slice(0, 48)).filter(Boolean))].slice(0, 8)
+      }
+      : null;
+    task.details = {
+      ...(task.details || {}),
+      community: {
+        goal,
+        progress,
+        participantCount: Math.max(0, Math.floor(Number(data.participantCount || 0))),
+        participantNames,
+        updatedAt: Math.max(0, Math.floor(Number(data.updatedAt || Date.now())))
+      },
+      helpSignal
+    };
+    dirty = true;
+    save(false);
+    return { ok: true, taskId: id };
   }
 
   function applyItemMarket(row = {}, site = {}, market = siteMarketIntel(site)) {
@@ -10895,7 +12771,7 @@ function createWastelandSimulation(options = {}) {
       const zone = partyThreatZone(party);
       if (zone) zones.push(zone);
     });
-    Object.values(state.sites).forEach(site => {
+    Object.values(state.sites).filter(siteVisibleOnPublicGlobalMap).forEach(site => {
       const zone = siteThreatZone(site);
       if (zone) zones.push(zone);
     });
@@ -10903,7 +12779,7 @@ function createWastelandSimulation(options = {}) {
   }
 
   function siteVisibleOnPublicGlobalMap(site = {}) {
-    if (!site) return false;
+    if (!site || !siteIsInPublicRelease(site)) return false;
     if (isFactionCapitalSite(site)) return true;
     return !globalMapPointInCapitalClearZone(getGlobalMap(), site, CAPITAL_CLEAR_RADIUS_POINTS, site.id);
   }
@@ -11054,7 +12930,17 @@ function createWastelandSimulation(options = {}) {
     delete details.joinedPlayers;
     delete details.playerId;
     delete details.characterId;
-    return details;
+    return redactPublicIdentityFields(details);
+  }
+
+  function publicWorldTaskReward(task = {}) {
+    const reward = task?.reward && typeof task.reward === 'object' ? task.reward : {};
+    const reputationFactionId = worldTaskRewardFactionId(task);
+    return {
+      ...reward,
+      reputation: reputationFactionId ? Math.max(0, Math.floor(Number(reward.reputation || 0))) : 0,
+      reputationFactionId
+    };
   }
 
   function publicWorldEvent(event = {}) {
@@ -11072,7 +12958,9 @@ function createWastelandSimulation(options = {}) {
       'playerId',
       'socketId',
       'ownerPlayerId',
-      'startedByPlayerId'
+      'startedByPlayerId',
+      'requestedByCharacterId',
+      'responderCharacterIds'
     ]);
     const out = {};
     for (const [key, row] of Object.entries(value)) {
@@ -11082,65 +12970,143 @@ function createWastelandSimulation(options = {}) {
     return out;
   }
 
+  function publicWorldTaskAccess(task = {}) {
+    const target = task?.siteId ? state.sites[task.siteId] : null;
+    const targetParty = task?.partyId ? state.parties[task.partyId] : null;
+    const issuerId = worldTaskIssuerSiteId(task?.type || '', target, task || {});
+    const issuer = issuerId ? state.sites[issuerId] : null;
+    const taskType = String(task?.type || '');
+    const statusOnly = taskType === 'patrol_mission';
+    const partyKind = String(targetParty?.kind || '').toLowerCase();
+    const targetPlayerLimit = targetParty ? worldPartyPlayerLimit(targetParty, task) : 0;
+    const targetPlayerCount = targetParty ? worldPartyPlayerCount(targetParty) : 0;
+    const targetPartyHasPlayerSlot = !targetPlayerLimit || targetPlayerCount < targetPlayerLimit;
+    const canJoinParty = !!(targetParty
+      && !targetParty.destroyed
+      && targetParty.state !== 'destroyed'
+      && targetPartyHasPlayerSlot
+      && ((taskType === 'join_patrol' && partyKind === 'patrol')
+        || (taskType === 'escort_caravan'
+          && partyKind === 'caravan'
+          && caravanStagingIsOpen(targetParty))));
+    const issuerFactionId = factionGroup(
+      targetParty?.faction
+      || issuer?.owner
+      || issuer?.faction
+      || task?.details?.rewardFactionId
+      || 'neutral'
+    );
+    const restricted = ['escort_caravan', 'join_patrol', 'defend_resource', 'retake_site'].includes(taskType);
+    const requiredFactionCandidate = factionGroup(targetParty?.faction || issuer?.owner || task?.faction || '');
+    const requiredFactionId = restricted && isJoinableWorldFaction(requiredFactionCandidate)
+      ? requiredFactionCandidate
+      : '';
+    return {
+      target,
+      targetParty,
+      issuerId,
+      issuer,
+      taskType,
+      statusOnly,
+      partyKind,
+      targetPlayerLimit,
+      targetPlayerCount,
+      canJoinParty,
+      partyId: task?.partyId || '',
+      actionMode: statusOnly ? 'status_only' : (canJoinParty ? 'join_party' : 'contract'),
+      issuerFactionId,
+      requiredFactionId
+    };
+  }
+
+  function publicWorldContractKey(task = {}) {
+    return worldContractSemanticKey(task, publicWorldTaskAccess(task));
+  }
+
+  function publicWorldTask(task = {}) {
+    const access = publicWorldTaskAccess(task);
+    const {
+      target,
+      targetParty,
+      issuerId,
+      issuer,
+      taskType,
+      statusOnly,
+      partyKind,
+      targetPlayerLimit,
+      targetPlayerCount,
+      canJoinParty
+    } = access;
+    const targetPoint = normalizeWorldPoint(task?.details || {});
+    const taskZone = String(task?.type || '') === 'clear_lair'
+      ? worldZoneById(task?.details?.worldZoneId || task?.worldZoneId || '')
+      : null;
+    const targetLocationId = String(taskZone
+      ? worldZoneLocationId(taskZone)
+      : (String(task?.type || '') === 'clear_lair' && targetParty
+        ? lairLocationIdForParty(targetParty)
+        : (task?.details?.locationId || target?.locationId || ''))).slice(0, 80);
+    const publicDetails = publicWorldTaskDetails(task);
+    const runtimeOperation = taskType === 'escort_caravan'
+      ? publicCaravanWorldOperation(task, targetParty)
+      : ['patrol_mission', 'join_patrol'].includes(taskType)
+        ? publicPatrolWorldOperation(task, targetParty)
+        : normalizeWorldOperation(publicDetails.operation || {}, state.worldHour);
+    const details = runtimeOperation ? { ...publicDetails, operation: runtimeOperation } : publicDetails;
+    const impactSiteId = ['escort_caravan', 'patrol_mission', 'join_patrol'].includes(taskType)
+      ? safeId(details.liveEvent?.impactSiteId || details.destinationSiteId || '', '')
+      : safeId(task?.siteId || '', '');
+    const impactSite = impactSiteId ? state.sites[impactSiteId] : target;
+    const liveRegion = impactSite ? liveRegionForSite(impactSite) : null;
+    const builtLiveEvent = LIVE_ACTIVITY_TYPES.has(taskType)
+      ? buildLiveEvent(runtimeOperation ? { ...task, details } : task, liveRegion || {}, state.worldHour)
+      : null;
+    const operationStage = runtimeOperation ? worldOperationStage(runtimeOperation) : null;
+    const liveEvent = builtLiveEvent && operationStage
+      ? { ...builtLiveEvent, stage: operationStage.key, stageLabel: operationStage.label }
+      : builtLiveEvent;
+    return {
+      ...task,
+      journalCategory: 'contract',
+      procedural: true,
+      contractKey: worldContractSemanticKey(task, access),
+      reward: publicWorldTaskReward(task),
+      details: String(task?.type || '') === 'clear_lair'
+        ? {
+          ...details,
+          locationId: targetLocationId,
+          encounterId: taskZone ? worldZoneEncounterId(taskZone) : (task.details?.encounterId || (targetParty ? partyMeetingEncounterId(targetParty) : ''))
+        }
+        : (liveEvent ? { ...details, liveEvent } : details),
+      ...(liveEvent ? { liveEvent, liveRegion } : {}),
+      ...(runtimeOperation ? { operation: runtimeOperation } : {}),
+      impactSiteId: impactSite?.id || '',
+      impactSiteName: impactSite?.name || '',
+      issuerSiteId: issuerId,
+      issuerSiteName: issuer?.name || '',
+      targetSiteName: target?.name || '',
+      targetPartyName: targetParty?.name || '',
+      targetX: targetPoint ? Number(targetPoint.x.toFixed(2)) : undefined,
+      targetY: targetPoint ? Number(targetPoint.y.toFixed(2)) : undefined,
+      targetLocationId,
+      targetPartyKind: targetParty?.kind || '',
+      actionMode: statusOnly ? 'status_only' : (canJoinParty ? 'join_party' : ''),
+      statusOnly,
+      npcOnly: statusOnly,
+      joinPartyId: canJoinParty ? targetParty.id : '',
+      joinPartyName: canJoinParty ? targetParty.name : '',
+      joinPartyFaction: canJoinParty ? targetParty.faction : '',
+      joinPartyKind: canJoinParty ? partyKind : '',
+      joinPartyPlayerCount: targetParty ? targetPlayerCount : 0,
+      joinPartyPlayerLimit: targetParty ? targetPlayerLimit : 0,
+      joinPartySlotsLeft: targetParty ? Math.max(0, targetPlayerLimit - targetPlayerCount) : 0,
+      targetPartyDestroyed: !!targetParty?.destroyed
+    };
+  }
+
   function publicState() {
     cleanupWorldZonesForSingleReality();
     const serverNow = Date.now();
-    const publicTask = task => {
-      const target = task?.siteId ? state.sites[task.siteId] : null;
-      const targetParty = task?.partyId ? state.parties[task.partyId] : null;
-      const issuerId = worldTaskIssuerSiteId(task?.type || '', target, task || {});
-      const issuer = issuerId ? state.sites[issuerId] : null;
-      const taskType = String(task?.type || '');
-      const targetPartyKind = String(targetParty?.kind || '').toLowerCase();
-      const targetPlayerLimit = targetParty ? worldPartyPlayerLimit(targetParty, task) : 0;
-      const targetPlayerCount = targetParty ? worldPartyPlayerCount(targetParty) : 0;
-      const targetPartyHasPlayerSlot = !targetPlayerLimit || targetPlayerCount < targetPlayerLimit;
-      const canJoinParty = !!(targetParty
-        && !targetParty.destroyed
-        && targetParty.state !== 'destroyed'
-        && targetPartyHasPlayerSlot
-        && ((taskType === 'join_patrol' && targetPartyKind === 'patrol')
-          || (taskType === 'escort_caravan'
-            && targetPartyKind === 'caravan'
-            && caravanStagingIsOpen(targetParty))));
-      const targetPoint = normalizeWorldPoint(task?.details || {});
-      const taskZone = String(task?.type || '') === 'clear_lair'
-        ? worldZoneById(task?.details?.worldZoneId || task?.worldZoneId || '')
-        : null;
-      const targetLocationId = String(taskZone
-        ? worldZoneLocationId(taskZone)
-        : (String(task?.type || '') === 'clear_lair' && targetParty
-          ? lairLocationIdForParty(targetParty)
-          : (task?.details?.locationId || target?.locationId || ''))).slice(0, 80);
-      const details = publicWorldTaskDetails(task);
-      return {
-        ...task,
-        details: String(task?.type || '') === 'clear_lair'
-          ? {
-            ...details,
-            locationId: targetLocationId,
-            encounterId: taskZone ? worldZoneEncounterId(taskZone) : (task.details?.encounterId || (targetParty ? partyMeetingEncounterId(targetParty) : ''))
-          }
-          : details,
-        issuerSiteId: issuerId,
-        issuerSiteName: issuer?.name || '',
-        targetSiteName: target?.name || '',
-        targetPartyName: targetParty?.name || '',
-        targetX: targetPoint ? Number(targetPoint.x.toFixed(2)) : undefined,
-        targetY: targetPoint ? Number(targetPoint.y.toFixed(2)) : undefined,
-        targetLocationId,
-        targetPartyKind: targetParty?.kind || '',
-        actionMode: canJoinParty ? 'join_party' : '',
-        joinPartyId: canJoinParty ? targetParty.id : '',
-        joinPartyName: canJoinParty ? targetParty.name : '',
-        joinPartyFaction: canJoinParty ? targetParty.faction : '',
-        joinPartyKind: canJoinParty ? targetParty.kind : '',
-        joinPartyPlayerCount: targetParty ? targetPlayerCount : 0,
-        joinPartyPlayerLimit: targetParty ? targetPlayerLimit : 0,
-        joinPartySlotsLeft: targetParty ? Math.max(0, targetPlayerLimit - targetPlayerCount) : 0,
-        targetPartyDestroyed: !!targetParty?.destroyed
-      };
-    };
     const taskBoardWeight = task => {
       const active = task?.status === 'active' ? 10000 : 0;
       const type = String(task?.type || '');
@@ -11159,25 +13125,40 @@ function createWastelandSimulation(options = {}) {
       const urgentWeight = type === 'defend_resource' || type === 'retake_site' ? 450 : 0;
       return active + groupWeight + urgentWeight + clamp(Number(task?.priority || 0), 0, 5) * 90 + Number(task?.createdHour || 0) / 1000;
     };
-    const activityTaskTypes = new Set([
-      'escort_caravan',
-      'distress_signal',
-      'recon_expedition',
-      'resource_expedition',
-      'outpost_defense',
-      'assault_diversion'
-    ]);
-    const orderedTasks = state.worldTasks
+    const activityTaskTypes = LIVE_ACTIVITY_TYPES;
+    const orderedTaskCandidates = state.worldTasks
+      .filter(worldTaskIsInPublicRelease)
       .slice()
       .sort((a, b) => {
         const weightDelta = taskBoardWeight(b) - taskBoardWeight(a);
         if (Math.abs(weightDelta) > 0.0001) return weightDelta;
         return Number(b.createdHour || 0) - Number(a.createdHour || 0);
       });
+    const orderedTasks = dedupeActiveWorldContracts(orderedTaskCandidates, {
+      keyForTask: publicWorldContractKey
+    });
     // Live activities are the primary Unity entry point and must stay visible.
-    const activityTasks = orderedTasks.filter(task => (
-      task?.status === 'active' && activityTaskTypes.has(String(task?.type || ''))
-    ));
+    const isPublicActivityTask = task => (
+      task?.status === 'active'
+      && activityTaskTypes.has(String(task?.type || ''))
+      && !(String(task?.type || '') === 'patrol_mission'
+        && worldTaskById(task.details?.participationTaskId || '')?.status === 'active')
+    );
+    const backgroundActivityCount = orderedTaskCandidates.filter(isPublicActivityTask).length;
+    const activityTasks = orderedTasks.filter(isPublicActivityTask).sort((left, right) => {
+      const leftImpactId = ['escort_caravan', 'patrol_mission', 'join_patrol'].includes(String(left?.type || ''))
+        ? safeId(left?.details?.liveEvent?.impactSiteId || left?.details?.destinationSiteId || '', '')
+        : safeId(left?.siteId || '', '');
+      const rightImpactId = ['escort_caravan', 'patrol_mission', 'join_patrol'].includes(String(right?.type || ''))
+        ? safeId(right?.details?.liveEvent?.impactSiteId || right?.details?.destinationSiteId || '', '')
+        : safeId(right?.siteId || '', '');
+      const leftSite = leftImpactId ? state.sites[leftImpactId] : null;
+      const rightSite = rightImpactId ? state.sites[rightImpactId] : null;
+      const scoreDelta = liveActivityPriority(right, liveRegionForSite(rightSite) || {}, state.worldHour)
+        - liveActivityPriority(left, liveRegionForSite(leftSite) || {}, state.worldHour);
+      if (Math.abs(scoreDelta) > 0.001) return scoreDelta;
+      return Number(right.createdHour || 0) - Number(left.createdHour || 0);
+    });
     const visibleTasks = [
       ...activityTasks,
       ...orderedTasks.filter(task => !activityTaskTypes.has(String(task?.type || '')))
@@ -11185,6 +13166,7 @@ function createWastelandSimulation(options = {}) {
     return {
       schema: state.schema,
       version: state.version,
+      ...(locationRelease ? { locationRelease: clone(locationRelease) } : {}),
       worldHour: Number(Number(state.worldHour || 0).toFixed(2)),
       gameDayRealMs,
       updatedAt: state.updatedAt,
@@ -11199,6 +13181,12 @@ function createWastelandSimulation(options = {}) {
         const productionNeed = productionNeedReason ? resourceSiteSupportDemand(site, productionNeedReason) : {};
         const control = siteControlIntel(site);
         const market = siteMarketIntel(site);
+        const liveRegion = deriveLiveRegion(site, {
+          worldHour: state.worldHour,
+          market,
+          control,
+          stored: state.liveRegions?.[site.id]
+        });
         return {
           id: site.id,
           type: site.type,
@@ -11243,6 +13231,7 @@ function createWastelandSimulation(options = {}) {
           marketAbundance: market.abundance,
           marketPriceMultiplier: market.priceMultiplier,
           marketQuantityMultiplier: market.quantityMultiplier,
+          liveRegion,
           danger: site.danger || 0,
           security: site.security,
           prosperity: site.prosperity,
@@ -11296,9 +13285,20 @@ function createWastelandSimulation(options = {}) {
       territories: publicTerritories(),
       worldZones: [],
       worldContacts: [],
-      events: state.events.slice(0, 30).map(publicWorldEvent),
-      worldTasks: visibleTasks.map(publicTask),
-      worldActivities: activityTasks.slice(0, 18).map(publicTask),
+      events: state.events.filter(publicRecordStaysInsideRelease).slice(0, 30).map(publicWorldEvent),
+      worldTasks: visibleTasks.map(publicWorldTask),
+      worldActivities: activityTasks.slice(0, PUBLIC_LIVE_ACTIVITY_LIMIT).map(publicWorldTask),
+      worldPulse: {
+        activityLimit: PUBLIC_LIVE_ACTIVITY_LIMIT,
+        activeCount: Math.min(PUBLIC_LIVE_ACTIVITY_LIMIT, activityTasks.length),
+        hiddenBackgroundCount: Math.max(0, backgroundActivityCount - Math.min(PUBLIC_LIVE_ACTIVITY_LIMIT, activityTasks.length)),
+        aftermaths: Object.keys(state.liveRegions || {})
+          .filter(siteId => siteVisibleOnPublicGlobalMap(state.sites?.[siteId]))
+          .map(siteId => liveRegionForSite(state.sites?.[siteId]))
+          .filter(region => region?.aftermath)
+          .sort((left, right) => Number(right.aftermath?.startedHour || 0) - Number(left.aftermath?.startedHour || 0))
+          .slice(0, 8)
+      },
       stats: state.stats
     };
   }
@@ -11309,41 +13309,16 @@ function createWastelandSimulation(options = {}) {
       .filter(Boolean))]
       .slice(0, 300);
     if (!orderedIds.length) return [];
-    const currentPublic = new Map(publicState().worldTasks.map(task => [String(task?.id || ''), task]));
+    cleanupWorldZonesForSingleReality();
     const allTasks = [
       ...(Array.isArray(state.worldTasks) ? state.worldTasks : []),
       ...(Array.isArray(state.worldTaskHistory) ? state.worldTaskHistory : [])
     ];
     const rawById = new Map(allTasks.map(task => [String(task?.id || ''), task]));
-    return orderedIds.map(id => {
-      if (currentPublic.has(id)) return currentPublic.get(id);
-      const task = rawById.get(id);
-      if (!task) return null;
-      const target = task.siteId ? state.sites[task.siteId] : null;
-      const targetParty = task.partyId ? state.parties[task.partyId] : null;
-      const issuerId = worldTaskIssuerSiteId(task.type || '', target, task);
-      const issuer = issuerId ? state.sites[issuerId] : null;
-      const targetPoint = normalizeWorldPoint(task.details || {});
-      const taskZone = String(task.type || '') === 'clear_lair'
-        ? worldZoneById(task.details?.worldZoneId || task.worldZoneId || '')
-        : null;
-      const targetLocationId = String(taskZone
-        ? worldZoneLocationId(taskZone)
-        : (task.details?.locationId || target?.locationId || '')).slice(0, 80);
-      return {
-        ...task,
-        details: publicWorldTaskDetails(task),
-        issuerSiteId: issuerId,
-        issuerSiteName: issuer?.name || '',
-        targetSiteName: target?.name || '',
-        targetPartyName: targetParty?.name || '',
-        targetX: targetPoint ? Number(targetPoint.x.toFixed(2)) : undefined,
-        targetY: targetPoint ? Number(targetPoint.y.toFixed(2)) : undefined,
-        targetLocationId,
-        targetPartyKind: targetParty?.kind || '',
-        targetPartyDestroyed: !!targetParty?.destroyed
-      };
-    }).filter(Boolean);
+    return orderedIds
+      .map(id => rawById.get(id))
+      .filter(Boolean)
+      .map(publicWorldTask);
   }
 
   function recordWorldTaskPlayerTransfer(taskId = '', playerIds = []) {
@@ -11493,6 +13468,7 @@ function createWastelandSimulation(options = {}) {
 
   syncGlobalMap(getGlobalMap());
   expireWorldTasks();
+  repairSiteActivityLocationIds();
   ensureResourceExpeditionTasks();
   ensureReconExpeditionTasks();
   ensureOutpostDefenseTasks();
@@ -11506,6 +13482,7 @@ function createWastelandSimulation(options = {}) {
     reset,
     publicState,
     publicWorldTasks,
+    isWorldTaskInPublicRelease: worldTaskIsInPublicRelease,
     recordWorldTaskPlayerTransfer,
     syncGlobalMap,
     applyTraderSupply,
@@ -11529,6 +13506,7 @@ function createWastelandSimulation(options = {}) {
     completeWorldTaskDelivery,
     completeWorldActivityTask,
     failWorldActivityTask,
+    syncWorldActivityProgress,
     joinWorldParty,
     leaveWorldParty,
     reconcileWorldPartyMembers,

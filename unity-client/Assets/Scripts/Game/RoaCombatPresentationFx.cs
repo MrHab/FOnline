@@ -40,6 +40,8 @@ namespace RealmOfAshes.Game
             public GameObject Root;
             public Renderer Core;
             public Material CoreMaterial;
+            public Renderer Dust;
+            public Material DustMaterial;
             public LineRenderer[] Sparks;
             public Material SparkMaterial;
             public Vector3[] Velocities;
@@ -92,12 +94,33 @@ namespace RealmOfAshes.Game
         private Texture2D _damageVignette;
         private float _damageStarted = -10f;
         private float _damageStrength;
+        private float _lastConfirmationImpulseAt = -10f;
         private uint _variation = 0x7a4f31c9u;
 
         public int ActiveTracerCount { get { return CountTracers(); } }
         public int ActiveFlashCount { get { return CountFlashes(); } }
         public int ActiveImpactCount { get { return CountImpacts(); } }
         public int ActiveExplosionCount { get { return _explosions.Count; } }
+
+        public static float ConfirmationImpulse(bool critical, bool killed, float distance)
+        {
+            if (distance >= 18f) return 0f;
+            float proximity = 1f - Mathf.InverseLerp(5f, 18f, Mathf.Max(0f, distance));
+            float baseStrength = killed ? 0.052f : critical ? 0.036f : 0.020f;
+            return baseStrength * Mathf.Lerp(0.48f, 1f, proximity);
+        }
+
+        public static Color ConfirmedImpactColor(string weaponId, bool critical, bool killed)
+        {
+            if (killed) return new Color(0.92f, 0.16f, 0.08f);
+            if (weaponId == "laserPistol") return new Color(0.26f, 0.92f, 1f);
+            if (weaponId == "plasmaRifle") return new Color(0.42f, 1f, 0.36f);
+            if (weaponId == "flamethrower") return new Color(1f, 0.46f, 0.08f);
+            if (critical) return new Color(1f, 0.78f, 0.18f);
+            if (RoaMeleeGrip.IsMelee(weaponId) || weaponId == "fists")
+                return new Color(0.92f, 0.24f, 0.18f);
+            return new Color(1f, 0.48f, 0.30f);
+        }
 
         private void Awake()
         {
@@ -118,8 +141,15 @@ namespace RealmOfAshes.Game
         {
             DestroyPools();
             DestroyDamageCanvas();
-            if (_muzzleMesh != null) Destroy(_muzzleMesh);
-            if (_damageVignette != null) Destroy(_damageVignette);
+            DestroyOwnedObject(_muzzleMesh);
+            DestroyOwnedObject(_damageVignette);
+        }
+
+        private static void DestroyOwnedObject(UnityEngine.Object ownedObject)
+        {
+            if (ownedObject == null) return;
+            if (Application.isPlaying) UnityEngine.Object.Destroy(ownedObject);
+            else UnityEngine.Object.DestroyImmediate(ownedObject);
         }
 
         public void PlayShot(Vector3 start, Vector3 end, string weaponId,
@@ -198,9 +228,7 @@ namespace RealmOfAshes.Game
             ImpactFx impact = AcquireImpact();
             impact.Root.transform.position = new Vector3(
                 target.x, Mathf.Max(0.88f, target.y + 1.02f), target.z);
-            impact.Color = killed
-                ? new Color(1f, 0.28f, 0.12f)
-                : critical ? new Color(1f, 0.78f, 0.18f) : new Color(1f, 0.48f, 0.30f);
+            impact.Color = ConfirmedImpactColor(weaponId, critical, killed);
             impact.Started = Time.unscaledTime;
             impact.Life = killed ? 0.46f : critical ? 0.39f : 0.32f;
             impact.Scale = killed ? 1.6f : critical ? 1.35f : 1.16f;
@@ -209,6 +237,18 @@ namespace RealmOfAshes.Game
             impact.Root.SetActive(true);
             ConfigureImpact(impact, direction, weaponId);
             UpdateImpact(impact, 0f);
+
+            if (CameraRig != null && CameraRig.Target != null
+                && Time.unscaledTime - _lastConfirmationImpulseAt >= 0.045f)
+            {
+                float impulse = ConfirmationImpulse(critical, killed,
+                    Vector3.Distance(CameraRig.Target.position, target));
+                if (impulse > 0.0001f)
+                {
+                    CameraRig.AddImpulse(impulse);
+                    _lastConfirmationImpulseAt = Time.unscaledTime;
+                }
+            }
         }
 
         public void PlayExplosion(Vector3 center, float radius)

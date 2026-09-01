@@ -199,6 +199,7 @@ namespace RealmOfAshes.Game
                 + (string.IsNullOrEmpty(player.Name) ? player.Id : player.Name)
                 + "; в комнате: " + _remotes.Count);
             _ = LoadRemoteVisuals(remote);
+            if (player.Downed) view.SetDead(true);
             if (player.Dead || player.Hp <= 0) BeginRemoteDeath(player.Id, Time.unscaledTime);
         }
 
@@ -216,6 +217,7 @@ namespace RealmOfAshes.Game
                 if (_remotes.TryGetValue(player.Id, out Remote remote))
                 {
                     remote.Player = player;
+                    if (remote.View != null) remote.View.SetDead(player.Downed);
                     if (remote.View != null) remote.View.SetInjuries(player.Injuries);
                     if (remote.View != null && remote.View.Ready) _ = ApplyRemoteEquipment(remote);
                 }
@@ -254,7 +256,7 @@ namespace RealmOfAshes.Game
 
             foreach (Remote remote in _remotes.Values)
             {
-                if (remote?.Root == null || remote.Player == null || remote.Player.Dead) continue;
+                if (remote?.Root == null || remote.Player == null || remote.Player.Dead || remote.Player.Downed) continue;
                 Vector3 delta = remote.Root.transform.position - origin;
                 delta.y = 0f;
                 float sqr = delta.sqrMagnitude;
@@ -263,6 +265,24 @@ namespace RealmOfAshes.Game
                 distance = Mathf.Sqrt(sqr);
             }
 
+            return player != null;
+        }
+
+        public bool TryGetNearestDowned(Vector3 origin, float maxDistance, out PublicPlayer player, out float distance)
+        {
+            player = null;
+            distance = float.PositiveInfinity;
+            float maxSqr = maxDistance * maxDistance;
+            foreach (Remote remote in _remotes.Values)
+            {
+                if (remote?.Root == null || remote.Player == null || !remote.Player.Downed) continue;
+                Vector3 delta = remote.Root.transform.position - origin;
+                delta.y = 0f;
+                float sqr = delta.sqrMagnitude;
+                if (sqr > maxSqr || sqr >= distance * distance) continue;
+                player = remote.Player;
+                distance = Mathf.Sqrt(sqr);
+            }
             return player != null;
         }
 
@@ -277,7 +297,7 @@ namespace RealmOfAshes.Game
 
             foreach (Remote remote in _remotes.Values)
             {
-                if (remote?.Root == null || remote.Player == null || remote.Player.Dead) continue;
+                if (remote?.Root == null || remote.Player == null || remote.Player.Dead || remote.Player.Downed) continue;
                 if (remote.Gate != null && !remote.Gate.IsVisible) continue;
                 Vector3 delta = remote.Root.transform.position - worldPoint;
                 delta.y = 0f;
@@ -300,7 +320,7 @@ namespace RealmOfAshes.Game
             rayDistance = float.PositiveInfinity;
             foreach (Remote remote in _remotes.Values)
             {
-                if (remote?.Root == null || remote.Player == null || remote.Player.Dead) continue;
+                if (remote?.Root == null || remote.Player == null || remote.Player.Dead || remote.Player.Downed) continue;
                 if (remote.Gate != null && !remote.Gate.IsVisible) continue;
                 float distance;
                 if (!RoaEnemies.RayHitsModel(remote.Root, ray, out distance) || distance >= rayDistance) continue;
@@ -332,7 +352,7 @@ namespace RealmOfAshes.Game
             float bestProjection = maxDistance + 0.45f;
             foreach (Remote remote in _remotes.Values)
             {
-                if (remote?.Root == null || remote.Player == null || remote.Player.Dead) continue;
+                if (remote?.Root == null || remote.Player == null || remote.Player.Dead || remote.Player.Downed) continue;
                 if (remote.Gate != null && !remote.Gate.IsVisible) continue;
 
                 Vector3 delta = remote.Root.transform.position - origin;
@@ -357,6 +377,7 @@ namespace RealmOfAshes.Game
             if (player == null || string.IsNullOrEmpty(player.Id)) return;
             if (!_remotes.TryGetValue(player.Id, out Remote remote)) return;
             remote.Player = player;
+            if (remote.View != null) remote.View.SetDead(player.Downed);
             if (remote.View != null) remote.View.SetInjuries(player.Injuries);
             if (remote.View != null && remote.View.Ready) _ = ApplyRemoteEquipment(remote);
             if (player.Dead || player.Hp <= 0) BeginRemoteDeath(player.Id, Time.unscaledTime);
@@ -381,10 +402,34 @@ namespace RealmOfAshes.Game
         private void HandlePlayerDamaged(JObject payload)
         {
             string id = payload?["playerId"]?.ToString() ?? payload?["targetId"]?.ToString();
+            int damage = Mathf.Max(0,
+                Mathf.RoundToInt(payload?["damage"]?.ToObject<float>() ?? 0f));
+            bool critical = payload?["critical"]?.ToObject<bool>() == true;
+            bool hasSource = TryDamageSource(payload, out Vector3 source);
+            bool downed = payload?["downed"]?.ToObject<bool>() == true;
+            if (downed)
+            {
+                if (!string.IsNullOrEmpty(id) && _remotes.TryGetValue(id, out Remote wounded)
+                    && wounded.View != null && hasSource)
+                    wounded.View.PrepareDeath(source);
+                ApplyVitals(payload);
+                if (!string.IsNullOrEmpty(id) && _remotes.TryGetValue(id, out wounded))
+                {
+                    wounded.Moving = false;
+                    wounded.PresentationMoving = false;
+                    wounded.Velocity = Vector3.zero;
+                    wounded.PresentationVelocity = Vector3.zero;
+                    wounded.View?.SetDead(true);
+                }
+                return;
+            }
             bool fatal = payload?["killed"]?.ToObject<bool>() == true
                 || (payload?["hp"] != null && payload["hp"].ToObject<int>() <= 0);
             if (fatal)
             {
+                if (!string.IsNullOrEmpty(id) && _remotes.TryGetValue(id, out Remote killed)
+                    && killed.View != null && hasSource)
+                    killed.View.PrepareDeath(source);
                 ApplyVitals(payload);
                 BeginRemoteDeath(id, Time.unscaledTime);
                 return;
@@ -392,11 +437,7 @@ namespace RealmOfAshes.Game
             if (!string.IsNullOrEmpty(id)
                 && _remotes.TryGetValue(id, out Remote remote) && remote.View != null)
             {
-                int damage = Mathf.Max(0,
-                    Mathf.RoundToInt(payload["damage"]?.ToObject<float>() ?? 0f));
-                bool critical = payload["critical"]?.ToObject<bool>() == true;
-                if (TryDamageSource(payload, out Vector3 source))
-                    remote.View.PlayHit(source, damage, critical);
+                if (hasSource) remote.View.PlayHit(source, damage, critical);
                 else remote.View.PlayHit();
             }
             ApplyVitals(payload);
@@ -435,6 +476,11 @@ namespace RealmOfAshes.Game
             if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote) || remote.Player == null) return;
             if (payload["hp"] != null) remote.Player.Hp = payload["hp"].ToObject<int>();
             if (payload["maxHp"] != null) remote.Player.MaxHp = payload["maxHp"].ToObject<int>();
+            if (payload["downed"] != null)
+            {
+                remote.Player.Downed = payload["downed"].ToObject<bool>();
+                if (remote.View != null) remote.View.SetDead(remote.Player.Downed);
+            }
             if (payload["injuries"] is JObject injuries)
             {
                 remote.Player.Injuries = (JObject)injuries.DeepClone();

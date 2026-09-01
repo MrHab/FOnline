@@ -12,7 +12,7 @@ namespace RealmOfAshes.EditorTools
         private const string MenuPath = "Realm of Ashes/Проверить мобильное управление";
 
         [MenuItem(MenuPath)]
-        private static void Run()
+        public static void Run()
         {
             try
             {
@@ -96,7 +96,10 @@ namespace RealmOfAshes.EditorTools
                 controls.ForceVisible = true;
                 controls.CanvasDriven = true;
                 int menuRequests = 0;
+                int pingRequests = 0;
                 controls.MenuRequested = () => menuRequests++;
+                controls.PingRequested = () => pingRequests++;
+                controls.PingAvailable = true;
                 RoaMobileControlsCanvas canvas = root.AddComponent<RoaMobileControlsCanvas>();
                 canvas.Configure(controls);
                 var state = new RoaMobileControlsCanvas.Presentation
@@ -104,6 +107,7 @@ namespace RealmOfAshes.EditorTools
                     Visible = true,
                     TargetSelected = true,
                     Crouching = true,
+                    PingAvailable = true,
                     FireMode = "Одиночный",
                     JoystickActive = true,
                     JoystickBase = new Vector2(220f, 108f),
@@ -117,8 +121,9 @@ namespace RealmOfAshes.EditorTools
                         "mobile uGUI Canvas, touch targets or joystick visual is incomplete");
                 Require(canvas.ButtonLabel("Target") == "ЦЕЛЬ ✓"
                         && canvas.ButtonLabel("Crouch") == "ВСТАТЬ"
-                        && canvas.ButtonLabel("Mode") == "ОДИНОЧНЫЙ",
-                        "mobile Canvas does not reflect live target, stance or fire mode");
+                        && canvas.ButtonLabel("Mode") == "ОДИНОЧНЫЙ"
+                        && canvas.ButtonLabel("Player") == "МЕТКА",
+                        "mobile Canvas does not reflect live target, stance, ping or fire mode");
                 Require(canvas.TryGetButtonScreenRect("Fire", out Rect fireRect)
                         && RectNear(fireRect, layout.Fire),
                         "mobile Canvas fire visual differs from its touch layout");
@@ -130,6 +135,8 @@ namespace RealmOfAshes.EditorTools
                         "mobile Canvas pointer-up does not stop held fire");
                 Require(canvas.SimulateClickForProbe("Menu") && menuRequests == 1,
                         "mobile Canvas menu button is not connected to gameplay control");
+                Require(canvas.SimulateClickForProbe("Player") && pingRequests == 1,
+                        "mobile contextual player button does not open activity pings");
 
                 state.InputSuppressed = true;
                 state.JoystickActive = true;

@@ -8,4 +8,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Wasteland.unity
     guid: 555cf56d23c7c2e418ade77f6275210d
+  - enabled: 1
+    path: Assets/Scenes/GlobalMapAuthored.unity
+    guid: 3e125b761d3cee84fb68023ce64ec27d
+  - enabled: 1
+    path: Assets/Scenes/Locations/OldKlimCaravan.unity
+    guid: 93e2cd9c0da765a4382c8ad2795e9b49
   m_configObjects: {}

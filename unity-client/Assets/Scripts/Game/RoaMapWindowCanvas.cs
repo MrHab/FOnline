@@ -246,6 +246,8 @@ namespace RealmOfAshes.Game
                     image.color = new Color(0.898f, 0.710f, 0.345f); size = 10f; break;
                 case RoaMinimap.MarkerKind.Objective:
                     image.color = new Color(0.95f, 0.78f, 0.25f); size = 15f; break;
+                case RoaMinimap.MarkerKind.Threat:
+                    image.color = new Color(0.96f, 0.24f, 0.16f); size = 19f; break;
                 case RoaMinimap.MarkerKind.Extraction:
                     image.color = new Color(0.42f, 0.82f, 0.40f); size = 17f; break;
                 default:

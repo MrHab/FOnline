@@ -1,0 +1,10 @@
+{
+  "name": "com.realmofashes.models",
+  "version": "7.76.6",
+  "displayName": "Realm of Ashes 3D Models",
+  "description": "Authoritative GLB source models shared by the browser and Unity clients.",
+  "unity": "6000.0",
+  "author": {
+    "name": "Realm of Ashes"
+  }
+}

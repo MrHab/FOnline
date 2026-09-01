@@ -19,6 +19,7 @@ namespace RealmOfAshes.EditorTools
             GameObject rig = null;
             GameObject flightRig = null;
             GameObject staleLockRig = null;
+            GameObject actionGuardRig = null;
             GameObject pointBlankRig = null;
             GameObject pointBlankActor = null;
             GameObject pointBlankPlayer = null;
@@ -137,6 +138,28 @@ namespace RealmOfAshes.EditorTools
                     "устаревший замок вытянул ногу за персонажем: extension="
                     + staleExtension.ToString("F3") + ", xz=" + staleHorizontal.ToString("F3"));
 
+                // Full-body combat clips release ordinary gait locks. Recreate a
+                // single-leg spike from an authored hurt frame and verify that the
+                // action guard preserves the weight shift without folding the foot
+                // up toward the pelvis.
+                actionGuardRig = new GameObject("ActionFootGuardRig");
+                actionGuardRig.transform.position = new Vector3(1.1f, 0f, 1.1f);
+                GameObject actionModel = Node(actionGuardRig.transform,
+                    "character_root", Vector3.zero);
+                Transform actionLeft = Leg(actionModel.transform, "l", -0.20f);
+                Transform actionRight = Leg(actionModel.transform, "r", 0.20f);
+                var actionIk = new RoaFootIk();
+                actionIk.Bind(actionGuardRig.transform, actionModel.transform);
+                actionLeft.parent.localRotation = Quaternion.Euler(110f, 0f, 0f);
+                Physics.SyncTransforms();
+                actionIk.StabilizeAction(1f / 60f, false, "hurt", 0.04f);
+                float actionHighest = Mathf.Max(actionLeft.position.y, actionRight.position.y);
+                float actionSplit = Mathf.Abs(actionLeft.position.y - actionRight.position.y);
+                Require(actionIk.Suspended && actionIk.ActionSafetyActive
+                        && actionHighest < 0.33f && actionSplit < 0.22f,
+                    "защитный контур hurt-клипа не удержал ногу: max="
+                    + actionHighest.ToString("F3") + ", split=" + actionSplit.ToString("F3"));
+
                 // Reproduce the reported melee overlap: another actor's lower-body
                 // collider sits directly above one foot. It must never become a step.
                 pointBlankRig = new GameObject("PointBlankFootRig");
@@ -190,6 +213,7 @@ namespace RealmOfAshes.EditorTools
 
                 Debug.Log("[КОНТАКТ С ЗЕМЛЁЙ] готово: IK 2 пробы, ступень="
                     + (rightFoot.position.y - leftFoot.position.y).ToString("F2")
+                    + " м, action=" + actionHighest.ToString("F2")
                     + " м, LOD=" + RoaFootIk.MaxDistance(false) + "/" + RoaFootIk.MaxDistance(true) + " м");
             }
             finally
@@ -201,6 +225,7 @@ namespace RealmOfAshes.EditorTools
                 Destroy(rig);
                 Destroy(flightRig);
                 Destroy(staleLockRig);
+                Destroy(actionGuardRig);
                 Destroy(pointBlankRig);
                 Destroy(pointBlankActor);
                 Destroy(pointBlankPlayer);

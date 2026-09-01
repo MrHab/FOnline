@@ -14,6 +14,7 @@ namespace RealmOfAshes.EditorTools
     public static class RoaGroundDressingProbe
     {
         private const string RequestName = "RoaGroundDressingProbe.request";
+        private const string DefaultCaptureName = "WorldReadability44.png";
         private static double _nextRequestCheck;
 
         static RoaGroundDressingProbe()
@@ -51,6 +52,13 @@ namespace RealmOfAshes.EditorTools
                 Require(RoaLocalTerrain.AlbedoResolution(false) == 1024
                         && RoaLocalTerrain.AlbedoResolution(true) == 512,
                     "земля снова потеряла разрешение, необходимое для цельных дорог");
+
+                RoaEnvironmentPalette palette = Resources.Load<RoaEnvironmentPalette>(
+                    RoaEnvironmentPalette.ResourceKey);
+                Require(palette != null && palette.Ready
+                        && palette.DryScrubCount >= 3 && palette.StoneCount >= 4
+                        && palette.GroundAccentCount >= 3 && palette.DistantRidgeCount >= 4,
+                    "curated MEP environment palette is missing or incomplete");
 
                 float macroMin = 1f;
                 float macroMax = 0f;
@@ -100,8 +108,11 @@ namespace RealmOfAshes.EditorTools
                         && terrain.GroundRenderer.sharedMaterial.GetTexture("_DetailAlbedoMap") != null
                         && terrain.GroundRenderer.sharedMaterial.IsKeywordEnabled("_DETAIL_MULX2"),
                     "повторяемая микротекстура земли не подключена");
-                Require(terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 4
-                        && terrain.DetailVertexCount < 10000,
+                Require(terrain.UsesAuthoredEnvironment
+                        && terrain.AuthoredEnvironmentPrefabCount
+                            >= terrain.SurfaceDetailClusterCount + terrain.DistantRidgeCount
+                        && terrain.DetailVertexCount > 500
+                        && terrain.DetailVertexCount < 250000,
                     "геометрический бюджет оформления нарушен: " + terrain.DetailVertexCount);
                 int initialVertices = terrain.DetailVertexCount;
 
@@ -120,43 +131,57 @@ namespace RealmOfAshes.EditorTools
                         && generator.OliveScrubClusterCount > budget / 8,
                     "кустарник потерял один из двух детерминированных тонов: "
                     + generator.DryScrubClusterCount + "/" + generator.OliveScrubClusterCount);
-                Require(RoaGroundDressing.ScrubBladeCount >= 6
-                        && RoaGroundDressing.ScrubLobeCount == 3
-                        && RoaGroundDressing.ScrubToneCount == 2
-                        && RoaGroundDressing.StoneClusterPieceCount >= 4
-                        && terrain.DetailVertexCount > terrain.SurfaceDetailClusterCount * 48,
+                Require(generator.UsesAuthoredPrefabs
+                        && generator.AuthoredPrefabCount
+                            >= generator.SurfaceClusterCount + generator.RidgeCount
+                        && generator.AuthoredRendererCount > generator.AuthoredPrefabCount
+                        && generator.CompatibleMaterialCount > 0
+                        && generator.GroundAccentCount > 0
+                        && generator.GroundAccentCount < generator.SurfaceClusterCount / 2
+                        && generator.MaximumDecorationHeight > 0.9f
+                        && generator.MaximumDecorationHeight < 2.5f,
                     "детали земли остались слишком мелкими или схематичными");
                 Require(generator.MinimumClusterSpacing >= RoaGroundDressing.MinimumSurfaceSpacing - 0.001f,
                     "декоративные группы снова накладываются друг на друга: "
                     + generator.MinimumClusterSpacing.ToString("0.00") + " м");
                 int initialScrubCount = generator.ScrubClusterCount;
                 int initialStoneCount = generator.StoneClusterCount;
+                int initialAuthoredPrefabCount = generator.AuthoredPrefabCount;
+                int initialAuthoredRendererCount = generator.AuthoredRendererCount;
+                int initialGroundAccentCount = generator.GroundAccentCount;
+                int initialAuthoredVertexCount = generator.VertexCount;
 
                 Transform dressing = host.transform.Find("GroundDressing");
                 Require(dressing != null, "корень GroundDressing не создан");
                 Require(dressing.GetComponentsInChildren<Collider>(true).Length == 0,
                     "визуальное оформление добавило игровой коллайдер");
                 MeshRenderer[] renderers = dressing.GetComponentsInChildren<MeshRenderer>(true);
-                Require(renderers.Length == 2
+                int shadowCasters = Array.FindAll(renderers,
+                    renderer => renderer.shadowCastingMode == ShadowCastingMode.On).Length;
+                Require(renderers.Length == generator.AuthoredRendererCount
+                        && renderers.Length > generator.AuthoredPrefabCount
                         && Array.TrueForAll(renderers, renderer => renderer.sharedMaterial != null
-                            && renderer.shadowCastingMode == ShadowCastingMode.Off),
+                            && renderer.shadowCastingMode != ShadowCastingMode.ShadowsOnly
+                            && Array.TrueForAll(renderer.sharedMaterials, material => material != null
+                                && material.shader != null
+                                && material.shader.name.StartsWith("Universal Render Pipeline/",
+                                    StringComparison.Ordinal)))
+                        && shadowCasters == generator.AuthoredShadowCasterCount
+                        && shadowCasters > 0 && shadowCasters < renderers.Length / 2,
                     "ожидались отдельные материалы кустарника и камней");
                 MeshRenderer scrubRenderer = Array.Find(renderers, renderer => renderer.name == "Scrub");
                 MeshRenderer stoneRenderer = Array.Find(renderers,
                     renderer => renderer.name == "StonesAndDistantRidge");
-                Require(scrubRenderer != null && stoneRenderer != null
-                        && scrubRenderer.sharedMaterial.color.r > 0.35f
-                        && stoneRenderer.sharedMaterial.color.r > 0.44f
-                        && scrubRenderer.GetComponent<MeshFilter>().sharedMesh.bounds.max.y < 0.52f
-                        && scrubRenderer.sharedMaterial.shader.name.Contains("Unlit"),
+                Require(scrubRenderer == null && stoneRenderer == null
+                        && generator.UsesAuthoredPrefabs
+                        && generator.AuthoredPrefabCount >= budget / 2,
                     "декор земли снова сливается в почти чёрные точки или вырос выше щиколотки");
-                Material[] scrubMaterials = scrubRenderer.sharedMaterials;
-                Require(scrubMaterials.Length == RoaGroundDressing.ScrubToneCount
-                        && scrubRenderer.GetComponent<MeshFilter>().sharedMesh.subMeshCount
-                            == RoaGroundDressing.ScrubToneCount
+                Material[] scrubMaterials = renderers[0].sharedMaterials;
+                Require(scrubMaterials.Length > 0
                         && Array.TrueForAll(scrubMaterials, material => material != null
-                            && material.shader.name.Contains("Unlit"))
-                        && Mathf.Abs(scrubMaterials[0].color.r - scrubMaterials[1].color.r) > 0.10f,
+                            && !material.name.StartsWith("RuntimeGround", StringComparison.Ordinal))
+                        && Array.Exists(renderers, renderer => renderer.sharedMaterial != null
+                            && !renderer.sharedMaterial.shader.name.Contains("Unlit")),
                     "сухой и оливковый кустарник снова слились в один повторяемый материал");
 
                 GameObject dressingObject = dressing.gameObject;
@@ -174,6 +199,13 @@ namespace RealmOfAshes.EditorTools
                 settlementHost = new GameObject("Settlement dressing probe");
                 RoaLocalTerrain settlement = settlementHost.AddComponent<RoaLocalTerrain>();
                 settlement.Initialize(Location("settlement", 38, 38, 9961L), null);
+                Require(settlement.UsesAuthoredEnvironment
+                        && settlement.AuthoredEnvironmentPrefabCount > 0,
+                    "settlement did not use the authored MEP environment palette");
+                Debug.Log("[WORLD READABILITY 4.4] authored MEP dressing: prefabs="
+                    + initialAuthoredPrefabCount + ", renderers=" + initialAuthoredRendererCount
+                    + ", accents=" + initialGroundAccentCount + ", unique vertices="
+                    + initialAuthoredVertexCount);
                 Require(settlement.SurfaceDetailClusterCount > 0,
                     "авторское поселение без tile-снимка осталось полностью пустым");
 
@@ -241,7 +273,14 @@ namespace RealmOfAshes.EditorTools
         private static void CaptureIfRequested(GameObject host)
         {
             string path = Environment.GetEnvironmentVariable("ROA_GROUND_DRESSING_CAPTURE");
-            if (string.IsNullOrWhiteSpace(path)) return;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                string projectRoot = Directory.GetParent(Application.dataPath)?.FullName;
+                path = Path.Combine(projectRoot ?? Application.dataPath, "Library", "RealmOfAshes",
+                    DefaultCaptureName);
+            }
+            string captureDirectory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(captureDirectory)) Directory.CreateDirectory(captureDirectory);
 
             RenderTexture previous = RenderTexture.active;
             RenderTexture target = null;
@@ -253,13 +292,13 @@ namespace RealmOfAshes.EditorTools
             try
             {
                 RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = new Color(0.42f, 0.38f, 0.30f);
+                RenderSettings.ambientLight = new Color(0.20f, 0.18f, 0.14f);
 
                 lightObject = new GameObject("GroundDressingCaptureLight");
                 Light light = lightObject.AddComponent<Light>();
                 light.type = LightType.Directional;
                 light.color = new Color(1f, 0.82f, 0.61f);
-                light.intensity = 1.2f;
+                light.intensity = 0.85f;
                 light.shadows = LightShadows.Soft;
                 lightObject.transform.rotation = Quaternion.Euler(48f, -32f, 0f);
 
@@ -295,9 +334,16 @@ namespace RealmOfAshes.EditorTools
                 readback = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false);
                 readback.ReadPixels(new Rect(0f, 0f, target.width, target.height), 0, 0);
                 readback.Apply(false, false);
-                float darkRatio = DarkPixelRatio(readback.GetPixels32());
+                Color32[] pixels = readback.GetPixels32();
+                float darkRatio = DarkPixelRatio(pixels);
+                float magentaRatio = MagentaPixelRatio(pixels);
+                float brightRatio = BrightPixelRatio(pixels);
                 Require(darkRatio < 0.0075f,
                     "кадр снова провалился в чёрные пятна: " + darkRatio.ToString("0.0000"));
+                Require(magentaRatio < 0.0001f,
+                    "MEP materials are rendered magenta: " + magentaRatio.ToString("0.0000"));
+                Require(brightRatio < 0.18f,
+                    "controlled environment capture is overexposed: " + brightRatio.ToString("0.0000"));
                 File.WriteAllBytes(path, readback.EncodeToPNG());
                 Debug.Log("[ОФОРМЛЕНИЕ ЗЕМЛИ] доля почти чёрных пикселей: "
                     + darkRatio.ToString("0.0000"));
@@ -330,6 +376,31 @@ namespace RealmOfAshes.EditorTools
                 if (luminance < 0.20f) dark++;
             }
             return dark / (float)pixels.Length;
+        }
+
+        public static float MagentaPixelRatio(Color32[] pixels)
+        {
+            if (pixels == null || pixels.Length == 0) return 0f;
+            int magenta = 0;
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                Color32 pixel = pixels[i];
+                if (pixel.r > 220 && pixel.b > 220 && pixel.g < 80) magenta++;
+            }
+            return magenta / (float)pixels.Length;
+        }
+
+        public static float BrightPixelRatio(Color32[] pixels)
+        {
+            if (pixels == null || pixels.Length == 0) return 0f;
+            int bright = 0;
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                Color32 pixel = pixels[i];
+                float luminance = (0.2126f * pixel.r + 0.7152f * pixel.g + 0.0722f * pixel.b) / 255f;
+                if (luminance > 0.90f) bright++;
+            }
+            return bright / (float)pixels.Length;
         }
 
         private static void Require(bool condition, string message)

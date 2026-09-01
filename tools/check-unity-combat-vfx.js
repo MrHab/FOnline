@@ -179,7 +179,8 @@ assert(collisionProbe.includes('RoaWeaponView.FireBlockThreshold')
   && collisionProbe.includes('RoaWeaponView.RecoilEnvelope(RoaWeaponView.RecoilPeakSeconds)'),
   'Weapon collision probe does not verify the fire interlock, contact and recoil envelopes');
 assert(character.includes('_weapon != null && _weapon.Ready')
-  && character.includes('_weapon.PlayAttack();')
+  && character.includes('_weapon.PlayAttack(meleeSwingSeconds);')
+  && character.includes('public void PlayAttack(float meleeSwingSeconds)')
   && character.includes('_attackUntil = 0f;')
   && weapon.includes('public static float RecoilEnvelope(float elapsed)')
   && weapon.includes('private void ApplyFirearmRecoil()')

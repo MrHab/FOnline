@@ -15,6 +15,8 @@ namespace RealmOfAshes.Game
     {
         private static readonly string[] Kinds =
         {
+            "patrol_mission",
+            "join_patrol",
             "escort_caravan",
             "distress_signal",
             "recon_expedition",
@@ -44,8 +46,10 @@ namespace RealmOfAshes.Game
         private GameObject _shade;
         private RectTransform _grid;
         private Text _message;
+        private Button _quickJoin;
+        private Text _quickJoinLabel;
         private readonly List<GameObject> _cards = new List<GameObject>();
-        private bool _expanded = true;
+        private bool _expanded;
         private bool _wasVisible;
         private float _refreshAt;
 
@@ -68,6 +72,14 @@ namespace RealmOfAshes.Game
             }
             UpdateHubPresentation();
             UpdateLauncherPresentation();
+            if (_quickJoin != null)
+            {
+                bool quickAvailable = Interaction != null && !Interaction.WorldTaskActionPending && !Map.TravelActive;
+                SetButton(_quickJoin, quickAvailable);
+                if (_quickJoinLabel != null) _quickJoinLabel.text = Interaction != null && Interaction.WorldTaskActionPending
+                    ? "ПОДБИРАЕМ ВЫЛАЗКУ…"
+                    : Map.TravelActive ? "МАРШРУТ УЖЕ ПОСТРОЕН" : "БЫСТРАЯ ВЫЛАЗКА";
+            }
             if (Time.unscaledTime < _refreshAt) return;
             _refreshAt = Time.unscaledTime + 0.75f;
             List<JObject> tasks = CollectPriorityTasks();
@@ -120,10 +132,12 @@ namespace RealmOfAshes.Game
             bool tracked = Interaction != null && Interaction.IsWorldTaskTracked(id);
             double score = accepted ? 2000000d : 0d;
             score += tracked ? 1000000d : 0d;
+            if (ActiveHelpSignal(task) != null) score += 1500000d;
             score += (task?["priority"]?.ToObject<double>() ?? 0d) * 20000d;
             score -= TaskDistance(task) * 120d;
 
-            double now = Map?.WastelandState?["sim"]?["worldHour"]?.ToObject<double>() ?? double.NaN;
+            JObject sim = Map?.WastelandState?["sim"] as JObject;
+            double now = sim?["worldHour"]?.ToObject<double>() ?? double.NaN;
             double expires = task?["expiresHour"]?.ToObject<double>() ?? double.NaN;
             if (!double.IsNaN(now) && !double.IsNaN(expires))
                 score += Math.Max(0d, 8d - Math.Max(0d, expires - now)) * 15000d;
@@ -132,8 +146,9 @@ namespace RealmOfAshes.Game
 
         private float TaskDistance(JObject task)
         {
-            JToken x = task?["targetX"] ?? task?["details"]?["x"];
-            JToken y = task?["targetY"] ?? task?["details"]?["y"];
+            JObject details = task?["details"] as JObject;
+            JToken x = task?["targetX"] ?? details?["x"];
+            JToken y = task?["targetY"] ?? details?["y"];
             if (x == null || y == null || x.Type == JTokenType.Null || y.Type == JTokenType.Null)
                 return 9999f;
             Vector2 point = new Vector2(x.ToObject<float>(), y.ToObject<float>());
@@ -170,17 +185,19 @@ namespace RealmOfAshes.Game
             outline.effectColor = task == null ? new Color(Border.r, Border.g, Border.b, 0.20f) : Border;
             outline.effectDistance = new Vector2(1f, -1f);
             card.GetComponent<LayoutElement>().preferredWidth = 342f;
-            card.GetComponent<LayoutElement>().preferredHeight = 92f;
+            card.GetComponent<LayoutElement>().preferredHeight = 140f;
             RectTransform rect = (RectTransform)card.transform;
 
             Text kicker = Label("Kind", rect, 10, TextAnchor.MiddleLeft, KindColor(kind), FontStyle.Bold);
-            kicker.text = KindLabel(kind).ToUpperInvariant();
+            bool helpRequested = ActiveHelpSignal(task) != null;
+            kicker.text = (helpRequested ? "НУЖНА ПОМОЩЬ · " : string.Empty) + KindLabel(kind).ToUpperInvariant();
+            if (helpRequested) kicker.color = Danger;
             Place(kicker.rectTransform, 10f, -20f, -118f, -5f);
 
             if (task == null)
             {
                 Text empty = Label("Empty", rect, 12, TextAnchor.UpperLeft, Muted);
-                empty.text = "Сейчас подходящей цели нет.\nСигналы обновляются вместе с живым миром.";
+                empty.text = "Сейчас подходящего контракта нет.\nДоска обновляется вместе с живым миром.";
                 empty.horizontalOverflow = HorizontalWrapMode.Wrap;
                 Place(empty.rectTransform, 10f, -58f, -10f, -25f);
                 Text wait = Label("Wait", rect, 10, TextAnchor.MiddleLeft, new Color(Muted.r, Muted.g, Muted.b, 0.65f));
@@ -195,8 +212,12 @@ namespace RealmOfAshes.Game
             bool tracked = Interaction != null && Interaction.IsWorldTaskTracked(id);
             string siteId = task["siteId"]?.ToString() ?? string.Empty;
             string issuerId = task["issuerSiteId"]?.ToString() ?? siteId;
-            string target = task["targetSiteName"]?.ToString() ?? siteId;
-            double worldHour = Map?.WastelandState?["sim"]?["worldHour"]?.ToObject<double>() ?? double.NaN;
+            string target = kind == "escort_caravan"
+                ? task["impactSiteName"]?.ToString() ?? task["targetSiteName"]?.ToString() ?? siteId
+                : task["targetSiteName"]?.ToString() ?? siteId;
+            if (IsPatrolMission(task))
+                target = PatrolOperationTargetName(task, siteId);
+            double worldHour = Map?.WastelandState?["worldHour"]?.ToObject<double>() ?? double.NaN;
             string deadline = RoaActivityHubPresentation.DeadlineLabel(task, worldHour);
             Text deadlineText = Label("Deadline", rect, 10, TextAnchor.MiddleRight,
                 deadline == "истекает" || deadline == "меньше часа" ? Danger : Muted, FontStyle.Bold);
@@ -212,21 +233,37 @@ namespace RealmOfAshes.Game
             details.horizontalOverflow = HorizontalWrapMode.Wrap;
             details.verticalOverflow = VerticalWrapMode.Truncate;
             details.text = target + DistanceText(task) + " · " + RiskLabel(task)
-                + "\n" + GoalText(kind);
-            Place(details.rectTransform, 10f, -65f, -112f, -41f);
+                + "\n" + LiveStageAndCause(task)
+                + "\n" + (IsPatrolMission(task) ? PatrolOperationContext(task) : LiveRegionMetrics(task));
+            Place(details.rectTransform, 10f, -103f, -10f, -41f);
 
             JObject reward = task["reward"] as JObject;
             Text rewardText = Label("Reward", rect, 10, TextAnchor.MiddleLeft, accepted ? Safe : Accent);
-            rewardText.text = (tracked ? "МЕТКА · " : accepted ? "ПРИНЯТО · " : string.Empty)
-                + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP · "
-                + (reward?["caps"]?.ToObject<int>() ?? 0) + " крышек";
-            Place(rewardText.rectTransform, 10f, -87f, -116f, -67f);
+            rewardText.text = kind == "patrol_mission"
+                ? "ВЕДЁТ: " + PatrolOperationLeader(task) + " · СТАТУС ОТРЯДА"
+                : (tracked ? "МЕТКА · " : accepted ? "ПРИНЯТО · " : string.Empty)
+                    + CommunityText(task) + " · "
+                    + (reward?["xp"]?.ToObject<int>() ?? 0) + " XP · "
+                    + (reward?["caps"]?.ToObject<int>() ?? 0) + " крышек";
+            Place(rewardText.rectTransform, 10f, -135f, -116f, -107f);
 
-            string caption = ActionLabel(kind, accepted, siteId, issuerId);
+            string caption = helpRequested && !accepted ? "ПРИЙТИ НА ПОМОЩЬ" : ActionLabel(kind, accepted, siteId, issuerId);
+            bool patrolRouteAvailable = kind != "patrol_mission" || !string.IsNullOrEmpty(WorldTaskTargetSiteId(task));
+            if (!patrolRouteAvailable) caption = "ДВИЖУЩАЯСЯ ЦЕЛЬ";
+            bool patrolJoinAvailable = kind != "join_patrol" || accepted || task["actionMode"]?.ToString() == "join_party";
+            string requiredPatrolFaction = task["joinPartyFaction"]?.ToString() ?? string.Empty;
+            JObject playerState = Interaction != null ? Interaction.TradeSelf : null;
+            string playerFaction = playerState?["worldFactionId"]?.ToString()
+                ?? playerState?["factionId"]?.ToString() ?? string.Empty;
+            bool patrolFactionAvailable = kind != "join_patrol" || accepted
+                || string.IsNullOrEmpty(requiredPatrolFaction) || playerFaction == requiredPatrolFaction;
+            if (kind == "join_patrol" && !accepted && !patrolJoinAvailable) caption = "НЕТ МЕСТ";
+            else if (kind == "join_patrol" && !accepted && !patrolFactionAvailable) caption = "НУЖНА ФРАКЦИЯ";
             bool enabled = Interaction != null && !Interaction.WorldTaskActionPending && !Map.TravelActive
-                && !(kind == "escort_caravan" && accepted);
+                && patrolRouteAvailable && patrolJoinAvailable && patrolFactionAvailable
+                && !((kind == "escort_caravan" || kind == "join_patrol") && accepted);
             Button action = Button(rect, caption, () => Activate(task));
-            Place((RectTransform)action.transform, 232f, -86f, -10f, -61f);
+            Place((RectTransform)action.transform, 232f, -134f, -10f, -107f);
             SetButton(action, enabled);
             _cards.Add(card);
         }
@@ -239,6 +276,12 @@ namespace RealmOfAshes.Game
                 if (accepted) return "В КАРАВАНЕ";
                 return Map.PlayerAtWorldSite(issuerId) ? "ВСТУПИТЬ" : "К СБОРУ";
             }
+            if (kind == "join_patrol")
+            {
+                if (accepted) return "В ПАТРУЛЕ";
+                return Map.PlayerAtWorldSite(issuerId) ? "ВСТУПИТЬ" : "К СБОРУ";
+            }
+            if (kind == "patrol_mission") return "К ЦЕЛИ";
             if (!accepted) return "ВЗЯТЬ И ЕХАТЬ";
             return Map.PlayerAtWorldSite(siteId) ? "ВОЙТИ" : "ЕХАТЬ";
         }
@@ -252,11 +295,19 @@ namespace RealmOfAshes.Game
             string issuerId = task["issuerSiteId"]?.ToString() ?? siteId;
             bool accepted = Interaction.IsWorldTaskAccepted(id);
 
-            if (kind == "escort_caravan" && !accepted && !Map.PlayerAtWorldSite(issuerId))
+            if (kind == "patrol_mission")
+            {
+                TravelTo(task);
+                return;
+            }
+
+            if ((kind == "escort_caravan" || kind == "join_patrol") && !accepted && !Map.PlayerAtWorldSite(issuerId))
             {
                 if (Map.RequestTravelToWorldSite(issuerId))
                 {
-                    SetMessage("Маршрут к месту сбора каравана начат.", Safe);
+                    SetMessage(kind == "escort_caravan"
+                        ? "Маршрут к месту сбора каравана начат."
+                        : "Маршрут к месту сбора патруля начат.", Safe);
                     SetExpanded(false);
                 }
                 else SetMessage("Не удалось построить маршрут к месту сбора.", Danger);
@@ -265,7 +316,9 @@ namespace RealmOfAshes.Game
 
             if (!accepted)
             {
-                SetMessage(kind == "escort_caravan" ? "Записываемся в сопровождение…" : "Принимаем вылазку…", Accent);
+                bool joiningParty = kind == "escort_caravan" || kind == "join_patrol";
+                SetMessage(kind == "escort_caravan" ? "Записываемся в сопровождение…"
+                    : kind == "join_patrol" ? "Присоединяемся к патрулю…" : "Принимаем вылазку…", Accent);
                 Interaction.SubmitWorldTaskAction(id, "accept", ack =>
                 {
                     if (ack?["ok"]?.ToObject<bool>() != true)
@@ -273,8 +326,9 @@ namespace RealmOfAshes.Game
                         SetMessage(ack?["error"]?.ToString() ?? "Активность недоступна.", Danger);
                         return;
                     }
-                    SetMessage(kind == "escort_caravan" ? "Вы в группе каравана." : "Вылазка принята. Маршрут построен.", Safe);
-                    if (kind != "escort_caravan") TravelTo(task);
+                    SetMessage(kind == "escort_caravan" ? "Вы в группе каравана."
+                        : kind == "join_patrol" ? "Вы в группе патруля." : "Вылазка принята. Маршрут построен.", Safe);
+                    if (!joiningParty) TravelTo(task);
                     InvalidateActivityCards();
                 });
                 return;
@@ -293,9 +347,36 @@ namespace RealmOfAshes.Game
             TravelTo(task);
         }
 
+        private void QuickJoin()
+        {
+            if (Interaction == null || Map == null || Interaction.WorldTaskActionPending || Map.TravelActive) return;
+            SetMessage("Сервер ищет срочную вылазку и свободный временный отряд…", Accent);
+            if (!Interaction.SubmitQuickWorldActivity(ack =>
+            {
+                if (ack?["ok"]?.ToObject<bool>() != true)
+                {
+                    SetMessage(ack?["error"]?.ToString() ?? "Подходящая вылазка не найдена.", Danger);
+                    return;
+                }
+                if (ack?["sim"] is JObject sim) Map.ApplyWastelandState(sim);
+                JObject task = ack?["task"] as JObject;
+                if (task == null)
+                {
+                    SetMessage("Вылазка принята, но её точка не найдена на карте.", Danger);
+                    return;
+                }
+                bool rescue = ack?["joinSource"]?.ToString() == "help_signal";
+                SetMessage(rescue
+                    ? "Отряд запросил подкрепление. Строим маршрут к сигналу."
+                    : "Временный отряд найден. Строим маршрут к вылазке.", rescue ? Danger : Safe);
+                TravelTo(task);
+                InvalidateActivityCards();
+            })) SetMessage("Подбор уже выполняется.", Muted);
+        }
+
         private void TravelTo(JObject task)
         {
-            string siteId = task?["siteId"]?.ToString() ?? string.Empty;
+            string siteId = WorldTaskTargetSiteId(task);
             if (string.IsNullOrEmpty(siteId) || !Map.RequestTravelToWorldSite(siteId))
             {
                 SetMessage("Не удалось построить маршрут к этой точке.", Danger);
@@ -329,6 +410,154 @@ namespace RealmOfAshes.Game
             return "низкий риск";
         }
 
+        private static string LiveStageAndCause(JObject task)
+        {
+            JObject details = task?["details"] as JObject;
+            JObject liveEvent = task?["liveEvent"] as JObject ?? details?["liveEvent"] as JObject;
+            JObject operation = WorldTaskOperation(task);
+            JObject help = ActiveHelpSignal(task);
+            if (help != null)
+            {
+                string caller = help["requestedByName"]?.ToString() ?? "Отряд";
+                return "СРОЧНЫЙ ЗАПРОС · " + caller + " ждёт подкрепление";
+            }
+            string stage = liveEvent?["stageLabel"]?.ToString();
+            string cause = liveEvent?["causeLabel"]?.ToString();
+            if (IsPatrolMission(task))
+            {
+                if (string.IsNullOrEmpty(stage)) stage = PatrolPhaseLabel(operation?["phase"]?.ToString());
+                if (string.IsNullOrEmpty(cause)) cause = operation?["goal"]?["summary"]?.ToString();
+                cause = CompactText(cause, 64);
+            }
+            if (string.IsNullOrEmpty(stage)) stage = "Основная фаза";
+            if (string.IsNullOrEmpty(cause)) cause = "Обстановка в районе меняется";
+            return stage + " · причина: " + cause;
+        }
+
+        private static JObject WorldTaskOperation(JObject task)
+        {
+            JObject details = task?["details"] as JObject;
+            return task?["operation"] as JObject ?? details?["operation"] as JObject;
+        }
+
+        private static bool IsPatrolMission(JObject task)
+        {
+            return WorldTaskOperation(task)?["kind"]?.ToString() == "patrol_mission"
+                || task?["type"]?.ToString() == "patrol_mission";
+        }
+
+        private static string PatrolPhaseLabel(string phase)
+        {
+            switch (phase ?? string.Empty)
+            {
+                case "preparing": return "Сбор отряда";
+                case "loading": return "Подготовка";
+                case "traveling": return "Патруль в пути";
+                case "patrolling": return "Патрулирование маршрута";
+                case "holding": return "Удержание позиции";
+                case "engaged": return "Патруль ведёт бой";
+                case "unloading": return "Выполнение задачи";
+                case "returning": return "Патруль возвращается";
+                case "completed": return "Задача выполнена";
+                case "failed": return "Патруль потерян";
+                case "cancelled": return "Операция отменена";
+                default: return "Патруль выполняет задачу";
+            }
+        }
+
+        private static string PatrolOperationContext(JObject task)
+        {
+            JObject operation = WorldTaskOperation(task);
+            string goal = operation?["goal"]?["summary"]?.ToString();
+            return "Цель: " + CompactText(string.IsNullOrEmpty(goal) ? "выполнить приказ фракции" : goal, 68);
+        }
+
+        private static string PatrolOperationLeader(JObject task)
+        {
+            string leader = WorldTaskOperation(task)?["assignment"]?["leaderName"]?.ToString();
+            if (string.IsNullOrEmpty(leader)) leader = "Командир патруля";
+            return leader;
+        }
+
+        private static string CompactText(string value, int limit)
+        {
+            value = value ?? string.Empty;
+            if (limit < 2 || value.Length <= limit) return value;
+            return value.Substring(0, limit - 1).TrimEnd() + "…";
+        }
+
+        private static string WorldTaskTargetSiteId(JObject task)
+        {
+            JObject operation = WorldTaskOperation(task);
+            if (IsPatrolMission(task))
+            {
+                if (operation?["goal"]?["kind"]?.ToString() == "intercept_hostile")
+                    return FirstNonEmpty(operation?["goal"]?["targetSiteId"]?.ToString(),
+                        operation?["destinationSiteId"]?.ToString());
+                return FirstNonEmpty(task?["impactSiteId"]?.ToString(), operation?["goal"]?["targetSiteId"]?.ToString(),
+                    operation?["destinationSiteId"]?.ToString(), task?["siteId"]?.ToString());
+            }
+            return task?["siteId"]?.ToString() ?? string.Empty;
+        }
+
+        private static string PatrolOperationTargetName(JObject task, string fallback)
+        {
+            JObject details = task?["details"] as JObject;
+            JObject operation = WorldTaskOperation(task);
+            if (operation?["goal"]?["kind"]?.ToString() == "intercept_hostile")
+                return FirstNonEmpty(details?["targetPartyName"]?.ToString(), "вражеский отряд");
+            return FirstNonEmpty(task?["impactSiteName"]?.ToString(), task?["targetSiteName"]?.ToString(),
+                WorldTaskTargetSiteId(task), fallback);
+        }
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            if (values == null) return string.Empty;
+            foreach (string value in values)
+                if (!string.IsNullOrEmpty(value)) return value;
+            return string.Empty;
+        }
+
+        private static JObject ActiveHelpSignal(JObject task)
+        {
+            JObject liveEvent = task?["liveEvent"] as JObject;
+            JObject details = task?["details"] as JObject;
+            JObject signal = liveEvent?["helpSignal"] as JObject
+                ?? details?["helpSignal"] as JObject;
+            if (signal == null || signal["active"]?.ToObject<bool>() == false) return null;
+            long expiresAt = signal["expiresAt"]?.ToObject<long>() ?? 0L;
+            return expiresAt <= 0L || expiresAt > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() ? signal : null;
+        }
+
+        private static string LiveRegionMetrics(JObject task)
+        {
+            JObject region = task?["liveRegion"] as JObject;
+            JObject supplyState = region?["supply"] as JObject;
+            JObject securityState = region?["security"] as JObject;
+            JObject influenceState = region?["influence"] as JObject;
+            string supply = supplyState?["label"]?.ToString();
+            string security = securityState?["label"]?.ToString();
+            string influence = influenceState?["label"]?.ToString();
+            if (string.IsNullOrEmpty(supply) && string.IsNullOrEmpty(security) && string.IsNullOrEmpty(influence))
+                return GoalText(task?["type"]?.ToString() ?? string.Empty);
+            return "Снабжение: " + (supply ?? "нет данных")
+                + " · безопасность: " + (security ?? "нет данных")
+                + " · влияние: " + (influence ?? "нет данных");
+        }
+
+        private static string CommunityText(JObject task)
+        {
+            JObject liveEvent = task?["liveEvent"] as JObject;
+            JObject details = task?["details"] as JObject;
+            JObject detailsLiveEvent = details?["liveEvent"] as JObject;
+            JObject community = liveEvent?["community"] as JObject
+                ?? detailsLiveEvent?["community"] as JObject;
+            int progress = community?["progress"]?.ToObject<int>() ?? 0;
+            int goal = Mathf.Max(1, community?["goal"]?.ToObject<int>() ?? 1);
+            int participants = Mathf.Max(0, community?["participantCount"]?.ToObject<int>() ?? 0);
+            return "ВКЛАД " + progress + "/" + goal + (participants > 0 ? " · " + participants + " чел." : string.Empty);
+        }
+
         private void SetMessage(string value, Color color)
         {
             if (_message == null) return;
@@ -357,7 +586,7 @@ namespace RealmOfAshes.Game
             _launcher.GetComponent<Outline>().effectColor = Border;
             _launcher.GetComponent<Button>().onClick.AddListener(() => SetExpanded(true));
             Text launcherLabel = Label("Label", launcher, 12, TextAnchor.MiddleCenter, Accent, FontStyle.Bold);
-            launcherLabel.text = "СИГНАЛЫ ПУСТОШИ";
+            launcherLabel.text = "КОНТРАКТЫ ПУСТОШИ";
             Stretch(launcherLabel.rectTransform, 2f);
 
             _shade = new GameObject("ActivityHubShade", typeof(RectTransform), typeof(Image));
@@ -376,7 +605,7 @@ namespace RealmOfAshes.Game
             root.anchorMin = root.anchorMax = new Vector2(0f, 1f);
             root.pivot = new Vector2(0f, 1f);
             root.anchoredPosition = new Vector2(18f, -64f);
-            root.sizeDelta = new Vector2(370f, 414f);
+            root.sizeDelta = new Vector2(370f, 558f);
             _root.GetComponent<Image>().color = PanelBg;
             _root.GetComponent<Outline>().effectColor = Border;
 
@@ -384,26 +613,31 @@ namespace RealmOfAshes.Game
             title.text = "СЕЙЧАС РЯДОМ";
             Place(title.rectTransform, 14f, -35f, -54f, -8f);
             Text subtitle = Label("Subtitle", root, 11, TextAnchor.MiddleLeft, Muted);
-            subtitle.text = "Три приоритетных сигнала живого мира";
+            subtitle.text = "Три приоритетных контракта живого мира";
             Place(subtitle.rectTransform, 14f, -57f, -54f, -37f);
 
             Button close = Button(root, "×", () => SetExpanded(false));
             Place((RectTransform)close.transform, 329f, -40f, -10f, -10f);
 
+            _quickJoin = Button(root, "БЫСТРАЯ ВЫЛАЗКА", QuickJoin);
+            Place((RectTransform)_quickJoin.transform, 14f, -104f, -14f, -67f);
+            _quickJoinLabel = _quickJoin.transform.Find("Label")?.GetComponent<Text>();
+            _quickJoin.GetComponent<Outline>().effectColor = Safe;
+
             var gridGo = new GameObject("ActivityGrid", typeof(RectTransform), typeof(GridLayoutGroup));
             _grid = (RectTransform)gridGo.transform;
             _grid.SetParent(root, false);
-            Place(_grid, 14f, -358f, -14f, -68f);
+            Place(_grid, 14f, -480f, -14f, -118f);
             GridLayoutGroup grid = gridGo.GetComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(342f, 92f);
+            grid.cellSize = new Vector2(342f, 116f);
             grid.spacing = new Vector2(0f, 7f);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 1;
             grid.startAxis = GridLayoutGroup.Axis.Horizontal;
 
             _message = Label("Message", root, 11, TextAnchor.MiddleLeft, Muted);
-            _message.text = "Выберите сигнал — цель станет маршрутом.";
-            Place(_message.rectTransform, 14f, -402f, -14f, -368f);
+            _message.text = "Выберите контракт — цель станет маршрутом.";
+            Place(_message.rectTransform, 14f, -546f, -14f, -492f);
             ConfigureHubPresentation(root, launcher, _grid, launcherLabel);
         }
 
@@ -411,6 +645,8 @@ namespace RealmOfAshes.Game
         {
             switch (kind)
             {
+                case "patrol_mission": return "Задача патруля";
+                case "join_patrol": return "Патруль";
                 case "escort_caravan": return "Караван";
                 case "distress_signal": return "Сигнал бедствия";
                 case "recon_expedition": return "Разведка";
@@ -425,6 +661,8 @@ namespace RealmOfAshes.Game
         {
             switch (kind)
             {
+                case "patrol_mission": return "Проследить за выполнением приказа фракции.";
+                case "join_patrol": return "Присоединиться к действующему патрулю.";
                 case "escort_caravan": return "Успеть к сбору и довести груз.";
                 case "distress_signal": return "Найти маяк и пережить засаду.";
                 case "recon_expedition": return "Проверить точки и эвакуироваться.";
@@ -439,6 +677,8 @@ namespace RealmOfAshes.Game
         {
             switch (kind)
             {
+                case "patrol_mission": return new Color(0.92f, 0.67f, 0.28f, 1f);
+                case "join_patrol": return new Color(0.56f, 0.75f, 0.42f, 1f);
                 case "distress_signal": return Danger;
                 case "outpost_defense": return new Color(1f, 0.56f, 0.22f, 1f);
                 case "recon_expedition": return new Color(0.48f, 0.78f, 0.78f, 1f);

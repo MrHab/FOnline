@@ -9,15 +9,25 @@ const read = relative => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 const dressing = read('unity-client/Assets/Scripts/World/RoaGroundDressing.cs');
 const terrain = read('unity-client/Assets/Scripts/World/RoaLocalTerrain.cs');
+const palette = read('unity-client/Assets/Scripts/World/RoaEnvironmentPalette.cs');
+const authoring = read('unity-client/Assets/Editor/RoaEnvironmentPaletteAuthoring.cs');
 const probe = read('unity-client/Assets/Editor/RoaGroundDressingProbe.cs');
 const audit = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
+const paletteAsset = path.join(
+  ROOT,
+  'unity-client/Assets/Resources/RealmOfAshes/EnvironmentPalette.asset'
+);
+
+assert(fs.existsSync(paletteAsset), 'curated MEP Resources palette asset is missing');
 
 [
   'public static int SurfaceBudget(bool mobile)',
-  'return mobile ? 60 : 120;',
+  'return mobile ? 24 : 40;',
   'public static int RidgeBudget(bool mobile)',
-  'return mobile ? 16 : 28;',
-  'public const float MinimumSurfaceSpacing = 0.72f;',
+  'return mobile ? 8 : 12;',
+  'public const float MinimumSurfaceSpacing = 1.35f;',
+  'Mathf.Lerp(0.60f, 0.95f, sizeRandom)',
+  'Mathf.Lerp(0.48f, 0.78f, sizeRandom)',
   'public const int ScrubLobeCount = 3;',
   'public const int ScrubToneCount = 2;',
   'public static bool SupportsTile(int type)',
@@ -32,6 +42,19 @@ const audit = read('unity-client/Assets/Editor/RoaClientAuditRunner.cs');
   'PatchDensity(',
   'NearestDistance(',
   'AppendDistantRidge(',
+  'Resources.Load<RoaEnvironmentPalette>(RoaEnvironmentPalette.ResourceKey)',
+  'AppendAuthoredPrefab(',
+  'AppendAuthoredRidges(',
+  'StripGameplayComponents(',
+  'BuildCompatibleMaterials(',
+  'CompatibleMaterialCount',
+  'Universal Render Pipeline/Lit',
+  'ConfigureOpaqueSurface(',
+  'castContactShadow',
+  'public bool UsesAuthoredPrefabs',
+  'public int AuthoredPrefabCount',
+  'public int AuthoredShadowCasterCount',
+  'public int GroundAccentCount',
   'CreateRenderNode("Scrub", _scrubMesh,',
   'new GameObject("GroundDressing")',
   'new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer))',
@@ -58,25 +81,56 @@ assert(!/AddComponent<[^>]*Collider/.test(dressing)
   'float worldZ = (y / (_textureSize - 1f) - 0.5f) * _visualDepth;',
   'float macro = SurfaceMacroSample(worldX, worldZ, seed);',
   'PaintPathConnection(',
+  'JitteredTileCenter(',
   'TileType(stateMap, tx + 1, tz, mapWidth, mapDepth) == Path',
   'public int PathConnectionCount',
+  'public bool UsesAuthoredEnvironment',
+  'public int AuthoredEnvironmentPrefabCount',
 ].forEach(marker => assert(terrain.includes(marker), `RoaLocalTerrain не подключает оформление: ${marker}`));
+
+[
+  'public const string ResourceKey = "RealmOfAshes/EnvironmentPalette";',
+  '[SerializeField] private GameObject[] _dryScrubs;',
+  '[SerializeField] private GameObject[] _stones;',
+  '[SerializeField] private GameObject[] _groundAccents;',
+  '[SerializeField] private GameObject[] _distantRidges;',
+  'public bool Ready',
+  'PickDryScrub(',
+  'PickGroundAccent(',
+].forEach(marker => assert(palette.includes(marker), `Environment palette is incomplete: ${marker}`));
+
+[
+  'Assets/Resources/RealmOfAshes/EnvironmentPalette.asset',
+  'MEP_Grass_A_02_Dry.prefab',
+  'MEP_StoneGround_a_Sand.prefab',
+  'Cracked_Mud_03.prefab',
+  'MEP_Desert_Cliff_06.prefab',
+  'AssetDatabase.CreateAsset(palette, AssetPath)',
+].forEach(marker => assert(authoring.includes(marker), `Environment palette authoring is incomplete: ${marker}`));
 
 [
   'RoaGroundDressing.SupportsTile(3)',
   'GetComponentsInChildren<Collider>(true).Length == 0',
   'terrain.ApplyMap(water)',
   'ROA_GROUND_DRESSING_CAPTURE',
-  'DarkPixelRatio(readback.GetPixels32())',
+  'DefaultCaptureName = "WorldReadability44.png"',
+  'DarkPixelRatio(pixels)',
+  'MagentaPixelRatio(pixels)',
+  'magentaRatio < 0.0001f',
+  'BrightPixelRatio(pixels)',
+  'brightRatio < 0.18f',
   'darkRatio < 0.0075f',
   'expectedDetailSize = Application.isMobilePlatform ? 64 : 128',
-  'RoaGroundDressing.StoneClusterPieceCount >= 4',
-  'RoaGroundDressing.ScrubBladeCount >= 6',
-  'RoaGroundDressing.ScrubLobeCount == 3',
-  'generator.DryScrubClusterCount + generator.OliveScrubClusterCount',
-  'sharedMesh.subMeshCount',
-  'renderer.shadowCastingMode == ShadowCastingMode.Off',
-  'sharedMaterial.shader.name.Contains("Unlit")',
+  'palette != null && palette.Ready',
+  'terrain.UsesAuthoredEnvironment',
+  'terrain.AuthoredEnvironmentPrefabCount',
+  'generator.AuthoredPrefabCount',
+  'generator.AuthoredRendererCount',
+  'generator.AuthoredShadowCasterCount',
+  'generator.GroundAccentCount',
+  'generator.MaximumDecorationHeight',
+  'renderer.shadowCastingMode != ShadowCastingMode.ShadowsOnly',
+  '!material.name.StartsWith("RuntimeGround", StringComparison.Ordinal)',
   'generator.MinimumClusterSpacing >= RoaGroundDressing.MinimumSurfaceSpacing',
   'terrain.PathConnectionCount == 17',
   'terrain.AlbedoTextureSize == RoaLocalTerrain.AlbedoResolution(',

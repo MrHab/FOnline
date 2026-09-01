@@ -74,6 +74,7 @@ function normalizeCost(cost) {
 
 const web = sourceTree(WEB_DIR, '.js');
 const unity = sourceTree(UNITY_DIR, '.cs');
+const server = read('server.js');
 const socket = read('unity-client/Assets/Scripts/Net/RoaSocketClient.cs');
 const bootstrap = read('unity-client/Assets/Scripts/Game/RoaGameBootstrap.cs');
 const interaction = read('unity-client/Assets/Scripts/Game/RoaInteraction.cs');
@@ -85,9 +86,11 @@ const hudCanvas = read('unity-client/Assets/Scripts/Game/RoaHudCanvas.cs');
 const hudProbe = read('unity-client/Assets/Editor/RoaHudCanvasProbe.cs');
 const nameplates = read('unity-client/Assets/Scripts/Game/RoaActorNameplates.cs');
 const enemies = read('unity-client/Assets/Scripts/Game/RoaEnemies.cs');
+const npcCombatProbe = read('unity-client/Assets/Editor/RoaNpcCombatBehaviorProbe.cs');
 
-assert(uiScale.includes('return mobile ? new Vector2(1280f, 720f) : new Vector2(1600f, 900f);'),
-  'Unity UI must keep readable 1600x900 desktop and 1280x720 mobile references');
+assert(uiScale.includes('return mobile ? new Vector2(1280f, 720f) : new Vector2(1440f, 810f);')
+  && uiScale.includes('public static void Apply(CanvasScaler scaler, bool mobile)'),
+  'Unity UI must keep readable 1440x810 desktop and 1280x720 mobile references');
 
 assert(bootstrap.includes('private const float AuthHeartbeatFailureRetrySeconds = 60f;')
   && bootstrap.includes('ShouldAttemptAuthHeartbeat(gameplaySession, socketPhase)')
@@ -104,6 +107,19 @@ assert(offlineProbe.includes('AuthHeartbeatDelay(false), 60f')
   && offlineProbe.includes('ShouldReportConnectFailure(true)')
   && auditRunner.includes('typeof(RoaOfflineResilienceProbe)'),
   'Unity offline resilience probe must cover heartbeat gating, warning latching, and the full audit');
+assert(enemies.includes('[DefaultExecutionOrder(-80)]')
+  && enemies.includes('InstallPresentationBody(root, bodyProfile,')
+  && enemies.includes('ResolvePresentationContact(presentedPosition,')
+  && enemies.includes('SetPresentationBodyAlive(enemy.BodyCollider, enemy.BodyRigidbody, false)')
+  && enemies.includes('enemy.Hp = ResolveFrameHealth(previousHp, frameHp, deadFrame,')
+  && enemies.includes('enemy.Snapshot["aiState"] = data["aiState"].ToString();')
+  && enemies.includes('enemy.ActionUntil, enemy.ReactionUntil, Time.time)')
+  && enemies.includes('NpcCombatFactionLine(')
+  && bootstrap.includes('Enemies.SetLocalPlayer(_controller)')
+  && npcCombatProbe.includes('[NPC COMBAT 4.7] готово:')
+  && npcCombatProbe.includes('ResolveFrameHealth(80, 55, false, true)')
+  && auditRunner.includes('typeof(RoaNpcCombatBehaviorProbe)'),
+  'Unity NPC combat presentation lost live HP, hit reaction priority, threat readability, contact separation, death release, or its audit');
 assert(socket.includes('public bool ReconnectScheduled')
   && socket.includes('public float ReconnectDelayRemainingSeconds'),
   'Unity socket must expose read-only reconnect timing for honest player feedback');
@@ -122,11 +138,25 @@ assert(hudCanvas.includes('public static LayoutProfile ResolveLayout(bool mobile
   && hudCanvas.includes('bool mobile = MobileHudMode;')
   && hudCanvas.includes('ApplyAdaptiveLayout(mobile);')
   && hudCanvas.includes('drag.SetBasePosition(position);')
-  && hudCanvas.includes('0.62f, new Vector2(0f, 44f)')
-  && hudCanvas.includes('0.86f, new Vector2(0f, 16f)')
+  && hudCanvas.includes('0.625f, new Vector2(0f, 44f)')
+  && hudCanvas.includes('0.875f, new Vector2(0f, 16f)')
   && hudProbe.includes('weapon console again obscures too much of the combat view')
   && hudProbe.includes('quickbar overlaps the compact weapon console'),
   'Unity HUD no longer guarantees a compact, non-overlapping desktop/mobile combat stack');
+assert(hudCanvas.includes('public enum HudFocusMode')
+  && hudCanvas.includes('Activity,')
+  && hudCanvas.includes('Detailed')
+  && hudCanvas.includes('public static bool ShowsIdentity(')
+  && hudCanvas.includes('public static bool ShowsQuickbar(')
+  && hudCanvas.includes('SetWorldActivity(RoaWorldActivityCanvas activity)')
+  && hudCanvas.includes('BuildCompactWeaponConsole();')
+  && hudCanvas.includes('RefreshHudFocus(worldHud, mobile, focus);')
+  && hudCanvas.includes('ClampBottomPanelPosition(')
+  && hudCanvas.includes('Time.unscaledDeltaTime * 6.5f')
+  && hudCanvas.includes('AppendOccupiedScreenRect(_compactConsolePanel, output);')
+  && hudProbe.includes('exploration strip obscures the world or overlaps the quickbar')
+  && hudProbe.includes('contextual exploration console is incomplete'),
+  'Unity HUD lost contextual exploration/activity/combat/detail focus or its compact information strip');
 assert(nameplates.includes('public static bool IsImportantNpc(')
   && nameplates.includes('case "merchant":')
   && nameplates.includes('case "quartermaster":')
@@ -185,8 +215,16 @@ const webHandlers = uniqueSorted(collect(web,
   /\b(?:multiplayer\.socket|socket)\.(?:on|once)\(\s*(['"])([^'"]+)\1/g, 2));
 const lifecycle = ['connect', 'connect_error', 'disconnect'];
 const unityHandlers = uniqueSorted(collect(unity, /\b_connection\.On\(\s*"([^"]+)"/g));
-assert.deepStrictEqual(unityHandlers, webHandlers.filter(name => !lifecycle.includes(name)),
-  'Unity must handle every non-lifecycle event handled by the production browser client');
+const unityOnlyHandlers = ['worldActivityFeedChanged'];
+assert.deepStrictEqual(
+  unityHandlers.filter(name => !unityOnlyHandlers.includes(name)),
+  webHandlers.filter(name => !lifecycle.includes(name)),
+  'Unity must handle every non-lifecycle event handled by the production browser client'
+);
+for (const name of unityOnlyHandlers) {
+  assert(unityHandlers.includes(name), `Unity-only server event ${name} must remain handled by Unity`);
+  assert(!webHandlers.includes(name), `Unity-only server event ${name} must not leak back into the legacy browser client`);
+}
 assert(socket.includes('_connection.OnConnected +=')
   && socket.includes('_connection.OnConnectError +=')
   && socket.includes('_connection.OnDisconnected +='),
@@ -250,6 +288,36 @@ const expectedRecipes = browserRecipes.map(row => ({
 const actualRecipes = unityRecipes.map(row => ({ ...row, cost: normalizeCost(row.cost) }));
 assert.deepEqual(actualRecipes, expectedRecipes, 'Unity crafting catalog drifted from the browser client');
 
+const craftedOutputIds = new Set(expectedRecipes.map(row => row.outputId));
+const requiredCraftOutputIds = Object.values(browserItems)
+  .filter(item => item.slot
+    || item.type === 'ammo'
+    || ['medkit', 'stim', 'doctorBag', 'antibiotics'].includes(item.id))
+  .map(item => item.id)
+  .sort();
+const missingCraftOutputIds = requiredCraftOutputIds.filter(id => !craftedOutputIds.has(id));
+assert.deepStrictEqual(missingCraftOutputIds, [],
+  `Crafting catalog is missing weapons, equipment, ammo or medicine: ${missingCraftOutputIds.join(', ')}`);
+
+const serverRecipeCosts = Object.fromEntries(Object.entries(
+  extractExpression(server, 'const SERVER_CRAFT_RECIPE_COSTS ='))
+  .map(([id, cost]) => [id, normalizeCost(cost)]));
+const serverRecipeOutputs = Object.fromEntries(Object.entries(
+  extractExpression(server, 'const SERVER_CRAFT_RECIPE_OUTPUTS ='))
+  .map(([id, output]) => [id, { id: String(output.id), qty: Number(output.qty) }]));
+const serverRecipeStations = Object.fromEntries(Object.entries(
+  extractExpression(server, 'const SERVER_CRAFT_RECIPE_STATIONS =')));
+const expectedServerCosts = Object.fromEntries(expectedRecipes.map(row => [row.id, row.cost]));
+const expectedServerOutputs = Object.fromEntries(expectedRecipes
+  .map(row => [row.id, { id: row.outputId, qty: row.outputQty }]));
+const expectedServerStations = Object.fromEntries(expectedRecipes.map(row => [row.id, row.station]));
+assert.deepStrictEqual(serverRecipeCosts, expectedServerCosts,
+  'Server crafting costs drifted from the browser client');
+assert.deepStrictEqual(serverRecipeOutputs, expectedServerOutputs,
+  'Server crafting outputs drifted from the browser client');
+assert.deepStrictEqual(serverRecipeStations, expectedServerStations,
+  'Server crafting stations drifted from the browser client');
+
 // Weapon modification effects are server-authoritative. The Unity UI still must
 // expose each canonical modification in its correct slot.
 const browserModSource = read('public/js/game/04e_weapon_modification_workbench.js');
@@ -283,7 +351,6 @@ for (const [id, row] of Object.entries(browserMods)) {
 }
 
 // Creation choices that influence the initial authoritative join.
-const server = read('server.js');
 const serverTraits = collect(server.match(/const SERVER_START_TRAITS = new Set\(\[([^\]]+)\]\)/)?.[1] || '',
   /['"]([^'"]+)['"]/g);
 const browserCreatorSource = read('public/js/game/08_character_creation_save.js');
@@ -336,14 +403,16 @@ assert(unityCharacterView.includes('public bool ApplyAppearance(CharacterAppeara
   && unityBootstrap.includes('_characterPreview.Show(BaseUrl, _creator.Appearance,'),
   'Unity creator must update face/hair variants on the live GLB preview');
 
-// Camera zoom is persistent in the browser and global-map panning is a distinct
-// middle/right-button gesture. Preserve both client-only behaviours in Unity.
+// Camera zoom is persistent in the browser. The Unity strategic map adds a
+// mass-market pointer contract: a short primary click routes, a primary drag
+// pans, right drag pans, and middle drag rotates the angled strategic camera.
 const browserCamera = read('public/js/game/02_renderer_world_map.js');
 const browserGlobalControls = read('public/js/game/12_global_map_canvas_controls.js');
 const unityCamera = read('unity-client/Assets/Scripts/Game/RoaCameraRig.cs');
 const unityGlobalMap = read('unity-client/Assets/Scripts/Game/RoaGlobalMap.cs');
 const unityGlobalMapCanvas = read('unity-client/Assets/Scripts/Game/RoaGlobalMapCanvas.cs');
 const unityCameraProbe = read('unity-client/Assets/Editor/RoaCameraProbe.cs');
+const unityGlobalMapPresentationProbe = read('unity-client/Assets/Editor/RoaGlobalMapPresentationProbe.cs');
 assert(browserCamera.includes("const CAMERA_ZOOM_STORAGE_KEY = 'realm.cameraZoomScale';")
   && unityCamera.includes('private const string ZoomPrefsKey = "roa.cameraDistance.v4";')
   && unityCamera.includes('private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";')
@@ -352,31 +421,53 @@ assert(browserCamera.includes("const CAMERA_ZOOM_STORAGE_KEY = 'realm.cameraZoom
   && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud ? 0f'),
   'Unity local camera zoom must persist and ignore wheel input behind open UI');
 assert(browserGlobalControls.includes('e.button !== 1 && e.button !== 2')
-  && unityGlobalMap.includes('Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2)')
+  && unityGlobalMap.includes('private bool UpdateCameraOrbit()')
+  && unityGlobalMap.includes('Input.GetMouseButtonDown(2)')
+  && unityGlobalMap.includes('StrategicCameraOrbit(CameraRig.PitchDeg, CameraRig.YawDeg, delta)')
+  && unityGlobalMap.includes('bool pressed = Input.GetMouseButton(1);')
+  && unityGlobalMap.includes('bool began = Input.GetMouseButtonDown(1);')
+  && unityGlobalMap.includes('CameraRig.PitchDeg = StrategicDefaultPitchDeg;')
+  && unityGlobalMap.includes('CameraRig.YawDeg = StrategicDefaultYawDeg;')
+  && unityGlobalMap.includes('|| _cameraOrbiting || _mousePrimaryTracking')
+  && unityGlobalMap.includes('_cameraOrbiting = false;')
   && unityGlobalMap.includes('CameraRig.ZoomPersistenceEnabled = false;')
+  && unityGlobalMap.includes('private bool UpdateKeyboardCameraPan()')
+  && unityGlobalMap.includes('KeyboardCameraPanMovement(input, CameraRig.Distance,')
+  && unityGlobalMap.includes('ApplyCameraPanDelta(RightMousePanDelta(delta));')
+  && unityGlobalMap.includes('return new Vector2(pointerDelta.x, -pointerDelta.y);')
+  && unityGlobalMap.includes('CameraRig.MinDistance = StrategicMinimumCameraDistance(span);')
+  && unityGlobalMap.includes('CameraRig.MaxDistance = StrategicMaximumCameraDistance(span);')
   && unityGlobalMap.includes('_cameraAnchor.transform.position = ClampCameraPan('),
-  'Unity global map must retain independent zoom and middle/right-button panning');
+  'Unity global map must retain independent zoom, camera-relative WASD, vertical-only inverted right-button panning and clamped middle-button orbit');
 assert(unityGlobalMap.includes('private bool UpdateTouchMapInput()')
   && unityGlobalMap.includes('int count = Input.touchCount;')
   && unityGlobalMap.includes('events.IsPointerOverGameObject(touch.fingerId)')
   && unityGlobalMap.includes('CameraRig.SetDistance(PinchZoomDistance(')
+  && unityGlobalMap.includes('ApplyCameraPanDelta(center - _pinchLastCenter);')
   && unityGlobalMap.includes('TouchTapEligible(')
-  && unityGlobalMap.includes('private void UpdateMouseMapSelection()')
+  && unityGlobalMap.includes('private bool UpdateMouseMapInput()')
   && unityGlobalMap.includes('Input.GetMouseButtonDown(0)')
+  && unityGlobalMap.includes('Input.GetMouseButtonUp(0)')
+  && unityGlobalMap.includes('MouseTapEligible(')
   && unityGlobalMap.includes('SelectScreenPointAndMaybeTravel(screenPoint)')
   && unityGlobalMap.includes('Time.unscaledTime < _suppressSyntheticMouseUntil'),
   'Unity global map mouse/touch must share route selection while separating tap, drag, pinch and synthetic mouse input');
 assert(unityGlobalMapCanvas.includes('TouchGestureHelp')
   && unityGlobalMapCanvas.includes('КАСАНИЕ — МАРШРУТ')
   && unityGlobalMapCanvas.includes('ПОТЯНУТЬ — ОБЗОР')
-  && unityGlobalMapCanvas.includes('ЩИПОК — МАСШТАБ'),
-  'Unity global map does not explain its touch gestures on mobile');
+  && unityGlobalMapCanvas.includes('ЩИПОК — МАСШТАБ')
+  && unityGlobalMapCanvas.includes('ЗАЖАТЬ КОЛЕСО — УГОЛ')
+  && unityGlobalMapCanvas.includes('WASD/ТЯНУТЬ — ОБЗОР')
+  && unityGlobalMapCanvas.includes('ПКМ — ИНВ. Y'),
+  'Unity global map does not explain its mobile gestures, WASD, inverted RMB and desktop middle-button orbit');
 assert(unityCameraProbe.includes('короткое касание не выбирает маршрут')
+  && unityCameraProbe.includes('ЛКМ не отделяет короткий выбор маршрута от перетаскивания карты')
   && unityCameraProbe.includes('pinch карты меняет масштаб в неверном направлении')
   && unityCameraProbe.includes('Canvas-подпись активности перекрывает панель')
   && unityCameraProbe.includes('экранная подпись неверно переводится')
   && unityCameraProbe.includes('пул Canvas-подписей карты не ограничен')
-  && unityCameraProbe.includes('touch=tap/drag/pinch, labels=canvas/activities'),
+  && unityCameraProbe.includes('orbit=55/45+MMB')
+  && unityCameraProbe.includes('pointer=tap/drag/pinch-pan, labels=canvas/activities'),
   'Unity camera probe does not cover the global-map gesture and Canvas-label contract');
 assert(unityGlobalMap.includes('public int CollectOverlayLabels(List<OverlayLabel> output)')
   && unityGlobalMap.includes('_activityOverlayLabels.Add(new ActivityOverlayState')
@@ -407,13 +498,59 @@ assert(unityCameraProbe.includes('route=progress/contact')
   'Unity camera probe does not cover route progress visibility and contact warning');
 assert(unityCameraProbe.includes('lists=stable')
   && unityCameraProbe.includes('!RoaGlobalMapCanvas.ListSignatureChanged(ref cachedSignature, workSame)')
-  && unityCameraProbe.includes('неизменная доска работ пересобирается'),
+  && unityCameraProbe.includes('неизменная доска контрактов пересобирается'),
   'Unity camera probe does not protect stable global-map lists from periodic rebuilds');
+assert(unityGlobalMap.includes('public bool FocusPlayerOnMap()')
+  && unityGlobalMap.includes('public static Color RouteVisualColor(')
+  && unityGlobalMap.includes('public static float RouteVisualScale(')
+  && unityGlobalMap.includes('InfrastructureLabelLimit = 3')
+  && unityGlobalMap.includes('InfrastructureShortTitle(')
+  && unityGlobalMap.includes('_routeVisualProgress.Add(routeProgress);')
+  && unityGlobalMap.includes('PresentationWinners(DynamicVisualLayer.Site')
+  && unityGlobalMapCanvas.includes('RouteStateBadge')
+  && unityGlobalMapCanvas.includes('RouteRiskBadge')
+  && unityGlobalMapCanvas.includes('JourneyFlow')
+  && unityGlobalMapCanvas.includes('"ЦЕЛЬ", "ПУТЬ", "ПРИБЫТИЕ", "ЛОКАЦИЯ"')
+  && unityGlobalMapCanvas.includes('ResolveJourneyStage(')
+  && unityGlobalMapCanvas.includes('Вход — автоматически')
+  && unityGlobalMapCanvas.includes('Кликните по локации ещё раз, чтобы войти')
+  && unityGlobalMapCanvas.includes('_mapLabelFrames.Sort(CompareOverlayLabels);')
+  && unityGlobalMapCanvas.includes('SidebarHeight(mobile, expanded, contact, viewHeight)')
+  && unityGlobalMapCanvas.includes('MapContextText(Map.DetailTierLabel')
+  && unityGlobalMapCanvas.includes('Map.RouteRequestPending')
+  && unityGlobalMapCanvas.includes('"МЕНЯЕМ ПУТЬ" : "РАСЧЁТ ПУТИ"')
+  && !unityGlobalMapCanvas.includes('Нажмите «Войти»'),
+  'Unity global map 2.0 must keep a decision card, prioritized labels, route stages and click-to-enter guidance');
+assert(unityGlobalMapPresentationProbe.includes('[GLOBAL MAP & TRAVEL 4.6] готово')
+  && unityGlobalMapPresentationProbe.includes('labels[0].Id == "selected"')
+  && unityGlobalMapPresentationProbe.includes('MapJourneyStage.Arrival')
+  && unityGlobalMapPresentationProbe.includes('RouteVisualColor(0.2f, 0.6f')
+  && unityGlobalMapPresentationProbe.includes('RouteVisualScale(0.6f, 0.6f')
+  && unityGlobalMapPresentationProbe.includes('InfrastructureLabelLimit == 3')
+  && unityGlobalMapPresentationProbe.includes('buttons.Contains("К ИГРОКУ")')
+  && unityGlobalMapPresentationProbe.includes('!buttons.Contains("Войти")')
+  && auditRunner.includes('typeof(RoaGlobalMapPresentationProbe)'),
+  'Unity audit does not protect the global map 2.0 presentation contract');
+assert(unityGlobalMap.includes('public bool RouteRequestPending')
+  && unityGlobalMap.includes('_routeRequestPending = true;')
+  && unityGlobalMap.includes('if (rerouting) RestoreTravelDestinationSelection();')
+  && unityGlobalMap.includes('private void RestoreTravelDestinationSelection()')
+  && unityGlobalMap.includes('bool selectedActivityLabelAdded = false;')
+  && unityGlobalMap.includes('&& !selectedActivityLabelAdded'),
+  'Unity global-map reroute must remain transactional and selected labels must not duplicate');
 assert(unityGlobalMap.includes('TravelDescriptorGraceSeconds = 2.5f')
   && unityGlobalMap.includes('bool preserveFreshTravel = preserveIdleSelection')
   && unityGlobalMap.includes('else if (!preserveFreshTravel) ClearTravel();')
   && unityGlobalMap.includes('_travelDescriptorGraceUntil = Time.realtimeSinceStartup + TravelDescriptorGraceSeconds;'),
   'Unity must not let a queued stale global-map snapshot erase a newly acknowledged route');
+assert(unityGlobalMap.includes('public bool LocationEntryPending')
+  && unityGlobalMap.includes('|| _locationEntryPending) return;')
+  && unityGlobalMap.includes('_locationEntryPending = true;')
+  && unityGlobalMap.includes('_locationEntryPending = false;')
+  && server.includes('selectRoomWorldActivityTask(tasks.filter')
+  && server.includes('selectRoomWorldActivityTask')
+  && server.includes('worldTaskTrackedId'),
+  'Global-map arrival must be single-flight and start the tracked world activity');
 
 console.log(`Unity client parity OK: ${webEmits.length} outgoing events, ${webHandlers.length} incoming events, `
   + `${Object.keys(unityItems).length} items, ${actualRecipes.length} recipes, `

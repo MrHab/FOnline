@@ -85,6 +85,8 @@ namespace RealmOfAshes.Game
         {
             SetMaterialColor(fx.CoreMaterial, fx.Color, 0.96f, 2.8f);
             SetMaterialColor(fx.SparkMaterial, Color.Lerp(fx.Color, Color.white, 0.32f), 0.94f, 3.2f);
+            SetMaterialColor(fx.DustMaterial,
+                Color.Lerp(new Color(0.48f, 0.37f, 0.25f), fx.Color, 0.16f), 0.46f, 0.35f);
             float strength = weaponId == "rocketLauncher" ? 1.45f
                 : weaponId == "shotgun" ? 1.2f : 1f;
             Vector3 side = Vector3.Cross(Vector3.up, shotDirection);
@@ -100,6 +102,8 @@ namespace RealmOfAshes.Game
                 fx.Sparks[i].SetPosition(1, velocity * 0.035f);
             }
             fx.Core.transform.localScale = Vector3.one * 0.08f;
+            if (fx.Dust != null)
+                fx.Dust.transform.localScale = new Vector3(0.10f, 0.018f, 0.10f);
         }
 
         private void UpdateImpact(ImpactFx fx, float t)
@@ -109,6 +113,14 @@ namespace RealmOfAshes.Game
             fx.Core.transform.localScale = Vector3.one * Mathf.Lerp(0.055f, 0.24f, burst) * fade * Mathf.Max(0.5f, fx.Scale);
             SetMaterialColor(fx.CoreMaterial, fx.Color, 0.94f * fade, 2.8f);
             SetMaterialAlpha(fx.SparkMaterial, 0.92f * fade);
+            if (fx.Dust != null)
+            {
+                float dustFade = (1f - Mathf.SmoothStep(0f, 1f, t)) * 0.48f;
+                float dustRadius = Mathf.Lerp(0.10f, 0.46f, Mathf.Sqrt(t))
+                    * Mathf.Max(0.55f, fx.Scale);
+                fx.Dust.transform.localScale = new Vector3(dustRadius, 0.018f, dustRadius);
+                SetMaterialAlpha(fx.DustMaterial, dustFade);
+            }
             for (int i = 0; i < fx.Sparks.Length; i++)
             {
                 Vector3 head = fx.Velocities[i] * (t * 0.24f) + Vector3.down * (t * t * 0.18f);

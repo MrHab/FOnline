@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
@@ -53,7 +54,13 @@ namespace RealmOfAshes.EditorTools
 
             var options = new BuildPlayerOptions
             {
-                scenes = new[] { "Assets/Scenes/Wasteland.unity" },
+                // Runtime location/map presentation is loaded additively. Building only
+                // Wasteland silently drops those authored scenes from WebGL even though
+                // they are enabled in the project's build profile.
+                scenes = EditorBuildSettings.scenes
+                    .Where(scene => scene.enabled)
+                    .Select(scene => scene.path)
+                    .ToArray(),
                 locationPathName = output,
                 target = BuildTarget.WebGL,
                 options = BuildOptions.None

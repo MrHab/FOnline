@@ -44,6 +44,14 @@ namespace RealmOfAshes.Game
         private const float MinGroundNormalY = 0.57f;
         private const float MaximumWalkableRise = 0.30f;
         private const float MaximumUnsupportedLift = 0.075f;
+        // Полнотелые hurt/attack-клипы временно владеют ногами и не должны
+        // бороться с обычными замками шага. Но полностью отпускать цепь тоже
+        // нельзя: отдельные кадры донора поднимают стопу почти к тазу. Этот
+        // мягкий предел сохраняет авторский перенос веса, не позволяя ноге
+        // «улететь» при ударе в упор.
+        private const float StationaryActionLiftLimit = 0.18f;
+        private const float MovingActionLiftLimit = 0.32f;
+        private const float ActionNormalWeight = 0.58f;
         private const float DesktopMaxDistance = 20f;
         private const float MobileMaxDistance = 12f;
         private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
@@ -89,6 +97,8 @@ namespace RealmOfAshes.Game
         public bool Ready { get; private set; }
         public int GroundProbeCount { get; private set; }
         public bool SupportSafetyActive { get; private set; }
+        public bool ActionSafetyActive { get; private set; }
+        public bool Suspended { get; private set; }
 
         /// <summary>Сколько стоп зафиксировано сейчас. Для диагностики.</summary>
         public int LockedCount { get { return (_left.Locked ? 1 : 0) + (_right.Locked ? 1 : 0); } }
@@ -116,6 +126,8 @@ namespace RealmOfAshes.Game
             _hasLastActorPos = false;
             _lastClip = string.Empty;
             SupportSafetyActive = false;
+            ActionSafetyActive = false;
+            Suspended = false;
         }
 
         public bool TryGetContactLifts(out float left, out float right)
@@ -212,6 +224,8 @@ namespace RealmOfAshes.Game
         public void Apply(float dt, bool locomoting, bool turning, bool dead, string clip, float kneeFlex)
         {
             SupportSafetyActive = false;
+            ActionSafetyActive = false;
+            Suspended = false;
             if (!Ready) return;
 
             float frameDt = Mathf.Clamp(dt, 0.001f, 0.08f);
@@ -256,6 +270,71 @@ namespace RealmOfAshes.Game
             ApplySide(_left, frameDt, actorVel, actorSpeed, groundY, rootYaw, turning, !locomoting, dead, hadActorPosition, flex);
             ApplySide(_right, frameDt, actorVel, actorSpeed, groundY, rootYaw, turning, !locomoting, dead, hadActorPosition, flex);
             EnsureSupportContact(dead);
+        }
+
+        /// <summary>
+        /// Full-body attack and hurt clips own the complete leg chain. Ordinary
+        /// gait locks are released for their duration, while a separate safety
+        /// contour keeps each sole inside a plausible vertical envelope. This
+        /// prevents a stale planted target and the opposite failure — an authored
+        /// combat frame folding one leg upward at point-blank range.
+        /// </summary>
+        public void Suspend(string clip)
+        {
+            StabilizeAction(1f / 60f, false, clip, 0f);
+        }
+
+        public void StabilizeAction(float dt, bool locomoting, string clip, float kneeFlex)
+        {
+            SupportSafetyActive = false;
+            ActionSafetyActive = false;
+            bool entering = !Suspended || _lastClip != (clip ?? string.Empty);
+            Suspended = true;
+            if (!Ready) return;
+
+            if (entering)
+            {
+                ResetSide(_left);
+                ResetSide(_right);
+                _left.RelockCooldown = 0.16f;
+                _right.RelockCooldown = 0.16f;
+            }
+            _lastClip = clip ?? string.Empty;
+
+            float frameDt = Mathf.Clamp(dt, 0.001f, 0.08f);
+            if (_ground != null)
+            {
+                float groundY = _ground.position.y;
+                float liftLimit = locomoting
+                    ? MovingActionLiftLimit : StationaryActionLiftLimit;
+                StabilizeActionSide(_left, frameDt, groundY, liftLimit, kneeFlex);
+                StabilizeActionSide(_right, frameDt, groundY, liftLimit, kneeFlex);
+                EnsureSupportContact(false);
+                _lastActorPos = _ground.position;
+                _hasLastActorPos = true;
+            }
+        }
+
+        private void StabilizeActionSide(Side side, float frameDt, float groundY,
+                                         float liftLimit, float kneeFlex)
+        {
+            if (side.Foot == null || side.RestHeight <= 0f) return;
+
+            Vector3 animated = side.Foot.position;
+            SampleGround(side, animated, groundY, frameDt,
+                out float surfaceY, out Vector3 surfaceNormal);
+            float contactY = surfaceY + side.RestHeight;
+            // Root compression is applied before this pass. Treat it as authored
+            // lift for the decision, but solve against the real contact plane.
+            float authoredLift = animated.y - contactY + Mathf.Max(0f, kneeFlex);
+            float targetY = Mathf.Clamp(animated.y, contactY, contactY + liftLimit);
+            if (authoredLift <= liftLimit && animated.y >= contactY - 0.004f) return;
+
+            Vector3 target = animated;
+            target.y = targetY;
+            SolveLegChain(side, ConstrainFootTarget(side, target));
+            ApplyFootNormal(side, surfaceNormal, ActionNormalWeight);
+            ActionSafetyActive = true;
         }
 
         private void EnsureSupportContact(bool dead)

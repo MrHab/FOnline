@@ -84,11 +84,19 @@ namespace RealmOfAshes.Game
             if (error >= safeSnapDistance)
             {
                 smoothVelocity = Vector3.zero;
+                // A positional correction is instantaneous, but the actor's
+                // semantic motion is not. Keeping the authoritative velocity
+                // prevents a moving NPC/player from flashing to idle for one
+                // frame immediately after a snap. Dead, stopped and combat-
+                // locked actors already arrive here with networkMoving=false.
+                Vector3 snapVelocity = networkMoving ? networkVelocity : Vector3.zero;
+                snapVelocity.y = 0f;
+                float snapSpeed = snapVelocity.magnitude;
                 return new Sample
                 {
                     Position = predicted,
-                    VisualVelocity = Vector3.zero,
-                    Moving = false,
+                    VisualVelocity = snapVelocity,
+                    Moving = snapSpeed >= PresentationMoveSpeed,
                     Snapped = true,
                     Error = error
                 };

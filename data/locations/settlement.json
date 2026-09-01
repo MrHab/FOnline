@@ -118,7 +118,7 @@
       "position": {
         "x": -7,
         "y": 0,
-        "z": 3
+        "z": 7
       },
       "rotation": {
         "x": 0,
@@ -194,9 +194,9 @@
       "name": "Койка Старого Клима",
       "url": "/assets/models/wasteland/cot_bed.glb",
       "position": {
-        "x": -15,
+        "x": -3,
         "y": 0,
-        "z": 11
+        "z": 14
       },
       "rotation": {
         "x": 0,
@@ -277,9 +277,9 @@
       "name": "Покрышки",
       "url": "/assets/models/wasteland/tire_stack.glb",
       "position": {
-        "x": 12,
+        "x": -20,
         "y": 0,
-        "z": 15
+        "z": -10
       },
       "rotation": {
         "x": 0,
@@ -315,9 +315,9 @@
       "name": "Куча металлолома",
       "url": "/assets/models/wasteland/scrap_heap.glb",
       "position": {
-        "x": 17,
+        "x": -20,
         "y": 0,
-        "z": 16
+        "z": -6
       },
       "rotation": {
         "x": 0,
@@ -353,9 +353,9 @@
       "name": "Грузовой штабель",
       "url": "/assets/models/wasteland/cargo_stack.glb",
       "position": {
-        "x": 11,
+        "x": 15,
         "y": 0,
-        "z": 12
+        "z": 10
       },
       "rotation": {
         "x": 0,
@@ -389,11 +389,10 @@
       "id": "obj_0142",
       "model": "oldKlimCaravan",
       "name": "Караван Старого Клима",
-      "url": "/assets/models/wasteland/old_klim_caravan.glb",
       "position": {
-        "x": 9,
+        "x": 14,
         "y": 0,
-        "z": 8
+        "z": 6
       },
       "rotation": {
         "x": 0,
@@ -415,6 +414,32 @@
         "x": 6,
         "z": 4
       },
+      "collisionParts": [
+        {
+          "center": {
+            "x": 0,
+            "y": 0.7,
+            "z": 0.9
+          },
+          "size": {
+            "x": 3.2,
+            "y": 1.4,
+            "z": 1.1
+          }
+        },
+        {
+          "center": {
+            "x": 0,
+            "y": 1.25,
+            "z": -1.55
+          },
+          "size": {
+            "x": 4.32,
+            "y": 2.5,
+            "z": 0.45
+          }
+        }
+      ],
       "placement": {
         "anchor": "cell-center",
         "gridStep": 2,
@@ -479,9 +504,9 @@
       "name": "Хранилище Старого Клима",
       "url": "/assets/models/wasteland/storage_chest.glb",
       "position": {
-        "x": -5,
+        "x": -18,
         "y": 0,
-        "z": 11
+        "z": 7
       },
       "rotation": {
         "x": 0,
@@ -839,11 +864,10 @@
       "id": "old_klim_trade_hall",
       "model": "oldKlimTradeHall",
       "name": "Торговый зал Старого Клима",
-      "url": "/assets/models/wasteland/old_klim_trade_hall.glb",
       "position": {
-        "x": -8,
+        "x": -12,
         "y": 0,
-        "z": 11
+        "z": 7
       },
       "rotation": {
         "x": 0,
@@ -867,6 +891,28 @@
         "x": 11,
         "z": 5
       },
+      "collisionParts": [
+        {
+          "center": { "x": 0, "y": 1.6, "z": -2.15 },
+          "size": { "x": 10.5, "y": 3.2, "z": 0.42 }
+        },
+        {
+          "center": { "x": -5.05, "y": 1.6, "z": 0 },
+          "size": { "x": 0.42, "y": 3.2, "z": 4.7 }
+        },
+        {
+          "center": { "x": 5.05, "y": 1.6, "z": 0 },
+          "size": { "x": 0.42, "y": 3.2, "z": 4.7 }
+        },
+        {
+          "center": { "x": -3.55, "y": 1.6, "z": 2.15 },
+          "size": { "x": 3.25, "y": 3.2, "z": 0.42 }
+        },
+        {
+          "center": { "x": 3.55, "y": 1.6, "z": 2.15 },
+          "size": { "x": 3.25, "y": 3.2, "z": 0.42 }
+        }
+      ],
       "vision": {
         "mode": "block"
       }
@@ -875,11 +921,10 @@
       "id": "old_klim_trade_hall_roof",
       "model": "oldKlimTradeHallRoof",
       "name": "Крыша торгового зала Старого Клима",
-      "url": "/assets/models/wasteland/old_klim_trade_hall_roof.glb",
       "position": {
-        "x": -8,
+        "x": -12,
         "y": 0,
-        "z": 11
+        "z": 7
       },
       "rotation": {
         "x": 0,
@@ -913,9 +958,9 @@
       "name": "Товар Старого Клима",
       "url": "/assets/models/wasteland/cargo_stack.glb",
       "position": {
-        "x": -13,
+        "x": -18,
         "y": 0,
-        "z": 11
+        "z": 8
       },
       "rotation": {
         "x": 0,
@@ -1034,9 +1079,9 @@
       "name": "Костёр караванной площади",
       "url": "/assets/models/wasteland/campfire_rest.glb",
       "position": {
-        "x": 4,
+        "x": 3,
         "y": 0,
-        "z": 9
+        "z": 6
       },
       "rotation": {
         "x": 0,
@@ -1065,11 +1110,10 @@
       "id": "old_klim_loading_shelter",
       "model": "oldKlimLoadingCanopy",
       "name": "Навес погрузочного двора",
-      "url": "/assets/models/wasteland/old_klim_loading_canopy.glb",
       "position": {
-        "x": 17,
+        "x": 18,
         "y": 0,
-        "z": 17
+        "z": 12
       },
       "rotation": {
         "x": 0,
@@ -1159,13 +1203,12 @@
     },
     {
       "id": "old_klim_loading_watchtower",
-      "model": "scrapWatchTower",
+      "model": "oldKlimWatchtower",
       "name": "Вышка погрузочного двора",
-      "url": "/assets/models/wasteland/scrap_watch_tower.glb",
       "position": {
-        "x": 21,
+        "x": 21.5,
         "y": 0,
-        "z": 5
+        "z": 7
       },
       "rotation": {
         "x": 0,
@@ -1186,17 +1229,17 @@
       ],
       "vision": {
         "mode": "block"
-      }
+      },
+      "collisionSize": { "width": 3.2, "depth": 3.2 }
     },
     {
       "id": "old_klim_loading_gate",
-      "model": "openScrapGate",
+      "model": "oldKlimServiceGate",
       "name": "Ворота погрузочного двора",
-      "url": "/assets/models/wasteland/open_scrap_gate.glb",
       "position": {
-        "x": 13,
+        "x": 25,
         "y": 0,
-        "z": 15
+        "z": 7
       },
       "rotation": {
         "x": 0,
@@ -1204,11 +1247,16 @@
         "z": 0
       },
       "scale": {
-        "x": 1.25,
+        "x": 1,
         "y": 1,
         "z": 1
       },
       "collision": "solid",
+      "footprint": { "x": 5.5, "z": 1.2 },
+      "collisionParts": [
+        { "center": { "x": -2.35, "y": 1.6, "z": 0 }, "size": { "x": 0.7, "y": 3.2, "z": 0.7 } },
+        { "center": { "x": 2.35, "y": 1.6, "z": 0 }, "size": { "x": 0.7, "y": 3.2, "z": 0.7 } }
+      ],
       "tags": [
         "gate",
         "loading-yard",
@@ -1220,13 +1268,12 @@
     },
     {
       "id": "old_klim_main_gate",
-      "model": "openScrapGate",
+      "model": "oldKlimMainGate",
       "name": "Главные ворота стоянки",
-      "url": "/assets/models/wasteland/open_scrap_gate.glb",
       "position": {
-        "x": 1,
+        "x": 0,
         "y": 0,
-        "z": -21
+        "z": -23
       },
       "rotation": {
         "x": 0,
@@ -1234,11 +1281,16 @@
         "z": 0
       },
       "scale": {
-        "x": 1.35,
-        "y": 1.05,
+        "x": 1,
+        "y": 1,
         "z": 1
       },
       "collision": "solid",
+      "footprint": { "x": 9, "z": 1.4 },
+      "collisionParts": [
+        { "center": { "x": -4.1, "y": 1.9, "z": 0 }, "size": { "x": 0.8, "y": 3.8, "z": 0.8 } },
+        { "center": { "x": 4.1, "y": 1.9, "z": 0 }, "size": { "x": 0.8, "y": 3.8, "z": 0.8 } }
+      ],
       "tags": [
         "gate",
         "entry",
@@ -1257,7 +1309,7 @@
       "position": {
         "x": 12,
         "y": 0,
-        "z": -18
+        "z": -28
       },
       "rotation": {
         "x": 0,
@@ -1288,7 +1340,7 @@
       "position": {
         "x": -7,
         "y": 0,
-        "z": -17
+        "z": -28
       },
       "rotation": {
         "x": 0,
@@ -1316,9 +1368,9 @@
       "name": "Мёртвое дерево у стоянки",
       "url": "/assets/models/wasteland/dead_tree_a.glb",
       "position": {
-        "x": -23,
+        "x": -29,
         "y": 0,
-        "z": 14
+        "z": 0
       },
       "rotation": {
         "x": 0,
@@ -1346,9 +1398,9 @@
       "name": "Камни у западной ограды",
       "url": "/assets/models/wasteland/rubble_rock.glb",
       "position": {
-        "x": -21,
+        "x": -28,
         "y": 0,
-        "z": 16
+        "z": -10
       },
       "rotation": {
         "x": 0,
@@ -1376,9 +1428,9 @@
       "name": "Камни у восточной ограды",
       "url": "/assets/models/wasteland/rubble_rock.glb",
       "position": {
-        "x": 24,
+        "x": 29,
         "y": 0,
-        "z": 19
+        "z": -12
       },
       "rotation": {
         "x": 0,
@@ -1404,199 +1456,198 @@
       "id": "old_klim_cliff_north_west_corner",
       "model": "oldKlimCliffCorner",
       "name": "Северо-западный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_corner.glb",
-      "position": { "x": -25.5, "y": 0, "z": 24 },
+      "position": { "x": -25, "y": 0, "z": 23 },
       "rotation": { "x": 0, "y": 0.14, "z": 0 },
       "scale": { "x": 1.05, "y": 1.05, "z": 1.05 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 5 }
     },
     {
       "id": "old_klim_cliff_north_01",
       "model": "oldKlimCliffStraight",
       "name": "Северный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": -20.2, "y": 0, "z": 25.1 },
+      "position": { "x": -21, "y": 0, "z": 25 },
       "rotation": { "x": 0, "y": 0.1, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_north_02",
       "model": "oldKlimCliffStraight",
       "name": "Северный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": -15.1, "y": 0, "z": 23.5 },
+      "position": { "x": -15, "y": 0, "z": 25 },
       "rotation": { "x": 0, "y": -0.2, "z": 0 },
       "scale": { "x": 0.9, "y": 0.94, "z": 0.9 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_north_03",
       "model": "oldKlimCliffStraight",
       "name": "Северный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": -18.2, "y": 0, "z": 29 },
+      "position": { "x": -9, "y": 0, "z": 25 },
       "rotation": { "x": 0, "y": -0.58, "z": 0 },
       "scale": { "x": 0.78, "y": 0.84, "z": 0.78 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_north_04",
       "model": "oldKlimCliffStraight",
       "name": "Северный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": -7.4, "y": 0, "z": 28.4 },
+      "position": { "x": -3, "y": 0, "z": 25 },
       "rotation": { "x": 0, "y": 0.32, "z": 0 },
       "scale": { "x": 0.8, "y": 0.86, "z": 0.8 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_north_05",
       "model": "oldKlimCliffStraight",
       "name": "Северный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": -1.6, "y": 0, "z": 29.5 },
+      "position": { "x": 3, "y": 0, "z": 25 },
       "rotation": { "x": 0, "y": -0.18, "z": 0 },
       "scale": { "x": 0.92, "y": 0.96, "z": 0.92 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_north_06",
       "model": "oldKlimCliffStraight",
       "name": "Северный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": 10.5, "y": 0, "z": 29.2 },
+      "position": { "x": 9, "y": 0, "z": 25 },
       "rotation": { "x": 0, "y": -0.27, "z": 0 },
       "scale": { "x": 0.82, "y": 0.88, "z": 0.82 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_north_07",
       "model": "oldKlimCliffStraight",
       "name": "Северный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": 17.2, "y": 0, "z": 26.1 },
+      "position": { "x": 15, "y": 0, "z": 25 },
       "rotation": { "x": 0, "y": 0.18, "z": 0 },
       "scale": { "x": 1.03, "y": 1.02, "z": 1.03 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_north_08",
       "model": "oldKlimCliffStraight",
       "name": "Северный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": 22.4, "y": 0, "z": 23.6 },
+      "position": { "x": 21, "y": 0, "z": 25 },
       "rotation": { "x": 0, "y": -0.12, "z": 0 },
       "scale": { "x": 0.92, "y": 0.96, "z": 0.92 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_north_east_corner",
       "model": "oldKlimCliffCorner",
       "name": "Северо-восточный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_corner.glb",
-      "position": { "x": 25.7, "y": 0, "z": 20.2 },
+      "position": { "x": 25, "y": 0, "z": 23 },
       "rotation": { "x": 0, "y": 1.7, "z": 0 },
       "scale": { "x": 1.02, "y": 1.02, "z": 1.02 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 5 }
     },
     {
       "id": "old_klim_cliff_west_01",
       "model": "oldKlimCliffStraight",
       "name": "Западный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": -26.5, "y": 0, "z": 18.4 },
+      "position": { "x": -25, "y": 0, "z": 19 },
       "rotation": { "x": 0, "y": 1.46, "z": 0 },
       "scale": { "x": 1.04, "y": 1.02, "z": 1.04 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_west_02",
       "model": "oldKlimCliffStraight",
       "name": "Западный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": -24.9, "y": 0, "z": 12.8 },
+      "position": { "x": -25, "y": 0, "z": 13 },
       "rotation": { "x": 0, "y": 1.72, "z": 0 },
       "scale": { "x": 0.9, "y": 0.94, "z": 0.9 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_west_end",
       "model": "oldKlimCliffEnd",
       "name": "Конец западного уступа",
-      "url": "/assets/models/wasteland/old_klim_cliff_end.glb",
-      "position": { "x": -25.8, "y": 0, "z": 7.2 },
+      "position": { "x": -25, "y": 0, "z": 8 },
       "rotation": { "x": 0, "y": 1.36, "z": 0 },
       "scale": { "x": 0.84, "y": 0.9, "z": 0.84 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 5, "depth": 3 }
     },
     {
       "id": "old_klim_cliff_east_01",
       "model": "oldKlimCliffStraight",
       "name": "Восточный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": 27.2, "y": 0, "z": 14.8 },
+      "position": { "x": 25, "y": 0, "z": 19 },
       "rotation": { "x": 0, "y": 1.48, "z": 0 },
       "scale": { "x": 0.94, "y": 0.98, "z": 0.94 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_east_02",
       "model": "oldKlimCliffStraight",
       "name": "Восточный скальный уступ",
-      "url": "/assets/models/wasteland/old_klim_cliff_straight.glb",
-      "position": { "x": 25.8, "y": 0, "z": 9.2 },
+      "position": { "x": 25, "y": 0, "z": 15.5 },
       "rotation": { "x": 0, "y": 1.8, "z": 0 },
       "scale": { "x": 0.84, "y": 0.9, "z": 0.84 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 6, "depth": 2.7 }
     },
     {
       "id": "old_klim_cliff_east_end",
       "model": "oldKlimCliffEnd",
       "name": "Конец восточного уступа",
-      "url": "/assets/models/wasteland/old_klim_cliff_end.glb",
-      "position": { "x": 25.1, "y": 0, "z": 4.2 },
+      "position": { "x": 25, "y": 0, "z": 12.5 },
       "rotation": { "x": 0, "y": 1.38, "z": 0 },
       "scale": { "x": 0.9, "y": 0.94, "z": 0.9 },
       "collision": "solid",
       "tags": ["perimeter", "cliff", "old_klim"],
-      "vision": { "mode": "block" }
+      "vision": { "mode": "block" },
+      "collisionSize": { "width": 5, "depth": 3 }
     },
     {
       "id": "old_klim_scatter_north_01",
       "model": "oldKlimScrubBlueA",
       "name": "Синий пепельный куст",
-      "url": "/assets/models/wasteland/old_klim_scrub_blue_a.glb",
       "position": { "x": -27.5, "y": 0, "z": 21.2 },
       "rotation": { "x": 0, "y": 0.2, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1608,7 +1659,6 @@
       "id": "old_klim_scatter_north_02",
       "model": "oldKlimRockScatterA",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_a.glb",
       "position": { "x": -22.8, "y": 0, "z": 22.7 },
       "rotation": { "x": 0, "y": 0.6, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1620,7 +1670,6 @@
       "id": "old_klim_scatter_north_03",
       "model": "oldKlimScrubBlueB",
       "name": "Синий пепельный куст",
-      "url": "/assets/models/wasteland/old_klim_scrub_blue_b.glb",
       "position": { "x": -18.1, "y": 0, "z": 20.4 },
       "rotation": { "x": 0, "y": -0.3, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1632,7 +1681,6 @@
       "id": "old_klim_scatter_north_04",
       "model": "oldKlimRockScatterB",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_b.glb",
       "position": { "x": -13.6, "y": 0, "z": 25.8 },
       "rotation": { "x": 0, "y": 0.9, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1644,7 +1692,6 @@
       "id": "old_klim_scatter_north_05",
       "model": "oldKlimScrubAmber",
       "name": "Янтарный сухостой",
-      "url": "/assets/models/wasteland/old_klim_scrub_amber.glb",
       "position": { "x": -5.8, "y": 0, "z": 25.6 },
       "rotation": { "x": 0, "y": -0.7, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1656,7 +1703,6 @@
       "id": "old_klim_scatter_north_06",
       "model": "oldKlimRockScatterC",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_c.glb",
       "position": { "x": 0.8, "y": 0, "z": 27.2 },
       "rotation": { "x": 0, "y": 0.4, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1668,7 +1714,6 @@
       "id": "old_klim_scatter_north_07",
       "model": "oldKlimScrubBlueA",
       "name": "Синий пепельный куст",
-      "url": "/assets/models/wasteland/old_klim_scrub_blue_a.glb",
       "position": { "x": 13.3, "y": 0, "z": 25.6 },
       "rotation": { "x": 0, "y": 1.1, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1680,7 +1725,6 @@
       "id": "old_klim_scatter_north_08",
       "model": "oldKlimRockScatterA",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_a.glb",
       "position": { "x": 18.4, "y": 0, "z": 22.2 },
       "rotation": { "x": 0, "y": -0.5, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1692,7 +1736,6 @@
       "id": "old_klim_scatter_north_09",
       "model": "oldKlimScrubBlueB",
       "name": "Синий пепельный куст",
-      "url": "/assets/models/wasteland/old_klim_scrub_blue_b.glb",
       "position": { "x": 23.1, "y": 0, "z": 18.8 },
       "rotation": { "x": 0, "y": 0.75, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1704,7 +1747,6 @@
       "id": "old_klim_scatter_north_10",
       "model": "oldKlimRockScatterB",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_b.glb",
       "position": { "x": 27.2, "y": 0, "z": 20.8 },
       "rotation": { "x": 0, "y": -0.9, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1716,7 +1758,6 @@
       "id": "old_klim_scatter_west_01",
       "model": "oldKlimScrubAmber",
       "name": "Янтарный сухостой",
-      "url": "/assets/models/wasteland/old_klim_scrub_amber.glb",
       "position": { "x": -30, "y": 0, "z": 16 },
       "rotation": { "x": 0, "y": 0.35, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1728,7 +1769,6 @@
       "id": "old_klim_scatter_west_02",
       "model": "oldKlimRockScatterC",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_c.glb",
       "position": { "x": -29, "y": 0, "z": 10 },
       "rotation": { "x": 0, "y": -0.2, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1740,7 +1780,6 @@
       "id": "old_klim_scatter_west_03",
       "model": "oldKlimScrubBlueA",
       "name": "Синий пепельный куст",
-      "url": "/assets/models/wasteland/old_klim_scrub_blue_a.glb",
       "position": { "x": -29, "y": 0, "z": 3 },
       "rotation": { "x": 0, "y": 0.85, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1752,7 +1791,6 @@
       "id": "old_klim_scatter_west_04",
       "model": "oldKlimRockScatterA",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_a.glb",
       "position": { "x": -28, "y": 0, "z": -6 },
       "rotation": { "x": 0, "y": 0.15, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1764,7 +1802,6 @@
       "id": "old_klim_scatter_west_05",
       "model": "oldKlimScrubBlueB",
       "name": "Синий пепельный куст",
-      "url": "/assets/models/wasteland/old_klim_scrub_blue_b.glb",
       "position": { "x": -25, "y": 0, "z": -15 },
       "rotation": { "x": 0, "y": -0.65, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1776,7 +1813,6 @@
       "id": "old_klim_scatter_east_01",
       "model": "oldKlimScrubAmber",
       "name": "Янтарный сухостой",
-      "url": "/assets/models/wasteland/old_klim_scrub_amber.glb",
       "position": { "x": 30, "y": 0, "z": 16 },
       "rotation": { "x": 0, "y": -0.35, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1788,7 +1824,6 @@
       "id": "old_klim_scatter_east_02",
       "model": "oldKlimRockScatterC",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_c.glb",
       "position": { "x": 29, "y": 0, "z": 10 },
       "rotation": { "x": 0, "y": 0.2, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1800,7 +1835,6 @@
       "id": "old_klim_scatter_east_03",
       "model": "oldKlimScrubBlueA",
       "name": "Синий пепельный куст",
-      "url": "/assets/models/wasteland/old_klim_scrub_blue_a.glb",
       "position": { "x": 29, "y": 0, "z": 3 },
       "rotation": { "x": 0, "y": -0.85, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1812,7 +1846,6 @@
       "id": "old_klim_scatter_east_04",
       "model": "oldKlimRockScatterB",
       "name": "Каменная осыпь",
-      "url": "/assets/models/wasteland/old_klim_rock_scatter_b.glb",
       "position": { "x": 28, "y": 0, "z": -6 },
       "rotation": { "x": 0, "y": -0.15, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
@@ -1824,12 +1857,139 @@
       "id": "old_klim_scatter_east_05",
       "model": "oldKlimScrubBlueB",
       "name": "Синий пепельный куст",
-      "url": "/assets/models/wasteland/old_klim_scrub_blue_b.glb",
       "position": { "x": 25, "y": 0, "z": -15 },
       "rotation": { "x": 0, "y": 0.65, "z": 0 },
       "scale": { "x": 1, "y": 1, "z": 1 },
       "collision": "none",
       "tags": ["perimeter", "scatter", "vegetation", "old_klim"],
+      "vision": { "blocks": false }
+    },
+    {
+      "id": "old_klim_defensive_perimeter",
+      "model": "oldKlimDefensivePerimeter",
+      "name": "Fortified settlement perimeter",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "collision": "solid",
+      "tags": ["perimeter", "wall", "fortification", "old_klim"],
+      "collisionParts": [
+        { "center": { "x": -21, "y": 1.3, "z": -23 }, "size": { "x": 6, "y": 2.6, "z": 0.65 } },
+        { "center": { "x": -15, "y": 1.3, "z": -23 }, "size": { "x": 6, "y": 2.6, "z": 0.65 } },
+        { "center": { "x": -9, "y": 1.3, "z": -23 }, "size": { "x": 6, "y": 2.6, "z": 0.65 } },
+        { "center": { "x": 9, "y": 1.3, "z": -23 }, "size": { "x": 6, "y": 2.6, "z": 0.65 } },
+        { "center": { "x": 15, "y": 1.3, "z": -23 }, "size": { "x": 6, "y": 2.6, "z": 0.65 } },
+        { "center": { "x": 21, "y": 1.3, "z": -23 }, "size": { "x": 6, "y": 2.6, "z": 0.65 } },
+        { "center": { "x": -25, "y": 1.3, "z": -20 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": -25, "y": 1.3, "z": -14 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": -25, "y": 1.3, "z": -8 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": -25, "y": 1.3, "z": -2 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": -25, "y": 1.3, "z": 4 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": 25, "y": 1.3, "z": -20 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": 25, "y": 1.3, "z": -14 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": 25, "y": 1.3, "z": -8 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": 25, "y": 1.3, "z": -2 }, "size": { "x": 0.65, "y": 2.6, "z": 6 } },
+        { "center": { "x": 25, "y": 1.3, "z": 2.5 }, "size": { "x": 0.65, "y": 2.6, "z": 3 } },
+        { "center": { "x": 25, "y": 1.3, "z": 11.5 }, "size": { "x": 0.65, "y": 2.6, "z": 3.5 } },
+        { "center": { "x": -7.5, "y": 1.8, "z": -19.5 }, "size": { "x": 3.2, "y": 3.6, "z": 3.2 } },
+        { "center": { "x": 7.5, "y": 1.8, "z": -19.5 }, "size": { "x": 3.2, "y": 3.6, "z": 3.2 } },
+        { "center": { "x": -21, "y": 1.8, "z": 19.5 }, "size": { "x": 3.2, "y": 3.6, "z": 3.2 } },
+        { "center": { "x": 21, "y": 1.8, "z": 19.5 }, "size": { "x": 3.2, "y": 3.6, "z": 3.2 } }
+      ],
+      "vision": { "mode": "block" }
+    },
+    {
+      "id": "old_klim_brahmin_pens",
+      "model": "oldKlimBrahminPens",
+      "name": "Brahmin rest pens",
+      "position": { "x": 16.5, "y": 0, "z": -8 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "collision": "solid",
+      "footprint": { "x": 14, "z": 8 },
+      "tags": ["brahmin", "pen", "caravan", "old_klim"],
+      "collisionParts": [
+        { "center": { "x": -3.5, "y": 0.6, "z": 4 }, "size": { "x": 6, "y": 1.2, "z": 0.25 } },
+        { "center": { "x": -6.5, "y": 0.6, "z": 0 }, "size": { "x": 0.25, "y": 1.2, "z": 8 } },
+        { "center": { "x": -0.5, "y": 0.6, "z": 0 }, "size": { "x": 0.25, "y": 1.2, "z": 8 } },
+        { "center": { "x": -5.4, "y": 0.6, "z": -4 }, "size": { "x": 2.2, "y": 1.2, "z": 0.25 } },
+        { "center": { "x": -1.6, "y": 0.6, "z": -4 }, "size": { "x": 2.2, "y": 1.2, "z": 0.25 } },
+        { "center": { "x": 3.5, "y": 0.6, "z": 4 }, "size": { "x": 6, "y": 1.2, "z": 0.25 } },
+        { "center": { "x": 0.5, "y": 0.6, "z": 0 }, "size": { "x": 0.25, "y": 1.2, "z": 8 } },
+        { "center": { "x": 6.5, "y": 0.6, "z": 0 }, "size": { "x": 0.25, "y": 1.2, "z": 8 } },
+        { "center": { "x": 1.6, "y": 0.6, "z": -4 }, "size": { "x": 2.2, "y": 1.2, "z": 0.25 } },
+        { "center": { "x": 5.4, "y": 0.6, "z": -4 }, "size": { "x": 2.2, "y": 1.2, "z": 0.25 } }
+      ],
+      "vision": { "mode": "cover" }
+    },
+    {
+      "id": "old_klim_gardens",
+      "model": "oldKlimGardens",
+      "name": "Settlement gardens",
+      "position": { "x": -14, "y": 0, "z": 15 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "collision": "none",
+      "footprint": { "x": 14, "z": 7 },
+      "tags": ["garden", "food", "settlement", "old_klim"],
+      "vision": { "blocks": false }
+    },
+    {
+      "id": "old_klim_residential_row",
+      "model": "oldKlimResidentialRow",
+      "name": "Residential yard",
+      "position": { "x": 5, "y": 0, "z": 18 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "collision": "solid",
+      "footprint": { "x": 22, "z": 5 },
+      "tags": ["housing", "building", "settlement", "old_klim"],
+      "collisionParts": [
+        { "center": { "x": -8, "y": 1.5, "z": 0 }, "size": { "x": 5.5, "y": 3, "z": 4.5 } },
+        { "center": { "x": 0, "y": 1.5, "z": 0 }, "size": { "x": 5.5, "y": 3, "z": 4.5 } },
+        { "center": { "x": 8, "y": 1.5, "z": 0 }, "size": { "x": 5.5, "y": 3, "z": 4.5 } }
+      ],
+      "vision": { "mode": "block" }
+    },
+    {
+      "id": "old_klim_workshop_shelter",
+      "model": "oldKlimWorkshopShelter",
+      "name": "Workshop shelter",
+      "position": { "x": -12, "y": 0, "z": -5 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "collision": "solid",
+      "footprint": { "x": 12, "z": 7 },
+      "tags": ["workshop", "building", "old_klim"],
+      "collisionParts": [
+        { "center": { "x": 0, "y": 1.2, "z": 3.3 }, "size": { "x": 12, "y": 2.4, "z": 0.5 } },
+        { "center": { "x": -5.8, "y": 1.2, "z": 1.7 }, "size": { "x": 0.5, "y": 2.4, "z": 3.4 } },
+        { "center": { "x": 5.8, "y": 1.2, "z": 1.7 }, "size": { "x": 0.5, "y": 2.4, "z": 3.4 } }
+      ],
+      "vision": { "mode": "block" }
+    },
+    {
+      "id": "old_klim_entry_guard_post",
+      "model": "oldKlimGuardPost",
+      "name": "Entry inspection post",
+      "position": { "x": -6, "y": 0, "z": -15 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "collision": "none",
+      "footprint": { "x": 5, "z": 3.5 },
+      "tags": ["guard-post", "entry", "settlement", "old_klim"],
+      "vision": { "mode": "cover" }
+    },
+    {
+      "id": "old_klim_plaza_seating",
+      "model": "oldKlimPlazaSeating",
+      "name": "Central plaza seating",
+      "position": { "x": 3, "y": 0, "z": 6 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "scale": { "x": 1, "y": 1, "z": 1 },
+      "collision": "none",
+      "footprint": { "x": 7, "z": 7 },
+      "tags": ["plaza", "social", "settlement", "old_klim"],
       "vision": { "blocks": false }
     }
   ],

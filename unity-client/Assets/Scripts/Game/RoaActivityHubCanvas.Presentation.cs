@@ -63,14 +63,53 @@ namespace RealmOfAshes.Game
             foreach (JObject task in tasks)
             {
                 string id = task?["id"]?.ToString() ?? string.Empty;
+                JObject details = task?["details"] as JObject;
                 JObject reward = task?["reward"] as JObject;
+                JObject liveEvent = task?["liveEvent"] as JObject;
+                JObject operation = task?["operation"] as JObject ?? details?["operation"] as JObject;
+                JObject operationGoal = operation?["goal"] as JObject;
+                JObject operationAssignment = operation?["assignment"] as JObject;
+                JObject community = liveEvent?["community"] as JObject;
+                JObject helpSignal = liveEvent?["helpSignal"] as JObject;
+                JObject liveRegion = task?["liveRegion"] as JObject;
+                JObject supply = liveRegion?["supply"] as JObject;
+                JObject security = liveRegion?["security"] as JObject;
+                JObject influence = liveRegion?["influence"] as JObject;
                 Append(value, id);
                 Append(value, task?["type"]?.ToString());
                 Append(value, task?["title"]?.ToString());
                 Append(value, task?["targetSiteName"]?.ToString());
+                Append(value, task?["impactSiteId"]?.ToString());
+                Append(value, task?["impactSiteName"]?.ToString());
                 Append(value, task?["siteId"]?.ToString());
                 Append(value, task?["issuerSiteId"]?.ToString());
                 Append(value, task?["priority"]?.ToString());
+                Append(value, liveEvent?["stage"]?.ToString());
+                Append(value, liveEvent?["stageLabel"]?.ToString());
+                Append(value, liveEvent?["causeLabel"]?.ToString());
+                Append(value, operation?["id"]?.ToString());
+                Append(value, operation?["kind"]?.ToString());
+                Append(value, operation?["phase"]?.ToString());
+                Append(value, operation?["revision"]?.ToString());
+                Append(value, operation?["sourceSiteId"]?.ToString());
+                Append(value, operation?["destinationSiteId"]?.ToString());
+                Append(value, operationGoal?["kind"]?.ToString());
+                Append(value, operationGoal?["reason"]?.ToString());
+                Append(value, operationGoal?["summary"]?.ToString());
+                Append(value, operationGoal?["targetSiteId"]?.ToString());
+                Append(value, operationAssignment?["leaderName"]?.ToString());
+                Append(value, operationAssignment?["leaderRole"]?.ToString());
+                Append(value, details?["targetPartyName"]?.ToString());
+                Append(value, details?["waitUntilHour"]?.ToString());
+                Append(value, details?["departedHour"]?.ToString());
+                Append(value, community?["progress"]?.ToString());
+                Append(value, community?["participantCount"]?.ToString());
+                Append(value, helpSignal?["requestedByName"]?.ToString());
+                Append(value, helpSignal?["expiresAt"]?.ToString());
+                Append(value, helpSignal?["responderCount"]?.ToString());
+                Append(value, supply?["label"]?.ToString());
+                Append(value, security?["label"]?.ToString());
+                Append(value, influence?["label"]?.ToString());
                 Append(value, reward?["xp"]?.ToString());
                 Append(value, reward?["caps"]?.ToString());
                 value.Append(accepted?.Invoke(id) == true ? '1' : '0');
@@ -98,7 +137,7 @@ namespace RealmOfAshes.Game
         public static string LauncherText(bool travelActive, float secondsLeft, int taskCount)
         {
             if (travelActive) return "В ПУТИ · " + Mathf.CeilToInt(Mathf.Max(0f, secondsLeft)) + " С";
-            return taskCount > 0 ? "СИГНАЛЫ ПУСТОШИ · " + taskCount : "СИГНАЛЫ ПУСТОШИ";
+            return taskCount > 0 ? "КОНТРАКТЫ ПУСТОШИ · " + taskCount : "КОНТРАКТЫ ПУСТОШИ";
         }
 
         private static void Append(StringBuilder target, string part)
@@ -159,7 +198,7 @@ namespace RealmOfAshes.Game
             if (!_presentedOnce)
             {
                 _presentedOnce = true;
-                _expanded = true;
+                _expanded = false;
             }
             SetExpanded(_expanded, true);
             InvalidateActivityCards();
@@ -226,7 +265,7 @@ namespace RealmOfAshes.Game
 
         private string BuildVisibleCardSignature(List<JObject> tasks)
         {
-            double worldHour = Map?.WastelandState?["sim"]?["worldHour"]?.ToObject<double>() ?? double.NaN;
+            double worldHour = Map?.WastelandState?["worldHour"]?.ToObject<double>() ?? double.NaN;
             return RoaActivityHubPresentation.BuildSignature(tasks, Map != null && Map.TravelActive,
                 Interaction != null && Interaction.WorldTaskActionPending,
                 id => Interaction != null && Interaction.IsWorldTaskAccepted(id),

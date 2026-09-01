@@ -38,6 +38,15 @@ namespace RealmOfAshes.EditorTools
                     && smooth.sqrMagnitude < 0.0001f,
                 "крупная коррекция протянулась через сцену вместо безопасного snap");
 
+            smooth = Vector3.one;
+            RoaNetworkActorMotion.Sample movingTeleport = RoaNetworkActorMotion.Step(
+                Vector3.zero, Vector3.forward * 8f, Vector3.forward * 4f, true,
+                0f, 1f / 60f, 0.1f, 0.25f, 3.4f, ref smooth);
+            Require(movingTeleport.Snapped && movingTeleport.Moving
+                    && Mathf.Abs(movingTeleport.VisualVelocity.z - 4f) < 0.001f
+                    && smooth.sqrMagnitude < 0.0001f,
+                "движущийся сетевой актёр вспыхнул в idle после snap-коррекции");
+
             smooth = Vector3.zero;
             RoaNetworkActorMotion.Sample stopCorrection = RoaNetworkActorMotion.Step(
                 Vector3.zero, Vector3.forward * 0.7f, Vector3.zero, false,
@@ -72,6 +81,7 @@ namespace RealmOfAshes.EditorTools
 
             Debug.Log("[СЕТЕВОЕ ДВИЖЕНИЕ] готово: прогноз="
                 + predicted.z.ToString("0.00") + "/" + capped.z.ToString("0.00")
+                + ", snap=" + movingTeleport.VisualVelocity.z.ToString("0.00")
                 + ", stop=" + stopCorrection.VisualVelocity.z.ToString("0.00")
                 + ", cap=" + nearTeleport.VisualVelocity.magnitude.ToString("0.00")
                 + ", 30/120 FPS=" + at30.Position.z.ToString("0.000")

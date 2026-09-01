@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85f7e1cb27695894394c7353d949e26b, type: 3}
+  m_Name: GlobalMapModelPrefabs
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.Game.RoaModelPrefabCatalog
+  entries:
+  - sourceUrl: /assets/models/characters/base/character_female_large.glb
+    prefab: {fileID: 971036837001020182, guid: d3b4077a5477d634e9e07b4ba0a31ccb, type: 3}
+  - sourceUrl: /assets/models/characters/base/character_female_medium.glb
+    prefab: {fileID: 1333530274289934723, guid: e91e43d7ec6bf664ab9460abdf200a50, type: 3}
+  - sourceUrl: /assets/models/characters/base/character_female_slim.glb
+    prefab: {fileID: 4282484722595699946, guid: fd933ce5780e45749acc0d0519548d74, type: 3}
+  - sourceUrl: /assets/models/characters/base/character_male_large.glb
+    prefab: {fileID: 8742549109345688677, guid: 67f80ea200aa32b4c8b67b6c5925c5f1, type: 3}
+  - sourceUrl: /assets/models/characters/base/character_male_medium.glb
+    prefab: {fileID: 2656729991155903506, guid: 27eb01be56bd5354782a3d8b51274d80, type: 3}
+  - sourceUrl: /assets/models/characters/base/character_male_slim.glb
+    prefab: {fileID: 3263121585391160069, guid: b906249dda334074085a99d886fc178a, type: 3}
+  - sourceUrl: /assets/models/characters/npc/npc_humanoid_animations.glb
+    prefab: {fileID: 9071860110875983437, guid: f3faa7c8b7c783742acef23c07ba6cd3, type: 3}
+  - sourceUrl: /assets/models/wasteland/brahmin.glb
+    prefab: {fileID: 5635988986985348765, guid: 98f48e4d66e9ea946b0316d94ae081bb, type: 3}
+  - sourceUrl: /assets/models/wasteland/npc_ash_wolf.glb
+    prefab: {fileID: 4293081618108315741, guid: c1019b8456d5e8541a2f5a43c5397e15, type: 3}
+  - sourceUrl: /assets/models/wasteland/npc_fire_gecko.glb
+    prefab: {fileID: 8250634240932639904, guid: 13576563c552e5442adec3d01344bba9, type: 3}
+  - sourceUrl: /assets/models/wasteland/npc_gecko.glb
+    prefab: {fileID: 3857105491611449263, guid: 4d7e1053b193b274eb79d95040767670, type: 3}
+  - sourceUrl: /assets/models/wasteland/npc_ghoul.glb
+    prefab: {fileID: 2882596692508787526, guid: e0fb1a4aa5e00fb47bf20f863cc6e468, type: 3}
+  - sourceUrl: /assets/models/wasteland/npc_mutant_ant.glb
+    prefab: {fileID: 238666572597406880, guid: 4dd71dc73541d0d4f80f5791b5764fb1, type: 3}
+  - sourceUrl: /assets/models/wasteland/npc_radscorpion.glb
+    prefab: {fileID: 4415182887389652907, guid: c50408004620e324ab80230646c67bb8, type: 3}
+  - sourceUrl: /assets/models/wasteland/npc_super_mutant.glb
+    prefab: {fileID: 5681379148403661094, guid: 1d1715e4767c6054584d334733e6dcb0, type: 3}

@@ -35,7 +35,16 @@ namespace RealmOfAshes.Game
         [Header("Зум колесом")]
         public float MinDistance = MinimumGameplayDistance;
         public float MaxDistance = MaximumGameplayDistance;
-        public float ZoomSpeed = 6f;
+
+        /// <summary>
+        /// Множитель дистанции за один щелчок колеса. Шаг фиксированный и
+        /// ограниченный: сырое значение оси колеса различается между
+        /// редактором, standalone и WebGL в разы, и пропорциональная формула
+        /// телепортировала зум через весь диапазон, «проскакивая» ярусы
+        /// глобальной карты.
+        /// </summary>
+        public const float ZoomStepFactor = 1.12f;
+        public const float ZoomMaxNotchesPerFrame = 2f;
 
         /// <summary>
         /// The global map has its own temporary zoom range. It disables saving so
@@ -71,9 +80,15 @@ namespace RealmOfAshes.Game
         {
             if (Target == null) return;
 
-            float scroll = RoaGameBootstrap.BlocksWorldHud ? 0f : Input.GetAxis("Mouse ScrollWheel");
+            // mouseScrollDelta не масштабируется настройками осей Input Manager,
+            // а клэмп по щелчкам гарантирует, что один кадр не перепрыгнет ярус
+            // детализации карты (границы ярусов дальше ×1.25 друг от друга).
+            float scroll = RoaGameBootstrap.BlocksWorldHud ? 0f : Input.mouseScrollDelta.y;
             if (Mathf.Abs(scroll) > 0.0001f)
-                SetDistance(Distance - scroll * ZoomSpeed * Distance, ZoomPersistenceEnabled);
+            {
+                float notches = Mathf.Clamp(scroll, -ZoomMaxNotchesPerFrame, ZoomMaxNotchesPerFrame);
+                SetDistance(Distance * Mathf.Pow(ZoomStepFactor, -notches), ZoomPersistenceEnabled);
+            }
 
             Quaternion orbit = Quaternion.Euler(PitchDeg, YawDeg, 0f);
             bool teleported;

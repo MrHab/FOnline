@@ -287,10 +287,10 @@ namespace RealmOfAshes.EditorTools
             };
             Vector2[] expectedCanvasSizes =
             {
-                new Vector2(140f, 26f),
-                new Vector2(156f, 26f),
+                new Vector2(168f, 30f),
+                new Vector2(188f, 32f),
                 new Vector2(220f, 44f),
-                new Vector2(92f, 24f)
+                new Vector2(132f, 26f)
             };
             float[] scales = { 1f, 1.42f, 2f };
 

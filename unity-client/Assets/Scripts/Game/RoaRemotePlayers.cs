@@ -675,8 +675,9 @@ namespace RealmOfAshes.Game
         {
             if (rows == null) return;
             float maxSq = maxDistance * maxDistance;
-            foreach (Remote remote in _remotes.Values)
+            foreach (KeyValuePair<string, Remote> pair in _remotes)
             {
+                Remote remote = pair.Value;
                 if (remote == null || remote.Root == null || remote.Player == null || remote.Player.Dead) continue;
                 if (remote.Gate != null && !remote.Gate.IsVisible) continue;
                 Vector3 delta = remote.Root.transform.position - origin;
@@ -684,6 +685,7 @@ namespace RealmOfAshes.Game
                 if (delta.sqrMagnitude > maxSq) continue;
                 rows.Add(new RoaActorNameplates.Entry
                 {
+                    Key = "player:" + pair.Key,
                     Name = string.IsNullOrEmpty(remote.Player.Name) ? "Игрок" : remote.Player.Name,
                     Hp = remote.Player.Hp,
                     MaxHp = Mathf.Max(1, remote.Player.MaxHp),

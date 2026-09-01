@@ -10,6 +10,9 @@ namespace RealmOfAshes.Game
     /// speech while remaining transparent to mouse and touch input.
     /// </summary>
     [DisallowMultipleComponent]
+    // Мировые подписи проецируются в экран и должны обновляться после
+    // RoaCameraRig.LateUpdate, иначе отстают от камеры на кадр и «плывут».
+    [DefaultExecutionOrder(50)]
     public sealed class RoaWorldOverlayCanvas : MonoBehaviour
     {
         public struct GroundLabel

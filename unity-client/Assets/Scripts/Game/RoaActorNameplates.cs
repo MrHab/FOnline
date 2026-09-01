@@ -9,6 +9,10 @@ namespace RealmOfAshes.Game
     /// Имена и состояние здоровья разговорных NPC и других игроков. Точное HP
     /// открывает только серверно сохранённый талант «Осведомлённость».
     /// </summary>
+    // Плашки проецируют мир в экран, поэтому обязаны обновляться после того,
+    // как RoaCameraRig (LateUpdate с порядком по умолчанию) довёл камеру:
+    // иначе подписи целый кадр живут по прошлой проекции и «плывут».
+    [DefaultExecutionOrder(50)]
     public sealed class RoaActorNameplates : MonoBehaviour
     {
         public RoaSocketClient Socket;
@@ -20,6 +24,8 @@ namespace RealmOfAshes.Game
 
         public struct Entry
         {
+            /// <summary>Устойчивый ключ актёра для липких слотов раскладки.</summary>
+            public string Key;
             public string Name;
             public string Faction;
             public int Hp;
@@ -99,6 +105,9 @@ namespace RealmOfAshes.Game
 
         private readonly List<Entry> _entries = new List<Entry>();
         private readonly List<Rect> _occupied = new List<Rect>();
+        // Вертикальный сдвиг слота каждой плашки на прошлом кадре (по Entry.Key).
+        private Dictionary<string, float> _stickySlots = new Dictionary<string, float>();
+        private Dictionary<string, float> _nextStickySlots = new Dictionary<string, float>();
         private GUIStyle _nameStyle;
         private GUIStyle _healthStyle;
 
@@ -319,6 +328,7 @@ namespace RealmOfAshes.Game
                 if (Hud != null && Hud.HasState)
                     _entries.Add(new Entry
                     {
+                        Key = "self",
                         Name = string.IsNullOrEmpty(Hud.Name) ? "Странник" : Hud.Name,
                         Hp = Hud.Hp,
                         MaxHp = Hud.MaxHp,
@@ -327,15 +337,29 @@ namespace RealmOfAshes.Game
                         IsSelf = true
                     });
                 Vector3 origin = Player.transform.position;
-                _entries.Sort((a, b) => Vector3.SqrMagnitude(a.World - origin).CompareTo(Vector3.SqrMagnitude(b.World - origin)));
+                // Гистерезис сортировки: сантиметровое дрожание дистанции не должно
+                // перетасовывать first-fit раскладку. Сравниваем корзины по 2 м,
+                // внутри корзины порядок стабилен по ключу актёра.
+                _entries.Sort((a, b) =>
+                {
+                    int buckets = NameplateOrderBucket(a.World, origin)
+                        .CompareTo(NameplateOrderBucket(b.World, origin));
+                    return buckets != 0
+                        ? buckets
+                        : string.CompareOrdinal(a.Key ?? string.Empty, b.Key ?? string.Empty);
+                });
                 bool awareness = Socket?.Session?.Self?["talentRanks"]?["awareness"]?.ToObject<int>() > 0;
                 _occupied.Clear();
+                _nextStickySlots.Clear();
                 foreach (Entry entry in _entries)
                 {
                     Vector3 screen = camera.WorldToScreenPoint(entry.World);
                     if (screen.z <= 0f || screen.x < 0f || screen.x > Screen.width || screen.y < 0f || screen.y > Screen.height) continue;
-                    // Та же раскладка без наложений, что и у IMGUI (координаты сверху вниз).
-                    if (!TryResolveScreenRect(new Vector2(screen.x, Screen.height - screen.y), _occupied, Screen.width, Screen.height, out Rect rect))
+                    // Та же раскладка без наложений, что и у IMGUI (координаты сверху вниз),
+                    // но со «липким» слотом: занятая плашка держится за прошлый сдвиг.
+                    if (!TryResolveScreenRectSticky(new Vector2(screen.x, Screen.height - screen.y),
+                            _occupied, Screen.width, Screen.height,
+                            entry.Key, _stickySlots, _nextStickySlots, out Rect rect))
                         continue;
                     _occupied.Add(rect);
 
@@ -388,6 +412,11 @@ namespace RealmOfAshes.Game
                     nameRect.sizeDelta = new Vector2(width, 14f);
                     nameRect.anchoredPosition = new Vector2(0f, rowY + (presentation.ShowFaction ? 14f : 0f));
                 }
+                // Память слотов живёт ровно один кадр: актёры, пропавшие из
+                // раскладки, не тянут за собой устаревшие сдвиги.
+                Dictionary<string, float> swap = _stickySlots;
+                _stickySlots = _nextStickySlots;
+                _nextStickySlots = swap;
             }
             for (int i = used; i < _pool.Count; i++) if (_pool[i].Root.activeSelf) _pool[i].Root.SetActive(false);
             RefreshHint(show);
@@ -450,32 +479,84 @@ namespace RealmOfAshes.Game
         public static bool TryResolveScreenRect(Vector2 point, IReadOnlyList<Rect> occupied,
                                                 int screenWidth, int screenHeight, out Rect resolved)
         {
+            return TryResolveScreenRectSticky(point, occupied, screenWidth, screenHeight,
+                null, null, null, out resolved);
+        }
+
+        /// <summary>Корзина сортировки плашек: 2-метровые ступени дистанции.</summary>
+        public static int NameplateOrderBucket(Vector3 world, Vector3 origin)
+        {
+            Vector3 delta = world - origin;
+            delta.y = 0f;
+            return Mathf.FloorToInt(delta.magnitude / 2f);
+        }
+
+        /// <summary>
+        /// Раскладка без наложений с памятью слота. Порядок предпочтений:
+        /// родное место над головой → слот прошлого кадра → свободный слот
+        /// с шагом 49px. Без памяти каждый пересчёт мог перекинуть плашку на
+        /// другой свободный слот, и имена «летали» при любой перетасовке.
+        /// </summary>
+        public static bool TryResolveScreenRectSticky(Vector2 point, IReadOnlyList<Rect> occupied,
+                                                      int screenWidth, int screenHeight,
+                                                      string key,
+                                                      Dictionary<string, float> previousSlots,
+                                                      Dictionary<string, float> nextSlots,
+                                                      out Rect resolved)
+        {
             const float width = 164f;
             const float height = 46f;
             const float margin = 6f;
             float baseX = Mathf.Clamp(point.x - width * 0.5f, margin,
                                       Mathf.Max(margin, screenWidth - width - margin));
-            float baseY = Mathf.Clamp(point.y - height - 8f, margin,
-                                      Mathf.Max(margin, screenHeight - height - margin));
-            for (int attempt = 0; attempt < 7; attempt++)
+            float maxY = Mathf.Max(margin, screenHeight - height - margin);
+            float baseY = Mathf.Clamp(point.y - height - 8f, margin, maxY);
+
+            // 1. Родное место: всегда возвращаемся к нему, как только оно свободно.
+            var natural = new Rect(baseX, baseY, width, height);
+            if (!OverlapsAny(natural, occupied))
             {
-                int step = attempt == 0 ? 0 : (attempt + 1) / 2;
-                float direction = attempt == 0 || attempt % 2 == 1 ? -1f : 1f;
-                float y = Mathf.Clamp(baseY + direction * step * 49f, margin,
-                                      Mathf.Max(margin, screenHeight - height - margin));
-                var candidate = new Rect(baseX, y, width, height);
-                bool overlaps = false;
-                for (int i = 0; i < occupied.Count; i++)
+                if (nextSlots != null && key != null) nextSlots[key] = 0f;
+                resolved = natural;
+                return true;
+            }
+
+            // 2. Слот прошлого кадра: занятая плашка держится за уже выданный
+            //    сдвиг, а не прыгает на первый попавшийся свободный.
+            if (previousSlots != null && key != null
+                && previousSlots.TryGetValue(key, out float lastOffset) && lastOffset != 0f)
+            {
+                float stickyY = Mathf.Clamp(baseY + lastOffset, margin, maxY);
+                var sticky = new Rect(baseX, stickyY, width, height);
+                if (!OverlapsAny(sticky, occupied))
                 {
-                    if (!candidate.Overlaps(occupied[i])) continue;
-                    overlaps = true;
-                    break;
+                    if (nextSlots != null) nextSlots[key] = stickyY - baseY;
+                    resolved = sticky;
+                    return true;
                 }
-                if (overlaps) continue;
+            }
+
+            // 3. Обычный подбор свободного слота вверх/вниз.
+            for (int attempt = 1; attempt < 7; attempt++)
+            {
+                int step = (attempt + 1) / 2;
+                float direction = attempt % 2 == 1 ? -1f : 1f;
+                float y = Mathf.Clamp(baseY + direction * step * 49f, margin, maxY);
+                var candidate = new Rect(baseX, y, width, height);
+                if (OverlapsAny(candidate, occupied)) continue;
+                if (nextSlots != null && key != null) nextSlots[key] = y - baseY;
                 resolved = candidate;
                 return true;
             }
             resolved = default;
+            return false;
+        }
+
+        private static bool OverlapsAny(Rect candidate, IReadOnlyList<Rect> occupied)
+        {
+            if (occupied == null) return false;
+            for (int i = 0; i < occupied.Count; i++)
+                if (candidate.Overlaps(occupied[i])) return true;
             return false;
         }
 

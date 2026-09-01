@@ -179,6 +179,78 @@ namespace RealmOfAshes.Game
             return found;
         }
 
+        private Transform _banner;
+        private Material _bannerFlagMaterial;
+        private Material _bannerPoleMaterial;
+
+        /// <summary>
+        /// Фракционный штандарт над отрядом — читаемость принадлежности с любого
+        /// зума, как знамёна армий в стратегиях. Чистая презентация: кликов не
+        /// перехватывает (коллайдеры примитивов удаляются), масштабируется вместе
+        /// с актёром.
+        /// </summary>
+        public void SetBanner(Color color, bool visible = true)
+        {
+            if (!visible)
+            {
+                if (_banner != null) _banner.gameObject.SetActive(false);
+                return;
+            }
+            if (_banner == null)
+            {
+                Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
+                    ?? Shader.Find("Unlit/Color")
+                    ?? Shader.Find("Sprites/Default");
+                if (shader == null) return;
+                _bannerPoleMaterial = new Material(shader) { name = "PartyBannerPole" };
+                ApplyBannerColor(_bannerPoleMaterial, new Color(0.16f, 0.13f, 0.10f));
+                _bannerFlagMaterial = new Material(shader) { name = "PartyBannerFlag" };
+
+                var root = new GameObject("PartyBanner");
+                _banner = root.transform;
+                _banner.SetParent(transform, false);
+
+                GameObject pole = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                pole.name = "Pole";
+                Destroy(pole.GetComponent<Collider>());
+                pole.transform.SetParent(_banner, false);
+                pole.transform.localPosition = new Vector3(0f, 1.05f, 0f);
+                pole.transform.localScale = new Vector3(0.045f, 2.1f, 0.045f);
+                ConfigureBannerRenderer(pole, _bannerPoleMaterial);
+
+                GameObject flag = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                flag.name = "Flag";
+                Destroy(flag.GetComponent<Collider>());
+                flag.transform.SetParent(_banner, false);
+                flag.transform.localPosition = new Vector3(0.34f, 1.86f, 0f);
+                flag.transform.localScale = new Vector3(0.64f, 0.4f, 0.02f);
+                ConfigureBannerRenderer(flag, _bannerFlagMaterial);
+            }
+            _banner.gameObject.SetActive(true);
+            ApplyBannerColor(_bannerFlagMaterial, color);
+        }
+
+        private static void ConfigureBannerRenderer(GameObject go, Material material)
+        {
+            var renderer = go.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+        }
+
+        private static void ApplyBannerColor(Material material, Color color)
+        {
+            if (material == null) return;
+            material.color = color;
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+        }
+
+        private void OnDestroy()
+        {
+            if (_bannerFlagMaterial != null) Destroy(_bannerFlagMaterial);
+            if (_bannerPoleMaterial != null) Destroy(_bannerPoleMaterial);
+        }
+
         public bool TryGetStrategicWorldBounds(out Bounds bounds)
         {
             bounds = default;

@@ -44,6 +44,7 @@ namespace RealmOfAshes.Game
         private GameObject _tutorial;
         private GameObject _hudToolbar;
         private Text _menuStatus;
+        private Text _audioButtonLabel;
         private Text _graphicsCurrent;
         private readonly List<Button> _presetButtons = new List<Button>();
         private readonly Dictionary<string, Text> _graphicsRows = new Dictionary<string, Text>();
@@ -78,6 +79,7 @@ namespace RealmOfAshes.Game
                 foreach (Button button in _menu.GetComponentsInChildren<Button>())
                     if (button.name == "SwitchCharacter" || button.name == "Logout")
                         button.interactable = !Bootstrap.GameMenuActionPending;
+                RefreshAudioLabel();
             }
             if (_graphics.activeSelf) RefreshGraphics();
         }
@@ -122,12 +124,12 @@ namespace RealmOfAshes.Game
         /// <summary>#game-settings-panel: 310px под ⚙, список кнопок и заметка.</summary>
         private void BuildMenu()
         {
-            RectTransform panel = Panel("GameMenu", new Vector2(1f, 1f), new Vector2(-10f, -58f), new Vector2(310f, 360f));
+            RectTransform panel = Panel("GameMenu", new Vector2(1f, 1f), new Vector2(-10f, -58f), new Vector2(310f, 404f));
             _menu = panel.gameObject;
             PanelTitle(panel, "Меню", () => Bootstrap.MenuOpenGameMenu(false));
 
-            string[] names = { "SwitchCharacter", "Logout", "EditHud", "ResetHud", "Graphics", "Tutorial" };
-            string[] labels = { "Сменить персонажа", "Выйти из аккаунта", "Редактировать HUD", "Сбросить HUD", "Настройки графики", "Обучение и управление (F1)" };
+            string[] names = { "SwitchCharacter", "Logout", "EditHud", "ResetHud", "Graphics", "Audio", "Tutorial" };
+            string[] labels = { "Сменить персонажа", "Выйти из аккаунта", "Редактировать HUD", "Сбросить HUD", "Настройки графики", "Звук", "Обучение и управление (F1)" };
             System.Action[] actions =
             {
                 () => Bootstrap.ReturnToCharacterPicker(),
@@ -135,6 +137,7 @@ namespace RealmOfAshes.Game
                 () => Bootstrap.MenuBeginHudEdit(),
                 () => Bootstrap.MenuResetHud(),
                 () => Bootstrap.MenuOpenGraphics(true),
+                () => { RoaAudio.Active?.CycleMasterVolume(); RefreshAudioLabel(); },
                 () => Bootstrap.MenuOpenTutorial(true)
             };
             for (int i = 0; i < names.Length; i++)
@@ -142,14 +145,25 @@ namespace RealmOfAshes.Game
                 Button button = UiButton(names[i], panel, labels[i], 12, actions[i]);
                 var rect = (RectTransform)button.transform;
                 Place(rect, 0f, 1f, 1f, 1f, new Vector2(12f, -48f - i * 44f - 36f), new Vector2(-12f, -48f - i * 44f));
-                button.GetComponentInChildren<Text>().alignment = TextAnchor.MiddleLeft;
+                Text buttonLabel = button.GetComponentInChildren<Text>();
+                buttonLabel.alignment = TextAnchor.MiddleLeft;
+                if (names[i] == "Audio") _audioButtonLabel = buttonLabel;
             }
+            RefreshAudioLabel();
 
             _menuStatus = Label("Note", panel, 10, TextAnchor.UpperLeft, NoteInk);
             _menuStatus.horizontalOverflow = HorizontalWrapMode.Wrap;
             Place(_menuStatus.rectTransform, 0f, 0f, 1f, 0f, new Vector2(12f, 8f), new Vector2(-12f, 34f));
         }
 
+        private void RefreshAudioLabel()
+        {
+            if (_audioButtonLabel == null) return;
+            RoaAudio audio = RoaAudio.Active;
+            _audioButtonLabel.text = audio == null ? "Звук: —"
+                : audio.Muted ? "Звук: выключен"
+                : "Звук: " + audio.VolumePercent + "%";
+        }
         /// <summary>#graphics-window: пресеты, текущий режим, строки параметров.</summary>
         private void BuildGraphics()
         {
@@ -248,9 +262,10 @@ namespace RealmOfAshes.Game
             PanelTitle(panel, "Обучение", () => Bootstrap.MenuOpenTutorial(false));
 
             RectTransform scrollArea = Child("Scroll", panel);
-            Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 30f), new Vector2(-14f, -48f));
+            Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 38f), new Vector2(-14f, -48f));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scrollArea.gameObject.AddComponent<RectMask2D>();
             RectTransform list = Child("List", scrollArea);
             list.anchorMin = new Vector2(0f, 1f);
@@ -271,7 +286,8 @@ namespace RealmOfAshes.Game
                 new[] { "Взаимодействие", "Короткое E открывает разговор, торговлю, хранилище, контейнер, ресурс, станок, доску работ или переход между локациями. Удержание E открывает круг быстрых слотов; клавиши 1–8 используют слот сразу." },
                 new[] { "Инвентарь", "Tab — сумка, P или B — PIP-ASH, M — карта локации. В сумке вкладки категорий и сортировка; кнопка «быстро» назначает предмет в быстрый слот." },
                 new[] { "HUD", "В меню ⚙ включите «Редактировать HUD» и перетащите золотые рамки; «Сбросить HUD» возвращает раскладку." },
-                new[] { "Глобальная карта", "G у границы локации — выход на глобальную карту. Выберите точку и подтвердите маршрут: время, встречи, состав группы, отмену и прибытие ведёт сервер." }
+                new[] { "Глобальная карта", "G у границы локации — выход на глобальную карту. Выберите точку и подтвердите маршрут: время, встречи, состав группы, отмену и прибытие ведёт сервер." },
+                new[] { "Активности", "В центре событий выберите карточку и нажмите «ВЗЯТЬ И ЕХАТЬ». В локации следуйте золотым целям; после основной задачи доберитесь до зелёной «ЭВАКУАЦИИ». Результат и начисленную награду подтверждает сервер." }
             };
             foreach (string[] section in sections)
             {
@@ -286,7 +302,11 @@ namespace RealmOfAshes.Game
 
             Text hint = Label("Hint", panel, 10, TextAnchor.MiddleLeft, NoteInk);
             hint.text = "F1 / Esc — закрыть";
-            Place(hint.rectTransform, 0f, 0f, 1f, 0f, new Vector2(14f, 6f), new Vector2(-14f, 26f));
+            Place(hint.rectTransform, 0f, 0f, 1f, 0f, new Vector2(14f, 6f), new Vector2(-202f, 30f));
+            Button restartCoach = UiButton("RestartFirstRunCoach", panel, "Повторить первый выход", 10,
+                () => Bootstrap.MenuRestartFirstRunCoach());
+            Place((RectTransform)restartCoach.transform, 1f, 0f, 1f, 0f,
+                new Vector2(-194f, 6f), new Vector2(-14f, 30f));
         }
 
         /// <summary>Тулбар редактирования HUD внизу экрана.</summary>

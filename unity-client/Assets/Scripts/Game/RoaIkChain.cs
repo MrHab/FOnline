@@ -49,6 +49,15 @@ namespace RealmOfAshes.Game
         /// </param>
         public bool Solve(Vector3 target, Quaternion? endRotation)
         {
+            return Solve(target, endRotation, null);
+        }
+
+        /// <summary>
+        /// Решить цепь с pole-целью: локоть или колено стабильно остаётся на нужной
+        /// стороне, даже когда конечность почти выпрямлена.
+        /// </summary>
+        public bool Solve(Vector3 target, Quaternion? endRotation, Vector3? pole)
+        {
             if (!Ready) return false;
 
             for (int i = 0; i < _bones.Length; i++) _positions[i] = _bones[i].position;
@@ -93,6 +102,8 @@ namespace RealmOfAshes.Game
                 }
             }
 
+            if (pole.HasValue) ApplyPoleConstraint(pole.Value);
+
             // Довернуть каждое звено так, чтобы направление на следующее совпало
             // с расчётным. Читать позиции надо заново: поворот родителя уже
             // сдвинул детей.
@@ -110,6 +121,26 @@ namespace RealmOfAshes.Game
             if (endRotation.HasValue) _bones[last].rotation = endRotation.Value;
 
             return Vector3.Distance(_bones[last].position, target) < 0.01f;
+        }
+
+        private void ApplyPoleConstraint(Vector3 pole)
+        {
+            // The anatomical bend is the penultimate joint: calf for a leg,
+            // lower arm for a four-bone arm chain. The clavicle remains animation-led.
+            for (int i = Mathf.Max(1, _positions.Length - 2); i < _positions.Length - 1; i++)
+            {
+                Vector3 anchor = _positions[i - 1];
+                Vector3 axis = _positions[i + 1] - anchor;
+                if (axis.sqrMagnitude < 1e-8f) continue;
+
+                Vector3 current = Vector3.ProjectOnPlane(_positions[i] - anchor, axis);
+                Vector3 desired = Vector3.ProjectOnPlane(pole - anchor, axis);
+                if (current.sqrMagnitude < 1e-8f || desired.sqrMagnitude < 1e-8f) continue;
+
+                float angle = Vector3.SignedAngle(current, desired, axis.normalized);
+                _positions[i] = anchor
+                    + Quaternion.AngleAxis(angle, axis.normalized) * (_positions[i] - anchor);
+            }
         }
     }
 }

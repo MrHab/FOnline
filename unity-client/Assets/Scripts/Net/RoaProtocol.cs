@@ -147,6 +147,7 @@ namespace RealmOfAshes.Net
         [JsonProperty("z")] public float Z;
         [JsonProperty("self")] public JObject Self;
         [JsonProperty("combat")] public JObject Combat;
+        [JsonProperty("combats")] public JArray Combats;
         [JsonProperty("players")] public List<PublicPlayer> Players = new List<PublicPlayer>();
         [JsonProperty("worldState")] public JObject WorldState;
         [JsonProperty("serverAuthoritativeEnemies")] public bool ServerAuthoritativeEnemies;
@@ -180,6 +181,8 @@ namespace RealmOfAshes.Net
         [JsonProperty("ap")] public float Ap;
         [JsonProperty("maxAp")] public int MaxAp;
         [JsonProperty("dead")] public bool Dead;
+        [JsonProperty("downed")] public bool Downed;
+        [JsonProperty("downedUntil")] public long DownedUntil;
         [JsonProperty("level")] public int Level;
         [JsonProperty("weapon")] public string Weapon;
         [JsonProperty("equipment")] public JObject Equipment;
@@ -264,6 +267,8 @@ namespace RealmOfAshes.Net
         public const int HostileToViewer = 8;
         public const int HasLook = 16;
         public const int HasSpeech = 32;
+        public const int AttackTelegraph = 64;
+        public const int RangedAttackTelegraph = 128;
     }
 
     #endregion

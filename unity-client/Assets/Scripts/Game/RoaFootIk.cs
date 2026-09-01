@@ -12,7 +12,8 @@ namespace RealmOfAshes.Game
     /// опорную стопу в момент контакта, пришивает её к точке касания и держит,
     /// пока анимация не поднимет ногу снова.
     ///
-    /// Двигаются только бедро и голень — ориентацию стопы задаёт анимация.
+    /// Цепь бедро–голень ставит стопу в контакт, а лёгкий слой ориентации
+    /// совмещает подошву с нормалью поверхности.
     /// </summary>
     public sealed class RoaFootIk
     {
@@ -26,14 +27,34 @@ namespace RealmOfAshes.Game
         private const float TwistLimit = 0.55f;
         private const float TurnTwistLimit = 0.6f;
 
-        /// <summary>Замок хватает быстро (24), отпускает мягко (6).</summary>
+        /// <summary>Замок хватает быстро (24), отпускает за короткую часть шага (18).</summary>
         private const float BlendRateLock = 24f;
-        private const float BlendRateRelease = 6f;
+        private const float BlendRateRelease = 18f;
+        private const float TargetReachReserve = 0.018f;
 
         /// <summary>Скачок позиции, после которого замки сбрасываются, м.</summary>
         private const float TeleportReset = 1.6f;
 
         private const int FabrikIterations = 8;
+        private const float GroundProbeRadius = 0.045f;
+        private const float GroundProbeAbove = 0.62f;
+        private const float GroundProbeDistance = 1.28f;
+        private const float GroundFollowRate = 22f;
+        private const float GroundNormalRate = 14f;
+        private const float MinGroundNormalY = 0.57f;
+        private const float MaximumWalkableRise = 0.30f;
+        private const float MaximumUnsupportedLift = 0.075f;
+        // Полнотелые hurt/attack-клипы временно владеют ногами и не должны
+        // бороться с обычными замками шага. Но полностью отпускать цепь тоже
+        // нельзя: отдельные кадры донора поднимают стопу почти к тазу. Этот
+        // мягкий предел сохраняет авторский перенос веса, не позволяя ноге
+        // «улететь» при ударе в упор.
+        private const float StationaryActionLiftLimit = 0.18f;
+        private const float MovingActionLiftLimit = 0.32f;
+        private const float ActionNormalWeight = 0.58f;
+        private const float DesktopMaxDistance = 20f;
+        private const float MobileMaxDistance = 12f;
+        private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
 
         private sealed class Side
         {
@@ -46,8 +67,13 @@ namespace RealmOfAshes.Game
             public bool Locked;
             public float Blend;
             public Vector3 LockPos;
+            public Vector3 LockNormal = Vector3.up;
             public float LockYaw;
             public float RelockCooldown;
+
+            public float GroundY;
+            public Vector3 GroundNormal = Vector3.up;
+            public bool HasGround;
 
             public Vector3 PrevAnimated;
             public bool HasPrev;
@@ -62,22 +88,94 @@ namespace RealmOfAshes.Game
 
         private Transform _ground;
         private Transform _modelRoot;
+        private Transform _actorRoot;
 
         private Vector3 _lastActorPos;
         private bool _hasLastActorPos;
         private string _lastClip = string.Empty;
 
         public bool Ready { get; private set; }
+        public int GroundProbeCount { get; private set; }
+        public bool SupportSafetyActive { get; private set; }
+        public bool ActionSafetyActive { get; private set; }
+        public bool Suspended { get; private set; }
 
         /// <summary>Сколько стоп зафиксировано сейчас. Для диагностики.</summary>
         public int LockedCount { get { return (_left.Locked ? 1 : 0) + (_right.Locked ? 1 : 0); } }
+
+        public static float MaxDistance(bool mobile)
+        {
+            return mobile ? MobileMaxDistance : DesktopMaxDistance;
+        }
+
+        public static bool ShouldRun(Vector3 actorPosition, Vector3 observerPosition,
+                                     bool visible, bool mobile)
+        {
+            if (!visible) return false;
+            Vector3 delta = actorPosition - observerPosition;
+            delta.y = 0f;
+            float maxDistance = MaxDistance(mobile);
+            return delta.sqrMagnitude <= maxDistance * maxDistance;
+        }
+
+        public void Reset()
+        {
+            ResetSide(_left);
+            ResetSide(_right);
+            _lastActorPos = Vector3.zero;
+            _hasLastActorPos = false;
+            _lastClip = string.Empty;
+            SupportSafetyActive = false;
+            ActionSafetyActive = false;
+            Suspended = false;
+        }
+
+        public bool TryGetContactLifts(out float left, out float right)
+        {
+            left = 0f;
+            right = 0f;
+            if (!Ready || !_left.HasGround || !_right.HasGround
+                || _left.Foot == null || _right.Foot == null) return false;
+            left = _left.Foot.position.y - (_left.GroundY + _left.RestHeight);
+            right = _right.Foot.position.y - (_right.GroundY + _right.RestHeight);
+            return true;
+        }
+
+        public bool TryGetGroundPose(out float groundY, out Vector3 normal)
+        {
+            groundY = _ground != null ? _ground.position.y : 0f;
+            normal = Vector3.up;
+            int count = 0;
+            Vector3 normalSum = Vector3.zero;
+            float heightSum = 0f;
+            if (_left.HasGround)
+            {
+                count++;
+                heightSum += _left.GroundY;
+                normalSum += _left.GroundNormal;
+            }
+            if (_right.HasGround)
+            {
+                count++;
+                heightSum += _right.GroundY;
+                normalSum += _right.GroundNormal;
+            }
+            if (count == 0) return false;
+            groundY = heightSum / count;
+            if (normalSum.sqrMagnitude > 0.01f) normal = normalSum.normalized;
+            return true;
+        }
 
         /// <param name="ground">Трансформ на уровне ступней — от него считается земля.</param>
         /// <param name="modelRoot">Корень модели: его поворот задаёт скручивание.</param>
         public void Bind(Transform ground, Transform modelRoot)
         {
+            Reset();
+            GroundProbeCount = 0;
+            Ready = false;
             _ground = ground;
             _modelRoot = modelRoot;
+            _actorRoot = ResolveActorRoot(ground);
             if (_ground == null || _modelRoot == null) return;
 
             BindSide(_left, "thigh_l", "calf_l", "foot_l");
@@ -125,6 +223,9 @@ namespace RealmOfAshes.Game
         /// </param>
         public void Apply(float dt, bool locomoting, bool turning, bool dead, string clip, float kneeFlex)
         {
+            SupportSafetyActive = false;
+            ActionSafetyActive = false;
+            Suspended = false;
             if (!Ready) return;
 
             float frameDt = Mathf.Clamp(dt, 0.001f, 0.08f);
@@ -168,6 +269,116 @@ namespace RealmOfAshes.Game
 
             ApplySide(_left, frameDt, actorVel, actorSpeed, groundY, rootYaw, turning, !locomoting, dead, hadActorPosition, flex);
             ApplySide(_right, frameDt, actorVel, actorSpeed, groundY, rootYaw, turning, !locomoting, dead, hadActorPosition, flex);
+            EnsureSupportContact(dead);
+        }
+
+        /// <summary>
+        /// Full-body attack and hurt clips own the complete leg chain. Ordinary
+        /// gait locks are released for their duration, while a separate safety
+        /// contour keeps each sole inside a plausible vertical envelope. This
+        /// prevents a stale planted target and the opposite failure — an authored
+        /// combat frame folding one leg upward at point-blank range.
+        /// </summary>
+        public void Suspend(string clip)
+        {
+            StabilizeAction(1f / 60f, false, clip, 0f);
+        }
+
+        public void StabilizeAction(float dt, bool locomoting, string clip, float kneeFlex)
+        {
+            SupportSafetyActive = false;
+            ActionSafetyActive = false;
+            bool entering = !Suspended || _lastClip != (clip ?? string.Empty);
+            Suspended = true;
+            if (!Ready) return;
+
+            if (entering)
+            {
+                ResetSide(_left);
+                ResetSide(_right);
+                _left.RelockCooldown = 0.16f;
+                _right.RelockCooldown = 0.16f;
+            }
+            _lastClip = clip ?? string.Empty;
+
+            float frameDt = Mathf.Clamp(dt, 0.001f, 0.08f);
+            if (_ground != null)
+            {
+                float groundY = _ground.position.y;
+                float liftLimit = locomoting
+                    ? MovingActionLiftLimit : StationaryActionLiftLimit;
+                StabilizeActionSide(_left, frameDt, groundY, liftLimit, kneeFlex);
+                StabilizeActionSide(_right, frameDt, groundY, liftLimit, kneeFlex);
+                EnsureSupportContact(false);
+                _lastActorPos = _ground.position;
+                _hasLastActorPos = true;
+            }
+        }
+
+        private void StabilizeActionSide(Side side, float frameDt, float groundY,
+                                         float liftLimit, float kneeFlex)
+        {
+            if (side.Foot == null || side.RestHeight <= 0f) return;
+
+            Vector3 animated = side.Foot.position;
+            SampleGround(side, animated, groundY, frameDt,
+                out float surfaceY, out Vector3 surfaceNormal);
+            float contactY = surfaceY + side.RestHeight;
+            // Root compression is applied before this pass. Treat it as authored
+            // lift for the decision, but solve against the real contact plane.
+            float authoredLift = animated.y - contactY + Mathf.Max(0f, kneeFlex);
+            float targetY = Mathf.Clamp(animated.y, contactY, contactY + liftLimit);
+            if (authoredLift <= liftLimit && animated.y >= contactY - 0.004f) return;
+
+            Vector3 target = animated;
+            target.y = targetY;
+            SolveLegChain(side, ConstrainFootTarget(side, target));
+            ApplyFootNormal(side, surfaceNormal, ActionNormalWeight);
+            ActionSafetyActive = true;
+        }
+
+        private void EnsureSupportContact(bool dead)
+        {
+            if (dead || !_left.HasGround || !_right.HasGround
+                || _left.Foot == null || _right.Foot == null) return;
+
+            float leftContactY = _left.GroundY + _left.RestHeight;
+            float rightContactY = _right.GroundY + _right.RestHeight;
+            float leftLift = _left.Foot.position.y - leftContactY;
+            float rightLift = _right.Foot.position.y - rightContactY;
+            if (Mathf.Min(leftLift, rightLift) <= MaximumUnsupportedLift) return;
+
+            Side support = leftLift <= rightLift ? _left : _right;
+            Vector3 target = support.Foot.position;
+            target.y = support.GroundY + support.RestHeight;
+            target = ConstrainFootTarget(support, target);
+            SolveLegChain(support, target);
+            ApplyFootNormal(support, support.GroundNormal, 0.72f);
+            SupportSafetyActive = true;
+        }
+
+        private static Vector3 ConstrainFootTarget(Side side, Vector3 target)
+        {
+            if (side.Thigh == null || side.Calf == null || side.Foot == null) return target;
+            float reach = Vector3.Distance(side.Thigh.position, side.Calf.position)
+                + Vector3.Distance(side.Calf.position, side.Foot.position) - TargetReachReserve;
+            float vertical = target.y - side.Thigh.position.y;
+            float horizontalLimitSquared = reach * reach - vertical * vertical;
+            if (horizontalLimitSquared <= 0f)
+            {
+                target.x = side.Thigh.position.x;
+                target.z = side.Thigh.position.z;
+                return target;
+            }
+
+            Vector2 horizontal = new Vector2(target.x - side.Thigh.position.x,
+                target.z - side.Thigh.position.z);
+            float horizontalLimit = Mathf.Sqrt(horizontalLimitSquared);
+            if (horizontal.sqrMagnitude <= horizontalLimit * horizontalLimit) return target;
+            horizontal = horizontal.normalized * horizontalLimit;
+            target.x = side.Thigh.position.x + horizontal.x;
+            target.z = side.Thigh.position.z + horizontal.y;
+            return target;
         }
 
         private static void ResetSide(Side side)
@@ -175,6 +386,9 @@ namespace RealmOfAshes.Game
             side.Locked = false;
             side.Blend = 0f;
             side.HasPrev = false;
+            side.HasGround = false;
+            side.GroundNormal = Vector3.up;
+            side.LockNormal = Vector3.up;
         }
 
         private void ApplySide(Side side, float frameDt, Vector3 actorVel, float actorSpeed,
@@ -184,10 +398,14 @@ namespace RealmOfAshes.Game
             if (side.Foot == null || side.RestHeight <= 0f) return;
 
             Vector3 animated = side.Foot.position;
+            float surfaceY;
+            Vector3 surfaceNormal;
+            SampleGround(side, animated, groundY, frameDt, out surfaceY, out surfaceNormal);
 
-            // Высота считается от настоящей земли, а не от «земли клипа»:
-            // поправка на просадку корня обязательна, иначе присед ломает замки.
-            float height = animated.y - groundY - side.RestHeight + kneeFlex;
+            // Высота считается от поверхности непосредственно под каждой стопой.
+            // На плоскости это прежний groundY, а на ступени или склоне ноги
+            // получают разные цели и перестают висеть либо проваливаться.
+            float height = animated.y - surfaceY - side.RestHeight + kneeFlex;
 
             Vector3 footVel = Vector3.zero;
             if (side.HasPrev) footVel = (animated - side.PrevAnimated) / frameDt;
@@ -231,7 +449,8 @@ namespace RealmOfAshes.Game
                 if (stance && height < Lift * 1.2f && side.RelockCooldown <= 0f)
                 {
                     side.Locked = true;
-                    side.LockPos = new Vector3(animated.x, groundY + side.RestHeight, animated.z);
+                    side.LockPos = new Vector3(animated.x, surfaceY + side.RestHeight, animated.z);
+                    side.LockNormal = surfaceNormal;
                     side.LockYaw = rootYaw;
                 }
             }
@@ -265,7 +484,7 @@ namespace RealmOfAshes.Game
             // к устаревшему замку и проваливалась.
             Vector3 grounded = new Vector3(
                 animated.x,
-                groundY + side.RestHeight + Mathf.Max(0f, height),
+                surfaceY + side.RestHeight + Mathf.Max(0f, height),
                 animated.z);
 
             bool hasTarget = false;
@@ -282,12 +501,94 @@ namespace RealmOfAshes.Game
                 hasTarget = true;
             }
 
-            if (hasTarget) SolveLegChain(side, target);
+            if (hasTarget) SolveLegChain(side, ConstrainFootTarget(side, target));
+
+            float contact = 1f - Mathf.Clamp01(Mathf.Max(0f, height) / (Lift * 3f));
+            float normalWeight = Mathf.Clamp01(Mathf.Max(side.Blend, contact * 0.72f));
+            Vector3 contactNormal = Vector3.Slerp(surfaceNormal, side.LockNormal, side.Blend).normalized;
+            if (!dead && normalWeight > 0.01f) ApplyFootNormal(side, contactNormal, normalWeight);
+        }
+
+        private void SampleGround(Side side, Vector3 animated, float fallbackY, float dt,
+                                  out float surfaceY, out Vector3 surfaceNormal)
+        {
+            float targetY = fallbackY;
+            Vector3 targetNormal = Vector3.up;
+            float bestDistance = float.PositiveInfinity;
+            Vector3 origin = new Vector3(animated.x, Mathf.Max(animated.y, fallbackY) + GroundProbeAbove, animated.z);
+            GroundProbeCount++;
+            int count = Physics.SphereCastNonAlloc(origin, GroundProbeRadius, Vector3.down, GroundHits,
+                GroundProbeDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+
+            for (int i = 0; i < count; i++)
+            {
+                RaycastHit hit = GroundHits[i];
+                if (hit.collider == null || hit.distance >= bestDistance) continue;
+                if (IsActorCollider(hit.collider, _actorRoot)) continue;
+                if (hit.normal.y < MinGroundNormalY) continue;
+                if (hit.point.y < fallbackY - 0.52f
+                    || hit.point.y > fallbackY + MaximumWalkableRise) continue;
+                bestDistance = hit.distance;
+                targetY = hit.point.y;
+                targetNormal = hit.normal.normalized;
+            }
+
+            if (!side.HasGround || Mathf.Abs(side.GroundY - targetY) > TeleportReset)
+            {
+                side.GroundY = targetY;
+                side.GroundNormal = targetNormal;
+                side.HasGround = true;
+            }
+            else
+            {
+                float yBlend = 1f - Mathf.Exp(-GroundFollowRate * dt);
+                float normalBlend = 1f - Mathf.Exp(-GroundNormalRate * dt);
+                side.GroundY = Mathf.Lerp(side.GroundY, targetY, yBlend);
+                side.GroundNormal = Vector3.Slerp(side.GroundNormal, targetNormal, normalBlend).normalized;
+            }
+
+            surfaceY = side.GroundY;
+            surfaceNormal = side.GroundNormal;
         }
 
         /// <summary>
-        /// FABRIK по цепи бедро → голень → стопа. Стопу не вращаем: её ориентацию
-        /// задаёт анимация, IK лишь приводит сустав стопы в целевую точку.
+        /// Коллайдеры персонажей не являются опорой для стоп. Особенно заметен
+        /// этот случай в ближнем бою: нижняя полусфера CharacterController игрока
+        /// попадала под пробу NPC и выглядела как ступень высотой в несколько
+        /// десятков сантиметров, после чего IK складывал одну ногу к корпусу.
+        /// </summary>
+        public static bool IsActorCollider(Collider collider, Transform owner)
+        {
+            if (collider == null) return false;
+            Transform hit = collider.transform;
+            if (owner != null && hit != null && hit.IsChildOf(owner)) return true;
+            if (collider is CharacterController) return true;
+            if (hit == null) return false;
+            if (hit.GetComponentInParent<RoaPlayerController>() != null) return true;
+            if (hit.GetComponentInParent<RoaCharacterView>() != null) return true;
+            return hit.GetComponentInParent<RoaVisibilityGate>() != null;
+        }
+
+        private static Transform ResolveActorRoot(Transform ground)
+        {
+            if (ground == null) return null;
+            RoaPlayerController player = ground.GetComponentInParent<RoaPlayerController>();
+            if (player != null) return player.transform;
+            RoaVisibilityGate gate = ground.GetComponentInParent<RoaVisibilityGate>();
+            return gate != null ? gate.transform : ground;
+        }
+
+        private static void ApplyFootNormal(Side side, Vector3 normal, float weight)
+        {
+            if (side.Foot == null || normal.sqrMagnitude < 0.5f) return;
+            Quaternion tilt = Quaternion.FromToRotation(Vector3.up, normal.normalized);
+            side.Foot.rotation = Quaternion.Slerp(side.Foot.rotation, tilt * side.Foot.rotation,
+                Mathf.Clamp01(weight * 0.78f));
+        }
+
+        /// <summary>
+        /// FABRIK по цепи бедро → голень → стопа. Сам решатель меняет только
+        /// направление звеньев; наклон стопы по нормали применяется отдельным слоем.
         /// </summary>
         private static void SolveLegChain(Side side, Vector3 target)
         {

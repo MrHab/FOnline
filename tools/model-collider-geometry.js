@@ -16,14 +16,7 @@ const NON_BLOCKING_MODEL_FILES = new Set([
   'mod_floor_tile.glb',
   'mod_floor_wood.glb',
   'mod_roof_metal.glb',
-  'mod_roof_wood.glb',
-  'old_klim_trade_hall_roof.glb',
-  'old_klim_scrub_blue_a.glb',
-  'old_klim_scrub_blue_b.glb',
-  'old_klim_scrub_amber.glb',
-  'old_klim_rock_scatter_a.glb',
-  'old_klim_rock_scatter_b.glb',
-  'old_klim_rock_scatter_c.glb'
+  'mod_roof_wood.glb'
 ]);
 
 const NON_COLLIDING_MESH_NAME = /(?:painted_contact_shadow|ground_pebble_detail|ground_detail|loose_scrap_flake|discarded_bolt_detail)/i;

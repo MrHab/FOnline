@@ -282,8 +282,14 @@ function assertAdaptiveSpatialMovementPadding() {
 
 function assertRemainingEnemyAiScansUseCrowdIndexes() {
   const meleeGoal = extractFunction(serverSource, 'enemyMeleeGoalNearTarget');
-  assert(meleeGoal.includes('room.enemyAttackersByTargetId instanceof Map')
-    && meleeGoal.includes('roomEnemySpatialCandidates(room, tx, tz, 7.5)')
+  const formationActors = extractFunction(serverSource, 'activeMeleeFormationActorIds');
+  const reservation = extractFunction(serverSource, 'roomMeleeFormationReservation');
+  const cacheBuilder = extractFunction(serverSource, 'rebuildRoomEnemyAiLookupCaches');
+  assert(meleeGoal.includes('roomMeleeFormationReservation(room, enemy, target)')
+    && reservation.includes('activeMeleeFormationActorIds(room, targetId)')
+    && formationActors.includes('room?.enemyMeleeFormationActorsByTargetId instanceof Map')
+    && cacheBuilder.includes('room.enemyMeleeFormationActorsByTargetId = formationActorsByTargetId;')
+    && cacheBuilder.includes('reconcileNpcMeleeSlotReservations(state.slots, activeIds)')
     && !meleeGoal.includes('for (const other of room.enemies.values())'),
   'melee surround-slot selection returned to a per-attacker full room scan');
 
@@ -292,7 +298,6 @@ function assertRemainingEnemyAiScansUseCrowdIndexes() {
     'NPC corpse search returned to a full room scan');
 
   const factionFoes = extractFunction(serverSource, 'npcHasLiveFactionFoes');
-  const cacheBuilder = extractFunction(serverSource, 'rebuildRoomEnemyAiLookupCaches');
   assert(factionFoes.includes('room.enemyLiveFactionGroups instanceof Set')
     && cacheBuilder.includes('room.enemyAttackersByTargetId = attackersByTargetId;'),
   'scheduled/stationary NPC faction checks no longer reuse per-tick lookup caches');

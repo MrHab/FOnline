@@ -22,6 +22,9 @@ namespace RealmOfAshes.Game
         [Tooltip("Сколько секунд продолжать движение по последней скорости, если пакетов нет.")]
         public float MaxExtrapolationSeconds = 0.25f;
 
+        [Tooltip("Коррекция больше этой дистанции считается телепортом, а не рывком.")]
+        public float SnapDistance = 3.4f;
+
         public RoaSocketClient Socket;
 
         [Tooltip("Origin сервера — отсюда грузятся модели персонажей.")]
@@ -29,6 +32,9 @@ namespace RealmOfAshes.Game
 
         [Tooltip("Туман войны. Пока не назначен, другие игроки видны всегда.")]
         public RoaFogOfWar Fog;
+
+        private RoaMovementFx _movementFx;
+        private Camera _worldCamera;
 
         private sealed class Remote
         {
@@ -38,15 +44,38 @@ namespace RealmOfAshes.Game
             public PublicPlayer Player;
             public Vector3 TargetPosition;
             public Vector3 Velocity;
+            public Vector3 PresentationVelocity;
             public float TargetYawDeg;
             public float LastPacketTime;
             public long LastSeq;
             public Vector3 SmoothVelocity;
             public bool Moving;
+            public bool PresentationMoving;
             public bool Crouching;
+            public Vector3 AimPoint;
+            public float AimUntil;
+            public RoaMovementFx.ActorStepState StepFx;
+        }
+
+        private const float DeathVisualLifetime = 3.2f;
+
+        private sealed class DeathVisual
+        {
+            public GameObject Root;
+            public float RemoveAt;
         }
 
         private readonly Dictionary<string, Remote> _remotes = new Dictionary<string, Remote>();
+        private readonly List<DeathVisual> _deathVisuals = new List<DeathVisual>();
+
+        public int DeathVisualCount { get { return _deathVisuals.Count; } }
+        public static float DeathVisualSeconds { get { return DeathVisualLifetime; } }
+
+        public void ConfigureMovementFx(RoaMovementFx movementFx, Camera worldCamera)
+        {
+            _movementFx = movementFx;
+            _worldCamera = worldCamera;
+        }
 
         private void OnEnable()
         {
@@ -91,6 +120,18 @@ namespace RealmOfAshes.Game
 
             Remote remote;
             if (!_remotes.TryGetValue(id, out remote) || remote.View == null) return;
+
+            if (payload["angle"] != null)
+                remote.TargetYawDeg = RoaCoords.AngleToYawDeg(payload["angle"].ToObject<float>());
+
+            Vector3 start;
+            Vector3 end;
+            if (RoaCombatFx.TryShotEndpoints(payload, out start, out end))
+            {
+                remote.AimPoint = end;
+                remote.AimUntil = Time.time + 0.32f;
+                remote.View.SetAim(end, true);
+            }
 
             remote.View.PlayAttack();
         }
@@ -147,14 +188,19 @@ namespace RealmOfAshes.Game
                 TargetYawDeg = RoaCoords.AngleToYawDeg(player.Angle),
                 LastPacketTime = Time.time,
                 Velocity = Vector3.zero,
+                PresentationVelocity = Vector3.zero,
                 Moving = player.Moving,
+                PresentationMoving = false,
                 Crouching = player.Crouching
             };
+            view.OnVisualChanged += remote.Gate.Invalidate;
             _remotes[player.Id] = remote;
             Debug.Log("[ROA] Другой игрок вошёл: "
                 + (string.IsNullOrEmpty(player.Name) ? player.Id : player.Name)
                 + "; в комнате: " + _remotes.Count);
             _ = LoadRemoteVisuals(remote);
+            if (player.Downed) view.SetDead(true);
+            if (player.Dead || player.Hp <= 0) BeginRemoteDeath(player.Id, Time.unscaledTime);
         }
 
         private void HandleSnapshot(List<PublicPlayer> players)
@@ -163,9 +209,15 @@ namespace RealmOfAshes.Game
             foreach (PublicPlayer player in players)
             {
                 if (player == null || string.IsNullOrEmpty(player.Id)) continue;
+                if (player.Dead || player.Hp <= 0)
+                {
+                    BeginRemoteDeath(player.Id, Time.unscaledTime);
+                    continue;
+                }
                 if (_remotes.TryGetValue(player.Id, out Remote remote))
                 {
                     remote.Player = player;
+                    if (remote.View != null) remote.View.SetDead(player.Downed);
                     if (remote.View != null) remote.View.SetInjuries(player.Injuries);
                     if (remote.View != null && remote.View.Ready) _ = ApplyRemoteEquipment(remote);
                 }
@@ -187,6 +239,15 @@ namespace RealmOfAshes.Game
             }
         }
 
+        public bool TryGetPosition(string id, out Vector3 position)
+        {
+            position = Vector3.zero;
+            if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote)
+                || remote?.Root == null) return false;
+            position = remote.Root.transform.position;
+            return true;
+        }
+
         public bool TryGetNearest(Vector3 origin, float maxDistance, out PublicPlayer player, out float distance)
         {
             player = null;
@@ -195,7 +256,7 @@ namespace RealmOfAshes.Game
 
             foreach (Remote remote in _remotes.Values)
             {
-                if (remote?.Root == null || remote.Player == null || remote.Player.Dead) continue;
+                if (remote?.Root == null || remote.Player == null || remote.Player.Dead || remote.Player.Downed) continue;
                 Vector3 delta = remote.Root.transform.position - origin;
                 delta.y = 0f;
                 float sqr = delta.sqrMagnitude;
@@ -204,6 +265,24 @@ namespace RealmOfAshes.Game
                 distance = Mathf.Sqrt(sqr);
             }
 
+            return player != null;
+        }
+
+        public bool TryGetNearestDowned(Vector3 origin, float maxDistance, out PublicPlayer player, out float distance)
+        {
+            player = null;
+            distance = float.PositiveInfinity;
+            float maxSqr = maxDistance * maxDistance;
+            foreach (Remote remote in _remotes.Values)
+            {
+                if (remote?.Root == null || remote.Player == null || !remote.Player.Downed) continue;
+                Vector3 delta = remote.Root.transform.position - origin;
+                delta.y = 0f;
+                float sqr = delta.sqrMagnitude;
+                if (sqr > maxSqr || sqr >= distance * distance) continue;
+                player = remote.Player;
+                distance = Mathf.Sqrt(sqr);
+            }
             return player != null;
         }
 
@@ -218,7 +297,7 @@ namespace RealmOfAshes.Game
 
             foreach (Remote remote in _remotes.Values)
             {
-                if (remote?.Root == null || remote.Player == null || remote.Player.Dead) continue;
+                if (remote?.Root == null || remote.Player == null || remote.Player.Dead || remote.Player.Downed) continue;
                 if (remote.Gate != null && !remote.Gate.IsVisible) continue;
                 Vector3 delta = remote.Root.transform.position - worldPoint;
                 delta.y = 0f;
@@ -241,7 +320,7 @@ namespace RealmOfAshes.Game
             rayDistance = float.PositiveInfinity;
             foreach (Remote remote in _remotes.Values)
             {
-                if (remote?.Root == null || remote.Player == null || remote.Player.Dead) continue;
+                if (remote?.Root == null || remote.Player == null || remote.Player.Dead || remote.Player.Downed) continue;
                 if (remote.Gate != null && !remote.Gate.IsVisible) continue;
                 float distance;
                 if (!RoaEnemies.RayHitsModel(remote.Root, ray, out distance) || distance >= rayDistance) continue;
@@ -273,7 +352,7 @@ namespace RealmOfAshes.Game
             float bestProjection = maxDistance + 0.45f;
             foreach (Remote remote in _remotes.Values)
             {
-                if (remote?.Root == null || remote.Player == null || remote.Player.Dead) continue;
+                if (remote?.Root == null || remote.Player == null || remote.Player.Dead || remote.Player.Downed) continue;
                 if (remote.Gate != null && !remote.Gate.IsVisible) continue;
 
                 Vector3 delta = remote.Root.transform.position - origin;
@@ -298,9 +377,10 @@ namespace RealmOfAshes.Game
             if (player == null || string.IsNullOrEmpty(player.Id)) return;
             if (!_remotes.TryGetValue(player.Id, out Remote remote)) return;
             remote.Player = player;
+            if (remote.View != null) remote.View.SetDead(player.Downed);
             if (remote.View != null) remote.View.SetInjuries(player.Injuries);
             if (remote.View != null && remote.View.Ready) _ = ApplyRemoteEquipment(remote);
-            if (player.Dead || player.Hp <= 0) HandlePlayerLeft(player.Id);
+            if (player.Dead || player.Hp <= 0) BeginRemoteDeath(player.Id, Time.unscaledTime);
         }
 
         private void HandlePlayerRespawned(JObject payload)
@@ -321,28 +401,140 @@ namespace RealmOfAshes.Game
 
         private void HandlePlayerDamaged(JObject payload)
         {
-            ApplyVitals(payload, true);
+            string id = payload?["playerId"]?.ToString() ?? payload?["targetId"]?.ToString();
+            int damage = Mathf.Max(0,
+                Mathf.RoundToInt(payload?["damage"]?.ToObject<float>() ?? 0f));
+            bool critical = payload?["critical"]?.ToObject<bool>() == true;
+            bool hasSource = TryDamageSource(payload, out Vector3 source);
+            bool downed = payload?["downed"]?.ToObject<bool>() == true;
+            if (downed)
+            {
+                if (!string.IsNullOrEmpty(id) && _remotes.TryGetValue(id, out Remote wounded)
+                    && wounded.View != null && hasSource)
+                    wounded.View.PrepareDeath(source);
+                ApplyVitals(payload);
+                if (!string.IsNullOrEmpty(id) && _remotes.TryGetValue(id, out wounded))
+                {
+                    wounded.Moving = false;
+                    wounded.PresentationMoving = false;
+                    wounded.Velocity = Vector3.zero;
+                    wounded.PresentationVelocity = Vector3.zero;
+                    wounded.View?.SetDead(true);
+                }
+                return;
+            }
+            bool fatal = payload?["killed"]?.ToObject<bool>() == true
+                || (payload?["hp"] != null && payload["hp"].ToObject<int>() <= 0);
+            if (fatal)
+            {
+                if (!string.IsNullOrEmpty(id) && _remotes.TryGetValue(id, out Remote killed)
+                    && killed.View != null && hasSource)
+                    killed.View.PrepareDeath(source);
+                ApplyVitals(payload);
+                BeginRemoteDeath(id, Time.unscaledTime);
+                return;
+            }
+            if (!string.IsNullOrEmpty(id)
+                && _remotes.TryGetValue(id, out Remote remote) && remote.View != null)
+            {
+                if (hasSource) remote.View.PlayHit(source, damage, critical);
+                else remote.View.PlayHit();
+            }
+            ApplyVitals(payload);
+        }
+
+        private bool TryDamageSource(JObject payload, out Vector3 source)
+        {
+            source = Vector3.zero;
+            if (payload?["sourceX"] != null && payload["sourceZ"] != null)
+            {
+                source = RoaCoords.ToUnity(payload["sourceX"].ToObject<float>(),
+                                           payload["sourceZ"].ToObject<float>());
+                return true;
+            }
+
+            string attackerId = payload?["attackerId"]?.ToString();
+            if (!string.IsNullOrEmpty(attackerId)
+                && _remotes.TryGetValue(attackerId, out Remote attacker)
+                && attacker.Root != null)
+            {
+                source = attacker.Root.transform.position;
+                return true;
+            }
+            return false;
         }
 
         private void HandlePlayerHealed(JObject payload)
         {
-            ApplyVitals(payload, false);
+            ApplyVitals(payload);
         }
 
-        private void ApplyVitals(JObject payload, bool removeDead)
+        private void ApplyVitals(JObject payload)
         {
             if (payload == null) return;
             string id = payload["playerId"]?.ToString() ?? payload["targetId"]?.ToString();
             if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote) || remote.Player == null) return;
             if (payload["hp"] != null) remote.Player.Hp = payload["hp"].ToObject<int>();
             if (payload["maxHp"] != null) remote.Player.MaxHp = payload["maxHp"].ToObject<int>();
+            if (payload["downed"] != null)
+            {
+                remote.Player.Downed = payload["downed"].ToObject<bool>();
+                if (remote.View != null) remote.View.SetDead(remote.Player.Downed);
+            }
             if (payload["injuries"] is JObject injuries)
             {
                 remote.Player.Injuries = (JObject)injuries.DeepClone();
                 if (remote.View != null) remote.View.SetInjuries(remote.Player.Injuries);
             }
-            if (removeDead && (payload["killed"]?.ToObject<bool>() == true || remote.Player.Hp <= 0))
-                HandlePlayerLeft(id);
+        }
+
+        private bool BeginRemoteDeath(string id, float now)
+        {
+            if (string.IsNullOrEmpty(id) || !_remotes.TryGetValue(id, out Remote remote)) return false;
+            _remotes.Remove(id);
+            if (remote.Player != null)
+            {
+                remote.Player.Dead = true;
+                remote.Player.Hp = 0;
+            }
+            remote.Moving = false;
+            remote.PresentationMoving = false;
+            remote.Velocity = Vector3.zero;
+            remote.PresentationVelocity = Vector3.zero;
+            remote.View?.SetDead(true);
+            if (remote.Root == null) return true;
+
+            remote.Root.name = "RemoteDeath:" + id;
+            foreach (Collider collider in remote.Root.GetComponentsInChildren<Collider>(true))
+                collider.enabled = false;
+            _deathVisuals.Add(new DeathVisual
+            {
+                Root = remote.Root,
+                RemoveAt = now + DeathVisualLifetime
+            });
+            return true;
+        }
+
+        private void UpdateDeathVisuals(float now)
+        {
+            for (int i = _deathVisuals.Count - 1; i >= 0; i--)
+            {
+                DeathVisual visual = _deathVisuals[i];
+                if (visual.Root != null && now < visual.RemoveAt) continue;
+                if (visual.Root != null) DisposeRemoteRoot(visual.Root);
+                _deathVisuals.RemoveAt(i);
+            }
+        }
+
+        private static void DisposeRemoteRoot(GameObject root)
+        {
+            if (root == null) return;
+#if UNITY_EDITOR
+            if (!Application.isPlaying) Object.DestroyImmediate(root);
+            else Object.Destroy(root);
+#else
+            Object.Destroy(root);
+#endif
         }
 
         /// <summary>
@@ -402,15 +594,18 @@ namespace RealmOfAshes.Game
             {
                 if (remote.Root == null) continue;
 
-                // Экстраполяция закрывает разрыв между пакетами, но ограничена по
-                // времени: иначе потерянный «стоп» уводит фигуру в бесконечный бег.
-                float sincePacket = Time.time - remote.LastPacketTime;
-                if (sincePacket <= MaxExtrapolationSeconds)
-                    remote.TargetPosition += remote.Velocity * Time.deltaTime;
-
+                float sincePacket = Time.time - remote.LastPacketTime
+                    + RoaNetworkActorMotion.OneWayLatencySeconds(
+                        Socket != null ? Socket.PingMs : -1f, MaxExtrapolationSeconds);
                 Transform t = remote.Root.transform;
-                t.position = Vector3.SmoothDamp(t.position, remote.TargetPosition,
-                    ref remote.SmoothVelocity, SmoothTime);
+                RoaNetworkActorMotion.Sample motion = RoaNetworkActorMotion.Step(
+                    t.position, remote.TargetPosition, remote.Velocity, remote.Moving,
+                    sincePacket, Time.deltaTime, SmoothTime,
+                    MaxExtrapolationSeconds, SnapDistance, ref remote.SmoothVelocity);
+                t.position = motion.Position;
+                remote.PresentationVelocity = motion.VisualVelocity;
+                remote.PresentationMoving = motion.Moving;
+                if (motion.Snapped) remote.StepFx = default(RoaMovementFx.ActorStepState);
 
                 t.rotation = Quaternion.Slerp(t.rotation,
                     Quaternion.Euler(0f, remote.TargetYawDeg, 0f), 1f - Mathf.Exp(-12f * Time.deltaTime));
@@ -418,22 +613,43 @@ namespace RealmOfAshes.Game
                 // Локомоция берётся из серверной скорости: у удалённых игроков
                 // своего ввода нет, а взгляд и путь так же независимы, как у своего.
                 if (remote.View != null)
-                    remote.View.UpdateLocomotion(remote.Velocity, remote.TargetYawDeg,
-                        remote.Moving, remote.Crouching);
+                {
+                    remote.View.UpdateLocomotion(remote.PresentationVelocity, remote.TargetYawDeg,
+                        remote.PresentationMoving, remote.Crouching);
+                    remote.View.SetAim(remote.AimPoint, Time.time < remote.AimUntil);
+                }
 
-                // Скрываем только показ: анимация и интерполяция продолжают идти,
-                // иначе игрок выходил бы из тумана в позе, застывшей при входе.
+                // Туман скрывает рендереры, но сеть, интерполяция и выбор клипа
+                // продолжают обновляться. Сэмплинг костей для невидимого актёра
+                // Unity отсекает отдельно через BasedOnRenderers.
                 if (remote.Gate != null)
                     remote.Gate.SetVisible(Fog == null || Fog.IsVisible(t.position, remote.Crouching));
+
+                bool visible = remote.Gate == null || remote.Gate.IsVisible;
+                bool presentationVisible = visible && !RoaGameBootstrap.BlocksWorldHud;
+                Vector3 observer = _worldCamera != null ? _worldCamera.transform.position : t.position;
+                if (remote.View != null)
+                    remote.View.SetPresentationLod(RoaActorPresentationLod.Select(
+                        t.position, observer, presentationVisible, Application.isMobilePlatform,
+                        remote.View.PresentationTier));
+                if (_movementFx != null)
+                {
+                    _movementFx.TrackActor(ref remote.StepFx, t.position, remote.PresentationVelocity,
+                        remote.PresentationMoving, presentationVisible, remote.Crouching, observer);
+                }
             }
+            UpdateDeathVisuals(Time.unscaledTime);
         }
 
         public void Clear()
         {
             foreach (Remote remote in _remotes.Values)
-                if (remote.Root != null) Destroy(remote.Root);
-
+                if (remote.Root != null) DisposeRemoteRoot(remote.Root);
             _remotes.Clear();
+
+            for (int i = 0; i < _deathVisuals.Count; i++)
+                if (_deathVisuals[i].Root != null) DisposeRemoteRoot(_deathVisuals[i].Root);
+            _deathVisuals.Clear();
         }
 
         public void CollectMinimapMarkers(List<RoaMinimap.Marker> markers)

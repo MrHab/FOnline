@@ -97,7 +97,10 @@
       ],
       "resourceType": "ore",
       "hp": 5,
-      "maxHp": 5
+      "maxHp": 5,
+      "vision": {
+        "mode": "cover"
+      }
     }
   ]
 }

@@ -66,6 +66,9 @@ namespace RealmOfAshes.Game
         private float _runLean;
         private float _swayDampBlend;
         private float _crouchBlend;
+        private float _contactPressure;
+        private float _contactForward;
+        private float _contactSide;
 
         public bool Ready { get; private set; }
 
@@ -77,6 +80,9 @@ namespace RealmOfAshes.Game
         /// localPosition.y = −KneeFlex, а foot IK учитывает это в высоте стопы.
         /// </summary>
         public float KneeFlex { get; private set; }
+
+        /// <summary>Сглаженная сила упора в препятствие, 0..1.</summary>
+        public float ContactPressure { get { return _contactPressure; } }
 
         public void Bind(Transform modelRoot)
         {
@@ -121,15 +127,19 @@ namespace RealmOfAshes.Game
         /// <param name="lowerBodyYawTarget">Целевой доворот таза, радианы.</param>
         public void Step(bool locomoting, bool turning, string action,
                          float lowerBodyYawTarget, float sideAmount, float forwardAmount,
-                         float turnAmount, bool crouching, bool dead, float dt)
+                         float turnAmount, bool crouching, bool dead, float dt,
+                         float contactPressure = 0f, float contactForward = 0f,
+                         float contactSide = 0f)
         {
             if (!Ready) return;
 
             float frameDt = Mathf.Clamp(dt, 0.001f, 0.08f);
+            float contactTarget = dead ? 0f : Mathf.Clamp01(contactPressure);
 
             float kneeFlexTarget = dead
                 ? 0f
-                : (crouching ? KneeFlexCrouch : (locomoting ? KneeFlexMove : KneeFlexIdle));
+                : (crouching ? KneeFlexCrouch : (locomoting ? KneeFlexMove : KneeFlexIdle))
+                    + contactTarget * 0.022f;
             KneeFlex = Blend(KneeFlex, kneeFlexTarget, 7f, frameDt);
 
             _crouchBlend = Blend(_crouchBlend, crouching && !dead ? 1f : 0f, 8f, frameDt);
@@ -146,6 +156,12 @@ namespace RealmOfAshes.Game
             _sideAmount = Blend(_sideAmount, sideAmount, 9f, frameDt);
             _forwardAmount = Blend(_forwardAmount, forwardAmount, 9f, frameDt);
             _turnAmount = Blend(_turnAmount, turnAmount, turning ? 11f : 7f, frameDt);
+            _contactPressure = Blend(_contactPressure, contactTarget,
+                contactTarget > _contactPressure ? 12f : 8f, frameDt);
+            _contactForward = Blend(_contactForward,
+                Mathf.Clamp(contactForward, -1f, 1f), 10f, frameDt);
+            _contactSide = Blend(_contactSide,
+                Mathf.Clamp(contactSide, -1f, 1f), 10f, frameDt);
 
             // Бег читается по силуэту: корпус подаётся вперёд заметно сильнее шага.
             _runLean = Blend(_runLean, action == "run" ? 0.11f : 0f, 6f, frameDt);
@@ -229,16 +245,31 @@ namespace RealmOfAshes.Game
             float forwardLean = Mathf.Max(0f, forward) * _moveBlend;
             float turn = _turnAmount * _moveBlend;
             float runLean = _runLean * _moveBlend;
+            float contactForward = _contactForward * _contactPressure;
+            float contactSide = _contactSide * _contactPressure;
 
-            AddOffset(_pelvis, backwardLean * -0.025f, turn * 0.06f, side * -0.035f);
+            // Упор читается как короткая компрессия, а не отдельная театральная
+            // анимация: таз и грудь слегка уходят от поверхности, шея и голова
+            // компенсируют движение, сохраняя взгляд на прицеле.
+            AddOffset(_pelvis,
+                backwardLean * -0.025f - contactForward * 0.018f,
+                turn * 0.06f,
+                side * -0.035f - contactSide * 0.014f);
             AddOffset(_spine01,
-                forwardLean * 0.025f - backwardLean * 0.045f + runLean * 0.5f,
+                forwardLean * 0.025f - backwardLean * 0.045f + runLean * 0.5f
+                    - contactForward * 0.038f,
                 counterYaw * 0.16f - turn * 0.035f,
-                side * -0.018f);
-            AddOffset(_spine02, runLean * 0.5f, counterYaw * 0.18f, side * -0.012f);
-            AddOffset(_spine03, 0f, counterYaw * 0.18f, side * 0.012f);
-            AddOffset(_neck, 0f, counterYaw * 0.22f, side * 0.008f);
-            AddOffset(_head, 0f, counterYaw * 0.26f, 0f);
+                side * -0.018f - contactSide * 0.026f);
+            AddOffset(_spine02,
+                runLean * 0.5f - contactForward * 0.022f,
+                counterYaw * 0.18f,
+                side * -0.012f - contactSide * 0.016f);
+            AddOffset(_spine03, contactForward * 0.008f,
+                counterYaw * 0.18f, side * 0.012f + contactSide * 0.008f);
+            AddOffset(_neck, contactForward * 0.014f,
+                counterYaw * 0.22f, side * 0.008f + contactSide * 0.010f);
+            AddOffset(_head, contactForward * 0.012f,
+                counterYaw * 0.26f, contactSide * 0.012f);
         }
 
         /// <summary>

@@ -27,6 +27,13 @@ namespace RealmOfAshes.Net
         /// <summary>Минимальный интервал между пакетами state: 50 мс = 20 Гц, как у web-клиента.</summary>
         public const float StateSendIntervalSeconds = 0.05f;
 
+        /// <summary>
+        /// Gameplay acknowledgements must always finish locally, even when a
+        /// packet or the connection disappears. Otherwise the owning screen can
+        /// remain locked in a pending state forever.
+        /// </summary>
+        public const float GameplayAckTimeoutSeconds = 10f;
+
         public enum ConnectionPhase
         {
             Disconnected,
@@ -42,6 +49,16 @@ namespace RealmOfAshes.Net
         public JoinAck Session { get; private set; }
         public float PingMs { get; private set; } = -1f;
         public int ReconnectAttempt { get { return _reconnectAttempt; } }
+        public bool ReconnectScheduled { get { return _reconnectScheduled; } }
+        public float ReconnectDelayRemainingSeconds
+        {
+            get
+            {
+                return _reconnectScheduled
+                    ? Mathf.Max(0f, _reconnectAt - Time.realtimeSinceStartup)
+                    : 0f;
+            }
+        }
 
         // Игровые события, уже разложенные по главному потоку.
         public event Action<JoinAck> OnJoined;
@@ -55,6 +72,7 @@ namespace RealmOfAshes.Net
         public event Action<JObject> OnEnemySnapshot;
         public event Action<JObject> OnEnemyActivityDelta;
         public event Action<JObject> OnWorldState;
+        public event Action<JObject> OnWorldActivityFeedChanged;
 
         /// <summary>Полный снимок серверных контейнеров текущей комнаты.</summary>
         public event Action<JObject> OnWorldContainers;
@@ -159,6 +177,18 @@ namespace RealmOfAshes.Net
         private readonly ConcurrentQueue<Action> _mainThread = new ConcurrentQueue<Action>();
         private readonly JsonSerializer _serializer = JsonSerializer.CreateDefault();
 
+        private sealed class PendingAckRequest
+        {
+            public long Id;
+            public string EventName;
+            public float Deadline;
+            public Action<JObject> Callback;
+        }
+
+        private readonly Dictionary<long, PendingAckRequest> _pendingAcks =
+            new Dictionary<long, PendingAckRequest>();
+        private long _nextAckRequestId;
+
         private long _stateSeq;
         private float _stateCooldown;
         private bool _lastSentMoving;
@@ -173,6 +203,7 @@ namespace RealmOfAshes.Net
         private float _reconnectAt;
         private int _reconnectAttempt;
         private bool _shuttingDown;
+        private bool _connectFailureLogged;
 
         private const float NetworkPingIntervalSeconds = 2f;
         private const float NetworkPingTimeoutSeconds = 3.5f;
@@ -194,6 +225,7 @@ namespace RealmOfAshes.Net
             _reconnectScheduled = false;
             _joinPending = false;
             ResetNetworkPing();
+            FailPendingAcks(false, true);
             Phase = ConnectionPhase.Disconnected;
             Session = null;
             RoaSocketIoConnection connection = _connection;
@@ -238,6 +270,7 @@ namespace RealmOfAshes.Net
             _shuttingDown = false;
             _reconnectAttempt = 0;
             _reconnectScheduled = false;
+            _connectFailureLogged = false;
             LastError = string.Empty;
 
             BeginTransportConnection();
@@ -251,6 +284,7 @@ namespace RealmOfAshes.Net
 
             RoaSocketIoConnection previous = _connection;
             _connection = null;
+            FailPendingAcks(false, true);
             previous?.Dispose();
 
             // Уходит в socket.handshake.auth. Сервер читает отсюда clientInstanceId,
@@ -276,7 +310,7 @@ namespace RealmOfAshes.Net
                     if (_connection != connection || _shuttingDown) return;
                     Phase = ConnectionPhase.Disconnected;
                     LastError = "Не удалось подключиться: " + message;
-                    Debug.LogError("[ROA] " + LastError);
+                    ReportConnectFailureOnce(LastError);
                     ScheduleReconnect();
                 });
             });
@@ -301,7 +335,8 @@ namespace RealmOfAshes.Net
                 Session = null;
                 _joinPending = false;
                 ResetNetworkPing();
-                Debug.LogWarning("[ROA] Соединение потеряно: " + reason);
+                FailPendingAcks(false, true);
+                ReportConnectFailureOnce("Соединение потеряно: " + reason);
                 OnDisconnected?.Invoke(reason);
                 if (!rejected) ScheduleReconnect();
             });
@@ -311,6 +346,8 @@ namespace RealmOfAshes.Net
                 if (_connection != registeredConnection || _shuttingDown) return;
                 Phase = ConnectionPhase.Disconnected;
                 LastError = "Ошибка подключения: " + message;
+                FailPendingAcks(false, true);
+                ReportConnectFailureOnce(LastError);
                 OnDisconnected?.Invoke(message);
                 ScheduleReconnect();
             });
@@ -388,6 +425,12 @@ namespace RealmOfAshes.Net
                 JObject state = payload?["state"] as JObject ?? payload;
                 if (state != null && IsForCurrentRoom(state["roomId"]?.ToString()))
                     OnWorldState?.Invoke(state);
+            }));
+
+            _connection.On("worldActivityFeedChanged", args => _mainThread.Enqueue(() =>
+            {
+                var payload = First<JObject>(args);
+                if (payload != null) OnWorldActivityFeedChanged?.Invoke(payload);
             }));
 
             _connection.On("worldContainersSnapshot", args => _mainThread.Enqueue(() =>
@@ -702,6 +745,7 @@ namespace RealmOfAshes.Net
                 _lastEnemyFrameSeq = 0;
                 _reconnectAttempt = 0;
                 _reconnectScheduled = false;
+                _connectFailureLogged = false;
                 _nextNetworkPingAt = Time.realtimeSinceStartup + 0.25f;
 
                 // Эти поля нужны только для первого создания. Повторный join после
@@ -723,6 +767,18 @@ namespace RealmOfAshes.Net
             _reconnectAt = Time.realtimeSinceStartup + delay;
             _reconnectScheduled = true;
             LastError = "Повторное подключение через " + delay.ToString("0") + " с.";
+        }
+
+        public static bool ShouldReportConnectFailure(bool alreadyReported)
+        {
+            return !alreadyReported;
+        }
+
+        private void ReportConnectFailureOnce(string message)
+        {
+            if (!ShouldReportConnectFailure(_connectFailureLogged)) return;
+            _connectFailureLogged = true;
+            Debug.LogWarning("[ROA] " + message);
         }
 
         private void ResetNetworkPing()
@@ -753,10 +809,17 @@ namespace RealmOfAshes.Net
             EmitWithAck("networkPing", new Dictionary<string, object>
             {
                 ["clientTime"] = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-            }, ack =>
+            }, NetworkPingTimeoutSeconds, ack =>
             {
                 if (!_networkPingPending || requestId != _networkPingRequestId) return;
                 _networkPingPending = false;
+                JToken pingOk = ack?["ok"];
+                if (pingOk == null || pingOk.Type != JTokenType.Boolean || !pingOk.Value<bool>())
+                {
+                    PingMs = -1f;
+                    _nextNetworkPingAt = Time.realtimeSinceStartup + NetworkPingIntervalSeconds;
+                    return;
+                }
                 float sample = Mathf.Max(0f, (Time.realtimeSinceStartup - _networkPingStartedAt) * 1000f);
                 PingMs = PingMs < 0f ? sample : Mathf.Lerp(PingMs, sample, 0.28f);
                 _nextNetworkPingAt = Time.realtimeSinceStartup + NetworkPingIntervalSeconds;
@@ -779,13 +842,86 @@ namespace RealmOfAshes.Net
         /// </summary>
         public void EmitWithAck(string eventName, object payload, Action<JObject> onAck)
         {
-            if (Phase != ConnectionPhase.Joined || _connection == null) return;
+            EmitWithAck(eventName, payload, GameplayAckTimeoutSeconds, onAck);
+        }
+
+        /// <summary>
+        /// Timeout-aware acknowledgement overload. Every request completes once:
+        /// with the authoritative reply, a timeout, or a disconnect failure.
+        /// Late replies are ignored after a local failure has already completed it.
+        /// </summary>
+        public void EmitWithAck(string eventName, object payload, float timeoutSeconds, Action<JObject> onAck)
+        {
+            if (Phase != ConnectionPhase.Joined || _connection == null)
+            {
+                onAck?.Invoke(AckFailure(eventName, false, true));
+                return;
+            }
+
+            long requestId = ++_nextAckRequestId;
+            var pending = new PendingAckRequest
+            {
+                Id = requestId,
+                EventName = eventName ?? string.Empty,
+                Deadline = Time.realtimeSinceStartup + Mathf.Max(0.1f, timeoutSeconds),
+                Callback = onAck
+            };
+            _pendingAcks[requestId] = pending;
 
             _connection.EmitAsync(eventName, payload, args => _mainThread.Enqueue(() =>
             {
+                PendingAckRequest request;
+                if (!_pendingAcks.TryGetValue(requestId, out request)) return;
+                _pendingAcks.Remove(requestId);
                 var result = First<JObject>(args);
-                if (onAck != null) onAck(result);
+                request.Callback?.Invoke(result ?? AckFailure(request.EventName, false, false));
             }));
+        }
+
+        public static bool AckRequestExpired(float now, float deadline)
+        {
+            return now >= deadline;
+        }
+
+        public static JObject AckFailure(string eventName, bool timeout, bool disconnected)
+        {
+            string error = disconnected
+                ? "Нет соединения с сервером. Действие можно повторить после восстановления связи."
+                : timeout
+                    ? "Сервер не подтвердил действие вовремя. Повторите попытку."
+                    : "Сервер вернул пустой ответ. Повторите попытку.";
+            return new JObject
+            {
+                ["ok"] = false,
+                ["error"] = error,
+                ["eventName"] = eventName ?? string.Empty,
+                ["timeout"] = timeout,
+                ["disconnected"] = disconnected,
+                ["empty"] = !timeout && !disconnected
+            };
+        }
+
+        private void ExpirePendingAcks()
+        {
+            if (_pendingAcks.Count == 0) return;
+            float now = Time.realtimeSinceStartup;
+            var expired = new List<PendingAckRequest>();
+            foreach (PendingAckRequest request in _pendingAcks.Values)
+                if (AckRequestExpired(now, request.Deadline)) expired.Add(request);
+            foreach (PendingAckRequest request in expired)
+            {
+                if (!_pendingAcks.Remove(request.Id)) continue;
+                request.Callback?.Invoke(AckFailure(request.EventName, true, false));
+            }
+        }
+
+        private void FailPendingAcks(bool timeout, bool disconnected)
+        {
+            if (_pendingAcks.Count == 0) return;
+            var failed = new List<PendingAckRequest>(_pendingAcks.Values);
+            _pendingAcks.Clear();
+            foreach (PendingAckRequest request in failed)
+                request.Callback?.Invoke(AckFailure(request.EventName, timeout, disconnected));
         }
 
         /// <summary>
@@ -867,6 +1003,9 @@ namespace RealmOfAshes.Net
             if (ack == null) return;
             ApplyAuthoritativeSelf(ack["self"] as JObject);
 
+            JArray combats = ack["combats"] as JArray;
+            if (Session != null && combats != null) Session.Combats = (JArray)combats.DeepClone();
+
             JObject combat = ack["combat"] as JObject;
             if (combat == null) return;
             if (Session != null) Session.Combat = combat;
@@ -921,6 +1060,7 @@ namespace RealmOfAshes.Net
                 Session.Z = update.Z;
                 Session.Self = update.Self;
                 Session.Combat = update.Combat ?? update.Self?["combat"] as JObject;
+                if (update.Combats != null) Session.Combats = update.Combats;
                 Session.Players = update.Players ?? new List<PublicPlayer>();
                 Session.WorldState = update.WorldState;
                 Session.ServerAuthoritativeEnemies = update.ServerAuthoritativeEnemies;
@@ -1031,6 +1171,8 @@ namespace RealmOfAshes.Net
 
             if (_stateCooldown > 0f) _stateCooldown -= Time.deltaTime;
 
+            ExpirePendingAcks();
+
             if (Phase == ConnectionPhase.Joined) UpdateNetworkPing();
 
             if (_reconnectScheduled && Phase == ConnectionPhase.Disconnected
@@ -1055,6 +1197,7 @@ namespace RealmOfAshes.Net
             _shuttingDown = true;
             _reconnectScheduled = false;
             ResetNetworkPing();
+            _pendingAcks.Clear();
             // Фазу надо снять до Dispose: иначе компоненты, которые уничтожаются
             // позже, увидят Joined и попытаются писать в закрытый транспорт.
             Phase = ConnectionPhase.Disconnected;

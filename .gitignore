@@ -14,6 +14,8 @@ backups/
 # simulation state must never enter the repository.
 .agents/
 .codex-npc-caps-inventory/
+.unity-global-map-bake/
+UnityMapMaterialBake/
 
 # Local environment and logs.
 .env
@@ -49,6 +51,22 @@ unity-client/Builds/
 unity-client/MemoryCaptures/
 unity-client/*.csproj
 unity-client/*.sln
+
+# Автовосстановленные Unity сцены после падения редактора.
+unity-client/Assets/_Recovery/
+unity-client/Assets/_Recovery.meta
+
+# Сторонний ассет-пак из стора (6+ ГБ): не подлежит коммиту ни по размеру,
+# ни по лицензии. Устанавливается локально через Package Manager/импорт.
+unity-client/Assets/MEP/
+unity-client/Assets/MEP.meta
+
+# Служебные каталоги Unity, созданные при открытии корня репозитория как
+# проекта (bake глобальной карты). Настоящий проект — только unity-client/.
+/Library/
+/Packages/
+/ProjectSettings/
+/UserSettings/
 
 # Сборка вспомогательных .NET-утилит (Tools/). Сами исходники нужны:
 # правило выше ограничено корнем unity-client/ и их csproj не задевает.

@@ -1361,6 +1361,15 @@ async function assertDualPistolRuntime(accounts) {
     && equippedLeft.ack.self?.equipmentRuntime?.offhand === leftRuntimeId,
   'Dual-pistol fixture could not equip a distinct pistol in each hand', equippedLeft.ack);
 
+  const dualJoin = await socketAck(account.socket, 'join', joinPayload(account));
+  const rightAtJoin = dualJoin.combats?.find(row => row.weaponRuntimeId === rightRuntimeId);
+  const leftAtJoin = dualJoin.combats?.find(row => row.weaponRuntimeId === leftRuntimeId);
+  invariant(dualJoin.ok === true
+    && dualJoin.alreadyJoined === true
+    && Number(rightAtJoin?.loaded) === 3
+    && Number(leftAtJoin?.loaded) === 1,
+  'Join baseline did not expose both authoritative runtime magazines', dualJoin);
+
   const dualToken = `combat_runtime_dual_${Date.now().toString(36)}_${++attackSequence}`;
   const dualPayload = {
     weapon: 'laserPistol',

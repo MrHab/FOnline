@@ -205,6 +205,275 @@ function segmentIntersectsRotatedBlocker(fromX, fromZ, toX, toZ, blocker, radius
   return tMax >= startT && tMin <= endT;
 }
 
+function npcAttackTelegraph(actor = {}, weapon = {}, options = {}) {
+  if (actor.dead || String(actor.aiState || "") !== "attack") return null;
+  const targetId = String(actor.targetId || "").slice(0, 96);
+  if (!targetId) return null;
+
+  const ranged = !!weapon.ammoType;
+  const weaponId = String(weapon.id || "");
+  let windowMs = ranged ? 380 : 520;
+  if (weaponId === "rocketLauncher") windowMs = 680;
+  else if (weaponId === "shotgun" || weaponId === "sawedOffShotgun") windowMs = 520;
+  else if (weapon.automatic) windowMs = 330;
+  windowMs = Math.round(clamp(options.windowMs ?? windowMs, 240, 800));
+
+  const remainingMs = Math.max(0, Math.ceil(Number(actor.attackTimer || 0) * 1000));
+  if (remainingMs <= 0 || remainingMs > windowMs) return null;
+  return { remainingMs, windowMs, targetId, ranged };
+}
+
+/**
+ * Short, bounded hit stagger gives every confirmed hit a readable response
+ * without letting automatic fire permanently stun-lock an NPC.  The helper is
+ * deliberately independent from room/path state so the authoritative combat
+ * loop and faction combat use the exact same timing rule.
+ */
+function applyNpcHitStagger(actor = {}, damage = 0, now = Date.now(), options = {}) {
+  if (!actor || actor.dead || Number(actor.hp || 0) <= 0) return 0;
+  const time = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  if (time < Number(actor.nextHitStaggerAt || 0)) return 0;
+
+  const minimumMs = clamp(Number(options.minimumMs ?? 130), 80, 240);
+  const maximumMs = Math.max(minimumMs, clamp(Number(options.maximumMs ?? 310), 180, 480));
+  const maxHp = Math.max(1, Number(actor.maxHp || actor.hp || 1));
+  const damageRatio = clamp(Math.max(0, Number(damage || 0)) / maxHp, 0, 0.65);
+  const criticalBonusMs = options.critical ? 75 : 0;
+  const durationMs = Math.round(clamp(
+    minimumMs + damageRatio * 520 + criticalBonusMs,
+    minimumMs,
+    maximumMs
+  ));
+  const immunityMs = Math.max(durationMs + 90,
+    clamp(Number(options.immunityMs ?? 360), 240, 720));
+
+  actor.hitStaggerUntil = time + durationMs;
+  actor.nextHitStaggerAt = time + immunityMs;
+  actor.aiState = 'stagger';
+  actor.vx = 0;
+  actor.vz = 0;
+  actor.attackTimer = Math.max(Number(actor.attackTimer || 0), durationMs / 1000 + 0.12);
+  actor.meleeCommitUntil = 0;
+  actor.meleeCommitTargetId = '';
+  return durationMs;
+}
+
+function npcHitStaggerActive(actor = {}, now = Date.now()) {
+  return !!(actor && !actor.dead && Number(actor.hp || 0) > 0
+    && Number(now) < Number(actor.hitStaggerUntil || 0));
+}
+
+/**
+ * Death is one authoritative state transition, not a collection of loosely
+ * related fields.  Clearing movement, targeting, telegraph and path intent in
+ * one place prevents a late compact frame from presenting a walking corpse.
+ */
+function finalizeNpcDeathState(actor = {}, now = Date.now()) {
+  if (!actor) return actor;
+  actor.dead = true;
+  actor.hp = 0;
+  actor.diedAt = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  actor.aiState = 'dead';
+  actor.vx = 0;
+  actor.vz = 0;
+  actor.targetId = '';
+  actor.targetPlayerId = '';
+  actor.attackTargetId = '';
+  actor.factionTargetId = '';
+  actor.factionGoalAngle = null;
+  actor.lookX = null;
+  actor.lookZ = null;
+  actor.lastKnownX = null;
+  actor.lastKnownZ = null;
+  actor.attackTimer = 0;
+  actor.hitStaggerUntil = 0;
+  actor.nextHitStaggerAt = 0;
+  actor.npcReloadUntil = 0;
+  actor.meleeCommitUntil = 0;
+  actor.meleeCommitCooldownUntil = 0;
+  actor.meleeCommitTargetId = '';
+  actor.tacticalGoal = null;
+  actor.tacticalGoalX = null;
+  actor.tacticalGoalZ = null;
+  actor.path = null;
+  actor.pathIndex = 0;
+  actor.pathGoalKey = '';
+  actor.nextPathAt = 0;
+  return actor;
+}
+
+/**
+ * Circular contact is the common denominator between the authoritative player
+ * capsule and the simplified broad phase used by moving NPCs.  Keeping the
+ * calculation here makes the "may leave an overlap, may never deepen it" rule
+ * deterministic and directly testable.
+ */
+function actorCircleContactPenalty(ax, az, actorRadius, bx, bz, targetRadius, margin = 0) {
+  const separation = Math.max(0, Number(actorRadius || 0))
+    + Math.max(0, Number(targetRadius || 0))
+    + Math.max(0, Number(margin || 0));
+  return Math.max(0, separation - Math.hypot(
+    Number(ax || 0) - Number(bx || 0),
+    Number(az || 0) - Number(bz || 0)
+  ));
+}
+
+function actorCircleMoveAllowed(currentX, currentZ, nextX, nextZ, actorRadius,
+  targetX, targetZ, targetRadius, margin = 0) {
+  const nextPenalty = actorCircleContactPenalty(nextX, nextZ, actorRadius,
+    targetX, targetZ, targetRadius, margin);
+  if (nextPenalty <= 0.001) return true;
+  const currentPenalty = actorCircleContactPenalty(currentX, currentZ, actorRadius,
+    targetX, targetZ, targetRadius, margin);
+  return currentPenalty > 0.001 && nextPenalty < currentPenalty - 0.0005;
+}
+
+/**
+ * Stable melee crowd layout around one target.  The first eight actors occupy
+ * the readable contact ring; additional attackers wait on concentric support
+ * rings instead of reusing the same eight points and merging into one body.
+ * The server remains authoritative: this helper only selects the destination
+ * offset used by the ordinary path/collision code.
+ */
+function npcMeleeFormationSlot(index, count, contactRadius, attackRange, seed = 0) {
+  const safeIndex = Math.max(0, Math.floor(Number(index || 0)));
+  const safeCount = Math.max(1, Math.floor(Number(count || 1)));
+  const slotsPerRing = 8;
+  const ring = Math.floor(safeIndex / slotsPerRing);
+  const localIndex = safeIndex % slotsPerRing;
+  const actorsOnRing = Math.max(1, Math.min(slotsPerRing,
+    safeCount - ring * slotsPerRing));
+  const slot = localIndex;
+  const angle = actorsOnRing === 1
+    ? 0
+    : localIndex * Math.PI * 2 / actorsOnRing;
+  const baseRadius = Math.max(Math.max(0, Number(contactRadius || 0)),
+    clamp(Number(attackRange || 0) * 0.78, 1.05, 1.65));
+  const ringSpacing = Math.max(0.74, Math.max(0, Number(contactRadius || 0)) * 1.16);
+  const jitter = clamp(Number(seed || 0), 0, 1) * 0.16;
+  return {
+    ring,
+    slot,
+    angle,
+    radius: baseRadius + jitter + ring * ringSpacing,
+    contact: ring === 0
+  };
+}
+
+/**
+ * Preserve melee engagement slots while the set of attackers changes.  A
+ * sorted-per-frame index makes every remaining NPC choose a different point
+ * whenever somebody joins, dies or retreats; the resulting crossovers are
+ * especially visible at point-blank range.  Existing valid reservations keep
+ * their index and only a newcomer receives the lowest free one.
+ */
+function reconcileNpcMeleeSlotReservations(previous, activeActorIds, reserveActorId = '') {
+  const active = new Set([...activeActorIds || []]
+    .map(id => String(id || ''))
+    .filter(Boolean));
+  const next = new Map();
+  const used = new Set();
+  if (previous instanceof Map) {
+    for (const [rawId, rawSlot] of previous.entries()) {
+      const id = String(rawId || '');
+      const slot = Math.floor(Number(rawSlot));
+      if (!id || !active.has(id) || !Number.isFinite(slot) || slot < 0 || used.has(slot)) continue;
+      next.set(id, slot);
+      used.add(slot);
+    }
+  }
+
+  const reserveId = String(reserveActorId || '');
+  if (reserveId && active.has(reserveId) && !next.has(reserveId)) {
+    let slot = 0;
+    while (used.has(slot)) slot += 1;
+    next.set(reserveId, slot);
+  }
+  return next;
+}
+
+/**
+ * Smoothly brakes an NPC over the last metres before its reserved melee slot.
+ * The final centimetres retain enough speed to actually reach the slot; the
+ * ordinary movement helper owns the exact stop threshold.
+ */
+function npcMeleeApproachSpeed(baseSpeed, distanceToGoal, options = {}) {
+  const speed = Math.max(0, Number(baseSpeed || 0));
+  const distance = Math.max(0, Number(distanceToGoal || 0));
+  const stopDistance = clamp(Number(options.stopDistance ?? 0.02), 0.01, 0.12);
+  const fullSpeedDistance = Math.max(stopDistance + 0.2,
+    Number(options.fullSpeedDistance ?? 1.65));
+  const minimumMultiplier = clamp(Number(options.minimumMultiplier ?? 0.24), 0.1, 0.65);
+  if (speed <= 0 || distance <= stopDistance) return 0;
+  const linear = clamp((distance - stopDistance) / (fullSpeedDistance - stopDistance), 0, 1);
+  const eased = linear * linear * (3 - 2 * linear);
+  return speed * (minimumMultiplier + (1 - minimumMultiplier) * eased);
+}
+
+/**
+ * Limits how many melee NPCs may commit to an actual swing at once. Everyone
+ * else keeps a reserved ring position and remains threatening, but the player
+ * gets a readable sequence of attacks instead of one synchronized damage wall.
+ */
+function npcMeleeCommitCapacity(attackerCount) {
+  const count = Math.max(0, Math.floor(Number(attackerCount || 0)));
+  if (count <= 1) return count;
+  if (count <= 5) return 2;
+  return 3;
+}
+
+function npcMeleeCommitLeaseMs(attackDelaySeconds, options = {}) {
+  const windupMs = Math.max(0, Number(attackDelaySeconds || 0) * 1000);
+  const followThroughMs = clamp(Number(options.followThroughMs ?? 620), 320, 900);
+  return Math.round(clamp(windupMs + followThroughMs, 760, 1850));
+}
+
+function npcMeleeCommitCooldownMs(seed = 0, options = {}) {
+  const minimumMs = clamp(Number(options.minimumMs ?? 820), 500, 1300);
+  const spreadMs = clamp(Number(options.spreadMs ?? 520), 0, 900);
+  return Math.round(minimumMs + clamp(Number(seed || 0), 0, 1) * spreadMs);
+}
+
+function releaseNpcMeleeCommit(actor = {}, activeActorIds = null, now = Date.now(), options = {}) {
+  const actorId = String(actor.id || '');
+  if (activeActorIds instanceof Set && actorId) activeActorIds.delete(actorId);
+  actor.meleeCommitUntil = 0;
+  actor.meleeCommitTargetId = '';
+  const cooldownMs = Math.max(0, Number(options.cooldownMs || 0));
+  if (cooldownMs > 0) {
+    actor.meleeCommitCooldownUntil = Math.max(Number(actor.meleeCommitCooldownUntil || 0),
+      Number(now || Date.now()) + cooldownMs);
+  }
+}
+
+function tryReserveNpcMeleeCommit(actor = {}, targetId = '', attackerCount = 1,
+  activeActorIds = null, now = Date.now(), options = {}) {
+  const id = String(actor.id || '');
+  const target = String(targetId || '');
+  if (!id || !target || !(activeActorIds instanceof Set)) return false;
+  const time = Number(now || Date.now());
+  if (String(actor.meleeCommitTargetId || '') === target
+    && time < Number(actor.meleeCommitUntil || 0)) {
+    activeActorIds.add(id);
+    return true;
+  }
+  releaseNpcMeleeCommit(actor, activeActorIds, time);
+  if (time < Number(actor.meleeCommitCooldownUntil || 0)) return false;
+  if (activeActorIds.size >= npcMeleeCommitCapacity(attackerCount)) return false;
+  actor.meleeCommitTargetId = target;
+  actor.meleeCommitUntil = time + npcMeleeCommitLeaseMs(
+    options.attackDelaySeconds ?? actor.attackTimer, options);
+  activeActorIds.add(id);
+  return true;
+}
+
+function completeNpcMeleeCommit(actor = {}, activeActorIds = null,
+  now = Date.now(), seed = 0, options = {}) {
+  releaseNpcMeleeCommit(actor, activeActorIds, now, {
+    cooldownMs: npcMeleeCommitCooldownMs(seed, options)
+  });
+}
+
 module.exports = {
   actorHostilityKeys,
   actorIsExplicitlyHostileToPlayer,
@@ -216,5 +485,20 @@ module.exports = {
   actorFieldOfViewDegrees,
   targetInsideVisionArc,
   npcAttackHitChance,
-  segmentIntersectsRotatedBlocker
+  npcAttackTelegraph,
+  applyNpcHitStagger,
+  npcHitStaggerActive,
+  finalizeNpcDeathState,
+  segmentIntersectsRotatedBlocker,
+  actorCircleContactPenalty,
+  actorCircleMoveAllowed,
+  npcMeleeFormationSlot,
+  reconcileNpcMeleeSlotReservations,
+  npcMeleeApproachSpeed,
+  npcMeleeCommitCapacity,
+  npcMeleeCommitLeaseMs,
+  npcMeleeCommitCooldownMs,
+  releaseNpcMeleeCommit,
+  tryReserveNpcMeleeCommit,
+  completeNpcMeleeCommit
 };

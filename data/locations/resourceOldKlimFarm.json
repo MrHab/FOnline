@@ -70,7 +70,10 @@
       ],
       "resourceType": "food",
       "hp": 6,
-      "maxHp": 6
+      "maxHp": 6,
+      "vision": {
+        "mode": "clear"
+      }
     },
     {
       "id": "farm_patch_02",
@@ -99,7 +102,10 @@
       ],
       "resourceType": "medicine",
       "hp": 5,
-      "maxHp": 5
+      "maxHp": 5,
+      "vision": {
+        "mode": "clear"
+      }
     },
     {
       "id": "farm_water_01",

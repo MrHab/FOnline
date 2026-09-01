@@ -10,11 +10,22 @@ const CLIENT_PARTS_DIR = path.join(ROOT, 'public', 'js', 'game');
 const CLIENT_PART_FILES = fs.readdirSync(CLIENT_PARTS_DIR)
   .filter(name => name.endsWith('.js'))
   .sort();
+const UNITY_CLIENT_DIR = path.join(ROOT, 'unity-client', 'Assets', 'Scripts');
+
+function readFilesRecursive(directory, extension) {
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const target = path.join(directory, entry.name);
+    return entry.isDirectory() ? readFilesRecursive(target, extension)
+      : entry.name.endsWith(extension) ? [fs.readFileSync(target, 'utf8')] : [];
+  });
+}
 
 const serverSource = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
 const clientSource = CLIENT_PART_FILES
   .map(name => fs.readFileSync(path.join(CLIENT_PARTS_DIR, name), 'utf8'))
   .join('\n');
+const unityClientSource = readFilesRecursive(UNITY_CLIENT_DIR, '.cs').join('\n');
 
 function collectMatches(source, pattern, eventGroup = 2) {
   const matches = [];
@@ -47,6 +58,11 @@ const clientHandlers = sortedUnique(collectMatches(
   clientSource,
   /\b(?:multiplayer\.socket|socket)\.(?:on|once)\(\s*(['"])([^'"]+)\1/g
 ));
+const unityClientHandlers = sortedUnique(collectMatches(
+  unityClientSource,
+  /\b_connection\.On\(\s*"([^"]+)"/g,
+  1
+));
 
 const clientDirectEmits = collectMatches(
   clientSource,
@@ -55,6 +71,11 @@ const clientDirectEmits = collectMatches(
 const clientGuardedEmits = collectMatches(
   clientSource,
   /\bemitGuardedMultiplayerGameplayAction\(\s*(['"])([^'"]+)\1/g
+);
+const unityClientEmits = collectMatches(
+  unityClientSource,
+  /\b(?:EmitWithAck|Emit)\(\s*"([^"]+)"/g,
+  1
 );
 const serverHandlers = sortedUnique(collectMatches(
   serverSource,
@@ -110,8 +131,8 @@ assert.strictEqual(
 );
 
 const serverEmits = sortedUnique([...serverDirectEmits, ...serverPartyEmits]);
-const clientEmits = sortedUnique([...clientDirectEmits, ...clientGuardedEmits]);
-const clientHandlerSet = new Set(clientHandlers);
+const clientEmits = sortedUnique([...clientDirectEmits, ...clientGuardedEmits, ...unityClientEmits]);
+const clientHandlerSet = new Set([...clientHandlers, ...unityClientHandlers]);
 const serverHandlerSet = new Set(serverHandlers);
 const serverEventsWithoutClientHandler = serverEmits
   .filter(eventName => !clientHandlerSet.has(eventName));
@@ -125,12 +146,12 @@ const serverHandlersWithoutClientEmit = serverHandlers
 assert.deepStrictEqual(
   serverEventsWithoutClientHandler,
   [],
-  `Production server emits event(s) without a browser handler: ${serverEventsWithoutClientHandler.join(', ')}`
+  `Production server emits event(s) without a shipped-client handler: ${serverEventsWithoutClientHandler.join(', ')}`
 );
 assert.deepStrictEqual(
   clientEventsWithoutServerHandler,
   [],
-  `Browser client emits event(s) without a production server handler: ${clientEventsWithoutServerHandler.join(', ')}`
+  `Shipped client emits event(s) without a production server handler: ${clientEventsWithoutServerHandler.join(', ')}`
 );
 assert.deepStrictEqual(
   clientHandlersWithoutServerEmit,
@@ -147,11 +168,11 @@ assert.deepStrictEqual(
     'worldTaskJoinParty',
     'worldTaskLeaveParty'
   ],
-  'Server handlers without a current browser emit must stay limited to transport and documented compatibility events'
+  'Server handlers without a current shipped-client emit must stay limited to transport and documented compatibility events'
 );
 
 console.log(
   `Socket event contract OK: ${serverEmits.length} server event(s), `
   + `${clientEmits.length} client event(s), ${serverHandlers.length} server handler(s), `
-  + `${clientHandlers.length} client handler(s), ${CLIENT_PART_FILES.length} client part(s) audited`
+  + `${clientHandlers.length} browser handler(s), ${CLIENT_PART_FILES.length} browser part(s) and Unity scripts audited`
 );

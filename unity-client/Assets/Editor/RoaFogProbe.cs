@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using Object = UnityEngine.Object;
 using System.Text;
 using Newtonsoft.Json;
 using RealmOfAshes.Game;
@@ -19,12 +21,117 @@ namespace RealmOfAshes.EditorTools
     public static class RoaFogProbe
     {
         private const string LocationsPath = "../data/locations";
+        private static readonly HashSet<string> ExplicitVisionCollisions = new HashSet<string>
+        {
+            "solid", "block", "blocked", "wall", "resource", "cover"
+        };
+
+        /// <summary>
+        /// Строгая CI-проба: все статические физические объекты обязаны явно
+        /// сказать, перекрывают ли они обзор. Это не даёт одинаковой модели
+        /// становиться укрытием в одной локации и прозрачной в другой.
+        /// </summary>
+        public static void Run()
+        {
+            string root = LocationsRoot();
+            if (!System.IO.Directory.Exists(root))
+                throw new InvalidOperationException("location data directory is missing: " + root);
+
+            string[] files = System.IO.Directory.GetFiles(root, "*.json");
+            Array.Sort(files, StringComparer.Ordinal);
+            int required = 0;
+            int block = 0;
+            int cover = 0;
+            int clear = 0;
+            var expected = new Dictionary<string, RoaAuthoredVision.Kind>
+            {
+                { "oldDepot/depot_scrap_01", RoaAuthoredVision.Kind.Cover },
+                { "relayStation/relay_antenna_01", RoaAuthoredVision.Kind.Cover },
+                { "resourceOldKlimFarm/farm_patch_01", RoaAuthoredVision.Kind.Clear }
+            };
+            var found = new HashSet<string>();
+
+            foreach (string file in files)
+            {
+                LocationDefinition location = JsonConvert.DeserializeObject<LocationDefinition>(
+                    System.IO.File.ReadAllText(file));
+                if (location == null || location.Objects == null)
+                    throw new InvalidOperationException(System.IO.Path.GetFileName(file)
+                        + " has no location objects");
+
+                string locationId = System.IO.Path.GetFileNameWithoutExtension(file);
+                foreach (LocationObject entry in location.Objects)
+                {
+                    if (entry == null || entry.IsLiveEntity()) continue;
+                    string collision = (entry.Collision ?? string.Empty).Trim().ToLowerInvariant();
+                    RoaAuthoredVision.Kind kind = RoaAuthoredVision.Resolve(entry);
+                    if (ExplicitVisionCollisions.Contains(collision))
+                    {
+                        required++;
+                        if (entry.Vision == null)
+                            throw new InvalidOperationException(locationId + "/" + entry.Id
+                                + " has physical collision without explicit vision");
+                        if (collision == "cover" && kind != RoaAuthoredVision.Kind.Cover)
+                            throw new InvalidOperationException(locationId + "/" + entry.Id
+                                + " has incompatible cover collision and vision");
+                        if (kind == RoaAuthoredVision.Kind.Block) block++;
+                        else if (kind == RoaAuthoredVision.Kind.Cover) cover++;
+                        else clear++;
+                    }
+
+                    string model = (entry.Model ?? string.Empty).Trim().ToLowerInvariant();
+                    if (collision == "resource"
+                        && (model == "scrapheap" || model == "oreoutcrop"
+                            || model == "deadtreeb" || model == "deadwood")
+                        && kind != RoaAuthoredVision.Kind.Cover)
+                        throw new InvalidOperationException(locationId + "/" + entry.Id
+                            + " physical resource is not low cover");
+                    if (collision == "resource" && model == "gardenpatch"
+                        && kind != RoaAuthoredVision.Kind.Clear)
+                        throw new InvalidOperationException(locationId + "/" + entry.Id
+                            + " low garden patch blocks sight");
+
+                    string key = locationId + "/" + entry.Id;
+                    if (expected.TryGetValue(key, out RoaAuthoredVision.Kind wanted))
+                    {
+                        if (kind != wanted)
+                            throw new InvalidOperationException(key + " resolves to " + kind
+                                + " instead of " + wanted);
+                        found.Add(key);
+                    }
+                }
+            }
+
+            if (found.Count != expected.Count)
+                throw new InvalidOperationException("authored LOS fixtures are missing");
+
+            var host = new GameObject("RoaFogAudit");
+            host.hideFlags = HideFlags.HideAndDontSave;
+            try
+            {
+                string lineReport = LineOfSightCheck(host, out bool lineOfSightOk);
+                if (!lineOfSightOk) throw new InvalidOperationException(lineReport);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+
+            Debug.Log("[ТУМАН ВОЙНЫ] готово: " + files.Length + " локаций, "
+                + required + " статических правил (стены/укрытия/сквозные="
+                + block + "/" + cover + "/" + clear + "), синтетический LOS сходится.");
+        }
+
+        private static string LocationsRoot()
+        {
+            return System.IO.Path.GetFullPath(
+                System.IO.Path.Combine(Application.dataPath, "..", LocationsPath));
+        }
 
         [MenuItem("Realm of Ashes/Проверить туман войны")]
         public static void Probe()
         {
-            string root = System.IO.Path.GetFullPath(
-                System.IO.Path.Combine(Application.dataPath, "..", LocationsPath));
+            string root = LocationsRoot();
 
             if (!System.IO.Directory.Exists(root))
             {
@@ -135,6 +242,11 @@ namespace RealmOfAshes.EditorTools
         /// </summary>
         private static string LineOfSightCheck(GameObject host)
         {
+            return LineOfSightCheck(host, out _);
+        }
+
+        private static string LineOfSightCheck(GameObject host, out bool passed)
+        {
             var fog = host.AddComponent<RoaFogOfWar>();
 
             var location = new LocationDefinition
@@ -190,7 +302,8 @@ namespace RealmOfAshes.EditorTools
                     + ", стен " + fog.VisualBlockCount + " (ожидается >0/3)");
             }
 
-            if (!wallVisible || behindVisible || !openVisible || !overlayOk)
+            passed = wallVisible && !behindVisible && openVisible && overlayOk;
+            if (!passed)
                 text.AppendLine("  ПРОВАЛ: линия видимости работает не так, как в web-клиенте.");
             else
                 text.AppendLine("  Сходится.");

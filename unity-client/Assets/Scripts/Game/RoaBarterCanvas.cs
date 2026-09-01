@@ -631,6 +631,7 @@ namespace RealmOfAshes.Game
             scroll.content = column.List;
             scroll.viewport = viewport;
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scroll.scrollSensitivity = 30f;
             scroll.movementType = ScrollRect.MovementType.Clamped;
             column.Empty = Label("Empty", viewport, 10, TextAnchor.UpperLeft, RowNote);
@@ -711,6 +712,7 @@ namespace RealmOfAshes.Game
             scroll.content = list;
             scroll.viewport = viewport;
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scroll.scrollSensitivity = 30f;
             scroll.movementType = ScrollRect.MovementType.Clamped;
             empty = Label("Empty", viewport, 11, TextAnchor.UpperLeft, RowNote);

@@ -6,6 +6,7 @@ using RealmOfAshes.World;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace RealmOfAshes.Game
 {
@@ -67,6 +68,7 @@ namespace RealmOfAshes.Game
 
         private string _baseUrl = "http://127.0.0.1:3000";
         private LocationDefinition _location;
+        private JObject _effectiveProfile;
         private Renderer _groundRenderer;
         private Color _groundDayColor = Color.white;
         private bool _localWorldActive;
@@ -103,6 +105,15 @@ namespace RealmOfAshes.Game
         private bool _cameraStateCaptured;
         private CameraClearFlags _initialClearFlags;
         private Color _initialBackground;
+        private Volume _postVolume;
+        private VolumeProfile _runtimeVolumeProfile;
+        private ColorAdjustments _colorAdjustments;
+        private Vignette _vignette;
+        private Bloom _bloom;
+        private Tonemapping _tonemapping;
+        private UniversalAdditionalCameraData _cameraData;
+        private bool _cameraPostStateCaptured;
+        private bool _initialRenderPostProcessing;
 
         private void Awake()
         {
@@ -119,6 +130,8 @@ namespace RealmOfAshes.Game
         {
             RestoreGround();
             RestoreSceneState();
+            if (_postVolume != null) DestroyRuntime(_postVolume.gameObject);
+            if (_runtimeVolumeProfile != null) DestroyRuntime(_runtimeVolumeProfile);
             if (_ownsSun && Sun != null) DestroyRuntime(Sun.gameObject);
         }
 
@@ -149,13 +162,12 @@ namespace RealmOfAshes.Game
         {
             RestoreGround();
             _location = location;
+            _effectiveProfile = ResolveVisualProfile(location);
             _groundRenderer = groundRenderer;
             if (_groundRenderer != null && _groundRenderer.sharedMaterial != null)
                 _groundDayColor = ReadMaterialColor(_groundRenderer.sharedMaterial);
 
-            VisualProfileId = location != null
-                ? (location.VisualProfile?["id"]?.ToString() ?? "default")
-                : "default";
+            VisualProfileId = _effectiveProfile?["id"]?.ToString() ?? "default";
             ApplyCurrentHour(true);
         }
 
@@ -174,6 +186,7 @@ namespace RealmOfAshes.Game
             StopClockPoll();
             RestoreGround();
             RestoreSceneState();
+            if (_postVolume != null) _postVolume.enabled = false;
             if (Sun != null) Sun.enabled = false;
             if (Moon != null) Moon.enabled = false;
             if (ReliefRim != null) ReliefRim.enabled = false;
@@ -192,21 +205,21 @@ namespace RealmOfAshes.Game
             float moonAmount = Smooth01((0.16f - sunAltitude) / 0.46f);
 
             Color sky = Color.Lerp(ProfileColor(profile, "skyNight", 0x34394a),
-                                   ProfileColor(profile, "skyDay", 0x3b2a1a), daylight);
+                                   ProfileColor(profile, "skyDay", 0x56616a), daylight);
             sky = Color.Lerp(sky, ProfileColor(profile, "skyDawn", 0x775033), twilight * 0.28f);
 
             Color fog = Color.Lerp(ProfileColor(profile, "fogNight", 0x394058),
-                                   ProfileColor(profile, "fogDay", 0x46311e), daylight);
+                                   ProfileColor(profile, "fogDay", 0x62594f), daylight);
             fog = Color.Lerp(fog, ProfileColor(profile, "fogDawn", 0x765031), twilight * 0.24f);
 
             Color hemiSky = Color.Lerp(ProfileColor(profile, "hemiSkyNight", 0xc9d7ff),
-                                       ProfileColor(profile, "hemiSkyDay", 0xe2c9a4), daylight);
+                                       ProfileColor(profile, "hemiSkyDay", 0xd6cec0), daylight);
             hemiSky = Color.Lerp(hemiSky, ProfileColor(profile, "hemiSkyDawn", 0xe2a66f), twilight * 0.35f);
             Color hemiGround = Color.Lerp(ProfileColor(profile, "hemiGroundNight", 0x84745e),
-                                          ProfileColor(profile, "hemiGroundDay", 0x85643e), daylight);
+                                          ProfileColor(profile, "hemiGroundDay", 0x756757), daylight);
 
             Color fill = Color.Lerp(ProfileColor(profile, "fillNight", 0xc2d0ff),
-                                    ProfileColor(profile, "fillDay", 0xecd4ad), daylight);
+                                    ProfileColor(profile, "fillDay", 0xe3d3bc), daylight);
             fill = Color.Lerp(fill, ProfileColor(profile, "fillDawn", 0xf1bb7c), twilight * 0.22f);
 
             Color sun = Color.Lerp(ProfileColor(profile, "sunNight", 0xffdfad),
@@ -227,9 +240,9 @@ namespace RealmOfAshes.Game
                                  * ProfileNumber(profile, "rimIntensityScale", 1f, 0.15f, 2f);
 
             float fogNight = ProfileNumber(profile, "fogDensityNight", mobile ? 0.00175f : 0.00205f, 0f, 0.02f);
-            float fogDay = ProfileNumber(profile, "fogDensityDay", 0.0026f, 0f, 0.02f);
-            float exposureNight = ProfileNumber(profile, "exposureNight", mobile ? 1.28f : 1.18f, 0.5f, 2f);
-            float exposureDay = ProfileNumber(profile, "exposureDay", mobile ? 1.10f : 1.16f, 0.5f, 2f);
+            float fogDay = ProfileNumber(profile, "fogDensityDay", 0.0022f, 0f, 0.02f);
+            float exposureNight = ProfileNumber(profile, "exposureNight", mobile ? 1.16f : 1.10f, 0.5f, 2f);
+            float exposureDay = ProfileNumber(profile, "exposureDay", mobile ? 1.07f : 1.04f, 0.5f, 2f);
             float tintMix = Mathf.Clamp(Smooth01(night) * 0.58f - twilight * 0.18f, 0f, 0.68f);
 
             return new LightingSample
@@ -278,7 +291,7 @@ namespace RealmOfAshes.Game
                 return;
             }
             _lastRequestedHour = hour;
-            Apply(Evaluate(hour, _location != null ? _location.VisualProfile : null, Application.isMobilePlatform));
+            Apply(Evaluate(hour, _effectiveProfile, Application.isMobilePlatform));
         }
 
         private void Apply(LightingSample sample)
@@ -307,6 +320,7 @@ namespace RealmOfAshes.Game
                 _camera.clearFlags = CameraClearFlags.SolidColor;
                 _camera.backgroundColor = sample.SkyColor;
             }
+            ApplyPostProcessing(sample);
 
             float dayFraction = sample.Hour / 24f;
             float azimuth = dayFraction * Mathf.PI * 2f - Mathf.PI * 0.35f;
@@ -340,8 +354,64 @@ namespace RealmOfAshes.Game
         private void ApplyGroundTint(float mix)
         {
             if (_groundRenderer == null || _groundRenderer.sharedMaterial == null) return;
-            Color night = ProfileColor(_location != null ? _location.VisualProfile : null, "groundNight", 0xb79a70);
-            WriteMaterialColor(_groundRenderer.sharedMaterial, Color.Lerp(_groundDayColor, night, mix));
+            Color profileDay = ProfileColor(_effectiveProfile, "groundDay", _groundDayColor);
+            float dayMix = ProfileNumber(_effectiveProfile, "groundDayMix", 0f, 0f, 0.65f);
+            Color day = Color.Lerp(_groundDayColor, profileDay, dayMix);
+            Color night = ProfileColor(_effectiveProfile, "groundNight", 0xb79a70);
+            WriteMaterialColor(_groundRenderer.sharedMaterial, Color.Lerp(day, night, mix));
+        }
+
+        private void ApplyPostProcessing(LightingSample sample)
+        {
+            EnsurePostProcessing();
+            if (_postVolume == null) return;
+            _postVolume.enabled = _localWorldActive;
+            bool mobile = Application.isMobilePlatform;
+
+            _colorAdjustments.postExposure.Override(Mathf.Log(Mathf.Max(0.01f, sample.Exposure), 2f));
+            _colorAdjustments.contrast.Override(ProfileNumber(_effectiveProfile, "postContrast", 13f, -40f, 40f));
+            _colorAdjustments.saturation.Override(ProfileNumber(_effectiveProfile, "postSaturation", -8f, -50f, 30f));
+            _colorAdjustments.colorFilter.Override(ProfileColor(_effectiveProfile, "postTint", Color.white));
+            _tonemapping.mode.Override(TonemappingMode.ACES);
+
+            _vignette.intensity.Override(ProfileNumber(_effectiveProfile, "vignette", mobile ? 0.10f : 0.17f, 0f, 0.35f));
+            _vignette.smoothness.Override(0.55f);
+            _vignette.rounded.Override(false);
+
+            _bloom.active = !mobile && QualitySettings.GetQualityLevel() >= 2;
+            _bloom.intensity.Override(ProfileNumber(_effectiveProfile, "bloom", 0.18f, 0f, 0.65f));
+            _bloom.threshold.Override(1.1f);
+            _bloom.scatter.Override(0.52f);
+        }
+
+        private void EnsurePostProcessing()
+        {
+            CacheCameraState();
+            if (_camera != null)
+            {
+                if (_cameraData == null) _cameraData = _camera.GetComponent<UniversalAdditionalCameraData>();
+                if (_cameraData == null) _cameraData = _camera.gameObject.AddComponent<UniversalAdditionalCameraData>();
+                if (!_cameraPostStateCaptured)
+                {
+                    _cameraPostStateCaptured = true;
+                    _initialRenderPostProcessing = _cameraData.renderPostProcessing;
+                }
+                _cameraData.renderPostProcessing = true;
+            }
+            if (_postVolume != null) return;
+
+            var volumeObject = new GameObject("Wasteland Post Processing");
+            volumeObject.transform.SetParent(transform, false);
+            _postVolume = volumeObject.AddComponent<Volume>();
+            _postVolume.isGlobal = true;
+            _postVolume.priority = 20f;
+            _runtimeVolumeProfile = ScriptableObject.CreateInstance<VolumeProfile>();
+            _runtimeVolumeProfile.name = "Runtime Wasteland Profile";
+            _postVolume.profile = _runtimeVolumeProfile;
+            _colorAdjustments = _runtimeVolumeProfile.Add<ColorAdjustments>(true);
+            _vignette = _runtimeVolumeProfile.Add<Vignette>(true);
+            _bloom = _runtimeVolumeProfile.Add<Bloom>(true);
+            _tonemapping = _runtimeVolumeProfile.Add<Tonemapping>(true);
         }
 
         private void RestoreGround()
@@ -452,6 +522,8 @@ namespace RealmOfAshes.Game
                 _camera.clearFlags = _initialClearFlags;
                 _camera.backgroundColor = _initialBackground;
             }
+            if (_cameraPostStateCaptured && _cameraData != null)
+                _cameraData.renderPostProcessing = _initialRenderPostProcessing;
             if (_sunStateCaptured && Sun != null && !_ownsSun)
             {
                 Sun.enabled = _initialSunEnabled;
@@ -547,6 +619,115 @@ namespace RealmOfAshes.Game
                 || float.TryParse(raw, NumberStyles.Float, CultureInfo.CurrentCulture, out value))
                 return Mathf.Clamp(value, min, max);
             return fallback;
+        }
+
+        private static JObject ResolveVisualProfile(LocationDefinition location)
+        {
+            string kind = (location?.Kind ?? string.Empty).Trim().ToLowerInvariant();
+            JObject profile;
+            if (kind == "settlement" || kind == "production")
+            {
+                profile = new JObject
+                {
+                    ["id"] = "settlement_warm",
+                    ["skyDay"] = "#5b5146",
+                    ["fogDay"] = "#625548",
+                    ["fogDensityDay"] = 0.0020f,
+                    ["exposureDay"] = 1.04f,
+                    ["sunDawn"] = "#ff9b58",
+                    ["fillDay"] = "#e7d0b0",
+                    ["groundDay"] = "#b29370",
+                    ["groundDayMix"] = 0.10f,
+                    ["groundNight"] = "#8e735a",
+                    ["postTint"] = "#f4f1ea",
+                    ["postContrast"] = 13f,
+                    ["postSaturation"] = -2f,
+                    ["vignette"] = 0.14f,
+                    ["bloom"] = 0.16f
+                };
+            }
+            else if (kind == "resource")
+            {
+                profile = new JObject
+                {
+                    ["id"] = "resource_dust",
+                    ["skyDay"] = "#4f5960",
+                    ["fogDay"] = "#62584d",
+                    ["fogDensityDay"] = 0.00265f,
+                    ["exposureDay"] = 1.02f,
+                    ["sunDay"] = "#f3d2a0",
+                    ["hemiSkyDay"] = "#c9c7bd",
+                    ["groundDay"] = "#927b68",
+                    ["groundDayMix"] = 0.22f,
+                    ["groundNight"] = "#78695a",
+                    ["postTint"] = "#eef1ef",
+                    ["postContrast"] = 13f,
+                    ["postSaturation"] = -12f,
+                    ["vignette"] = 0.17f,
+                    ["bloom"] = 0.10f
+                };
+            }
+            else if (kind == "lair" || location?.EncounterOnly == true || location?.Safe == false)
+            {
+                profile = new JObject
+                {
+                    ["id"] = "hostile_cold",
+                    ["skyDay"] = "#344a58",
+                    ["fogDay"] = "#465058",
+                    ["fogDawn"] = "#67433e",
+                    ["fogDensityDay"] = 0.00285f,
+                    ["exposureDay"] = 0.99f,
+                    ["sunDay"] = "#cedee5",
+                    ["sunDawn"] = "#d9a58c",
+                    ["hemiSkyDay"] = "#aebfc5",
+                    ["hemiGroundDay"] = "#535f65",
+                    ["fillDay"] = "#b8c6c9",
+                    ["groundDay"] = "#738087",
+                    ["groundDayMix"] = 0.36f,
+                    ["groundNight"] = "#626d72",
+                    ["postTint"] = "#e9f2f5",
+                    ["postContrast"] = 16f,
+                    ["postSaturation"] = -16f,
+                    ["vignette"] = 0.20f,
+                    ["bloom"] = 0.12f
+                };
+            }
+            else
+            {
+                profile = new JObject
+                {
+                    ["id"] = "wasteland_neutral",
+                    ["skyDay"] = "#4e5961",
+                    ["fogDay"] = "#5f5b55",
+                    ["fogDensityDay"] = 0.00205f,
+                    ["exposureDay"] = 0.82f,
+                    ["hemiSkyDay"] = "#76aad0",
+                    ["hemiGroundDay"] = "#365b78",
+                    ["fillDay"] = "#8ebbd2",
+                    ["sunDay"] = "#90cff7",
+                    ["sunDawn"] = "#c3c4bd",
+                    ["sunIntensityScale"] = 0.72f,
+                    ["hemiIntensityScale"] = 0.75f,
+                    ["fillIntensityScale"] = 0.82f,
+                    ["groundDay"] = "#0033ff",
+                    ["groundDayMix"] = 0.65f,
+                    ["postTint"] = "#7fc4ff",
+                    ["postContrast"] = 16f,
+                    ["postSaturation"] = -28f,
+                    ["vignette"] = 0.14f,
+                    ["bloom"] = 0.12f
+                };
+            }
+
+            if (location?.VisualProfile != null)
+            {
+                profile.Merge(location.VisualProfile.DeepClone(), new JsonMergeSettings
+                {
+                    MergeArrayHandling = MergeArrayHandling.Replace,
+                    MergeNullValueHandling = MergeNullValueHandling.Ignore
+                });
+            }
+            return profile;
         }
 
         private static Color ProfileColor(JObject profile, string key, int fallback)

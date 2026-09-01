@@ -11,7 +11,11 @@
 
 - `server.js` is the production entry point and authoritative multiplayer server.
 - `src/server/` contains extracted server-side systems.
-- `public/` contains the browser client and all shipped static assets.
+- `unity-client/` is the game client (Unity 6000.5.8f1, URP). Players get the
+  Unity WebGL build served from the site root; new client work happens here.
+- `public/` contains shipped static assets (GLB models, textures) and the
+  legacy Three.js client, which is frozen and served only at `/legacy/` as the
+  parity source for `npm run check:unity-parity`.
 - `data/` contains authored world data. Runtime account, save and simulation files are ignored.
 - `tools/` contains generators and verification scripts.
 - `docs/wiki/` documents the current game architecture.
@@ -30,7 +34,11 @@
 - Run the narrowest relevant `npm run check:*` command while iterating.
 - Run `npm run check` before handing off a substantial change or publishing a branch.
 - When changing networking, also verify `/health` and a Socket.IO connection.
-- When changing visuals or interaction, test the running client in a browser at desktop and mobile landscape sizes.
+- When changing the Unity client, run `unity-client/Tools/compile-check.ps1`,
+  the relevant **Realm of Ashes** editor probes (or the batch audit
+  `RoaClientAuditRunner.Run`) and `npm run check:unity-parity`.
+- When changing visuals or interaction, test the running Unity client at
+  desktop and mobile landscape sizes.
 
 ## Git and delivery
 

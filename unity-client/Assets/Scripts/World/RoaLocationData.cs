@@ -220,6 +220,7 @@ namespace RealmOfAshes.World
         /// способами — width/depth и x/z, — поэтому разбирается вручную.
         /// </summary>
         [JsonProperty("collisionSize")] public JObject CollisionSize;
+        [JsonProperty("collisionParts")] public JArray CollisionParts;
 
         public bool HasTag(string tag)
         {

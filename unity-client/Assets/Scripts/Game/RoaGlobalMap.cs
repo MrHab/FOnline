@@ -8,6 +8,8 @@ using RealmOfAshes.World;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Networking;
+using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace RealmOfAshes.Game
 {
@@ -18,12 +20,249 @@ namespace RealmOfAshes.Game
     /// </summary>
     public sealed class RoaGlobalMap : MonoBehaviour
     {
+        public enum MapDetailTier
+        {
+            Far = 0,
+            Medium = 1,
+            Near = 2
+        }
+
+        /// <summary>
+        /// One source of truth for the strategic-map hierarchy.  The map must not
+        /// show the same amount of information at every zoom level: the region is
+        /// for large decisions, the district is for choosing an activity and the
+        /// local view is for precise contacts.
+        /// </summary>
+        public struct MapPresentationProfile
+        {
+            public bool TerritoryFill;
+            public bool TerritoryBorder;
+            public bool Influence;
+            public bool Settlements;
+            public bool Sites;
+            public bool Parties;
+            public bool Threats;
+            public float SiteBucket;
+            public float PartyBucket;
+            public float ThreatBucket;
+            public int OverlayLabelLimit;
+            public int ActivityLabelLimit;
+            public int InfrastructureLabelLimit;
+        }
+
+        public struct StrategicVisualProfile
+        {
+            public Color CameraBackground;
+            public Color FogColor;
+            public Color AmbientSky;
+            public Color AmbientEquator;
+            public Color AmbientGround;
+            public float AmbientIntensity;
+            public float ReflectionIntensity;
+            public float FogStart;
+            public float FogEnd;
+        }
+
+        public static StrategicVisualProfile StrategicProfile(float mapSpan)
+        {
+            float span = Mathf.Max(40f, mapSpan);
+            float fogStart = Mathf.Max(72f, span * 1.12f);
+            return new StrategicVisualProfile
+            {
+                CameraBackground = new Color(0.035f, 0.031f, 0.025f, 1f),
+                FogColor = new Color(0.048f, 0.041f, 0.032f, 1f),
+                AmbientSky = new Color(0.48f, 0.405f, 0.31f, 1f),
+                AmbientEquator = new Color(0.315f, 0.265f, 0.195f, 1f),
+                AmbientGround = new Color(0.125f, 0.10f, 0.072f, 1f),
+                AmbientIntensity = 0.92f,
+                ReflectionIntensity = 0.32f,
+                FogStart = fogStart,
+                FogEnd = Mathf.Max(fogStart + 38f, span * 1.72f)
+            };
+        }
+
+        public static float PresentationVisibility(float current, bool visible,
+                                                   float unscaledDeltaTime)
+        {
+            float target = visible ? 1f : 0f;
+            return Mathf.MoveTowards(Mathf.Clamp01(current), target,
+                Mathf.Max(0f, unscaledDeltaTime) / 0.18f);
+        }
+
+        public static float PresentationVisibilityScale(float visibility, float detailScale)
+        {
+            float smooth = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(visibility));
+            return Mathf.Max(0.01f, detailScale) * Mathf.Lerp(0.76f, 1f, smooth);
+        }
+
+        public static MapPresentationProfile PresentationProfile(MapDetailTier tier)
+        {
+            switch (tier)
+            {
+                case MapDetailTier.Near:
+                    return new MapPresentationProfile
+                    {
+                        TerritoryFill = false,
+                        TerritoryBorder = true,
+                        Influence = true,
+                        Settlements = true,
+                        Sites = true,
+                        Parties = true,
+                        Threats = true,
+                        SiteBucket = 22f,
+                        PartyBucket = 0f,
+                        ThreatBucket = 30f,
+                        OverlayLabelLimit = 12,
+                        ActivityLabelLimit = 3,
+                        InfrastructureLabelLimit = 0
+                    };
+                case MapDetailTier.Medium:
+                    return new MapPresentationProfile
+                    {
+                        TerritoryFill = false,
+                        TerritoryBorder = true,
+                        Influence = false,
+                        Settlements = true,
+                        Sites = true,
+                        Parties = true,
+                        Threats = true,
+                        SiteBucket = 55f,
+                        PartyBucket = 42f,
+                        ThreatBucket = 72f,
+                        OverlayLabelLimit = 9,
+                        ActivityLabelLimit = 3,
+                        InfrastructureLabelLimit = 3
+                    };
+                default:
+                    return new MapPresentationProfile
+                    {
+                        TerritoryFill = true,
+                        TerritoryBorder = false,
+                        Influence = false,
+                        Settlements = true,
+                        Sites = false,
+                        Parties = false,
+                        Threats = false,
+                        SiteBucket = 0f,
+                        PartyBucket = 0f,
+                        ThreatBucket = 0f,
+                        OverlayLabelLimit = 6,
+                        ActivityLabelLimit = 2,
+                        InfrastructureLabelLimit = 0
+                    };
+            }
+        }
+
+        public static bool TargetKindVisibleAtTier(string kind, MapDetailTier tier,
+                                                   bool showEvents, bool showParties)
+        {
+            MapPresentationProfile profile = PresentationProfile(tier);
+            string normalized = (kind ?? string.Empty).Trim().ToLowerInvariant();
+            if (normalized == "site") return profile.Sites;
+            if (normalized == "party") return showParties && profile.Parties;
+            if (normalized == "zone") return showEvents && profile.Threats;
+            return true;
+        }
+
+        public static RoaActorPresentationTier StrategicActorPresentationTier(
+            MapDetailTier mapTier, bool markerVisible, bool selected,
+            Vector3 actorPosition, Vector3 observerPosition, bool mobile,
+            RoaActorPresentationTier previous)
+        {
+            if (!markerVisible) return RoaActorPresentationTier.Hidden;
+            if (mapTier != MapDetailTier.Near) return RoaActorPresentationTier.Far;
+            if (selected) return RoaActorPresentationTier.Near;
+            return RoaActorPresentationLod.Select(actorPosition, observerPosition,
+                true, mobile, previous);
+        }
+
+        public struct OverlayLabel
+        {
+            public string Id;
+            public string Text;
+            public string Semantic;
+            public Vector3 World;
+            public Color Color;
+            public bool Activity;
+            public bool Selected;
+            public bool Cluster;
+            public int Priority;
+        }
+
+        private enum DynamicVisualLayer
+        {
+            TerritoryFill,
+            TerritoryBorder,
+            Influence,
+            Settlement,
+            Site,
+            Party,
+            Threat,
+            Tracked
+        }
+
+        private sealed class DynamicVisualState
+        {
+            public GameObject Visual;
+            public DynamicVisualLayer Layer;
+            public GlobalMapPoint Point;
+            public Vector3 BaseScale;
+            public bool Important;
+            public int Priority;
+            public bool TargetVisible = true;
+            public float Visibility = 1f;
+            public float DetailScale = 1f;
+        }
+
+        private sealed class PartyActorState
+        {
+            public string Id;
+            public GameObject Root;
+            public RoaGlobalMapActorView Actor;
+            public DynamicTarget Target;
+            public DynamicVisualState Presentation;
+            public JObject Snapshot;
+            public Vector3 BaseScale;
+            public bool HasRenderedPoint;
+        }
+
+        private sealed class ActivityOverlayState
+        {
+            public string Id;
+            public string Text;
+            public GlobalMapPoint Point;
+            public Color Color;
+            public int Priority;
+        }
+
         private const float MapWorldScale = 0.1f;
         private const float NodeSnapRadiusPoints = 18f;
         private const float DynamicSnapRadiusPoints = 13f;
         private const float WastelandRefreshSeconds = 5f;
+        private const float WastelandMaxExtrapolationSeconds = 7.5f;
+        private const float PartyPositionCorrectionRate = 8.5f;
+        private const float PartyPositionSnapWorldDistance = 5f;
+        private const float PartyFacingLookAheadSeconds = 0.2f;
         // Only bridges main-thread queue reordering; it is not a client authority timeout.
         private const float TravelDescriptorGraceSeconds = 2.5f;
+        private const float TouchDragThresholdPixels = 14f;
+        private const float TouchTapMaxSeconds = 0.55f;
+        private const float MouseDragThresholdPixels = 9f;
+        private const float MouseTapMaxSeconds = 0.75f;
+        public const float StrategicDefaultPitchDeg = 55f;
+        public const float StrategicDefaultYawDeg = 45f;
+        public const float StrategicMinimumPitchDeg = 38f;
+        public const float StrategicMaximumPitchDeg = 82f;
+        public const float StrategicOrbitDegreesPerPixel = 0.18f;
+        public const float StrategicMinimumCameraClearance = 10f;
+        public const float StrategicKeyboardPanSpeedFactor = 0.28f;
+        public const float StrategicKeyboardPanMinimumSpeed = 7.5f;
+        public const float StrategicKeyboardPanMaximumSpeed = 32f;
+        private const int LocationEntryAutomaticAttempts = 4;
+        private const float LocationEntryRetryBaseSeconds = 1.25f;
+        private const string AuthoredSceneName = "GlobalMapAuthored";
+        private static readonly int BaseColorProperty = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorProperty = Shader.PropertyToID("_Color");
 
         public RoaSocketClient Socket;
         public RoaCameraRig CameraRig;
@@ -38,8 +277,24 @@ namespace RealmOfAshes.Game
         public int SettlementModelCount { get; private set; }
         public int SiteMarkerCount { get; private set; }
         public int SettlementStatusCount { get; private set; }
-        public int SiteMeshVertexCount { get; private set; }
-        public int SiteMeshSubMeshCount { get; private set; }
+        public int ThreatMarkerCount { get; private set; }
+        public int ActivityMarkerCount
+        {
+            get { return _activityOverlayLabels != null ? _activityOverlayLabels.Count : 0; }
+        }
+        public int PartyMarkerCount
+        {
+            get
+            {
+                if (_dynamicTargets == null) return 0;
+                int count = 0;
+                for (int i = 0; i < _dynamicTargets.Count; i++)
+                    if (_dynamicTargets[i] != null && _dynamicTargets[i].Kind == "party") count++;
+                return count;
+            }
+        }
+        public int PartyActorCount { get { return _partyActors != null ? _partyActors.Count : 0; } }
+        public bool PlayerActorReady { get { return _playerActor != null && _playerActor.Ready; } }
         public string SelectionSummary { get { return BuildSelectionSummary(); } }
         public string FactionSummary { get { return BuildFactionSummary(); } }
         public string AttachedPartyId { get { return _state?["attachedPartyId"]?.ToString() ?? string.Empty; } }
@@ -50,6 +305,7 @@ namespace RealmOfAshes.Game
         public bool CanvasDriven { get; set; }
 
         public bool ArrivalPending { get { return _arrivalPending; } }
+        public bool LocationEntryPending { get { return _locationEntryPending; } }
         public bool ContactDecisionPending { get { return _contactDecisionPending; } }
         public bool HasPendingContact { get { return _pendingContact != null; } }
         public string PendingContactName { get { return _pendingContact?.Name ?? "Событие пустоши"; } }
@@ -66,6 +322,86 @@ namespace RealmOfAshes.Game
         public float TravelSecondsLeft
         {
             get { return _travelActive ? Mathf.Max(0f, _travelDuration * (1f - TravelProgress)) : 0f; }
+        }
+        public bool RouteRequestPending { get { return _routeRequestPending; } }
+        public bool RerouteRequestPending { get { return _routeRequestPending && _routeRequestWasReroute; } }
+        public MapDetailTier DetailTier { get { return CurrentDetailTier(); } }
+        public string DetailTierLabel { get { return DetailTierDisplayName(CurrentDetailTier()); } }
+        public bool FactionLayerVisible { get { return _showFactions; } }
+        public bool EventLayerVisible { get { return _showEvents; } }
+        public bool PartyLayerVisible { get { return _showParties; } }
+        public string WorldChangeKey { get { return BuildWorldChangeKey(); } }
+        public string WorldChangeSummary { get { return BuildWorldChangeSummary(); } }
+        public string SelectedRiskLabel { get { return BuildSelectedRiskLabel(); } }
+        public bool HoverPreviewActive { get { return _hoverDynamic != null || _hoverNode != null; } }
+        public string HoverTitle
+        {
+            get
+            {
+                if (_hoverDynamic != null) return _hoverDynamic.Name ?? _hoverDynamic.Id ?? "Точка пустоши";
+                return _hoverNode != null ? NodeTitle(_hoverNode) : string.Empty;
+            }
+        }
+        public string HoverSemantic
+        {
+            get
+            {
+                if (_hoverDynamic != null) return _hoverDynamic.Semantic;
+                return _hoverNode != null ? "ПОСЕЛЕНИЕ" : string.Empty;
+            }
+        }
+        public Color HoverAccent
+        {
+            get
+            {
+                if (_hoverDynamic != null) return _hoverDynamic.Accent;
+                return _hoverNode != null ? new Color(0.94f, 0.82f, 0.47f, 1f) : Color.clear;
+            }
+        }
+        public string HoverSummary
+        {
+            get
+            {
+                GlobalMapPoint point = _hoverDynamic?.Point
+                    ?? (_hoverNode != null ? new GlobalMapPoint { X = _hoverNode.X, Y = _hoverNode.Y } : null);
+                if (point == null) return string.Empty;
+                float distance = DistanceKm(PlayerXY, new Vector2(point.X, point.Y));
+                return distance.ToString("0.0") + " км · риск "
+                    + RiskLabel(DangerAtPoint(point, _hoverDynamic)) + " · ЛКМ — маршрут";
+            }
+        }
+
+        public void ToggleFactionLayer()
+        {
+            _showFactions = !_showFactions;
+            ApplyDynamicPresentation(true);
+        }
+
+        public void ToggleEventLayer()
+        {
+            _showEvents = !_showEvents;
+            ApplyDynamicPresentation(true);
+        }
+
+        public void TogglePartyLayer()
+        {
+            _showParties = !_showParties;
+            ApplyDynamicPresentation(true);
+        }
+
+        /// <summary>Возвращает стратегическую камеру к позиции игрока, не меняя маршрут.</summary>
+        public bool FocusPlayerOnMap()
+        {
+            if (!IsActive || _cameraAnchor == null || _root == null || _playerPoint == null)
+                return false;
+            Vector3 world = _root.transform.TransformPoint(
+                PointToWorld(_playerPoint.X, _playerPoint.Y, 0f));
+            world.y = _cameraAnchor.transform.position.y;
+            _cameraAnchor.transform.position = ClampCameraPan(world,
+                MapWidthPoints * MapWorldScale, MapHeightPoints * MapWorldScale);
+            CameraRig?.SnapToTarget();
+            StatusText = "Камера возвращена к игроку.";
+            return true;
         }
 
         /// <summary>Клетка карты для точки — «Клетка cx:cy» в тексте маршрута web.</summary>
@@ -134,7 +470,8 @@ namespace RealmOfAshes.Game
             return locationId;
         }
 
-        // Прибытие к локации ждёт кнопки «Войти» (pendingWorldDrop web), а не входит само.
+        // Legacy pendingWorldDrop остаётся только для совместимости со старыми снимками.
+        // Новый Unity-путь после подтверждённого прибытия входит в локацию автоматически.
         private bool _pendingEntry;
         public bool PendingEntry { get { return _pendingEntry; } }
         public string PendingEntryTitle { get { return _pendingEntry ? SelectedTitle : string.Empty; } }
@@ -143,7 +480,8 @@ namespace RealmOfAshes.Game
         public bool CanEnter(out string label)
         {
             label = "Войти";
-            if (_travelActive || _pendingContact != null || !string.IsNullOrEmpty(AttachedPartyId) || _arrivalPending) return false;
+            if (_travelActive || _pendingContact != null || !string.IsNullOrEmpty(AttachedPartyId)
+                || _arrivalPending || _locationEntryPending) return false;
             if (_pendingEntry) { label = "Войти: " + SelectedTitle; return true; }
             GlobalMapNode node = PlayerNode;
             if (node != null) { label = "Войти: " + NodeTitle(node); return true; }
@@ -161,6 +499,13 @@ namespace RealmOfAshes.Game
         {
             string label;
             if (!CanEnter(out label)) return;
+            if (_pendingEntry && _pendingArrival != null)
+            {
+                _locationEntryAttempts = 0;
+                _locationEntryRetryAt = 0f;
+                RequestLocationEntry(_pendingArrival);
+                return;
+            }
             if (!_pendingEntry)
             {
                 GlobalMapNode node = PlayerNode;
@@ -198,20 +543,19 @@ namespace RealmOfAshes.Game
         private GameObject _playerMarker;
         private GameObject _selectionMarker;
         private GameObject _cameraAnchor;
-        private MeshCollider _terrainCollider;
-        private LineRenderer _routeLine;
-        private Texture2D _terrainTexture;
-        private readonly List<Material> _materials = new List<Material>();
-        private readonly List<Material> _dynamicMaterials = new List<Material>();
-        private readonly List<Mesh> _dynamicMeshes = new List<Mesh>();
-        private readonly Dictionary<string, Material> _dynamicMaterialCache = new Dictionary<string, Material>();
-
-        private sealed class MeshBucket
-        {
-            public Color Color;
-            public readonly List<Vector3> Vertices = new List<Vector3>();
-            public readonly List<int> Triangles = new List<int>();
-        }
+        private Collider _terrainCollider;
+        private List<GameObject> _routeVisuals = new List<GameObject>();
+        private List<Vector3> _routeVisualBaseScales = new List<Vector3>();
+        private List<float> _routeVisualProgress = new List<float>();
+        private List<bool> _routeVisualShadows = new List<bool>();
+        private float _appliedRouteProgress = -1f;
+        private bool _appliedRouteContact;
+        private float _routeDetailScale = 1f;
+        private List<DynamicVisualState> _dynamicPresentationVisuals =
+            new List<DynamicVisualState>();
+        // UnityEngine native resources must be created from Awake/OnEnable, never
+        // from a MonoBehaviour field initializer (which runs in its constructor).
+        private MaterialPropertyBlock _colorBlock;
 
         private sealed class DynamicTarget
         {
@@ -228,16 +572,47 @@ namespace RealmOfAshes.Game
             public float Radius;
             public bool CanEnter;
             public bool Forced;
+            public string Semantic;
+            public Color Accent;
+            public int Priority;
             public JObject Data;
         }
 
         private JObject _wasteland;
+        private float _wastelandAppliedRealtime = -1f;
+        private double _wastelandSampleAgeMs;
         private GameObject _dynamicRoot;
+        private RoaUnityGlobalMapScene _authoredScene;
+        private Scene _authoredUnityScene;
+        private AsyncOperation _authoredSceneUnload;
         private Coroutine _wastelandPoll;
-        private readonly List<DynamicTarget> _dynamicTargets = new List<DynamicTarget>();
-        private readonly Dictionary<string, JObject> _territoryByCell = new Dictionary<string, JObject>();
+        private bool _wastelandFetchPending;
+        private List<DynamicTarget> _dynamicTargets = new List<DynamicTarget>();
+        private Dictionary<string, PartyActorState> _partyActors =
+            new Dictionary<string, PartyActorState>(StringComparer.Ordinal);
+        private HashSet<string> _seenPartyActors = new HashSet<string>(StringComparer.Ordinal);
+        private RoaGlobalMapActorView _playerActor;
+        private sealed class ActivityHighlightVisual
+        {
+            public GameObject Visual;
+            public Vector3 BaseScale;
+            public float Phase;
+        }
+
+        private List<ActivityHighlightVisual> _activityHighlightVisuals =
+            new List<ActivityHighlightVisual>();
+        private List<ActivityOverlayState> _activityOverlayLabels = new List<ActivityOverlayState>();
+        private string _activityHighlightKey = string.Empty;
+        private Dictionary<string, JObject> _territoryByCell = new Dictionary<string, JObject>();
         private DynamicTarget _selectedDynamic;
+        private DynamicTarget _hoverDynamic;
+        private GlobalMapNode _hoverNode;
         private string _factionSummary = string.Empty;
+        [SerializeField] private bool _showFactions;
+        [SerializeField] private bool _showEvents = true;
+        [SerializeField] private bool _showParties = true;
+        private MapDetailTier _appliedDetailTier = (MapDetailTier)(-1);
+        private float _nextPresentationRefresh;
 
         private GlobalMapPoint _playerPoint = new GlobalMapPoint();
         private GlobalMapPoint _selectedPoint = new GlobalMapPoint();
@@ -247,13 +622,21 @@ namespace RealmOfAshes.Game
         private float _travelStartedRealtime;
         private bool _travelActive;
         private float _travelDescriptorGraceUntil;
+        private int _routeRequestVersion;
+        private bool _routeRequestPending;
+        private bool _routeRequestWasReroute;
         private bool _arrivalPending;
+        private bool _locationEntryPending;
+        private JObject _pendingArrival;
+        private string _pendingArrivalKey = string.Empty;
+        private int _locationEntryAttempts;
+        private float _locationEntryRetryAt;
         private float _arrivalRetryAt;
         private bool _contactArrival;
         private DynamicTarget _savedDestinationDynamic;
         private GlobalMapNode _savedDestinationNode;
         private GlobalMapPoint _savedDestinationPoint;
-        private readonly HashSet<string> _ignoredRouteContacts = new HashSet<string>();
+        private HashSet<string> _ignoredRouteContacts = new HashSet<string>();
         private DynamicTarget _pendingContact;
         private string _travelLeaderId = string.Empty;
         private bool _contactDecisionPending;
@@ -265,18 +648,99 @@ namespace RealmOfAshes.Game
         private float _savedMaxDistance;
         private float _savedPitch;
         private float _savedYaw;
+        private float _savedFieldOfView;
+        private CameraClearFlags _savedCameraClearFlags;
+        private Color _savedCameraBackground;
+        private bool _mapLightingSaved;
+        private AmbientMode _savedAmbientMode;
+        private Color _savedAmbientSky;
+        private Color _savedAmbientEquator;
+        private Color _savedAmbientGround;
+        private float _savedAmbientIntensity;
+        private float _savedReflectionIntensity;
+        private bool _savedFog;
+        private FogMode _savedFogMode;
+        private Color _savedFogColor;
+        private float _savedFogStartDistance;
+        private float _savedFogEndDistance;
+        private float _savedFogDensity;
+        private Light _savedSun;
+        private Vector3 _playerMarkerBaseScale = Vector3.one;
+        private Vector3 _selectionMarkerBaseScale = Vector3.one;
+        private Quaternion _playerMarkerBaseRotation = Quaternion.identity;
+        private Quaternion _selectionMarkerBaseRotation = Quaternion.identity;
         private bool _cameraPanning;
         private Vector2 _lastPanPointer;
+        private bool _cameraOrbiting;
+        private Vector2 _lastOrbitPointer;
+        private bool _mousePrimaryTracking;
+        private bool _mousePrimaryDragging;
+        private Vector2 _mousePrimaryStart;
+        private Vector2 _mousePrimaryLast;
+        private float _mousePrimaryStartedAt;
+        private int _mapTouchFinger = -1;
+        private Vector2 _mapTouchStart;
+        private float _mapTouchStartedAt;
+        private bool _mapTouchDragging;
+        private bool _mapTouchBlocked;
+        private bool _pinching;
+        private int _pinchFingerA = -1;
+        private int _pinchFingerB = -1;
+        private float _pinchStartSpan;
+        private float _pinchStartCameraDistance;
+        private Vector2 _pinchLastCenter;
+        private float _suppressSyntheticMouseUntil;
 
         public void Configure(RoaGameBootstrap bootstrap, RoaSocketClient socket,
                               RoaCameraRig cameraRig, string baseUrl)
         {
+            EnsureRuntimeState();
             DetachSocket();
             _bootstrap = bootstrap;
             Socket = socket;
             CameraRig = cameraRig;
             BaseUrl = string.IsNullOrEmpty(baseUrl) ? BaseUrl : baseUrl;
             AttachSocket();
+        }
+
+        private void Awake()
+        {
+            EnsureRuntimeState();
+        }
+
+        private void OnEnable()
+        {
+            EnsureRuntimeState();
+        }
+
+        /// <summary>
+        /// Unity can preserve a MonoBehaviour across script reload while dropping its
+        /// non-serialized managed fields. Native Unity state must also be created here,
+        /// outside the MonoBehaviour constructor. Restore both before gameplay resumes.
+        /// </summary>
+        private void EnsureRuntimeState()
+        {
+            if (_routeVisuals == null) _routeVisuals = new List<GameObject>();
+            if (_routeVisualBaseScales == null) _routeVisualBaseScales = new List<Vector3>();
+            if (_routeVisualProgress == null) _routeVisualProgress = new List<float>();
+            if (_routeVisualShadows == null) _routeVisualShadows = new List<bool>();
+            if (_dynamicPresentationVisuals == null)
+                _dynamicPresentationVisuals = new List<DynamicVisualState>();
+            if (_colorBlock == null) _colorBlock = new MaterialPropertyBlock();
+            if (_dynamicTargets == null) _dynamicTargets = new List<DynamicTarget>();
+            if (_partyActors == null)
+                _partyActors = new Dictionary<string, PartyActorState>(StringComparer.Ordinal);
+            if (_seenPartyActors == null)
+                _seenPartyActors = new HashSet<string>(StringComparer.Ordinal);
+            if (_activityHighlightVisuals == null)
+                _activityHighlightVisuals = new List<ActivityHighlightVisual>();
+            if (_activityOverlayLabels == null)
+                _activityOverlayLabels = new List<ActivityOverlayState>();
+            if (_territoryByCell == null) _territoryByCell = new Dictionary<string, JObject>();
+            if (_playerPoint == null) _playerPoint = new GlobalMapPoint();
+            if (_selectedPoint == null) _selectedPoint = new GlobalMapPoint();
+            if (_route == null) _route = new List<GlobalMapPoint>();
+            if (_ignoredRouteContacts == null) _ignoredRouteContacts = new HashSet<string>();
         }
 
         private void AttachSocket()
@@ -288,6 +752,7 @@ namespace RealmOfAshes.Game
             Socket.OnGlobalTravelArrived += HandleTravelArrived;
             Socket.OnGlobalTravelGroupReleased += HandleGroupReleased;
             Socket.OnGlobalTravelEncounterDecision += HandleEncounterDecision;
+            Socket.OnWorldActivityFeedChanged += HandleWorldActivityFeedChanged;
         }
 
         private void DetachSocket()
@@ -299,11 +764,18 @@ namespace RealmOfAshes.Game
             Socket.OnGlobalTravelArrived -= HandleTravelArrived;
             Socket.OnGlobalTravelGroupReleased -= HandleGroupReleased;
             Socket.OnGlobalTravelEncounterDecision -= HandleEncounterDecision;
+            Socket.OnWorldActivityFeedChanged -= HandleWorldActivityFeedChanged;
+        }
+
+        private void HandleWorldActivityFeedChanged(JObject _)
+        {
+            if (IsActive && !_wastelandFetchPending) StartCoroutine(FetchWasteland());
         }
 
         private void OnDestroy()
         {
             DetachSocket();
+            RestoreMapLighting();
             ClearVisuals();
         }
 
@@ -326,6 +798,7 @@ namespace RealmOfAshes.Game
         /// <summary>Показать карту после globalTravelEnterWorld или события лидера.</summary>
         public IEnumerator Enter(JObject state, Action<bool, string> onDone)
         {
+            EnsureRuntimeState();
             if (_wastelandPoll != null) StopCoroutine(_wastelandPoll);
             _wastelandPoll = null;
             if (_map == null)
@@ -347,14 +820,30 @@ namespace RealmOfAshes.Game
             }
 
             ClearVisuals();
-            BuildVisuals();
+            bool visualsLoaded = false;
+            string visualsError = null;
+            yield return LoadAuthoredVisuals((ok, error) =>
+            {
+                visualsLoaded = ok;
+                visualsError = error;
+            });
+            if (!visualsLoaded)
+            {
+                StatusText = visualsError;
+                onDone?.Invoke(false, visualsError);
+                yield break;
+            }
             ApplyState(state);
             IsActive = true;
-            StatusText = _travelActive ? "Маршрут восстановлен сервером." : "Выберите точку на карте.";
+            StatusText = _pendingEntry
+                ? "Прибытие подтверждено. Входим в локацию..."
+                : (_travelActive ? "Маршрут восстановлен сервером." : "Выберите точку на карте.");
+            ConfigureMapLighting();
             ConfigureCamera();
             _wastelandPoll = StartCoroutine(PollWasteland());
             onDone?.Invoke(true, "Глобальная карта загружена: " + _map.Nodes.Count + " поселения, "
                                   + _map.Infrastructure.Count + " объектов инфраструктуры.");
+            if (_pendingEntry) ResumePendingLocationEntry();
         }
 
         /// <summary>
@@ -367,16 +856,73 @@ namespace RealmOfAshes.Game
             ApplyState(state, true);
         }
 
+        /// <summary>Немедленно применяет свежую публичную симуляцию из подтверждённого действия.</summary>
+        public void ApplyWastelandState(JObject state)
+        {
+            if (state == null) return;
+            ApplyWastelandSnapshot(state, true);
+        }
+
+        private bool ApplyWastelandSnapshot(JObject state, bool clone)
+        {
+            if (state == null || WastelandSnapshotIsStale(_wasteland, state)) return false;
+
+            float appliedAt = Time.realtimeSinceStartup;
+            double previousSampledAt = Number(_wasteland?["sampledAt"], 0d);
+            double sampledAt = Number(state["sampledAt"], 0d);
+            double serverNow = Math.Max(sampledAt,
+                Number(state["serverNow"], sampledAt));
+            bool sameSample = sampledAt > 0d && sampledAt == previousSampledAt;
+            double carriedAgeMs = sameSample && _wastelandAppliedRealtime >= 0f
+                ? Math.Max(0d, _wastelandSampleAgeMs
+                    + Math.Max(0f, appliedAt - _wastelandAppliedRealtime) * 1000d)
+                : 0d;
+            double serverAgeMs = sampledAt > 0d ? Math.Max(0d, serverNow - sampledAt) : 0d;
+
+            _wastelandSampleAgeMs = sameSample
+                ? Math.Max(carriedAgeMs, serverAgeMs)
+                : serverAgeMs;
+            _wastelandAppliedRealtime = appliedAt;
+            _wasteland = clone ? (JObject)state.DeepClone() : state;
+            _wasteland["sampleAgeMs"] = _wastelandSampleAgeMs;
+            if (IsActive) RebuildDynamicWorld();
+            return true;
+        }
+
+        public static bool WastelandSnapshotIsStale(JObject previous, JObject incoming)
+        {
+            if (incoming == null) return true;
+            double previousSampledAt = Number(previous?["sampledAt"], 0d);
+            double sampledAt = Number(incoming["sampledAt"], 0d);
+            if (previousSampledAt <= 0d) return false;
+            if (sampledAt <= 0d) return true;
+            if (sampledAt != previousSampledAt) return sampledAt < previousSampledAt;
+
+            double previousServerNow = Number(previous?["serverNow"], 0d);
+            double serverNow = Number(incoming["serverNow"], 0d);
+            return previousServerNow > 0d && serverNow > 0d && serverNow < previousServerNow;
+        }
+
         public void Leave()
         {
             _pendingEntry = false;
+            _locationEntryPending = false;
+            _pendingArrival = null;
+            _pendingArrivalKey = string.Empty;
+            _locationEntryAttempts = 0;
+            _locationEntryRetryAt = 0f;
             IsActive = false;
-            _cameraPanning = false;
+            ResetTouchMapInput();
+            ResetMouseMapInput();
+            _routeRequestVersion++;
+            _routeRequestPending = false;
+            _routeRequestWasReroute = false;
             _travelActive = false;
             _arrivalPending = false;
             if (_wastelandPoll != null) StopCoroutine(_wastelandPoll);
             _wastelandPoll = null;
             RestoreCamera();
+            RestoreMapLighting();
             ClearVisuals();
         }
 
@@ -393,14 +939,21 @@ namespace RealmOfAshes.Game
 
         private IEnumerator FetchWasteland()
         {
+            if (_wastelandFetchPending) yield break;
+            _wastelandFetchPending = true;
             using (UnityWebRequest request = UnityWebRequest.Get(BaseUrl.TrimEnd('/') + "/api/wasteland"))
             {
                 request.SetRequestHeader("Cache-Control", "no-store");
                 yield return request.SendWebRequest();
-                if (!IsActive) yield break;
+                if (!IsActive)
+                {
+                    _wastelandFetchPending = false;
+                    yield break;
+                }
                 if (request.result != UnityWebRequest.Result.Success)
                 {
                     StatusText = "Живая пустошь временно недоступна: " + request.error;
+                    _wastelandFetchPending = false;
                     yield break;
                 }
 
@@ -409,13 +962,13 @@ namespace RealmOfAshes.Game
                     JObject payload = JObject.Parse(request.downloadHandler.text);
                     JObject sim = payload["sim"] as JObject;
                     if (sim == null) throw new JsonException("В ответе нет поля sim.");
-                    _wasteland = sim;
-                    RebuildDynamicWorld();
+                    ApplyWastelandSnapshot(sim, false);
                 }
                 catch (JsonException error)
                 {
                     StatusText = "Не удалось разобрать живую пустошь: " + error.Message;
                 }
+                _wastelandFetchPending = false;
             }
         }
 
@@ -457,194 +1010,110 @@ namespace RealmOfAshes.Game
             }
         }
 
-        private void BuildVisuals()
+        private IEnumerator LoadAuthoredVisuals(Action<bool, string> onDone)
         {
-            _root = new GameObject("GlobalMap");
-            BuildTerrain();
-            BuildInfrastructure();
-            BuildNodes();
+            while (_authoredSceneUnload != null && !_authoredSceneUnload.isDone) yield return null;
+            _authoredSceneUnload = null;
 
-            _routeLine = CreateLine("ActiveRoute", new Color(1f, 0.68f, 0.18f), 0.32f, 0.22f);
-
-            _playerMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            _playerMarker.name = "GlobalPlayer";
-            _playerMarker.transform.SetParent(_root.transform, false);
-            _playerMarker.transform.localScale = Vector3.one * 0.9f;
-            ApplyMaterial(_playerMarker, new Color(0.95f, 0.83f, 0.22f));
-            Destroy(_playerMarker.GetComponent<Collider>());
-
-            _selectionMarker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            _selectionMarker.name = "SelectedDestination";
-            _selectionMarker.transform.SetParent(_root.transform, false);
-            _selectionMarker.transform.localScale = new Vector3(0.75f, 0.06f, 0.75f);
-            ApplyMaterial(_selectionMarker, new Color(0.2f, 0.78f, 0.95f));
-            Destroy(_selectionMarker.GetComponent<Collider>());
-
-            _cameraAnchor = new GameObject("GlobalMapCameraAnchor");
-            _cameraAnchor.transform.SetParent(_root.transform, false);
-        }
-
-        private void BuildTerrain()
-        {
-            float width = MapWidthPoints * MapWorldScale;
-            float depth = MapHeightPoints * MapWorldScale;
-
-            var mesh = new Mesh { name = "GlobalMapTerrain" };
-            mesh.vertices = new[]
+            Scene scene = SceneManager.GetSceneByName(AuthoredSceneName);
+            if (!scene.IsValid() || !scene.isLoaded)
             {
-                new Vector3(-width * 0.5f, 0f, -depth * 0.5f),
-                new Vector3(width * 0.5f, 0f, -depth * 0.5f),
-                new Vector3(-width * 0.5f, 0f, depth * 0.5f),
-                new Vector3(width * 0.5f, 0f, depth * 0.5f)
-            };
-            mesh.uv = new[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f) };
-            mesh.triangles = new[] { 0, 2, 1, 2, 3, 1 };
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-
-            var terrain = new GameObject("Terrain");
-            terrain.transform.SetParent(_root.transform, false);
-            terrain.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var renderer = terrain.AddComponent<MeshRenderer>();
-
-            _terrainTexture = new Texture2D(_map.Grid.Cols, _map.Grid.Rows, TextureFormat.RGBA32, false);
-            _terrainTexture.name = "GlobalMapCells";
-            _terrainTexture.filterMode = FilterMode.Point;
-            _terrainTexture.wrapMode = TextureWrapMode.Clamp;
-
-            for (int cy = 0; cy < _map.Grid.Rows; cy++)
-            {
-                for (int cx = 0; cx < _map.Grid.Cols; cx++)
+                AsyncOperation load = SceneManager.LoadSceneAsync(AuthoredSceneName, LoadSceneMode.Additive);
+                if (load == null)
                 {
-                    GlobalMapCell cell;
-                    _map.Cells.TryGetValue(cx + ":" + cy, out cell);
-                    // Верх карты (cy=0) соответствует верхнему краю текстуры.
-                    _terrainTexture.SetPixel(cx, _map.Grid.Rows - 1 - cy, CellColor(cell));
+                    onDone?.Invoke(false, "Не удалось начать загрузку авторской сцены " + AuthoredSceneName + ".");
+                    yield break;
+                }
+                while (!load.isDone) yield return null;
+                scene = SceneManager.GetSceneByName(AuthoredSceneName);
+            }
+
+            RoaUnityGlobalMapScene authored = FindAuthoredScene(scene);
+            if (authored == null)
+            {
+                onDone?.Invoke(false, "В сцене " + AuthoredSceneName + " нет RoaUnityGlobalMapScene.");
+                yield break;
+            }
+            if (!authored.Validate(out string validationError))
+            {
+                onDone?.Invoke(false, "Авторская глобальная карта неполна: " + validationError + ".");
+                yield break;
+            }
+
+            var missingNodes = new List<string>();
+            if (_map?.Nodes != null)
+            {
+                foreach (GlobalMapNode node in _map.Nodes)
+                {
+                    if (node == null || string.IsNullOrEmpty(node.Id)) continue;
+                    if (!authored.TryGetNode(node.Id, out RoaGlobalMapNodeAnchor _)) missingNodes.Add(node.Id);
                 }
             }
-            _terrainTexture.Apply(false, false);
+            if (missingNodes.Count > 0)
+            {
+                onDone?.Invoke(false, "В авторской глобальной карте отсутствуют узлы: "
+                                     + string.Join(", ", missingNodes) + ".");
+                yield break;
+            }
 
-            Material material = CreateMaterial(Color.white);
-            if (material.HasProperty("_BaseMap")) material.SetTexture("_BaseMap", _terrainTexture);
-            else if (material.HasProperty("_MainTex")) material.SetTexture("_MainTex", _terrainTexture);
-            renderer.sharedMaterial = material;
-
-            _terrainCollider = terrain.AddComponent<MeshCollider>();
-            _terrainCollider.sharedMesh = mesh;
+            _authoredUnityScene = scene;
+            _authoredScene = authored;
+            _root = authored.gameObject;
+            _root.SetActive(true);
+            _playerMarker = authored.PlayerMarker;
+            _selectionMarker = authored.SelectionMarker;
+            _cameraAnchor = authored.CameraAnchor != null ? authored.CameraAnchor.gameObject : null;
+            _terrainCollider = authored.SelectionSurface;
+            _dynamicRoot = authored.DynamicContentRoot != null ? authored.DynamicContentRoot.gameObject : null;
+            _playerMarkerBaseScale = _playerMarker != null ? _playerMarker.transform.localScale : Vector3.one;
+            _selectionMarkerBaseScale = _selectionMarker != null ? _selectionMarker.transform.localScale : Vector3.one;
+            _playerMarkerBaseRotation = _playerMarker != null
+                ? _playerMarker.transform.localRotation : Quaternion.identity;
+            _selectionMarkerBaseRotation = _selectionMarker != null
+                ? _selectionMarker.transform.localRotation : Quaternion.identity;
+            EnsurePlayerActor();
+            authored.ClearDynamicContent();
+            _routeVisuals.Clear();
+            _routeVisualBaseScales.Clear();
+            _routeVisualProgress.Clear();
+            _routeVisualShadows.Clear();
+            _appliedRouteProgress = -1f;
+            _dynamicPresentationVisuals.Clear();
+            _appliedDetailTier = (MapDetailTier)(-1);
+            _activityHighlightVisuals.Clear();
+            SettlementModelCount = authored.NodeCount;
+            onDone?.Invoke(true, null);
         }
 
-        private void BuildInfrastructure()
+        private static RoaUnityGlobalMapScene FindAuthoredScene(Scene scene)
         {
-            foreach (GlobalMapInfrastructure row in _map.Infrastructure)
+            if (!scene.IsValid() || !scene.isLoaded) return null;
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int i = 0; i < roots.Length; i++)
             {
-                if (row == null || row.Points == null || row.Points.Count < 2) continue;
-                bool pipeline = string.Equals(row.Type, "pipeline", StringComparison.OrdinalIgnoreCase);
-                Color color = pipeline ? new Color(0.33f, 0.48f, 0.5f) : new Color(0.25f, 0.21f, 0.17f);
-                float width = Mathf.Clamp(row.Width * MapWorldScale, 0.18f, 1.1f);
-                LineRenderer line = CreateLine("Infrastructure:" + row.Id, color, width, 0.08f);
-                SetLinePoints(line, row.Points);
+                RoaUnityGlobalMapScene marker = roots[i].GetComponentInChildren<RoaUnityGlobalMapScene>(true);
+                if (marker != null) return marker;
             }
-        }
-
-        private void BuildNodes()
-        {
-            SettlementModelCount = 0;
-            foreach (GlobalMapNode node in _map.Nodes)
-            {
-                if (node == null) continue;
-                BuildSettlementModel(node);
-                SettlementModelCount++;
-            }
-        }
-
-        private void BuildSettlementModel(GlobalMapNode node)
-        {
-            var group = new GameObject("SettlementModel:" + node.Id);
-            group.transform.SetParent(_root.transform, false);
-            group.transform.localPosition = PointToWorld(node.X, node.Y, 0.08f);
-            group.transform.localScale = Vector3.one * 1.25f;
-            Color accent = NodeColor(node.Id);
-
-            CreateNodePart(group.transform, "Foundation", PrimitiveType.Cylinder,
-                new Vector3(0f, 0.03f, 0f), new Vector3(1.28f, 0.035f, 1.28f),
-                new Color(accent.r * 0.38f, accent.g * 0.38f, accent.b * 0.38f), Vector3.zero);
-
-            string id = (node.Id ?? string.Empty).ToLowerInvariant();
-            if (id == "relaystation")
-            {
-                CreateNodePart(group.transform, "RelayBase", PrimitiveType.Cube, new Vector3(0f, 0.14f, 0f), new Vector3(0.72f, 0.22f, 0.58f), Hex(0x38464c), Vector3.zero);
-                CreateNodePart(group.transform, "RelayMast", PrimitiveType.Cylinder, new Vector3(0f, 0.78f, 0f), new Vector3(0.09f, 0.65f, 0.09f), Hex(0x252c31), Vector3.zero);
-                CreateNodePart(group.transform, "RelayPanelA", PrimitiveType.Cube, new Vector3(-0.24f, 0.56f, 0.04f), new Vector3(0.4f, 0.25f, 0.045f), Hex(0x2f7084), new Vector3(-12f, -20f, 0f));
-                CreateNodePart(group.transform, "RelayPanelB", PrimitiveType.Cube, new Vector3(0.25f, 0.78f, -0.04f), new Vector3(0.42f, 0.24f, 0.045f), Hex(0x3f8797), new Vector3(10f, 22f, 0f));
-                CreateNodePart(group.transform, "RelayBeacon", PrimitiveType.Sphere, new Vector3(0f, 1.45f, 0f), Vector3.one * 0.15f, accent, Vector3.zero);
-            }
-            else if (id == "scraptown")
-            {
-                CreateNodePart(group.transform, "ScrapBase", PrimitiveType.Cube, new Vector3(0f, 0.12f, 0f), new Vector3(0.86f, 0.16f, 0.62f), Hex(0x3a3730), new Vector3(0f, 8f, 0f));
-                CreateNodePart(group.transform, "ScrapPileA", PrimitiveType.Cube, new Vector3(-0.2f, 0.3f, 0.04f), new Vector3(0.52f, 0.12f, 0.3f), Hex(0x8b6c42), new Vector3(7f, -24f, 9f));
-                CreateNodePart(group.transform, "ScrapPileB", PrimitiveType.Cube, new Vector3(0.18f, 0.43f, -0.05f), new Vector3(0.5f, 0.1f, 0.26f), Hex(0x58615e), new Vector3(-5f, 28f, -6f));
-                CreateNodePart(group.transform, "ScrapTank", PrimitiveType.Cylinder, new Vector3(0.34f, 0.25f, 0.25f), new Vector3(0.27f, 0.22f, 0.27f), Hex(0x1b1917), new Vector3(90f, 0f, 0f));
-            }
-            else if (id == "caravancamp")
-            {
-                CreateNodePart(group.transform, "CaravanYard", PrimitiveType.Cube, new Vector3(0f, 0.1f, 0f), new Vector3(0.9f, 0.14f, 0.66f), Hex(0x5a4932), new Vector3(0f, -8f, 0f));
-                CreateNodePart(group.transform, "TentA", PrimitiveType.Cube, new Vector3(-0.23f, 0.32f, -0.06f), new Vector3(0.34f, 0.34f, 0.38f), Hex(0xb7a36d), new Vector3(0f, 18f, 45f));
-                CreateNodePart(group.transform, "TentB", PrimitiveType.Cube, new Vector3(0.2f, 0.29f, 0.12f), new Vector3(0.31f, 0.31f, 0.34f), Hex(0x93835b), new Vector3(0f, -14f, 45f));
-                CreateNodePart(group.transform, "Wagon", PrimitiveType.Cube, new Vector3(0.32f, 0.18f, -0.25f), new Vector3(0.5f, 0.2f, 0.26f), Hex(0x6b5234), new Vector3(0f, 16f, 0f));
-                CreateNodePart(group.transform, "Campfire", PrimitiveType.Sphere, new Vector3(-0.05f, 0.15f, -0.27f), Vector3.one * 0.13f, Hex(0xff9d3b), Vector3.zero);
-            }
-            else
-            {
-                CreateNodePart(group.transform, "KlimYard", PrimitiveType.Cube, new Vector3(0f, 0.12f, 0f), new Vector3(0.9f, 0.16f, 0.68f), Hex(0x5b432b), Vector3.zero);
-                CreateNodePart(group.transform, "KlimHall", PrimitiveType.Cube, new Vector3(-0.1f, 0.34f, 0f), new Vector3(0.58f, 0.38f, 0.45f), Hex(0x7a5b34), new Vector3(0f, 9f, 0f));
-                CreateNodePart(group.transform, "KlimRoof", PrimitiveType.Cube, new Vector3(-0.1f, 0.58f, 0f), new Vector3(0.5f, 0.26f, 0.5f), Hex(0x493624), new Vector3(0f, 9f, 45f));
-                CreateNodePart(group.transform, "KlimTower", PrimitiveType.Cylinder, new Vector3(0.36f, 0.49f, -0.16f), new Vector3(0.13f, 0.45f, 0.13f), Hex(0x30261c), Vector3.zero);
-            }
-
-            CreateNodePart(group.transform, "FlagPole", PrimitiveType.Cylinder, new Vector3(0.48f, 0.55f, -0.32f), new Vector3(0.045f, 0.5f, 0.045f), Hex(0x21170e), Vector3.zero);
-            CreateNodePart(group.transform, "Flag", PrimitiveType.Cube, new Vector3(0.62f, 0.91f, -0.32f), new Vector3(0.3f, 0.18f, 0.035f), accent, Vector3.zero);
-        }
-
-        private GameObject CreateNodePart(Transform parent, string name, PrimitiveType type,
-                                          Vector3 position, Vector3 scale, Color color, Vector3 rotation)
-        {
-            GameObject part = GameObject.CreatePrimitive(type);
-            part.name = name;
-            part.transform.SetParent(parent, false);
-            part.transform.localPosition = position;
-            part.transform.localScale = scale;
-            part.transform.localEulerAngles = rotation;
-            ApplyMaterial(part, color);
-            Collider collider = part.GetComponent<Collider>();
-            if (collider != null) Destroy(collider);
-            return part;
-        }
-
-        private static Color NodeColor(string nodeId)
-        {
-            switch ((nodeId ?? string.Empty).ToLowerInvariant())
-            {
-                case "scraptown": return Hex(0xe4b35c);
-                case "relaystation": return Hex(0x62c8e5);
-                case "caravancamp": return Hex(0x91d16f);
-                default: return Hex(0xd58a45);
-            }
+            return null;
         }
 
         private void RebuildDynamicWorld()
         {
             if (_root == null || _wasteland == null) return;
 
-            if (_dynamicRoot != null)
-            {
-                _dynamicRoot.SetActive(false);
-                Destroy(_dynamicRoot);
-            }
-            foreach (Material material in _dynamicMaterials) if (material != null) Destroy(material);
-            _dynamicMaterials.Clear();
-            foreach (Mesh mesh in _dynamicMeshes) if (mesh != null) Destroy(mesh);
-            _dynamicMeshes.Clear();
-            _dynamicMaterialCache.Clear();
+            if (_authoredScene == null || _authoredScene.DynamicContentRoot == null) return;
+            _authoredScene.ClearDynamicContent();
+            _dynamicRoot = _authoredScene.DynamicContentRoot.gameObject;
+            IndexExistingPartyActors();
+            _routeVisuals.Clear();
+            _routeVisualBaseScales.Clear();
+            _routeVisualProgress.Clear();
+            _routeVisualShadows.Clear();
+            _appliedRouteProgress = -1f;
+            _dynamicPresentationVisuals.Clear();
+            _appliedDetailTier = (MapDetailTier)(-1);
+            _activityHighlightVisuals.Clear();
+            _activityHighlightKey = string.Empty;
             _dynamicTargets.Clear();
             _territoryByCell.Clear();
             _factionSummary = string.Empty;
@@ -653,11 +1122,8 @@ namespace RealmOfAshes.Game
             InfluenceZoneCount = 0;
             SiteMarkerCount = 0;
             SettlementStatusCount = 0;
-            SiteMeshVertexCount = 0;
-            SiteMeshSubMeshCount = 0;
-
-            _dynamicRoot = new GameObject("WastelandSimulation");
-            _dynamicRoot.transform.SetParent(_root.transform, false);
+            ThreatMarkerCount = 0;
+            _seenPartyActors.Clear();
 
             BuildFactionTerritories();
             if (TerritoryCellCount == 0) BuildFactionInfluence();
@@ -665,7 +1131,6 @@ namespace RealmOfAshes.Game
             JArray sites = _wasteland["sites"] as JArray;
             if (sites != null)
             {
-                var siteVisuals = new RoaGlobalMapSiteMeshBuilder();
                 foreach (JToken token in sites)
                 {
                     JObject row = token as JObject;
@@ -688,20 +1153,27 @@ namespace RealmOfAshes.Game
                                   ?? row["note"]?.ToString()
                                   ?? row["workSummary"]?.ToString()
                                   ?? string.Empty;
+                    string controlState = row["controlState"]?.ToString() ?? string.Empty;
+                    target.Semantic = MarkerSemanticLabel("site", type, false);
+                    target.Accent = MarkerSemanticColor("site", type, false, controlState);
+                    target.Priority = MarkerPresentationPriority("site", type, false, controlState);
                     _dynamicTargets.Add(target);
 
-                    Color accent = FactionColor(row["owner"]?.ToString(), new Color(0.72f, 0.63f, 0.36f));
-                    siteVisuals.AddSite(row, PointToWorld(target.Point.X, target.Point.Y, 0.09f), accent);
+                    Color accent = target.Accent;
+                    GameObject marker = InstantiateLivePrefab(RoaGlobalMapPrefabKind.Site,
+                                                               "WorldSite:" + id);
+                    if (marker != null)
+                    {
+                        marker.transform.localPosition = PointToWorld(target.Point.X, target.Point.Y, 0.09f);
+                        float scale = string.Equals(type, "outpost", StringComparison.OrdinalIgnoreCase) ? 0.86f
+                                    : (string.Equals(type, "resource", StringComparison.OrdinalIgnoreCase) ? 0.68f : 0.76f);
+                        marker.transform.localScale *= scale;
+                        TintLivePrefab(marker, accent, "Tint");
+                        RegisterDynamicVisual(marker, DynamicVisualLayer.Site, target.Point,
+                            false, target.Priority);
+                        SiteMarkerCount++;
+                    }
                 }
-                Mesh siteMesh;
-                siteVisuals.Build("WorldSiteModels", _dynamicRoot.transform, CreateDynamicMaterial, out siteMesh);
-                if (siteMesh != null)
-                {
-                    _dynamicMeshes.Add(siteMesh);
-                    SiteMeshVertexCount = siteMesh.vertexCount;
-                    SiteMeshSubMeshCount = siteMesh.subMeshCount;
-                }
-                SiteMarkerCount = siteVisuals.MarkerCount;
             }
 
             JArray parties = _wasteland["parties"] as JArray;
@@ -714,25 +1186,54 @@ namespace RealmOfAshes.Game
                     string id = row["id"]?.ToString() ?? string.Empty;
                     if (string.IsNullOrEmpty(id)) continue;
 
+                    float sampleAgeSeconds = CurrentWastelandSampleAgeSeconds();
+                    GlobalMapPoint displayPoint = WorldPartyDisplayPoint(row,
+                        sampleAgeSeconds, _map.Grid.CellPoints, _map.Grid.CellKm,
+                        Float(_wasteland["gameDayRealMs"], 60f * 60f * 1000f));
                     DynamicTarget target = TargetFrom(row, "party");
+                    target.Point = displayPoint;
                     target.PartyId = id;
                     target.Faction = row["faction"]?.ToString() ?? string.Empty;
                     target.Radius = PartyRadius(row);
                     target.CanEnter = PartyCanEncounter(row);
                     target.Forced = WorldPartyHostile(target.Faction);
                     target.Details = row["statusText"]?.ToString() ?? row["kind"]?.ToString() ?? string.Empty;
-                    _dynamicTargets.Add(target);
+                    string partyKind = row["kind"]?.ToString() ?? string.Empty;
+                    target.Semantic = MarkerSemanticLabel("party", partyKind, target.Forced);
+                    target.Accent = MarkerSemanticColor("party", partyKind, target.Forced, string.Empty);
+                    target.Priority = MarkerPresentationPriority("party", partyKind,
+                        target.Forced, string.Empty);
+                    _seenPartyActors.Add(id);
 
-                    GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                    marker.name = "WorldParty:" + id;
-                    marker.transform.SetParent(_dynamicRoot.transform, false);
-                    marker.transform.localPosition = PointToWorld(target.Point.X, target.Point.Y, 0.45f);
-                    float size = string.Equals(row["kind"]?.ToString(), "caravan", StringComparison.OrdinalIgnoreCase) ? 0.72f : 0.54f;
-                    marker.transform.localScale = Vector3.one * size;
-                    ApplyDynamicMaterial(marker, FactionColor(row["faction"]?.ToString(), new Color(0.8f, 0.32f, 0.25f)));
-                    Destroy(marker.GetComponent<Collider>());
+                    PartyActorState partyActor = EnsurePartyActor(id);
+                    if (partyActor != null && partyActor.Root != null)
+                    {
+                        if (!partyActor.HasRenderedPoint)
+                        {
+                            partyActor.Root.transform.localPosition = PointToWorld(
+                                displayPoint.X, displayPoint.Y, 0.45f);
+                            partyActor.HasRenderedPoint = true;
+                        }
+                        else
+                        {
+                            target.Point = WorldToPoint(partyActor.Root.transform.position);
+                        }
+
+                        float size = string.Equals(row["kind"]?.ToString(), "caravan",
+                            StringComparison.OrdinalIgnoreCase) ? 0.72f : 0.54f;
+                        partyActor.Root.transform.localScale = partyActor.BaseScale * size;
+                        TintLivePrefab(partyActor.Root, target.Accent, "Tint");
+                        partyActor.Target = target;
+                        partyActor.Snapshot = row;
+                        partyActor.Presentation = RegisterDynamicVisual(partyActor.Root,
+                            DynamicVisualLayer.Party, target.Point, false, target.Priority);
+                        if (partyActor.Actor != null)
+                            _ = partyActor.Actor.ConfigureParty(BaseUrl, row);
+                    }
+                    _dynamicTargets.Add(target);
                 }
             }
+            RemoveMissingPartyActors();
 
             JArray zones = _wasteland["worldZones"] as JArray;
             if (zones != null)
@@ -759,11 +1260,19 @@ namespace RealmOfAshes.Game
                         || row["details"]?["forced"]?.ToObject<bool>() == true
                         || WorldPartyHostile(target.Faction);
                     target.Details = row["title"]?.ToString() ?? row["encounterId"]?.ToString() ?? string.Empty;
+                    target.Semantic = MarkerSemanticLabel("zone", row["kind"]?.ToString(), target.Forced);
+                    target.Accent = MarkerSemanticColor("zone", row["kind"]?.ToString(),
+                        target.Forced, row["status"]?.ToString());
+                    target.Priority = MarkerPresentationPriority("zone", row["kind"]?.ToString(),
+                        target.Forced, row["status"]?.ToString());
                     _dynamicTargets.Add(target);
 
                     DrawWorldRing("WorldZone:" + id, target.Point,
                                   Mathf.Clamp(Float(row["radius"], 7f), 2f, 40f),
-                                  new Color(0.95f, 0.3f, 0.2f, 0.95f));
+                                  new Color(0.95f, 0.3f, 0.2f, 0.38f),
+                                  0.13f, 0.16f, DynamicVisualLayer.Threat, false,
+                                  target.Priority);
+                    ThreatMarkerCount++;
                 }
             }
 
@@ -775,14 +1284,49 @@ namespace RealmOfAshes.Game
                 {
                     JObject row = token as JObject;
                     if (row == null) continue;
+                    bool hostileFaction = WorldPartyHostile(row["faction"]?.ToString());
+                    if (!ThreatZoneShouldDisplay(row["kind"]?.ToString(),
+                        Float(row["chanceBonus"], 0f), Float(row["difficultyBonus"], 0f),
+                        hostileFaction)) continue;
                     GlobalMapPoint point = ReadPoint(row, "x", "y", null);
+                    float difficulty = Float(row["difficultyBonus"], 0f);
+                    float chance = Float(row["chanceBonus"], 0f);
+                    int priority = Mathf.RoundToInt(70f + Mathf.Max(0f, difficulty) * 25f
+                        + Mathf.Max(0f, chance) * 40f);
                     DrawWorldRing("Threat:" + index++, point,
-                                  Mathf.Clamp(Float(row["radius"], 10f), 2f, 80f),
-                                  new Color(0.72f, 0.16f, 0.13f, 0.65f));
+                                  ThreatRadiusPoints(row), ThreatZoneColor(difficulty, chance),
+                                  0.13f, 0.16f, DynamicVisualLayer.Threat, false, priority);
+                    ThreatMarkerCount++;
                 }
             }
 
+            BuildTrackedWorldTaskMarker();
+            _dynamicPresentationVisuals.Sort((left, right) =>
+                (right?.Priority ?? 0).CompareTo(left?.Priority ?? 0));
             ResolveSelectedDynamic();
+            RebuildRouteVisuals();
+            ApplyDynamicPresentation(true);
+        }
+
+        private void BuildTrackedWorldTaskMarker()
+        {
+            JObject task = _bootstrap?.Interaction?.TrackedWorldTask;
+            JObject details = task?["details"] as JObject;
+            JToken x = task?["targetX"] ?? task?["x"] ?? details?["x"];
+            JToken y = task?["targetY"] ?? task?["y"] ?? details?["y"];
+            if (task == null || x == null || y == null || x.Type == JTokenType.Null || y.Type == JTokenType.Null) return;
+            var point = new GlobalMapPoint { X = Float(x, 0f), Y = Float(y, 0f) };
+            string id = task["id"]?.ToString() ?? "tracked";
+            DrawWorldRing("TrackedWorldTask:" + id, point, 9f,
+                new Color(1f, 0.78f, 0.18f, 0.95f), 0.24f, 0.12f,
+                DynamicVisualLayer.Tracked, true, 140);
+
+            GameObject marker = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TrackedTask,
+                                                       "TrackedWorldTaskMarker:" + id);
+            if (marker == null) return;
+            marker.transform.localPosition = PointToWorld(point.X, point.Y, 0.32f);
+            TintLivePrefab(marker, new Color(1f, 0.78f, 0.18f, 1f));
+            RegisterDynamicVisual(marker, DynamicVisualLayer.Tracked, point, true, 140);
         }
 
         private void BuildSettlementStatus(JObject row)
@@ -797,26 +1341,17 @@ namespace RealmOfAshes.Game
             Color ring = critical ? new Color(0.96f, 0.22f, 0.16f, 0.82f)
                        : (contested ? new Color(1f, 0.65f, 0.18f, 0.76f)
                                     : new Color(accent.r, accent.g, accent.b, 0.68f));
-            DrawWorldRing("SettlementStatus:" + id, point, 14f, ring, 0.18f, 0.12f);
+            DrawWorldRing("SettlementStatus:" + id, point, 14f, ring, 0.18f, 0.12f,
+                DynamicVisualLayer.Settlement, false, critical ? 125 : (contested ? 115 : 100));
 
             Vector3 origin = PointToWorld(point.X, point.Y, 0.09f);
-            GameObject pole = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            pole.name = "SettlementFlagPole:" + id;
-            pole.transform.SetParent(_dynamicRoot.transform, false);
-            pole.transform.localPosition = origin + new Vector3(0.62f, 0.48f, -0.42f);
-            pole.transform.localScale = new Vector3(0.035f, 0.45f, 0.035f);
-            ApplyDynamicMaterial(pole, Hex(0x20170c));
-            Collider poleCollider = pole.GetComponent<Collider>();
-            if (poleCollider != null) Destroy(poleCollider);
-
-            GameObject flag = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            flag.name = "SettlementFlag:" + id;
-            flag.transform.SetParent(_dynamicRoot.transform, false);
-            flag.transform.localPosition = origin + new Vector3(0.78f, 0.82f, -0.42f);
-            flag.transform.localScale = new Vector3(0.34f, 0.18f, 0.035f);
-            ApplyDynamicMaterial(flag, accent);
-            Collider flagCollider = flag.GetComponent<Collider>();
-            if (flagCollider != null) Destroy(flagCollider);
+            GameObject flag = InstantiateLivePrefab(RoaGlobalMapPrefabKind.SettlementStatus,
+                                                     "SettlementStatusMarker:" + id);
+            if (flag == null) return;
+            flag.transform.localPosition = origin;
+            TintLivePrefab(flag, accent, "Tint");
+            RegisterDynamicVisual(flag, DynamicVisualLayer.Settlement, point, false,
+                critical ? 125 : (contested ? 115 : 100));
             SettlementStatusCount++;
         }
 
@@ -837,14 +1372,12 @@ namespace RealmOfAshes.Game
             JArray rows = _wasteland?["territories"] as JArray;
             if (rows == null || _map == null || _map.Grid == null) return;
 
-            var fills = new Dictionary<string, MeshBucket>();
-            var glows = new Dictionary<string, MeshBucket>();
-            var cores = new Dictionary<string, MeshBucket>();
             float cellPoints = _map.Grid.CellPoints;
             float cellWorld = cellPoints * MapWorldScale;
-            float coreThickness = Mathf.Max(0.075f, cellWorld * 0.045f);
-            float glowThickness = Mathf.Max(0.22f, cellWorld * 0.14f);
 
+            // Build the ownership index first. The old single pass could not know
+            // whether the next cell had the same owner, so every simulation cell
+            // became a visible border and the world looked like a debug grid.
             foreach (JToken token in rows)
             {
                 JObject row = token as JObject;
@@ -855,39 +1388,48 @@ namespace RealmOfAshes.Game
                 string owner = row["owner"]?.ToString() ?? string.Empty;
                 if (string.IsNullOrEmpty(owner) || string.Equals(owner, "neutral", StringComparison.OrdinalIgnoreCase)) continue;
                 _territoryByCell[cx + ":" + cy] = row;
+            }
+
+            foreach (JToken token in rows)
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                int cx = Mathf.FloorToInt(Float(row["cx"], -1f));
+                int cy = Mathf.FloorToInt(Float(row["cy"], -1f));
+                string owner = row["owner"]?.ToString() ?? string.Empty;
+                if (!_territoryByCell.ContainsKey(cx + ":" + cy)
+                    || string.IsNullOrEmpty(owner)) continue;
 
                 Color baseColor = TerritoryColor(row, owner);
                 float strength = Mathf.Clamp(Float(row["strength"], 0.3f), 0.1f, 1f);
-                float alpha = Mathf.Round((0.055f + strength * 0.105f) * 40f) / 40f;
+                float alpha = Mathf.Round((0.025f + strength * 0.065f) * 100f) / 100f;
                 Color fillColor = new Color(baseColor.r, baseColor.g, baseColor.b, alpha);
-                MeshBucket fill = Bucket(fills, ColorKey(fillColor), fillColor);
 
-                float x0 = cx * cellPoints;
-                float y0 = cy * cellPoints;
-                float x1 = x0 + cellPoints;
-                float y1 = y0 + cellPoints;
-                AddPointQuad(fill, x0 + cellPoints * 0.01f, y0 + cellPoints * 0.01f,
-                             x1 - cellPoints * 0.01f, y1 - cellPoints * 0.01f, 0.045f);
-                TerritoryCellCount++;
+                GameObject cell = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryCell,
+                    "TerritoryCell:" + cx + ":" + cy);
+                if (cell != null)
+                {
+                    cell.transform.localPosition = PointToWorld((cx + 0.5f) * cellPoints,
+                                                                 (cy + 0.5f) * cellPoints, 0.045f);
+                    cell.transform.localScale = new Vector3(cellWorld * 1.005f, 1f, cellWorld * 1.005f);
+                    TintLivePrefab(cell, fillColor);
+                    RegisterDynamicVisual(cell, DynamicVisualLayer.TerritoryFill,
+                        new GlobalMapPoint { X = (cx + 0.5f) * cellPoints, Y = (cy + 0.5f) * cellPoints });
+                    TerritoryCellCount++;
+                }
 
                 string borders = row["borders"]?.ToString()?.ToUpperInvariant() ?? string.Empty;
-                Color glowColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0.18f);
-                Color coreColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0.72f);
-                MeshBucket glow = Bucket(glows, ColorKey(glowColor), glowColor);
-                MeshBucket core = Bucket(cores, ColorKey(coreColor), coreColor);
+                Color coreColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0.76f);
                 foreach (char side in borders)
                 {
                     if (side != 'N' && side != 'E' && side != 'S' && side != 'W') continue;
                     if (TerritoryBorderTouchesWater(cx, cy, side)) continue;
-                    AddTerritoryBorder(glow, cx, cy, side, glowThickness, 0.068f);
-                    AddTerritoryBorder(core, cx, cy, side, coreThickness, 0.078f);
-                    TerritoryBorderCount++;
+                    if (!TerritoryBorderIsFrontier(cx, cy, side, owner)) continue;
+                    if (PlaceTerritoryBorder(cx, cy, side, cellPoints, cellWorld, coreColor) != null)
+                        TerritoryBorderCount++;
                 }
             }
 
-            BuildBucketedMesh("FactionTerritoryFill", fills);
-            BuildBucketedMesh("FactionTerritoryGlow", glows);
-            BuildBucketedMesh("FactionTerritoryBorders", cores);
             _factionSummary = ComposeFactionSummary();
         }
 
@@ -895,7 +1437,6 @@ namespace RealmOfAshes.Game
         {
             JArray sites = _wasteland?["sites"] as JArray;
             if (sites == null) return;
-            var fills = new Dictionary<string, MeshBucket>();
             int limit = 32;
             foreach (JToken token in sites)
             {
@@ -908,125 +1449,56 @@ namespace RealmOfAshes.Game
                 bool contested = string.Equals(site["controlState"]?.ToString(), "contested", StringComparison.OrdinalIgnoreCase)
                               || string.Equals(site["controlState"]?.ToString(), "threatened", StringComparison.OrdinalIgnoreCase);
                 float alpha = string.Equals(owner, "neutral", StringComparison.OrdinalIgnoreCase) ? 0.095f : (critical ? 0.18f : (contested ? 0.16f : 0.12f));
-                Color fillColor = new Color(color.r, color.g, color.b, alpha);
                 GlobalMapPoint point = ReadPoint(site, "x", "y", null);
                 float radius = FactionInfluenceRadius(site);
-                AddPointCircle(Bucket(fills, ColorKey(fillColor), fillColor), point, radius, 0.035f, 48);
                 DrawWorldRing("FactionInfluence:" + (site["id"]?.ToString() ?? InfluenceZoneCount.ToString()),
-                              point, radius, new Color(color.r, color.g, color.b, critical ? 0.48f : 0.28f), 0.14f, 0.075f);
+                              point, radius, new Color(color.r, color.g, color.b,
+                                  critical ? 0.34f : Mathf.Max(0.14f, alpha)), 0.14f, 0.075f,
+                              DynamicVisualLayer.Influence);
                 InfluenceZoneCount++;
             }
-            BuildBucketedMesh("FactionInfluenceFill", fills);
             _factionSummary = ComposeFactionSummary();
         }
 
-        private void AddTerritoryBorder(MeshBucket bucket, int cx, int cy, char side, float thickness, float height)
+        private GameObject PlaceTerritoryBorder(int cx, int cy, char side, float cellPoints,
+                                                float cellWorld, Color color)
         {
-            float cp = _map.Grid.CellPoints;
-            float x0 = (cx * cp - MapWidthPoints * 0.5f) * MapWorldScale;
-            float x1 = ((cx + 1) * cp - MapWidthPoints * 0.5f) * MapWorldScale;
-            float z0 = (MapHeightPoints * 0.5f - cy * cp) * MapWorldScale;
-            float z1 = (MapHeightPoints * 0.5f - (cy + 1) * cp) * MapWorldScale;
-            if (side == 'N') AddWorldQuad(bucket, x0, z0 - thickness * 0.5f, x1, z0 + thickness * 0.5f, height);
-            else if (side == 'S') AddWorldQuad(bucket, x0, z1 - thickness * 0.5f, x1, z1 + thickness * 0.5f, height);
-            else if (side == 'W') AddWorldQuad(bucket, x0 - thickness * 0.5f, z1, x0 + thickness * 0.5f, z0, height);
-            else if (side == 'E') AddWorldQuad(bucket, x1 - thickness * 0.5f, z1, x1 + thickness * 0.5f, z0, height);
+            float pointX = (cx + 0.5f) * cellPoints;
+            float pointY = (cy + 0.5f) * cellPoints;
+            bool horizontal = side == 'N' || side == 'S';
+            if (side == 'N') pointY = cy * cellPoints;
+            else if (side == 'S') pointY = (cy + 1f) * cellPoints;
+            else if (side == 'W') pointX = cx * cellPoints;
+            else if (side == 'E') pointX = (cx + 1f) * cellPoints;
+
+            GameObject border = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryBorder,
+                "TerritoryBorder:" + cx + ":" + cy + ":" + side);
+            if (border == null) return null;
+            border.transform.localPosition = PointToWorld(pointX, pointY, 0.078f);
+            border.transform.localRotation = Quaternion.Euler(0f, horizontal ? 90f : 0f, 0f);
+            border.transform.localScale = new Vector3(1f, 1f, cellWorld * 0.98f);
+            TintLivePrefab(border, color);
+            RegisterDynamicVisual(border, DynamicVisualLayer.TerritoryBorder,
+                new GlobalMapPoint { X = pointX, Y = pointY });
+            return border;
         }
 
-        private void AddPointQuad(MeshBucket bucket, float x0, float y0, float x1, float y1, float height)
+        private bool TerritoryBorderIsFrontier(int cx, int cy, char side, string owner)
         {
-            Vector3 a = PointToWorld(x0, y0, height);
-            Vector3 b = PointToWorld(x1, y0, height);
-            Vector3 c = PointToWorld(x0, y1, height);
-            Vector3 d = PointToWorld(x1, y1, height);
-            AddQuad(bucket, a, b, c, d);
-        }
+            int nx = cx;
+            int ny = cy;
+            if (side == 'N') ny--;
+            else if (side == 'E') nx++;
+            else if (side == 'S') ny++;
+            else if (side == 'W') nx--;
 
-        private static void AddWorldQuad(MeshBucket bucket, float x0, float z0, float x1, float z1, float height)
-        {
-            AddQuad(bucket, new Vector3(x0, height, z0), new Vector3(x1, height, z0),
-                    new Vector3(x0, height, z1), new Vector3(x1, height, z1));
-        }
-
-        private void AddPointCircle(MeshBucket bucket, GlobalMapPoint point, float radiusPoints, float height, int segments)
-        {
-            int start = bucket.Vertices.Count;
-            bucket.Vertices.Add(PointToWorld(point.X, point.Y, height));
-            for (int i = 0; i <= segments; i++)
-            {
-                float angle = i / (float)segments * Mathf.PI * 2f;
-                bucket.Vertices.Add(PointToWorld(point.X + Mathf.Cos(angle) * radiusPoints,
-                                                point.Y + Mathf.Sin(angle) * radiusPoints, height));
-            }
-            for (int i = 0; i < segments; i++)
-            {
-                bucket.Triangles.Add(start);
-                bucket.Triangles.Add(start + i + 2);
-                bucket.Triangles.Add(start + i + 1);
-            }
-        }
-
-        private static void AddQuad(MeshBucket bucket, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
-        {
-            int start = bucket.Vertices.Count;
-            bucket.Vertices.Add(a);
-            bucket.Vertices.Add(b);
-            bucket.Vertices.Add(c);
-            bucket.Vertices.Add(d);
-            bucket.Triangles.Add(start);
-            bucket.Triangles.Add(start + 2);
-            bucket.Triangles.Add(start + 1);
-            bucket.Triangles.Add(start + 2);
-            bucket.Triangles.Add(start + 3);
-            bucket.Triangles.Add(start + 1);
-        }
-
-        private GameObject BuildBucketedMesh(string name, Dictionary<string, MeshBucket> buckets)
-        {
-            if (buckets == null || buckets.Count == 0) return null;
-            var go = new GameObject(name);
-            go.transform.SetParent(_dynamicRoot.transform, false);
-            var filter = go.AddComponent<MeshFilter>();
-            var renderer = go.AddComponent<MeshRenderer>();
-            var mesh = new Mesh { name = name };
-            var vertices = new List<Vector3>();
-            var materials = new List<Material>();
-            var triangles = new List<int[]>();
-            foreach (MeshBucket bucket in buckets.Values)
-            {
-                int offset = vertices.Count;
-                vertices.AddRange(bucket.Vertices);
-                int[] shifted = new int[bucket.Triangles.Count];
-                for (int i = 0; i < shifted.Length; i++) shifted[i] = bucket.Triangles[i] + offset;
-                triangles.Add(shifted);
-                materials.Add(CreateDynamicMaterial(bucket.Color));
-            }
-            if (vertices.Count > 65535) mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            mesh.SetVertices(vertices);
-            mesh.subMeshCount = triangles.Count;
-            for (int i = 0; i < triangles.Count; i++) mesh.SetTriangles(triangles[i], i, false);
-            mesh.RecalculateBounds();
-            filter.sharedMesh = mesh;
-            renderer.sharedMaterials = materials.ToArray();
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-            _dynamicMeshes.Add(mesh);
-            return go;
-        }
-
-        private static MeshBucket Bucket(Dictionary<string, MeshBucket> buckets, string key, Color color)
-        {
-            MeshBucket bucket;
-            if (buckets.TryGetValue(key, out bucket)) return bucket;
-            bucket = new MeshBucket { Color = color };
-            buckets[key] = bucket;
-            return bucket;
-        }
-
-        private static string ColorKey(Color color)
-        {
-            Color32 value = color;
-            return value.r + ":" + value.g + ":" + value.b + ":" + value.a;
+            if (_map?.Grid == null || nx < 0 || ny < 0
+                || nx >= _map.Grid.Cols || ny >= _map.Grid.Rows) return true;
+            if (IsWaterCell(nx, ny)) return false;
+            if (!_territoryByCell.TryGetValue(nx + ":" + ny, out JObject neighbor)) return true;
+            string neighborOwner = neighbor?["owner"]?.ToString() ?? string.Empty;
+            return !string.Equals(FactionGroupKey(owner), FactionGroupKey(neighborOwner),
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private Color TerritoryColor(JObject row, string owner)
@@ -1073,60 +1545,293 @@ namespace RealmOfAshes.Game
         }
 
         private void DrawWorldRing(string name, GlobalMapPoint point, float radiusPoints, Color color,
-                                   float width = 0.13f, float height = 0.16f)
+                                   float width = 0.13f, float height = 0.16f,
+                                   DynamicVisualLayer layer = DynamicVisualLayer.Influence,
+                                   bool important = false, int priority = 0)
         {
-            const int segments = 40;
-            var points = new List<GlobalMapPoint>(segments + 1);
-            for (int i = 0; i <= segments; i++)
+            GameObject go = InstantiateLivePrefab(RoaGlobalMapPrefabKind.InfluenceRing, name);
+            if (go == null) return;
+            float diameter = Mathf.Max(0.1f, radiusPoints * MapWorldScale * 2f);
+            go.transform.localPosition = PointToWorld(point.X, point.Y, height);
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = new Vector3(diameter, 1f, diameter);
+            TintLivePrefab(go, color);
+            RegisterDynamicVisual(go, layer, point, important, priority);
+        }
+
+        private DynamicVisualState RegisterDynamicVisual(GameObject visual,
+                                                          DynamicVisualLayer layer,
+                                                          GlobalMapPoint point,
+                                                          bool important = false,
+                                                          int priority = 0)
+        {
+            if (visual == null) return null;
+            var state = new DynamicVisualState
             {
-                float angle = i / (float)segments * Mathf.PI * 2f;
-                points.Add(new GlobalMapPoint
-                {
-                    X = point.X + Mathf.Cos(angle) * radiusPoints,
-                    Y = point.Y + Mathf.Sin(angle) * radiusPoints
-                });
+                Visual = visual,
+                Layer = layer,
+                Point = CopyPoint(point),
+                BaseScale = visual.transform.localScale,
+                Important = important,
+                Priority = priority,
+                TargetVisible = visual.activeSelf,
+                Visibility = visual.activeSelf ? 1f : 0f,
+                DetailScale = 1f
+            };
+            _dynamicPresentationVisuals.Add(state);
+            return state;
+        }
+
+        public static MapDetailTier DetailTierForDistance(float distance, float minDistance,
+                                                          float maxDistance)
+        {
+            float span = Mathf.Max(0.01f, maxDistance - minDistance);
+            float normalized = Mathf.Clamp01((distance - minDistance) / span);
+            if (normalized <= 0.24f) return MapDetailTier.Near;
+            if (normalized <= 0.42f) return MapDetailTier.Medium;
+            return MapDetailTier.Far;
+        }
+
+        public static string DetailTierDisplayName(MapDetailTier tier)
+        {
+            switch (tier)
+            {
+                case MapDetailTier.Near: return "РАЙОН";
+                case MapDetailTier.Medium: return "ОКРУГА";
+                default: return "РЕГИОН";
             }
-            LineRenderer line = CreateDynamicLine(name, color, width, height);
-            SetLinePoints(line, points);
         }
 
-        private LineRenderer CreateDynamicLine(string name, Color color, float width, float height)
+        private MapDetailTier CurrentDetailTier()
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(_dynamicRoot.transform, false);
-            go.transform.localPosition = Vector3.up * height;
-            var line = go.AddComponent<LineRenderer>();
-            line.useWorldSpace = false;
-            line.startWidth = width;
-            line.endWidth = width;
-            line.numCapVertices = 2;
-            line.numCornerVertices = 2;
-            line.sharedMaterial = CreateDynamicMaterial(color);
-            return line;
+            return CameraRig == null
+                ? MapDetailTier.Medium
+                : DetailTierForDistance(CameraRig.Distance, CameraRig.MinDistance, CameraRig.MaxDistance);
         }
 
-        private LineRenderer CreateLine(string name, Color color, float width, float height)
+        private void ApplyDynamicPresentation(bool force = false)
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(_root.transform, false);
-            go.transform.localPosition = Vector3.up * height;
-            var line = go.AddComponent<LineRenderer>();
-            line.useWorldSpace = false;
-            line.loop = false;
-            line.startWidth = width;
-            line.endWidth = width;
-            line.numCapVertices = 2;
-            line.numCornerVertices = 2;
-            line.sharedMaterial = CreateMaterial(color);
-            return line;
+            MapDetailTier tier = CurrentDetailTier();
+            if (!force && tier == _appliedDetailTier) return;
+            _appliedDetailTier = tier;
+            MapPresentationProfile profile = PresentationProfile(tier);
+
+            Dictionary<string, DynamicVisualState> siteWinners = profile.Sites
+                && profile.SiteBucket > 0f
+                ? PresentationWinners(DynamicVisualLayer.Site, profile.SiteBucket) : null;
+            Dictionary<string, DynamicVisualState> partyWinners = profile.Parties
+                && profile.PartyBucket > 0f
+                ? PresentationWinners(DynamicVisualLayer.Party, profile.PartyBucket) : null;
+            Dictionary<string, DynamicVisualState> threatWinners = profile.Threats
+                && profile.ThreatBucket > 0f
+                ? PresentationWinners(DynamicVisualLayer.Threat, profile.ThreatBucket) : null;
+            for (int i = 0; i < _dynamicPresentationVisuals.Count; i++)
+            {
+                DynamicVisualState state = _dynamicPresentationVisuals[i];
+                if (state == null || state.Visual == null) continue;
+                bool selected = state.Point != null && _selectedPoint != null
+                    && Distance(state.Point, _selectedPoint) <= 1.1f;
+                bool visible = state.Important || selected;
+                if (!visible)
+                {
+                    switch (state.Layer)
+                    {
+                        case DynamicVisualLayer.TerritoryFill:
+                            visible = _showFactions && profile.TerritoryFill;
+                            break;
+                        case DynamicVisualLayer.TerritoryBorder:
+                            visible = _showFactions && profile.TerritoryBorder;
+                            break;
+                        case DynamicVisualLayer.Influence:
+                            visible = _showFactions && profile.Influence;
+                            break;
+                        case DynamicVisualLayer.Settlement:
+                            visible = profile.Settlements;
+                            break;
+                        case DynamicVisualLayer.Site:
+                            visible = profile.Sites && (profile.SiteBucket <= 0f
+                                || IsPresentationWinner(state, siteWinners,
+                                    profile.SiteBucket));
+                            break;
+                        case DynamicVisualLayer.Party:
+                            visible = _showParties && profile.Parties
+                                && (profile.PartyBucket <= 0f
+                                    || IsPresentationWinner(state, partyWinners,
+                                        profile.PartyBucket));
+                            break;
+                        case DynamicVisualLayer.Threat:
+                            visible = _showEvents && profile.Threats
+                                && (profile.ThreatBucket <= 0f
+                                    || IsPresentationWinner(state, threatWinners,
+                                        profile.ThreatBucket));
+                            break;
+                        case DynamicVisualLayer.Tracked:
+                            visible = true;
+                            break;
+                    }
+                }
+
+                float scale = tier == MapDetailTier.Far ? 1.18f
+                            : (tier == MapDetailTier.Medium ? 1.08f : 1f);
+                state.TargetVisible = visible;
+                state.DetailScale = scale;
+                bool immediate = force || state.Layer == DynamicVisualLayer.TerritoryFill;
+                if (immediate)
+                {
+                    state.Visibility = visible ? 1f : 0f;
+                    if (state.Visual.activeSelf != visible) state.Visual.SetActive(visible);
+                    state.Visual.transform.localScale = state.BaseScale
+                        * PresentationVisibilityScale(state.Visibility, scale);
+                }
+                else if (visible && !state.Visual.activeSelf)
+                {
+                    state.Visual.SetActive(true);
+                }
+            }
+
+            for (int i = 0; i < _activityHighlightVisuals.Count; i++)
+            {
+                ActivityHighlightVisual activity = _activityHighlightVisuals[i];
+                if (activity?.Visual != null && activity.Visual.activeSelf != _showEvents)
+                    activity.Visual.SetActive(_showEvents);
+            }
+
+            ApplyMarkerPresentation(tier);
+            ApplyRoutePresentation(tier);
         }
 
-        private void SetLinePoints(LineRenderer line, IList<GlobalMapPoint> points)
+        private void UpdateDynamicPresentationTransitions(float unscaledDeltaTime)
         {
-            if (line == null) return;
-            int count = points != null ? points.Count : 0;
-            line.positionCount = count;
-            for (int i = 0; i < count; i++) line.SetPosition(i, PointToWorld(points[i].X, points[i].Y, 0f));
+            for (int i = 0; i < _dynamicPresentationVisuals.Count; i++)
+            {
+                DynamicVisualState state = _dynamicPresentationVisuals[i];
+                if (state == null || state.Visual == null
+                    || state.Layer == DynamicVisualLayer.TerritoryFill) continue;
+                float next = PresentationVisibility(state.Visibility,
+                    state.TargetVisible, unscaledDeltaTime);
+                if (state.TargetVisible && !state.Visual.activeSelf)
+                    state.Visual.SetActive(true);
+                state.Visibility = next;
+                state.Visual.transform.localScale = state.BaseScale
+                    * PresentationVisibilityScale(next, state.DetailScale);
+                if (!state.TargetVisible && next <= 0.001f && state.Visual.activeSelf)
+                    state.Visual.SetActive(false);
+            }
+        }
+
+        private Dictionary<string, DynamicVisualState> PresentationWinners(
+            DynamicVisualLayer layer, float bucketSize)
+        {
+            var winners = new Dictionary<string, DynamicVisualState>();
+            for (int i = 0; i < _dynamicPresentationVisuals.Count; i++)
+            {
+                DynamicVisualState candidate = _dynamicPresentationVisuals[i];
+                if (candidate == null || candidate.Visual == null || candidate.Point == null
+                    || candidate.Layer != layer || candidate.Important) continue;
+                string key = PresentationBucket(candidate.Point, bucketSize);
+                if (!winners.TryGetValue(key, out DynamicVisualState current)
+                    || candidate.Priority > current.Priority)
+                    winners[key] = candidate;
+            }
+            return winners;
+        }
+
+        private static bool IsPresentationWinner(DynamicVisualState state,
+            IDictionary<string, DynamicVisualState> winners, float bucketSize)
+        {
+            if (state == null || winners == null || state.Point == null) return false;
+            return winners.TryGetValue(PresentationBucket(state.Point, bucketSize),
+                out DynamicVisualState winner) && ReferenceEquals(winner, state);
+        }
+
+        private static string PresentationBucket(GlobalMapPoint point, float size)
+        {
+            if (point == null) return "none";
+            float safe = Mathf.Max(1f, size);
+            return Mathf.FloorToInt(point.X / safe) + ":" + Mathf.FloorToInt(point.Y / safe);
+        }
+
+        private void ApplyMarkerPresentation(MapDetailTier tier)
+        {
+            float playerScale = tier == MapDetailTier.Far ? 1.75f
+                              : (tier == MapDetailTier.Medium ? 1.35f : 1.08f);
+            float selectionScale = tier == MapDetailTier.Far ? 1.5f
+                                 : (tier == MapDetailTier.Medium ? 1.25f : 1f);
+            if (_playerMarker != null) _playerMarker.transform.localScale = _playerMarkerBaseScale * playerScale;
+            if (_selectionMarker != null) _selectionMarker.transform.localScale = _selectionMarkerBaseScale * selectionScale;
+        }
+
+        private void ApplyRoutePresentation(MapDetailTier tier)
+        {
+            _routeDetailScale = RouteDetailScale(tier);
+            ApplyRouteProgressPresentation(true);
+        }
+
+        public static float RouteDetailScale(MapDetailTier tier)
+        {
+            return tier == MapDetailTier.Far ? 1.55f
+                 : (tier == MapDetailTier.Medium ? 1.28f : 1.05f);
+        }
+
+        public static Color RouteVisualColor(float routePosition, float travelProgress,
+                                             bool shadow, bool contact)
+        {
+            float position = Mathf.Clamp01(routePosition);
+            float progress = Mathf.Clamp01(travelProgress);
+            if (shadow)
+                return contact
+                    ? new Color(0.11f, 0.018f, 0.008f, 0.94f)
+                    : new Color(0.035f, 0.025f, 0.012f, 0.9f);
+
+            Color completed = new Color(0.23f, 0.58f, 0.48f, 0.68f);
+            Color ahead = contact
+                ? new Color(1f, 0.31f, 0.13f, 1f)
+                : new Color(1f, 0.79f, 0.18f, 0.96f);
+            if (position < progress - 0.012f) return completed;
+
+            float head = 1f - Mathf.Clamp01(Mathf.Abs(position - progress) / 0.075f);
+            Color headColor = contact
+                ? new Color(1f, 0.78f, 0.42f, 1f)
+                : new Color(0.48f, 0.96f, 1f, 1f);
+            return Color.Lerp(ahead, headColor, head);
+        }
+
+        /// <summary>
+        /// Completed arrows recede while the authoritative travel head is enlarged.
+        /// Direction remains readable without animating or manufacturing geometry.
+        /// </summary>
+        public static float RouteVisualScale(float routePosition, float travelProgress,
+                                             bool shadow, bool contact)
+        {
+            float position = Mathf.Clamp01(routePosition);
+            float progress = Mathf.Clamp01(travelProgress);
+            float head = 1f - Mathf.Clamp01(Mathf.Abs(position - progress) / 0.075f);
+            if (shadow) return 1f + head * (contact ? 0.14f : 0.09f);
+            if (position < progress - 0.012f) return 0.78f;
+            return Mathf.Lerp(1f, contact ? 1.46f : 1.32f, head);
+        }
+
+        private void ApplyRouteProgressPresentation(bool force = false)
+        {
+            float progress = _travelActive ? TravelProgress : 0f;
+            bool contact = _pendingContact != null;
+            if (!force && Mathf.Abs(progress - _appliedRouteProgress) < 0.006f
+                && contact == _appliedRouteContact) return;
+            _appliedRouteProgress = progress;
+            _appliedRouteContact = contact;
+            int count = Mathf.Min(_routeVisuals.Count,
+                Mathf.Min(_routeVisualBaseScales.Count,
+                    Mathf.Min(_routeVisualProgress.Count, _routeVisualShadows.Count)));
+            for (int i = 0; i < count; i++)
+            {
+                GameObject visual = _routeVisuals[i];
+                if (visual == null) continue;
+                visual.transform.localScale = _routeVisualBaseScales[i]
+                    * (_routeDetailScale * RouteVisualScale(_routeVisualProgress[i], progress,
+                        _routeVisualShadows[i], contact));
+                TintLivePrefab(visual, RouteVisualColor(_routeVisualProgress[i], progress,
+                    _routeVisualShadows[i], contact));
+            }
         }
 
         private void ApplyState(JObject state, bool preserveIdleSelection = false)
@@ -1144,6 +1849,14 @@ namespace RealmOfAshes.Game
                               && authoritativeTravel == null
                               && (!_travelActive || preserveFreshTravel);
             _state = state != null ? (JObject)state.DeepClone() : new JObject();
+            EnsurePlayerActor();
+            JObject pendingDrop = _state["pendingWorldDrop"] as JObject;
+            if (pendingDrop != null)
+            {
+                RestorePendingLocationEntry(pendingDrop);
+                RefreshMarkers();
+                return;
+            }
             if (_pendingEntry)
             {
                 // Ждём «Войти»: сервер ещё хранит завершённый маршрут и стартовую точку —
@@ -1165,8 +1878,44 @@ namespace RealmOfAshes.Game
             RefreshMarkers();
         }
 
+        private void RestorePendingLocationEntry(JObject pendingDrop)
+        {
+            if (pendingDrop == null) return;
+            JObject arrival = (JObject)pendingDrop.DeepClone();
+            string targetLocationId = arrival["targetLocationId"]?.ToString()
+                                   ?? arrival["locationId"]?.ToString()
+                                   ?? string.Empty;
+            if (string.IsNullOrEmpty(targetLocationId)) return;
+            arrival["targetLocationId"] = targetLocationId;
+            string key = PendingArrivalKey(arrival);
+            bool changed = !string.Equals(key, _pendingArrivalKey, StringComparison.Ordinal);
+
+            _playerPoint = ReadObjectPoint(arrival["worldPoint"],
+                ReadPoint(_state, "playerX", "playerY", _playerPoint));
+            _selectedPoint = CopyPoint(_playerPoint);
+            _selectedDynamic = null;
+            string siteId = arrival["siteId"]?.ToString() ?? string.Empty;
+            if (!string.IsNullOrEmpty(siteId) && _dynamicTargets != null)
+                _selectedDynamic = _dynamicTargets.Find(row => row != null && row.Id == siteId);
+            _selectedNode = _selectedDynamic == null
+                ? NearestNode(_selectedPoint, NodeSnapRadiusPoints)
+                : null;
+            ClearTravel();
+            _pendingEntry = true;
+            _pendingArrival = arrival;
+            _pendingArrivalKey = key;
+            if (changed)
+            {
+                _locationEntryAttempts = 0;
+                _locationEntryRetryAt = Time.realtimeSinceStartup;
+            }
+        }
+
         private void ApplyTravel(JObject travel)
         {
+            _routeRequestPending = false;
+            _routeRequestWasReroute = false;
+            _locationEntryPending = false;
             _travelLeaderId = travel["leaderId"]?.ToString() ?? Socket?.Session?.Id ?? string.Empty;
             GlobalMapPoint from = ReadObjectPoint(travel["fromPoint"], _playerPoint);
             GlobalMapPoint to = ReadObjectPoint(travel["toPoint"] ?? travel["targetPoint"], from);
@@ -1221,11 +1970,12 @@ namespace RealmOfAshes.Game
             _contactDecisionPending = false;
             _ignoredRouteContacts.Clear();
             _playerPoint = PointAtRouteProgress(_route, progress);
-            SetLinePoints(_routeLine, _route);
+            RebuildRouteVisuals();
         }
 
         private void ClearTravel()
         {
+            ClearRouteVisuals();
             _route.Clear();
             _travelActive = false;
             _travelDescriptorGraceUntil = 0f;
@@ -1235,79 +1985,596 @@ namespace RealmOfAshes.Game
             _contactDecisionPending = false;
             _travelLeaderId = string.Empty;
             _ignoredRouteContacts.Clear();
-            if (_routeLine != null) _routeLine.positionCount = 0;
+        }
+
+        private void RebuildRouteVisuals()
+        {
+            ClearRouteVisuals();
+            if (_authoredScene == null || _route == null || _route.Count < 2) return;
+
+            const float spacing = 0.82f;
+            const int maximumPairs = 140;
+            float totalLength = 0f;
+            for (int i = 1; i < _route.Count; i++)
+                totalLength += Distance(_route[i - 1], _route[i]);
+            totalLength = Mathf.Max(0.001f, totalLength);
+            float distanceBeforeSegment = 0f;
+            int pairCount = 0;
+            for (int segment = 1; segment < _route.Count && pairCount < maximumPairs; segment++)
+            {
+                Vector3 from = PointToWorld(_route[segment - 1].X, _route[segment - 1].Y, 0.38f);
+                Vector3 to = PointToWorld(_route[segment].X, _route[segment].Y, 0.38f);
+                Vector3 delta = to - from;
+                delta.y = 0f;
+                float length = delta.magnitude;
+                if (length < 0.01f) continue;
+                int count = Mathf.Clamp(Mathf.CeilToInt(length / spacing), 1,
+                    maximumPairs - pairCount);
+                Quaternion rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+                for (int i = 0; i < count; i++)
+                {
+                    float t = (i + 0.5f) / count;
+                    float routeProgress = Mathf.Clamp01((distanceBeforeSegment
+                        + Distance(_route[segment - 1], _route[segment]) * t) / totalLength);
+                    Vector3 position = Vector3.Lerp(from, to, t);
+                    GameObject shadow = InstantiateLivePrefab(RoaGlobalMapPrefabKind.RouteDash,
+                        "ActiveRouteShadow:" + segment + ":" + i);
+                    if (shadow != null)
+                    {
+                        shadow.transform.localPosition = position + Vector3.down * 0.045f;
+                        shadow.transform.localRotation = rotation;
+                        shadow.transform.localScale = Vector3.one * 1.75f;
+                        _routeVisuals.Add(shadow);
+                        _routeVisualBaseScales.Add(shadow.transform.localScale);
+                        _routeVisualProgress.Add(routeProgress);
+                        _routeVisualShadows.Add(true);
+                    }
+
+                    GameObject dash = InstantiateLivePrefab(RoaGlobalMapPrefabKind.RouteDash,
+                        "ActiveRoute:" + segment + ":" + i);
+                    if (dash != null)
+                    {
+                        dash.transform.localPosition = position;
+                        dash.transform.localRotation = rotation;
+                        dash.transform.localScale = Vector3.one;
+                        _routeVisuals.Add(dash);
+                        _routeVisualBaseScales.Add(dash.transform.localScale);
+                        _routeVisualProgress.Add(routeProgress);
+                        _routeVisualShadows.Add(false);
+                    }
+                    pairCount++;
+                }
+                distanceBeforeSegment += Distance(_route[segment - 1], _route[segment]);
+            }
+            ApplyRoutePresentation(CurrentDetailTier());
+        }
+
+        private void ClearRouteVisuals()
+        {
+            if (_authoredScene != null)
+            {
+                for (int i = 0; i < _routeVisuals.Count; i++)
+                    _authoredScene.ReleaseLivePrefab(_routeVisuals[i]);
+            }
+            _routeVisuals.Clear();
+            _routeVisualBaseScales.Clear();
+            _routeVisualProgress.Clear();
+            _routeVisualShadows.Clear();
+            _appliedRouteProgress = -1f;
         }
 
         private void Update()
         {
             if (!IsActive) return;
 
-            UpdateCameraPan();
+            if (_pendingEntry && !_locationEntryPending && _pendingArrival != null
+                && Time.realtimeSinceStartup >= _locationEntryRetryAt)
+                ResumePendingLocationEntry();
 
-            if (!_travelActive) return;
-            if (_pendingContact != null) return;
+            UpdatePartyActors();
+
+            bool touchActive = UpdateTouchMapInput();
+            if (!touchActive)
+            {
+                bool keyboardActive = UpdateKeyboardCameraPan();
+                bool mouseActive = UpdateMouseMapInput();
+                if (mouseActive || keyboardActive) ClearHoverPreview();
+                else UpdateMouseHover();
+            }
+            else
+            {
+                ResetMouseMapInput(false);
+                ClearHoverPreview();
+            }
+            PulseActivityHighlights();
+            if (Time.unscaledTime >= _nextPresentationRefresh)
+            {
+                _nextPresentationRefresh = Time.unscaledTime + 0.18f;
+                ApplyDynamicPresentation();
+                ApplyRouteProgressPresentation();
+            }
+            UpdateDynamicPresentationTransitions(Time.unscaledDeltaTime);
+            UpdateStrategicActorPresentation();
+            PulseMapFocus();
+
+            if (!_travelActive)
+            {
+                _playerActor?.SetMotion(Vector3.zero, false);
+                return;
+            }
+            if (_pendingContact != null)
+            {
+                _playerActor?.SetMotion(Vector3.zero, false);
+                return;
+            }
 
             GlobalMapPoint previousPoint = CopyPoint(_playerPoint);
             float progress = Mathf.Clamp01((Time.realtimeSinceStartup - _travelStartedRealtime) / _travelDuration);
             _playerPoint = PointAtRouteProgress(_route, progress);
             RefreshMarkers();
+            Vector3 playerMotion = PointToWorld(_playerPoint.X, _playerPoint.Y, 0f)
+                - PointToWorld(previousPoint.X, previousPoint.Y, 0f);
+            Vector3 playerWorldMotion = _root != null
+                ? _root.transform.TransformDirection(playerMotion) : playerMotion;
+            _playerActor?.SetMotion(playerWorldMotion, playerMotion.sqrMagnitude > 0.000001f);
 
             if (!_arrivalPending && Time.realtimeSinceStartup >= _arrivalRetryAt
                 && MaybeTriggerTravelContact(previousPoint, _playerPoint)) return;
             if (progress >= 1f && !_arrivalPending && Time.realtimeSinceStartup >= _arrivalRetryAt)
             {
                 if (TryOpenSelectedDestinationContact()) return;
-                bool toLocation = _selectedNode != null
-                    || (_selectedDynamic != null && !string.IsNullOrEmpty(_selectedDynamic.LocationId));
-                if (CanvasDriven && toLocation && !_pendingEntry)
-                {
-                    // Как pendingWorldDrop web: остаёмся на карте, вход — кнопкой «Войти».
-                    _pendingEntry = true;
-                    _playerPoint = CopyPoint(_selectedPoint);
-                    ClearTravel();
-                    RefreshMarkers();
-                    StatusText = "Вы на месте. Нажмите «Войти», чтобы перейти в локацию.";
-                    return;
-                }
                 RequestArrival();
             }
         }
 
-        private void UpdateCameraPan()
+        private bool UpdateTouchMapInput()
+        {
+            if (!InputEnabled)
+            {
+                ResetTouchMapInput();
+                return false;
+            }
+
+            int count = Input.touchCount;
+            if (count <= 0)
+            {
+                if (_mapTouchFinger >= 0 || _pinching) ResetTouchMapInput();
+                return false;
+            }
+
+            _suppressSyntheticMouseUntil = Time.unscaledTime + 0.45f;
+            if (count >= 2)
+            {
+                Touch first = Input.GetTouch(0);
+                Touch second = Input.GetTouch(1);
+                _mapTouchFinger = -1;
+                _mapTouchDragging = false;
+                _mapTouchBlocked = false;
+                if (!TouchCanUseMap(first) || !TouchCanUseMap(second)
+                    || CameraRig == null)
+                {
+                    ResetPinch();
+                    _cameraPanning = false;
+                    return true;
+                }
+
+                int fingerA = Mathf.Min(first.fingerId, second.fingerId);
+                int fingerB = Mathf.Max(first.fingerId, second.fingerId);
+                float span = Vector2.Distance(first.position, second.position);
+                Vector2 center = (first.position + second.position) * 0.5f;
+                if (!_pinching || fingerA != _pinchFingerA || fingerB != _pinchFingerB)
+                {
+                    _pinching = true;
+                    _pinchFingerA = fingerA;
+                    _pinchFingerB = fingerB;
+                    _pinchStartSpan = Mathf.Max(1f, span);
+                    _pinchStartCameraDistance = CameraRig.Distance;
+                    _pinchLastCenter = center;
+                }
+                else
+                {
+                    CameraRig.SetDistance(PinchZoomDistance(_pinchStartCameraDistance,
+                        _pinchStartSpan, span, CameraRig.MinDistance, CameraRig.MaxDistance), false);
+                    ApplyCameraPanDelta(center - _pinchLastCenter);
+                    _pinchLastCenter = center;
+                }
+                _cameraPanning = true;
+                return true;
+            }
+
+            ResetPinch();
+            _cameraPanning = false;
+            Touch touch = Input.GetTouch(0);
+            if (_mapTouchFinger < 0)
+            {
+                if (touch.phase != TouchPhase.Began) return true;
+                _mapTouchFinger = touch.fingerId;
+                _mapTouchStart = touch.position;
+                _mapTouchStartedAt = Time.unscaledTime;
+                _mapTouchDragging = false;
+                _mapTouchBlocked = !TouchCanUseMap(touch);
+                _cameraPanning = false;
+            }
+            if (touch.fingerId != _mapTouchFinger) return true;
+
+            bool ended = touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled;
+            if (!_mapTouchBlocked && !_mapTouchDragging
+                && TouchDragReached(_mapTouchStart, touch.position, TouchDragThresholdPixels))
+            {
+                _mapTouchDragging = true;
+                _cameraPanning = true;
+            }
+            if (!_mapTouchBlocked && _mapTouchDragging && touch.phase == TouchPhase.Moved)
+                ApplyCameraPanDelta(touch.deltaPosition);
+
+            if (!ended) return true;
+            bool tap = !_mapTouchBlocked && TouchTapEligible(
+                Time.unscaledTime - _mapTouchStartedAt, _mapTouchStart, touch.position,
+                touch.phase == TouchPhase.Canceled);
+            Vector2 screenPoint = touch.position;
+            ResetSingleTouch();
+            if (tap) SelectScreenPointAndMaybeTravel(screenPoint);
+            return true;
+        }
+
+        private bool TouchCanUseMap(Touch touch)
+        {
+            if (!MapScreenPointCanGesture(touch.position, Screen.width, Screen.height, CanvasDriven))
+                return false;
+            EventSystem events = EventSystem.current;
+            return events == null || !events.IsPointerOverGameObject(touch.fingerId);
+        }
+
+        private void ResetSingleTouch()
+        {
+            _mapTouchFinger = -1;
+            _mapTouchDragging = false;
+            _mapTouchBlocked = false;
+            _cameraPanning = false;
+        }
+
+        private void ResetPinch()
+        {
+            _pinching = false;
+            _pinchFingerA = -1;
+            _pinchFingerB = -1;
+            _pinchStartSpan = 0f;
+            _pinchStartCameraDistance = 0f;
+            _pinchLastCenter = Vector2.zero;
+        }
+
+        private void ResetTouchMapInput()
+        {
+            ResetSingleTouch();
+            ResetPinch();
+        }
+
+        public static bool TouchDragReached(Vector2 start, Vector2 current, float threshold)
+        {
+            float safeThreshold = Mathf.Max(1f, threshold);
+            return (current - start).sqrMagnitude >= safeThreshold * safeThreshold;
+        }
+
+        public static bool TouchTapEligible(float heldSeconds, Vector2 start,
+                                            Vector2 current, bool cancelled)
+        {
+            return PointerTapEligible(heldSeconds, start, current, cancelled,
+                TouchTapMaxSeconds, TouchDragThresholdPixels);
+        }
+
+        public static bool MouseTapEligible(float heldSeconds, Vector2 start,
+                                            Vector2 current, bool cancelled)
+        {
+            return PointerTapEligible(heldSeconds, start, current, cancelled,
+                MouseTapMaxSeconds, MouseDragThresholdPixels);
+        }
+
+        public static bool PointerTapEligible(float heldSeconds, Vector2 start,
+                                              Vector2 current, bool cancelled,
+                                              float maxSeconds, float dragThreshold)
+        {
+            return !cancelled && heldSeconds <= Mathf.Max(0.05f, maxSeconds)
+                && !TouchDragReached(start, current, dragThreshold);
+        }
+
+        public static float PinchZoomDistance(float startCameraDistance, float startFingerSpan,
+                                              float currentFingerSpan, float minDistance,
+                                              float maxDistance)
+        {
+            float ratio = Mathf.Max(1f, startFingerSpan) / Mathf.Max(1f, currentFingerSpan);
+            return Mathf.Clamp(startCameraDistance * ratio, minDistance, maxDistance);
+        }
+
+        /// <summary>
+        /// Pure strategic-camera orbit calculation. The returned vector stores pitch in x
+        /// and yaw in y. Unity screen-space y grows upward, so dragging the wheel upward
+        /// lowers the camera toward the horizon while dragging downward raises it.
+        /// </summary>
+        public static Vector2 StrategicCameraOrbit(float pitchDeg, float yawDeg,
+                                                    Vector2 pointerDelta)
+        {
+            float pitch = Mathf.Clamp(
+                pitchDeg - pointerDelta.y * StrategicOrbitDegreesPerPixel,
+                StrategicMinimumPitchDeg, StrategicMaximumPitchDeg);
+            float yaw = Mathf.Repeat(
+                yawDeg + pointerDelta.x * StrategicOrbitDegreesPerPixel, 360f);
+            return new Vector2(pitch, yaw);
+        }
+
+        /// <summary>
+        /// Right-button navigation follows the horizontal pointer impulse, but uses an
+        /// inverted vertical axis. Primary-button and touch dragging keep their original
+        /// direct-map-drag behaviour.
+        /// </summary>
+        public static Vector2 RightMousePanDelta(Vector2 pointerDelta)
+        {
+            return new Vector2(pointerDelta.x, -pointerDelta.y);
+        }
+
+        public static Vector3 KeyboardCameraPanMovement(Vector2 input, float distance,
+                                                        float deltaTime, Vector3 right,
+                                                        Vector3 forward)
+        {
+            if (input.sqrMagnitude > 1f) input.Normalize();
+            float speed = Mathf.Clamp(distance * StrategicKeyboardPanSpeedFactor,
+                StrategicKeyboardPanMinimumSpeed, StrategicKeyboardPanMaximumSpeed);
+            return (right.normalized * input.x + forward.normalized * input.y)
+                * speed * Mathf.Max(0f, deltaTime);
+        }
+
+        public static float StrategicMinimumCameraDistance(float mapSpan)
+        {
+            float pitchRadians = StrategicMinimumPitchDeg * Mathf.Deg2Rad;
+            float clearanceDistance = StrategicMinimumCameraClearance
+                / Mathf.Max(0.01f, Mathf.Sin(pitchRadians));
+            return Mathf.Max(clearanceDistance, Mathf.Max(14f, Mathf.Max(0f, mapSpan) * 0.2f));
+        }
+
+        public static float StrategicMaximumCameraDistance(float mapSpan)
+        {
+            return Mathf.Max(150f, Mathf.Max(0f, mapSpan) * 1.65f);
+        }
+
+        public static bool MapScreenPointCanGesture(Vector2 screenPoint, int screenWidth,
+                                                     int screenHeight, bool canvasDriven)
+        {
+            if (screenPoint.x < 0f || screenPoint.y < 0f
+                || screenPoint.x > screenWidth || screenPoint.y > screenHeight) return false;
+            if (canvasDriven) return true;
+            Vector2 guiPoint = new Vector2(screenPoint.x, screenHeight - screenPoint.y);
+            return MapPointCanSelect(guiPoint, screenWidth, screenHeight);
+        }
+        private bool UpdateMouseMapInput()
+        {
+            if (!_mousePrimaryTracking && UpdateCameraOrbit()) return true;
+            if (!_mousePrimaryTracking && UpdateCameraPan()) return true;
+
+            if (!InputEnabled || Input.touchCount > 0
+                || Time.unscaledTime < _suppressSyntheticMouseUntil)
+            {
+                ResetPrimaryMouseInput();
+                return false;
+            }
+
+            Vector2 pointer = Input.mousePosition;
+            if (!_mousePrimaryTracking && Input.GetMouseButtonDown(0))
+            {
+                EventSystem events = EventSystem.current;
+                bool blocked = events != null && events.IsPointerOverGameObject();
+                if (!blocked)
+                    blocked = !MapScreenPointCanGesture(pointer, Screen.width, Screen.height,
+                        CanvasDriven);
+                if (blocked) return false;
+
+                _mousePrimaryTracking = true;
+                _mousePrimaryDragging = false;
+                _mousePrimaryStart = pointer;
+                _mousePrimaryLast = pointer;
+                _mousePrimaryStartedAt = Time.unscaledTime;
+            }
+            if (!_mousePrimaryTracking) return false;
+            if (!Input.GetMouseButton(0) && !Input.GetMouseButtonUp(0))
+            {
+                ResetPrimaryMouseInput();
+                return true;
+            }
+
+            if (!_mousePrimaryDragging && TouchDragReached(_mousePrimaryStart, pointer,
+                MouseDragThresholdPixels))
+            {
+                _mousePrimaryDragging = true;
+                _cameraPanning = true;
+            }
+            if (_mousePrimaryDragging && Input.GetMouseButton(0))
+                ApplyCameraPanDelta(pointer - _mousePrimaryLast);
+            _mousePrimaryLast = pointer;
+
+            if (!Input.GetMouseButtonUp(0)) return true;
+            bool tap = MouseTapEligible(Time.unscaledTime - _mousePrimaryStartedAt,
+                _mousePrimaryStart, pointer, false);
+            ResetPrimaryMouseInput();
+            if (tap) SelectScreenPointAndMaybeTravel(pointer);
+            return true;
+        }
+
+        private void UpdateMouseHover()
+        {
+            if (!InputEnabled || _cameraPanning || _cameraOrbiting || _mousePrimaryTracking
+                || !Input.mousePresent
+                || Application.isMobilePlatform || _terrainCollider == null)
+            {
+                ClearHoverPreview();
+                return;
+            }
+
+            EventSystem events = EventSystem.current;
+            if (events != null && events.IsPointerOverGameObject())
+            {
+                ClearHoverPreview();
+                return;
+            }
+
+            Vector2 screenPoint = Input.mousePosition;
+            if (!MapScreenPointCanGesture(screenPoint, Screen.width, Screen.height, CanvasDriven))
+            {
+                ClearHoverPreview();
+                return;
+            }
+
+            Camera camera = Camera.main;
+            if (camera == null || !_terrainCollider.Raycast(camera.ScreenPointToRay(screenPoint),
+                out RaycastHit hit, 1000f))
+            {
+                ClearHoverPreview();
+                return;
+            }
+
+            GlobalMapPoint point = WorldToPoint(hit.point);
+            DynamicTarget target = NearestDynamicTarget(point,
+                DynamicSnapRadiusPoints * 0.9f, true);
+            GlobalMapNode node = target == null ? NearestNode(point, NodeSnapRadiusPoints * 0.9f) : null;
+            _hoverDynamic = target;
+            _hoverNode = node;
+        }
+
+        private void ClearHoverPreview()
+        {
+            _hoverDynamic = null;
+            _hoverNode = null;
+        }
+
+        private bool UpdateCameraOrbit()
+        {
+            if (!InputEnabled || CameraRig == null || _cameraAnchor == null)
+            {
+                _cameraOrbiting = false;
+                _lastOrbitPointer = Vector2.zero;
+                return false;
+            }
+
+            if (!_cameraOrbiting)
+            {
+                if (!Input.GetMouseButtonDown(2)) return false;
+                EventSystem events = EventSystem.current;
+                if (events != null && events.IsPointerOverGameObject()) return false;
+                if (!MapScreenPointCanGesture(Input.mousePosition, Screen.width, Screen.height,
+                    CanvasDriven)) return false;
+                _cameraOrbiting = true;
+                _cameraPanning = false;
+                _lastOrbitPointer = Input.mousePosition;
+                return true;
+            }
+
+            if (!Input.GetMouseButton(2))
+            {
+                _cameraOrbiting = false;
+                _lastOrbitPointer = Vector2.zero;
+                return false;
+            }
+
+            Vector2 pointer = Input.mousePosition;
+            Vector2 delta = pointer - _lastOrbitPointer;
+            _lastOrbitPointer = pointer;
+            if (delta.sqrMagnitude < 0.01f) return true;
+
+            Vector2 orbit = StrategicCameraOrbit(CameraRig.PitchDeg, CameraRig.YawDeg, delta);
+            CameraRig.PitchDeg = orbit.x;
+            CameraRig.YawDeg = orbit.y;
+            return true;
+        }
+
+        private bool UpdateCameraPan()
         {
             if (!InputEnabled || CameraRig == null || _cameraAnchor == null)
             {
                 _cameraPanning = false;
-                return;
+                return false;
             }
 
-            bool pressed = Input.GetMouseButton(1) || Input.GetMouseButton(2);
+            bool pressed = Input.GetMouseButton(1);
             if (!_cameraPanning)
             {
-                bool began = Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2);
-                if (!began || Input.mousePosition.x <= 380f) return;
+                bool began = Input.GetMouseButtonDown(1);
+                if (!began) return false;
+                EventSystem events = EventSystem.current;
+                if (events != null && events.IsPointerOverGameObject()) return false;
+                if (!MapScreenPointCanGesture(Input.mousePosition, Screen.width, Screen.height,
+                    CanvasDriven)) return false;
                 _cameraPanning = true;
                 _lastPanPointer = Input.mousePosition;
-                return;
+                return true;
             }
             if (!pressed)
             {
                 _cameraPanning = false;
-                return;
+                return false;
             }
 
             Vector2 pointer = Input.mousePosition;
             Vector2 delta = pointer - _lastPanPointer;
             _lastPanPointer = pointer;
-            if (delta.sqrMagnitude < 0.01f) return;
+            if (delta.sqrMagnitude < 0.01f) return true;
 
-            Vector3 movement = CameraPanMovement(delta, CameraRig.Distance, Screen.height,
+            ApplyCameraPanDelta(RightMousePanDelta(delta));
+            return true;
+        }
+
+        private bool UpdateKeyboardCameraPan()
+        {
+            if (!InputEnabled || CameraRig == null || _cameraAnchor == null
+                || Input.touchCount > 0 || RoaGameBootstrap.BlocksWorldHud)
+                return false;
+
+            EventSystem events = EventSystem.current;
+            GameObject selected = events != null ? events.currentSelectedGameObject : null;
+            if (selected != null
+                && selected.GetComponentInParent<UnityEngine.UI.InputField>() != null)
+                return false;
+
+            Vector2 input = new Vector2(
+                (Input.GetKey(KeyCode.D) ? 1f : 0f) - (Input.GetKey(KeyCode.A) ? 1f : 0f),
+                (Input.GetKey(KeyCode.W) ? 1f : 0f) - (Input.GetKey(KeyCode.S) ? 1f : 0f));
+            if (input.sqrMagnitude < 0.01f) return false;
+
+            Vector3 movement = KeyboardCameraPanMovement(input, CameraRig.Distance,
+                Time.unscaledDeltaTime, CameraRig.PlanarRight(), CameraRig.PlanarForward());
+            ApplyCameraMovement(movement);
+            return true;
+        }
+
+        private void ResetPrimaryMouseInput(bool clearCameraPanning = true)
+        {
+            _mousePrimaryTracking = false;
+            _mousePrimaryDragging = false;
+            _mousePrimaryStart = Vector2.zero;
+            _mousePrimaryLast = Vector2.zero;
+            _mousePrimaryStartedAt = 0f;
+            if (clearCameraPanning) _cameraPanning = false;
+        }
+
+        private void ResetMouseMapInput(bool clearCameraPanning = true)
+        {
+            ResetPrimaryMouseInput(clearCameraPanning);
+            _lastPanPointer = Vector2.zero;
+            _cameraOrbiting = false;
+            _lastOrbitPointer = Vector2.zero;
+        }
+
+        private void ApplyCameraPanDelta(Vector2 pointerDelta)
+        {
+            if (CameraRig == null || _cameraAnchor == null || pointerDelta.sqrMagnitude < 0.01f) return;
+            Vector3 movement = CameraPanMovement(pointerDelta, CameraRig.Distance, Screen.height,
                 CameraRig.PlanarRight(), CameraRig.PlanarForward());
+            ApplyCameraMovement(movement);
+        }
+
+        private void ApplyCameraMovement(Vector3 movement)
+        {
+            if (_cameraAnchor == null || movement.sqrMagnitude < 0.000001f) return;
             _cameraAnchor.transform.position = ClampCameraPan(
                 _cameraAnchor.transform.position + movement,
                 MapWidthPoints * MapWorldScale, MapHeightPoints * MapWorldScale);
         }
-
         public static Vector3 CameraPanMovement(Vector2 pointerDelta, float distance,
                                                 float screenHeight, Vector3 right, Vector3 forward)
         {
@@ -1334,6 +2601,7 @@ namespace RealmOfAshes.Game
             foreach (DynamicTarget target in _dynamicTargets)
             {
                 if (target == null || !target.CanEnter || target.Point == null) continue;
+                if (target.Kind != "party" && target.Kind != "zone") continue;
                 if (_ignoredRouteContacts.Contains(target.Kind + ":" + target.Id)) continue;
                 float touchRadius = Mathf.Max(2f, target.Radius) + 2.5f;
                 if (Distance(previousPoint, target.Point) <= touchRadius + 0.25f) continue;
@@ -1341,29 +2609,6 @@ namespace RealmOfAshes.Game
                 float distance = PointSegmentDistance(target.Point, previousPoint, nextPoint, out t);
                 if (distance > touchRadius || t < 0f || t > 1f || t >= bestT) continue;
                 best = target;
-                bestT = t;
-            }
-
-            foreach (GlobalMapNode node in _map.Nodes)
-            {
-                if (node == null || string.IsNullOrEmpty(node.EffectiveLocationId)) continue;
-                if (_ignoredRouteContacts.Contains("settlement:" + node.Id)) continue;
-                var center = new GlobalMapPoint { X = node.X, Y = node.Y };
-                const float touchRadius = 17.5f;
-                if (Distance(previousPoint, center) <= touchRadius + 0.25f) continue;
-                float t;
-                float distance = PointSegmentDistance(center, previousPoint, nextPoint, out t);
-                if (distance > touchRadius || t < 0f || t > 1f || t >= bestT) continue;
-                best = new DynamicTarget
-                {
-                    Kind = "settlement",
-                    Id = node.Id,
-                    Name = node.EffectiveLocationId,
-                    LocationId = node.EffectiveLocationId,
-                    Point = center,
-                    Radius = 15f,
-                    CanEnter = true
-                };
                 bestT = t;
             }
 
@@ -1383,16 +2628,6 @@ namespace RealmOfAshes.Game
             _selectedDynamic = best;
             _selectedNode = null;
             _selectedPoint = CopyPoint(best.Point);
-            if (CanvasDriven && !string.IsNullOrEmpty(best.LocationId))
-            {
-                // Как pendingWorldDrop web: прибыли к точке с локацией — ждём «Войти».
-                _pendingEntry = true;
-                _playerPoint = CopyPoint(_selectedPoint);
-                ClearTravel();
-                RefreshMarkers();
-                StatusText = "Вы на месте: " + best.Name + ". Нажмите «Войти», чтобы перейти в локацию.";
-                return true;
-            }
             StatusText = "Маршрут встретил: " + best.Name + ". Сервер подтверждает вход...";
             if (best.Kind == "party" || best.Kind == "zone")
             {
@@ -1425,7 +2660,7 @@ namespace RealmOfAshes.Game
         {
             if (contact == null || Socket == null || !IsLocalTravelLeader()) return false;
             _pendingContact = contact;
-            StatusText = "На маршруте: " + contact.Name + ". Войти или обойти?";
+            StatusText = "На маршруте: " + contact.Name + ". Вступить или обойти?";
             Socket.Emit("globalTravelEncounterDecision", new
             {
                 pending = true,
@@ -1502,17 +2737,43 @@ namespace RealmOfAshes.Game
             });
         }
 
-        private void SelectFromCursor()
+        private bool SelectScreenPointAndMaybeTravel(Vector2 screenPoint)
+        {
+            if (!SelectFromScreen(screenPoint)) return false;
+            if (!RouteClickAllowed(InputEnabled, _arrivalPending, _locationEntryPending,
+                                   _pendingContact != null,
+                                   !string.IsNullOrEmpty(AttachedPartyId))) return true;
+            _pendingEntry = false;
+            if (PlayerAtSelection) EnterCurrent();
+            else StartTravel();
+            return true;
+        }
+
+        public static bool RouteClickAllowed(bool inputEnabled, bool arrivalPending,
+                                             bool contactPending, bool attachedToParty)
+        {
+            return RouteClickAllowed(inputEnabled, arrivalPending, false, contactPending,
+                attachedToParty);
+        }
+
+        public static bool RouteClickAllowed(bool inputEnabled, bool arrivalPending,
+                                             bool locationEntryPending, bool contactPending,
+                                             bool attachedToParty)
+        {
+            return inputEnabled && !arrivalPending && !locationEntryPending
+                && !contactPending && !attachedToParty;
+        }
+        private bool SelectFromScreen(Vector2 screenPoint)
         {
             Camera camera = Camera.main;
-            if (camera == null || _terrainCollider == null) return;
+            if (camera == null || _terrainCollider == null) return false;
 
-            Ray ray = camera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (!_terrainCollider.Raycast(ray, out hit, 1000f)) return;
+            Ray ray = camera.ScreenPointToRay(screenPoint);
+            if (!_terrainCollider.Raycast(ray, out RaycastHit hit, 1000f)) return false;
 
             _selectedPoint = WorldToPoint(hit.point);
-            _selectedDynamic = NearestDynamicTarget(_selectedPoint, DynamicSnapRadiusPoints);
+            _selectedDynamic = NearestDynamicTarget(_selectedPoint,
+                DynamicSnapRadiusPoints, true);
             _selectedNode = _selectedDynamic == null ? NearestNode(_selectedPoint, NodeSnapRadiusPoints) : null;
             if (_selectedDynamic != null)
                 _selectedPoint = CopyPoint(_selectedDynamic.Point);
@@ -1523,6 +2784,7 @@ namespace RealmOfAshes.Game
                 ? "Выбрано: " + _selectedDynamic.Name
                 : (_selectedNode != null ? "Выбрано: " + _selectedNode.EffectiveLocationId : "Выбрана точка пустоши.");
             RefreshMarkers();
+            return true;
         }
 
         public void RequestEnterFromLocation()
@@ -1556,7 +2818,8 @@ namespace RealmOfAshes.Game
         /// </summary>
         public bool RequestTravelToWorldParty(string partyId, Action<JObject> completed = null)
         {
-            if (!IsActive || _travelActive || _pendingContact != null || string.IsNullOrEmpty(partyId)) return false;
+            if (!IsActive || _arrivalPending || _locationEntryPending
+                || _pendingContact != null || string.IsNullOrEmpty(partyId)) return false;
             if (!string.IsNullOrEmpty(AttachedPartyId))
             {
                 StatusText = "Вы движетесь с отрядом. Сначала покиньте группу.";
@@ -1573,6 +2836,574 @@ namespace RealmOfAshes.Game
             return true;
         }
 
+        public int CollectOverlayLabels(List<OverlayLabel> output)
+        {
+            if (output == null) return 0;
+            output.Clear();
+            if (!IsActive || _root == null || _map == null) return 0;
+
+            MapDetailTier tier = CurrentDetailTier();
+            MapPresentationProfile profile = PresentationProfile(tier);
+            int activityLabels = 0;
+            bool selectedActivityLabelAdded = false;
+            for (int i = 0; _showEvents && i < _activityOverlayLabels.Count; i++)
+            {
+                ActivityOverlayState row = _activityOverlayLabels[i];
+                if (row == null || row.Point == null) continue;
+                bool selected = _selectedPoint != null && Distance(_selectedPoint, row.Point) <= 1f;
+                if (activityLabels >= profile.ActivityLabelLimit && !selected) continue;
+                output.Add(new OverlayLabel
+                {
+                    Id = row.Id,
+                    Text = row.Text,
+                    World = _root.transform.TransformPoint(PointToWorld(row.Point.X, row.Point.Y, 1.2f)),
+                    Color = row.Color,
+                    Activity = true,
+                    Selected = selected,
+                    Priority = selected ? 1500 : row.Priority
+                });
+                if (selected) selectedActivityLabelAdded = true;
+                activityLabels++;
+            }
+
+            if (_selectedDynamic != null && _selectedDynamic.Point != null
+                && !selectedActivityLabelAdded)
+            {
+                string semantic = string.IsNullOrWhiteSpace(_selectedDynamic.Semantic)
+                    ? "ЦЕЛЬ"
+                    : _selectedDynamic.Semantic.ToUpperInvariant();
+                string name = _selectedDynamic.Name ?? _selectedDynamic.Id ?? "Точка пустоши";
+                output.Add(new OverlayLabel
+                {
+                    Id = "selected:" + (_selectedDynamic.Id ?? name),
+                    Text = "<b>" + EscapeOverlayText(semantic) + "</b>\n"
+                        + EscapeOverlayText(name),
+                    Semantic = semantic,
+                    World = _root.transform.TransformPoint(PointToWorld(
+                        _selectedDynamic.Point.X, _selectedDynamic.Point.Y, 1.26f)),
+                    Color = _selectedDynamic.Accent,
+                    Activity = true,
+                    Selected = true,
+                    Cluster = false,
+                    Priority = 1800
+                });
+            }
+
+            if (tier == MapDetailTier.Medium) AppendSiteClusterLabels(output);
+            if (profile.InfrastructureLabelLimit > 0)
+                AppendInfrastructureLabels(output, profile.InfrastructureLabelLimit);
+
+            if (_map.Nodes != null)
+            {
+                GlobalMapNode playerNode = PlayerNode;
+                foreach (GlobalMapNode node in _map.Nodes)
+                {
+                    if (node == null) continue;
+                    bool selected = _selectedNode == node;
+                    bool playerLocation = playerNode == node;
+                    bool coveredBySelectedTarget = _selectedDynamic?.Point != null
+                        && Mathf.Abs(_selectedDynamic.Point.X - node.X) <= 1f
+                        && Mathf.Abs(_selectedDynamic.Point.Y - node.Y) <= 1f;
+                    if (coveredBySelectedTarget && !playerLocation) continue;
+                    if (tier == MapDetailTier.Near && !selected && !playerLocation) continue;
+                    string title = NodeTitle(node);
+                    if (string.IsNullOrWhiteSpace(title)) continue;
+                    output.Add(new OverlayLabel
+                    {
+                        Id = "node:" + (node.Id ?? node.EffectiveLocationId),
+                        Text = EscapeOverlayText(title),
+                        World = NodeLabelWorld(node, 0.9f),
+                        Color = selected ? new Color(0.3f, 0.88f, 1f, 1f)
+                                          : new Color(0.94f, 0.82f, 0.47f, 1f),
+                        Activity = false,
+                        Selected = selected,
+                        Cluster = false,
+                        Priority = selected ? 1600 : (playerLocation ? 1100 : 450)
+                    });
+                }
+            }
+            return output.Count;
+        }
+
+        private void AppendSiteClusterLabels(List<OverlayLabel> output)
+        {
+            var buckets = new Dictionary<string, List<DynamicTarget>>();
+            for (int i = 0; i < _dynamicTargets.Count; i++)
+            {
+                DynamicTarget target = _dynamicTargets[i];
+                if (target == null || target.Kind != "site" || target.Point == null) continue;
+                string key = PresentationBucket(target.Point, 55f);
+                if (!buckets.TryGetValue(key, out List<DynamicTarget> rows))
+                {
+                    rows = new List<DynamicTarget>();
+                    buckets.Add(key, rows);
+                }
+                rows.Add(target);
+            }
+
+            foreach (KeyValuePair<string, List<DynamicTarget>> pair in buckets)
+            {
+                if (pair.Value == null || pair.Value.Count < 2) continue;
+                float x = 0f;
+                float y = 0f;
+                for (int i = 0; i < pair.Value.Count; i++)
+                {
+                    x += pair.Value[i].Point.X;
+                    y += pair.Value[i].Point.Y;
+                }
+                var point = new GlobalMapPoint { X = x / pair.Value.Count, Y = y / pair.Value.Count };
+                output.Add(new OverlayLabel
+                {
+                    Id = "cluster:" + pair.Key,
+                    Text = "• " + pair.Value.Count + " точек",
+                    World = _root.transform.TransformPoint(PointToWorld(point.X, point.Y, 0.82f)),
+                    Color = new Color(0.82f, 0.76f, 0.56f, 0.92f),
+                    Activity = false,
+                    Selected = false,
+                    Cluster = true,
+                    Priority = 250
+                });
+            }
+        }
+
+        private void AppendInfrastructureLabels(List<OverlayLabel> output, int limit)
+        {
+            if (_map?.Infrastructure == null || _root == null || limit <= 0) return;
+            int added = 0;
+            for (int i = 0; i < _map.Infrastructure.Count && added < limit; i++)
+            {
+                GlobalMapInfrastructure row = _map.Infrastructure[i];
+                if (row == null || !string.Equals(row.Type, "road",
+                        StringComparison.OrdinalIgnoreCase)
+                    || row.Points == null || row.Points.Count < 2) continue;
+                GlobalMapPoint point = row.Points[row.Points.Count / 2];
+                if (point == null) continue;
+                output.Add(new OverlayLabel
+                {
+                    Id = "infrastructure:" + (row.Id ?? added.ToString()),
+                    Text = InfrastructureShortTitle(row.Id, row.Name),
+                    World = _root.transform.TransformPoint(PointToWorld(point.X, point.Y, 0.54f)),
+                    Color = new Color(0.82f, 0.66f, 0.36f, 0.92f),
+                    Activity = false,
+                    Selected = false,
+                    Cluster = true,
+                    Priority = 820 - added * 10
+                });
+                added++;
+            }
+        }
+
+        public static string InfrastructureShortTitle(string id, string fallback)
+        {
+            switch ((id ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "southern_caravan_road": return "ЮЖНАЯ ТРАССА";
+                case "relay_trade_road": return "ТОРГОВЫЙ ПУТЬ";
+                case "old_northern_road": return "СЕВЕРНЫЙ ТРАКТ";
+                default:
+                    return string.IsNullOrWhiteSpace(fallback)
+                        ? "СТАРАЯ ДОРОГА"
+                        : fallback.Trim().ToUpperInvariant();
+            }
+        }
+
+        /// <summary>Draw up to three pulsing rings for the compact live-event rail.</summary>
+        public void SetActivityHighlights(IList<JObject> tasks)
+        {
+            var ids = new List<string>();
+            if (tasks != null)
+            {
+                for (int i = 0; i < tasks.Count && i < 3; i++)
+                    ids.Add(tasks[i]?["id"]?.ToString() ?? string.Empty);
+            }
+            string key = string.Join("|", ids);
+            if (key == _activityHighlightKey && (_activityHighlightVisuals.Count > 0 || ids.Count == 0)) return;
+            ClearActivityHighlights();
+            _activityHighlightKey = key;
+            if (_root == null || tasks == null) return;
+
+            for (int i = 0; i < tasks.Count && i < 3; i++)
+            {
+                JObject task = tasks[i];
+                GlobalMapPoint point;
+                if (!TryActivityPoint(task, out point)) continue;
+                Color color = ActivityColor(task);
+                string type = task?["type"]?.ToString() ?? string.Empty;
+                string kindLabel = ActivityKindLabel(type);
+                string title = task?["title"]?.ToString() ?? string.Empty;
+                string text = "<b>" + EscapeOverlayText(kindLabel.ToUpperInvariant()) + "</b>";
+                if (!string.IsNullOrEmpty(title)
+                    && !string.Equals(title, kindLabel, StringComparison.OrdinalIgnoreCase))
+                    text += "\n" + EscapeOverlayText(title);
+                _activityOverlayLabels.Add(new ActivityOverlayState
+                {
+                    Id = "activity:" + ids[i],
+                    Text = text,
+                    Point = CopyPoint(point),
+                    Color = color,
+                    Priority = 900 - i * 40
+                });
+
+                GameObject visual = InstantiateLivePrefab(ActivityPrefabKind(type),
+                    "LiveActivity:" + ids[i]);
+                if (visual == null) continue;
+                visual.transform.localPosition = PointToWorld(point.X, point.Y, 0.34f + i * 0.02f);
+                visual.transform.localRotation = Quaternion.identity;
+                visual.transform.localScale = Vector3.one * (1f + i * 0.08f);
+                TintLivePrefab(visual, color, "Tint");
+                _activityHighlightVisuals.Add(new ActivityHighlightVisual
+                {
+                    Visual = visual,
+                    BaseScale = visual.transform.localScale,
+                    Phase = i * 0.9f
+                });
+            }
+            ApplyDynamicPresentation(true);
+        }
+
+        private static RoaGlobalMapPrefabKind ActivityPrefabKind(string type)
+        {
+            switch (type ?? string.Empty)
+            {
+                case "escort_caravan": return RoaGlobalMapPrefabKind.ActivityCaravan;
+                case "distress_signal": return RoaGlobalMapPrefabKind.ActivityDistress;
+                case "recon_expedition": return RoaGlobalMapPrefabKind.ActivityRecon;
+                case "resource_expedition": return RoaGlobalMapPrefabKind.ActivityResource;
+                case "outpost_defense": return RoaGlobalMapPrefabKind.ActivityDefense;
+                case "assault_diversion": return RoaGlobalMapPrefabKind.ActivityAssault;
+                default: return RoaGlobalMapPrefabKind.TrackedTask;
+            }
+        }
+
+        private bool TryActivityPoint(JObject task, out GlobalMapPoint point)
+        {
+            point = null;
+            JToken x = task?["targetX"] ?? task?["details"]?["x"];
+            JToken y = task?["targetY"] ?? task?["details"]?["y"];
+            if (x != null && y != null && x.Type != JTokenType.Null && y.Type != JTokenType.Null)
+            {
+                point = new GlobalMapPoint { X = Float(x, 0f), Y = Float(y, 0f) };
+                return true;
+            }
+
+            string siteId = task?["siteId"]?.ToString() ?? string.Empty;
+            DynamicTarget target = _dynamicTargets.Find(row => row != null
+                && (row.SiteId == siteId || (row.Kind == "site" && row.Id == siteId)));
+            if (target != null)
+            {
+                point = CopyPoint(target.Point);
+                return true;
+            }
+
+            foreach (JToken token in _wasteland?["sites"] as JArray ?? new JArray())
+            {
+                JObject site = token as JObject;
+                if (site?["id"]?.ToString() != siteId) continue;
+                point = new GlobalMapPoint { X = Float(site["x"], 0f), Y = Float(site["y"], 0f) };
+                return true;
+            }
+            if (_map?.Nodes != null)
+            {
+                foreach (GlobalMapNode node in _map.Nodes)
+                {
+                    if (node == null || (node.Id != siteId && node.EffectiveLocationId != siteId)) continue;
+                    point = new GlobalMapPoint { X = node.X, Y = node.Y };
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static Color ActivityColor(JObject task)
+        {
+            switch (task?["type"]?.ToString() ?? string.Empty)
+            {
+                case "distress_signal": return new Color(1f, 0.28f, 0.16f, 1f);
+                case "outpost_defense": return new Color(1f, 0.55f, 0.18f, 1f);
+                case "recon_expedition": return new Color(0.35f, 0.86f, 0.92f, 1f);
+                case "resource_expedition": return new Color(0.48f, 0.88f, 0.34f, 1f);
+                case "assault_diversion": return new Color(0.96f, 0.38f, 0.24f, 1f);
+                case "escort_caravan": return new Color(0.96f, 0.76f, 0.25f, 1f);
+                default: return new Color(0.82f, 0.82f, 0.68f, 1f);
+            }
+        }
+
+        private static string ActivityKindLabel(string kind)
+        {
+            switch (kind ?? string.Empty)
+            {
+                case "escort_caravan": return "Караван";
+                case "distress_signal": return "Сигнал бедствия";
+                case "recon_expedition": return "Разведка";
+                case "resource_expedition": return "Вылазка за ресурсами";
+                case "outpost_defense": return "Защита аванпоста";
+                case "assault_diversion": return "Штурм / диверсия";
+                default: return "Активность";
+            }
+        }
+
+        private static string EscapeOverlayText(string value)
+        {
+            return (value ?? string.Empty).Replace("&", "&amp;")
+                .Replace("<", "&lt;").Replace(">", "&gt;");
+        }
+
+        private string BuildWorldChangeKey()
+        {
+            JArray aftermaths = _wasteland?["worldPulse"]?["aftermaths"] as JArray;
+            if (aftermaths == null || aftermaths.Count == 0) return string.Empty;
+            var parts = new List<string>();
+            foreach (JToken token in aftermaths)
+            {
+                JObject region = token as JObject;
+                JObject aftermath = region?["aftermath"] as JObject;
+                string siteId = region?["siteId"]?.ToString()
+                    ?? aftermath?["siteId"]?.ToString() ?? string.Empty;
+                string title = aftermath?["title"]?.ToString() ?? string.Empty;
+                string outcome = aftermath?["outcome"]?.ToString() ?? string.Empty;
+                string revision = aftermath?["revision"]?.ToString()
+                    ?? aftermath?["updatedAt"]?.ToString() ?? string.Empty;
+                if (!string.IsNullOrEmpty(siteId) || !string.IsNullOrEmpty(title))
+                    parts.Add(siteId + ":" + outcome + ":" + revision + ":" + title);
+            }
+            return string.Join("|", parts);
+        }
+
+        private string BuildWorldChangeSummary()
+        {
+            JArray aftermaths = _wasteland?["worldPulse"]?["aftermaths"] as JArray;
+            if (aftermaths == null || aftermaths.Count == 0) return string.Empty;
+            if (aftermaths.Count == 1)
+            {
+                string title = aftermaths[0]?["aftermath"]?["title"]?.ToString() ?? string.Empty;
+                return string.IsNullOrEmpty(title) ? "Мир изменился" : "Мир изменился · " + title;
+            }
+            return "Мир изменился: " + aftermaths.Count + " события";
+        }
+
+        private string BuildSelectedRiskLabel()
+        {
+            return _selectedPoint == null
+                ? "неизвестно"
+                : RiskLabel(DangerAtPoint(_selectedPoint, _selectedDynamic));
+        }
+
+        private float DangerAtPoint(GlobalMapPoint point, DynamicTarget target)
+        {
+            if (point == null) return 0f;
+            float danger = Float(target?.Data?["danger"], 0f);
+            if (_map?.Grid != null)
+            {
+                int cx = Mathf.Clamp(Mathf.FloorToInt(point.X / _map.Grid.CellPoints), 0,
+                    _map.Grid.Cols - 1);
+                int cy = Mathf.Clamp(Mathf.FloorToInt(point.Y / _map.Grid.CellPoints), 0,
+                    _map.Grid.Rows - 1);
+                if (_map.Cells.TryGetValue(cx + ":" + cy, out GlobalMapCell cell) && cell != null)
+                {
+                    danger = Mathf.Max(danger, Mathf.Clamp(
+                        Mathf.Max(cell.Difficulty, cell.Danger) * 22f, 0f, 78f));
+                    string pvp = (cell.PvpMode ?? string.Empty).ToLowerInvariant();
+                    if (pvp.Contains("fulldrop")) danger = Mathf.Max(danger, 72f);
+                    else if (pvp == "pvp") danger = Mathf.Max(danger, 46f);
+                }
+            }
+            foreach (JToken token in _wasteland?["threatZones"] as JArray ?? new JArray())
+            {
+                JObject row = token as JObject;
+                if (row == null) continue;
+                bool hostileFaction = WorldPartyHostile(row["faction"]?.ToString());
+                float chance = Float(row["chanceBonus"], 0f);
+                float difficulty = Float(row["difficultyBonus"], 0f);
+                if (!ThreatZoneShouldDisplay(row["kind"]?.ToString(), chance, difficulty,
+                    hostileFaction)) continue;
+                GlobalMapPoint threatPoint = ReadPoint(row, "x", "y", null);
+                if (Distance(point, threatPoint) <= ThreatRadiusPoints(row))
+                {
+                    float inferred = Mathf.Clamp(32f + Mathf.Max(0f, difficulty) * 58f
+                        + Mathf.Max(0f, chance) * 90f, 32f, 96f);
+                    danger = Mathf.Max(danger, Float(row["danger"], inferred));
+                }
+            }
+            foreach (JToken token in _wasteland?["worldZones"] as JArray ?? new JArray())
+            {
+                JObject row = token as JObject;
+                if (row == null || !string.Equals(row["status"]?.ToString(), "active",
+                    StringComparison.OrdinalIgnoreCase)) continue;
+                GlobalMapPoint zonePoint = ReadPoint(row, "x", "y", null);
+                float radius = Mathf.Clamp(Float(row["radius"], 7f), 2f, 40f);
+                if (Distance(point, zonePoint) <= radius)
+                    danger = Mathf.Max(danger, Float(row["danger"], 68f));
+            }
+            return danger;
+        }
+
+        public static string RiskLabel(float danger)
+        {
+            if (danger >= 85f) return "крайний";
+            if (danger >= 60f) return "высокий";
+            if (danger >= 30f) return "средний";
+            return "низкий";
+        }
+
+        public static bool ThreatZoneShouldDisplay(string kind, float chanceBonus,
+                                                   float difficultyBonus, bool hostileFaction)
+        {
+            string value = (kind ?? string.Empty).Trim().ToLowerInvariant();
+            if (value == "caravan" || value == "patrol" || value == "trader"
+                || value == "merchant" || value == "escort")
+                return false;
+            if (value == "resource" || value == "production" || value == "outpost"
+                || value == "pointofinterest" || value == "settlement")
+                return false;
+            if (value == "monster" || value == "raider" || value == "hostile"
+                || value == "predator" || value == "ambush" || value == "battle"
+                || value == "beast" || value == "deathclaw" || value == "mutant"
+                || value == "anomaly")
+                return true;
+            return hostileFaction || difficultyBonus >= 0.25f || chanceBonus >= 0.08f;
+        }
+
+        private float ThreatRadiusPoints(JObject row)
+        {
+            float direct = Float(row?["radius"], 0f);
+            if (direct > 0f) return Mathf.Clamp(direct, 2f, 80f);
+            float radiusKm = Float(row?["radiusKm"], 0f);
+            if (radiusKm <= 0f || _map?.Grid == null) return 10f;
+            return Mathf.Clamp(radiusKm / Mathf.Max(0.001f, _map.Grid.CellKm)
+                * _map.Grid.CellPoints, 2f, 80f);
+        }
+
+        public static Color ThreatZoneColor(float difficultyBonus, float chanceBonus)
+        {
+            float severity = Mathf.Max(Mathf.Max(0f, difficultyBonus), Mathf.Max(0f, chanceBonus) * 4f);
+            if (severity >= 0.75f) return new Color(0.93f, 0.20f, 0.13f, 0.38f);
+            if (severity >= 0.35f) return new Color(1f, 0.46f, 0.12f, 0.32f);
+            return new Color(0.96f, 0.67f, 0.18f, 0.26f);
+        }
+
+        private void PulseActivityHighlights()
+        {
+            for (int i = 0; i < _activityHighlightVisuals.Count; i++)
+            {
+                ActivityHighlightVisual state = _activityHighlightVisuals[i];
+                if (state == null || state.Visual == null || !state.Visual.activeSelf) continue;
+                float pulse = 1f + Mathf.Sin(Time.unscaledTime * 4.2f + state.Phase) * 0.09f;
+                MapDetailTier tier = CurrentDetailTier();
+                float detailScale = tier == MapDetailTier.Far ? 1.28f
+                                  : (tier == MapDetailTier.Medium ? 1.12f : 1f);
+                state.Visual.transform.localScale = state.BaseScale * pulse * detailScale;
+                state.Visual.transform.Rotate(0f, Time.unscaledDeltaTime * 24f, 0f, Space.Self);
+            }
+        }
+
+        private void PulseMapFocus()
+        {
+            MapDetailTier tier = CurrentDetailTier();
+            float playerDetailScale = tier == MapDetailTier.Far ? 1.75f
+                                    : (tier == MapDetailTier.Medium ? 1.35f : 1.08f);
+            float selectionDetailScale = tier == MapDetailTier.Far ? 1.5f
+                                       : (tier == MapDetailTier.Medium ? 1.25f : 1f);
+            if (_playerMarker != null && _playerMarker.activeInHierarchy)
+            {
+                float breath = 1f + Mathf.Sin(Time.unscaledTime * 2.4f) * 0.025f;
+                _playerMarker.transform.localScale = _playerMarkerBaseScale
+                    * playerDetailScale * breath;
+                _playerMarker.transform.localRotation = _playerMarkerBaseRotation;
+            }
+            if (_selectionMarker != null && _selectionMarker.activeInHierarchy)
+            {
+                float pulse = 1f + Mathf.Sin(Time.unscaledTime * 4.1f) * 0.075f;
+                _selectionMarker.transform.localScale = _selectionMarkerBaseScale
+                    * selectionDetailScale * pulse;
+                _selectionMarker.transform.localRotation = _selectionMarkerBaseRotation
+                    * Quaternion.Euler(0f, Time.unscaledTime * 26f, 0f);
+            }
+        }
+
+        private void ClearActivityHighlights()
+        {
+            if (_authoredScene != null)
+            {
+                for (int i = 0; i < _activityHighlightVisuals.Count; i++)
+                    if (_activityHighlightVisuals[i] != null)
+                        _authoredScene.ReleaseLivePrefab(_activityHighlightVisuals[i].Visual);
+            }
+            _activityHighlightVisuals.Clear();
+            _activityOverlayLabels.Clear();
+            _activityHighlightKey = string.Empty;
+        }
+
+
+        /// <summary>Select an activity site and immediately request its server route.</summary>
+        public bool RequestTravelToWorldSite(string siteId, Action<JObject> completed = null)
+        {
+            if (!IsActive || _arrivalPending || _locationEntryPending
+                || _pendingContact != null || string.IsNullOrEmpty(siteId)) return false;
+            if (!string.IsNullOrEmpty(AttachedPartyId))
+            {
+                StatusText = "Вы движетесь с отрядом. Сначала покиньте группу.";
+                return false;
+            }
+
+            DynamicTarget target = _dynamicTargets.Find(row => row != null
+                && (row.SiteId == siteId || (row.Kind == "site" && row.Id == siteId))
+                && row.CanEnter);
+            if (target != null)
+            {
+                _selectedDynamic = target;
+                _selectedNode = null;
+                _selectedPoint = CopyPoint(target.Point);
+            }
+            else
+            {
+                JObject site = null;
+                foreach (JToken token in _wasteland?["sites"] as JArray ?? new JArray())
+                {
+                    JObject row = token as JObject;
+                    if (row?["id"]?.ToString() == siteId) { site = row; break; }
+                }
+                string locationId = site?["locationId"]?.ToString() ?? siteId;
+                GlobalMapNode node = null;
+                if (_map != null && _map.Nodes != null)
+                foreach (GlobalMapNode row in _map.Nodes)
+                {
+                    if (row.Id == siteId || row.Id == locationId || row.EffectiveLocationId == locationId)
+                    {
+                        node = row;
+                        break;
+                    }
+                }
+                if (node == null)
+                {
+                    StatusText = "Точка активности пока не нанесена на карту.";
+                    return false;
+                }
+                _selectedDynamic = null;
+                _selectedNode = node;
+                _selectedPoint = new GlobalMapPoint { X = node.X, Y = node.Y };
+            }
+
+            RefreshMarkers();
+            if (Distance(_playerPoint, _selectedPoint) <= 0.35f)
+            {
+                StatusText = "Вы прибыли к цели. Входим в локацию...";
+                EnterCurrent();
+                completed?.Invoke(new JObject { ["ok"] = true, ["alreadyThere"] = true });
+                return true;
+            }
+            StartTravel(completed);
+            return true;
+        }
+
+        public bool PlayerAtWorldSite(string siteId)
+        {
+            if (string.IsNullOrEmpty(siteId)) return false;
+            JObject site = PlayerSiteData();
+            if (site == null) return false;
+            string id = site["id"]?.ToString() ?? string.Empty;
+            string locationId = site["locationId"]?.ToString() ?? string.Empty;
+            return id == siteId || locationId == siteId;
+        }
         public bool SubmitPendingContactDecision(bool enter)
         {
             if (_pendingContact == null || _contactDecisionPending || !IsLocalTravelLeader()) return false;
@@ -1596,7 +3427,8 @@ namespace RealmOfAshes.Game
 
         private void StartTravel(Action<JObject> completed = null)
         {
-            if (_travelActive || Socket == null) return;
+            if (Socket == null || _arrivalPending || _locationEntryPending
+                || _pendingContact != null) return;
             if (!string.IsNullOrEmpty(AttachedPartyId))
             {
                 StatusText = "Вы движетесь с отрядом. Сначала покиньте группу.";
@@ -1608,7 +3440,11 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            StatusText = "Сервер строит маршрут...";
+            bool rerouting = _travelActive;
+            int requestVersion = ++_routeRequestVersion;
+            _routeRequestPending = true;
+            _routeRequestWasReroute = rerouting;
+            StatusText = rerouting ? "Сервер меняет маршрут..." : "Сервер строит маршрут...";
             string locationId = _selectedDynamic != null && !string.IsNullOrEmpty(_selectedDynamic.LocationId)
                 ? _selectedDynamic.LocationId
                 : (_selectedNode != null ? _selectedNode.EffectiveLocationId : "wasteland");
@@ -1622,9 +3458,15 @@ namespace RealmOfAshes.Game
 
             Socket.EmitWithAck("globalTravelStart", payload, ack =>
             {
+                if (requestVersion != _routeRequestVersion) return;
+                _routeRequestPending = false;
+                _routeRequestWasReroute = false;
                 if (!AckOk(ack))
                 {
-                    StatusText = AckError(ack, "Сервер не подтвердил маршрут.");
+                    if (rerouting) RestoreTravelDestinationSelection();
+                    StatusText = AckError(ack, rerouting
+                        ? "Сервер не подтвердил изменение маршрута."
+                        : "Сервер не подтвердил маршрут.");
                     completed?.Invoke(ack);
                     return;
                 }
@@ -1632,14 +3474,29 @@ namespace RealmOfAshes.Game
                 ApplyTravel(ack);
                 _travelDescriptorGraceUntil = Time.realtimeSinceStartup + TravelDescriptorGraceSeconds;
                 RefreshMarkers();
-                StatusText = "Маршрут запущен.";
+                StatusText = rerouting ? "Маршрут изменён." : "Маршрут запущен.";
                 completed?.Invoke(ack);
             });
+        }
+
+        private void RestoreTravelDestinationSelection()
+        {
+            if (!_travelActive || _route == null || _route.Count == 0) return;
+            GlobalMapPoint destination = _route[_route.Count - 1];
+            _selectedPoint = CopyPoint(destination);
+            _selectedDynamic = NearestDynamicTarget(destination, DynamicSnapRadiusPoints);
+            _selectedNode = _selectedDynamic == null
+                ? NearestNode(destination, NodeSnapRadiusPoints)
+                : null;
+            RefreshMarkers();
         }
 
         private void CancelTravel()
         {
             if (!_travelActive || Socket == null || _arrivalPending) return;
+            _routeRequestVersion++;
+            _routeRequestPending = false;
+            _routeRequestWasReroute = false;
             StatusText = "Останавливаем маршрут...";
             Socket.EmitWithAck("globalTravelCancel", new { }, ack =>
             {
@@ -1660,7 +3517,7 @@ namespace RealmOfAshes.Game
 
         private void RequestArrival()
         {
-            if (Socket == null) return;
+            if (Socket == null || _arrivalPending || _locationEntryPending) return;
             _arrivalPending = true;
             StatusText = "Сервер подтверждает прибытие...";
             string targetLocationId = _selectedDynamic != null && !string.IsNullOrEmpty(_selectedDynamic.LocationId)
@@ -1716,19 +3573,35 @@ namespace RealmOfAshes.Game
 
         private void RequestLocationEntry(JObject arrival)
         {
-            if (arrival == null || Socket == null) return;
-            string locationId = arrival["targetLocationId"]?.ToString();
+            if (arrival == null || Socket == null || _locationEntryPending) return;
+            string locationId = arrival["targetLocationId"]?.ToString()
+                             ?? arrival["locationId"]?.ToString();
             if (string.IsNullOrEmpty(locationId))
             {
                 StatusText = "В ответе прибытия нет targetLocationId.";
                 return;
             }
 
+            _pendingEntry = true;
+            _pendingArrival = (JObject)arrival.DeepClone();
+            _pendingArrival["targetLocationId"] = locationId;
+            _pendingArrivalKey = PendingArrivalKey(_pendingArrival);
+            if (Socket.Phase != RoaSocketClient.ConnectionPhase.Joined)
+            {
+                StatusText = "Связь восстанавливается. Вход продолжится автоматически.";
+                _locationEntryRetryAt = Time.realtimeSinceStartup + 1f;
+                return;
+            }
+
             StatusText = "Вход в локацию " + locationId + "...";
+            _locationEntryPending = true;
+            _locationEntryAttempts++;
             var payload = new
             {
                 locationId,
-                roomId = arrival["encounterRoomId"]?.ToString() ?? string.Empty,
+                roomId = arrival["encounterRoomId"]?.ToString()
+                      ?? arrival["roomId"]?.ToString()
+                      ?? string.Empty,
                 encounterId = arrival["encounterId"]?.ToString() ?? string.Empty,
                 worldZoneId = arrival["worldZoneId"]?.ToString() ?? string.Empty,
                 partyId = arrival["partyId"]?.ToString() ?? string.Empty,
@@ -1736,14 +3609,37 @@ namespace RealmOfAshes.Game
                 worldPoint = arrival["worldPoint"],
                 pvpMode = arrival["pvpMode"]?.ToString() ?? string.Empty,
                 entryKey = arrival["entryKey"]?.ToString() ?? "entryFromWorld",
-                deviceType = "desktop",
-                controlType = "keyboard_mouse"
+                deviceType = Application.isMobilePlatform ? "mobile" : "desktop",
+                controlType = Application.isMobilePlatform ? "touch" : "keyboard_mouse"
             };
 
             Socket.EmitWithAck("changeLocation", payload, ack =>
             {
+                _locationEntryPending = false;
                 if (!AckOk(ack))
                 {
+                    if (LocationEntryFailureRetryable(ack))
+                    {
+                        if (ShouldAutoRetryLocationEntry(_locationEntryAttempts, true))
+                        {
+                            float delay = LocationEntryRetryDelay(_locationEntryAttempts);
+                            _locationEntryRetryAt = Time.realtimeSinceStartup + delay;
+                            StatusText = "Ответ входа потерян. Повторяем через "
+                                       + delay.ToString("0.#") + " с...";
+                        }
+                        else
+                        {
+                            _locationEntryRetryAt = float.PositiveInfinity;
+                            StatusText = "Вход не подтверждён. Нажмите «Войти», чтобы повторить.";
+                        }
+                        return;
+                    }
+
+                    _pendingEntry = false;
+                    _pendingArrival = null;
+                    _pendingArrivalKey = string.Empty;
+                    _locationEntryAttempts = 0;
+                    _locationEntryRetryAt = 0f;
                     StatusText = AckError(ack, "Сервер не разрешил вход в локацию.");
                     return;
                 }
@@ -1754,7 +3650,54 @@ namespace RealmOfAshes.Game
                     StatusText = "Не удалось разобрать ответ смены локации.";
                     return;
                 }
+                _pendingEntry = false;
+                _pendingArrival = null;
+                _pendingArrivalKey = string.Empty;
+                _locationEntryAttempts = 0;
+                _locationEntryRetryAt = 0f;
             });
+        }
+
+        private void ResumePendingLocationEntry()
+        {
+            if (!_pendingEntry || _pendingArrival == null || _locationEntryPending) return;
+            if (!ShouldAutoRetryLocationEntry(_locationEntryAttempts, true))
+            {
+                _locationEntryRetryAt = float.PositiveInfinity;
+                StatusText = "Вход не подтверждён. Нажмите «Войти», чтобы повторить.";
+                return;
+            }
+            RequestLocationEntry(_pendingArrival);
+        }
+
+        public static bool ShouldAutoRetryLocationEntry(int attempts, bool pendingEntry)
+        {
+            return pendingEntry && attempts < LocationEntryAutomaticAttempts;
+        }
+
+        public static float LocationEntryRetryDelay(int attempts)
+        {
+            int exponent = Mathf.Clamp(attempts - 1, 0, 3);
+            return LocationEntryRetryBaseSeconds * Mathf.Pow(2f, exponent);
+        }
+
+        public static bool LocationEntryFailureRetryable(JObject ack)
+        {
+            return ack == null
+                || TokenTrue(ack["timeout"])
+                || TokenTrue(ack["disconnected"])
+                || TokenTrue(ack["empty"]);
+        }
+
+        private static string PendingArrivalKey(JObject arrival)
+        {
+            if (arrival == null) return string.Empty;
+            return (arrival["targetLocationId"]?.ToString()
+                    ?? arrival["locationId"]?.ToString()
+                    ?? string.Empty)
+                 + "|" + (arrival["siteId"]?.ToString() ?? string.Empty)
+                 + "|" + (arrival["worldZoneId"]?.ToString() ?? string.Empty)
+                 + "|" + (arrival["expiresAt"]?.ToString() ?? string.Empty);
         }
 
         private void HandleTravelStarted(JObject payload)
@@ -1859,10 +3802,224 @@ namespace RealmOfAshes.Game
             return string.IsNullOrEmpty(key) ? "neutral" : key;
         }
 
+        private void UpdatePartyActors()
+        {
+            if (_partyActors == null || _partyActors.Count == 0 || _map?.Grid == null) return;
+            float sampleAgeSeconds = CurrentWastelandSampleAgeSeconds();
+            float gameDayRealMs = Float(_wasteland?["gameDayRealMs"], 60f * 60f * 1000f);
+            float correction = 1f - Mathf.Exp(-PartyPositionCorrectionRate
+                * Mathf.Max(0.001f, Time.unscaledDeltaTime));
+            bool selectedMoved = false;
+
+            foreach (PartyActorState state in _partyActors.Values)
+            {
+                if (state == null || state.Root == null || state.Snapshot == null) continue;
+                GlobalMapPoint desiredPoint = WorldPartyDisplayPoint(state.Snapshot,
+                    sampleAgeSeconds, _map.Grid.CellPoints, _map.Grid.CellKm, gameDayRealMs);
+                Vector3 desiredLocal = PointToWorld(desiredPoint.X, desiredPoint.Y, 0.45f);
+                Vector3 currentLocal = state.Root.transform.localPosition;
+                if (!state.HasRenderedPoint
+                    || Vector3.Distance(currentLocal, desiredLocal) > PartyPositionSnapWorldDistance)
+                    currentLocal = desiredLocal;
+                else
+                    currentLocal = Vector3.Lerp(currentLocal, desiredLocal, correction);
+                state.Root.transform.localPosition = currentLocal;
+                state.HasRenderedPoint = true;
+
+                GlobalMapPoint renderedPoint = WorldToPoint(state.Root.transform.position);
+                if (state.Target != null) state.Target.Point = renderedPoint;
+                if (state.Presentation != null) state.Presentation.Point = CopyPoint(renderedPoint);
+
+                GlobalMapPoint lookAheadPoint = WorldPartyDisplayPoint(state.Snapshot,
+                    sampleAgeSeconds + PartyFacingLookAheadSeconds,
+                    _map.Grid.CellPoints, _map.Grid.CellKm, gameDayRealMs);
+                Vector3 lookAheadLocal = PointToWorld(lookAheadPoint.X, lookAheadPoint.Y, 0.45f);
+                Vector3 motionLocal = lookAheadLocal - currentLocal;
+                if (motionLocal.sqrMagnitude <= 0.000001f)
+                    motionLocal = desiredLocal - currentLocal;
+                Vector3 motionWorld = _root != null
+                    ? _root.transform.TransformDirection(motionLocal) : motionLocal;
+                state.Actor?.SetMotion(motionWorld, motionLocal.sqrMagnitude > 0.000001f);
+
+                if (_selectedDynamic != null && state.Target != null
+                    && !string.IsNullOrEmpty(_selectedDynamic.PartyId)
+                    && _selectedDynamic.PartyId == state.Target.PartyId)
+                {
+                    _selectedDynamic = state.Target;
+                    if (!_travelActive)
+                    {
+                        _selectedPoint = CopyPoint(renderedPoint);
+                        selectedMoved = true;
+                    }
+                }
+            }
+
+            if (selectedMoved && _selectionMarker != null)
+                _selectionMarker.transform.localPosition = PointToWorld(
+                    _selectedPoint.X, _selectedPoint.Y, 0.13f);
+        }
+
+        private void UpdateStrategicActorPresentation()
+        {
+            MapDetailTier mapTier = CurrentDetailTier();
+            bool mobile = Application.isMobilePlatform;
+            Vector3 observer = _cameraAnchor != null
+                ? _cameraAnchor.transform.position
+                : (_root != null ? _root.transform.position : Vector3.zero);
+
+            if (_playerActor != null && _playerMarker != null)
+            {
+                RoaActorPresentationTier playerTier = StrategicActorPresentationTier(
+                    mapTier, true, false, _playerMarker.transform.position, observer,
+                    mobile, _playerActor.PresentationTier);
+                _playerActor.SetPresentationLod(playerTier);
+            }
+
+            if (_partyActors == null) return;
+            foreach (PartyActorState state in _partyActors.Values)
+            {
+                if (state?.Actor == null || state.Root == null) continue;
+                bool markerVisible = state.Presentation == null
+                    || state.Presentation.TargetVisible;
+                bool selected = _selectedDynamic != null && state.Target != null
+                    && !string.IsNullOrEmpty(state.Target.PartyId)
+                    && state.Target.PartyId == _selectedDynamic.PartyId;
+                RoaActorPresentationTier tier = StrategicActorPresentationTier(
+                    mapTier, markerVisible, selected, state.Root.transform.position,
+                    observer, mobile, state.Actor.PresentationTier);
+                state.Actor.SetPresentationLod(tier);
+            }
+        }
+
+        private float CurrentWastelandSampleAgeSeconds()
+        {
+            if (_wastelandAppliedRealtime < 0f
+                || Number(_wasteland?["sampledAt"], 0d) <= 0d) return 0f;
+            double ageMs = Math.Max(0d, _wastelandSampleAgeMs
+                + Math.Max(0f, Time.realtimeSinceStartup - _wastelandAppliedRealtime) * 1000d);
+            return Mathf.Min(WastelandMaxExtrapolationSeconds, (float)(ageMs / 1000d));
+        }
+
+        public static GlobalMapPoint WorldPartyDisplayPoint(JObject party,
+                                                             float sampleAgeSeconds,
+                                                             float cellPoints,
+                                                             float cellKm,
+                                                             float gameDayRealMs)
+        {
+            GlobalMapPoint basePoint = ReadPoint(party, "x", "y", null);
+            if (party == null || TokenTrue(party["destroyed"])) return basePoint;
+            string state = (party["state"]?.ToString() ?? string.Empty).Trim().ToLowerInvariant();
+            if (state == "engaged" || state == "onsite" || state == "staging"
+                || state == "recovering" || state == "forming" || state == "destroyed")
+                return basePoint;
+
+            List<GlobalMapPoint> route = ReadRoute(party["movementRoutePoints"] as JArray);
+            for (int i = route.Count - 1; i > 0; i--)
+                if (Distance(route[i - 1], route[i]) <= 0.01f) route.RemoveAt(i);
+            if (route.Count == 0) route.Add(CopyPoint(basePoint));
+            else if (Distance(basePoint, route[0]) > 0.05f) route.Insert(0, CopyPoint(basePoint));
+            else route[0] = CopyPoint(basePoint);
+
+            float routeDistance = 0f;
+            for (int i = 1; i < route.Count; i++)
+                routeDistance += Distance(route[i - 1], route[i]);
+            float speedKmh = Mathf.Max(0f, Float(party["speedKmh"], 0f));
+            float pointKm = Mathf.Max(0.001f, cellKm / Mathf.Max(0.001f, cellPoints));
+            if (routeDistance <= 0.001f || speedKmh <= 0f) return basePoint;
+
+            float safeAge = Mathf.Clamp(sampleAgeSeconds, 0f,
+                WastelandMaxExtrapolationSeconds);
+            float worldHours = safeAge * 1000f
+                / Mathf.Max(60000f, gameDayRealMs) * 24f;
+            float travelPoints = Mathf.Min(routeDistance, speedKmh * worldHours / pointKm);
+            return PointAtRouteProgress(route, travelPoints / routeDistance);
+        }
+
         private void RefreshMarkers()
         {
             if (_playerMarker != null) _playerMarker.transform.localPosition = PointToWorld(_playerPoint.X, _playerPoint.Y, 0.62f);
             if (_selectionMarker != null) _selectionMarker.transform.localPosition = PointToWorld(_selectedPoint.X, _selectedPoint.Y, 0.13f);
+        }
+
+        private Vector3 NodeLabelWorld(GlobalMapNode node, float height)
+        {
+            if (_authoredScene != null && node != null
+                && _authoredScene.TryGetNode(node.Id, out RoaGlobalMapNodeAnchor anchor)
+                && anchor != null)
+                return anchor.transform.position + Vector3.up * height;
+            Vector3 local = node != null ? PointToWorld(node.X, node.Y, height) : Vector3.up * height;
+            return _root != null ? _root.transform.TransformPoint(local) : local;
+        }
+
+        private void ConfigureMapLighting()
+        {
+            if (!_mapLightingSaved)
+            {
+                _mapLightingSaved = true;
+                _savedAmbientMode = RenderSettings.ambientMode;
+                _savedAmbientSky = RenderSettings.ambientSkyColor;
+                _savedAmbientEquator = RenderSettings.ambientEquatorColor;
+                _savedAmbientGround = RenderSettings.ambientGroundColor;
+                _savedAmbientIntensity = RenderSettings.ambientIntensity;
+                _savedReflectionIntensity = RenderSettings.reflectionIntensity;
+                _savedFog = RenderSettings.fog;
+                _savedFogMode = RenderSettings.fogMode;
+                _savedFogColor = RenderSettings.fogColor;
+                _savedFogStartDistance = RenderSettings.fogStartDistance;
+                _savedFogEndDistance = RenderSettings.fogEndDistance;
+                _savedFogDensity = RenderSettings.fogDensity;
+                _savedSun = RenderSettings.sun;
+            }
+
+            // Local scene lighting is disabled while travelling, so the authored
+            // strategic map owns a warm, readable light setup of its own. Linear
+            // distance fog merges the authored table edge into the charcoal void;
+            // it never obscures the playable centre or replaces authored geometry.
+            float span = Mathf.Max(MapWidthPoints, MapHeightPoints) * MapWorldScale;
+            StrategicVisualProfile profile = StrategicProfile(span);
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = profile.AmbientSky;
+            RenderSettings.ambientEquatorColor = profile.AmbientEquator;
+            RenderSettings.ambientGroundColor = profile.AmbientGround;
+            RenderSettings.ambientIntensity = profile.AmbientIntensity;
+            RenderSettings.reflectionIntensity = profile.ReflectionIntensity;
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = profile.FogColor;
+            RenderSettings.fogStartDistance = profile.FogStart;
+            RenderSettings.fogEndDistance = profile.FogEnd;
+
+            if (_authoredScene != null)
+            {
+                Light[] authoredLights = _authoredScene.GetComponentsInChildren<Light>(true);
+                for (int i = 0; i < authoredLights.Length; i++)
+                {
+                    Light candidate = authoredLights[i];
+                    if (candidate == null || candidate.type != LightType.Directional) continue;
+                    candidate.enabled = true;
+                    RenderSettings.sun = candidate;
+                    break;
+                }
+            }
+        }
+
+        private void RestoreMapLighting()
+        {
+            if (!_mapLightingSaved) return;
+            RenderSettings.ambientMode = _savedAmbientMode;
+            RenderSettings.ambientSkyColor = _savedAmbientSky;
+            RenderSettings.ambientEquatorColor = _savedAmbientEquator;
+            RenderSettings.ambientGroundColor = _savedAmbientGround;
+            RenderSettings.ambientIntensity = _savedAmbientIntensity;
+            RenderSettings.reflectionIntensity = _savedReflectionIntensity;
+            RenderSettings.fog = _savedFog;
+            RenderSettings.fogMode = _savedFogMode;
+            RenderSettings.fogColor = _savedFogColor;
+            RenderSettings.fogStartDistance = _savedFogStartDistance;
+            RenderSettings.fogEndDistance = _savedFogEndDistance;
+            RenderSettings.fogDensity = _savedFogDensity;
+            RenderSettings.sun = _savedSun;
+            _mapLightingSaved = false;
         }
 
         private void ConfigureCamera()
@@ -1876,18 +4033,35 @@ namespace RealmOfAshes.Game
                 _savedMaxDistance = CameraRig.MaxDistance;
                 _savedPitch = CameraRig.PitchDeg;
                 _savedYaw = CameraRig.YawDeg;
+                _savedFieldOfView = CameraRig.CurrentFieldOfView;
+                Camera view = CameraRig.GetComponent<Camera>();
+                if (view != null)
+                {
+                    _savedCameraClearFlags = view.clearFlags;
+                    _savedCameraBackground = view.backgroundColor;
+                }
             }
 
             CameraRig.ZoomPersistenceEnabled = false;
+            CameraRig.SetFieldOfView(RoaCameraRig.StrategicFieldOfView);
+            Camera mapCamera = CameraRig.GetComponent<Camera>();
+            if (mapCamera != null)
+            {
+                float mapSpan = Mathf.Max(MapWidthPoints, MapHeightPoints) * MapWorldScale;
+                StrategicVisualProfile profile = StrategicProfile(mapSpan);
+                mapCamera.clearFlags = CameraClearFlags.SolidColor;
+                mapCamera.backgroundColor = profile.CameraBackground;
+            }
 
             float span = Mathf.Max(MapWidthPoints, MapHeightPoints) * MapWorldScale;
             CameraRig.Target = _cameraAnchor.transform;
-            CameraRig.PitchDeg = 68f;
-            CameraRig.YawDeg = 0f;
-            CameraRig.MinDistance = Mathf.Max(28f, span * 0.45f);
-            CameraRig.MaxDistance = Mathf.Max(150f, span * 1.8f);
-            CameraRig.Distance = Mathf.Clamp(span * 1.12f, CameraRig.MinDistance, CameraRig.MaxDistance);
+            CameraRig.PitchDeg = StrategicDefaultPitchDeg;
+            CameraRig.YawDeg = StrategicDefaultYawDeg;
+            CameraRig.MinDistance = StrategicMinimumCameraDistance(span);
+            CameraRig.MaxDistance = StrategicMaximumCameraDistance(span);
+            CameraRig.Distance = Mathf.Clamp(span * 1.05f, CameraRig.MinDistance, CameraRig.MaxDistance);
             CameraRig.SnapToTarget();
+            ApplyDynamicPresentation(true);
         }
 
         private void RestoreCamera()
@@ -1898,36 +4072,51 @@ namespace RealmOfAshes.Game
             CameraRig.MaxDistance = _savedMaxDistance;
             CameraRig.PitchDeg = _savedPitch;
             CameraRig.YawDeg = _savedYaw;
+            CameraRig.SetFieldOfView(_savedFieldOfView);
+            Camera view = CameraRig.GetComponent<Camera>();
+            if (view != null)
+            {
+                view.clearFlags = _savedCameraClearFlags;
+                view.backgroundColor = _savedCameraBackground;
+            }
             CameraRig.ZoomPersistenceEnabled = true;
             _cameraSaved = false;
         }
 
         private void ClearVisuals()
         {
+            ClearPartyActors();
+            if (_authoredScene != null) _authoredScene.ClearDynamicContent();
             if (_root != null)
             {
                 _root.SetActive(false);
-                Destroy(_root);
             }
+            if (_authoredUnityScene.IsValid() && _authoredUnityScene.isLoaded)
+                _authoredSceneUnload = SceneManager.UnloadSceneAsync(_authoredUnityScene);
+            _authoredUnityScene = default;
+            _authoredScene = null;
             _root = null;
             _playerMarker = null;
+            _playerActor = null;
             _selectionMarker = null;
             _cameraAnchor = null;
             _terrainCollider = null;
-            _routeLine = null;
+            _routeVisuals.Clear();
+            _routeVisualBaseScales.Clear();
+            _routeVisualProgress.Clear();
+            _routeVisualShadows.Clear();
+            _appliedRouteProgress = -1f;
+            _dynamicPresentationVisuals.Clear();
+            _appliedDetailTier = (MapDetailTier)(-1);
             _dynamicRoot = null;
-            _dynamicTargets.Clear();
+            _dynamicTargets?.Clear();
+            ClearHoverPreview();
+            _routeVisuals?.Clear();
+            _activityHighlightVisuals?.Clear();
+            _activityOverlayLabels?.Clear();
+            _activityHighlightKey = string.Empty;
 
-            if (_terrainTexture != null) Destroy(_terrainTexture);
-            _terrainTexture = null;
-            foreach (Material material in _materials) if (material != null) Destroy(material);
-            _materials.Clear();
-            foreach (Material material in _dynamicMaterials) if (material != null) Destroy(material);
-            _dynamicMaterials.Clear();
-            foreach (Mesh mesh in _dynamicMeshes) if (mesh != null) Destroy(mesh);
-            _dynamicMeshes.Clear();
-            _dynamicMaterialCache.Clear();
-            _territoryByCell.Clear();
+            _territoryByCell?.Clear();
             _factionSummary = string.Empty;
             TerritoryCellCount = 0;
             TerritoryBorderCount = 0;
@@ -1935,62 +4124,137 @@ namespace RealmOfAshes.Game
             SettlementModelCount = 0;
             SiteMarkerCount = 0;
             SettlementStatusCount = 0;
-            SiteMeshVertexCount = 0;
-            SiteMeshSubMeshCount = 0;
+            ThreatMarkerCount = 0;
         }
 
-        private void ApplyMaterial(GameObject target, Color color)
+        private GameObject InstantiateLivePrefab(RoaGlobalMapPrefabKind kind, string objectName,
+                                                 Transform parent = null)
         {
-            MeshRenderer renderer = target != null ? target.GetComponent<MeshRenderer>() : null;
-            if (renderer != null) renderer.sharedMaterial = CreateMaterial(color);
+            if (_authoredScene == null || _dynamicRoot == null) return null;
+            GameObject instance = _authoredScene.InstantiateLivePrefab(kind,
+                parent != null ? parent : _dynamicRoot.transform);
+            if (instance == null) return null;
+            instance.name = objectName;
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            return instance;
         }
 
-        private void ApplyDynamicMaterial(GameObject target, Color color)
+        private void EnsurePlayerActor()
         {
-            MeshRenderer renderer = target != null ? target.GetComponent<MeshRenderer>() : null;
-            if (renderer != null) renderer.sharedMaterial = CreateDynamicMaterial(color);
-        }
-
-        private Material CreateMaterial(Color color)
-        {
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
-                         ?? Shader.Find("Universal Render Pipeline/Lit")
-                         ?? Shader.Find("Standard");
-            var material = new Material(shader) { color = color };
-            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
-            _materials.Add(material);
-            return material;
-        }
-
-        private Material CreateDynamicMaterial(Color color)
-        {
-            Color32 value = color;
-            string key = value.r + ":" + value.g + ":" + value.b + ":" + value.a;
-            Material cached;
-            if (_dynamicMaterialCache.TryGetValue(key, out cached) && cached != null) return cached;
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
-                         ?? Shader.Find("Universal Render Pipeline/Lit")
-                         ?? Shader.Find("Standard");
-            var material = new Material(shader) { color = color };
-            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
-            if (color.a < 0.999f)
+            if (_playerMarker == null) return;
+            if (_playerActor == null || _playerActor.gameObject != _playerMarker)
             {
-                material.renderQueue = 3000;
-                if (material.HasProperty("_Surface")) material.SetFloat("_Surface", 1f);
-                if (material.HasProperty("_SrcBlend"))
-                    material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                if (material.HasProperty("_DstBlend"))
-                    material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                if (material.HasProperty("_ZWrite")) material.SetFloat("_ZWrite", 0f);
-                if (material.HasProperty("_Cull")) material.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
-                material.SetOverrideTag("RenderType", "Transparent");
-                material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-                material.DisableKeyword("_ALPHATEST_ON");
+                _playerActor = _playerMarker.GetComponent<RoaGlobalMapActorView>();
+                if (_playerActor == null)
+                    _playerActor = _playerMarker.AddComponent<RoaGlobalMapActorView>();
             }
-            _dynamicMaterials.Add(material);
-            _dynamicMaterialCache[key] = material;
-            return material;
+
+            JObject self = Socket?.Session?.Self;
+            _ = _playerActor.ConfigurePlayer(BaseUrl, self ?? new JObject());
+        }
+
+        private PartyActorState EnsurePartyActor(string id)
+        {
+            if (string.IsNullOrEmpty(id) || _authoredScene == null || _dynamicRoot == null)
+                return null;
+            if (_partyActors.TryGetValue(id, out PartyActorState current)
+                && current != null && current.Root != null)
+                return current;
+
+            GameObject prefab = _authoredScene.PrefabFor(RoaGlobalMapPrefabKind.Party);
+            if (prefab == null) return null;
+            GameObject root = Instantiate(prefab, _dynamicRoot.transform);
+            root.name = "WorldParty:" + id;
+            root.transform.localPosition = Vector3.zero;
+            root.transform.localRotation = Quaternion.identity;
+            root.SetActive(true);
+            RoaGlobalMapActorView actor = root.GetComponent<RoaGlobalMapActorView>();
+            if (actor == null) actor = root.AddComponent<RoaGlobalMapActorView>();
+
+            var state = new PartyActorState
+            {
+                Id = id,
+                Root = root,
+                Actor = actor,
+                BaseScale = root.transform.localScale
+            };
+            _partyActors[id] = state;
+            return state;
+        }
+
+        private void IndexExistingPartyActors()
+        {
+            if (_dynamicRoot == null || _partyActors == null || _authoredScene == null) return;
+            GameObject prefab = _authoredScene.PrefabFor(RoaGlobalMapPrefabKind.Party);
+            Vector3 authoredScale = prefab != null ? prefab.transform.localScale : Vector3.one;
+            Transform content = _dynamicRoot.transform;
+            for (int i = 0; i < content.childCount; i++)
+            {
+                Transform child = content.GetChild(i);
+                if (child == null || !child.name.StartsWith("WorldParty:",
+                    StringComparison.Ordinal)) continue;
+                RoaGlobalMapActorView actor = child.GetComponent<RoaGlobalMapActorView>();
+                if (actor == null) continue;
+                string id = child.name.Substring("WorldParty:".Length);
+                if (string.IsNullOrEmpty(id)) continue;
+                if (_partyActors.TryGetValue(id, out PartyActorState indexed)
+                    && indexed != null && indexed.Root != null)
+                {
+                    if (indexed.Root != child.gameObject) Destroy(child.gameObject);
+                    continue;
+                }
+                _partyActors[id] = new PartyActorState
+                {
+                    Id = id,
+                    Root = child.gameObject,
+                    Actor = actor,
+                    BaseScale = authoredScale,
+                    HasRenderedPoint = true
+                };
+            }
+        }
+
+        private void RemoveMissingPartyActors()
+        {
+            if (_partyActors.Count == 0) return;
+            var removed = new List<string>();
+            foreach (KeyValuePair<string, PartyActorState> pair in _partyActors)
+            {
+                if (_seenPartyActors.Contains(pair.Key)) continue;
+                if (pair.Value?.Root != null) Destroy(pair.Value.Root);
+                removed.Add(pair.Key);
+            }
+            for (int i = 0; i < removed.Count; i++) _partyActors.Remove(removed[i]);
+        }
+
+        private void ClearPartyActors()
+        {
+            if (_partyActors != null)
+            {
+                foreach (PartyActorState state in _partyActors.Values)
+                    if (state?.Root != null) Destroy(state.Root);
+                _partyActors.Clear();
+            }
+            _seenPartyActors?.Clear();
+        }
+
+        private void TintLivePrefab(GameObject target, Color color, string childNameFilter = null)
+        {
+            if (target == null) return;
+            Renderer[] renderers = target.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer renderer = renderers[i];
+                if (renderer == null) continue;
+                if (!string.IsNullOrEmpty(childNameFilter)
+                    && renderer.gameObject.name.IndexOf(childNameFilter, StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+                _colorBlock.Clear();
+                _colorBlock.SetColor(BaseColorProperty, color);
+                _colorBlock.SetColor(ColorProperty, color);
+                renderer.SetPropertyBlock(_colorBlock);
+            }
         }
 
         private float MapWidthPoints { get { return _map.Grid.Cols * _map.Grid.CellPoints; } }
@@ -2005,10 +4269,11 @@ namespace RealmOfAshes.Game
 
         private GlobalMapPoint WorldToPoint(Vector3 world)
         {
+            Vector3 local = _root != null ? _root.transform.InverseTransformPoint(world) : world;
             return new GlobalMapPoint
             {
-                X = Mathf.Clamp(world.x / MapWorldScale + MapWidthPoints * 0.5f, 0f, MapWidthPoints),
-                Y = Mathf.Clamp(MapHeightPoints * 0.5f - world.z / MapWorldScale, 0f, MapHeightPoints)
+                X = Mathf.Clamp(local.x / MapWorldScale + MapWidthPoints * 0.5f, 0f, MapWidthPoints),
+                Y = Mathf.Clamp(MapHeightPoints * 0.5f - local.z / MapWorldScale, 0f, MapHeightPoints)
             };
         }
 
@@ -2027,7 +4292,8 @@ namespace RealmOfAshes.Game
             return best;
         }
 
-        private DynamicTarget NearestDynamicTarget(GlobalMapPoint point, float radius)
+        private DynamicTarget NearestDynamicTarget(GlobalMapPoint point, float radius,
+                                                   bool respectPresentation = false)
         {
             DynamicTarget best = null;
             float bestDistance = radius;
@@ -2035,12 +4301,49 @@ namespace RealmOfAshes.Game
             {
                 if (target == null || target.Point == null) continue;
                 if (!target.CanEnter && !string.Equals(target.Kind, "site", StringComparison.OrdinalIgnoreCase)) continue;
+                if (respectPresentation && !TargetVisibleForSelection(target,
+                    CurrentDetailTier())) continue;
                 float distance = Distance(point, target.Point);
                 if (distance > bestDistance) continue;
+                if (best != null && Mathf.Abs(distance - bestDistance) <= 0.001f
+                    && target.Priority <= best.Priority) continue;
                 best = target;
                 bestDistance = distance;
             }
             return best;
+        }
+
+        private bool TargetVisibleForSelection(DynamicTarget target, MapDetailTier tier)
+        {
+            if (target == null || target.Point == null) return false;
+            if (!TargetKindVisibleAtTier(target.Kind, tier, _showEvents, _showParties))
+                return false;
+
+            MapPresentationProfile profile = PresentationProfile(tier);
+            float bucket = string.Equals(target.Kind, "site", StringComparison.OrdinalIgnoreCase)
+                ? profile.SiteBucket
+                : (string.Equals(target.Kind, "party", StringComparison.OrdinalIgnoreCase)
+                    ? profile.PartyBucket
+                    : (string.Equals(target.Kind, "zone", StringComparison.OrdinalIgnoreCase)
+                        ? profile.ThreatBucket : 0f));
+            return bucket <= 0f || PresentationTargetWinner(target, bucket);
+        }
+
+        private bool PresentationTargetWinner(DynamicTarget candidate, float bucketSize)
+        {
+            if (candidate == null || candidate.Point == null) return false;
+            string bucket = PresentationBucket(candidate.Point, bucketSize);
+            DynamicTarget winner = null;
+            for (int i = 0; i < _dynamicTargets.Count; i++)
+            {
+                DynamicTarget current = _dynamicTargets[i];
+                if (current == null || current.Point == null
+                    || !string.Equals(current.Kind, candidate.Kind,
+                        StringComparison.OrdinalIgnoreCase)
+                    || PresentationBucket(current.Point, bucketSize) != bucket) continue;
+                if (winner == null || current.Priority > winner.Priority) winner = current;
+            }
+            return ReferenceEquals(winner, candidate);
         }
 
         private static float PointSegmentDistance(GlobalMapPoint point, GlobalMapPoint from,
@@ -2195,9 +4498,30 @@ namespace RealmOfAshes.Game
                 : fallback;
         }
 
+        private static double Number(JToken token, double fallback)
+        {
+            if (token == null) return fallback;
+            if (token.Type == JTokenType.Integer || token.Type == JTokenType.Float)
+                return token.Value<double>();
+            double value;
+            return double.TryParse(token.ToString(), System.Globalization.NumberStyles.Float,
+                                   System.Globalization.CultureInfo.InvariantCulture, out value)
+                ? value
+                : fallback;
+        }
+
         private static bool AckOk(JObject ack)
         {
-            return ack != null && ack["ok"] != null && ack["ok"].ToObject<bool>();
+            return ack != null && TokenTrue(ack["ok"]);
+        }
+
+        private static bool TokenTrue(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null
+                || token.Type == JTokenType.Undefined) return false;
+            if (token.Type == JTokenType.Boolean) return token.Value<bool>();
+            bool value;
+            return bool.TryParse(token.ToString(), out value) && value;
         }
 
         private static string AckError(JObject ack, string fallback)
@@ -2219,25 +4543,6 @@ namespace RealmOfAshes.Game
                 ["selectedX"] = x,
                 ["selectedY"] = y
             };
-        }
-
-        private static Color CellColor(GlobalMapCell cell)
-        {
-            string texture = cell != null ? (cell.Texture ?? string.Empty).ToLowerInvariant() : string.Empty;
-            switch (texture)
-            {
-                case "water":
-                case "ocean":
-                case "sea":
-                case "lake": return Hex(0x254a52);
-                case "old_road": return Hex(0x675a3d);
-                case "salt_flat": return Hex(0xa89e70);
-                case "dry_lake": return Hex(0xb39a60);
-                case "rocky_hills": return Hex(0x6a6250);
-                case "scrap_field": return Hex(0x5c5142);
-                case "green_lowland": return Hex(0x405b32);
-                default: return Hex(0x7a5b32);
-            }
         }
 
         private static Color Hex(int rgb)
@@ -2290,15 +4595,22 @@ namespace RealmOfAshes.Game
                 if (string.IsNullOrEmpty(ownerLabel)) ownerLabel = FactionName(owner);
                 string type = SiteTypeLabel(site["type"]?.ToString());
                 string control = site["controlStateLabel"]?.ToString() ?? site["controlState"]?.ToString() ?? "стабильно";
-                float pressure = Float(site["controlPressure"], 0f);
-                lines.Add(type + " · владелец: " + ownerLabel + " · контроль: " + control
-                          + (Mathf.Abs(pressure) > 0.05f ? " (" + (pressure > 0f ? "+" : string.Empty) + pressure.ToString("0.#") + ")" : string.Empty));
-                lines.Add("Безопасность " + Mathf.RoundToInt(Float(site["security"], 0f))
-                          + " · процветание " + Mathf.RoundToInt(Float(site["prosperity"], 0f))
-                          + " · опасность " + Mathf.RoundToInt(Float(site["danger"], 0f)));
-                string market = site["marketStateLabel"]?.ToString();
-                if (string.IsNullOrEmpty(market)) market = site["marketState"]?.ToString();
-                if (!string.IsNullOrEmpty(market)) lines.Add("Рынок: " + market);
+                lines.Add(type + " · владелец: " + ownerLabel + " · контроль: " + control);
+                JObject liveRegion = site["liveRegion"] as JObject;
+                if (liveRegion != null)
+                {
+                    lines.Add("Снабжение: " + (liveRegion["supply"]?["label"]?.ToString() ?? "нет данных")
+                              + " · безопасность: " + (liveRegion["security"]?["label"]?.ToString() ?? "нет данных")
+                              + " · влияние: " + (liveRegion["influence"]?["label"]?.ToString() ?? "нет данных"));
+                    JObject aftermath = liveRegion["aftermath"] as JObject;
+                    if (aftermath != null)
+                    {
+                        string aftermathTitle = aftermath["title"]?.ToString();
+                        string aftermathText = aftermath["text"]?.ToString();
+                        if (!string.IsNullOrEmpty(aftermathTitle))
+                            lines.Add("Последствие: " + aftermathTitle + (string.IsNullOrEmpty(aftermathText) ? string.Empty : " — " + aftermathText));
+                    }
+                }
                 string work = site["workSummary"]?.ToString();
                 if (!string.IsNullOrEmpty(work)) lines.Add("Население и работа: " + work);
                 string need = site["productionNeedSummary"]?.ToString();
@@ -2447,6 +4759,74 @@ namespace RealmOfAshes.Game
             return value == "peaceful" || value == "pve" ? "мирная зона" : (value == "pvp" ? "PvP" : mode);
         }
 
+        public static string MarkerSemanticLabel(string targetKind, string subtype, bool hostile)
+        {
+            string kind = (targetKind ?? string.Empty).ToLowerInvariant();
+            string type = (subtype ?? string.Empty).ToLowerInvariant();
+            if (hostile) return "УГРОЗА";
+            if (kind == "party")
+            {
+                if (type == "caravan") return "КАРАВАН";
+                if (type == "patrol") return "ПАТРУЛЬ";
+                return "ОТРЯД";
+            }
+            if (kind == "zone") return "СОБЫТИЕ";
+            switch (type)
+            {
+                case "settlement": return "ПОСЕЛЕНИЕ";
+                case "outpost": return "АВАНПОСТ";
+                case "production": return "ПРОИЗВОДСТВО";
+                case "resource": return "РЕСУРС";
+                case "pointofinterest": return "ТОЧКА ИНТЕРЕСА";
+                default: return "ТОЧКА ПУСТОШИ";
+            }
+        }
+
+        public static Color MarkerSemanticColor(string targetKind, string subtype, bool hostile,
+                                                string controlState)
+        {
+            string state = (controlState ?? string.Empty).ToLowerInvariant();
+            if (hostile || state == "critical") return new Color(0.94f, 0.25f, 0.16f, 1f);
+            if (state == "contested" || state == "threatened")
+                return new Color(1f, 0.61f, 0.16f, 1f);
+            string kind = (targetKind ?? string.Empty).ToLowerInvariant();
+            string type = (subtype ?? string.Empty).ToLowerInvariant();
+            if (kind == "party")
+            {
+                if (type == "caravan") return new Color(0.48f, 0.86f, 0.48f, 1f);
+                if (type == "patrol") return new Color(0.42f, 0.75f, 0.94f, 1f);
+                return new Color(0.78f, 0.72f, 0.56f, 1f);
+            }
+            if (kind == "zone") return new Color(1f, 0.48f, 0.18f, 1f);
+            switch (type)
+            {
+                case "outpost": return new Color(0.94f, 0.65f, 0.24f, 1f);
+                case "production": return new Color(0.86f, 0.48f, 0.20f, 1f);
+                case "resource": return new Color(0.31f, 0.82f, 0.70f, 1f);
+                case "pointofinterest": return new Color(0.45f, 0.72f, 0.96f, 1f);
+                case "settlement": return new Color(0.94f, 0.82f, 0.47f, 1f);
+                default: return new Color(0.78f, 0.72f, 0.56f, 1f);
+            }
+        }
+
+        public static int MarkerPresentationPriority(string targetKind, string subtype,
+                                                     bool hostile, string controlState)
+        {
+            string state = (controlState ?? string.Empty).ToLowerInvariant();
+            if (hostile || state == "critical") return 125;
+            if (state == "contested" || state == "threatened") return 115;
+            string kind = (targetKind ?? string.Empty).ToLowerInvariant();
+            string type = (subtype ?? string.Empty).ToLowerInvariant();
+            if (kind == "zone") return 105;
+            if (kind == "party") return type == "patrol" ? 72 : (type == "caravan" ? 62 : 68);
+            if (type == "settlement") return 100;
+            if (type == "outpost") return 82;
+            if (type == "resource") return 64;
+            if (type == "production") return 58;
+            if (type == "pointofinterest") return 52;
+            return 45;
+        }
+
         private static string SiteTypeLabel(string type)
         {
             switch ((type ?? string.Empty).ToLowerInvariant())
@@ -2473,33 +4853,10 @@ namespace RealmOfAshes.Game
 
         private void OnGUI()
         {
+            if (!IsActive || !InputEnabled || CanvasDriven) return;
             RoaUiTheme.Apply();
-            if (!IsActive || !InputEnabled) return;
 
             Rect panel = InformationPanelRect(Screen.width, Screen.height);
-            Event guiEvent = Event.current;
-            bool pointerOverCanvas = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-            if (!_travelActive && !_cameraPanning && !pointerOverCanvas
-                && guiEvent != null && guiEvent.type == EventType.MouseDown && guiEvent.button == 0
-                && (CanvasDriven || MapPointCanSelect(guiEvent.mousePosition, Screen.width, Screen.height)))
-            {
-                SelectFromCursor();
-                guiEvent.Use();
-                // Web: клик по карте = выбор цели и сразу старт маршрута (selectGlobalMapDestination);
-                // pendingWorldDrop сбрасывается, только если новая точка дальше 0.35.
-                if (CanvasDriven && !PlayerAtSelection)
-                {
-                    _pendingEntry = false;
-                    if (_pendingContact == null && string.IsNullOrEmpty(AttachedPartyId)) StartTravel();
-                }
-            }
-
-            if (CanvasDriven)
-            {
-                DrawNodeLabels();
-                return;
-            }
-
             DrawPanelBackdrop(panel);
             GUILayout.BeginArea(panel, GUI.skin.box);
             GUILayout.Label("<b>Глобальная карта</b>", Rich());
@@ -2540,7 +4897,7 @@ namespace RealmOfAshes.Game
                 {
                     GUI.enabled = !_contactDecisionPending;
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Button("Войти", GUILayout.Height(32f))) ResolveTravelContact(true);
+                    if (GUILayout.Button("Вступить", GUILayout.Height(32f))) ResolveTravelContact(true);
                     if (!_pendingContact.Forced && GUILayout.Button("Обойти", GUILayout.Height(32f))) ResolveTravelContact(false);
                     GUILayout.EndHorizontal();
                     GUI.enabled = true;
@@ -2552,20 +4909,16 @@ namespace RealmOfAshes.Game
             {
                 float progress = Mathf.Clamp01((Time.realtimeSinceStartup - _travelStartedRealtime) / _travelDuration);
                 GUILayout.Label("Путь: " + Mathf.RoundToInt(progress * 100f) + "%");
-                if (!_arrivalPending && GUILayout.Button("Остановить маршрут")) CancelTravel();
+
             }
             else if (!string.IsNullOrEmpty(AttachedPartyId))
             {
                 GUILayout.Label("Вы следуете с отрядом " + AttachedPartyId + ". Собственный маршрут недоступен.", Wrapped());
                 if (GUILayout.Button("Покинуть отряд")) RequestLeaveAttachedWorldParty();
             }
-            else if (GUILayout.Button("Начать маршрут"))
-            {
-                StartTravel();
-            }
 
             GUILayout.Space(4f);
-            GUILayout.Label("ЛКМ — выбрать точку, колесо — масштаб, Esc — меню.");
+            GUILayout.Label("ЛКМ — маршрут, WASD — обзор, ПКМ — обзор (инв. Y), колесо — масштаб, зажать колесо — угол.");
             GUILayout.EndScrollView();
             GUILayout.EndArea();
 
@@ -2602,7 +4955,7 @@ namespace RealmOfAshes.Game
             var occupied = new List<Rect>();
             foreach (GlobalMapNode node in _map.Nodes)
             {
-                Vector3 screen = camera.WorldToScreenPoint(PointToWorld(node.X, node.Y, 0.9f));
+                Vector3 screen = camera.WorldToScreenPoint(NodeLabelWorld(node, 0.9f));
                 if (screen.z <= 0f) continue;
                 Vector2 point = new Vector2(screen.x, Screen.height - screen.y);
                 if (!TryResolveNodeLabelRect(point, panel, occupied,
@@ -2613,19 +4966,28 @@ namespace RealmOfAshes.Game
         }
 
         /// <summary>
-        /// Keeps world-space map labels inside the visible map viewport. 3D marker
-        /// names are drawn by IMGUI and therefore are not clipped by the sidebar;
-        /// without this guard they appear on top of route controls and summaries.
-        /// Nearby labels are shifted vertically or omitted instead of overlapping.
+        /// Keeps projected Canvas labels inside the visible map viewport and out
+        /// of the route sidebar. Higher-priority activity labels reserve their
+        /// rectangles first; nearby settlements are shifted or omitted.
         /// </summary>
         public static bool TryResolveNodeLabelRect(Vector2 point, Rect blocked,
                                                    IReadOnlyList<Rect> occupied,
                                                    int screenWidth, int screenHeight,
                                                    out Rect resolved)
         {
-            const float width = 140f;
-            const float height = 24f;
+            return TryResolveOverlayLabelRect(point, blocked, occupied, screenWidth,
+                                              screenHeight, 140f, 24f, out resolved);
+        }
+
+        public static bool TryResolveOverlayLabelRect(Vector2 point, Rect blocked,
+                                                      IReadOnlyList<Rect> occupied,
+                                                      int screenWidth, int screenHeight,
+                                                      float requestedWidth, float requestedHeight,
+                                                      out Rect resolved)
+        {
             const float margin = 5f;
+            float width = Mathf.Clamp(requestedWidth, 60f, Mathf.Max(60f, screenWidth - margin * 2f));
+            float height = Mathf.Clamp(requestedHeight, 20f, Mathf.Max(20f, screenHeight - margin * 2f));
             if (point.x < 0f || point.y < 0f || point.x > screenWidth || point.y > screenHeight
                 || blocked.Contains(point))
             {
@@ -2633,16 +4995,22 @@ namespace RealmOfAshes.Game
                 return false;
             }
 
-            float rightEdge = Mathf.Min(screenWidth - margin, blocked.xMin - margin);
+            float rightEdge = screenWidth - margin;
+            bool rightSidebar = blocked.width > 0f && blocked.height > 0f
+                && blocked.xMin >= screenWidth * 0.5f
+                && blocked.height >= screenHeight * 0.25f;
+            if (rightSidebar)
+                rightEdge = Mathf.Min(rightEdge, blocked.xMin - margin);
             if (rightEdge - margin < width)
             {
                 resolved = default;
                 return false;
             }
+
             float x = Mathf.Clamp(point.x - width * 0.5f, margin, rightEdge - width);
             float baseY = Mathf.Clamp(point.y - height * 0.5f, margin,
                                       Mathf.Max(margin, screenHeight - height - margin));
-            for (int attempt = 0; attempt < 5; attempt++)
+            for (int attempt = 0; attempt < 7; attempt++)
             {
                 int step = attempt == 0 ? 0 : (attempt + 1) / 2;
                 float direction = attempt == 0 || attempt % 2 == 1 ? -1f : 1f;

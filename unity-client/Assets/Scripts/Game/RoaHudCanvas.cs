@@ -1,4 +1,5 @@
 using System.Text;
+using RealmOfAshes.Net;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -6,8 +7,193 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>Single adaptive owner for the always-visible gameplay HUD.</summary>
-    public sealed class RoaHudCanvas : MonoBehaviour
+    public sealed partial class RoaHudCanvas : MonoBehaviour
     {
+        public enum ConnectionBannerKind
+        {
+            Hidden,
+            Interrupted,
+            Connecting,
+            Synchronizing,
+            Restored,
+            Rejected
+        }
+
+        public enum HudFocusMode
+        {
+            Exploration,
+            Activity,
+            Combat,
+            Detailed
+        }
+
+        public enum HudVisualLayer
+        {
+            Minimap,
+            WeaponConsole,
+            Quickbar
+        }
+
+        public static float FocusLayerAlpha(HudFocusMode focus, HudVisualLayer layer)
+        {
+            switch (layer)
+            {
+                case HudVisualLayer.Minimap:
+                    if (focus == HudFocusMode.Activity) return 0.74f;
+                    if (focus == HudFocusMode.Exploration) return 0.86f;
+                    return 1f;
+                case HudVisualLayer.WeaponConsole:
+                    if (focus == HudFocusMode.Activity) return 0.76f;
+                    if (focus == HudFocusMode.Exploration) return 0.82f;
+                    return 1f;
+                case HudVisualLayer.Quickbar:
+                    return focus == HudFocusMode.Detailed ? 0.92f : 1f;
+                default:
+                    return 1f;
+            }
+        }
+
+        public readonly struct ConnectionBannerState
+        {
+            public readonly ConnectionBannerKind Kind;
+            public readonly string Title;
+            public readonly string Detail;
+
+            public ConnectionBannerState(ConnectionBannerKind kind, string title, string detail)
+            {
+                Kind = kind;
+                Title = title;
+                Detail = detail;
+            }
+        }
+
+        public readonly struct LayoutProfile
+        {
+            public readonly float PlayerScale;
+            public readonly Vector2 PlayerPosition;
+            public readonly float ConsoleScale;
+            public readonly Vector2 ConsolePosition;
+            public readonly float MapScale;
+            public readonly Vector2 MapPosition;
+            public readonly float QuickbarScale;
+            public readonly Vector2 QuickbarPosition;
+
+            public LayoutProfile(float playerScale, Vector2 playerPosition,
+                                 float consoleScale, Vector2 consolePosition,
+                                 float mapScale, Vector2 mapPosition,
+                                 float quickbarScale, Vector2 quickbarPosition)
+            {
+                PlayerScale = playerScale;
+                PlayerPosition = playerPosition;
+                ConsoleScale = consoleScale;
+                ConsolePosition = consolePosition;
+                MapScale = mapScale;
+                MapPosition = mapPosition;
+                QuickbarScale = quickbarScale;
+                QuickbarPosition = quickbarPosition;
+            }
+        }
+
+        public static LayoutProfile ResolveLayout(bool mobile)
+        {
+            return mobile
+                ? new LayoutProfile(0.75f, new Vector2(64f, -6f),
+                    0.625f, new Vector2(0f, 44f),
+                    0.625f, new Vector2(-62f, -8f),
+                    0.625f, new Vector2(0f, 208f))
+                 : new LayoutProfile(1f, new Vector2(12f, -12f),
+                    0.875f, new Vector2(0f, 16f),
+                    0.875f, new Vector2(-16f, -16f),
+                    0.875f, new Vector2(0f, 242f));
+        }
+
+        public static HudFocusMode ResolveFocusMode(bool recentCombat, bool detailHeld,
+                                                     bool editingHud)
+        {
+            return ResolveFocusMode(recentCombat, false, detailHeld, editingHud);
+        }
+
+        public static HudFocusMode ResolveFocusMode(bool recentCombat, bool activityActive,
+                                                     bool detailHeld, bool editingHud)
+        {
+            if (detailHeld || editingHud) return HudFocusMode.Detailed;
+            if (recentCombat) return HudFocusMode.Combat;
+            return activityActive ? HudFocusMode.Activity : HudFocusMode.Exploration;
+        }
+
+        public static bool ShowsIdentity(HudFocusMode focus)
+        {
+            return focus == HudFocusMode.Detailed;
+        }
+
+        public static bool ShowsQuickbar(HudFocusMode focus, bool mobile,
+                                         bool radialOpen, bool transientStatus)
+        {
+            if (mobile) return false;
+            return focus == HudFocusMode.Combat || focus == HudFocusMode.Detailed
+                || radialOpen || transientStatus;
+        }
+
+        public static float MapFocusScale(bool mobile, HudFocusMode focus)
+        {
+            if (mobile) return 0.625f;
+            return focus == HudFocusMode.Detailed || focus == HudFocusMode.Exploration
+                ? 0.875f : 0.75f;
+        }
+
+        public static float CompactConsoleScale(bool mobile)
+        {
+            return mobile ? 0.75f : 0.875f;
+        }
+
+        public static float CompactConsoleFocusScale(bool mobile, HudFocusMode focus)
+        {
+            if (mobile) return CompactConsoleScale(true);
+            return focus == HudFocusMode.Combat ? 1f : CompactConsoleScale(false);
+        }
+
+        public static Vector2 CompactConsolePosition(bool mobile)
+        {
+            return new Vector2(0f, mobile ? 20f : 16f);
+        }
+
+        public static Vector2 QuickbarFocusPosition(bool mobile, HudFocusMode focus)
+        {
+            if (focus == HudFocusMode.Detailed)
+                return ResolveLayout(mobile).QuickbarPosition;
+            return new Vector2(0f, mobile ? 112f : 92f);
+        }
+
+        public static Vector2 ClampBottomPanelPosition(Vector2 position, Vector2 panelSize,
+                                                        float scale, Vector2 parentSize,
+                                                        float padding = 8f)
+        {
+            float safeScale = Mathf.Max(0.01f, Mathf.Abs(scale));
+            float safePadding = Mathf.Max(0f, padding);
+            float halfWidth = Mathf.Max(0f, panelSize.x) * safeScale * 0.5f;
+            float height = Mathf.Max(0f, panelSize.y) * safeScale;
+
+            if (parentSize.x > 1f)
+            {
+                float minX = -parentSize.x * 0.5f + halfWidth + safePadding;
+                float maxX = parentSize.x * 0.5f - halfWidth - safePadding;
+                position.x = minX <= maxX ? Mathf.Clamp(position.x, minX, maxX) : 0f;
+            }
+
+            if (parentSize.y > 1f)
+            {
+                float maxY = parentSize.y - height - safePadding;
+                position.y = maxY >= safePadding
+                    ? Mathf.Clamp(position.y, safePadding, maxY)
+                    : safePadding;
+            }
+            else
+            {
+                position.y = Mathf.Max(safePadding, position.y);
+            }
+            return position;
+        }
+
         private static readonly Color Ink = new Color(0.90f, 0.78f, 0.43f, 1f);
         private static readonly Color MutedInk = new Color(0.73f, 0.66f, 0.43f, 1f);
         private static readonly Color Panel = new Color(0.055f, 0.06f, 0.052f, 0.91f);
@@ -19,14 +205,37 @@ namespace RealmOfAshes.Game
         private RoaCombat _combat;
         private RoaMobileControls _mobile;
         private RoaGlobalMap _globalMap;
+        private RoaWorldActivityCanvas _worldActivity;
         private Canvas _canvas;
         private RectTransform _safeRoot;
         private GameObject _playerPanel;
         private GameObject _mapPanel;
+        private CanvasGroup _mapGroup;
         private GameObject _quickPanel;
+        private CanvasGroup _quickGroup;
         private GameObject _logPanel;
         private GameObject _systemPanel;
+        private GameObject _connectionPanel;
+        private Image _connectionBack;
+        private Outline _connectionOutline;
+        private Image _connectionDot;
+        private Text _connectionTitle;
+        private Text _connectionDetail;
+        private bool _connectionInterrupted;
+        private float _connectionRestoredUntil;
         private GameObject _consolePanel;
+        private GameObject _compactConsolePanel;
+        private CanvasGroup _consoleGroup;
+        private CanvasGroup _compactConsoleGroup;
+        private Text _compactHp;
+        private Text _compactAp;
+        private Text _compactWeapon;
+        private Text _compactWeaponState;
+        private Text _compactAmmo;
+        private Image _compactHpFill;
+        private HudFocusMode _focusMode;
+        private bool _focusInitialized;
+        private float _consoleBlend;
         private RawImage _playerFrame;
         private Text _nameText;
         private Text _statsText;
@@ -42,6 +251,7 @@ namespace RealmOfAshes.Game
         private Text _consoleReserve;
         private Text _consoleAmmoType;
         private Text _consoleModeLabel;
+        private Text _consoleWeaponState;
         private Text _consoleApCost;
         private Text _consoleAmmoMain;
         private Text _consoleWeaponName;
@@ -75,9 +285,11 @@ namespace RealmOfAshes.Game
         private Text _systemText;
         private RoaInteraction _interaction;
         private readonly System.Collections.Generic.List<string> _systemLines = new System.Collections.Generic.List<string>();
-        private string _lastHint = string.Empty;
+        private string _lastCombatLine = string.Empty;
+        private float _combatLogUntil;
         private string _lastInteractionStatus = string.Empty;
         private float _systemLastPushAt;
+        private readonly Vector3[] _occupiedScreenCorners = new Vector3[4];
 
         /// <summary>Источник подсказок взаимодействия и статусов для системного журнала.</summary>
         public void SetInteraction(RoaInteraction interaction)
@@ -85,10 +297,46 @@ namespace RealmOfAshes.Game
             _interaction = interaction;
             if (interaction != null) interaction.HintCanvasDriven = true;
         }
+
+        /// <summary>Appends visible HUD panel bounds in top-left screen-space coordinates.</summary>
+        public int CollectOccupiedScreenRects(System.Collections.Generic.List<Rect> output)
+        {
+            if (output == null) throw new System.ArgumentNullException(nameof(output));
+            int before = output.Count;
+            AppendOccupiedScreenRect(_playerPanel, output);
+            AppendOccupiedScreenRect(_mapPanel, output);
+            AppendOccupiedScreenRect(_quickPanel, output);
+            AppendOccupiedScreenRect(_logPanel, output);
+            AppendOccupiedScreenRect(_systemPanel, output);
+            AppendOccupiedScreenRect(_connectionPanel, output);
+            AppendOccupiedScreenRect(_consolePanel, output);
+            AppendOccupiedScreenRect(_compactConsolePanel, output);
+            AppendOccupiedScreenRect(_economyRoot, output);
+            AppendOccupiedScreenRect(_interactionPrompt, output);
+            return output.Count - before;
+        }
+
+        private void AppendOccupiedScreenRect(GameObject panel,
+            System.Collections.Generic.List<Rect> output)
+        {
+            if (panel == null || !panel.activeInHierarchy) return;
+            RectTransform rect = panel.transform as RectTransform;
+            if (rect == null) return;
+            rect.GetWorldCorners(_occupiedScreenCorners);
+            Vector2 bottomLeft = RectTransformUtility.WorldToScreenPoint(
+                _canvas != null ? _canvas.worldCamera : null, _occupiedScreenCorners[0]);
+            Vector2 topRight = RectTransformUtility.WorldToScreenPoint(
+                _canvas != null ? _canvas.worldCamera : null, _occupiedScreenCorners[2]);
+            if (topRight.x <= bottomLeft.x || topRight.y <= bottomLeft.y) return;
+            output.Add(new Rect(bottomLeft.x, Screen.height - topRight.y,
+                topRight.x - bottomLeft.x, topRight.y - bottomLeft.y));
+        }
+
         private string _lastGlobalStatus = string.Empty;
         private float _globalStatusUntil;
         private Rect _lastSafeArea;
         private bool _lastMobile;
+        private const float MinimapPixels = 164f;
 
         public void Configure(RoaHud hud, RoaQuickbar quickbar, RoaMinimap minimap,
                               RoaCombat combat, RoaMobileControls mobile, RoaGlobalMap globalMap)
@@ -99,12 +347,14 @@ namespace RealmOfAshes.Game
             _combat = combat;
             _mobile = mobile;
             _globalMap = globalMap;
+            ConfigureEconomyFeedback(hud != null ? hud.Socket : null);
             ClaimLegacyRenderers(true);
             if (_canvas == null) Build();
         }
 
         private void OnDestroy()
         {
+            ReleaseEconomyFeedback();
             ClaimLegacyRenderers(false);
         }
 
@@ -122,18 +372,43 @@ namespace RealmOfAshes.Game
             if (_canvas == null) return;
             UpdateSafeArea();
             bool worldHud = !RoaGameBootstrap.BlocksWorldHud;
+            bool gameplayScreen = RoaGameBootstrap.Active != null
+                ? RoaGameBootstrap.Active.InGame
+                : _hud != null && _hud.HasState;
             // До входа в мир (экран аккаунта) HUD не показывается — как в web,
             // где #character-screen перекрывает всё.
             if (RoaGameBootstrap.Active != null && RoaGameBootstrap.Active.FrontendVisible) worldHud = false;
             // На глобальной карте web-окно карты перекрывает HUD целиком.
             if (RoaGameBootstrap.Active != null && RoaGameBootstrap.Active.OnGlobalMap) worldHud = false;
-            _playerPanel.SetActive(worldHud && _hud != null && _hud.HasState);
+            bool mobile = MobileHudMode; // mobile HUD and touch controls use one authoritative mode
+            bool detailsHeld = !mobile && (Input.GetKey(KeyCode.LeftAlt)
+                || Input.GetKey(KeyCode.RightAlt));
+            bool combatActive = _combat != null && _combat.CombatPresentationActive;
+            bool activityActive = _worldActivity != null && _worldActivity.IsActivityRunning;
+            HudFocusMode focus = ResolveFocusMode(combatActive, activityActive,
+                detailsHeld, RoaHudLayout.Editing);
+            RefreshHudFocus(worldHud, mobile, focus);
+
+            bool stateVisible = worldHud && _hud != null && _hud.HasState;
+            _playerPanel.SetActive(stateVisible && ShowsIdentity(focus));
             _mapPanel.SetActive(worldHud && _minimap != null);
-            _quickPanel.SetActive(worldHud && _quickbar != null && _quickbar.CanvasVisible);
-            bool mobile = Application.isMobilePlatform; // web device-mobile: журнал боя и системный журнал скрыты
-            _logPanel.SetActive(worldHud && !mobile && _combat != null && _combat.LogLines.Count > 0);
-            _consolePanel.SetActive(worldHud && _hud != null && _hud.HasState);
+            bool quickbarTransient = _quickbar != null
+                && (!string.IsNullOrEmpty(_quickbar.CanvasStatus) || _quickbar.IsRadialOpen);
+            _quickPanel.SetActive(worldHud && _quickbar != null && _quickbar.CanvasVisible
+                && ShowsQuickbar(focus, mobile, _quickbar.IsRadialOpen, quickbarTransient));
+            string latestCombat = _combat != null && _combat.LogLines.Count > 0
+                ? _combat.LogLines[_combat.LogLines.Count - 1] : string.Empty;
+            if (latestCombat != _lastCombatLine)
+            {
+                _lastCombatLine = latestCombat;
+                if (!string.IsNullOrEmpty(latestCombat)) _combatLogUntil = Time.unscaledTime + 5f;
+            }
+            _logPanel.SetActive(worldHud && !mobile && !string.IsNullOrEmpty(latestCombat)
+                && Time.unscaledTime < _combatLogUntil);
+            RefreshConnectionStatus(gameplayScreen);
             RefreshSystemStatus(worldHud && !mobile);
+            RefreshEconomyFeedback(worldHud);
+            RefreshInteractionPrompt(worldHud);
             RefreshPlayer();
             RefreshConsole();
             RefreshMinimap();
@@ -144,8 +419,12 @@ namespace RealmOfAshes.Game
         private bool IsBuilt()
         {
             return _canvas != null && _safeRoot != null && _playerPanel != null
-                && _mapPanel != null && _quickPanel != null && _logPanel != null && _systemPanel != null
-                && _consolePanel != null && _slotButtons[0] != null && _slotTexts[0] != null;
+                && _mapPanel != null && _mapGroup != null && _quickPanel != null
+                && _quickGroup != null && _logPanel != null && _systemPanel != null
+                && _connectionPanel != null && _connectionTitle != null && _connectionDetail != null
+                && _economyRoot != null && _consolePanel != null && _compactConsolePanel != null
+                && _interactionPrompt != null
+                && _slotButtons[0] != null && _slotTexts[0] != null;
         }
 
         private void Rebuild()
@@ -157,6 +436,8 @@ namespace RealmOfAshes.Game
 
         private void Build()
         {
+            _focusInitialized = false;
+            _consoleBlend = 0f;
             GameObject root = new GameObject("AdaptiveGameplayHud", typeof(RectTransform), typeof(Canvas),
                                              typeof(CanvasScaler), typeof(GraphicRaycaster));
             root.transform.SetParent(transform, false);
@@ -170,10 +451,13 @@ namespace RealmOfAshes.Game
             BuildPlayerPanel();
             BuildMinimapPanel();
             BuildWeaponConsole();
+            BuildCompactWeaponConsole();
             BuildQuickbar();
+            BuildInteractionPrompt();
             BuildSystemStatus();
+            BuildConnectionStatus();
+            BuildEconomyFeedback();
             BuildCombatLog();
-            if (Application.isMobilePlatform) ApplyMobileLayout();
             if (FindAnyObjectByType<EventSystem>() == null)
             {
                 var events = new GameObject("HudEventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
@@ -190,36 +474,39 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void BuildPlayerPanel()
         {
-            RectTransform panel = Rect("PlayerStatus", _safeRoot, new Vector2(0f, 1f),
-                                       new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                       new Vector2(8f, -8f), new Vector2(760f, 253f));
+            RectTransform panel = PanelRect("PlayerStatus", _safeRoot, new Vector2(0f, 1f),
+                                            new Vector2(0f, 1f), new Vector2(12f, -12f), new Vector2(330f, 74f));
             _playerPanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("status");
 
             _playerFrame = Raw("Frame", panel, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             _playerFrame.raycastTarget = false;
-            _playerFrame.color = Color.white;
+            _playerFrame.color = Color.clear;
+            _playerFrame.enabled = false;
+            Image accent = Bar("IdentityAccent", panel, new Vector2(10f, -65f), new Vector2(310f, 3f), ConsoleAccent).transform.parent.GetComponent<Image>();
+            if (accent != null) accent.color = new Color(0.04f, 0.04f, 0.035f, 0.72f);
 
-            // Позиции — из css: fps 7.4%/9.5%, имя 26.1%/35.3%, чипы 10.2%/64.2%.
-            _fpsText = PercentLabel("Fps", panel, 0.074f, 0.095f, 0.162f, 0.127f, 15,
-                                    TextAnchor.MiddleCenter, new Color(1f, 0.878f, 0.541f), FontStyle.Bold);
-            _nameText = PercentLabel("Name", panel, 0.261f, 0.353f, 0.565f, 0.18f, 21,
-                                     TextAnchor.MiddleLeft, new Color(1f, 0.871f, 0.525f), FontStyle.Bold);
-            _statsText = PercentLabel("Chips", panel, 0.102f, 0.642f, 0.77f, 0.135f, 13,
-                                      TextAnchor.MiddleLeft, new Color(0.843f, 0.89f, 0.635f), FontStyle.Bold);
+            _fpsText = Label("Diagnostics", panel, Vector2.zero, Vector2.zero, 1,
+                             TextAnchor.MiddleLeft, Color.clear);
+            _fpsText.gameObject.SetActive(false);
+            _nameText = Label("Name", panel, new Vector2(14f, -8f), new Vector2(300f, 25f), 17,
+                              TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
+            _statsText = Label("Progress", panel, new Vector2(14f, -35f), new Vector2(300f, 23f), 11,
+                               TextAnchor.MiddleLeft, MutedInk, FontStyle.Bold);
             _statsText.supportRichText = true;
         }
 
         private void BuildMinimapPanel()
         {
             RectTransform panel = PanelRect("Minimap", _safeRoot, new Vector2(1f, 1f),
-                                            new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(226f, 264f));
+                                            new Vector2(1f, 1f), new Vector2(-16f, -16f), new Vector2(190f, 202f));
             _mapPanel = panel.gameObject;
+            _mapGroup = panel.gameObject.AddComponent<CanvasGroup>();
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("minimap");
-            _mapTitle = Label("Title", panel, new Vector2(10f, -7f), new Vector2(206f, 22f), 13,
+            _mapTitle = Label("Title", panel, new Vector2(10f, -7f), new Vector2(170f, 22f), 12,
                               TextAnchor.MiddleLeft, Ink, FontStyle.Bold);
             RectTransform map = Rect("Map", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                     new Vector2(0f, 1f), new Vector2(13f, -34f), new Vector2(200f, 200f));
+                                     new Vector2(0f, 1f), new Vector2(13f, -32f), new Vector2(MinimapPixels, MinimapPixels));
             _mapImage = map.gameObject.AddComponent<RawImage>();
             _mapImage.color = Color.white;
             _mapImage.raycastTarget = false;
@@ -241,8 +528,9 @@ namespace RealmOfAshes.Game
             _playerArrow.rectTransform.anchorMin = Vector2.zero;
             _playerArrow.rectTransform.anchorMax = Vector2.zero;
             _playerArrow.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-            _cellText = Label("Cell", panel, new Vector2(13f, -238f), new Vector2(200f, 18f), 12,
+            _cellText = Label("Cell", panel, new Vector2(13f, -190f), new Vector2(164f, 10f), 10,
                               TextAnchor.MiddleLeft, MutedInk);
+            _cellText.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -256,8 +544,11 @@ namespace RealmOfAshes.Game
             // width min(1060px), aspect 2048/682, bottom 18 — как в css.
             RectTransform panel = Rect("WeaponConsole", _safeRoot, new Vector2(0.5f, 0f),
                                        new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                                       new Vector2(0f, 18f), new Vector2(1060f, 353f));
+                                       new Vector2(0f, 72f), new Vector2(760f, 253f));
             _consolePanel = panel.gameObject;
+            _consoleGroup = panel.gameObject.AddComponent<CanvasGroup>();
+            _consoleGroup.interactable = false;
+            _consoleGroup.blocksRaycasts = false;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("console");
 
             var frame = panel.gameObject.AddComponent<RawImage>();
@@ -293,8 +584,10 @@ namespace RealmOfAshes.Game
 
             // Центральная сцена: 30%/16.5% 39.2%x56.5%.
             RectTransform stage = PercentRect("Stage", panel, 0.30f, 0.165f, 0.392f, 0.565f);
-            _consoleModeLabel = PercentLabel("Mode", stage, 0.08f, 0.06f, 0.84f, 0.22f, 22,
+            _consoleModeLabel = PercentLabel("Mode", stage, 0.08f, 0.04f, 0.84f, 0.15f, 20,
                                              TextAnchor.MiddleCenter, new Color(0.851f, 0.718f, 0.412f), FontStyle.Bold);
+            _consoleWeaponState = PercentLabel("WeaponState", stage, 0.08f, 0.19f, 0.84f, 0.10f, 11,
+                                               TextAnchor.MiddleCenter, LedOn, FontStyle.Bold);
             // Силуэт оружия по центру сцены — web: 58% x 18% в центре
             // (15_css:787). Рендерится из той же GLB, что держит персонаж.
             RectTransform art = PercentRect("WeaponArt", stage, 0.21f, 0.30f, 0.58f, 0.34f);
@@ -320,6 +613,76 @@ namespace RealmOfAshes.Game
             _conditionFill = fill.gameObject.AddComponent<Image>();
             _conditionFill.color = new Color(0.878f, 0.769f, 0.376f, 1f);
             _conditionFill.raycastTarget = false;
+        }
+
+        public void SetWorldActivity(RoaWorldActivityCanvas activity)
+        {
+            _worldActivity = activity;
+        }
+
+        public bool IdentityVisible
+        {
+            get { return _playerPanel != null && _playerPanel.activeSelf; }
+        }
+
+        private void BuildCompactWeaponConsole()
+        {
+            RectTransform panel = PanelRect("CompactWeaponConsole", _safeRoot,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 16f),
+                new Vector2(560f, 66f));
+            _compactConsolePanel = panel.gameObject;
+            _compactConsoleGroup = panel.gameObject.AddComponent<CanvasGroup>();
+            _compactConsoleGroup.interactable = false;
+            _compactConsoleGroup.blocksRaycasts = false;
+            panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("console");
+
+            Image background = panel.GetComponent<Image>();
+            background.color = new Color(0.038f, 0.041f, 0.034f, 0.94f);
+            Outline outline = panel.GetComponent<Outline>();
+            outline.effectColor = new Color(ConsoleAccent.r, ConsoleAccent.g,
+                ConsoleAccent.b, 0.58f);
+
+            RectTransform hpTrack = Rect("HpTrack", panel, new Vector2(0f, 0f),
+                new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(12f, 8f),
+                new Vector2(126f, 4f));
+            Image hpBack = hpTrack.gameObject.AddComponent<Image>();
+            hpBack.color = new Color(0.12f, 0.09f, 0.06f, 0.9f);
+            hpBack.raycastTarget = false;
+            RectTransform hpFill = Rect("Fill", hpTrack, Vector2.zero, Vector2.one,
+                new Vector2(0f, 0.5f), Vector2.zero, Vector2.zero);
+            hpFill.offsetMin = Vector2.zero;
+            hpFill.offsetMax = Vector2.zero;
+            _compactHpFill = hpFill.gameObject.AddComponent<Image>();
+            _compactHpFill.raycastTarget = false;
+
+            _compactHp = Label("Hp", panel, new Vector2(12f, -8f), new Vector2(126f, 23f),
+                13, TextAnchor.MiddleLeft, HpHealthy, FontStyle.Bold);
+            _compactAp = Label("Ap", panel, new Vector2(12f, -32f), new Vector2(126f, 20f),
+                11, TextAnchor.MiddleLeft, ConsoleAccent, FontStyle.Bold);
+
+            RectTransform leftDividerRect = Rect("LeftDivider", panel,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(148f, -10f), new Vector2(2f, 46f));
+            Image leftDivider = leftDividerRect.gameObject.AddComponent<Image>();
+            leftDivider.color = new Color(ConsoleAccent.r, ConsoleAccent.g,
+                ConsoleAccent.b, 0.38f);
+            leftDivider.raycastTarget = false;
+            RectTransform rightDividerRect = Rect("RightDivider", panel,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(426f, -10f), new Vector2(2f, 46f));
+            Image rightDivider = rightDividerRect.gameObject.AddComponent<Image>();
+            rightDivider.color = new Color(ConsoleAccent.r, ConsoleAccent.g,
+                ConsoleAccent.b, 0.38f);
+            rightDivider.raycastTarget = false;
+
+            _compactWeapon = Label("Weapon", panel, new Vector2(164f, -7f),
+                new Vector2(246f, 25f), 15, TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
+            _compactWeaponState = Label("WeaponState", panel, new Vector2(164f, -34f),
+                new Vector2(246f, 18f), 10, TextAnchor.MiddleCenter, LedOn, FontStyle.Bold);
+            _compactAmmo = Label("Ammo", panel, new Vector2(440f, -10f),
+                new Vector2(108f, 42f), 15, TextAnchor.MiddleCenter, ConsoleAccent, FontStyle.Bold);
+            _compactAmmo.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _compactConsolePanel.SetActive(false);
         }
 
         /// <summary>Бокс консоли: подпись сверху, значение снизу, по центру.</summary>
@@ -364,6 +727,10 @@ namespace RealmOfAshes.Game
             label.raycastTarget = false;
             label.supportRichText = false;
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Shadow shadow = rect.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.62f);
+            shadow.effectDistance = new Vector2(1f, -1f);
+            shadow.useGraphicAlpha = true;
 
             // Без этого Text выше своей области не рисуется ВООБЩЕ: в узких
             // боксах «В МАГ.»/«ЗАПАС» значения просто исчезали.
@@ -395,14 +762,15 @@ namespace RealmOfAshes.Game
         private void BuildQuickbar()
         {
             RectTransform panel = PanelRect("Quickbar", _safeRoot, new Vector2(0.5f, 0f),
-                                            new Vector2(0.5f, 0f), new Vector2(0f, 16f), new Vector2(646f, 82f));
+                                            new Vector2(0.5f, 0f), new Vector2(0f, 14f), new Vector2(566f, 54f));
             _quickPanel = panel.gameObject;
+            _quickGroup = panel.gameObject.AddComponent<CanvasGroup>();
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("quickbar");
             for (int i = 0; i < _slotButtons.Length; i++)
             {
                 int slot = i;
                 RectTransform slotRect = Rect("Slot" + i, panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                                              new Vector2(0f, 1f), new Vector2(10f + i * 78f, -8f), new Vector2(72f, 54f));
+                                              new Vector2(0f, 1f), new Vector2(9f + i * 69f, -7f), new Vector2(64f, 38f));
                 Image image = slotRect.gameObject.AddComponent<Image>();
                 image.color = new Color(0.10f, 0.10f, 0.08f, 0.96f);
                 Button button = slotRect.gameObject.AddComponent<Button>();
@@ -413,11 +781,11 @@ namespace RealmOfAshes.Game
                 button.colors = colors;
                 button.onClick.AddListener(() => { if (_quickbar != null) _quickbar.TriggerSlot(slot); });
                 _slotButtons[i] = button;
-                _slotTexts[i] = Label("Label", slotRect, Vector2.zero, slotRect.sizeDelta, 13,
+                _slotTexts[i] = Label("Label", slotRect, Vector2.zero, slotRect.sizeDelta, 11,
                                       TextAnchor.MiddleCenter, Ink, FontStyle.Bold);
                 Stretch(_slotTexts[i].rectTransform, new Vector2(3f, 3f));
             }
-            _quickStatus = Label("Status", panel, new Vector2(12f, -62f), new Vector2(622f, 16f), 11,
+            _quickStatus = Label("Status", panel, new Vector2(10f, -46f), new Vector2(546f, 8f), 9,
                                  TextAnchor.MiddleCenter, MutedInk);
         }
 
@@ -427,10 +795,10 @@ namespace RealmOfAshes.Game
             // полупрозрачным текстом поверх мира.
             RectTransform panel = Rect("CombatLog", _safeRoot, new Vector2(0f, 0f),
                                        new Vector2(0f, 0f), new Vector2(0f, 0f),
-                                       new Vector2(12f, 12f), new Vector2(420f, 190f));
+                                       new Vector2(12f, 12f), new Vector2(360f, 118f));
             _logPanel = panel.gameObject;
             panel.gameObject.AddComponent<RoaHudDragHandle>().Configure("combatLog");
-            _logText = Label("Lines", panel, new Vector2(0f, 0f), new Vector2(420f, 190f), 14,
+            _logText = Label("Lines", panel, new Vector2(0f, 0f), new Vector2(360f, 118f), 12,
                              TextAnchor.LowerLeft, new Color(0.86f, 0.82f, 0.68f, 0.92f));
             _logText.horizontalOverflow = HorizontalWrapMode.Wrap;
             _logText.verticalOverflow = VerticalWrapMode.Truncate;
@@ -439,36 +807,108 @@ namespace RealmOfAshes.Game
         /// <summary>
         /// Мобильный ландшафт по web (02_mobile_fullscreen_touch.css, 13:647, 17:197):
         /// рамка игрока ≈47vw слева сверху, оружейная консоль по центру внизу в
-        /// масштабе 0.66 над зоной джойстика, миникарта меньше, системный журнал и
+        /// масштабе 0.62 над зоной джойстика, миникарта меньше, системный журнал и
         /// лог боя скрыты — место занимают сенсорные кнопки.
         /// </summary>
-        private void ApplyMobileLayout()
+        private bool MobileHudMode
         {
-            float screenW = RoaUiScale.Reference.x;
-            var player = (RectTransform)_playerPanel.transform;
-            float playerScale = Mathf.Clamp(screenW * 0.47f / 760f, 0.5f, 0.8f);
-            player.localScale = Vector3.one * playerScale;
-            player.anchoredPosition = new Vector2(72f, -6f); // left: 62px web — после левой колонки сенсорных иконок
+            get { return _mobile != null ? _mobile.ControlsEnabled : Application.isMobilePlatform; }
+        }
 
-            var console = (RectTransform)_consolePanel.transform;
-            console.localScale = Vector3.one * 0.66f;
-            console.anchoredPosition = new Vector2(0f, 52f);
+        public HudFocusMode CurrentFocusMode { get { return _focusMode; } }
 
-            var map = (RectTransform)_mapPanel.transform;
-            map.localScale = Vector3.one * 0.78f;
-            map.anchoredPosition = new Vector2(-70f, -8f); // правее — колонка сенсорных кнопок
+        private void RefreshHudFocus(bool worldHud, bool mobile, HudFocusMode resolved)
+        {
+            bool visible = worldHud && _hud != null && _hud.HasState;
+            if (!visible)
+            {
+                _consolePanel.SetActive(false);
+                _compactConsolePanel.SetActive(false);
+                _focusInitialized = false;
+                return;
+            }
 
-            var quick = (RectTransform)_quickPanel.transform;
-            quick.localScale = Vector3.one * 0.7f;
-            quick.anchoredPosition = new Vector2(0f, 290f);
+            if (!_focusInitialized || resolved != _focusMode)
+            {
+                _focusMode = resolved;
+                ApplyPanelLayout((RectTransform)_quickPanel.transform,
+                    ResolveLayout(mobile).QuickbarScale,
+                    QuickbarFocusPosition(mobile, _focusMode));
+                ApplyPanelLayout((RectTransform)_mapPanel.transform,
+                    MapFocusScale(mobile, _focusMode), ResolveLayout(mobile).MapPosition);
+                ApplyPanelLayout((RectTransform)_compactConsolePanel.transform,
+                    CompactConsoleFocusScale(mobile, _focusMode),
+                    CompactConsolePosition(mobile));
+            }
 
+            float target = resolved == HudFocusMode.Detailed ? 1f : 0f;
+            if (!_focusInitialized)
+            {
+                _consoleBlend = target;
+                _focusInitialized = true;
+            }
+            else
+            {
+                _consoleBlend = Mathf.MoveTowards(_consoleBlend, target,
+                    Time.unscaledDeltaTime * 6.5f);
+            }
+
+            float fullAlpha = Mathf.SmoothStep(0f, 1f, _consoleBlend);
+            float compactAlpha = Mathf.SmoothStep(0f, 1f, 1f - _consoleBlend);
+            float focusFadeSpeed = Time.unscaledDeltaTime * 4.8f;
+            if (_mapGroup != null)
+                _mapGroup.alpha = Mathf.MoveTowards(_mapGroup.alpha,
+                    FocusLayerAlpha(resolved, HudVisualLayer.Minimap), focusFadeSpeed);
+            if (_quickGroup != null)
+                _quickGroup.alpha = Mathf.MoveTowards(_quickGroup.alpha,
+                    FocusLayerAlpha(resolved, HudVisualLayer.Quickbar), focusFadeSpeed);
+            float weaponAlpha = FocusLayerAlpha(resolved, HudVisualLayer.WeaponConsole);
+            _consolePanel.SetActive(fullAlpha > 0.01f);
+            _compactConsolePanel.SetActive(compactAlpha > 0.01f);
+            _consoleGroup.alpha = fullAlpha;
+            _compactConsoleGroup.alpha = compactAlpha * weaponAlpha;
+            ClampBottomPanelToSafeArea((RectTransform)_consolePanel.transform);
+            ClampBottomPanelToSafeArea((RectTransform)_compactConsolePanel.transform);
+        }
+
+        private void ApplyAdaptiveLayout(bool mobile)
+        {
+            LayoutProfile layout = ResolveLayout(mobile);
+            ApplyPanelLayout((RectTransform)_playerPanel.transform,
+                layout.PlayerScale, layout.PlayerPosition);
+            ApplyPanelLayout((RectTransform)_consolePanel.transform,
+                layout.ConsoleScale, layout.ConsolePosition);
+            ApplyPanelLayout((RectTransform)_compactConsolePanel.transform,
+                CompactConsoleFocusScale(mobile, _focusMode), CompactConsolePosition(mobile));
+            ApplyPanelLayout((RectTransform)_mapPanel.transform,
+                MapFocusScale(mobile, _focusMode), layout.MapPosition);
+            ApplyPanelLayout((RectTransform)_quickPanel.transform,
+                layout.QuickbarScale, QuickbarFocusPosition(mobile, _focusMode));
+        }
+
+        private static void ApplyPanelLayout(RectTransform panel, float scale, Vector2 position)
+        {
+            panel.localScale = Vector3.one * scale;
+            position = new Vector2(Mathf.Round(position.x), Mathf.Round(position.y));
+            RoaHudDragHandle drag = panel.GetComponent<RoaHudDragHandle>();
+            if (drag != null) drag.SetBasePosition(position);
+            else panel.anchoredPosition = position;
+        }
+
+        private static void ClampBottomPanelToSafeArea(RectTransform panel)
+        {
+            if (panel == null) return;
+            RectTransform parent = panel.parent as RectTransform;
+            Vector2 parentSize = parent != null ? parent.rect.size : Vector2.zero;
+            panel.anchoredPosition = ClampBottomPanelPosition(panel.anchoredPosition,
+                panel.rect.size, panel.localScale.x, parentSize);
         }
 
         private void BuildSystemStatus()
         {
             // #system-log-panel: right 12, top 206 (под миникартой), width 190, max-height 138.
             RectTransform panel = PanelRect("SystemStatus", _safeRoot, new Vector2(1f, 1f),
-                                            new Vector2(1f, 1f), new Vector2(-16f, -296f), new Vector2(226f, 138f));
+                                            new Vector2(1f, 1f), new Vector2(-16f, -228f), new Vector2(190f, 82f));
             panel.GetComponent<Image>().color = new Color(0.031f, 0.039f, 0.039f, 0.42f);
             panel.GetComponent<Outline>().effectColor = new Color(0.89f, 0.765f, 0.431f, 0.36f);
             _systemPanel = panel.gameObject;
@@ -478,7 +918,7 @@ namespace RealmOfAshes.Game
             Text headText = Label("Title", head, new Vector2(9f, -4f), new Vector2(200f, 20f), 10,
                                   TextAnchor.MiddleLeft, ConsoleAccent, FontStyle.Bold);
             headText.text = "СИСТЕМА";
-            _systemText = Label("Text", panel, new Vector2(9f, -32f), new Vector2(208f, 102f), 11,
+            _systemText = Label("Text", panel, new Vector2(9f, -32f), new Vector2(172f, 44f), 10,
                                 TextAnchor.UpperLeft, new Color(0.624f, 0.784f, 0.816f, 1f));
             _systemText.horizontalOverflow = HorizontalWrapMode.Wrap;
             _systemText.verticalOverflow = VerticalWrapMode.Truncate;
@@ -486,13 +926,132 @@ namespace RealmOfAshes.Game
             _systemPanel.SetActive(false);
         }
 
+        private void BuildConnectionStatus()
+        {
+            RectTransform panel = PanelRect("ConnectionStatus", _safeRoot, new Vector2(0.5f, 1f),
+                                            new Vector2(0.5f, 1f), new Vector2(0f, -14f),
+                                            new Vector2(430f, 58f));
+            _connectionPanel = panel.gameObject;
+            _connectionBack = panel.GetComponent<Image>();
+            _connectionOutline = panel.GetComponent<Outline>();
+
+            if (_ledCircle == null) _ledCircle = BuildCircleTexture();
+            RectTransform dot = Rect("State", panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                                     new Vector2(0.5f, 0.5f), new Vector2(21f, -29f),
+                                     new Vector2(11f, 11f));
+            _connectionDot = dot.gameObject.AddComponent<Image>();
+            _connectionDot.sprite = Sprite.Create(_ledCircle,
+                new UnityEngine.Rect(0f, 0f, _ledCircle.width, _ledCircle.height),
+                new Vector2(0.5f, 0.5f));
+            _connectionDot.preserveAspect = true;
+            _connectionDot.raycastTarget = false;
+
+            _connectionTitle = Label("Title", panel, new Vector2(40f, -7f),
+                                     new Vector2(374f, 22f), 12,
+                                     TextAnchor.MiddleLeft, ConsoleAccent, FontStyle.Bold);
+            _connectionDetail = Label("Detail", panel, new Vector2(40f, -30f),
+                                      new Vector2(374f, 18f), 10,
+                                      TextAnchor.MiddleLeft, MutedInk);
+            _connectionPanel.SetActive(false);
+        }
+
+        public static ConnectionBannerState DescribeConnection(
+            RoaSocketClient.ConnectionPhase phase, int reconnectAttempt,
+            float retryRemainingSeconds, string lastError, bool restored)
+        {
+            if (phase == RoaSocketClient.ConnectionPhase.Joined)
+            {
+                return restored
+                    ? new ConnectionBannerState(ConnectionBannerKind.Restored,
+                        "СВЯЗЬ ВОССТАНОВЛЕНА", "Мир снова синхронизирован с сервером")
+                    : new ConnectionBannerState(ConnectionBannerKind.Hidden, string.Empty, string.Empty);
+            }
+
+            int attempt = Mathf.Max(1, reconnectAttempt);
+            switch (phase)
+            {
+                case RoaSocketClient.ConnectionPhase.Disconnected:
+                    int seconds = Mathf.Max(0, Mathf.CeilToInt(retryRemainingSeconds));
+                    string retry = seconds > 0
+                        ? "Повтор через " + seconds + " с · попытка " + attempt
+                        : "Ожидаем повторное подключение · попытка " + attempt;
+                    return new ConnectionBannerState(ConnectionBannerKind.Interrupted,
+                        "СВЯЗЬ С ПУСТОШЬЮ ПОТЕРЯНА", retry);
+                case RoaSocketClient.ConnectionPhase.Connecting:
+                    return new ConnectionBannerState(ConnectionBannerKind.Connecting,
+                        "ВОССТАНАВЛИВАЕМ СВЯЗЬ", "Подключение к серверу · попытка " + attempt);
+                case RoaSocketClient.ConnectionPhase.Connected:
+                case RoaSocketClient.ConnectionPhase.Joining:
+                    return new ConnectionBannerState(ConnectionBannerKind.Synchronizing,
+                        "СИНХРОНИЗИРУЕМ МИР", "Сервер отвечает · восстанавливаем персонажа");
+                case RoaSocketClient.ConnectionPhase.Rejected:
+                    return new ConnectionBannerState(ConnectionBannerKind.Rejected,
+                        "СЕССИЯ ОТКЛОНЕНА", string.IsNullOrWhiteSpace(lastError)
+                            ? "Вернитесь к выбору персонажа" : lastError.Trim());
+                default:
+                    return new ConnectionBannerState(ConnectionBannerKind.Hidden,
+                        string.Empty, string.Empty);
+            }
+        }
+
+        private void RefreshConnectionStatus(bool gameplayScreen)
+        {
+            RoaSocketClient socket = _hud != null ? _hud.Socket : null;
+            if (!gameplayScreen || socket == null)
+            {
+                _connectionInterrupted = false;
+                _connectionRestoredUntil = 0f;
+                _connectionPanel.SetActive(false);
+                return;
+            }
+
+            RoaSocketClient.ConnectionPhase phase = socket.Phase;
+            if (phase != RoaSocketClient.ConnectionPhase.Joined)
+            {
+                _connectionInterrupted = true;
+                _connectionRestoredUntil = 0f;
+            }
+            else if (_connectionInterrupted)
+            {
+                _connectionInterrupted = false;
+                _connectionRestoredUntil = Time.unscaledTime + 2.4f;
+            }
+
+            bool restored = phase == RoaSocketClient.ConnectionPhase.Joined
+                && Time.unscaledTime < _connectionRestoredUntil;
+            ConnectionBannerState state = DescribeConnection(phase, socket.ReconnectAttempt,
+                socket.ReconnectDelayRemainingSeconds, socket.LastError, restored);
+            bool visible = state.Kind != ConnectionBannerKind.Hidden;
+            _connectionPanel.SetActive(visible);
+            if (!visible) return;
+
+            Color accent;
+            if (state.Kind == ConnectionBannerKind.Restored)
+                accent = new Color(0.46f, 0.84f, 0.42f, 1f);
+            else if (state.Kind == ConnectionBannerKind.Rejected)
+                accent = new Color(1f, 0.36f, 0.28f, 1f);
+            else
+                accent = new Color(1f, 0.72f, 0.25f, 1f);
+
+            _connectionBack.color = new Color(0.035f, 0.04f, 0.035f, 0.94f);
+            _connectionOutline.effectColor = new Color(accent.r, accent.g, accent.b, 0.82f);
+            float pulse = state.Kind == ConnectionBannerKind.Restored
+                ? 1f
+                : 0.83f + 0.17f * Mathf.Sin(Time.unscaledTime * 4.6f);
+            _connectionDot.color = new Color(accent.r, accent.g, accent.b, Mathf.Clamp01(pulse));
+            _connectionTitle.color = accent;
+            _connectionTitle.text = state.Title;
+            _connectionDetail.text = state.Detail;
+        }
+
         private void UpdateSafeArea(bool force = false)
         {
             Rect area = Screen.safeArea;
-            bool mobile = _mobile != null && _mobile.ControlsEnabled;
+            bool mobile = MobileHudMode;
             if (!force && area == _lastSafeArea && mobile == _lastMobile) return;
             _lastSafeArea = area;
             _lastMobile = mobile;
+            RoaUiScale.Apply(_canvas != null ? _canvas.GetComponent<CanvasScaler>() : null, mobile);
             Vector2 min = area.position;
             Vector2 max = area.position + area.size;
             min.x /= Mathf.Max(1f, Screen.width);
@@ -503,9 +1062,10 @@ namespace RealmOfAshes.Game
             _safeRoot.anchorMax = max;
             _safeRoot.offsetMin = Vector2.zero;
             _safeRoot.offsetMax = Vector2.zero;
-            ((RectTransform)_quickPanel.transform).anchoredPosition = new Vector2(0f, mobile ? 86f : 16f);
+            ApplyAdaptiveLayout(mobile);
             ((RectTransform)_logPanel.transform).anchoredPosition = new Vector2(12f, mobile ? 142f : 12f);
-            ((RectTransform)_systemPanel.transform).anchoredPosition = new Vector2(-16f, mobile ? -220f : -296f);
+            ((RectTransform)_systemPanel.transform).anchoredPosition = new Vector2(-16f, mobile ? -184f : -228f);
+            ApplyInteractionPromptLayout(mobile);
         }
 
         private void PushSystemLine(string line)
@@ -516,7 +1076,7 @@ namespace RealmOfAshes.Game
                 return;
             }
             _systemLines.Add(line);
-            while (_systemLines.Count > 4) _systemLines.RemoveAt(0);
+            while (_systemLines.Count > 2) _systemLines.RemoveAt(0);
             _systemLastPushAt = Time.unscaledTime;
         }
 
@@ -534,15 +1094,10 @@ namespace RealmOfAshes.Game
                 && Time.unscaledTime < _globalStatusUntil)
                 PushSystemLine(status);
 
-            // Подсказка взаимодействия и статусы RoaInteraction — как setReadout → addLog('system') в web.
+            // Результаты взаимодействия остаются в журнале; доступное действие
+            // постоянно показывает отдельная центральная плашка.
             if (_interaction != null)
             {
-                string hint = _interaction.InteractionHint ?? string.Empty;
-                if (hint != _lastHint)
-                {
-                    _lastHint = hint;
-                    if (!string.IsNullOrEmpty(hint)) PushSystemLine(hint);
-                }
                 string line = _interaction.StatusLine ?? string.Empty;
                 if (line != _lastInteractionStatus)
                 {
@@ -553,36 +1108,22 @@ namespace RealmOfAshes.Game
 
             // Журнал виден, пока есть свежие строки (последняя — не старше 12 с).
             // Как #system-log-panel: виден, пока есть строки (в web панель постоянная).
-            bool visible = worldHud && _systemLines.Count > 0 && (_globalMap == null || !_globalMap.IsActive);
+            bool visible = worldHud && _systemLines.Count > 0
+                && Time.unscaledTime - _systemLastPushAt < 6f
+                && (_globalMap == null || !_globalMap.IsActive);
             _systemPanel.SetActive(visible);
             if (visible) _systemText.text = string.Join("\n", _systemLines);
         }
 
-        private float _smoothedFrame = 1f / 60f;
-
         private void RefreshPlayer()
         {
             if (_hud == null || !_playerPanel.activeSelf) return;
-            _playerFrame.texture = _hud.PlayerFrame;
-            _playerFrame.enabled = _hud.PlayerFrame != null;
+            _playerFrame.texture = null;
+            _playerFrame.enabled = false;
             _nameText.text = _hud.DisplayName;
-
-            _smoothedFrame = Mathf.Lerp(_smoothedFrame, Time.unscaledDeltaTime, 0.06f);
-            int fps = Mathf.RoundToInt(1f / Mathf.Max(0.001f, _smoothedFrame));
-
-            // Пинг рядом с FPS, цвет по порогам web: до 80 хорошо, до 160 средне.
-            int ping = _hud.PingMs;
-            string pingColor = ping < 0 ? "#adb3a0" : (ping <= 80 ? "#b8f18b" : (ping <= 160 ? "#ffd676" : "#ff9474"));
-            string pingText = ping < 0 ? "—ms" : ping + "ms";
-            _fpsText.supportRichText = true;
-            _fpsText.text = "FPS: " + fps + " <color=" + pingColor + ">" + pingText + "</color>";
-
-            // Чипы прогрессии — как в web: подпись приглушённая, число тёплое.
             _statsText.text =
-                "<color=#d7e3a2>УРОВЕНЬ</color> <color=#ffd16b>" + _hud.Level + "</color>   "
-                + "<color=#d7e3a2>ОПЫТ</color> <color=#ffd16b>" + _hud.Xp + "/" + Mathf.Max(1, _hud.XpNeeded) + "</color>   "
-                + "<color=#d7e3a2>ПЕРКИ</color> <color=#ffd16b>" + _hud.PerkPoints + "</color>   "
-                + "<color=#d7e3a2>НАВЫКИ</color> <color=#ffd16b>" + _hud.SkillPoints + "</color>";
+                "<color=#d7e3a2>УР.</color> <color=#ffd16b>" + _hud.Level + "</color>   "
+                + "<color=#d7e3a2>ОПЫТ</color> <color=#ffd16b>" + _hud.Xp + "/" + Mathf.Max(1, _hud.XpNeeded) + "</color>";
         }
 
         /// <summary>
@@ -592,7 +1133,7 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void RefreshConsole()
         {
-            if (_hud == null || !_consolePanel.activeSelf) return;
+            if (_hud == null || (!_consolePanel.activeSelf && !_compactConsolePanel.activeSelf)) return;
 
             RoaWeaponData.Weapon weapon = RoaWeaponData.Get(_hud.WeaponId);
             RoaWeaponData.FireMode mode = RoaWeaponData.Mode(_hud.WeaponId,
@@ -616,6 +1157,13 @@ namespace RealmOfAshes.Game
             _consoleArmor.text = _hud.ArmorThreshold.ToString();
 
             bool hasAmmo = !string.IsNullOrEmpty(weapon.AmmoType);
+            bool hasLoadedRound = _combat != null ? _combat.HasUsableRound : _hud.Loaded > 0;
+            int attackApCost = _combat != null ? _combat.CurrentAttackApCost : mode.ApCost;
+            RoaWeaponReadiness.Frame readiness = _combat != null
+                ? _combat.WeaponReadiness
+                : RoaWeaponReadiness.Evaluate(
+                    hasAmmo, hasLoadedRound, _hud.ReserveAmmo, _hud.Ap, attackApCost,
+                    _hud.CooldownRemainingSeconds, false, 0f);
             _consoleDamage.text = Mathf.Max(1, Mathf.RoundToInt(weapon.DmgMin * mode.DamageMul))
                 + "-" + Mathf.Max(1, Mathf.RoundToInt(weapon.DmgMax * mode.DamageMul));
             _consoleMag.text = hasAmmo ? _hud.Loaded + "/" + Mathf.Max(0, _hud.MagSize) : "—";
@@ -623,7 +1171,9 @@ namespace RealmOfAshes.Game
             _consoleAmmoType.text = RoaWeaponData.AmmoLabel(weapon.AmmoType);
 
             _consoleModeLabel.text = mode.Label;
-            _consoleApCost.text = mode.ApCost + " ОД";
+            _consoleWeaponState.text = readiness.Label;
+            _consoleWeaponState.color = WeaponStateColor(readiness.Kind);
+            _consoleApCost.text = attackApCost + " ОД";
             _consoleAmmoMain.text = hasAmmo ? _hud.Loaded.ToString("000") : "---";
             _consoleAmmoMain.color = hasAmmo && _hud.Loaded <= 0 ? AmmoEmpty : ConsoleAccent;
             _consoleWeaponName.text = weapon.Name;
@@ -633,6 +1183,41 @@ namespace RealmOfAshes.Game
             int activeLeds = Mathf.Clamp(Mathf.FloorToInt(_hud.Ap), 0, LedCount);
             for (int i = 0; i < LedCount; i++)
                 if (_leds[i] != null) _leds[i].color = i < activeLeds ? LedOn : LedOff;
+
+            _compactHp.text = "HP  " + _hud.Hp + "/" + Mathf.Max(1, _hud.MaxHp);
+            _compactHp.color = hpRatio <= 0.25f ? HpCritical
+                : hpRatio <= 0.55f ? HpWarning : HpHealthy;
+            _compactHpFill.color = _compactHp.color;
+            SetFill(_compactHpFill, hpRatio);
+            _compactAp.text = "ОД  " + Mathf.FloorToInt(_hud.Ap) + "/" + Mathf.Max(1, _hud.MaxAp)
+                + "   БРОНЯ " + _hud.ArmorThreshold;
+            _compactWeapon.text = weapon.Name;
+            _compactWeaponState.text = mode.Label.ToUpperInvariant() + " · " + readiness.Label
+                + " · " + attackApCost + " ОД";
+            _compactWeaponState.color = WeaponStateColor(readiness.Kind);
+            _compactAmmo.text = hasAmmo
+                ? _hud.Loaded + "/" + Mathf.Max(0, _hud.MagSize) + "  +" + _hud.ReserveAmmo
+                    + "\n" + RoaWeaponData.AmmoLabel(weapon.AmmoType)
+                : "БЛИЖНИЙ\nБОЙ";
+            _compactAmmo.color = hasAmmo && _hud.Loaded <= 0 ? AmmoEmpty : ConsoleAccent;
+        }
+
+        private static Color WeaponStateColor(RoaWeaponReadinessKind kind)
+        {
+            switch (kind)
+            {
+                case RoaWeaponReadinessKind.Ready:
+                    return LedOn;
+                case RoaWeaponReadinessKind.AttackPending:
+                case RoaWeaponReadinessKind.Cooldown:
+                case RoaWeaponReadinessKind.ReloadPending:
+                case RoaWeaponReadinessKind.Reloading:
+                    return ConsoleAccent;
+                case RoaWeaponReadinessKind.Empty:
+                    return HpWarning;
+                default:
+                    return AmmoEmpty;
+            }
         }
 
         private void RefreshMinimap()
@@ -660,7 +1245,7 @@ namespace RealmOfAshes.Game
                 Image image = _markers[i];
                 image.gameObject.SetActive(visible);
                 if (!visible) continue;
-                image.rectTransform.anchoredPosition = new Vector2(p.x * 200f, p.y * 200f);
+                image.rectTransform.anchoredPosition = new Vector2(p.x * MinimapPixels, p.y * MinimapPixels);
                 ApplyMarkerStyle(image, marker.Kind);
             }
             for (int i = count; i < _markers.Length; i++) _markers[i].gameObject.SetActive(false);
@@ -670,7 +1255,7 @@ namespace RealmOfAshes.Game
             _playerArrow.gameObject.SetActive(playerVisible);
             if (playerVisible)
             {
-                _playerArrow.rectTransform.anchoredPosition = new Vector2(player.x * 200f, player.y * 200f);
+                _playerArrow.rectTransform.anchoredPosition = new Vector2(player.x * MinimapPixels, player.y * MinimapPixels);
                 _playerArrow.rectTransform.localEulerAngles = new Vector3(0f, 0f, -_minimap.PlayerHeading);
             }
         }
@@ -695,7 +1280,7 @@ namespace RealmOfAshes.Game
         private void RefreshLog()
         {
             if (_combat == null || !_logPanel.activeSelf) return;
-            int start = Mathf.Max(0, _combat.LogLines.Count - 4);
+            int start = Mathf.Max(0, _combat.LogLines.Count - 3);
             var text = new StringBuilder();
             for (int i = start; i < _combat.LogLines.Count; i++)
             {
@@ -712,12 +1297,20 @@ namespace RealmOfAshes.Game
             {
                 case RoaMinimap.MarkerKind.Enemy:
                     image.color = new Color(0.88f, 0.31f, 0.22f); size = 5f; break;
+                case RoaMinimap.MarkerKind.FriendlyNpc:
+                    image.color = new Color(0.46f, 0.75f, 0.62f); size = 5f; break;
+                case RoaMinimap.MarkerKind.ServiceNpc:
+                    image.color = new Color(0.95f, 0.75f, 0.30f); size = 6f; break;
                 case RoaMinimap.MarkerKind.RemotePlayer:
                     image.color = new Color(0.44f, 0.67f, 0.90f); size = 6f; break;
                 case RoaMinimap.MarkerKind.GroundItem:
                     image.color = new Color(0.90f, 0.84f, 0.50f); size = 4f; break;
                 case RoaMinimap.MarkerKind.Container:
                     image.color = new Color(0.90f, 0.71f, 0.35f); size = 5f; break;
+                case RoaMinimap.MarkerKind.Objective:
+                    image.color = new Color(0.95f, 0.78f, 0.25f); size = 7f; break;
+                case RoaMinimap.MarkerKind.Extraction:
+                    image.color = new Color(0.42f, 0.82f, 0.40f); size = 8f; break;
                 default:
                     image.color = new Color(0.78f, 0.62f, 0.30f); size = 4f; break;
             }
@@ -784,6 +1377,10 @@ namespace RealmOfAshes.Game
             label.fontStyle = style;
             label.raycastTarget = false;
             label.supportRichText = false;
+            Shadow shadow = rect.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.62f);
+            shadow.effectDistance = new Vector2(1f, -1f);
+            shadow.useGraphicAlpha = true;
             return label;
         }
 

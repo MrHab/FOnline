@@ -19,7 +19,7 @@ namespace RealmOfAshes.Game
     ///
     /// Вся логика (запросы, этапы, проверки) остаётся в RoaGameBootstrap —
     /// это окно только рисует и дёргает его фасад Auth*.
-    /// Создание персонажа пока остаётся IMGUI-экраном bootstrap.
+    /// Создание персонажа также собирается здесь: SPECIAL, навыки, перки и живой предпросмотр.
     /// </summary>
     public sealed class RoaAuthCanvas : MonoBehaviour
     {
@@ -402,6 +402,7 @@ namespace RealmOfAshes.Game
             Place(scrollArea, 0f, 1f, 1f, 1f, new Vector2(12f, -44f - listHeight), new Vector2(-12f, -44f));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scrollArea.gameObject.AddComponent<RectMask2D>();
             RectTransform list = Child("List", scrollArea);
             list.anchorMin = new Vector2(0f, 1f);
@@ -674,6 +675,7 @@ namespace RealmOfAshes.Game
             Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(12f, 10f), new Vector2(-8f, -top));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scroll.scrollSensitivity = 24f;
             scrollArea.gameObject.AddComponent<RectMask2D>();
             RectTransform list = Child("List", scrollArea);

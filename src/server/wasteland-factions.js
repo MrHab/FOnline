@@ -2,7 +2,14 @@
 
 const { safeId } = require('./wasteland-sim-utils');
 
-const JOINABLE_WORLD_FACTIONS = new Set(['old_klim', 'scrap_union', 'relay_order', 'caravans']);
+// Player-facing political factions are deliberately narrower than the world
+// simulation's territorial groups. Free caravans still own sites, trade,
+// remember robberies and defend their camp, but players do not join them and
+// never build a reputation meter with them.
+const JOINABLE_WORLD_FACTIONS = new Set(['old_klim', 'scrap_union', 'relay_order']);
+const TERRITORIAL_WORLD_FACTIONS = new Set([...JOINABLE_WORLD_FACTIONS, 'caravans']);
+const INDEPENDENT_WORLD_FACTIONS = new Set(['caravans', 'neutral']);
+const HOSTILE_WORLD_FACTIONS = new Set(['raiders', 'mutants', 'wild']);
 const FACTION_CAPITAL_SITES = {
   settlement: 'old_klim',
   scrapTown: 'scrap_union',
@@ -25,6 +32,18 @@ function factionGroup(faction = '') {
 
 function isJoinableWorldFaction(faction = '') {
   return JOINABLE_WORLD_FACTIONS.has(factionGroup(faction));
+}
+
+function isTerritorialWorldFaction(faction = '') {
+  return TERRITORIAL_WORLD_FACTIONS.has(factionGroup(faction));
+}
+
+function factionCategory(faction = '') {
+  const group = factionGroup(faction);
+  if (JOINABLE_WORLD_FACTIONS.has(group)) return 'major';
+  if (INDEPENDENT_WORLD_FACTIONS.has(group)) return 'independent';
+  if (HOSTILE_WORLD_FACTIONS.has(group)) return 'hostile';
+  return 'independent';
 }
 
 function factionLabel(faction = '') {
@@ -76,13 +95,18 @@ function protectFactionCapitalSite(site = {}) {
 module.exports = {
   FACTION_CAPITAL_SITE_IDS,
   FACTION_CAPITAL_SITES,
+  HOSTILE_WORLD_FACTIONS,
+  INDEPENDENT_WORLD_FACTIONS,
   JOINABLE_WORLD_FACTIONS,
+  TERRITORIAL_WORLD_FACTIONS,
   capitalFactionForSite,
+  factionCategory,
   factionGroup,
   factionLabel,
   isCapitalProtectedSite,
   isFactionCapitalSite,
   isJoinableWorldFaction,
+  isTerritorialWorldFaction,
   protectFactionCapitalSite,
   siteUsesFactionCapitalLocation
 };

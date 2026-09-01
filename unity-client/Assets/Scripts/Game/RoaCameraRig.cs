@@ -8,14 +8,23 @@ namespace RealmOfAshes.Game
     /// Углы и дистанция подобраны под ту же читаемость сцены, что и у web-клиента:
     /// наклон около 55° даёт видеть и пол, и фасады строений.
     /// </summary>
-    public sealed class RoaCameraRig : MonoBehaviour
+    public sealed partial class RoaCameraRig : MonoBehaviour
     {
-        private const string ZoomPrefsKey = "roa.cameraDistance.v2";
+        private const string ZoomPrefsKey = "roa.cameraDistance.v4";
+        private const string PreviousZoomPrefsKey = "roa.cameraDistance.v3";
+        private const string LegacyZoomPrefsKey = "roa.cameraDistance.v2";
+        private const float PreviousDefaultGameplayDistance = 13.5f;
+
+        public const float DefaultGameplayDistance = 11.5f;
+        public const float MinimumGameplayDistance = 8f;
+        public const float MaximumGameplayDistance = 21.5f;
+        public const float GameplayFieldOfView = 52f;
+        public const float StrategicFieldOfView = 60f;
 
         public Transform Target;
 
         [Header("Расположение")]
-        public float Distance = 14f;
+        public float Distance = DefaultGameplayDistance;
         public float PitchDeg = 55f;
         public float YawDeg = 45f;
 
@@ -24,8 +33,8 @@ namespace RealmOfAshes.Game
         public float SmoothTime = 0.12f;
 
         [Header("Зум колесом")]
-        public float MinDistance = 8f;
-        public float MaxDistance = 28f;
+        public float MinDistance = MinimumGameplayDistance;
+        public float MaxDistance = MaximumGameplayDistance;
         public float ZoomSpeed = 6f;
 
         /// <summary>
@@ -35,11 +44,27 @@ namespace RealmOfAshes.Game
         public bool ZoomPersistenceEnabled = true;
 
         private Vector3 _velocity;
+        private float _impulse;
 
         private void Awake()
         {
-            if (PlayerPrefs.HasKey(ZoomPrefsKey))
-                Distance = Mathf.Clamp(PlayerPrefs.GetFloat(ZoomPrefsKey, Distance), MinDistance, MaxDistance);
+            string key = PlayerPrefs.HasKey(ZoomPrefsKey) ? ZoomPrefsKey
+                : PlayerPrefs.HasKey(PreviousZoomPrefsKey) ? PreviousZoomPrefsKey
+                : PlayerPrefs.HasKey(LegacyZoomPrefsKey) ? LegacyZoomPrefsKey : string.Empty;
+            if (!string.IsNullOrEmpty(key))
+            {
+                float stored = PlayerPrefs.GetFloat(key, Distance);
+                if (key != ZoomPrefsKey
+                    && Mathf.Abs(stored - PreviousDefaultGameplayDistance) < 0.01f)
+                    stored = DefaultGameplayDistance;
+                Distance = Mathf.Clamp(stored, MinDistance, MaxDistance);
+                if (key != ZoomPrefsKey)
+                {
+                    PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);
+                    PlayerPrefs.Save();
+                }
+            }
+            SetFieldOfView(GameplayFieldOfView);
         }
 
         private void LateUpdate()
@@ -51,13 +76,29 @@ namespace RealmOfAshes.Game
                 SetDistance(Distance - scroll * ZoomSpeed * Distance, ZoomPersistenceEnabled);
 
             Quaternion orbit = Quaternion.Euler(PitchDeg, YawDeg, 0f);
-            Vector3 desired = Target.position - orbit * Vector3.forward * Distance;
+            bool teleported;
+            Vector3 framedTarget = UpdatePresentationTarget(Target, orbit, out teleported);
+            Vector3 desired = framedTarget - orbit * Vector3.forward * Distance;
+            float impulse = _impulse;
+            if (impulse > 0.001f)
+            {
+                desired += EvaluateShakeOffset(orbit, impulse, Time.unscaledTime);
+                _impulse = Mathf.MoveTowards(_impulse, 0f, Time.unscaledDeltaTime * 1.15f);
+            }
 
-            transform.position = SmoothTime > 0f
-                ? Vector3.SmoothDamp(transform.position, desired, ref _velocity, SmoothTime)
+            transform.position = teleported ? desired : SmoothTime > 0f
+                ? Vector3.SmoothDamp(transform.position, desired, ref _velocity,
+                    SmoothTime, Mathf.Infinity, Time.unscaledDeltaTime)
                 : desired;
+            if (teleported) _velocity = Vector3.zero;
 
-            transform.rotation = orbit;
+            transform.rotation = orbit * EvaluateShakeRotation(impulse, Time.unscaledTime);
+        }
+
+        public void AddImpulse(float amount)
+        {
+            if (RoaGameBootstrap.BlocksWorldHud) return;
+            _impulse = Mathf.Clamp(Mathf.Max(_impulse, amount), 0f, 0.22f);
         }
 
         public void SetDistance(float distance, bool persist)
@@ -66,6 +107,31 @@ namespace RealmOfAshes.Game
             if (!persist) return;
             PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);
             PlayerPrefs.Save();
+        }
+
+        public float CurrentFieldOfView
+        {
+            get
+            {
+                Camera view = GetComponent<Camera>();
+                return view != null ? view.fieldOfView : GameplayFieldOfView;
+            }
+        }
+
+        public void SetFieldOfView(float fieldOfView)
+        {
+            Camera view = GetComponent<Camera>();
+            if (view != null) view.fieldOfView = Mathf.Clamp(fieldOfView, 35f, 75f);
+        }
+
+        public static float ProjectedActorScreenFraction(float actorHeight, float distance,
+                                                          float fieldOfView, float pitchDeg)
+        {
+            float visibleHeight = Mathf.Max(0f, actorHeight)
+                * Mathf.Abs(Mathf.Cos(pitchDeg * Mathf.Deg2Rad));
+            float frustumHeight = 2f * Mathf.Max(0.01f, distance)
+                * Mathf.Tan(Mathf.Clamp(fieldOfView, 1f, 179f) * 0.5f * Mathf.Deg2Rad);
+            return visibleHeight / Mathf.Max(0.001f, frustumHeight);
         }
 
         /// <summary>Мгновенно поставить камеру на место — при входе в локацию, без пролёта через всю карту.</summary>
@@ -77,6 +143,8 @@ namespace RealmOfAshes.Game
             transform.position = Target.position - orbit * Vector3.forward * Distance;
             transform.rotation = orbit;
             _velocity = Vector3.zero;
+            _impulse = 0f;
+            ResetPresentationState(Target.position);
         }
 
         /// <summary>Направление «вперёд» для ввода: проекция взгляда камеры на горизонталь.</summary>

@@ -17,6 +17,8 @@ namespace RealmOfAshes.Game
     public sealed class RoaPipboy : MonoBehaviour
     {
         private const float RemoteHealRange = 4.2f;
+        public static readonly string[] PrimaryFactionIds = { "old_klim", "scrap_union", "relay_order" };
+        public const string FactionGroupsExplanation = "Независимые поселения и караваны не имеют шкалы репутации. Рейдеры, мутанты, гули и дикие существа — угрозы, а не фракции игрока.";
 
         public RoaSocketClient Socket;
         public RoaRemotePlayers RemotePlayers;
@@ -327,7 +329,7 @@ namespace RealmOfAshes.Game
             DrawTabButton(Tab.Status, "Статус");
             DrawTabButton(Tab.Skills, "Навыки");
             DrawTabButton(Tab.Talents, "Таланты");
-            DrawTabButton(Tab.Tasks, "Работы");
+            DrawTabButton(Tab.Tasks, "Контракты");
             DrawTabButton(Tab.Social, "Друзья и клан");
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
@@ -383,7 +385,7 @@ namespace RealmOfAshes.Game
             GUILayout.Label(limit > 0 ? "В очереди: " + players + " из " + limit : "В очереди: " + players);
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Открыть работы"))
+            if (GUILayout.Button("Открыть контракты"))
             {
                 _tab = Tab.Tasks;
                 _open = true;
@@ -454,7 +456,7 @@ namespace RealmOfAshes.Game
             if (quests != null && quests.Count > 0)
             {
                 GUILayout.Space(8f);
-                GUILayout.Label("<b>Локальные задания</b>", Rich());
+                GUILayout.Label("<b>Сюжетный журнал</b>", Rich());
                 foreach (KeyValuePair<string, JToken> entry in quests)
                     GUILayout.Label(entry.Key + ": " + QuestStateLabel(entry.Value?.ToString()));
             }
@@ -467,7 +469,7 @@ namespace RealmOfAshes.Game
             JArray records = _self["worldTaskRecords"] as JArray;
             if (records == null || records.Count == 0)
             {
-                GUILayout.Label("Активных или отслеживаемых работ нет. Возьмите работу у доски поселения.");
+                GUILayout.Label("Активных или отслеживаемых контрактов нет. Проверьте доску контрактов поселения.");
                 GUILayout.EndScrollView();
                 return;
             }
@@ -513,6 +515,8 @@ namespace RealmOfAshes.Game
 
         /// <summary>Принятая работа «сопровождение каравана» на стоянке (acceptedStagingCaravanTask web).</summary>
         public JObject StagingTask { get { return _self != null ? StagingCaravanTask() : null; } }
+        public JObject ActiveEscortTask { get { return _self != null ? AcceptedCaravanTask() : null; } }
+        public JObject WorldParty(string id) { return FindWorldParty(id); }
         public float? StagingSeconds(JObject task) { return StagingSecondsLeft(task); }
         public static string CountdownText(float seconds) { return FormatCountdown(seconds); }
         public string SiteName(string id) { return WorldSiteName(_wasteland?["sites"] as JArray, id); }
@@ -526,6 +530,14 @@ namespace RealmOfAshes.Game
 
         private JObject StagingCaravanTask()
         {
+            JObject task = AcceptedCaravanTask();
+            JObject details = task?["details"] as JObject;
+            return details?["staging"]?.ToObject<bool>() == true
+                && details["joinClosed"]?.ToObject<bool>() != true ? task : null;
+        }
+
+        private JObject AcceptedCaravanTask()
+        {
             foreach (JToken token in _self?["worldTaskRecords"] as JArray ?? new JArray())
             {
                 JObject task = token as JObject;
@@ -533,10 +545,16 @@ namespace RealmOfAshes.Game
                     || task["status"]?.ToString() != "active") continue;
                 string id = task["id"]?.ToString();
                 if (!ArrayContains(_self?["worldTaskAccepted"] as JArray, id)) continue;
-                JObject details = task["details"] as JObject;
-                if (details?["staging"]?.ToObject<bool>() == true
-                    && details["joinClosed"]?.ToObject<bool>() != true) return task;
+                return task;
             }
+            return null;
+        }
+
+        private JObject FindWorldParty(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            foreach (JToken token in _wasteland?["parties"] as JArray ?? new JArray())
+                if (token?["id"]?.ToString() == id) return token as JObject;
             return null;
         }
 
@@ -700,7 +718,7 @@ namespace RealmOfAshes.Game
         private void DrawFactions()
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label("<b>Отношения фракций</b>", Rich(), GUILayout.ExpandWidth(true));
+            GUILayout.Label("<b>Основные фракции</b>", Rich(), GUILayout.ExpandWidth(true));
             GUI.enabled = !_worldRequestPending;
             if (GUILayout.Button(_worldRequestPending ? "Обновление…" : "Обновить", GUILayout.Width(112f)))
                 _worldRefreshAt = 0f;
@@ -717,11 +735,10 @@ namespace RealmOfAshes.Game
             string playerFaction = WorldFactionId();
             GUILayout.Label("Текущая сторона: " + (string.IsNullOrEmpty(playerFaction)
                 ? "Независимый странник" : FactionLabel(playerFaction)), GUI.skin.box);
+            GUILayout.Label(FactionGroupsExplanation, Wrap());
             _factionsScroll = GUILayout.BeginScrollView(_factionsScroll);
-            string[] ids = { "old_klim", "scrap_union", "relay_order", "caravans", "neutral", "raiders", "mutants", "wild" };
-            foreach (string id in ids)
+            foreach (string id in PrimaryFactionIds)
             {
-                int relation = FactionRelation(id, playerFaction);
                 int sites;
                 int parties;
                 int contested;
@@ -730,10 +747,10 @@ namespace RealmOfAshes.Game
                 GUILayout.BeginVertical(GUI.skin.box);
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("<b>" + FactionLabel(id) + "</b>", Rich(), GUILayout.ExpandWidth(true));
-                GUILayout.Label(RelationLabel(id, playerFaction, relation), GUILayout.Width(190f));
+                GUILayout.Label(id == playerFaction ? "Ваша фракция" : "Доступна для вступления", GUILayout.Width(190f));
                 GUILayout.EndHorizontal();
-                string extra = IsJoinableFaction(id) ? " · репутация " + reputation : string.Empty;
-                GUILayout.Label("Точки " + sites + " · отряды " + parties + " · спорные " + contested + extra);
+                GUILayout.Label("Точки " + sites + " · отряды " + parties + " · спорные " + contested
+                    + " · репутация " + reputation);
                 GUILayout.EndVertical();
             }
             GUILayout.EndScrollView();
@@ -1097,18 +1114,18 @@ namespace RealmOfAshes.Game
             _pending = true;
             _pendingProgression = false;
             _pendingUntil = Time.unscaledTime + 5f;
-            _status = "Сервер обновляет работу…";
+            _status = "Сервер обновляет контракт…";
             Socket.EmitWithAck("worldTaskAction", new { taskId, action }, ack =>
             {
                 _pending = false;
                 Socket.ApplyGameplayAck(ack);
                 if (ack == null || ack["ok"]?.ToObject<bool>() != true)
                 {
-                    _status = ack?["error"]?.ToString() ?? "Работа не обновлена.";
+                    _status = ack?["error"]?.ToString() ?? "Контракт не обновлён.";
                     return;
                 }
                 if (action == "track") _status = string.IsNullOrEmpty(ack["trackedId"]?.ToString())
-                    ? "Метка работы снята." : "Работа отслеживается.";
+                    ? "Метка контракта снята." : "Контракт отслеживается.";
                 else if (action == "deliver") _status = "Припасы доставлены.";
                 else if (action == "claim")
                 {
@@ -1116,8 +1133,8 @@ namespace RealmOfAshes.Game
                     _status = "Награда получена: " + Int(reward?["xp"]) + " XP, "
                         + Int(reward?["caps"]) + " крышек.";
                 }
-                else if (action == "cancel") _status = "Работа отменена.";
-                else _status = "Работа обновлена.";
+                else if (action == "cancel") _status = "Контракт отменён.";
+                else _status = "Контракт обновлён.";
             });
         }
 
@@ -1529,7 +1546,7 @@ namespace RealmOfAshes.Game
 
         public static bool IsJoinableFaction(string id)
         {
-            return id == "old_klim" || id == "scrap_union" || id == "relay_order" || id == "caravans";
+            return id == "old_klim" || id == "scrap_union" || id == "relay_order";
         }
 
         public static string FactionLabel(string id)

@@ -35,10 +35,10 @@ namespace RealmOfAshes.Game
         private const float MinAimDistance = 0.35f;
 
         /// <summary>
-        /// «Поднятое положение» (high-ready): щуп вдоль ствола на этих расстояниях
-        /// от рукояти. 04d:1308.
+        /// «Поднятое положение» (high-ready): непрерывный щуп вдоль ствола
+        /// от рукояти до этой дистанции. Тонкая геометрия между точками не теряется.
         /// </summary>
-        private static readonly float[] ObstructionProbes = { 0.55f, 0.95f };
+        private const float ObstructionDistance = 0.95f;
 
         /// <summary>Радиус щупа, м. Совпадает с проверкой движения игрока.</summary>
         private const float ObstructionRadius = 0.18f;
@@ -46,18 +46,132 @@ namespace RealmOfAshes.Game
         /// <summary>Насколько ствол поднимается при полном упоре, рад.</summary>
         private const float ReadyRaiseAngle = 1.05f;
 
-        /// <summary>Скорость смешивания подъёма за кадр. 04d:1314.</summary>
-        private const float ObstructionBlendStep = 0.16f;
+        /// <summary>Скорости входа в high-ready и возврата, 1/с.</summary>
+        private const float ObstructionRaiseRate = 15f;
+        private const float ObstructionReleaseRate = 8f;
+
+        /// <summary>
+        /// После этой глубины упора выстрел уже физически не помещается между
+        /// кистью и препятствием. Небольшое касание у конца щупа только начинает
+        /// high-ready и не должно блокировать огонь слишком рано.
+        /// </summary>
+        public const float FireBlockThreshold = 0.34f;
+
+        private const float ContactBumpSeconds = 0.18f;
+        private const float ContactBumpAngle = 0.13f;
+
+        /// <summary>Момент максимального импульса и полная длина отдачи огнестрела.</summary>
+        public const float RecoilPeakSeconds = 0.045f;
+        public const float RecoilDurationSeconds = 0.20f;
 
         private static readonly Collider[] ProbeHits = new Collider[8];
+        private static readonly RaycastHit[] ProbeCastHits = new RaycastHit[16];
 
         private float _obstructedBlend;
+        private float _contactBumpStartedAt = -100f;
+        private float _recoilStartedAt = -100f;
+        private float _recoilSide = 1f;
 
         /// <summary>Насколько ствол поднят из-за препятствия, 0..1. Для диагностики.</summary>
         public float ObstructedBlend { get { return _obstructedBlend; } }
 
+        /// <summary>Короткая процедурная отдача от попытки выстрела в упор.</summary>
+        public float ContactBumpWeight
+        {
+            get { return ContactBumpEnvelope(Time.time - _contactBumpStartedAt); }
+        }
+
+        /// <summary>Текущий импульс обычного выстрела, 0..1. Для диагностики.</summary>
+        public float RecoilWeight
+        {
+            get { return RecoilEnvelope(Time.time - _recoilStartedAt); }
+        }
+
+        public static bool BlocksFire(string weaponId, float primaryObstruction,
+                                      float offhandObstruction = 0f)
+        {
+            return IsFirearm(weaponId)
+                && Mathf.Max(primaryObstruction, offhandObstruction) >= FireBlockThreshold;
+        }
+
+        /// <summary>FPS-независимая огибающая контактного толчка, 0..1.</summary>
+        public static float ContactBumpEnvelope(float elapsed)
+        {
+            if (elapsed < 0f || elapsed >= ContactBumpSeconds) return 0f;
+            float phase = elapsed / ContactBumpSeconds;
+            return Mathf.Sin(phase * Mathf.PI);
+        }
+
+        /// <summary>
+        /// Быстрый толчок назад и более мягкое возвращение. Огибающая не зависит
+        /// от FPS, поэтому одиночный выстрел одинаково читается на 30 и 144 кадрах.
+        /// </summary>
+        public static float RecoilEnvelope(float elapsed)
+        {
+            if (elapsed < 0f || elapsed >= RecoilDurationSeconds) return 0f;
+            if (elapsed <= RecoilPeakSeconds)
+            {
+                float rise = Mathf.Clamp01(elapsed / RecoilPeakSeconds);
+                return rise * rise * (3f - 2f * rise);
+            }
+
+            float fall = Mathf.Clamp01((elapsed - RecoilPeakSeconds)
+                / (RecoilDurationSeconds - RecoilPeakSeconds));
+            fall = fall * fall * (3f - 2f * fall);
+            return 1f - fall;
+        }
+
+        /// <summary>
+        /// Проиграть атаку оружия без замены клипа ног: ближний бой запускает
+        /// существующий замах, огнестрел — короткую процедурную отдачу корпуса.
+        /// </summary>
+        public void PlayAttack()
+        {
+            PlayAttack(0f);
+        }
+
+        /// <param name="meleeSwingSeconds">
+        /// Полная длительность замаха. Ноль сохраняет локальный быстрый удар;
+        /// NPC передаёт рассчитанную длительность для контакта по серверному
+        /// дедлайну. Для огнестрела параметр намеренно игнорируется.
+        /// </param>
+        public void PlayAttack(float meleeSwingSeconds)
+        {
+            if (!Ready) return;
+            if (_melee != null)
+            {
+                StartSwing(meleeSwingSeconds);
+                return;
+            }
+
+            _recoilSide = -_recoilSide;
+            _recoilStartedAt = Time.time;
+        }
+
+        /// <summary>
+        /// Stop the transient attack layer without unequipping the weapon.
+        /// Hit and death presentation own a higher priority than recoil or a
+        /// melee swing, so their pose must not keep bending the same bones.
+        /// </summary>
+        public void CancelAttackPose()
+        {
+            _swingStartedAt = -1f;
+            _recoilStartedAt = -100f;
+        }
+
+        public void PlayBlockedContact()
+        {
+            _contactBumpStartedAt = Time.time;
+        }
+
         /// <summary>Позвонки, по которым раскладывается доворот корпуса.</summary>
         private static readonly string[] TorsoBones = { "spine_01", "spine_02", "spine_03" };
+        private static readonly Vector3[] RecoilOffsets =
+        {
+            new Vector3(-0.010f, 0.002f, 0.003f),
+            new Vector3(-0.020f, 0.003f, 0.004f),
+            new Vector3(-0.014f, 0.002f, 0.002f)
+        };
 
         private static readonly Dictionary<string, GltfImport> WeaponCache = new Dictionary<string, GltfImport>();
 
@@ -132,6 +246,12 @@ namespace RealmOfAshes.Game
             _reloadStartedAt = Time.time;
         }
 
+        /// <summary>Вернуть руку в боевую стойку перед следующим разрешённым выстрелом.</summary>
+        public void CancelReload()
+        {
+            _reloadStartedAt = -1f;
+        }
+
         /// <summary>Фаза перезарядки 0..1, либо −1 если она не идёт.</summary>
         private float ReloadPhase()
         {
@@ -157,6 +277,16 @@ namespace RealmOfAshes.Game
             get { return _socketGrip != null ? _socketGrip.position.y : 0f; }
         }
 
+        public bool TryGetMuzzle(out Vector3 worldPosition)
+        {
+            if (_socketMuzzle != null)
+            {
+                worldPosition = _socketMuzzle.position;
+                return true;
+            }
+            worldPosition = Vector3.zero;
+            return false;
+        }
         private Transform _weapon;
         private Transform _socketGrip;
         private Transform _socketMuzzle;
@@ -178,6 +308,9 @@ namespace RealmOfAshes.Game
 
         /// <summary>Левая рука дотянулась до цевья. Для диагностики.</summary>
         public bool SupportHandSolved { get; private set; }
+
+        public bool DualWield { get; set; }
+        public bool PrimaryHandSolved { get; private set; }
 
         private Dictionary<string, Transform> _bones;
         private readonly Transform[] _torso = new Transform[TorsoBones.Length];
@@ -210,6 +343,9 @@ namespace RealmOfAshes.Game
             TorsoResidual = 0f;
             WeaponConverge = 0f;
             _obstructedBlend = 0f;
+            _contactBumpStartedAt = -100f;
+            _recoilStartedAt = -100f;
+            _recoilSide = 1f;
             _reloadStartedAt = -1f;
             _reloadProfile = null;
             _reloadNode = null;
@@ -218,6 +354,8 @@ namespace RealmOfAshes.Game
             _primaryArm = null;
             _melee = null;
             _swingStartedAt = -1f;
+            DualWield = false;
+            PrimaryHandSolved = false;
         }
 
         public async Task Load(string baseUrl, string weaponId, Transform characterRoot,
@@ -342,7 +480,7 @@ namespace RealmOfAshes.Game
             Debug.Log("[ROA] Оружие " + weaponId + " подключено.");
         }
 
-        private static async Task<GltfImport> LoadCached(string key, string url)
+        internal static async Task<GltfImport> LoadCached(string key, string url)
         {
             GltfImport cached;
             if (WeaponCache.TryGetValue(key, out cached)) return cached;
@@ -364,6 +502,15 @@ namespace RealmOfAshes.Game
             return bones.TryGetValue(name, out bone) ? bone : null;
         }
 
+        private Vector3 ArmPole(bool left)
+        {
+            Transform upper = Bone(_bones, left ? "upperarm_l" : "upperarm_r");
+            Vector3 origin = upper != null ? upper.position : (_owner != null ? _owner.position : Vector3.zero);
+            Vector3 right = _owner != null ? _owner.right : Vector3.right;
+            Vector3 forward = _owner != null ? _owner.forward : Vector3.forward;
+            return origin + right * (left ? -0.48f : 0.48f) - forward * 0.18f + Vector3.down * 0.22f;
+        }
+
         private static Transform FindDeep(Transform root, string name)
         {
             if (root.name == name) return root;
@@ -374,6 +521,13 @@ namespace RealmOfAshes.Game
                 if (found != null) return found;
             }
             return null;
+        }
+
+        /// <summary>Дешёвый дальний LOD: оружие следует за кистью без IK и physics-проб.</summary>
+        public void ApplyReduced()
+        {
+            if (!Ready || _weapon == null || _hand == null) return;
+            Mount();
         }
 
         /// <summary>
@@ -401,6 +555,14 @@ namespace RealmOfAshes.Game
 
             // 1. Поза хвата поверх клипа локомоции: руки, кисти и пальцы.
             RoaWeaponGrip.ApplyTo(_bones);
+
+            // Короткий импульс не останавливает ноги. Он добавляется после клипа
+            // и хвата, а последующий IK снова точно посадит левую руку на цевьё.
+            ApplyFirearmRecoil();
+
+            // У пары пистолетов каждая рука держит свой ствол. На перезарядке
+            // правая кисть уходит вниз и к центру через ту же IK-цепь.
+            ApplyDualReloadPrimaryPose();
 
             // 2. Оружие в кисть.
             Mount();
@@ -459,37 +621,76 @@ namespace RealmOfAshes.Game
             {
                 Vector3 dir = barrel.normalized;
 
-                foreach (float distance in ObstructionProbes)
-                {
-                    if (!ProbeBlocked(grip + dir * distance)) continue;
-                    target = 1f;
-                    break;
-                }
+                Vector3 start = grip + dir * 0.08f;
+                Vector3 end = grip + dir * ObstructionDistance;
+                target = ObstructionAmount(start, end, ObstructionRadius, _owner, _weapon);
             }
 
-            _obstructedBlend += (target - _obstructedBlend) * ObstructionBlendStep;
-            if (_obstructedBlend < 0.005f) _obstructedBlend = 0f;
+            _obstructedBlend = SmoothObstruction(_obstructedBlend, target, Time.deltaTime);
         }
 
         /// <summary>
-        /// Есть ли что-то в точке щупа. Собственные коллайдеры персонажа
-        /// не считаются: рукоять у самой груди, и щуп неизбежно задевал бы их.
+        /// Есть ли препятствие на всём отрезке щупа. Собственные коллайдеры
+        /// персонажа и оружия не считаются.
         /// </summary>
-        private bool ProbeBlocked(Vector3 point)
+        public static bool IsSegmentBlocked(Vector3 start, Vector3 end, float radius,
+                                            Transform owner, Transform weapon)
         {
-            int count = Physics.OverlapSphereNonAlloc(point, ObstructionRadius, ProbeHits,
+            return ObstructionAmount(start, end, radius, owner, weapon) > 0f;
+        }
+
+        /// <summary>
+        /// Непрерывная величина упора 0..1. Стена у конца щупа лишь начинает
+        /// поднимать ствол, стена у рукояти переводит оружие в полный high-ready.
+        /// </summary>
+        public static float ObstructionAmount(Vector3 start, Vector3 end, float radius,
+                                              Transform owner, Transform weapon)
+        {
+            int count = Physics.OverlapSphereNonAlloc(start, radius, ProbeHits,
                 Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
 
             for (int i = 0; i < count; i++)
             {
                 Collider hit = ProbeHits[i];
-                if (hit == null) continue;
-                if (_weapon != null && hit.transform.IsChildOf(_weapon)) continue;
-                if (_owner != null && hit.transform.IsChildOf(_owner)) continue;
-
-                return true;
+                if (!IgnoredProbeCollider(hit, owner, weapon)) return 1f;
             }
 
+            Vector3 segment = end - start;
+            float distance = segment.magnitude;
+            if (distance <= 0.001f) return 0f;
+
+            int castCount = Physics.SphereCastNonAlloc(start, radius, segment / distance,
+                ProbeCastHits, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+            float nearest = float.PositiveInfinity;
+            for (int i = 0; i < castCount; i++)
+            {
+                RaycastHit hit = ProbeCastHits[i];
+                if (!IgnoredProbeCollider(hit.collider, owner, weapon))
+                    nearest = Mathf.Min(nearest, hit.distance);
+            }
+
+            return float.IsPositiveInfinity(nearest)
+                ? 0f
+                : Mathf.Clamp01(1f - nearest / distance);
+        }
+
+        /// <summary>Экспоненциальное сглаживание не зависит от частоты кадров.</summary>
+        public static float SmoothObstruction(float current, float target, float dt)
+        {
+            current = Mathf.Clamp01(current);
+            target = Mathf.Clamp01(target);
+            float rate = target > current ? ObstructionRaiseRate : ObstructionReleaseRate;
+            float blend = 1f - Mathf.Exp(-rate * Mathf.Clamp(dt, 0f, 0.1f));
+            float result = Mathf.Lerp(current, target, blend);
+            if (target <= 0f && result < 0.005f) return 0f;
+            return result;
+        }
+
+        private static bool IgnoredProbeCollider(Collider hit, Transform owner, Transform weapon)
+        {
+            if (hit == null) return true;
+            if (weapon != null && hit.transform.IsChildOf(weapon)) return true;
+            if (owner != null && hit.transform.IsChildOf(owner)) return true;
             return false;
         }
 
@@ -559,7 +760,7 @@ namespace RealmOfAshes.Game
             {
                 Matrix4x4 handToSocket = RoaWeaponGrip.HandToMount * Matrix4x4.Translate(PrimarySocketOffset);
                 Matrix4x4 handWorld = _socketGrip.localToWorldMatrix * handToSocket.inverse;
-                _primaryArm.Solve(handWorld.GetColumn(3), handWorld.rotation);
+                _primaryArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(false));
             }
 
             if (!_melee.TwoHanded || _socketGripLeft == null) return;
@@ -575,7 +776,7 @@ namespace RealmOfAshes.Game
                     _melee.SupportRotation.z * Mathf.Rad2Deg);
 
                 Matrix4x4 handWorld = _weapon.localToWorldMatrix * Matrix4x4.TRS(position, rot, Vector3.one);
-                _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation);
+                _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(true));
             }
         }
 
@@ -599,6 +800,23 @@ namespace RealmOfAshes.Game
             }
         }
 
+        private void ApplyFirearmRecoil()
+        {
+            float weight = RecoilWeight;
+            if (weight <= 0.001f) return;
+
+            int count = Mathf.Min(_torso.Length, RecoilOffsets.Length);
+            for (int i = 0; i < count; i++)
+            {
+                Transform bone = _torso[i];
+                if (bone == null) continue;
+                Vector3 radians = RecoilOffsets[i] * weight;
+                radians.y *= _recoilSide;
+                radians.z *= _recoilSide;
+                bone.localRotation = bone.localRotation * Quaternion.Euler(radians * Mathf.Rad2Deg);
+            }
+        }
+
         /// <summary>
         /// Завершение кадра: сначала подъём ствола, затем левая рука — она
         /// тянется к уже окончательному положению цевья.
@@ -606,7 +824,30 @@ namespace RealmOfAshes.Game
         private void Finish()
         {
             ApplyReadyRaise();
-            SolveSupportHand();
+            if (DualWield) SupportHandSolved = false;
+            else SolveSupportHand();
+        }
+
+        private void ApplyDualReloadPrimaryPose()
+        {
+            PrimaryHandSolved = false;
+            if (!DualWield || _primaryArm == null || !_primaryArm.Ready || _weapon == null) return;
+
+            float phase = ReloadPhase();
+            if (phase < 0f) return;
+            float blend = Mathf.Sin(phase * Mathf.PI);
+
+            Transform root = _weapon.parent;
+            if (root == null) return;
+            Matrix4x4 handLocal = root.worldToLocalMatrix * _hand.localToWorldMatrix;
+            Vector3 position = (Vector3)handLocal.GetColumn(3)
+                + new Vector3(-0.10f, -0.14f, -0.09f) * blend;
+            Quaternion rotation = handLocal.rotation
+                * Quaternion.Euler(18f * blend, 14f * blend, -22f * blend);
+            Matrix4x4 handWorld = root.localToWorldMatrix
+                * Matrix4x4.TRS(position, rotation, Vector3.one);
+            PrimaryHandSolved = _primaryArm.Solve(
+                handWorld.GetColumn(3), handWorld.rotation, ArmPole(false));
         }
 
         /// <summary>
@@ -664,7 +905,7 @@ namespace RealmOfAshes.Game
             Matrix4x4 handLocal = Matrix4x4.TRS(localPosition, localRotation, Vector3.one);
             Matrix4x4 handWorld = _weapon.localToWorldMatrix * handLocal;
 
-            SupportHandSolved = _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation);
+            SupportHandSolved = _supportArm.Solve(handWorld.GetColumn(3), handWorld.rotation, ArmPole(true));
         }
 
         /// <summary>
@@ -673,7 +914,8 @@ namespace RealmOfAshes.Game
         /// </summary>
         private void ApplyReadyRaise()
         {
-            if (_obstructedBlend <= 0.01f) return;
+            float contactBump = ContactBumpWeight;
+            if (_obstructedBlend <= 0.01f && contactBump <= 0.001f) return;
 
             Vector3 pivot = _socketGrip.position;
             Vector3 barrel = _socketMuzzle.position - pivot;
@@ -682,7 +924,8 @@ namespace RealmOfAshes.Game
 
             // Ось «вправо» относительно ствола: поворот вокруг неё задирает дуло.
             Vector3 axis = Vector3.Cross(barrel.normalized, Vector3.up).normalized;
-            _weapon.RotateAround(pivot, axis, _obstructedBlend * ReadyRaiseAngle * Mathf.Rad2Deg);
+            float angle = _obstructedBlend * ReadyRaiseAngle + contactBump * ContactBumpAngle;
+            _weapon.RotateAround(pivot, axis, angle * Mathf.Rad2Deg);
         }
 
         /// <summary>Поставить оружие так, чтобы его сокет хвата пришёл в кисть. 04d:1414.</summary>

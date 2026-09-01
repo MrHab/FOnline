@@ -152,7 +152,10 @@ if (sim) {
   const sites = sim.sites && typeof sim.sites === 'object' ? sim.sites : {};
   const parties = sim.parties && typeof sim.parties === 'object' ? sim.parties : {};
   const activeTasks = asArray(sim.worldTasks).filter(task => task && task.status === 'active');
-  const supportedTypes = new Set(['deliver_supplies', 'defend_resource', 'retake_site', 'clear_lair', 'escort_caravan', 'join_patrol']);
+  const supportedTypes = new Set([
+    'deliver_supplies', 'defend_resource', 'retake_site', 'clear_lair', 'escort_caravan', 'join_patrol',
+    'resource_expedition', 'recon_expedition', 'outpost_defense', 'distress_signal', 'assault_diversion'
+  ]);
 
   for (const task of activeTasks) {
     const id = String(task.id || '').trim() || '<без id>';

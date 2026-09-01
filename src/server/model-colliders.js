@@ -98,6 +98,7 @@ module.exports = {
   modelColliderParts,
   modelColliderRadius,
   modelFileName,
+  transformedBounds,
   transformedModelBlocker,
   transformedModelBlockers
 };

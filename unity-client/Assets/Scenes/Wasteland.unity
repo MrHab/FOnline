@@ -151,12 +151,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.Game.RoaCameraRig
   Target: {fileID: 0}
-  Distance: 14
+  Distance: 11.5
   PitchDeg: 55
   YawDeg: 45
   SmoothTime: 0.12
   MinDistance: 8
-  MaxDistance: 28
+  MaxDistance: 21.5
   ZoomSpeed: 6
 --- !u!81 &25186897
 AudioListener:
@@ -199,7 +199,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 400
-  field of view: 60
+  field of view: 52
   orthographic: 0
   orthographic size: 5
   m_Depth: 0

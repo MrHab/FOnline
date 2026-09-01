@@ -21,6 +21,8 @@ namespace RealmOfAshes.Game
         private const string AutomationLoginVariable = "ROA_UNITY_LOGIN";
         private const string AutomationPasswordVariable = "ROA_UNITY_PASSWORD";
         private const string AutomationForceMobileVariable = "ROA_UNITY_FORCE_MOBILE";
+        private const float AuthHeartbeatIntervalSeconds = 10f;
+        private const float AuthHeartbeatFailureRetrySeconds = 60f;
 
         public static RoaGameBootstrap Active { get; private set; }
         public static bool BlocksWorldHud
@@ -68,6 +70,9 @@ namespace RealmOfAshes.Game
         public RoaMinimap Minimap;
         public RoaRoofCutaway RoofCutaway;
         public RoaCombatFx CombatFx;
+        public RoaCombatPresentationFx CombatPresentation;
+        public RoaAudio Audio;
+        public RoaMovementFx MovementFx;
         public RoaMobileControls MobileControls;
         public RoaQuickbar Quickbar;
         public RoaActorNameplates ActorNameplates;
@@ -76,6 +81,9 @@ namespace RealmOfAshes.Game
         public RoaPipboyCanvas PipboyCanvas;
         public RoaWorkbenchCanvas WorkbenchCanvas;
         public RoaMapWindowCanvas MapWindow;
+        public RoaWorldActivityCanvas WorldActivityCanvas;
+        public RoaFirstRunCoach FirstRunCoach;
+        public RoaRecoveryCanvas RecoveryCanvas;
 
         [Tooltip("NPC, диалоги, торговля, трупы и контейнеры. Если пусто, создаётся автоматически.")]
         public RoaInteraction Interaction;
@@ -155,6 +163,7 @@ namespace RealmOfAshes.Game
         private bool _joiningNewCharacter;
         private float _nextAuthHeartbeatAt;
         private bool _authHeartbeatPending;
+        private bool _authHeartbeatWarningShown;
         private bool _gameMenuOpen;
         private bool _gameMenuActionPending;
         private bool _tutorialOpen;
@@ -200,6 +209,14 @@ namespace RealmOfAshes.Game
             Lighting.Configure(BaseUrl);
             Lighting.SetLocalWorldActive(false);
 
+            if (Audio == null) Audio = GetComponent<RoaAudio>();
+            if (Audio == null) Audio = gameObject.AddComponent<RoaAudio>();
+            Audio.Configure(this);
+
+            if (MovementFx == null) MovementFx = GetComponent<RoaMovementFx>();
+            if (MovementFx == null) MovementFx = gameObject.AddComponent<RoaMovementFx>();
+            MovementFx.Configure(Audio);
+
             if (Minimap == null) Minimap = GetComponent<RoaMinimap>();
             if (Minimap == null) Minimap = gameObject.AddComponent<RoaMinimap>();
 
@@ -207,13 +224,34 @@ namespace RealmOfAshes.Game
             if (RoofCutaway == null) RoofCutaway = gameObject.AddComponent<RoaRoofCutaway>();
             RoofCutaway.Configure(Fog, CameraRig);
 
+            if (CombatPresentation == null) CombatPresentation = GetComponent<RoaCombatPresentationFx>();
+            if (CombatPresentation == null) CombatPresentation = gameObject.AddComponent<RoaCombatPresentationFx>();
+            CombatPresentation.CameraRig = CameraRig;
+
             if (CombatFx == null) CombatFx = GetComponent<RoaCombatFx>();
             if (CombatFx == null) CombatFx = gameObject.AddComponent<RoaCombatFx>();
+            CombatFx.Audio = Audio;
+            CombatFx.Polish = CombatPresentation;
             CombatFx.Configure(Socket, Enemies);
 
-            if (Enemies != null) Enemies.Fog = Fog;
-            if (RemotePlayers != null) RemotePlayers.Fog = Fog;
+            Camera movementFxCamera = CameraRig != null ? CameraRig.GetComponent<Camera>() : Camera.main;
+            if (Enemies != null)
+            {
+                Enemies.Fog = Fog;
+                Enemies.ConfigureMovementFx(MovementFx, movementFxCamera);
+            }
+            if (RemotePlayers != null)
+            {
+                RemotePlayers.Fog = Fog;
+                RemotePlayers.ConfigureMovementFx(MovementFx, movementFxCamera);
+            }
             if (GroundItems != null) GroundItems.Fog = Fog;
+
+            var worldOverlay = GetComponent<RoaWorldOverlayCanvas>();
+            if (worldOverlay == null) worldOverlay = gameObject.AddComponent<RoaWorldOverlayCanvas>();
+            worldOverlay.Configure(GroundItems, Enemies, movementFxCamera);
+            if (GroundItems != null) GroundItems.CanvasDriven = true;
+            if (CombatFx != null) CombatFx.CanvasDriven = true;
 
             if (GlobalMap == null) GlobalMap = GetComponent<RoaGlobalMap>();
             if (GlobalMap == null) GlobalMap = gameObject.AddComponent<RoaGlobalMap>();
@@ -241,11 +279,18 @@ namespace RealmOfAshes.Game
             if (Inventory != null) Inventory.GroundItems = GroundItems;
             if (Combat != null)
             {
+                Combat.Bootstrap = this;
                 Combat.Pipboy = Pipboy;
+                Combat.GlobalMap = GlobalMap;
                 Combat.RemotePlayers = RemotePlayers;
                 Combat.Inventory = Inventory;
                 Combat.Fx = CombatFx;
+                Combat.Audio = Audio;
                 Combat.Fog = Fog;
+                var feedback = GetComponent<RoaCombatFeedbackCanvas>();
+                if (feedback == null) feedback = gameObject.AddComponent<RoaCombatFeedbackCanvas>();
+                feedback.Configure(CameraRig != null ? CameraRig.GetComponent<Camera>() : Camera.main);
+                Combat.FeedbackCanvas = feedback;
             }
 
             if (MobileControls == null) MobileControls = GetComponent<RoaMobileControls>();
@@ -253,6 +298,10 @@ namespace RealmOfAshes.Game
             if (_automationForceMobile) MobileControls.ForceVisible = true;
             MobileControls.Configure(Combat, Interaction, Inventory, Pipboy, Enemies, GlobalMap, GroundItems);
             MobileControls.MenuRequested = ToggleGameMenu;
+            var mobileCanvas = GetComponent<RoaMobileControlsCanvas>();
+            if (mobileCanvas == null) mobileCanvas = gameObject.AddComponent<RoaMobileControlsCanvas>();
+            mobileCanvas.Configure(MobileControls);
+            MobileControls.CanvasDriven = true;
 
             if (Quickbar == null) Quickbar = GetComponent<RoaQuickbar>();
             if (Quickbar == null) Quickbar = gameObject.AddComponent<RoaQuickbar>();
@@ -262,6 +311,7 @@ namespace RealmOfAshes.Game
             if (Hud == null) Hud = GetComponent<RoaHud>();
             if (Hud == null) Hud = gameObject.AddComponent<RoaHud>();
             if (ActorNameplates != null) ActorNameplates.Hud = Hud;
+            if (Combat != null) Combat.Hud = Hud;
             if (Hud.Socket == null)
             {
                 bool wasEnabled = Hud.enabled;
@@ -288,6 +338,7 @@ namespace RealmOfAshes.Game
             PipboyCanvas.Interaction = Interaction;
             PipboyCanvas.Fog = Fog;
             PipboyCanvas.Quickbar = Quickbar;
+            if (Combat != null) Combat.PipboyCanvas = PipboyCanvas;
             if (Inventory != null) Inventory.CanvasDriven = true;
             if (Pipboy != null) Pipboy.CanvasDriven = true;
 
@@ -322,7 +373,7 @@ namespace RealmOfAshes.Game
             storage.Interaction = Interaction;
             storage.Inventory = Inventory;
 
-            // Диалог NPC и доска работ в web-виде.
+            // Диалог NPC и доска контрактов в web-виде.
             var dialogue = GetComponent<RoaDialogueCanvas>();
             if (dialogue == null) dialogue = gameObject.AddComponent<RoaDialogueCanvas>();
             dialogue.Interaction = Interaction;
@@ -342,6 +393,13 @@ namespace RealmOfAshes.Game
             mapCanvas.HudCanvas = HudCanvas;
             if (GlobalMap != null) GlobalMap.CanvasDriven = true;
 
+            // Primary entry point for short activities on the global map.
+            var activityHub = GetComponent<RoaActivityHubCanvas>();
+            if (activityHub == null) activityHub = gameObject.AddComponent<RoaActivityHubCanvas>();
+            activityHub.Bootstrap = this;
+            activityHub.Map = GlobalMap;
+            activityHub.Interaction = Interaction;
+
             // Экран загрузки локации в web-виде (#location-loading-screen).
             var loadingCanvas = GetComponent<RoaLoadingCanvas>();
             if (loadingCanvas == null) loadingCanvas = gameObject.AddComponent<RoaLoadingCanvas>();
@@ -353,6 +411,21 @@ namespace RealmOfAshes.Game
             if (staging == null) staging = gameObject.AddComponent<RoaCaravanStagingCanvas>();
             staging.Pipboy = Pipboy;
             staging.Bootstrap = this;
+
+            // HUD сервер-авторитетной активности текущей локации.
+            if (WorldActivityCanvas == null) WorldActivityCanvas = GetComponent<RoaWorldActivityCanvas>();
+            if (WorldActivityCanvas == null) WorldActivityCanvas = gameObject.AddComponent<RoaWorldActivityCanvas>();
+            WorldActivityCanvas.Configure(Socket, this);
+            if (HudCanvas != null) HudCanvas.SetWorldActivity(WorldActivityCanvas);
+            if (Minimap != null) Minimap.WorldActivity = WorldActivityCanvas;
+
+            if (FirstRunCoach == null) FirstRunCoach = GetComponent<RoaFirstRunCoach>();
+            if (FirstRunCoach == null) FirstRunCoach = gameObject.AddComponent<RoaFirstRunCoach>();
+            FirstRunCoach.Configure(this);
+
+            if (RecoveryCanvas == null) RecoveryCanvas = GetComponent<RoaRecoveryCanvas>();
+            if (RecoveryCanvas == null) RecoveryCanvas = gameObject.AddComponent<RoaRecoveryCanvas>();
+            RecoveryCanvas.Configure(Socket, this);
 
             // Оружейный верстак в web-виде (#weapon-modification-window).
             var workbench = GetComponent<RoaWorkbenchCanvas>();
@@ -465,9 +538,27 @@ namespace RealmOfAshes.Game
                     SetGameMenuOpen(true);
             }
 
+            bool gameplaySession = _stage == Stage.Joining || _stage == Stage.LoadingLocation
+                || _stage == Stage.InWorld || _stage == Stage.LoadingGlobalMap
+                || _stage == Stage.GlobalMap;
+            RoaSocketClient.ConnectionPhase socketPhase = Socket != null
+                ? Socket.Phase
+                : RoaSocketClient.ConnectionPhase.Disconnected;
             if (_auth != null && _auth.IsAuthenticated && !_authHeartbeatPending
+                && ShouldAttemptAuthHeartbeat(gameplaySession, socketPhase)
                 && Time.unscaledTime >= _nextAuthHeartbeatAt)
                 StartCoroutine(DoAuthHeartbeat());
+        }
+
+        public static float AuthHeartbeatDelay(bool success)
+        {
+            return success ? AuthHeartbeatIntervalSeconds : AuthHeartbeatFailureRetrySeconds;
+        }
+
+        public static bool ShouldAttemptAuthHeartbeat(
+            bool gameplaySession, RoaSocketClient.ConnectionPhase socketPhase)
+        {
+            return !gameplaySession || socketPhase == RoaSocketClient.ConnectionPhase.Joined;
         }
 
         private void ToggleGameMenu()
@@ -652,10 +743,12 @@ namespace RealmOfAshes.Game
         public bool GameMenuActionPending { get { return _gameMenuActionPending; } }
         public bool InGame { get { return _stage == Stage.InWorld || _stage == Stage.GlobalMap; } }
         public bool OnGlobalMap { get { return _stage == Stage.GlobalMap; } }
+        public bool GlobalMapBlocksCombat { get { return _stage == Stage.LoadingGlobalMap || _stage == Stage.GlobalMap; } }
 
         public void MenuOpenGameMenu(bool open) { SetGameMenuOpen(open); }
         public void MenuOpenGraphics(bool open) { SetGraphicsOpen(open); }
         public void MenuOpenTutorial(bool open) { SetTutorialOpen(open); }
+        public void MenuRestartFirstRunCoach() { SetTutorialOpen(false); FirstRunCoach?.Restart(); }
         public void MenuBeginHudEdit() { BeginHudEdit(); }
         public void MenuEndHudEdit() { EndHudEdit(); }
         public void MenuResetHud() { RoaHudLayout.Reset(); _status = "Позиции HUD сброшены."; }
@@ -944,7 +1037,6 @@ namespace RealmOfAshes.Game
         private IEnumerator DoAuthHeartbeat()
         {
             _authHeartbeatPending = true;
-            _nextAuthHeartbeatAt = Time.unscaledTime + 10f;
             bool ok = false;
             string failure = null;
             yield return StartCoroutine(_auth.Heartbeat((success, error) =>
@@ -953,8 +1045,16 @@ namespace RealmOfAshes.Game
                 failure = error;
             }));
             _authHeartbeatPending = false;
-            if (!ok && !string.IsNullOrEmpty(failure))
+            _nextAuthHeartbeatAt = Time.unscaledTime + AuthHeartbeatDelay(ok);
+            if (ok)
+            {
+                _authHeartbeatWarningShown = false;
+            }
+            else if (!_authHeartbeatWarningShown && !string.IsNullOrEmpty(failure))
+            {
+                _authHeartbeatWarningShown = true;
                 Debug.LogWarning("[ROA] Heartbeat аккаунта: " + failure);
+            }
         }
 
         private void RecreateAuthClient()
@@ -964,8 +1064,9 @@ namespace RealmOfAshes.Game
             if (RemotePlayers != null) RemotePlayers.BaseUrl = BaseUrl;
             if (Enemies != null) Enemies.BaseUrl = BaseUrl;
             _auth = new RoaAuthClient(BaseUrl);
-            _nextAuthHeartbeatAt = Time.unscaledTime + 10f;
+            _nextAuthHeartbeatAt = Time.unscaledTime + AuthHeartbeatDelay(true);
             _authHeartbeatPending = false;
+            _authHeartbeatWarningShown = false;
             Quickbar?.Configure(_auth, Socket, Inventory, Combat, MobileControls, Interaction);
         }
 
@@ -1596,6 +1697,7 @@ namespace RealmOfAshes.Game
                 _controller.View = view;
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
+                _controller.Audio = Audio;
 
                 // Бой и подбор знают о персонаже только после спавна: до входа
                 // в мир стрелять не из чего и подбирать некому.
@@ -1624,12 +1726,14 @@ namespace RealmOfAshes.Game
             {
                 _controller.Pipboy = Pipboy;
                 _controller.Inventory = Inventory;
+                _controller.Audio = Audio;
             }
             if (Fog != null) Fog.Observer = _controller;
             if (Interaction != null) Interaction.SetPlayer(_controller);
             if (Pipboy != null) Pipboy.SetPlayer(_controller);
             if (ActorNameplates != null) ActorNameplates.SetPlayer(_controller);
             if (Minimap != null) Minimap.SetPlayer(_controller);
+            if (Enemies != null) Enemies.SetLocalPlayer(_controller);
 
             // Скорость зависит от SPECIAL: без этого персонаж бежал бы со скоростью
             // по умолчанию, и походка разошлась бы с web-клиентом.

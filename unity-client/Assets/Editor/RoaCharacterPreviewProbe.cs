@@ -1,9 +1,12 @@
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using GLTFast;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
 using RealmOfAshes.Net;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -17,6 +20,9 @@ namespace RealmOfAshes.EditorTools
     public static class RoaCharacterPreviewProbe
     {
         private const string BaseUrl = "http://127.0.0.1:3000";
+        private static bool _batchOptionsCaptured;
+        private static bool _previousEnterPlayModeOptionsEnabled;
+        private static EnterPlayModeOptions _previousEnterPlayModeOptions;
 
         [MenuItem("Realm of Ashes/Проверить предпросмотр создания персонажа")]
         public static async void Run()
@@ -25,18 +31,81 @@ namespace RealmOfAshes.EditorTools
             catch (Exception error) { Debug.LogError("[ПРЕДПРОСМОТР ПЕРСОНАЖА] " + error); }
         }
 
+        public static void RunBatch()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                RunBatchAsync();
+                return;
+            }
+
+            try
+            {
+                _previousEnterPlayModeOptionsEnabled = EditorSettings.enterPlayModeOptionsEnabled;
+                _previousEnterPlayModeOptions = EditorSettings.enterPlayModeOptions;
+                _batchOptionsCaptured = true;
+                EditorSettings.enterPlayModeOptionsEnabled = true;
+                EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.DisableDomainReload;
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                EditorApplication.playModeStateChanged += OnBatchPlayModeStateChanged;
+                EditorApplication.EnterPlaymode();
+            }
+            catch (Exception error)
+            {
+                Debug.LogError("[ПРЕДПРОСМОТР ПЕРСОНАЖА] BATCH FAIL: " + error);
+                FinishBatch(1);
+            }
+        }
+
+        private static void OnBatchPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state != PlayModeStateChange.EnteredPlayMode) return;
+            EditorApplication.playModeStateChanged -= OnBatchPlayModeStateChanged;
+            RunBatchAsync();
+        }
+
+        private static async void RunBatchAsync()
+        {
+            try
+            {
+                await RunAsync();
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] BATCH PASS");
+                FinishBatch(0);
+            }
+            catch (Exception error)
+            {
+                Debug.LogError("[ПРЕДПРОСМОТР ПЕРСОНАЖА] BATCH FAIL: " + error);
+                FinishBatch(1);
+            }
+        }
+
+        private static void FinishBatch(int exitCode)
+        {
+            if (_batchOptionsCaptured)
+            {
+                EditorSettings.enterPlayModeOptions = _previousEnterPlayModeOptions;
+                EditorSettings.enterPlayModeOptionsEnabled = _previousEnterPlayModeOptionsEnabled;
+                _batchOptionsCaptured = false;
+            }
+            EditorApplication.Exit(exitCode);
+        }
+
         public static async Task RunAsync()
         {
             GameObject host = null;
             Texture2D readback = null;
             RenderTexture previous = RenderTexture.active;
-            var deferAgent = new UninterruptedDeferAgent();
+            UninterruptedDeferAgent deferAgent = null;
             try
             {
                 // glTFast's normal runtime default owns a DontDestroyOnLoad
-                // MonoBehaviour. Edit-mode probes use the package's dedicated
+                // MonoBehaviour. Edit-mode menu probes use the package's dedicated
                 // uninterrupted agent instead.
-                GltfImport.SetDefaultDeferAgent(deferAgent);
+                if (!Application.isPlaying)
+                {
+                    deferAgent = new UninterruptedDeferAgent();
+                    GltfImport.SetDefaultDeferAgent(deferAgent);
+                }
                 host = new GameObject("RoaCharacterPreviewProbe");
                 RoaCharacterPreview preview = host.AddComponent<RoaCharacterPreview>();
                 var appearance = new CharacterAppearance
@@ -102,7 +171,8 @@ namespace RealmOfAshes.EditorTools
                 idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
                 animation.Sample();
 
-                Check(preview.RenderNow(), "камера не выполнила off-screen render");
+                Check(preview.RenderNow(), "камера не выполнила первый off-screen render");
+                Check(preview.RenderNow(), "камера не выполнила прогретый off-screen render");
                 RenderTexture.active = preview.Texture;
                 readback = new Texture2D(preview.Texture.width, preview.Texture.height,
                     TextureFormat.RGBA32, false);
@@ -126,12 +196,322 @@ namespace RealmOfAshes.EditorTools
                     Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] кадр: " + capturePath);
                 }
 
+                FieldInfo reactionField = typeof(RoaCharacterView).GetField("_hitReaction",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                RoaHitReaction reaction = reactionField?.GetValue(loaded) as RoaHitReaction;
+                Check(reaction != null && reaction.Ready,
+                    "направленная реакция не привязана к настоящему GLB");
+                FieldInfo spineField = typeof(RoaHitReaction).GetField("_spine02",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Transform hitSpine = spineField?.GetValue(reaction) as Transform;
+                Check(hitSpine != null, "реакция не нашла spine_02 настоящего GLB");
+                Transform hitLeftFoot = null;
+                Transform hitRightFoot = null;
+                foreach (Transform node in loaded.GetComponentsInChildren<Transform>(true))
+                {
+                    if (node.name == "foot_l") hitLeftFoot = node;
+                    else if (node.name == "foot_r") hitRightFoot = node;
+                }
+                Check(hitLeftFoot != null && hitRightFoot != null,
+                    "реальные стопы не найдены для проверки удара в упор");
+                bool skinnedBone = false;
+                foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    renderer.updateWhenOffscreen = true;
+                    renderer.forceMatrixRecalculationPerRender = true;
+                    foreach (Transform bone in renderer.bones)
+                        if (bone == hitSpine) skinnedBone = true;
+                }
+                Check(skinnedBone, "spine_02 реакции не входит в skinned mesh");
+
+                // The armed path is deliberate: the old full-body grip wrote spine_01..03
+                // after the hit layer and erased the impact while both hands still looked valid.
+                if (Application.isPlaying)
+                {
+                    // glTFast 6.14.1 has an Editor-only multi-primitive skinning job
+                    // bug outside Play Mode. The runtime batch path deliberately checks
+                    // the full kit; the fast editor audit keeps its original weapon path.
+                    var combatEquipment = new JObject
+                    {
+                        ["armor"] = "combatArmor",
+                        ["helmet"] = "tacticalHelmet",
+                        ["boots"] = "scoutBoots",
+                        ["backpack"] = "backpack"
+                    };
+                    await loaded.EquipItems(BaseUrl, combatEquipment);
+                    Check(loaded.LoadedEquipmentSlotCount == 4
+                            && loaded.HasLoadedEquipment("armor", "combatArmor")
+                            && loaded.HasLoadedEquipment("helmet", "tacticalHelmet")
+                            && loaded.HasLoadedEquipment("boots", "scoutBoots")
+                            && loaded.HasLoadedEquipment("backpack", "backpack"),
+                        "боевой контрольный кадр не получил полный комплект экипировки");
+                }
+                await loaded.EquipWeapon(BaseUrl, "assaultRifle");
+                foreach (Transform node in loaded.GetComponentsInChildren<Transform>(true))
+                    node.gameObject.layer = RoaCharacterPreview.PreviewLayer;
+                foreach (SkinnedMeshRenderer renderer
+                         in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    renderer.updateWhenOffscreen = true;
+                    renderer.forceMatrixRecalculationPerRender = true;
+                }
+                Check(loaded.WeaponReady && loaded.WeaponId == "assaultRifle",
+                    "автомат не загрузился на настоящего персонажа");
+                loaded.transform.localRotation = Quaternion.identity;
+                Vector3 aimPoint = loaded.transform.position + loaded.transform.forward * 8f;
+                aimPoint.y = loaded.AimPlaneY;
+                loaded.SetAim(aimPoint, true);
+                loaded.UpdateLocomotion(Vector3.zero, 0f, false, false);
+                MethodInfo runtimeLateUpdate = typeof(RoaCharacterView).GetMethod("LateUpdate",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Check(runtimeLateUpdate != null, "runtime LateUpdate персонажа недоступен");
+                runtimeLateUpdate.Invoke(loaded, null);
+                FieldInfo weaponField = typeof(RoaCharacterView).GetField("_weapon",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                RoaWeaponView weapon = weaponField?.GetValue(loaded) as RoaWeaponView;
+                Check(weapon != null && weapon.SupportHandSolved,
+                    "оружейный IK не посадил левую руку на цевьё");
+                Check(loaded.TryGetMuzzle(out Vector3 muzzle)
+                        && Vector3.Distance(muzzle, loaded.transform.position) > 0.45f,
+                    "дуло автомата осталось внутри корпуса");
+
+                Quaternion beforeHit = hitSpine.localRotation;
+                loaded.PlayHit(loaded.transform.position + loaded.transform.right * 3f, 46, true);
+                reaction.Apply(RoaHitReaction.ImpactSeconds);
+                float appliedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
+                Check(loaded.HitReactionActive && loaded.HitReactionDirection.x > 0.98f,
+                    "настоящий персонаж не отреагировал на удар справа");
+                Check(appliedAngle > 3f, "поза настоящего GLB не получила заметный импульс");
+
+                // Re-sample the authored frame, then execute the same complete LateUpdate
+                // order as gameplay. The impact must survive the subsequent weapon layer.
+                AnimationState hurt = animation["hurt"];
+                Check(hurt != null, "hurt-клип недоступен для проверки ног");
+                hurt.time = Mathf.Min(0.14f, hurt.length * 0.42f);
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
+                float retainedAngle = Quaternion.Angle(beforeHit, hitSpine.localRotation);
+                Check(retainedAngle > 3f,
+                    "оружейный хват стёр реакцию позвоночника на попадание");
+                Check(weapon.SupportHandSolved,
+                    "левая рука потеряла цевьё после реакции на попадание");
+                float hitGroundY = loaded.transform.parent != null
+                    ? loaded.transform.parent.position.y : loaded.transform.position.y;
+                float highestHitFoot = Mathf.Max(hitLeftFoot.position.y, hitRightFoot.position.y) - hitGroundY;
+                float hitFootSplit = Mathf.Abs(hitLeftFoot.position.y - hitRightFoot.position.y);
+                Check(loaded.FootIkSuppressed && highestHitFoot < 0.36f && hitFootSplit < 0.26f,
+                    "нога улетела вверх при ударе в упор: max="
+                    + highestHitFoot.ToString("0.000") + ", split=" + hitFootSplit.ToString("0.000"));
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] вооружённая реакция spine_02: "
+                    + appliedAngle.ToString("0.0") + "° → " + retainedAngle.ToString("0.0")
+                    + "°, muzzle=" + muzzle.ToString("F2"));
+
+                string hitCapturePath = Environment.GetEnvironmentVariable("ROA_UNITY_HIT_CAPTURE");
+                if (!string.IsNullOrWhiteSpace(hitCapturePath))
+                {
+                    Check(preview.RenderNow(), "камера не приняла вооружённую позу попадания");
+                    Check(preview.RenderNow(), "камера не отрисовала прогретую позу попадания");
+                    RenderTexture.active = preview.Texture;
+                    readback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
+                    readback.Apply(false, false);
+                    System.IO.File.WriteAllBytes(hitCapturePath, readback.EncodeToPNG());
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] вооружённая реакция на урон: "
+                        + hitCapturePath);
+                }
+
+                reaction.Reset();
+
+                // Sweep the real authored run cycle through gameplay LateUpdate. Even when
+                // both authored feet enter their flight phase, one procedural support foot
+                // must stay close enough to the sampled ground to read as planted.
+                AnimationState run = animation["run"];
+                Check(run != null, "run-клип недоступен для проверки выстрела в движении");
+                loaded.SetGroundingLod(true);
+                loaded.UpdateLocomotion(Vector3.forward * 4.2f, 0f, true, false);
+                animation.Play("run");
+                run.enabled = true;
+                run.weight = 1f;
+                float maximumMinimumLift = 0f;
+                int supportSafetyFrames = 0;
+                for (int frame = 0; frame < 32; frame++)
+                {
+                    run.normalizedTime = frame / 32f;
+                    animation.Sample();
+                    runtimeLateUpdate.Invoke(loaded, null);
+                    Check(loaded.TryGetFootContactLifts(out float leftLift, out float rightLift),
+                        "foot IK не выдал контакт настоящего бегового клипа");
+                    maximumMinimumLift = Mathf.Max(maximumMinimumLift, Mathf.Min(leftLift, rightLift));
+                    if (loaded.FootSupportSafetyActive) supportSafetyFrames++;
+                }
+                Check(maximumMinimumLift <= 0.085f,
+                    "обе стопы настоящего бегового клипа одновременно оторвались от земли: "
+                    + maximumMinimumLift.ToString("0.000") + " м");
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] опора бега: max="
+                    + maximumMinimumLift.ToString("0.000") + " м, safety=" + supportSafetyFrames + "/32");
+
+                // A firearm shot must be a layer over locomotion. The authored attack clip
+                // has static feet, so switching to it here would visibly stop a running actor.
+                loaded.SetGroundingLod(false);
+                loaded.UpdateLocomotion(Vector3.forward * 4.2f, 0f, true, false);
+                Check(loaded.CurrentClip == "run", "настоящий персонаж не выбрал бег перед выстрелом");
+                animation.Play("run");
+                run.enabled = true;
+                run.weight = 1f;
+                run.normalizedTime = 0.25f;
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
+                Quaternion beforeRecoil = hitSpine.localRotation;
+
+                loaded.PlayAttack();
+                Check(loaded.CurrentClip == "run",
+                    "вооружённый выстрел сбросил походку в полнотелый attack-клип");
+                FieldInfo recoilField = typeof(RoaWeaponView).GetField("_recoilStartedAt",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Check(recoilField != null, "время процедурной отдачи недоступно");
+                recoilField.SetValue(weapon, Time.time - RoaWeaponView.RecoilPeakSeconds);
+                run.enabled = true;
+                run.weight = 1f;
+                run.normalizedTime = 0.25f;
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
+                float recoilAngle = Quaternion.Angle(beforeRecoil, hitSpine.localRotation);
+                Check(weapon.RecoilWeight > 0.85f, "отдача не достигла читаемого импульса");
+                Check(recoilAngle > 0.8f, "отдача не дошла до позвоночника настоящего GLB");
+                Check(weapon.SupportHandSolved,
+                    "левая рука потеряла цевьё во время отдачи на бегу");
+                Check(loaded.TryGetMuzzle(out Vector3 movingMuzzle)
+                        && Vector3.Distance(movingMuzzle, loaded.transform.position) > 0.45f,
+                    "дуло ушло внутрь корпуса во время отдачи на бегу");
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] выстрел в движении: clip="
+                    + loaded.CurrentClip + ", recoil=" + recoilAngle.ToString("0.0")
+                    + "°, IK=" + weapon.SupportHandSolved);
+
+                string movingFireCapturePath = Environment.GetEnvironmentVariable(
+                    "ROA_UNITY_MOVING_FIRE_CAPTURE");
+                if (!string.IsNullOrWhiteSpace(movingFireCapturePath))
+                {
+                    Check(preview.RenderNow(), "камера не приняла позу выстрела на бегу");
+                    Check(preview.RenderNow(), "камера не отрисовала прогретую позу выстрела на бегу");
+                    RenderTexture.active = preview.Texture;
+                    readback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
+                    readback.Apply(false, false);
+                    System.IO.File.WriteAllBytes(movingFireCapturePath, readback.EncodeToPNG());
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] выстрел на бегу: "
+                        + movingFireCapturePath);
+                }
+
+                recoilField.SetValue(weapon, -100f);
+                loaded.SetGroundingLod(true);
+                loaded.UpdateLocomotion(Vector3.zero, 0f, false, false);
+                animation.Play("idle");
+                idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
+                loaded.SetDead(true);
+                Check(loaded.Dead && loaded.CurrentClip == "death"
+                        && animation.IsPlaying("death") && !animation.IsPlaying("run"),
+                    "смерть не остановила ходьбу на реальном GLB");
+                loaded.SetDead(false);
+                animation.Play("idle");
+                idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
+                animation.Sample();
+                string deathCapturePath = Environment.GetEnvironmentVariable("ROA_UNITY_DEATH_CAPTURE");
+                if (!string.IsNullOrWhiteSpace(deathCapturePath))
+                {
+                    foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    {
+                        renderer.updateWhenOffscreen = true;
+                        renderer.forceMatrixRecalculationPerRender = true;
+                    }
+                    loaded.SetDead(true);
+                    AnimationState death = animation["death"];
+                    Check(death != null, "death-клип недоступен");
+                    animation.Play("death");
+                    death.enabled = true;
+                    death.weight = 1f;
+                    death.wrapMode = WrapMode.ClampForever;
+                    float deathFinalTime = RoaCharacterView.FinalDeathPoseTime(death);
+                    Check(deathFinalTime >= 1.19f,
+                        "утверждённый death-клип снова обрезан до фазы наклона");
+                    death.time = deathFinalTime;
+                    animation.Sample();
+                    Check(preview.RenderNow(), "камера не обновила skinned bounds финального death-кадра");
+                    loaded.ApplyDeathSettleForDiagnostics(deathFinalTime);
+                    loaded.GroundDeathForDiagnostics(loaded.transform.parent.position.y);
+                    weapon.ApplyReduced();
+                    FieldInfo gripField = typeof(RoaWeaponView).GetField("_socketGrip",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    FieldInfo handField = typeof(RoaWeaponView).GetField("_hand",
+                        BindingFlags.Instance | BindingFlags.NonPublic);
+                    Transform deathGrip = gripField?.GetValue(weapon) as Transform;
+                    Transform deathHand = handField?.GetValue(weapon) as Transform;
+                    Check(deathGrip != null && deathHand != null
+                            && Vector3.Distance(deathGrip.position, deathHand.position) < 0.16f,
+                        "оружие оторвалось от кисти в финальной позе смерти");
+                    float stableGroundOffset = loaded.DeathGroundOffsetY;
+                    loaded.ApplyDeathSettleForDiagnostics(deathFinalTime);
+                    loaded.GroundDeathForDiagnostics(loaded.transform.parent.position.y);
+                    weapon.ApplyReduced();
+                    Check(Mathf.Abs(loaded.DeathGroundOffsetY - stableGroundOffset) < 0.005f,
+                        "повторное заземление изменило высоту тела между кадрами");
+                    Check(loaded.Dead && loaded.CurrentClip == "death",
+                        "настоящий персонаж не перешёл в позу смерти");
+                    Check(loaded.DeathSettleWeight > 0.98f
+                            && Quaternion.Angle(Quaternion.identity, loaded.transform.localRotation) < 0.1f,
+                        "авторская death-поза заменена синтетическим поворотом корня");
+                    Check(preview.RenderNow(), "камера не обновила геометрию позы смерти");
+                    Check(preview.RenderNow(), "камера не прогрела геометрию позы смерти");
+                    bool hasDeathBounds = false;
+                    bool hasBodyDeathBounds = false;
+                    Bounds deathBounds = default;
+                    Bounds bodyDeathBounds = default;
+                    foreach (SkinnedMeshRenderer renderer in loaded.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                    {
+                        if (!renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                        if (!hasDeathBounds) deathBounds = renderer.bounds;
+                        else deathBounds.Encapsulate(renderer.bounds);
+                        hasDeathBounds = true;
+                        if (IsEquipmentRenderer(renderer.transform)) continue;
+                        if (!hasBodyDeathBounds) bodyDeathBounds = renderer.bounds;
+                        else bodyDeathBounds.Encapsulate(renderer.bounds);
+                        hasBodyDeathBounds = true;
+                    }
+                    float deathGroundY = loaded.transform.parent.position.y;
+                    float deathGroundGap = deathBounds.min.y - deathGroundY;
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] границы смерти: all="
+                        + deathBounds.size.ToString("F2") + ", body="
+                        + bodyDeathBounds.size.ToString("F2") + ", minY="
+                        + deathGroundGap.ToString("0.00") + " м, rootY="
+                        + loaded.DeathGroundOffsetY.ToString("0.00") + ", bones="
+                        + loaded.DeathGroundContactBones);
+                    Check(hasDeathBounds && hasBodyDeathBounds
+                            && Mathf.Max(bodyDeathBounds.size.x, bodyDeathBounds.size.z) > 1.45f
+                            && bodyDeathBounds.size.y < 0.90f
+                            && Mathf.Max(deathBounds.size.x, deathBounds.size.z)
+                                > deathBounds.size.y * 1.55f,
+                        "финальная поза не образует читаемый лежащий силуэт");
+                    Check(loaded.DeathGroundContactBones == 4
+                            && loaded.DeathGroundOffsetY > 0.15f && loaded.DeathGroundOffsetY <= 0.45f
+                            && deathGroundGap > -0.06f && deathGroundGap < 0.12f,
+                        "поза смерти не соприкасается с реальной землёй");
+                    camera.transform.position = deathBounds.center + new Vector3(2.8f, 2.4f, 3.6f);
+                    camera.transform.LookAt(deathBounds.center);
+                    camera.fieldOfView = 34f;
+                    Check(preview.RenderNow(), "камера не приняла позу смерти");
+                    Check(preview.RenderNow(), "камера не отрисовала прогретую позу смерти");
+                    RenderTexture.active = preview.Texture;
+                    readback.ReadPixels(new Rect(0, 0, preview.Texture.width, preview.Texture.height), 0, 0);
+                    readback.Apply(false, false);
+                    System.IO.File.WriteAllBytes(deathCapturePath, readback.EncodeToPNG());
+                    Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] поза смерти: " + deathCapturePath);
+                }
+
                 Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] готово: GLB=male_medium, 320×360, "
                     + "варианты=лицо/волосы/цвет, слой=31, свет=3, пикселей=" + nonBackground);
             }
             finally
             {
-                GltfImport.UnsetDefaultDeferAgent(deferAgent);
+                if (deferAgent != null) GltfImport.UnsetDefaultDeferAgent(deferAgent);
                 RenderTexture.active = previous;
                 if (readback != null) UnityEngine.Object.DestroyImmediate(readback);
                 if (host != null) UnityEngine.Object.DestroyImmediate(host);
@@ -173,6 +553,13 @@ namespace RealmOfAshes.EditorTools
                 }
             }
             Check(found, "hair_08 не записан в реальное color-свойство материала");
+        }
+
+        private static bool IsEquipmentRenderer(Transform node)
+        {
+            for (Transform cursor = node; cursor != null; cursor = cursor.parent)
+                if (cursor.name.StartsWith("Equipment:", StringComparison.Ordinal)) return true;
+            return false;
         }
 
         private static void Check(bool condition, string message)

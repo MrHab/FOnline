@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2017d318019948d48b5096a276f732f8, type: 3}
+  m_Name: EnvironmentPalette
+  m_EditorClassIdentifier: Assembly-CSharp::RealmOfAshes.World.RoaEnvironmentPalette
+  _dryScrubs:
+  - {fileID: 4990788508836949561, guid: 2f3bdf848f15b4e43b2b949480020ba1, type: 3}
+  - {fileID: 4589673819247719427, guid: f9f01048e4d3b2c4281c1ccf2817f1ef, type: 3}
+  - {fileID: 7320418402806268557, guid: fbce3f8d3a569a44e9603ae2abee1dc1, type: 3}
+  - {fileID: 7350376942081872559, guid: 3d7a2931b6620d644ac00d38d2aa60c8, type: 3}
+  _stones:
+  - {fileID: 696553180820459941, guid: 052c9e5dcd7aff54f93527d4c1921d29, type: 3}
+  - {fileID: 1793206104326408301, guid: cff05c2d3e015f043b2e97711a52337b, type: 3}
+  - {fileID: 2743307770135660980, guid: 07c36dc52e08477458700d4bd4379cbf, type: 3}
+  - {fileID: 7991506209617150624, guid: 6784e2687794f724da71ed95efa28417, type: 3}
+  - {fileID: 3302944349850796395, guid: b2691dc7ae63a4e43a73e48234662c72, type: 3}
+  _groundAccents:
+  - {fileID: 242209393546787654, guid: e53562fcb7d19e64fa05e42c2011c397, type: 3}
+  - {fileID: 8041597183142399517, guid: ff107e0c569173d47bae6a71596e0cca, type: 3}
+  - {fileID: 6850534132312162935, guid: ddfd0b99412488b49a1843fc60b103f3, type: 3}
+  _distantRidges:
+  - {fileID: 2790789360301950302, guid: 0e549151ef88ca54e8509221c846280f, type: 3}
+  - {fileID: 7977078785926697256, guid: d472a7638a203bb42ba59a40ed0f8df6, type: 3}
+  - {fileID: 5510554461754921360, guid: 1930010a993c40a44b726e821a6b1ea8, type: 3}
+  - {fileID: 5687732951537202097, guid: 7213e4b85388d0f40954c28cec3171f2, type: 3}

@@ -591,6 +591,41 @@
     loadWastelandSimState({ force });
   }
 
+  function requestQuickWorldActivity(onAck) {
+    return emitGuardedMultiplayerGameplayAction('worldActivityQuickJoin', {}, ack => {
+      if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
+      if (ack?.sim) applyWastelandSimState(ack.sim);
+      if (typeof onAck === 'function') onAck(ack);
+    });
+  }
+
+  function requestWorldActivityHelpSignal(onAck) {
+    return emitGuardedMultiplayerGameplayAction('worldActivityHelpSignal', {}, ack => {
+      if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
+      if (typeof onAck === 'function') onAck(ack);
+    });
+  }
+
+  function requestWorldActivityPing(type, x, z, onAck) {
+    return emitGuardedMultiplayerGameplayAction('worldActivityPing', { type, x, z }, ack => {
+      if (typeof onAck === 'function') onAck(ack);
+    });
+  }
+
+  function requestWorldActivityRevive(targetId, onAck) {
+    return emitGuardedMultiplayerGameplayAction('worldActivityRevive', { targetId }, ack => {
+      if (typeof onAck === 'function') onAck(ack);
+    });
+  }
+
+  function requestWorldActivityContinue(taskId, onAck) {
+    return emitGuardedMultiplayerGameplayAction('worldActivityContinue', { taskId }, ack => {
+      if (ack?.self && typeof applyServerAuthoritativePlayerState === 'function') applyServerAuthoritativePlayerState(ack.self);
+      if (ack?.sim) applyWastelandSimState(ack.sim);
+      if (typeof onAck === 'function') onAck(ack);
+    });
+  }
+
   async function loadWorldDataConfig() {
     // Location and map definitions are part of the critical character gate.
     // Wasteland simulation is only needed on the global map, so start it in

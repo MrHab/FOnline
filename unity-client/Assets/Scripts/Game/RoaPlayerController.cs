@@ -47,10 +47,17 @@ namespace RealmOfAshes.Game
         [Tooltip("Скорость доворота корпуса к прицелу, град/с.")]
         public float TurnSpeedDeg = 900f;
 
+        [Tooltip("Скорость сглаживания визуальной локомоции при разгоне, м/с².")]
+        public float VisualAcceleration = 26f;
+
+        [Tooltip("Скорость возврата анимации в стойку, м/с².")]
+        public float VisualDeceleration = 34f;
+
         [Header("Связи")]
         public RoaSocketClient Socket;
         public RoaCameraRig Camera;
         public RoaCharacterView View;
+        public RoaAudio Audio;
         public RoaPipboy Pipboy;
         public RoaInventory Inventory;
 
@@ -58,6 +65,12 @@ namespace RealmOfAshes.Game
 
         private CharacterController _controller;
         private Vector3 _velocity;
+        private Vector3 _visualVelocity;
+        private Vector3 _collisionNormal;
+        private Vector3 _requestedVelocity;
+        private float _collisionPressure;
+        private bool _colliding;
+        private bool _actorContact;
         private float _yawDeg;
         private bool _crouching;
         private float _baseSpeed = DefaultSpeed;
@@ -65,6 +78,10 @@ namespace RealmOfAshes.Game
         private bool _virtualCrouch;
 
         public bool Moving { get; private set; }
+        public bool Colliding { get { return _colliding; } }
+        public Vector3 CollisionNormal { get { return _collisionNormal; } }
+        public float CollisionPressure { get { return _collisionPressure; } }
+        public bool ActorContact { get { return _actorContact; } }
 
         /// <summary>Touch UI disables cursor aiming and supplies an explicit target.</summary>
         public bool PointerAimEnabled { get; private set; } = true;
@@ -83,10 +100,17 @@ namespace RealmOfAshes.Game
         public bool HasBrokenLeg { get; private set; }
         public bool HasConcussion { get; private set; }
         public bool HasInfection { get; private set; }
+        public bool Downed { get; private set; }
 
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
+            _controller.slopeLimit = 50f;
+            _controller.stepOffset = Mathf.Clamp(_controller.height * 0.14f, 0.18f, 0.28f);
+            _controller.skinWidth = Mathf.Clamp(_controller.radius * 0.16f, 0.045f, 0.075f);
+            _controller.minMoveDistance = 0f;
+            _controller.detectCollisions = true;
+            _controller.enableOverlapRecovery = true;
             _yawDeg = transform.eulerAngles.y;
         }
 
@@ -98,15 +122,23 @@ namespace RealmOfAshes.Game
         private void OnDisable()
         {
             if (Socket != null) Socket.OnAuthoritativeSelf -= ApplyAuthoritativeState;
+            Audio?.StopLocomotion();
         }
 
         private void Update()
         {
-            if (!InputEnabled || (Pipboy != null && Pipboy.IsOpen) || (Inventory != null && Inventory.IsOpen))
+            if (!InputEnabled || Downed || (Pipboy != null && Pipboy.IsOpen) || (Inventory != null && Inventory.IsOpen))
             {
                 _velocity = Vector3.zero;
+                _visualVelocity = Vector3.zero;
+                _requestedVelocity = Vector3.zero;
+                _colliding = false;
+                _actorContact = false;
+                _collisionNormal = Vector3.zero;
+                _collisionPressure = 0f;
                 Moving = false;
-                if (View != null) View.UpdateLocomotion(_velocity, _yawDeg, false, _crouching);
+                Audio?.StopLocomotion();
+                if (View != null) View.UpdateLocomotion(_visualVelocity, _yawDeg, false, _crouching);
                 if (Socket != null)
                     Socket.SendState(transform.position, _yawDeg, _velocity, false, _crouching, false);
                 return;
@@ -114,8 +146,13 @@ namespace RealmOfAshes.Game
 
             if (PointerAimEnabled) AimAtCursor();
             ReadInputAndMove();
+            Vector3 footPosition = transform.position;
+            footPosition.y = FeetY() + 0.025f;
+            Audio?.SetLocomotion(_visualVelocity, footPosition, _controller.isGrounded, _crouching, Moving);
 
-            if (View != null) View.UpdateLocomotion(_velocity, _yawDeg, Moving, _crouching);
+            if (View != null)
+                View.UpdateLocomotion(_visualVelocity, _yawDeg, Moving, _crouching,
+                    _collisionNormal, _collisionPressure);
 
             // turning — часть протокола: сервер ретранслирует его другим клиентам,
             // чтобы у них персонаж тоже переступал, а не проворачивался на месте.
@@ -226,14 +263,60 @@ namespace RealmOfAshes.Game
             // начнёт резать позицию по бюджету расстояния.
             if (wish.sqrMagnitude > 1f) wish.Normalize();
 
-            Moving = wish.sqrMagnitude > 0.0001f;
+            bool requestedMovement = wish.sqrMagnitude > 0.0001f;
 
             float speed = Mathf.Min(Speed, ServerSpeedLimit) * (_crouching ? CrouchSpeedFactorValue : 1f);
-            _velocity = wish * speed;
+            Vector3 requestedVelocity = wish * speed;
+            _requestedVelocity = requestedVelocity;
+            float frameDt = Mathf.Max(0.001f, Time.deltaTime);
+            Vector3 before = transform.position;
+            _colliding = false;
+            _actorContact = false;
+            _collisionNormal = Vector3.zero;
+            _collisionPressure = 0f;
 
-            Vector3 motion = _velocity * Time.deltaTime;
-            motion.y = _controller.isGrounded ? -0.05f : -9.81f * Time.deltaTime;
+            Vector3 motion = requestedVelocity * frameDt;
+            motion.y = _controller.isGrounded ? -0.05f : -9.81f * frameDt;
             _controller.Move(motion);
+
+            // Animation and the network see the displacement that collisions
+            // actually allowed. This prevents running in place against walls and
+            // keeps stride sync correct while the controller slides along cover.
+            Vector3 actual = (transform.position - before) / frameDt;
+            actual.y = 0f;
+            _velocity = actual;
+            Moving = requestedMovement && actual.sqrMagnitude > 0.0064f;
+
+            Vector3 presentationVelocity = RoaLocomotionPresentation.ResolveCollisionVelocity(
+                requestedVelocity, actual, _colliding, _collisionNormal);
+            _visualVelocity = RoaLocomotionPresentation.SmoothVisualVelocity(
+                _visualVelocity, presentationVelocity,
+                VisualAcceleration, VisualDeceleration, frameDt);
+        }
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (hit == null || hit.normal.y > 0.55f) return;
+            // A living actor blocks displacement, but it is not a wall: feeding
+            // this contact into the compression pose bends the pelvis while foot
+            // IK tries to keep both soles planted and can fold a leg upward.
+            if (RoaFootIk.IsActorCollider(hit.collider, transform))
+            {
+                _actorContact = true;
+                return;
+            }
+            float pressure = RoaLocomotionPresentation.ContactPressure(
+                _requestedVelocity, hit.normal);
+            if (pressure <= 0.001f) return;
+
+            // В углу CharacterController может вернуть несколько стен за кадр.
+            // Для позы и скольжения сохраняем ту, в которую игрок давит сильнее.
+            if (!_colliding || pressure > _collisionPressure)
+            {
+                _colliding = true;
+                _collisionNormal = hit.normal;
+                _collisionPressure = pressure;
+            }
         }
 
         /// <summary>
@@ -250,6 +333,13 @@ namespace RealmOfAshes.Game
         public void ApplySpecial(JObject self)
         {
             if (self == null) return;
+
+            bool downed = self.Value<bool?>("downed") == true;
+            if (Downed != downed)
+            {
+                Downed = downed;
+                if (View != null) View.SetDead(Downed);
+            }
 
             JObject special = self["special"] as JObject;
             var ranks = self["talentRanks"] as JObject;
@@ -363,6 +453,14 @@ namespace RealmOfAshes.Game
             _controller.enabled = false;
             transform.position = position;
             _controller.enabled = true;
+            _velocity = Vector3.zero;
+            _visualVelocity = Vector3.zero;
+            _colliding = false;
+            _actorContact = false;
+            _collisionNormal = Vector3.zero;
+            _collisionPressure = 0f;
+            _requestedVelocity = Vector3.zero;
+            Audio?.StopLocomotion();
 
             if (Camera != null) Camera.SnapToTarget();
         }

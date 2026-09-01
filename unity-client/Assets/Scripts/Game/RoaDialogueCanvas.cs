@@ -5,14 +5,14 @@ using UnityEngine.UI;
 namespace RealmOfAshes.Game
 {
     /// <summary>
-    /// Диалог с NPC и доска работ в структуре web-клиента.
+    /// Диалог с NPC и доска контрактов в структуре web-клиента.
     ///
     /// Диалог (#npc-dialogue-window, 07c_trader_dialogues_quests.js:394):
     /// модальное окно с именем собеседника, репликой и списком вариантов-кнопок:
     /// торговля, поручения с их состоянием и действиями, ограбление каравана
     /// на встречах, «Уйти».
     ///
-    /// Доска работ: карточка поселения-владельца с кнопкой вступления во
+    /// Доска контрактов: карточка поселения-владельца с кнопкой вступления во
     /// фракцию и список работ пустоши с действиями Взять / Отслеживать /
     /// Доставить / Забрать награду / Отменить.
     ///
@@ -126,6 +126,7 @@ namespace RealmOfAshes.Game
             Place(scrollArea, 0f, 0f, 1f, 1f, new Vector2(14f, 34f), new Vector2(-14f, -156f));
             var scroll = scrollArea.gameObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
+            RoaUiScroll.Configure(scroll);
             scrollArea.gameObject.AddComponent<RectMask2D>();
 
             _list = Child("List", scrollArea);
@@ -209,22 +210,22 @@ namespace RealmOfAshes.Game
 
             if (Interaction.JobBoardLoading)
             {
-                AddCard("Получаем актуальные работы…", string.Empty, null);
+                AddCard("Получаем актуальные контракты…", string.Empty, null);
                 return;
             }
 
             if (site.Joinable && !site.IsMember)
                 AddOption(site.JoinLabel, () => Interaction.JobBoardJoinOwner());
 
-            AddHeading("РАБОТЫ ПУСТОШИ");
+            AddHeading("КОНТРАКТЫ");
             List<RoaInteraction.JobBoardTask> tasks = Interaction.JobBoardTasks();
-            if (tasks.Count == 0) AddCard("У этой доски сейчас нет работ", string.Empty, null);
+            if (tasks.Count == 0) AddCard("На этой доске сейчас нет контрактов", string.Empty, null);
 
             foreach (RoaInteraction.JobBoardTask task in tasks)
             {
                 RoaInteraction.JobBoardTask captured = task;
                 var actions = new List<(string, System.Action)>();
-                if (task.Status == "active" && !task.Accepted)
+                if (task.Status == "active" && !task.Accepted && !task.StatusOnly)
                     actions.Add(("Взять", () => Interaction.JobBoardAction(captured, "accept")));
                 if (task.Status == "active" && task.Accepted)
                 {
@@ -239,7 +240,7 @@ namespace RealmOfAshes.Game
                 string body = task.Text + "\n" + task.RewardText
                     + (task.SlotsLeft >= 0 ? " · мест в группе: " + task.SlotsLeft : string.Empty)
                     + (task.Status == "completed" && task.Claimed ? "\nНаграда уже получена." : string.Empty)
-                    + (task.Status == "completed" && !task.RewardEligible ? "\nРабота завершена; участие не подтверждено." : string.Empty);
+                    + (task.Status == "completed" && !task.RewardEligible ? "\nКонтракт завершён; участие не подтверждено." : string.Empty);
 
                 AddCard((task.Tracked ? "★ " : string.Empty) + task.Title, body.Trim(), actions);
             }

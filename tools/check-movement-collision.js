@@ -10,6 +10,7 @@ const {
   modelColliderCatalogEntry,
   modelColliderParts,
   modelColliderRadius,
+  transformedBounds,
   transformedModelBlocker,
   transformedModelBlockers
 } = require('../src/server/model-colliders');
@@ -87,21 +88,40 @@ for (const fileName of fs.readdirSync(locationsDir).filter(name => name.endsWith
   const location = JSON.parse(fs.readFileSync(path.join(locationsDir, fileName), 'utf8'));
   for (const row of Array.isArray(location.objects) ? location.objects : []) {
     if (!['solid', 'cover', 'block', 'blocked', 'wall', 'resource'].includes(String(row?.collision || '').toLowerCase())) continue;
+    const playerCollision = String(row?.playerCollision ?? row?.movementCollision ?? '').toLowerCase();
+    if (row?.playerCollision === false || row?.movementCollision === false
+      || ['none', 'false', 'off', 'pass-through', 'passthrough', 'overlap', 'disabled'].includes(playerCollision)) continue;
     const modelFile = String(row.url || row.file || '').replace(/\\/g, '/').split('/').pop().toLowerCase()
       || modelFilesByKey.get(String(row.model || ''));
-    assert(modelFile && catalog[modelFile], `${fileName}/${row.id || row.model}: blocking GLB has no generated collider`);
-    const transformed = transformedModelBlockers(catalog, modelFile, {
+    const transform = {
       x: Number(row.position?.x || row.x || 0),
       z: Number(row.position?.z || row.z || 0),
       rotationY: Number(row.rotation?.y ?? row.rotationY ?? 0),
       scaleX: Number(row.scale?.x ?? row.scale ?? 1),
       scaleZ: Number(row.scale?.z ?? row.scale ?? 1)
-    });
+    };
+    const authoredParts = (Array.isArray(row.collisionParts) ? row.collisionParts : []).map(part => transformedBounds({
+      center: {
+        x: Number(part?.center?.x ?? part?.x ?? 0),
+        z: Number(part?.center?.z ?? part?.z ?? 0)
+      },
+      size: {
+        x: Number(part?.size?.x ?? part?.width ?? 0),
+        z: Number(part?.size?.z ?? part?.depth ?? 0)
+      }
+    }, transform)).filter(Boolean);
     const exact = row.collisionSize && typeof row.collisionSize === 'object' ? row.collisionSize : {};
-    const exactWidth = Number(exact.width || exact.x || 0);
-    const exactDepth = Number(exact.depth || exact.z || 0);
-    const hasAuthoredFallback = Number.isFinite(exactWidth) && exactWidth > 0
-      && Number.isFinite(exactDepth) && exactDepth > 0;
+    const footprint = row.footprint && typeof row.footprint === 'object' ? row.footprint : {};
+    const cells = row.placement?.cells && typeof row.placement.cells === 'object' ? row.placement.cells : {};
+    const fallbackWidth = Number(exact.width || exact.x || footprint.x || Number(cells.x || 0) * 2 || 0);
+    const fallbackDepth = Number(exact.depth || exact.z || footprint.z || Number(cells.z || 0) * 2 || 0);
+    const hasAuthoredFallback = Number.isFinite(fallbackWidth) && fallbackWidth > 0
+      && Number.isFinite(fallbackDepth) && fallbackDepth > 0;
+    assert(authoredParts.length || (modelFile && catalog[modelFile]) || hasAuthoredFallback,
+      `${fileName}/${row.id || row.model}: blocking object has neither authored parts, footprint nor a generated GLB collider`);
+    const transformed = authoredParts.length
+      ? authoredParts
+      : (modelFile && catalog[modelFile] ? transformedModelBlockers(catalog, modelFile, transform) : []);
     assert(transformed.length > 0 || hasAuthoredFallback,
       `${fileName}/${row.id || row.model}: collider transform and authored fallback both failed`);
     authoredColliderCount += 1;
@@ -221,13 +241,17 @@ assert(visibilityUpdateBody.includes('visibilitySafetyRefreshTimer <= 0')
 assert(visibilityUpdateBody.includes('rtsFogObserverEpoch++')
   && functionBody(clientMovement, 'updateEntityRtsFogVisibility').includes('rtsFogObserverEpoch'),
   'observer sub-tile movement does not invalidate exact entity LOS caches');
-const hallVisionBoxes = transformedModelBlockers(catalog, 'old_klim_trade_hall.glb', {
-  x: -8,
-  z: 11,
-  rotationY: Math.PI / 2,
+const settlementLocation = JSON.parse(fs.readFileSync(path.join(locationsDir, 'settlement.json'), 'utf8'));
+const tradeHall = settlementLocation.objects.find(row => row?.id === 'old_klim_trade_hall');
+assert(tradeHall && Array.isArray(tradeHall.collisionParts) && tradeHall.collisionParts.length === 5,
+  'MEP trade hall must preserve its doorway with five authored collision parts');
+const hallVisionBoxes = tradeHall.collisionParts.map(part => transformedBounds(part, {
+  x: Number(tradeHall.position.x),
+  z: Number(tradeHall.position.z),
+  rotationY: Number(tradeHall.rotation.y),
   scaleX: 1,
   scaleZ: 1
-}).map(box => ({ ...box, kind: 'block' }));
+})).filter(Boolean).map(box => ({ ...box, kind: 'block' }));
 const exactVisionRuntime = new Function('boxes', [
   'const TILE = 2;',
   'const authoredExactVisionBoxes = boxes;',
@@ -236,10 +260,56 @@ const exactVisionRuntime = new Function('boxes', [
   functionSource(clientCollision, 'isAuthoredExactLowCoverHidingCrouchedTargetWorldLine'),
   'return { isAuthoredExactVisionBlockingWorldLine, isAuthoredExactLowCoverHidingCrouchedTargetWorldLine };'
 ].join('\n'))(hallVisionBoxes);
-assert.strictEqual(exactVisionRuntime.isAuthoredExactVisionBlockingWorldLine(-5, 12.4, -7.2, 12.4, false), false,
-  'trade hall doorway is sealed along the real player-offset fog ray');
-assert.strictEqual(exactVisionRuntime.isAuthoredExactVisionBlockingWorldLine(-5, 13, -7, 13, false), true,
-  'trade hall regression fixture no longer demonstrates the blocked tile-center ray');
+const hallX = Number(tradeHall.position.x);
+const hallZ = Number(tradeHall.position.z);
+assert.strictEqual(exactVisionRuntime.isAuthoredExactVisionBlockingWorldLine(
+  hallX + 3, hallZ, hallX + 0.8, hallZ, false), false,
+  'MEP trade hall doorway is sealed along the real player-offset fog ray');
+assert.strictEqual(exactVisionRuntime.isAuthoredExactVisionBlockingWorldLine(
+  hallX + 3, hallZ + 3, hallX + 0.8, hallZ + 3, false), true,
+  'MEP trade hall wall no longer blocks the adjacent fog ray');
+function settlementCollisionBoxes(...ids) {
+  return ids.flatMap(id => {
+    const entry = settlementLocation.objects.find(row => row?.id === id);
+    assert(entry && Array.isArray(entry.collisionParts), 'Missing settlement collision object: ' + id);
+    return entry.collisionParts.map(part => transformedBounds(part, {
+      x: Number(entry.position.x),
+      z: Number(entry.position.z),
+      rotationY: Number(entry.rotation.y),
+      scaleX: 1,
+      scaleZ: 1
+    })).filter(Boolean).map(box => ({ ...box, kind: 'block' }));
+  });
+}
+const settlementBarrierRuntime = new Function('boxes', [
+  'const TILE = 2;',
+  'const authoredExactVisionBoxes = boxes;',
+  functionSource(clientCollision, 'authoredExactVisionBoxHitInterval'),
+  functionSource(clientCollision, 'isAuthoredExactVisionBlockingWorldLine'),
+  'return isAuthoredExactVisionBlockingWorldLine;'
+].join('\n'))(settlementCollisionBoxes(
+  'old_klim_defensive_perimeter', 'old_klim_main_gate', 'old_klim_loading_gate'));
+assert.strictEqual(settlementBarrierRuntime(0, -27, 0, -20, false), false,
+  'Main settlement gate no longer has a clear central passage');
+assert.strictEqual(settlementBarrierRuntime(4.1, -27, 4.1, -20, false), true,
+  'Main gate post no longer protects the settlement entrance');
+assert.strictEqual(settlementBarrierRuntime(22, 7, 28, 7, false), false,
+  'Service gate no longer has a clear central caravan passage');
+assert.strictEqual(settlementBarrierRuntime(22, 4.65, 28, 4.65, false), true,
+  'Service gate post no longer protects the loading-yard entrance');
+const penRuntime = new Function('boxes', [
+  'const TILE = 2;',
+  'const authoredExactVisionBoxes = boxes;',
+  functionSource(clientCollision, 'authoredExactVisionBoxHitInterval'),
+  functionSource(clientCollision, 'isAuthoredExactVisionBlockingWorldLine'),
+  'return isAuthoredExactVisionBlockingWorldLine;'
+].join('\n'))(settlementCollisionBoxes('old_klim_brahmin_pens'));
+assert.strictEqual(penRuntime(13, -14, 13, -10, false), false,
+  'Left brahmin pen no longer has a clear entrance');
+assert.strictEqual(penRuntime(20, -14, 20, -10, false), false,
+  'Right brahmin pen no longer has a clear entrance');
+assert.strictEqual(penRuntime(11.1, -14, 11.1, -10, false), true,
+  'Brahmin pen fence no longer blocks beside its entrance');
 const exactCoverRuntime = new Function('boxes', [
   'const TILE = 2;',
   'const authoredExactVisionBoxes = boxes;',

@@ -689,13 +689,74 @@ function assertReputationFactionBackfill() {
     x: 30,
     y: 30
   };
+  first.state.sites.independent_board = {
+    id: 'independent_board',
+    type: 'settlement',
+    owner: 'caravans',
+    faction: 'caravans',
+    x: 40,
+    y: 40
+  };
+  first.state.sites.main_target = {
+    id: 'main_target',
+    type: 'resource',
+    owner: 'scrap_union',
+    faction: 'scrap_union',
+    x: 50,
+    y: 50
+  };
   first.state.parties.hostile_party = party('hostile_party', 'patrol', 'raiders');
-  const completed = task('hostile_delivery', 'deliver_supplies', 'hostile_party', { status: 'completed' });
-  completed.issuerSiteId = 'issuer_board';
-  completed.siteId = 'hostile_lair';
-  completed.faction = 'raiders';
-  completed.details = { rewardFactionId: 'raiders' };
-  first.state.worldTasks = [completed];
+  first.state.parties.major_patrol = party('major_patrol', 'patrol', 'old_klim');
+  first.state.parties.free_caravan = party('free_caravan', 'caravan', 'caravans');
+
+  const hostileLegacy = task('hostile_delivery', 'deliver_supplies', 'hostile_party', { status: 'completed' });
+  hostileLegacy.issuerSiteId = 'issuer_board';
+  hostileLegacy.siteId = 'hostile_lair';
+  hostileLegacy.faction = 'raiders';
+  hostileLegacy.details = { rewardFactionId: 'raiders' };
+
+  const independentFrozen = task('independent_frozen', 'deliver_supplies', '', { status: 'completed' });
+  independentFrozen.issuerSiteId = 'issuer_board';
+  independentFrozen.siteId = 'main_target';
+  independentFrozen.details = { rewardFactionId: 'caravans' };
+
+  const neutralFrozen = task('neutral_frozen', 'deliver_supplies', '', { status: 'completed' });
+  neutralFrozen.issuerSiteId = 'issuer_board';
+  neutralFrozen.siteId = 'main_target';
+  neutralFrozen.details = { rewardFactionId: 'neutral' };
+
+  const emptyFrozen = task('empty_frozen', 'deliver_supplies', '', { status: 'completed' });
+  emptyFrozen.issuerSiteId = 'issuer_board';
+  emptyFrozen.siteId = 'main_target';
+  emptyFrozen.details = { rewardFactionId: '' };
+
+  const independentIssuer = task('independent_issuer', 'deliver_supplies', '', { status: 'completed' });
+  independentIssuer.issuerSiteId = 'independent_board';
+  independentIssuer.siteId = 'main_target';
+
+  const hostileIssuer = task('hostile_issuer', 'deliver_supplies', '', { status: 'completed' });
+  hostileIssuer.issuerSiteId = 'hostile_lair';
+  hostileIssuer.siteId = 'main_target';
+  hostileIssuer.details = { rewardFactionId: 'wild' };
+
+  const majorPatrol = task('major_patrol_task', 'join_patrol', 'major_patrol', { status: 'completed' });
+  majorPatrol.issuerSiteId = 'independent_board';
+  majorPatrol.siteId = 'main_target';
+
+  const independentEscort = task('independent_escort', 'escort_caravan', 'free_caravan');
+  independentEscort.issuerSiteId = 'independent_board';
+  independentEscort.siteId = 'main_target';
+
+  first.state.worldTasks = [
+    hostileLegacy,
+    independentFrozen,
+    neutralFrozen,
+    emptyFrozen,
+    independentIssuer,
+    hostileIssuer,
+    majorPatrol,
+    independentEscort
+  ];
   first.sim.save(true);
 
   const reloaded = createWastelandSimulation({
@@ -704,12 +765,72 @@ function assertReputationFactionBackfill() {
     gameDayRealMs: 60 * 60 * 1000,
     saveIntervalMs: 3000
   });
-  const reloadedTask = [
+  const reloadedTasks = new Map([
     ...(reloaded.state().worldTasks || []),
     ...(reloaded.state().worldTaskHistory || [])
-  ].find(row => row.id === completed.id);
-  assert.strictEqual(reloadedTask?.details?.rewardFactionId, 'old_klim',
-    'a hostile target/party captured reputation before the joinable issuer faction');
+  ].map(row => [row.id, row]));
+  assert.strictEqual(reloadedTasks.get(hostileLegacy.id)?.details?.rewardFactionId, 'old_klim',
+    'a legacy hostile target marker did not migrate to the joinable issuer faction');
+  assert.strictEqual(reloadedTasks.get(hostileLegacy.id)?.details?.legacyRewardFactionId, 'raiders',
+    'the migrated hostile target marker was not retained for audit');
+  assert.strictEqual(reloadedTasks.get(hostileLegacy.id)?.reward?.reputation, 1,
+    'a main-faction issuer lost reputation because its target was hostile');
+
+  for (const [taskId, legacyFaction] of [
+    [independentFrozen.id, 'caravans'],
+    [neutralFrozen.id, 'neutral']
+  ]) {
+    const row = reloadedTasks.get(taskId);
+    assert.strictEqual(row?.details?.rewardFactionId, '',
+      `${legacyFaction} reputation was retargeted to a political faction`);
+    assert.strictEqual(row?.details?.legacyRewardFactionId, legacyFaction,
+      `${legacyFaction} reputation was removed without an archive marker`);
+    assert.strictEqual(row?.reward?.reputation, 0,
+      `${legacyFaction} still grants player reputation`);
+  }
+  assert.strictEqual(reloadedTasks.get(emptyFrozen.id)?.details?.rewardFactionId, '',
+    'an explicitly empty reputation marker fell back to the issuer');
+  assert.strictEqual(reloadedTasks.get(emptyFrozen.id)?.details?.legacyRewardFactionId, undefined,
+    'an empty reputation marker was misclassified as a hostile faction');
+  assert.strictEqual(reloadedTasks.get(emptyFrozen.id)?.reward?.reputation, 0,
+    'an explicitly reputation-free task still grants reputation');
+  for (const taskId of [independentIssuer.id, hostileIssuer.id, independentEscort.id]) {
+    assert.strictEqual(reloadedTasks.get(taskId)?.details?.rewardFactionId, '',
+      `${taskId} acquired a reputation recipient from its target`);
+    assert.strictEqual(reloadedTasks.get(taskId)?.reward?.reputation, 0,
+      `${taskId} still grants reputation without a main-faction payer`);
+  }
+  assert.strictEqual(reloadedTasks.get(majorPatrol.id)?.details?.rewardFactionId, 'old_klim',
+    'main patrol work did not reward the accompanied main faction');
+  assert.strictEqual(reloadedTasks.get(majorPatrol.id)?.reward?.reputation, 1,
+    'main patrol work lost its reputation reward');
+
+  const publicTasks = new Map(reloaded.publicWorldTasks([...reloadedTasks.keys()])
+    .map(row => [row.id, row]));
+  assert.deepStrictEqual(
+    {
+      reputation: publicTasks.get(independentFrozen.id)?.reward?.reputation,
+      reputationFactionId: publicTasks.get(independentFrozen.id)?.reward?.reputationFactionId
+    },
+    { reputation: 0, reputationFactionId: '' },
+    'public tasks advertise independent reputation that cannot be granted'
+  );
+  assert.deepStrictEqual(
+    {
+      reputation: publicTasks.get(hostileLegacy.id)?.reward?.reputation,
+      reputationFactionId: publicTasks.get(hostileLegacy.id)?.reward?.reputationFactionId
+    },
+    { reputation: 1, reputationFactionId: 'old_klim' },
+    'public tasks hide the repaired main-faction reputation reward'
+  );
+
+  const independentJoin = reloaded.joinWorldParty(joinPayload(
+    independentEscort.id,
+    'free_caravan',
+    { factionId: '', worldFactionId: '' }
+  ));
+  assert.strictEqual(independentJoin?.ok, true,
+    'an independent player cannot escort a free caravan');
 
   reloaded.state().sites.issuer_board.owner = 'scrap_union';
   reloaded.state().sites.issuer_board.faction = 'scrap_union';
@@ -725,9 +846,17 @@ function assertReputationFactionBackfill() {
     [
       ...(restarted.state().worldTasks || []),
       ...(restarted.state().worldTaskHistory || [])
-    ].find(row => row.id === completed.id)?.details?.rewardFactionId,
+    ].find(row => row.id === hostileLegacy.id)?.details?.rewardFactionId,
     'old_klim',
     'the completed-task reputation faction changed after world ownership changed'
+  );
+  assert.strictEqual(
+    [
+      ...(restarted.state().worldTasks || []),
+      ...(restarted.state().worldTaskHistory || [])
+    ].find(row => row.id === independentFrozen.id)?.reward?.reputation,
+    0,
+    'an archived independent reward was retargeted after world ownership changed'
   );
 }
 
@@ -909,6 +1038,119 @@ function evaluateServerFunctions(source, sections, names, globals = {}) {
     context
   );
   return context.__testedFunctions;
+}
+
+function assertServerFactionMigrationContract() {
+  const serverSource = fs.readFileSync(path.join(PROJECT_ROOT, 'server.js'), 'utf8');
+  let persistCalls = 0;
+  const legacyState = {
+    characterProfile: {
+      factionId: 'caravans',
+      worldFactionId: 'caravans',
+      factionName: 'Free Caravans',
+      factionJoinedAt: 123,
+      worldFactionReputation: { scrap_union: 8, caravans: 6, mutant_ants: 99 }
+    },
+    worldFactionReputation: { old_klim: 5, caravans: 4, ghouls: 88 }
+  };
+  const row = {
+    state: legacyState,
+    summary: { factionId: 'caravans', factionName: 'Free Caravans' }
+  };
+  const savesDb = { characters: { account: { character: row } } };
+  const api = evaluateServerFunctions(
+    serverSource,
+    [
+      ['const SERVER_JOINABLE_WORLD_FACTIONS', 'const SERVER_DEFAULT_FACTION_RELATIONS'],
+      ['function serverFactionKey(', 'const SERVER_PLAYER_FACTION_MODEL_VERSION'],
+      ['const SERVER_PLAYER_FACTION_MODEL_VERSION', 'const SERVER_ALWAYS_HOSTILE_FACTION_GROUPS'],
+      ['function serverWorldTaskReputationFaction(', 'function serverWorldTaskDeliveryPlan(']
+    ],
+    ['sanitizePersistedPlayerFactionState', 'migrateStoredPlayerFactionModel', 'serverWorldTaskReputationFaction'],
+    {
+      clamp: (value, min, max) => Math.max(min, Math.min(max, Number(value))),
+      savesDb,
+      persistSaves: () => { persistCalls += 1; },
+      isWorldPartyTask: taskRow => ['escort_caravan', 'join_patrol'].includes(String(taskRow?.type || '')),
+      serverWorldTaskSite: (state, id) => state?.sites?.[id] || null,
+      serverCombatFactionGroup: faction => {
+        const key = String(faction || '').toLowerCase();
+        if (['raider', 'raiders'].includes(key)) return 'raiders';
+        if (['mutant', 'mutants', 'super_mutant', 'super_mutants'].includes(key)) return 'mutants';
+        if (['ghoul', 'ghouls', 'mutant_ant', 'mutant_ants', 'wild'].includes(key)) return key === 'wild' ? 'wild' : `${key.replace(/s$/, '')}s`;
+        return key;
+      },
+      SERVER_ALWAYS_HOSTILE_FACTION_GROUPS: new Set([
+        'raiders', 'mutants', 'ghouls', 'mutant_ants', 'wild'
+      ])
+    }
+  );
+
+  assert.strictEqual(persistCalls, 1,
+    'startup faction migration did not persist its one changed character batch');
+  assert.strictEqual(legacyState.characterProfile.factionId, '',
+    'legacy caravan membership did not become independent');
+  assert.strictEqual(legacyState.characterProfile.worldFactionId, '',
+    'legacy caravan world-faction membership survived migration');
+  assert.strictEqual(legacyState.characterProfile.factionName, undefined,
+    'legacy caravan faction name survived migration');
+  assert.strictEqual(legacyState.characterProfile.factionJoinedAt, undefined,
+    'legacy caravan join date survived migration');
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(legacyState.worldFactionReputation)),
+    { scrap_union: 8, old_klim: 5 },
+    'migration retained independent/creature reputation or lost a main faction'
+  );
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(legacyState.archivedWorldFactionReputation)),
+    { caravans: 6 },
+    'legacy caravan reputation was not archived at its highest saved value'
+  );
+  assert.strictEqual(legacyState.worldFactionModelVersion, 2,
+    'migrated state was not marked with the simplified faction model');
+  assert.deepStrictEqual(row.summary, { factionId: '' },
+    'legacy summary still advertises caravan membership');
+
+  const migratedSnapshot = JSON.stringify(legacyState);
+  api.sanitizePersistedPlayerFactionState(legacyState);
+  assert.strictEqual(JSON.stringify(legacyState), migratedSnapshot,
+    'player faction migration is not idempotent');
+
+  const state = {
+    sites: {
+      main_issuer: { owner: 'old_klim', faction: 'old_klim' },
+      independent_issuer: { owner: 'caravans', faction: 'caravans' },
+      hostile_issuer: { owner: 'raiders', faction: 'raiders' },
+      main_target: { owner: 'scrap_union', faction: 'scrap_union' }
+    },
+    parties: {
+      main_patrol: { faction: 'old_klim' },
+      free_caravan: { faction: 'caravans' }
+    }
+  };
+  assert.strictEqual(api.serverWorldTaskReputationFaction({
+    type: 'deliver_supplies', issuerSiteId: 'main_issuer', siteId: 'main_target',
+    details: { rewardFactionId: 'raiders' }
+  }, state), 'old_klim', 'hostile legacy marker did not migrate to its main issuer');
+  for (const rewardFactionId of ['caravans', 'neutral', '']) {
+    assert.strictEqual(api.serverWorldTaskReputationFaction({
+      type: 'deliver_supplies', issuerSiteId: 'main_issuer', siteId: 'main_target',
+      details: { rewardFactionId }
+    }, state), '', `${rewardFactionId || 'empty'} frozen marker fell back to a main issuer`);
+  }
+  assert.strictEqual(api.serverWorldTaskReputationFaction({
+    type: 'deliver_supplies', issuerSiteId: 'independent_issuer', siteId: 'main_target', details: {}
+  }, state), '', 'ordinary independent work inherited reputation from its main target');
+  assert.strictEqual(api.serverWorldTaskReputationFaction({
+    type: 'deliver_supplies', issuerSiteId: 'hostile_issuer', siteId: 'main_target',
+    details: { rewardFactionId: 'raiders' }
+  }, state), '', 'hostile-issued work inherited reputation from its main target');
+  assert.strictEqual(api.serverWorldTaskReputationFaction({
+    type: 'join_patrol', partyId: 'main_patrol', issuerSiteId: 'independent_issuer', details: {}
+  }, state), 'old_klim', 'main patrol work did not reward its accompanied faction');
+  assert.strictEqual(api.serverWorldTaskReputationFaction({
+    type: 'escort_caravan', partyId: 'free_caravan', issuerSiteId: 'main_issuer', details: {}
+  }, state), '', 'free-caravan escort inherited reputation from a main issuer');
 }
 
 function assertServerPersistenceFaultRecovery() {
@@ -1154,6 +1396,7 @@ function assertServerWorldTransferFaultRecovery() {
   let persistCalls = 0;
   let removeTravelCalls = 0;
   let hostilityCalls = 0;
+  let activityEnsureCalls = 0;
   let refreshCalls = 0;
   let joinCalls = 0;
   let leaveCalls = 0;
@@ -1253,6 +1496,9 @@ function assertServerWorldTransferFaultRecovery() {
       applyRememberedEncounterHostilityForPlayer: () => {
         hostilityCalls++;
       },
+      ensureServerWorldActivityForRoom: () => {
+        activityEnsureCalls++;
+      },
       refreshRoomWorldState: () => {
         refreshCalls++;
       },
@@ -1300,6 +1546,8 @@ function assertServerWorldTransferFaultRecovery() {
       'failed world transfer destroyed an independent travel session');
     assert.strictEqual(hostilityCalls, 0,
       'failed world transfer changed target-room hostility');
+    assert.strictEqual(activityEnsureCalls, 0,
+      'failed world transfer created an activity before persistence');
     assert.strictEqual(refreshCalls, 0,
       'failed world transfer refreshed the target room before persistence');
     assert.strictEqual(transferEvents.length, 0,
@@ -1327,6 +1575,7 @@ function assertServerWorldTransferFaultRecovery() {
   assert.strictEqual(leaveCalls, 1, 'successful retry left the old room more than once');
   assert.strictEqual(removeTravelCalls, 1, 'successful retry did not clear independent travel exactly once');
   assert.strictEqual(hostilityCalls, 1, 'successful retry did not restore remembered hostility exactly once');
+  assert.strictEqual(activityEnsureCalls, 1, 'successful retry did not create the target activity exactly once');
   assert.strictEqual(refreshCalls, 1, 'successful retry did not refresh the target room exactly once');
   assert.strictEqual(
     transferEvents.filter(row => row.eventName === 'serverWorldTransfer').length,
@@ -1425,6 +1674,8 @@ function assertSocketAndClientContract() {
   assert(travelStart.includes('if (candidateExisting?.terminating) globalTravelSessions.delete(socket.id)')
     && travelStart.includes('candidateExisting && !candidateExisting.terminating'),
   'a completed route can remain authoritative and reject a new destination');
+  assert(travelStart.includes('serverGlobalTravelCurrentPoint(existing, Date.now())'),
+    'changing destination does not continue from the current authoritative route position');
   const enterWorld = serverSource.slice(
     serverSource.indexOf("socket.on('globalTravelEnterWorld'"),
     serverSource.indexOf("socket.on('globalTravelCancel'", serverSource.indexOf("socket.on('globalTravelEnterWorld'"))
@@ -1477,9 +1728,9 @@ function assertSocketAndClientContract() {
   'global travel cancellation persists players before suppressing the cancelled route descriptor');
   assert(serverSource.includes('syncWorldPartyPlayerAttachments(simState);'),
     'world-party attachment is not reconciled on the server tick');
-  assert(serverSource.includes('if (!p.attachedPartyTaskId) {')
+  assert(serverSource.includes('if (!p.attachedPartyTaskId && !p.pendingLocationTransition) {')
     && serverSource.includes('attachedPartyId: worldTransferId(savedGlobalMap.attachedPartyId'),
-  'reconnect creates an independent route instead of restoring server world-party attachment');
+  'reconnect creates an independent route instead of restoring a world-party attachment or pending arrival');
   assert(serverSource.includes('attachedPartyId,')
     && serverSource.includes('attachedPartyTaskId,'),
   'authoritative global-map state omits server world-party attachment');
@@ -1556,9 +1807,17 @@ function assertSocketAndClientContract() {
       < arrivalTransferMarker.lastIndexOf('});'),
     'arrival transfer dedupe commits before its durable arrival marker'
   );
-  assert(serverSource.includes('const detachedWorldTaskIds = detachServerPlayerFromActiveWorldParties(p);')
-    && serverSource.includes("emitAuthoritativePlayerState(p, { reason: 'deathRespawn', detachedWorldTaskIds });"),
-  'death/respawn does not atomically detach active world-party work');
+  const respawnFlow = serverSourceSection(
+    serverSource,
+    'function serverRespawnPlayer(',
+    'function serverEnemyTypeIndexByName('
+  );
+  assert(respawnFlow.includes("failServerPlayerActiveWorldActivities(p, 'player_died')")
+    && respawnFlow.includes('...detachServerPlayerFromActiveWorldParties(p)')
+    && respawnFlow.indexOf('failServerPlayerActiveWorldActivities')
+      < respawnFlow.indexOf('detachServerPlayerFromActiveWorldParties')
+    && respawnFlow.includes("emitAuthoritativePlayerState(p, { reason: 'deathRespawn', detachedWorldTaskIds });"),
+  'death/respawn does not atomically fail personal activities and detach active world-party work');
   const savedLocationContext = serverSource.slice(
     serverSource.indexOf('function serverLocationContextFromPlayer('),
     serverSource.indexOf('function mergeAuthoritativeCharacterState(', serverSource.indexOf('function serverLocationContextFromPlayer('))
@@ -1600,6 +1859,7 @@ try {
   assertPublicIdentityRedaction();
   assertPublicMotionSnapshot();
   assertUnrelatedEncounterCannotFinishEscorts();
+  assertServerFactionMigrationContract();
   assertServerPersistenceFaultRecovery();
   assertGlobalTravelLeaderDisconnectRecovery();
   assertServerWorldTransferFaultRecovery();

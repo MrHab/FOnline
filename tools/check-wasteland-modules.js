@@ -16,9 +16,13 @@ const {
   globalMapRoadRows
 } = require('../src/server/wasteland-district-sites');
 const {
+  JOINABLE_WORLD_FACTIONS,
+  TERRITORIAL_WORLD_FACTIONS,
+  factionCategory,
   factionGroup,
   factionLabel,
   isJoinableWorldFaction,
+  isTerritorialWorldFaction,
   protectFactionCapitalSite
 } = require('../src/server/wasteland-factions');
 const {
@@ -56,7 +60,14 @@ const {
   seededRandom,
   writeJsonAtomic
 } = require('../src/server/wasteland-sim-utils');
-const { normalizeWorldTask } = require('../src/server/wasteland-world-tasks');
+const {
+  WORLD_OPERATION_SCHEMA,
+  createPatrolOperation,
+  createSupplyOperation,
+  normalizeWorldTask,
+  transitionWorldOperation,
+  worldOperationStage
+} = require('../src/server/wasteland-world-tasks');
 
 const ROOT = path.resolve(__dirname, '..');
 const globalMap = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/global-map.json'), 'utf8'));
@@ -66,7 +77,14 @@ function checkFactions() {
   assert.strictEqual(factionGroup('scrap_town'), 'scrap_union');
   assert.strictEqual(factionLabel('relay'), 'техники Ретранслятора');
   assert.strictEqual(isJoinableWorldFaction('old_klim'), true);
+  assert.strictEqual(isJoinableWorldFaction('caravans'), false);
   assert.strictEqual(isJoinableWorldFaction('raiders'), false);
+  assert.strictEqual(isTerritorialWorldFaction('caravans'), true);
+  assert.strictEqual(isTerritorialWorldFaction('neutral'), false);
+  assert.strictEqual(factionCategory('old_klim'), 'major');
+  assert.strictEqual(factionCategory('caravans'), 'independent');
+  assert.strictEqual(factionCategory('neutral'), 'independent');
+  assert.strictEqual(factionCategory('ghouls'), 'hostile');
 
   const capital = {
     id: 'settlement',
@@ -100,6 +118,37 @@ function checkFactions() {
     controlPressure: 0,
     supplyDisruptedUntil: 0
   });
+}
+
+function checkFactionPresentationContract() {
+  const expected = ['old_klim', 'scrap_union', 'relay_order'];
+  assert.deepStrictEqual([...JOINABLE_WORLD_FACTIONS].sort(), [...expected].sort(),
+    'server player-faction allowlist must contain exactly the three main factions');
+  assert.deepStrictEqual([...TERRITORIAL_WORLD_FACTIONS].sort(), [...expected, 'caravans'].sort(),
+    'territorial simulation must retain caravans without making them a player faction');
+
+  const pipboy = fs.readFileSync(path.join(ROOT, 'unity-client/Assets/Scripts/Game/RoaPipboy.cs'), 'utf8');
+  const canvas = fs.readFileSync(path.join(ROOT, 'unity-client/Assets/Scripts/Game/RoaPipboyCanvas.cs'), 'utf8');
+  const quotedIds = source => [...String(source || '').matchAll(/['\"]([a-z0-9_]+)['\"]/g)]
+    .map(match => match[1]);
+
+  const unityAllowlist = pipboy.match(/PrimaryFactionIds\s*=\s*\{([^}]*)\}/);
+  assert(unityAllowlist, 'Unity PIP-Boy main-faction allowlist is missing');
+  assert.deepStrictEqual(quotedIds(unityAllowlist[1]), expected,
+    'Unity RoaPipboy does not show exactly the three server player factions');
+  const unityJoinability = pipboy.slice(
+    pipboy.indexOf('public static bool IsJoinableFaction('),
+    pipboy.indexOf('public static string FactionLabel(', pipboy.indexOf('public static bool IsJoinableFaction('))
+  );
+  assert.deepStrictEqual(quotedIds(unityJoinability), expected,
+    'Unity faction joinability drifted from its three-card PIP-Boy allowlist');
+
+  assert(canvas.includes('foreach (string id in RoaPipboy.PrimaryFactionIds)'),
+    'RoaPipboyCanvas no longer renders the shared three-faction allowlist');
+  assert(canvas.includes('RoaPipboy.PrimaryFactionIds.Length'),
+    'RoaPipboyCanvas dashboard no longer counts the shared three-faction allowlist');
+  assert(!/\bFactionIds\s*=/.test(canvas),
+    'RoaPipboyCanvas reintroduced a separate faction allowlist that can drift');
 }
 
 function checkMapGeometry() {
@@ -186,6 +235,226 @@ function checkTaskNormalization() {
   assert.deepStrictEqual(task.reward, { xp: 12, caps: 17, reputation: 2 });
   assert.notStrictEqual(task.details, undefined);
   assert.strictEqual(localizeLegacyWorldText('Raiders vs patrol'), 'Рейдеры против патруля');
+}
+
+function checkWorldOperations() {
+  const operation = createSupplyOperation({
+    partyId: 'resource_dryWaterPump_1000',
+    issuerFactionId: 'old_klim',
+    sourceSiteId: 'dryWaterPump',
+    destinationSiteId: 'settlement',
+    cargo: { water: 48, invalid: -3 },
+    goal: {
+      reason: 'site_shortage',
+      summary: 'Поселению нужна вода.',
+      targetSiteId: 'settlement'
+    },
+    assignment: {
+      leaderId: 'resource_dryWaterPump_1000_merchant',
+      leaderName: 'Караванщик',
+      leaderRole: 'Глава каравана',
+      leaseUntilHour: 40
+    },
+    createdHour: 10
+  }, 10);
+  assert.strictEqual(operation.schema, WORLD_OPERATION_SCHEMA);
+  assert.strictEqual(operation.kind, 'supply_delivery');
+  assert.strictEqual(operation.phase, 'preparing');
+  assert.strictEqual(operation.assignment.assigneeId, 'resource_dryWaterPump_1000');
+  assert.strictEqual(operation.assignment.leaderName, 'Караванщик');
+  assert.deepStrictEqual(operation.cargo, { water: 48 });
+
+  const traveling = transitionWorldOperation(operation, 'traveling', 12, {
+    assignment: { taskId: 'escort_water' }
+  });
+  assert.strictEqual(traveling.phase, 'traveling');
+  assert.strictEqual(traveling.departureHour, 12);
+  assert.strictEqual(traveling.revision, operation.revision + 1);
+  assert.deepStrictEqual(worldOperationStage(traveling), { key: 'active', label: 'Караван в пути' });
+  assert.strictEqual(transitionWorldOperation(traveling, 'traveling', 13).revision, traveling.revision,
+    'an unchanged operation transition must be idempotent');
+
+  const completed = transitionWorldOperation(traveling, 'completed', 18, {
+    outcome: {
+      result: 'delivered',
+      reason: 'caravan_arrived',
+      siteId: 'settlement',
+      cargo: { water: 48 },
+      deliveredUnits: 48,
+      npcLosses: 0
+    }
+  });
+  assert.strictEqual(completed.status, 'completed');
+  assert.strictEqual(completed.completedHour, 18);
+  assert.strictEqual(completed.outcome.deliveredUnits, 48);
+
+  const failed = transitionWorldOperation(traveling, 'failed', 19, {
+    outcome: {
+      result: 'failed',
+      reason: 'caravan_destroyed',
+      siteId: 'roadOutpost',
+      cargo: {},
+      deliveredUnits: 0,
+      npcLosses: 4
+    }
+  });
+  const cancelled = transitionWorldOperation(traveling, 'cancelled', 20, {
+    outcome: {
+      result: 'cancelled',
+      reason: 'route_abandoned',
+      siteId: 'dryWaterPump',
+      cargo: { water: 48 },
+      deliveredUnits: 0,
+      npcLosses: 0
+    }
+  });
+  for (const terminal of [completed, failed, cancelled]) {
+    for (const activePhase of ['traveling', 'preparing']) {
+      const reopened = transitionWorldOperation(terminal, activePhase, 24, {
+        outcome: {
+          result: 'reopened',
+          reason: 'invalid_terminal_transition',
+          siteId: 'dryWaterPump',
+          cargo: { water: 1 },
+          deliveredUnits: 1,
+          npcLosses: 0
+        }
+      });
+      assert.deepStrictEqual(reopened, terminal,
+        `${terminal.phase} world operation must not reopen as ${activePhase}`);
+    }
+
+    const enrichedOutcome = {
+      ...terminal.outcome,
+      npcLosses: Number(terminal.outcome?.npcLosses || 0) + 1
+    };
+    const enriched = transitionWorldOperation(terminal, terminal.phase, 25, {
+      outcome: enrichedOutcome
+    });
+    assert.strictEqual(enriched.phase, terminal.phase,
+      'same-terminal outcome enrichment must preserve the terminal phase');
+    assert.strictEqual(enriched.completedHour, terminal.completedHour,
+      'same-terminal outcome enrichment must preserve the first completion time');
+    assert.strictEqual(enriched.revision, terminal.revision + 1,
+      'same-terminal outcome enrichment must advance the operation revision');
+    assert.deepStrictEqual(enriched.outcome, enrichedOutcome,
+      'same-terminal transition must publish the authoritative outcome enrichment');
+    assert.strictEqual(
+      transitionWorldOperation(enriched, terminal.phase, 26, { outcome: enrichedOutcome }).revision,
+      enriched.revision,
+      'repeating the same terminal outcome must be idempotent'
+    );
+  }
+
+  const task = normalizeWorldTask({
+    id: 'escort_water',
+    type: 'escort_caravan',
+    details: { operation: completed }
+  }, 20);
+  assert.notStrictEqual(task.details.operation, completed);
+  assert.strictEqual(task.details.operation.assignment.leaderName, 'Караванщик');
+}
+
+function checkPatrolWorldOperations() {
+  const operation = createPatrolOperation({
+    partyId: 'klim_road_patrol',
+    issuerFactionId: 'old_klim',
+    sourceSiteId: 'settlement',
+    destinationSiteId: 'roadOutpost',
+    goal: {
+      summary: 'Патруль проверяет дорогу.',
+      targetSiteId: 'roadOutpost'
+    },
+    createdHour: 30
+  }, 30);
+  assert.strictEqual(operation.schema, WORLD_OPERATION_SCHEMA);
+  assert.strictEqual(operation.id, 'patrol_klim_road_patrol_300');
+  assert.strictEqual(operation.kind, 'patrol_mission');
+  assert.strictEqual(operation.status, 'active');
+  assert.strictEqual(operation.phase, 'patrolling');
+  assert.strictEqual(operation.goal.kind, 'patrol_mission');
+  assert.strictEqual(operation.goal.reason, 'area_patrol');
+  assert.strictEqual(operation.goal.targetSiteId, 'roadOutpost');
+  assert.strictEqual(operation.assignment.kind, 'party');
+  assert.strictEqual(operation.assignment.assigneeId, 'klim_road_patrol');
+  assert.strictEqual(operation.assignment.leaderId, 'klim_road_patrol_leader');
+  assert.strictEqual(operation.assignment.leaderName, 'Командир патруля');
+  assert.deepStrictEqual(worldOperationStage(operation), {
+    key: 'active',
+    label: 'Патрулирование маршрута'
+  });
+
+  const holding = transitionWorldOperation(operation, 'holding', 32, {
+    goal: { reason: 'friendly_site_attacked' }
+  });
+  assert.strictEqual(holding.phase, 'holding');
+  assert.strictEqual(holding.status, 'active');
+  assert.strictEqual(holding.goal.reason, 'friendly_site_attacked');
+  assert.strictEqual(holding.revision, operation.revision + 1);
+  assert.deepStrictEqual(worldOperationStage(holding), {
+    key: 'active',
+    label: 'Удержание позиции'
+  });
+  assert.deepStrictEqual(
+    transitionWorldOperation(holding, 'holding', 33, { goal: { reason: 'friendly_site_attacked' } }),
+    holding,
+    'repeating the same patrol phase and goal must be idempotent'
+  );
+
+  const terminalOperations = [
+    transitionWorldOperation(holding, 'completed', 36, {
+      outcome: {
+        result: 'patrol_completed',
+        reason: 'patrol_duty_completed',
+        siteId: 'roadOutpost',
+        npcLosses: 0
+      }
+    }),
+    transitionWorldOperation(holding, 'failed', 37, {
+      outcome: {
+        result: 'failed',
+        reason: 'patrol_destroyed',
+        siteId: 'roadOutpost',
+        npcLosses: 4
+      }
+    }),
+    transitionWorldOperation(holding, 'cancelled', 38, {
+      outcome: {
+        result: 'cancelled',
+        reason: 'mission_abandoned',
+        siteId: 'settlement',
+        npcLosses: 0
+      }
+    })
+  ];
+  for (const terminal of terminalOperations) {
+    assert.strictEqual(terminal.status, terminal.phase);
+    assert(terminal.completedHour >= 36);
+    assert.notStrictEqual(worldOperationStage(terminal).key, 'active');
+    for (const activePhase of ['patrolling', 'holding', 'traveling']) {
+      assert.deepStrictEqual(
+        transitionWorldOperation(terminal, activePhase, 40),
+        terminal,
+        `${terminal.phase} patrol operation must not reopen as ${activePhase}`
+      );
+    }
+    assert.deepStrictEqual(
+      transitionWorldOperation(terminal, terminal.phase, 41, { outcome: terminal.outcome }),
+      terminal,
+      'repeating the same terminal patrol outcome must be idempotent'
+    );
+  }
+
+  const missionTask = normalizeWorldTask({
+    id: 'patrol_mission_road_outpost',
+    type: 'patrol_mission',
+    partyId: 'klim_road_patrol',
+    siteId: 'roadOutpost',
+    details: { operation: holding }
+  }, 32);
+  assert.notStrictEqual(missionTask.details.operation, holding);
+  assert.strictEqual(missionTask.details.operation.kind, 'patrol_mission');
+  assert.strictEqual(missionTask.details.operation.phase, 'holding');
 }
 
 function checkPartySpeed() {
@@ -287,11 +556,14 @@ function checkPersistenceAndRandom() {
 }
 
 checkFactions();
+checkFactionPresentationContract();
 checkMapGeometry();
 checkDistrictSites();
 checkSiteInstances();
 checkStockpiles();
 checkTaskNormalization();
+checkWorldOperations();
+checkPatrolWorldOperations();
 checkPartySpeed();
 checkPartyMembership();
 checkPartyModuleBoundaries();

@@ -53,6 +53,12 @@ namespace RealmOfAshes.Game
             Apply();
         }
 
+        public void SetBasePosition(Vector2 basePosition)
+        {
+            _basePosition = basePosition;
+            Apply();
+        }
+
         private void Update()
         {
             bool editing = RoaHudLayout.Editing;

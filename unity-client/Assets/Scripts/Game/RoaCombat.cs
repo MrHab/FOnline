@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using RealmOfAshes.Net;
@@ -16,9 +17,9 @@ namespace RealmOfAshes.Game
     /// Никакого локального расчёта урона нет и быть не должно —
     /// docs/wiki/SERVER_AUTHORITATIVE_RULES.md.
     ///
-    /// Сервер сам проверяет доступность боя в локации, дистанцию, очки действия,
-    /// магазин и темп стрельбы, поэтому клиент не дублирует эти проверки:
-    /// он показывает отказ, если он пришёл.
+    /// Сервер окончательно проверяет локацию, дистанцию, ОД, магазин и темп.
+    /// Клиент использует только последний authoritative ACK, чтобы не рисовать
+    /// заранее известный ложный выстрел; любой новый результат всё равно решает сервер.
     /// </summary>
     public sealed class RoaCombat : MonoBehaviour
     {
@@ -28,9 +29,14 @@ namespace RealmOfAshes.Game
         public RoaRemotePlayers RemotePlayers;
         public RoaPlayerController Player;
         public RoaInteraction Interaction;
+        public RoaGameBootstrap Bootstrap;
         public RoaPipboy Pipboy;
+        public RoaPipboyCanvas PipboyCanvas;
         public RoaInventory Inventory;
+        public RoaGlobalMap GlobalMap;
         public RoaCombatFx Fx;
+        public RoaAudio Audio;
+        public RoaHud Hud;
         public RoaFogOfWar Fog;
         public bool InputEnabled = true;
 
@@ -51,14 +57,82 @@ namespace RealmOfAshes.Game
         public bool MobileInputMode { get; set; }
 
         public string FireMode { get { return _fireMode; } }
+        public bool ReloadRequestPending { get { return _reloadRequestInFlight; } }
+        public bool AttackRequestPending
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(_pendingAttackToken)
+                    && Time.unscaledTime < _attackRequestTimeoutAt;
+            }
+        }
+        public int CurrentAttackApCost
+        {
+            get
+            {
+                return RoaCombatPreview.EffectiveApCost(
+                    Socket?.Session?.Self, Socket?.Session?.Combat, _fireMode);
+            }
+        }
+        public RoaWeaponReadiness.Frame WeaponReadiness
+        {
+            get { return EvaluateWeaponReadiness(); }
+        }
+        public float ReloadVisualRemaining
+        {
+            get { return Mathf.Max(0f, _reloadVisualEndsAt - Time.unscaledTime); }
+        }
+        public bool CombatPresentationActive
+        {
+            get { return IsCombatPresentationActive(Time.unscaledTime, _combatPresentationUntil); }
+        }
+        public bool HasUsableRound
+        {
+            get
+            {
+                if (!HasAmmoWeapon()) return true;
+                if (_fireMode == "dual" && HasDualPistolPair())
+                    return LoadedRoundsForHand("weapon") > 0
+                        || LoadedRoundsForHand("offhand") > 0;
+
+                int loaded = LoadedRoundsForHand(ActiveHandSlot());
+                return loaded >= 0
+                    ? loaded > 0
+                    : (Socket?.Session?.Combat?["loaded"]?.ToObject<int>() ?? 0) > 0;
+            }
+        }
+
+        public void NotifyCombatPresentation(float seconds = CombatPresentationSeconds)
+        {
+            _combatPresentationUntil = Mathf.Max(_combatPresentationUntil,
+                Time.unscaledTime + Mathf.Max(0.25f, seconds));
+        }
+
+        public static bool IsCombatPresentationActive(float now, float until)
+        {
+            return now < until;
+        }
 
         private float _nextRequestAt;
+        private string _pendingAttackToken = string.Empty;
+        private float _attackRequestTimeoutAt = -100f;
+        private const float AttackRequestTimeoutSeconds = 1.5f;
+        private string _meleePresentationToken = string.Empty;
+        private float _meleeVisualStartedAt = -100f;
+        private bool _reloadRequestInFlight;
+        private float _reloadVisualEndsAt = -100f;
+        private const float ReloadVisualSeconds = 0.82f;
+        private float _combatPresentationUntil = -100f;
+        private const float CombatPresentationSeconds = 7f;
         private int _shotSeq;
         private string _fireMode = "single";
         private string _modeWeapon = string.Empty;
         private JObject _hoverTarget;
         private Vector3 _hoverPosition;
         private float _nextHoverAt;
+        private string _mobileAimTargetId = string.Empty;
+        private Vector3 _mobileAimPosition;
+        private RoaTargetingFeedback _targetingFeedback;
         private GUIStyle _targetHintStyle;
 
         /// <summary>Последние строки боевого журнала. Показываются в углу.</summary>
@@ -67,11 +141,14 @@ namespace RealmOfAshes.Game
         private string _lastLogRaw = string.Empty;
         private int _lastLogCount;
         public bool CanvasDriven { get; set; }
+        public RoaCombatFeedbackCanvas FeedbackCanvas;
         public IReadOnlyList<string> LogLines { get { return _log; } }
 
         /// <summary>Всплывающий текст над целью: (текст, мир, до какого времени).</summary>
         private readonly List<FloatingText> _floating = new List<FloatingText>();
+        private readonly List<HitConfirmation> _hitConfirmations = new List<HitConfirmation>();
         private const float RemotePlayerHitRadius = 0.58f;
+        private const int HitConfirmationLimit = 12;
 
         private struct FloatingText
         {
@@ -81,20 +158,44 @@ namespace RealmOfAshes.Game
             public Color Color;
         }
 
+        private struct HitConfirmation
+        {
+            public Vector3 World;
+            public float Started;
+            public bool Critical;
+            public bool Killed;
+        }
+
+        public int ActiveHitConfirmationCount
+        {
+            get
+            {
+                return CanvasDriven && FeedbackCanvas != null
+                    ? FeedbackCanvas.ActiveMarkerCount : _hitConfirmations.Count;
+            }
+        }
+
         private void OnEnable()
         {
             if (Socket == null) return;
             Socket.OnEnemyAttack += HandleEnemyAttack;
             Socket.OnEnemyAttackMiss += HandleEnemyAttackMiss;
+            Socket.OnPlayerDamaged += HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect += HandlePlayerStatusEffect;
             Socket.OnEnemyKilled += HandleEnemyKilled;
         }
 
         private void OnDisable()
         {
+            _pendingAttackToken = string.Empty;
+            _attackRequestTimeoutAt = -100f;
+            _meleePresentationToken = string.Empty;
+            _meleeVisualStartedAt = -100f;
+            _combatPresentationUntil = -100f;
             if (Socket == null) return;
             Socket.OnEnemyAttack -= HandleEnemyAttack;
             Socket.OnEnemyAttackMiss -= HandleEnemyAttackMiss;
+            Socket.OnPlayerDamaged -= HandlePlayerDamaged;
             Socket.OnPlayerStatusEffect -= HandlePlayerStatusEffect;
             Socket.OnEnemyKilled -= HandleEnemyKilled;
         }
@@ -102,11 +203,21 @@ namespace RealmOfAshes.Game
         private void HandleEnemyAttack(JObject payload)
         {
             if (payload == null || Player == null) return;
+            NotifyCombatPresentation();
             int damage = Mathf.Max(0, Mathf.RoundToInt(payload["damage"]?.ToObject<float>() ?? 0f));
             int absorbed = Mathf.Max(0, Mathf.RoundToInt(payload["absorbed"]?.ToObject<float>() ?? 0f));
             string name = payload["enemyName"]?.ToString() ?? "Противник";
             string type = payload["damageType"]?.ToString() ?? "ballistic";
-            Player.View?.PlayHit();
+            bool critical = payload["critical"]?.ToObject<bool>() == true;
+            bool hasSource = payload["x"] != null && payload["z"] != null;
+            Vector3 source = hasSource
+                ? RoaCoords.ToUnity(payload["x"].ToObject<float>(), payload["z"].ToObject<float>())
+                : Vector3.zero;
+            if (hasSource) Player.View?.PlayHit(source, damage, critical);
+            else Player.View?.PlayHit();
+            Audio?.PlayHurt(damage);
+            if (hasSource) Fx?.PlayDamagePulse(damage, Player.transform.position, source);
+            else Fx?.PlayDamagePulse(damage);
             Float("-" + damage, Player.transform.position, new Color(1f, 0.36f, 0.29f));
             AddLog(name + " атакует (" + type + "): -" + damage + " HP"
                 + (absorbed > 0 ? ", броня " + absorbed : string.Empty));
@@ -114,9 +225,56 @@ namespace RealmOfAshes.Game
                 AddLog("Второй шанс: смертельный удар оставил 1 HP.");
         }
 
+        private void HandlePlayerDamaged(JObject payload)
+        {
+            if (payload == null || Player == null || Socket?.Session == null) return;
+            string targetId = payload["playerId"]?.ToString() ?? payload["targetId"]?.ToString();
+            if (!string.Equals(targetId, Socket.Session.Id, StringComparison.Ordinal)) return;
+
+            // Урон NPC уже приходит отдельным адресным enemyAttack с координатами.
+            // Здесь нужен только PvP/взрыв игрока, иначе feedback проиграется дважды.
+            if (!string.IsNullOrEmpty(payload["enemyId"]?.ToString())) return;
+            string attackerId = payload["attackerId"]?.ToString();
+            if (string.IsNullOrEmpty(attackerId)) return;
+            NotifyCombatPresentation();
+
+            int damage = Mathf.Max(0, Mathf.RoundToInt(payload["damage"]?.ToObject<float>() ?? 0f));
+            int absorbed = Mathf.Max(0, Mathf.RoundToInt(payload["absorbed"]?.ToObject<float>() ?? 0f));
+            string attacker = payload["attackerName"]?.ToString() ?? "Игрок";
+            string type = payload["damageType"]?.ToString() ?? "ballistic";
+            bool critical = payload["critical"]?.ToObject<bool>() == true;
+
+            bool hasSource = TryDamageSource(payload, attackerId, out Vector3 source);
+            if (hasSource) Player.View?.PlayHit(source, damage, critical);
+            else Player.View?.PlayHit();
+            Audio?.PlayHurt(damage);
+            if (hasSource) Fx?.PlayDamagePulse(damage, Player.transform.position, source);
+            else Fx?.PlayDamagePulse(damage);
+            Float("-" + damage, Player.transform.position,
+                critical ? new Color(1f, 0.72f, 0.2f) : new Color(1f, 0.36f, 0.29f));
+            AddLog(attacker + (critical ? " наносит критический удар" : " атакует")
+                + " (" + DamageTypeLabel(type) + "): -" + damage + " HP"
+                + (absorbed > 0 ? ", броня " + absorbed : string.Empty));
+            if (payload["secondChance"]?.ToObject<bool>() == true)
+                AddLog("Второй шанс: смертельный удар оставил 1 HP.");
+        }
+
+        private bool TryDamageSource(JObject payload, string attackerId, out Vector3 source)
+        {
+            source = Vector3.zero;
+            if (payload["sourceX"] != null && payload["sourceZ"] != null)
+            {
+                source = RoaCoords.ToUnity(payload["sourceX"].ToObject<float>(),
+                                           payload["sourceZ"].ToObject<float>());
+                return true;
+            }
+            return RemotePlayers != null && RemotePlayers.TryGetPosition(attackerId, out source);
+        }
+
         private void HandleEnemyAttackMiss(JObject payload)
         {
             if (Player == null) return;
+            NotifyCombatPresentation();
             string name = payload?["enemyName"]?.ToString() ?? "Противник";
             Float("Промах", Player.transform.position, new Color(0.85f, 0.82f, 0.7f));
             AddLog(name + " промахивается.");
@@ -127,6 +285,8 @@ namespace RealmOfAshes.Game
             if (payload?["effect"]?.ToString() != "infection" || Player == null) return;
             int damage = Mathf.Max(0, payload["damage"]?.ToObject<int>() ?? 0);
             if (damage <= 0) return;
+            Audio?.PlayHurt(damage);
+            Fx?.PlayDamagePulse(damage);
             Float("-" + damage, Player.transform.position, new Color(0.62f, 0.81f, 0.45f));
             AddLog("Инфекция: -" + damage + " HP. Нужны антибиотики.");
         }
@@ -134,8 +294,26 @@ namespace RealmOfAshes.Game
         private void HandleEnemyKilled(JObject payload)
         {
             if (payload == null || payload["killerId"]?.ToString() != Socket?.Session?.Id) return;
-            int xp = Mathf.Max(0, payload["xp"]?.ToObject<int>() ?? 0);
+            float delay = PeekMeleePresentationDelay();
+            if (delay > 0.001f)
+            {
+                StartCoroutine(PresentEnemyKillAfterDelay((JObject)payload.DeepClone(), delay));
+                return;
+            }
+            PresentEnemyKill(payload);
+        }
+
+        private IEnumerator PresentEnemyKillAfterDelay(JObject payload, float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            PresentEnemyKill(payload);
+        }
+
+        private void PresentEnemyKill(JObject payload)
+        {
+            int xp = Mathf.Max(0, payload?["xp"]?.ToObject<int>() ?? 0);
             if (xp <= 0) return;
+            Audio?.PlayKillConfirm();
             Vector3 position = RoaCoords.ToUnity(
                 payload["x"]?.ToObject<float>() ?? 0f,
                 payload["z"]?.ToObject<float>() ?? 0f);
@@ -152,18 +330,34 @@ namespace RealmOfAshes.Game
             if (inputAllowed && Input.GetKeyDown(ModeKey)) CycleFireMode();
             if (inputAllowed && Input.GetKeyDown(ReloadKey)) Reload();
             if (!MobileInputMode && inputAllowed && Input.GetMouseButton(0) && Time.time >= _nextRequestAt) Attack();
-            UpdateHoverTarget(inputAllowed && !MobileInputMode);
+            UpdateHoverTarget(inputAllowed);
+            UpdateTargetingFeedback(inputAllowed);
 
             for (int i = _floating.Count - 1; i >= 0; i--)
                 if (Time.time > _floating[i].Until) _floating.RemoveAt(i);
+            for (int i = _hitConfirmations.Count - 1; i >= 0; i--)
+                if (RoaCombatConfirmation.Expired(
+                    Time.unscaledTime - _hitConfirmations[i].Started,
+                    _hitConfirmations[i].Killed)) _hitConfirmations.RemoveAt(i);
         }
 
         private bool InputAllowed()
         {
-            return InputEnabled
-                && (Interaction == null || !Interaction.IsPanelOpen)
-                && (Pipboy == null || !Pipboy.PointerOverUi)
-                && (Inventory == null || !Inventory.IsOpen);
+            return InputEnabled && !UiBlocksAttack(
+                Interaction != null && Interaction.IsPanelOpen,
+                PipboyCanvas != null && PipboyCanvas.IsOpen,
+                Pipboy != null && Pipboy.PointerOverUi,
+                Inventory != null && Inventory.IsOpen,
+                (GlobalMap != null && GlobalMap.IsActive)
+                    || (Bootstrap != null && Bootstrap.GlobalMapBlocksCombat));
+        }
+
+        public static bool UiBlocksAttack(bool interactionOpen, bool pipboyCanvasOpen,
+                                          bool pipboyOpen, bool inventoryOpen,
+                                          bool globalMapOpen)
+        {
+            return interactionOpen || pipboyCanvasOpen || pipboyOpen
+                || inventoryOpen || globalMapOpen;
         }
 
         private void UpdateHoverTarget(bool enabled)
@@ -173,16 +367,41 @@ namespace RealmOfAshes.Game
                 _hoverTarget = null;
                 return;
             }
+
+            if (MobileInputMode)
+            {
+                RefreshMobileAimTarget();
+                return;
+            }
+
             if (Time.unscaledTime < _nextHoverAt) return;
-            _nextHoverAt = Time.unscaledTime + 0.10f;
-            // Наведение — только когда курсор над самой моделью (hit-test web), а не
-            // в радиусе вокруг ног: иначе подсказка появляется раньше наведения.
+            _nextHoverAt = Time.unscaledTime + 0.05f;
             Camera hoverCamera = Camera.main;
             if (hoverCamera == null)
             {
                 _hoverTarget = null;
                 return;
             }
+
+            // Сначала показываем цель, которую выберет фактический выстрел:
+            // экранная точка проходит тот же ray resolver, что и AttackAt.
+            // Поэтому кольцо, процент и отправленный серверу targetId не спорят.
+            if (TryScreenPointToWorld(Input.mousePosition, out Vector3 cursor)
+                && TryResolvePrimaryTarget(cursor, out string resolvedEnemyId,
+                    out Vector3 resolvedEnemyPosition, out PublicPlayer resolvedRemote,
+                    out Vector3 resolvedRemotePosition))
+            {
+                if (resolvedRemote != null)
+                {
+                    SetRemoteAimTarget(resolvedRemote, resolvedRemotePosition);
+                    return;
+                }
+                if (!string.IsNullOrEmpty(resolvedEnemyId)
+                    && SetEnemyAimTarget(resolvedEnemyId, resolvedEnemyPosition)) return;
+            }
+
+            // Запасной hit-test сохраняет полезную подсказку по самой модели,
+            // даже если она за пределами дальности текущего оружия.
             Ray hoverRay = hoverCamera.ScreenPointToRay(Input.mousePosition);
             bool hasEnemy = Enemies.TryFindTargetUnderCursor(hoverRay,
                 out string enemyId, out Vector3 enemyPosition, out float enemyCursorDistance);
@@ -194,29 +413,78 @@ namespace RealmOfAshes.Game
 
             if (hasRemote && (!hasEnemy || remoteCursorDistance < enemyCursorDistance))
             {
-                _hoverPosition = remotePosition;
-                _hoverTarget = new JObject
-                {
-                    ["id"] = remote.Id ?? string.Empty,
-                    ["name"] = remote.Name ?? "Игрок",
-                    ["hp"] = remote.Hp,
-                    ["maxHp"] = Mathf.Max(1, remote.MaxHp),
-                    ["dead"] = remote.Dead,
-                    ["isRemotePlayer"] = true,
-                    ["worldFactionId"] = remote.WorldFactionId ?? remote.FactionId ?? string.Empty
-                };
+                SetRemoteAimTarget(remote, remotePosition);
                 return;
             }
 
-            JObject snapshot;
-            if (hasEnemy && Enemies.TryGetSnapshot(enemyId, out snapshot))
-            {
-                _hoverPosition = enemyPosition;
-                _hoverTarget = snapshot;
-            }
-            else _hoverTarget = null;
+            if (hasEnemy && SetEnemyAimTarget(enemyId, enemyPosition)) return;
+            _hoverTarget = null;
         }
 
+        /// <summary>
+        /// Mobile auto-target supplies its intended point here. Combat resolves
+        /// that point through the same line selector as a real shot, so a nearer
+        /// actor intercepting the line is shown before the player presses fire.
+        /// </summary>
+        public void SetMobileAimTarget(string targetId, Vector3 position)
+        {
+            _mobileAimTargetId = targetId ?? string.Empty;
+            _mobileAimPosition = position;
+            if (MobileInputMode) RefreshMobileAimTarget();
+        }
+
+        public void ClearMobileAimTarget()
+        {
+            _mobileAimTargetId = string.Empty;
+            if (MobileInputMode) _hoverTarget = null;
+        }
+
+        private void RefreshMobileAimTarget()
+        {
+            if (string.IsNullOrEmpty(_mobileAimTargetId))
+            {
+                _hoverTarget = null;
+                return;
+            }
+
+            if (TryResolvePrimaryTarget(_mobileAimPosition, out string enemyId,
+                out Vector3 enemyPosition, out PublicPlayer remote, out Vector3 remotePosition))
+            {
+                if (remote != null)
+                {
+                    SetRemoteAimTarget(remote, remotePosition);
+                    return;
+                }
+                if (!string.IsNullOrEmpty(enemyId) && SetEnemyAimTarget(enemyId, enemyPosition)) return;
+            }
+
+            // The selected enemy can still be valid but outside this weapon's
+            // range. Keep it visible as an explicit out-of-range target.
+            if (!SetEnemyAimTarget(_mobileAimTargetId, _mobileAimPosition)) _hoverTarget = null;
+        }
+
+        private bool SetEnemyAimTarget(string enemyId, Vector3 position)
+        {
+            if (!Enemies.TryGetSnapshot(enemyId, out JObject snapshot)) return false;
+            _hoverPosition = position;
+            _hoverTarget = snapshot;
+            return true;
+        }
+
+        private void SetRemoteAimTarget(PublicPlayer remote, Vector3 position)
+        {
+            _hoverPosition = position;
+            _hoverTarget = new JObject
+            {
+                ["id"] = remote.Id ?? string.Empty,
+                ["name"] = remote.Name ?? "Игрок",
+                ["hp"] = remote.Hp,
+                ["maxHp"] = Mathf.Max(1, remote.MaxHp),
+                ["dead"] = remote.Dead,
+                ["isRemotePlayer"] = true,
+                ["worldFactionId"] = remote.WorldFactionId ?? remote.FactionId ?? string.Empty
+            };
+        }
         public bool TriggerAttackAt(Vector3 worldTarget)
         {
             if (Socket == null || Enemies == null || Player == null) return false;
@@ -274,8 +542,141 @@ namespace RealmOfAshes.Game
             TriggerAttackAtScreenPoint(Input.mousePosition);
         }
 
+        private RoaWeaponReadiness.Frame EvaluateWeaponReadiness()
+        {
+            JObject combat = Socket?.Session?.Combat;
+            JObject self = Socket?.Session?.Self;
+            float actionPoints = Hud != null
+                ? Hud.Ap : self?["ap"]?.ToObject<float>() ?? 0f;
+            int reserveAmmo = Hud != null
+                ? Hud.ReserveAmmo : combat?["reserveAmmo"]?.ToObject<int>() ?? 0;
+            float cooldown = Hud != null ? Hud.CooldownRemainingSeconds : 0f;
+            return RoaWeaponReadiness.Evaluate(
+                HasAmmoWeapon(), HasUsableRound, reserveAmmo,
+                actionPoints, CurrentAttackApCost, cooldown,
+                _reloadRequestInFlight, ReloadVisualRemaining, AttackRequestPending);
+        }
+
+        private bool BlockKnownImpossibleAttack()
+        {
+            RoaWeaponReadiness.Frame readiness = EvaluateWeaponReadiness();
+            switch (readiness.Kind)
+            {
+                case RoaWeaponReadinessKind.AttackPending:
+                    _nextRequestAt = Time.time + 0.04f;
+                    return true;
+                case RoaWeaponReadinessKind.Cooldown:
+                    float cooldown = Hud != null ? Hud.CooldownRemainingSeconds : 0.08f;
+                    _nextRequestAt = Time.time + Mathf.Clamp(cooldown, 0.035f, 0.12f);
+                    return true;
+                case RoaWeaponReadinessKind.LowActionPoints:
+                    _nextRequestAt = Time.time + 0.24f;
+                    AddLog(readiness.Label);
+                    return true;
+                default:
+                    // Reloading is a cosmetic tail after the authoritative ACK:
+                    // firing intentionally cancels it below. Empty magazines and
+                    // a pending reload have their own tactile feedback above.
+                    return false;
+            }
+        }
+
+        private void BeginAttackRequest(string attackToken, bool melee, float visualStartedAt)
+        {
+            _pendingAttackToken = attackToken ?? string.Empty;
+            _attackRequestTimeoutAt = Time.unscaledTime + AttackRequestTimeoutSeconds;
+            _meleePresentationToken = melee ? _pendingAttackToken : string.Empty;
+            _meleeVisualStartedAt = melee ? visualStartedAt : -100f;
+        }
+
+        /// <summary>
+        /// Сколько ещё ждать до контактной позы уже начатого замаха. Серверный
+        /// ACK и состояние игрока применяются сразу; задерживается только видимый
+        /// результат на цели.
+        /// </summary>
+        public static float MeleePresentationDelay(float visualStartedAt, float now,
+            float swingSeconds = RoaMeleeGrip.DefaultSwingSeconds)
+        {
+            return Mathf.Max(0f, visualStartedAt
+                + RoaMeleeGrip.StrikeContactSeconds(swingSeconds) - now);
+        }
+
+        private float PeekMeleePresentationDelay()
+        {
+            if (string.IsNullOrEmpty(_meleePresentationToken)) return 0f;
+            return MeleePresentationDelay(_meleeVisualStartedAt, Time.unscaledTime);
+        }
+
+        private bool TryTakeMeleePresentationDelay(string attackToken, out float delay)
+        {
+            delay = 0f;
+            if (string.IsNullOrEmpty(attackToken)
+                || !string.Equals(_meleePresentationToken, attackToken, StringComparison.Ordinal))
+                return false;
+
+            delay = MeleePresentationDelay(_meleeVisualStartedAt, Time.unscaledTime);
+            _meleePresentationToken = string.Empty;
+            _meleeVisualStartedAt = -100f;
+            return true;
+        }
+
+        private void CompleteAttackRequest(string attackToken, JObject ack)
+        {
+            float retry = AuthoritativeRetrySeconds(ack);
+            if (retry > 0f) _nextRequestAt = Mathf.Max(_nextRequestAt, Time.time + retry);
+            if (!string.Equals(_pendingAttackToken, attackToken, StringComparison.Ordinal)) return;
+            _pendingAttackToken = string.Empty;
+            _attackRequestTimeoutAt = -100f;
+        }
+
+        public static float AuthoritativeRetrySeconds(JObject ack)
+        {
+            if (ack == null) return 0f;
+            float retryMs = Mathf.Max(0f, ack["retryAfterMs"]?.ToObject<float>() ?? 0f);
+            float cooldownMs = Mathf.Max(0f,
+                ack["combat"]?["cooldownRemainingMs"]?.ToObject<float>() ?? 0f);
+            return Mathf.Clamp(Mathf.Max(retryMs, cooldownMs) / 1000f, 0f, 5f);
+        }
         private void AttackAt(Vector3 cursor)
         {
+            NotifyCombatPresentation();
+            string weapon = ActiveWeapon();
+            if (_reloadRequestInFlight)
+            {
+                _nextRequestAt = Time.time + Mathf.Max(MinRequestInterval, 0.16f);
+                AddLog("Перезарядка подтверждается сервером.");
+                return;
+            }
+            if (Player != null && Player.View != null && Player.View.FireObstructed)
+            {
+                // IK уже поднял оружие у стены. Не отправляем заведомо
+                // невозможный выстрел: игрок не теряет ОД/патроны, а другие
+                // клиенты не увидят трассер сквозь препятствие.
+                _nextRequestAt = Time.time + Mathf.Max(MinRequestInterval, 0.16f);
+                Player.View.PlayBlockedFireContact();
+                Audio?.PlayWeaponBlocked();
+                AddLog("Ствол упирается в препятствие.");
+                return;
+            }
+
+            if (HasAmmoWeapon() && !HasUsableRound)
+            {
+                _nextRequestAt = Time.time + Mathf.Max(MinRequestInterval, 0.18f);
+                Player.View?.PlayAttack();
+                Audio?.PlayDryFire();
+                int reserve = Hud != null
+                    ? Hud.ReserveAmmo : Socket?.Session?.Combat?["reserveAmmo"]?.ToObject<int>() ?? 0;
+                AddLog(reserve > 0 ? "Магазин пуст — нажмите R." : "Боеприпасы закончились.");
+                return;
+            }
+
+            if (BlockKnownImpossibleAttack()) return;
+
+            if (_reloadVisualEndsAt > Time.unscaledTime)
+            {
+                _reloadVisualEndsAt = -100f;
+                Player.View?.CancelReload();
+            }
 
             _nextRequestAt = Time.time + MinRequestInterval;
 
@@ -287,14 +688,17 @@ namespace RealmOfAshes.Game
             float angle = RoaCoords.YawDegToAngle(Player.transform.eulerAngles.y);
 
             // Замах проигрывается сразу, не дожидаясь ответа сервера: иначе
-            // удар отставал бы от нажатия на величину задержки. Если сервер
-            // откажет, промах покажет журнал, но замах уже был честным вводом.
+            // удар отставал бы от нажатия на величину задержки. Состояние
+            // игрока применяется сразу; HP/смерть выбранной PvE-цели и видимый
+            // результат ближнего удара ждут фактического контакта оружия.
+            bool meleeAttack = !HasAmmoWeapon();
+            float attackVisualStartedAt = Time.unscaledTime;
             if (Player.View != null) Player.View.PlayAttack();
 
             string attackToken = Guid.NewGuid().ToString("N");
+            BeginAttackRequest(attackToken, meleeAttack, attackVisualStartedAt);
             SendAttackVisual(self, targetPosition, selfX, selfZ, targetX, targetZ, angle);
 
-            string weapon = ActiveWeapon();
             if (weapon == "rocketLauncher")
             {
                 SendExplosion(selfX, selfZ, targetX, targetZ, angle, targetPosition, attackToken);
@@ -334,6 +738,8 @@ namespace RealmOfAshes.Game
             }
             else if (!string.IsNullOrEmpty(enemyId))
             {
+                if (meleeAttack)
+                    Enemies.BeginMeleePresentationHold(enemyId, RoaMeleeGrip.StrikeContactSeconds());
                 RoaCoords.ToServer(enemyPosition, out targetX, out targetZ);
                 SendAuthoritativeHit(enemyId, selfX, selfZ, targetX, targetZ, angle,
                     enemyPosition, attackToken);
@@ -416,6 +822,7 @@ namespace RealmOfAshes.Game
 
             if (melee)
             {
+                Audio?.PlayMeleeSwing(Player.transform.position);
                 Socket.Emit("melee", new Dictionary<string, object>
                 {
                     ["targetX"] = targetX,
@@ -428,16 +835,83 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            var shots = new List<KeyValuePair<string, string>>();
+            JObject equipment = EquipmentSnapshot();
+            if (_fireMode == "dual" && HasDualPistolPair())
+            {
+                foreach (string handSlot in new[] { "weapon", "offhand" })
+                {
+                    if (LoadedRoundsForHand(handSlot) == 0) continue;
+                    shots.Add(new KeyValuePair<string, string>(handSlot,
+                        BaseItemId(equipment?[handSlot]?.ToString())));
+                }
+            }
+            else
+            {
+                string handSlot = ActiveHandSlot();
+                if (LoadedRoundsForHand(handSlot) != 0)
+                {
+                    string handWeapon = BaseItemId(equipment?[handSlot]?.ToString());
+                    shots.Add(new KeyValuePair<string, string>(handSlot,
+                        string.IsNullOrEmpty(handWeapon) ? weapon : handWeapon));
+                }
+            }
+
+            // При пустых магазинах сервер вернёт честный отказ; клиент не рисует
+            // ложный трассер и не отправляет визуальный пакет другим игрокам.
+            if (shots.Count == 0) return;
+            for (int i = 0; i < shots.Count; i++)
+            {
+                KeyValuePair<string, string> shot = shots[i];
+                if (i == 0)
+                    PlayRangedVisual(self, target, selfX, selfZ, targetX, targetZ,
+                        angle, shot.Key, shot.Value, true);
+                else
+                    StartCoroutine(PlayDelayedRangedVisual(self, target, selfX, selfZ,
+                        targetX, targetZ, angle, shot.Key, shot.Value));
+            }
+        }
+
+        private IEnumerator PlayDelayedRangedVisual(Vector3 self, Vector3 target,
+                                                     float selfX, float selfZ,
+                                                     float targetX, float targetZ, float angle,
+                                                     string handSlot, string weaponId)
+        {
+            yield return new WaitForSecondsRealtime(0.09f);
+            PlayRangedVisual(self, target, selfX, selfZ, targetX, targetZ,
+                angle, handSlot, weaponId, false);
+        }
+
+        private void PlayRangedVisual(Vector3 self, Vector3 target,
+                                      float selfX, float selfZ, float targetX, float targetZ,
+                                      float angle, string handSlot, string weaponId,
+                                      bool addCameraImpulse)
+        {
+            if (Socket == null || Player == null) return;
+
             Vector3 dir = target - self;
             dir.y = 0f;
             if (dir.sqrMagnitude > 0.0001f) dir.Normalize();
-
             RoaCoords.ToServer(dir, out float dirX, out float dirZ);
+
+            Vector3 start = Vector3.zero;
+            bool exactMuzzle = Player.View != null
+                && Player.View.TryGetMuzzle(handSlot, out start);
+            if (!exactMuzzle)
+            {
+                float side = handSlot == "offhand" ? -0.34f : 0.34f;
+                start = self + Player.transform.right * side
+                    + Player.transform.forward * 0.24f + Vector3.up * 0.23f;
+            }
+            RoaCoords.ToServer(start, out float startX, out float startZ);
 
             Socket.Emit("shoot", new Dictionary<string, object>
             {
                 ["shotSeq"] = ++_shotSeq,
                 ["clientFiredAt"] = Mathf.RoundToInt(Time.realtimeSinceStartup * 1000f),
+                ["startX"] = startX,
+                ["startY"] = start.y,
+                ["startZ"] = startZ,
                 ["originX"] = selfX,
                 ["originZ"] = selfZ,
                 ["dirX"] = dirX,
@@ -446,19 +920,20 @@ namespace RealmOfAshes.Game
                 ["endZ"] = targetZ,
                 ["angle"] = angle,
                 ["mode"] = _fireMode,
-                ["handSlot"] = ActiveHandSlot(),
+                ["handSlot"] = handSlot,
                 ["deviceType"] = MobileInputMode ? "mobile" : "desktop",
                 ["controlType"] = MobileInputMode ? "touch" : "keyboard_mouse"
             });
 
-            if (Fx != null)
+            if (Fx == null) return;
+            Vector3 end = new Vector3(target.x, Mathf.Max(1.02f, target.y + 0.23f), target.z);
+            Fx.PlayShot(start, end, weaponId, exactMuzzle);
+            if (addCameraImpulse)
             {
-                Vector3 start = new Vector3(self.x, Mathf.Max(1.05f, self.y + 0.23f), self.z);
-                Vector3 end = new Vector3(target.x, Mathf.Max(1.02f, target.y + 0.23f), target.z);
-                Fx.PlayShot(start, end, weapon);
+                float impulse = RoaCombatFx.ImpulseFor(weaponId) * (MobileInputMode ? 0.6f : 1f);
+                RoaGameBootstrap.Active?.CameraRig?.AddImpulse(impulse);
             }
         }
-
         private void SendAuthoritativeHit(string enemyId,
                                           float selfX, float selfZ,
                                           float targetX, float targetZ,
@@ -489,7 +964,11 @@ namespace RealmOfAshes.Game
                 ["coneWidth"] = coneWidth,
                 ["shotDirX"] = shotDirX,
                 ["shotDirZ"] = shotDirZ
-            }, ack => HandleHitResult(ack, targetPosition));
+            }, ack =>
+            {
+                CompleteAttackRequest(attackToken, ack);
+                HandleHitResult(ack, targetPosition, RoaCoords.ToUnity(selfX, selfZ), attackToken);
+            });
         }
 
         private void SendAuthoritativePlayerHit(PublicPlayer target,
@@ -513,7 +992,12 @@ namespace RealmOfAshes.Game
                 ["weapon"] = ActiveWeapon(),
                 ["weaponRuntimeId"] = ActiveWeaponRuntimeId(),
                 ["equipment"] = EquipmentSnapshot()
-            }, ack => HandlePlayerHitResult(ack, target, targetPosition));
+            }, ack =>
+            {
+                CompleteAttackRequest(attackToken, ack);
+                HandlePlayerHitResult(ack, target, targetPosition,
+                    RoaCoords.ToUnity(selfX, selfZ), attackToken);
+            });
         }
 
         private void SendUntargetedAttack(float selfX, float selfZ, float angle, string attackToken)
@@ -531,6 +1015,8 @@ namespace RealmOfAshes.Game
                 ["equipment"] = EquipmentSnapshot()
             }, ack =>
             {
+                CompleteAttackRequest(attackToken, ack);
+                TryTakeMeleePresentationDelay(attackToken, out float unusedPresentationDelay);
                 if (ack == null) return;
                 Socket.ApplyGameplayAck(ack);
                 if (ack["ok"]?.ToObject<bool>() != true)
@@ -558,17 +1044,61 @@ namespace RealmOfAshes.Game
                 ["z"] = selfZ,
                 ["angle"] = angle,
                 ["equipment"] = EquipmentSnapshot()
-            }, ack => HandleExplosionResult(ack, impactPosition));
+            }, ack =>
+            {
+                CompleteAttackRequest(attackToken, ack);
+                HandleExplosionResult(ack, impactPosition);
+            });
         }
 
-        private void HandleHitResult(JObject ack, Vector3 targetPosition)
+        private void HandleHitResult(JObject ack, Vector3 targetPosition, Vector3 sourcePosition,
+                                     string attackToken)
         {
+            bool meleePresentation = TryTakeMeleePresentationDelay(
+                attackToken, out float presentationDelay);
             if (ack == null) return;
             Socket.ApplyGameplayAck(ack);
             ApplyResolvedMode(ack);
-            if (ack["enemy"] is JObject enemyState) Enemies.ApplyPublicEnemy(enemyState);
 
-            if (ack["ok"]?.ToObject<bool>() != true)
+            bool accepted = ack["ok"]?.ToObject<bool>() == true;
+            if (accepted && meleePresentation && presentationDelay > 0.001f)
+            {
+                StartCoroutine(PresentHitResultAfterDelay((JObject)ack.DeepClone(),
+                    targetPosition, sourcePosition, attackToken, presentationDelay));
+                return;
+            }
+
+            PresentHitResult(ack, targetPosition, sourcePosition, attackToken);
+        }
+
+        private IEnumerator PresentHitResultAfterDelay(JObject ack, Vector3 targetPosition,
+                                                        Vector3 sourcePosition, string attackToken,
+                                                        float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            PresentHitResult(ack, targetPosition, sourcePosition, attackToken);
+        }
+
+        private void PresentHitResult(JObject ack, Vector3 targetPosition, Vector3 sourcePosition,
+                                      string attackToken)
+        {
+            bool accepted = ack["ok"]?.ToObject<bool>() == true;
+            bool hit = accepted && (ack["hit"]?.ToObject<bool>() ?? true);
+            int damage = Mathf.Max(0, Mathf.RoundToInt(ack["damage"]?.ToObject<float>() ?? 0f));
+            bool critical = ack["critical"]?.ToObject<bool>() ?? false;
+            JObject enemy = ack["enemy"] as JObject;
+            string resultWeapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
+            string resolvedEnemyId = enemy?["id"]?.ToString();
+            if (string.IsNullOrEmpty(RoaWeaponData.Get(resultWeapon).AmmoType)
+                && !string.IsNullOrEmpty(resolvedEnemyId))
+                Enemies.CompleteMeleePresentationHold(resolvedEnemyId);
+            if (enemy != null)
+            {
+                if (hit) Enemies.ApplyPublicEnemyHit(enemy, sourcePosition, damage, critical);
+                else Enemies.ApplyPublicEnemy(enemy);
+            }
+
+            if (!accepted)
             {
                 // Отказы сервера уже на русском и пригодны для показа игроку:
                 // мало ОД, пустой магазин, мирная локация, цель недоступна.
@@ -577,35 +1107,70 @@ namespace RealmOfAshes.Game
                 return;
             }
 
-            bool hit = ack["hit"]?.ToObject<bool>() ?? true;
-
             if (!hit)
             {
                 float chance = ack["chance"]?.ToObject<float>() ?? 0f;
+                string missWeapon = resultWeapon;
+                if (!string.IsNullOrEmpty(RoaWeaponData.Get(missWeapon).AmmoType))
+                {
+                    float targetScale = Mathf.Max(0.72f, enemy?["scale"]?.ToObject<float>() ?? 1f);
+                    Vector3 missPoint = RoaCombatFx.ResolveMissPoint(
+                        sourcePosition, targetPosition, attackToken, targetScale);
+                    Fx?.PlayMiss(missPoint, sourcePosition, missWeapon);
+                }
                 Float("мимо", targetPosition, new Color(0.72f, 0.72f, 0.72f));
                 AddLog("Промах, шанс был " + Mathf.RoundToInt(chance) + "%");
                 return;
             }
 
-            int damage = Mathf.RoundToInt(ack["damage"]?.ToObject<float>() ?? 0f);
-            bool critical = ack["critical"]?.ToObject<bool>() ?? false;
+            bool dead = enemy?["dead"]?.ToObject<bool>() ?? false;
+            string weapon = resultWeapon;
+            if (string.IsNullOrEmpty(RoaWeaponData.Get(weapon).AmmoType))
+                Audio?.PlayMeleeImpact(targetPosition, critical);
+            Audio?.PlayHitConfirm(critical);
+            Fx?.PlayConfirmedHit(targetPosition, sourcePosition, weapon, critical, dead);
+            ConfirmHit(targetPosition, critical, dead);
 
             Float((critical ? "КРИТ " : "") + damage, targetPosition,
                 critical ? new Color(1f, 0.85f, 0.25f) : new Color(1f, 0.45f, 0.4f));
 
-            JObject enemy = ack["enemy"] as JObject;
             string name = enemy?["name"]?.ToString() ?? "цель";
-            bool dead = enemy?["dead"]?.ToObject<bool>() ?? false;
-
             AddLog(name + ": " + damage + (critical ? " (крит)" : "") + (dead ? " — убит" : ""));
         }
 
-        private void HandlePlayerHitResult(JObject ack, PublicPlayer target, Vector3 targetPosition)
+        private void HandlePlayerHitResult(JObject ack, PublicPlayer target, Vector3 targetPosition,
+                                           Vector3 sourcePosition, string attackToken)
         {
+            bool meleePresentation = TryTakeMeleePresentationDelay(
+                attackToken, out float presentationDelay);
             if (ack == null) return;
             Socket.ApplyGameplayAck(ack);
             ApplyResolvedMode(ack);
 
+            bool accepted = ack["ok"]?.ToObject<bool>() == true;
+            if (accepted && meleePresentation && presentationDelay > 0.001f)
+            {
+                StartCoroutine(PresentPlayerHitResultAfterDelay((JObject)ack.DeepClone(), target,
+                    targetPosition, sourcePosition, attackToken, presentationDelay));
+                return;
+            }
+
+            PresentPlayerHitResult(ack, target, targetPosition, sourcePosition, attackToken);
+        }
+
+        private IEnumerator PresentPlayerHitResultAfterDelay(JObject ack, PublicPlayer target,
+                                                              Vector3 targetPosition,
+                                                              Vector3 sourcePosition,
+                                                              string attackToken, float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            PresentPlayerHitResult(ack, target, targetPosition, sourcePosition, attackToken);
+        }
+
+        private void PresentPlayerHitResult(JObject ack, PublicPlayer target,
+                                            Vector3 targetPosition, Vector3 sourcePosition,
+                                            string attackToken)
+        {
             if (ack["target"] is JObject targetState)
                 RemotePlayers?.ApplyPublicPlayer(targetState.ToObject<PublicPlayer>());
 
@@ -618,15 +1183,29 @@ namespace RealmOfAshes.Game
             bool hit = ack["hit"]?.ToObject<bool>() ?? false;
             if (!hit)
             {
+                string missWeapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
+                if (!string.IsNullOrEmpty(RoaWeaponData.Get(missWeapon).AmmoType))
+                {
+                    Vector3 missPoint = RoaCombatFx.ResolveMissPoint(
+                        sourcePosition, targetPosition, attackToken);
+                    Fx?.PlayMiss(missPoint, sourcePosition, missWeapon);
+                }
                 Float("мимо", targetPosition, new Color(0.72f, 0.72f, 0.72f));
                 AddLog("Промах по " + (target?.Name ?? "игроку") + ", шанс "
                     + Mathf.RoundToInt(ack["chance"]?.ToObject<float>() ?? 0f) + "%");
                 return;
             }
 
-            int damage = Mathf.RoundToInt(ack["damage"]?.ToObject<float>() ?? 0f);
+            int damage = Mathf.Max(0, Mathf.RoundToInt(ack["damage"]?.ToObject<float>() ?? 0f));
             bool critical = ack["critical"]?.ToObject<bool>() ?? false;
             bool killed = ack["killed"]?.ToObject<bool>() ?? false;
+            string weapon = ack["weapon"]?.ToString() ?? ActiveWeapon();
+            if (string.IsNullOrEmpty(RoaWeaponData.Get(weapon).AmmoType))
+                Audio?.PlayMeleeImpact(targetPosition, critical);
+            Audio?.PlayHitConfirm(critical);
+            if (killed) Audio?.PlayKillConfirm();
+            Fx?.PlayConfirmedHit(targetPosition, sourcePosition, weapon, critical, killed);
+            ConfirmHit(targetPosition, critical, killed);
             Float((critical ? "КРИТ " : "") + damage, targetPosition,
                 critical ? new Color(1f, 0.85f, 0.25f) : new Color(1f, 0.35f, 0.3f));
             AddLog((target?.Name ?? "Игрок") + ": " + damage
@@ -644,31 +1223,90 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            JArray enemyHits = ack["enemyHits"] as JArray;
             if (ack["enemies"] is JArray enemies)
+            {
                 foreach (JToken token in enemies)
-                    if (token is JObject enemy) Enemies.ApplyPublicEnemy(enemy);
+                {
+                    if (!(token is JObject enemy)) continue;
+                    JObject hit = FindResultRow(enemyHits, "enemyId", enemy["id"]?.ToString());
+                    if (hit != null)
+                        Enemies.ApplyPublicEnemyHit(enemy, impactPosition,
+                            Mathf.Max(0, hit["damage"]?.ToObject<int>() ?? 0),
+                            hit["critical"]?.ToObject<bool>() == true);
+                    else Enemies.ApplyPublicEnemy(enemy);
+                }
+            }
 
             int affected = 0;
-            if (ack["enemyHits"] is JArray enemyHits)
+            int confirmedTargets = 0;
+            bool anyCritical = false;
+            bool killedRemotePlayer = false;
+            if (enemyHits != null)
             {
-                foreach (JToken hit in enemyHits)
+                foreach (JToken token in enemyHits)
                 {
+                    JObject hit = token as JObject;
+                    if (hit == null) continue;
                     affected++;
+                    confirmedTargets++;
                     string id = hit["enemyId"]?.ToString();
                     Vector3 position = impactPosition;
-                    if (!string.IsNullOrEmpty(id)) Enemies.TryGetPosition(id, out position);
-                    int damage = Mathf.RoundToInt(hit["damage"]?.ToObject<float>() ?? 0f);
-                    bool critical = hit["critical"]?.ToObject<bool>() ?? false;
+                    if (!string.IsNullOrEmpty(id)
+                        && Enemies.TryGetPosition(id, out Vector3 resolvedEnemyPosition))
+                        position = resolvedEnemyPosition;
+                    int damage = Mathf.Max(0, hit["damage"]?.ToObject<int>() ?? 0);
+                    bool critical = hit["critical"]?.ToObject<bool>() == true;
+                    bool killed = hit["killed"]?.ToObject<bool>() == true;
+                    anyCritical |= critical;
+                    ConfirmHit(position, critical, killed);
                     Float((critical ? "КРИТ " : "") + damage, position,
                         critical ? new Color(1f, 0.85f, 0.25f) : new Color(1f, 0.55f, 0.3f));
                 }
             }
-            if (ack["playerHits"] is JArray playerHits) affected += playerHits.Count;
+
+            if (ack["playerHits"] is JArray playerHits)
+            {
+                foreach (JToken token in playerHits)
+                {
+                    JObject hit = token as JObject;
+                    if (hit == null) continue;
+                    affected++;
+                    string id = hit["playerId"]?.ToString();
+                    bool selfHit = string.Equals(id, Socket?.Session?.Id, StringComparison.Ordinal);
+                    if (selfHit) continue; // incoming-damage feedback already owns this branch.
+
+                    Vector3 position = impactPosition;
+                    if (!string.IsNullOrEmpty(id) && RemotePlayers != null
+                        && RemotePlayers.TryGetPosition(id, out Vector3 resolvedPlayerPosition))
+                        position = resolvedPlayerPosition;
+                    int damage = Mathf.Max(0, hit["damage"]?.ToObject<int>() ?? 0);
+                    bool critical = hit["critical"]?.ToObject<bool>() == true;
+                    bool killed = hit["killed"]?.ToObject<bool>() == true;
+                    confirmedTargets++;
+                    anyCritical |= critical;
+                    killedRemotePlayer |= killed;
+                    ConfirmHit(position, critical, killed);
+                    Float((critical ? "КРИТ " : "") + damage, position,
+                        critical ? new Color(1f, 0.85f, 0.25f) : new Color(1f, 0.45f, 0.34f));
+                }
+            }
 
             if (Fx != null)
                 Fx.PlayExplosion(impactPosition, ack["radius"]?.ToObject<float>() ?? 3.6f);
+            if (confirmedTargets > 0) Audio?.PlayHitConfirm(anyCritical);
+            if (killedRemotePlayer) Audio?.PlayKillConfirm();
             Float("ВЗРЫВ", impactPosition, new Color(1f, 0.65f, 0.22f));
             AddLog(affected > 0 ? "Взрыв задел целей: " + affected : "Взрыв никого не задел.");
+        }
+
+        private static JObject FindResultRow(JArray rows, string idKey, string id)
+        {
+            if (rows == null || string.IsNullOrEmpty(id)) return null;
+            foreach (JToken token in rows)
+                if (token is JObject row
+                    && string.Equals(row[idKey]?.ToString(), id, StringComparison.Ordinal)) return row;
+            return null;
         }
 
         private void EnsureFireMode()
@@ -681,6 +1319,7 @@ namespace RealmOfAshes.Game
 
         private void CycleFireMode()
         {
+            NotifyCombatPresentation(2.5f);
             List<string> modes = AvailableModes();
             if (modes.Count <= 1)
             {
@@ -722,6 +1361,32 @@ namespace RealmOfAshes.Game
             string right = BaseItemId(equipment?["weapon"]?.ToString());
             string left = BaseItemId(equipment?["offhand"]?.ToString());
             return IsDualPistol(right) && IsDualPistol(left);
+        }
+
+        private int LoadedRoundsForHand(string handSlot)
+        {
+            if (Socket?.Session == null) return -1;
+            string slot = handSlot == "offhand" ? "offhand" : "weapon";
+            string expectedRuntime = Socket.Session.Self?["equipmentRuntime"]?[slot]?.ToString() ?? string.Empty;
+            JArray combats = Socket.Session.Combats;
+            if (combats != null)
+            {
+                foreach (JToken token in combats)
+                {
+                    JObject row = token as JObject;
+                    if (row?["handSlot"]?.ToString() != slot) continue;
+                    if (!string.IsNullOrEmpty(expectedRuntime)
+                        && row?["weaponRuntimeId"]?.ToString() != expectedRuntime) continue;
+                    return Mathf.Max(0, row["loaded"]?.ToObject<int>() ?? 0);
+                }
+            }
+
+            JObject active = Socket.Session.Combat;
+            if (active?["handSlot"]?.ToString() == slot
+                && (string.IsNullOrEmpty(expectedRuntime)
+                    || active?["weaponRuntimeId"]?.ToString() == expectedRuntime))
+                return Mathf.Max(0, active["loaded"]?.ToObject<int>() ?? 0);
+            return -1;
         }
 
         private static bool IsDualPistol(string id)
@@ -775,7 +1440,14 @@ namespace RealmOfAshes.Game
 
         private void Reload()
         {
+            NotifyCombatPresentation(3.5f);
             if (Socket == null || Socket.Session == null) return;
+            if (_reloadRequestInFlight)
+            {
+                AddLog("Перезарядка уже подтверждается сервером.");
+                return;
+            }
+
             JObject combat = Socket.Session.Combat;
             string weapon = combat?["weapon"]?.ToString();
             if (string.IsNullOrEmpty(weapon))
@@ -784,12 +1456,36 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            string ammoType = combat?["ammoType"]?.ToString() ?? string.Empty;
+            int magSize = combat?["magSize"]?.ToObject<int>() ?? 0;
+            int loaded = combat?["loaded"]?.ToObject<int>() ?? 0;
+            int reserve = combat?["reserveAmmo"]?.ToObject<int>() ?? 0;
+            if (string.IsNullOrEmpty(ammoType) || magSize <= 0)
+            {
+                AddLog("Это оружие не требует перезарядки.");
+                return;
+            }
+            if (_fireMode != "dual" && loaded >= magSize)
+            {
+                AddLog("Магазин уже полон.");
+                return;
+            }
+            if (reserve <= 0)
+            {
+                Audio?.PlayDryFire();
+                AddLog("Нет патронов в запасе.");
+                return;
+            }
+
             var payload = new Dictionary<string, object> { ["weapon"] = weapon };
             JObject equipment = Socket.Session.Self?["equipment"] as JObject;
             if (equipment != null) payload["equipment"] = equipment;
 
+            _reloadRequestInFlight = true;
+            AddLog("Перезарядка…");
             Socket.EmitWithAck("reloadWeapon", payload, ack =>
             {
+                _reloadRequestInFlight = false;
                 if (ack == null)
                 {
                     AddLog("Сервер не ответил на перезарядку.");
@@ -799,13 +1495,16 @@ namespace RealmOfAshes.Game
                 Socket.ApplyGameplayAck(ack);
                 if (ack["ok"]?.ToObject<bool>() != true)
                 {
+                    Audio?.PlayDryFire();
                     AddLog(ack["error"]?.ToString() ?? "Перезарядка отклонена.");
                     return;
                 }
 
                 int take = ack["take"]?.ToObject<int>() ?? 0;
                 float apCost = ack["apCost"]?.ToObject<float>() ?? 0f;
-                Player.View?.StartReload(0f);
+                _reloadVisualEndsAt = Time.unscaledTime + ReloadVisualSeconds;
+                Player.View?.StartReload(ReloadVisualSeconds);
+                Audio?.PlayReload();
                 AddLog("Перезарядка: +" + take + " патр., -" + apCost.ToString("0.#") + " ОД");
             });
         }
@@ -827,6 +1526,16 @@ namespace RealmOfAshes.Game
 
         private void Float(string text, Vector3 world, Color color)
         {
+            if (CanvasDriven)
+            {
+                RoaCombatFeedbackCanvas feedback = EnsureFeedbackCanvas();
+                if (feedback != null)
+                {
+                    feedback.ShowFloating(text, world + Vector3.up * 1.6f, color);
+                    return;
+                }
+            }
+
             _floating.Add(new FloatingText
             {
                 Text = text,
@@ -836,29 +1545,146 @@ namespace RealmOfAshes.Game
             });
         }
 
+        private void ConfirmHit(Vector3 world, bool critical, bool killed)
+        {
+            if (CanvasDriven)
+            {
+                RoaCombatFeedbackCanvas feedback = EnsureFeedbackCanvas();
+                if (feedback != null)
+                {
+                    feedback.ShowHit(world + Vector3.up * 1.08f, critical, killed);
+                    return;
+                }
+            }
+
+            while (_hitConfirmations.Count >= HitConfirmationLimit)
+                _hitConfirmations.RemoveAt(0);
+            _hitConfirmations.Add(new HitConfirmation
+            {
+                World = world + Vector3.up * 1.08f,
+                Started = Time.unscaledTime,
+                Critical = critical,
+                Killed = killed
+            });
+        }
+
+        private RoaCombatFeedbackCanvas EnsureFeedbackCanvas()
+        {
+            if (FeedbackCanvas == null) FeedbackCanvas = GetComponent<RoaCombatFeedbackCanvas>();
+            if (FeedbackCanvas == null) FeedbackCanvas = gameObject.AddComponent<RoaCombatFeedbackCanvas>();
+            Camera camera = RoaGameBootstrap.Active?.CameraRig?.GetComponent<Camera>() ?? Camera.main;
+            FeedbackCanvas.Configure(camera);
+            return FeedbackCanvas;
+        }
+
+        private static void DrawHitConfirmation(Camera camera, HitConfirmation confirmation)
+        {
+            Vector3 screen = camera.WorldToScreenPoint(confirmation.World);
+            if (screen.z <= 0f) return;
+            RoaCombatConfirmation.Frame frame = RoaCombatConfirmation.Evaluate(
+                Time.unscaledTime - confirmation.Started, confirmation.Critical, confirmation.Killed);
+            if (!frame.Visible || frame.Alpha <= 0f) return;
+
+            float x = screen.x;
+            float y = Screen.height - screen.y;
+            float r = frame.Radius;
+            float length = frame.Length;
+            float thickness = frame.Thickness;
+            Color previous = GUI.color;
+            Color color = frame.Color;
+            color.a *= frame.Alpha;
+            GUI.color = color;
+
+            DrawMarkerCorner(x - r, y - r, length, thickness, true, true);
+            DrawMarkerCorner(x + r, y - r, length, thickness, false, true);
+            DrawMarkerCorner(x - r, y + r, length, thickness, true, false);
+            DrawMarkerCorner(x + r, y + r, length, thickness, false, false);
+            GUI.color = previous;
+        }
+
+        private static void DrawMarkerCorner(float x, float y, float length, float thickness,
+                                             bool opensRight, bool opensDown)
+        {
+            float horizontalX = opensRight ? x : x - length;
+            float verticalY = opensDown ? y : y - length;
+            GUI.DrawTexture(new Rect(horizontalX, y - thickness * 0.5f, length, thickness),
+                            Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(x - thickness * 0.5f, verticalY, thickness, length),
+                            Texture2D.whiteTexture);
+        }
+
         /// <summary>Подсказку цели рисует канва (RoaActorNameplates); IMGUI-вариант молчит.</summary>
         public bool TargetHintCanvasDriven { get; set; }
 
         /// <summary>
-        /// Компактная подсказка наведения: имя цели и шанс попадания (как просил
-        /// игрок — только эти два значения; расчёт тот же RoaCombatPreview).
+        /// Compact compatibility API retained for the existing HUD. The richer
+        /// display overload below also exposes blocked/range state and colour.
         /// </summary>
         public bool TryGetTargetHint(out string name, out int chance)
         {
-            name = string.Empty;
-            chance = 0;
-            if (_hoverTarget == null || Player == null || Socket?.Session?.Self == null) return false;
-            if (_hoverTarget["dead"]?.ToObject<bool>() == true) return false;
-            RoaCombatPreview.Result preview = RoaCombatPreview.Calculate(
-                Socket.Session.Self, Socket.Session.Combat, _hoverTarget, Player, _hoverPosition, _fireMode);
-            bool lineBlocked = preview.InRange && AttackLineBlocked(_hoverPosition,
-                _hoverTarget["scale"]?.ToObject<float>() ?? 1f);
-            bool remote = _hoverTarget["isRemotePlayer"]?.ToObject<bool>() == true;
-            name = _hoverTarget["name"]?.ToString() ?? (remote ? "Игрок" : "Цель");
-            chance = lineBlocked ? 0 : preview.Chance;
+            if (!TryBuildTargetFrame(out name, out chance, out _))
+            {
+                name = string.Empty;
+                chance = 0;
+                return false;
+            }
             return true;
         }
 
+        public bool TryGetTargetDisplay(out string name, out string label, out Color color)
+        {
+            name = string.Empty;
+            label = string.Empty;
+            color = Color.white;
+            if (!TryBuildTargetFrame(out name, out _, out RoaTargetingFeedback.Frame frame)) return false;
+            label = frame.Label;
+            // Keep the requested bright-red percentage; only explicit invalid
+            // states use the matching blocked/range colour.
+            color = frame.State == RoaTargetingFeedback.Status.Ready
+                ? new Color(1f, 0.176f, 0.122f, 1f) : frame.Color;
+            return true;
+        }
+
+        private bool TryBuildTargetFrame(out string name, out int chance,
+                                         out RoaTargetingFeedback.Frame frame)
+        {
+            name = string.Empty;
+            chance = 0;
+            frame = default(RoaTargetingFeedback.Frame);
+            if (_hoverTarget == null || Player == null || Socket?.Session?.Self == null) return false;
+            if (_hoverTarget["dead"]?.ToObject<bool>() == true) return false;
+
+            RoaCombatPreview.Result preview = RoaCombatPreview.Calculate(
+                Socket.Session.Self, Socket.Session.Combat, _hoverTarget, Player, _hoverPosition, _fireMode);
+            float targetScale = _hoverTarget["isRemotePlayer"]?.ToObject<bool>() == true
+                ? 1f : _hoverTarget["scale"]?.ToObject<float>() ?? 1f;
+            bool lineBlocked = preview.InRange
+                && ((Player.View != null && Player.View.FireObstructed)
+                    || AttackLineBlocked(_hoverPosition, targetScale));
+            bool remote = _hoverTarget["isRemotePlayer"]?.ToObject<bool>() == true;
+            name = _hoverTarget["name"]?.ToString() ?? (remote ? "Игрок" : "Цель");
+            chance = lineBlocked ? 0 : preview.Chance;
+            frame = RoaTargetingFeedback.Evaluate(Time.unscaledTime, chance,
+                preview.InRange, lineBlocked, targetScale);
+            return true;
+        }
+
+        private void UpdateTargetingFeedback(bool enabled)
+        {
+            if (!enabled || RoaGameBootstrap.BlocksWorldHud
+                || !TryBuildTargetFrame(out _, out _, out RoaTargetingFeedback.Frame frame))
+            {
+                if (_targetingFeedback != null) _targetingFeedback.Hide();
+                return;
+            }
+
+            if (_targetingFeedback == null)
+            {
+                _targetingFeedback = GetComponent<RoaTargetingFeedback>();
+                if (_targetingFeedback == null) _targetingFeedback = gameObject.AddComponent<RoaTargetingFeedback>();
+            }
+            _targetingFeedback.Present(frame, Player.transform.position, _hoverPosition, true);
+        }
         private void DrawTargetHint()
         {
             if (TargetHintCanvasDriven) return;
@@ -992,8 +1818,11 @@ namespace RealmOfAshes.Game
             if (RoaGameBootstrap.BlocksWorldHud) return;
             UnityEngine.Camera cam = UnityEngine.Camera.main;
 
-            if (cam != null)
+            if (!CanvasDriven && cam != null)
             {
+                foreach (HitConfirmation confirmation in _hitConfirmations)
+                    DrawHitConfirmation(cam, confirmation);
+
                 foreach (FloatingText item in _floating)
                 {
                     Vector3 screen = cam.WorldToScreenPoint(item.World);

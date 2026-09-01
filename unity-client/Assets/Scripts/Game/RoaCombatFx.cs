@@ -53,6 +53,15 @@ namespace RealmOfAshes.Game
             public bool Active;
         }
 
+        private sealed class ImpactFx
+        {
+            public GameObject Root;
+            public Material Material;
+            public float Started;
+            public float Life;
+            public bool Active;
+        }
+
         private sealed class ExplosionFx
         {
             public GameObject Root;
@@ -68,28 +77,75 @@ namespace RealmOfAshes.Game
 
         private const int InitialTracerPool = 24;
         private const int InitialFlashPool = 16;
+        private const int InitialImpactPool = 20;
         private const float DefaultShotDistance = 18f;
 
         private readonly List<TracerFx> _tracers = new List<TracerFx>();
         private readonly List<FlashFx> _flashes = new List<FlashFx>();
+        private readonly List<ImpactFx> _impacts = new List<ImpactFx>();
         private readonly List<ExplosionFx> _explosions = new List<ExplosionFx>();
         private readonly List<SpeechBubble> _speech = new List<SpeechBubble>();
+
+        public RoaAudio Audio;
+        public RoaCombatPresentationFx Polish;
+        public bool CanvasDriven { get; set; }
 
         private RoaSocketClient _socket;
         private RoaEnemies _enemies;
         private bool _subscribed;
         private GUIStyle _speechStyle;
 
-        public int ActiveTracerCount { get; private set; }
-        public int ActiveFlashCount { get; private set; }
-        public int ActiveExplosionCount { get { return _explosions.Count; } }
+        private int _activeTracerCount;
+        private int _activeFlashCount;
+        private int _activeImpactCount;
+
+        public int ActiveTracerCount { get { return Polish != null ? Polish.ActiveTracerCount : _activeTracerCount; } }
+        public int ActiveFlashCount { get { return Polish != null ? Polish.ActiveFlashCount : _activeFlashCount; } }
+        public int ActiveImpactCount { get { return Polish != null ? Polish.ActiveImpactCount : _activeImpactCount; } }
+        public int ActiveExplosionCount { get { return Polish != null ? Polish.ActiveExplosionCount : _explosions.Count; } }
+
+        public static Vector3 ResolveMissPoint(Vector3 source, Vector3 target,
+                                               string attackToken, float targetScale = 1f)
+        {
+            Vector3 forward = target - source;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.0001f) forward = Vector3.forward;
+            else forward.Normalize();
+            Vector3 side = Vector3.Cross(Vector3.up, forward).normalized;
+
+            uint hash = StableHash(attackToken);
+            float scale = Mathf.Clamp(targetScale, 0.72f, 1.85f);
+            float lateralNoise = ((hash >> 1) & 1023u) / 1023f;
+            float depthNoise = ((hash >> 11) & 1023u) / 1023f;
+            float lateral = Mathf.Lerp(0.76f, 1.28f, lateralNoise) * scale;
+            float depth = Mathf.Lerp(-0.14f, 0.36f, depthNoise) * scale;
+            float sign = (hash & 1u) == 0u ? -1f : 1f;
+            Vector3 point = target + side * (lateral * sign) + forward * depth;
+            point.y = Mathf.Max(0.08f, target.y + 0.08f);
+            return point;
+        }
+
+        private static uint StableHash(string value)
+        {
+            unchecked
+            {
+                uint hash = 2166136261u;
+                if (string.IsNullOrEmpty(value)) return hash;
+                for (int i = 0; i < value.Length; i++)
+                {
+                    hash ^= value[i];
+                    hash *= 16777619u;
+                }
+                return hash;
+            }
+        }
 
         public void Configure(RoaSocketClient socket, RoaEnemies enemies)
         {
             Unsubscribe();
             _socket = socket;
             _enemies = enemies;
-            EnsurePools();
+            if (Polish == null) EnsurePools();
             Subscribe();
         }
 
@@ -134,21 +190,27 @@ namespace RealmOfAshes.Game
             Vector3 start;
             Vector3 end;
             if (!TryShotEndpoints(payload, out start, out end)) return;
-            PlayShot(start, end, payload["weapon"]?.ToString());
+            PlayShot(start, end, payload["weapon"]?.ToString(), PayloadHasMuzzleStart(payload));
         }
 
-        public void PlayShot(Vector3 start, Vector3 end, string weaponId)
+        public void PlayShot(Vector3 start, Vector3 end, string weaponId, bool startAtMuzzle = false)
         {
-            EnsurePools();
             WeaponFxProfile profile = ProfileFor(weaponId);
             Vector3 direction = end - start;
             direction.y = 0f;
             if (direction.sqrMagnitude < 0.0001f) direction = Vector3.forward;
             else direction.Normalize();
 
-            start += direction * 0.34f;
+            if (!startAtMuzzle) start += direction * 0.34f;
             start.y = Mathf.Max(start.y, 1.05f);
             end.y = Mathf.Max(end.y, 1.02f);
+            Audio?.PlayShot(start, end, weaponId);
+            if (Polish != null)
+            {
+                Polish.PlayShot(start, end, weaponId, profile);
+                return;
+            }
+            EnsurePools();
 
             TracerFx tracer = AcquireTracer();
             tracer.Line.positionCount = 2;
@@ -176,9 +238,59 @@ namespace RealmOfAshes.Game
             Recount();
         }
 
+        public void PlayMiss(Vector3 point, Vector3 source, string weaponId)
+        {
+            WeaponFxProfile profile = ProfileFor(weaponId);
+            if (Polish != null)
+            {
+                Polish.PlayMiss(point, source, weaponId, profile);
+                return;
+            }
+            EnsurePools();
+            ImpactFx impact = AcquireImpact();
+            impact.Root.transform.position = point;
+            impact.Root.transform.localScale = Vector3.one * 0.13f;
+            SetMaterialColor(impact.Material,
+                Color.Lerp(new Color(0.72f, 0.61f, 0.43f), profile.Tracer, 0.18f), 0.82f);
+            impact.Started = Time.unscaledTime;
+            impact.Life = 0.22f;
+            impact.Active = true;
+            impact.Root.SetActive(true);
+            Recount();
+        }
+
+        public void PlayConfirmedHit(Vector3 target, Vector3 source, string weaponId,
+                                     bool critical, bool killed)
+        {
+            if (Polish != null)
+            {
+                Polish.PlayConfirmedHit(target, source, weaponId, critical, killed);
+                return;
+            }
+            EnsurePools();
+            ImpactFx impact = AcquireImpact();
+            impact.Root.transform.position = new Vector3(
+                target.x, Mathf.Max(0.88f, target.y + 1.02f), target.z);
+            impact.Root.transform.localScale = Vector3.one * (killed ? 0.28f : critical ? 0.23f : 0.19f);
+            Color color = killed ? new Color(1f, 0.28f, 0.12f)
+                : critical ? new Color(1f, 0.78f, 0.18f) : new Color(1f, 0.48f, 0.30f);
+            SetMaterialColor(impact.Material, color, 0.94f);
+            impact.Started = Time.unscaledTime;
+            impact.Life = killed ? 0.42f : critical ? 0.34f : 0.28f;
+            impact.Active = true;
+            impact.Root.SetActive(true);
+            Recount();
+        }
+
         public void PlayExplosion(Vector3 center, float radius)
         {
             radius = Mathf.Max(1.4f, radius);
+            Audio?.PlayExplosion(center, radius);
+            if (Polish != null)
+            {
+                Polish.PlayExplosion(center, radius);
+                return;
+            }
             var root = new GameObject("ExplosionFx");
             root.transform.SetParent(transform, false);
             root.transform.position = new Vector3(center.x, Mathf.Max(0.12f, center.y), center.z);
@@ -228,8 +340,19 @@ namespace RealmOfAshes.Game
             });
         }
 
+        public void PlayDamagePulse(int damage)
+        {
+            Polish?.PlayDamagePulse(damage);
+        }
+
+        public void PlayDamagePulse(int damage, Vector3 targetWorld, Vector3 sourceWorld)
+        {
+            Polish?.PlayDamagePulse(damage, targetWorld, sourceWorld);
+        }
+
         public void Clear()
         {
+            Polish?.Clear();
             for (int i = 0; i < _tracers.Count; i++)
             {
                 _tracers[i].Active = false;
@@ -240,10 +363,16 @@ namespace RealmOfAshes.Game
                 _flashes[i].Active = false;
                 if (_flashes[i].Root != null) _flashes[i].Root.SetActive(false);
             }
+            for (int i = 0; i < _impacts.Count; i++)
+            {
+                _impacts[i].Active = false;
+                if (_impacts[i].Root != null) _impacts[i].Root.SetActive(false);
+            }
             for (int i = _explosions.Count - 1; i >= 0; i--) DestroyExplosion(_explosions[i]);
             _explosions.Clear();
-            ActiveTracerCount = 0;
-            ActiveFlashCount = 0;
+            _activeTracerCount = 0;
+            _activeFlashCount = 0;
+            _activeImpactCount = 0;
         }
 
         private void Update()
@@ -278,6 +407,22 @@ namespace RealmOfAshes.Game
                     fx.Root.transform.localScale = Vector3.one * Mathf.Lerp(0.22f, 0.06f, t);
                 }
             }
+            for (int i = 0; i < _impacts.Count; i++)
+            {
+                ImpactFx fx = _impacts[i];
+                if (!fx.Active) continue;
+                float t = Mathf.Clamp01((now - fx.Started) / Mathf.Max(0.01f, fx.Life));
+                if (t >= 1f)
+                {
+                    fx.Active = false;
+                    fx.Root.SetActive(false);
+                }
+                else
+                {
+                    SetMaterialAlpha(fx.Material, 0.82f * (1f - t));
+                    fx.Root.transform.localScale = Vector3.one * Mathf.Lerp(0.16f, 0.035f, t);
+                }
+            }
             for (int i = _explosions.Count - 1; i >= 0; i--)
             {
                 ExplosionFx fx = _explosions[i];
@@ -300,6 +445,7 @@ namespace RealmOfAshes.Game
 
         private void OnGUI()
         {
+            if (CanvasDriven) return;
             RoaUiTheme.Apply();
             if (RoaGameBootstrap.BlocksWorldHud) return;
             if (_enemies == null || UnityEngine.Camera.main == null) return;
@@ -349,6 +495,35 @@ namespace RealmOfAshes.Game
                 case "rocketLauncher": return Profile(0xffd18a, 0xff9a32, 0xffb04d, 0.20f, 0.12f);
                 default: return Profile(0xffd56a, 0xffc86a, 0xffc86a, 0.16f, 0.08f);
             }
+        }
+
+        public static float ImpulseFor(string weaponId)
+        {
+            switch (weaponId ?? string.Empty)
+            {
+                case "rocketLauncher": return 0.18f;
+                case "shotgun": return 0.13f;
+                case "machineGun": return 0.075f;
+                case "plasmaRifle": return 0.09f;
+                case "rifle": case "assaultRifle": return 0.085f;
+                default: return 0.055f;
+            }
+        }
+
+        /// <summary>
+        /// Игроки передают координаты сокета дула со своего Unity-клиента.
+        /// NPC пока передают центр модели, поэтому для них остаётся короткий
+        /// процедурный вынос вспышки вперёд.
+        /// </summary>
+        public static bool PayloadHasMuzzleStart(JObject payload)
+        {
+            if (payload == null || payload["enemyShooter"]?.ToObject<bool>() == true) return false;
+            JToken x = payload["startX"];
+            JToken y = payload["startY"];
+            JToken z = payload["startZ"];
+            return x != null && x.Type != JTokenType.Null
+                && y != null && y.Type != JTokenType.Null
+                && z != null && z.Type != JTokenType.Null;
         }
 
         public static bool TryShotEndpoints(JObject payload, out Vector3 start, out Vector3 end)
@@ -405,6 +580,7 @@ namespace RealmOfAshes.Game
         {
             while (_tracers.Count < InitialTracerPool) _tracers.Add(CreateTracer());
             while (_flashes.Count < InitialFlashPool) _flashes.Add(CreateFlash());
+            while (_impacts.Count < InitialImpactPool) _impacts.Add(CreateImpact());
         }
 
         private TracerFx AcquireTracer()
@@ -420,6 +596,14 @@ namespace RealmOfAshes.Game
             for (int i = 0; i < _flashes.Count; i++) if (!_flashes[i].Active) return _flashes[i];
             FlashFx created = CreateFlash();
             _flashes.Add(created);
+            return created;
+        }
+
+        private ImpactFx AcquireImpact()
+        {
+            for (int i = 0; i < _impacts.Count; i++) if (!_impacts[i].Active) return _impacts[i];
+            ImpactFx created = CreateImpact();
+            _impacts.Add(created);
             return created;
         }
 
@@ -456,6 +640,22 @@ namespace RealmOfAshes.Game
             light.shadows = LightShadows.None;
             root.SetActive(false);
             return new FlashFx { Root = root, Renderer = renderer, Material = material, Light = light };
+        }
+
+        private ImpactFx CreateImpact()
+        {
+            GameObject root = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            root.name = "ImpactSparkFx";
+            root.transform.SetParent(transform, false);
+            Collider collider = root.GetComponent<Collider>();
+            if (collider != null) Destroy(collider);
+            Renderer renderer = root.GetComponent<Renderer>();
+            Material material = CreateTransparentMaterial(Color.white);
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            root.SetActive(false);
+            return new ImpactFx { Root = root, Material = material };
         }
 
         private static Material CreateTransparentMaterial(Color color)
@@ -503,10 +703,13 @@ namespace RealmOfAshes.Game
         {
             int tracers = 0;
             int flashes = 0;
+            int impacts = 0;
             for (int i = 0; i < _tracers.Count; i++) if (_tracers[i].Active) tracers++;
             for (int i = 0; i < _flashes.Count; i++) if (_flashes[i].Active) flashes++;
-            ActiveTracerCount = tracers;
-            ActiveFlashCount = flashes;
+            for (int i = 0; i < _impacts.Count; i++) if (_impacts[i].Active) impacts++;
+            _activeTracerCount = tracers;
+            _activeFlashCount = flashes;
+            _activeImpactCount = impacts;
         }
 
         private static float Number(JToken token, float fallback)
@@ -543,8 +746,14 @@ namespace RealmOfAshes.Game
                 if (_flashes[i].Material != null) Destroy(_flashes[i].Material);
                 if (_flashes[i].Root != null) Destroy(_flashes[i].Root);
             }
+            for (int i = 0; i < _impacts.Count; i++)
+            {
+                if (_impacts[i].Material != null) Destroy(_impacts[i].Material);
+                if (_impacts[i].Root != null) Destroy(_impacts[i].Root);
+            }
             _tracers.Clear();
             _flashes.Clear();
+            _impacts.Clear();
         }
     }
 }

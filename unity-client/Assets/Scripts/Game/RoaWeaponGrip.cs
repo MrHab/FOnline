@@ -87,6 +87,14 @@ namespace RealmOfAshes.Game
             return _loading ?? (_loading = Load(baseUrl));
         }
 
+        private static void DestroyProbe(GameObject probe)
+        {
+            if (probe == null) return;
+
+            if (Application.isPlaying) Object.Destroy(probe);
+            else Object.DestroyImmediate(probe);
+        }
+
         private static async Task Load(string baseUrl)
         {
             var settings = new ImportSettings { AnimationMethod = AnimationMethod.Legacy };
@@ -113,7 +121,7 @@ namespace RealmOfAshes.Game
             if (!await import.InstantiateMainSceneAsync(probe.transform))
             {
                 Debug.LogError("[ROA] Экземпляр позы хвата не создан.");
-                Object.Destroy(probe);
+                DestroyProbe(probe);
                 import.Dispose();
                 return;
             }
@@ -133,7 +141,7 @@ namespace RealmOfAshes.Game
             if (grip == null)
             {
                 Debug.LogError("[ROA] В GLB нет клипа assault_rifle_grip.");
-                Object.Destroy(probe);
+                DestroyProbe(probe);
                 import.Dispose();
                 return;
             }
@@ -184,7 +192,7 @@ namespace RealmOfAshes.Game
                     + (hand == null ? ", нет hand_r" : "")
                     + (supportHand == null ? ", нет hand_l" : "")
                     + (mount == null ? ", нет " + MountNodeName : ""));
-                Object.Destroy(probe);
+                DestroyProbe(probe);
                 import.Dispose();
                 return;
             }
@@ -207,20 +215,23 @@ namespace RealmOfAshes.Game
             {
                 Debug.LogError("[ROA] Крепление оружия в " + mountDistance.ToString("F3")
                     + " м от кисти — поза хвата не применилась.");
-                Object.Destroy(probe);
+                DestroyProbe(probe);
                 import.Dispose();
                 return;
             }
 
             Ready = true;
 
-            Object.Destroy(probe);
+            DestroyProbe(probe);
             import.Dispose();
 
             Debug.Log("[ROA] Поза хвата загружена: " + pose.Count + " костей.");
         }
 
-        /// <summary>Записать позу на кости персонажа. Вызывать каждый кадр после анимации.</summary>
+        /// <summary>
+        /// Записать оружейную позу рук и пальцев после клипа, сохранив уже
+        /// рассчитанные движение, упор и реакцию на попадание позвоночника.
+        /// </summary>
         public static void ApplyTo(Dictionary<string, Transform> bones)
         {
             Write(bones, false);
@@ -243,6 +254,7 @@ namespace RealmOfAshes.Game
             foreach (KeyValuePair<string, BonePose> entry in Pose)
             {
                 if (fingersOnly && !IsFinger(entry.Key)) continue;
+                if (!fingersOnly && IsGripTorsoBone(entry.Key)) continue;
 
                 Transform bone;
                 if (!bones.TryGetValue(entry.Key, out bone) || bone == null) continue;
@@ -250,6 +262,13 @@ namespace RealmOfAshes.Game
                 bone.localRotation = entry.Value.Rotation;
                 if (entry.Value.HasPosition) bone.localPosition = entry.Value.Position;
             }
+        }
+
+        private static bool IsGripTorsoBone(string boneName)
+        {
+            return boneName == "spine_01"
+                || boneName == "spine_02"
+                || boneName == "spine_03";
         }
 
         /// <summary>Имена вида index_01_l, thumb_03_r и т.д. approvedGripBoneIsFinger(), 04d:1630.</summary>

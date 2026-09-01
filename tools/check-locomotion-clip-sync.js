@@ -19,6 +19,7 @@ const ROOT = path.resolve(__dirname, '..');
 const RUNTIME_FILE = path.join(ROOT, 'public', 'assets', 'models', 'characters', 'npc', 'npc_humanoid_animations.glb');
 const CHARACTER_FILE = path.join(ROOT, 'public', 'assets', 'models', 'characters', 'base', 'character_male_medium.glb');
 const RUNTIME_SOURCE = path.join(ROOT, 'public', 'js', 'game', '04b_character_glb_runtime.js');
+const UNITY_CHARACTER_SOURCE = path.join(ROOT, 'unity-client', 'Assets', 'Scripts', 'Game', 'RoaCharacterView.cs');
 
 // Скорости, на которых рантайм реально играет эти клипы (скорость игрока 4.2,
 // порог бега 3.4, присед 0.62 от базовой). Темп = скорость / натуральная.
@@ -35,6 +36,9 @@ const MAX_TEMPO = 1.8;           // темп выше — клип выгляд�
 const MIN_TEMPO = 0.55;
 const MIN_TRAVEL_RATIO = 1.25;   // травел за цикл / размах одной стопы
 const MAX_LOOP_GAP = 0.006;      // замкнутость петли, м
+const FAST_PHASE_OFFSET = -1 / 6;  // run/crouch опережают walk по контакту стоп
+const MAX_PHASE_HEIGHT_RMS = 0.10;
+const MAX_PHASE_STANCE_MISMATCH = 0.15;
 
 function readPins() {
   const source = fs.readFileSync(RUNTIME_SOURCE, 'utf8');
@@ -59,6 +63,14 @@ async function main() {
   };
 
   const pins = readPins();
+  const unityCharacterSource = fs.readFileSync(UNITY_CHARACTER_SOURCE, 'utf8');
+  assert(
+    unityCharacterSource.includes('FastGaitPhaseOffset = -1f / 6f')
+      && unityCharacterSource.includes('SyncedLocomotionPhase(previous, clip')
+      && unityCharacterSource.includes('LocomotionPhaseOffset(nextClip)')
+      && unityCharacterSource.includes('- LocomotionPhaseOffset(previousClip)'),
+    'Unity runtime no longer compensates the measured slow/fast gait phase offset'
+  );
   const character = await load(CHARACTER_FILE);
   const donor = await load(RUNTIME_FILE);
   const clips = new Map();
@@ -73,6 +85,7 @@ async function main() {
   assert(footL && footR && pelvis, 'в базовой модели нет костей стоп или таза');
 
   const reported = [];
+  const phaseProfiles = new Map();
   for (const [name, usage] of Object.entries(CLIP_USAGE)) {
     const clip = clips.get(name);
     assert(clip, `клип локомоции отсутствует: ${name}`);
@@ -94,6 +107,8 @@ async function main() {
         p: pelvis.getWorldPosition(new THREE.Vector3())
       });
     }
+
+    phaseProfiles.set(name, samples.map(sample => sample.l.y - sample.r.y));
 
     // Травел: перемещение опорной стопы (той, что ниже) назад по Z.
     let travel = 0;
@@ -153,7 +168,50 @@ async function main() {
     reported.push(`${name} ${magnitude.toFixed(2)}м/с темп ${tempo.toFixed(2)}`);
   }
 
-  console.log(`Locomotion clip sync OK: ${reported.join(', ')}`);
+  const phaseReports = [];
+  for (const [slow, fast] of [
+    ['walk', 'run'],
+    ['walk', 'crouch_walk'],
+    ['walk_back', 'run_back'],
+    ['walk_back', 'crouch_walk_back']
+  ]) {
+    const source = phaseProfiles.get(slow);
+    const target = phaseProfiles.get(fast);
+    assert(source?.length === target?.length && source.length > 0,
+      `${slow}/${fast}: нет профиля высоты стоп`);
+    const count = source.length;
+    const offsetSteps = Math.round(FAST_PHASE_OFFSET * count);
+    let wrong = 0;
+    let corrected = 0;
+    let wrongSquare = 0;
+    let correctedSquare = 0;
+    for (let i = 0; i < count; i += 1) {
+      const shifted = (i + offsetSteps + count) % count;
+      const wrongDelta = source[i] - target[i];
+      const correctedDelta = source[i] - target[shifted];
+      wrongSquare += wrongDelta * wrongDelta;
+      correctedSquare += correctedDelta * correctedDelta;
+      if ((source[i] <= 0) !== (target[i] <= 0)) wrong += 1;
+      if ((source[i] <= 0) !== (target[shifted] <= 0)) corrected += 1;
+    }
+    wrong /= count;
+    corrected /= count;
+    const wrongRms = Math.sqrt(wrongSquare / count);
+    const correctedRms = Math.sqrt(correctedSquare / count);
+    const stanceReliable = fast === 'crouch_walk_back'
+      || corrected <= MAX_PHASE_STANCE_MISMATCH;
+    assert(
+      correctedRms <= MAX_PHASE_HEIGHT_RMS
+        && correctedRms + 0.03 <= wrongRms
+        && stanceReliable,
+      `${slow}->${fast}: сдвиг -1/6 не выровнял контактную фазу `
+        + `(RMS ${wrongRms.toFixed(3)}→${correctedRms.toFixed(3)} м, `
+        + `опора ${(wrong * 100).toFixed(0)}→${(corrected * 100).toFixed(0)}%)`
+    );
+    phaseReports.push(`${slow}/${fast} RMS ${wrongRms.toFixed(3)}→${correctedRms.toFixed(3)}м`);
+  }
+
+  console.log(`Locomotion clip sync OK: ${reported.join(', ')}; gait phase mismatch ${phaseReports.join(', ')}`);
 }
 
 main().catch(error => {

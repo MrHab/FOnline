@@ -1,9 +1,14 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using Newtonsoft.Json.Linq;
 using RealmOfAshes.Game;
+using RealmOfAshes.Net;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace RealmOfAshes.EditorTools
 {
@@ -12,6 +17,11 @@ namespace RealmOfAshes.EditorTools
         [MenuItem("Realm of Ashes/Probe/Adaptive HUD")]
         public static void Run()
         {
+            Require(RoaEnemies.ReadBoolean(JValue.CreateNull(), true)
+                    && !RoaEnemies.ReadBoolean(JValue.CreateNull())
+                    && RoaEnemies.ReadBoolean(new JValue(true))
+                    && !RoaEnemies.ReadBoolean(new JValue(false), true),
+                "explicit JSON null is no longer safe for optional NPC flags");
             var occupied = new List<Rect>();
             Require(RoaActorNameplates.TryResolveScreenRect(new Vector2(-20f, -10f), occupied,
                                                             800, 480, out Rect first),
@@ -23,9 +33,269 @@ namespace RealmOfAshes.EditorTools
                                                             800, 480, out Rect second),
                     "overlapping nameplate was not relocated");
             Require(!first.Overlaps(second), "relocated nameplates still overlap");
+            Require(RoaActorNameplates.IsImportantNpc(true, "merchant", string.Empty)
+                    && RoaActorNameplates.IsImportantNpc(true, string.Empty, "quartermaster")
+                    && !RoaActorNameplates.IsImportantNpc(true, "guard", string.Empty)
+                    && !RoaActorNameplates.IsImportantNpc(false, "merchant", string.Empty),
+                "Unity nameplates no longer match the important-NPC role filter");
+            var healthyExtra = new RoaActorNameplates.Entry { Hp = 100, MaxHp = 100 };
+            RoaActorNameplates.Presentation compact = RoaActorNameplates.ResolvePresentation(
+                healthyExtra, false, 6f, 20f);
+            var woundedExtra = new RoaActorNameplates.Entry { Hp = 42, MaxHp = 100 };
+            RoaActorNameplates.Presentation wounded = RoaActorNameplates.ResolvePresentation(
+                woundedExtra, false, 6f, 20f);
+            var self = new RoaActorNameplates.Entry
+                { Name = "Странник", Hp = 87, MaxHp = 100, IsSelf = true, IsPlayer = true };
+            RoaActorNameplates.Presentation own = RoaActorNameplates.ResolvePresentation(
+                self, false, 19f, 20f);
+            var hostileNpc = new RoaActorNameplates.Entry
+                { Faction = RoaActorNameplates.NpcFactionLine("raiders", true), Hp = 100, MaxHp = 100, Hostile = true };
+            RoaActorNameplates.Presentation hostileNpcPresentation = RoaActorNameplates.ResolvePresentation(
+                hostileNpc, false, 6f, 20f);
+            Require(!compact.ShowName && !compact.ShowHealthText && compact.Height <= 9f
+                    && wounded.ShowHealthText && wounded.HealthText == "тяжело"
+                    && own.ShowName && own.ShowHealthText && own.HealthText == "87/100"
+                    && Mathf.Approximately(own.Alpha, 1f)
+                    && hostileNpcPresentation.ShowFaction
+                    && hostileNpc.Faction == "ВРАГ · Рейдеры",
+                "compact health-bar/name hierarchy is not deterministic");
             Require(typeof(RoaHudCanvas).IsSubclassOf(typeof(MonoBehaviour)),
                     "adaptive HUD is not a Unity component");
-            Debug.Log("[ROA PROBE] Adaptive HUD OK: safe nameplates and Canvas owner.");
+            Vector2 desktopReference = RoaUiScale.ReferenceFor(false);
+            Vector2 mobileReference = RoaUiScale.ReferenceFor(true);
+            Require(desktopReference == new Vector2(1440f, 810f),
+                    "desktop UI reference no longer protects laptop readability");
+            Require(mobileReference == new Vector2(1280f, 720f),
+                    "mobile UI reference changed unexpectedly");
+            GameObject scaleProbe = new GameObject("UiScaleProbe", typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler));
+            UnityEngine.UI.CanvasScaler scaleProbeScaler = scaleProbe.GetComponent<UnityEngine.UI.CanvasScaler>();
+            RoaUiScale.Apply(scaleProbeScaler);
+            Require(scaleProbe.GetComponent<Canvas>().pixelPerfect
+                    && scaleProbeScaler.uiScaleMode == UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize
+                    && scaleProbeScaler.screenMatchMode == UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight,
+                "HUD scaling no longer keeps text pixel-aligned across fullscreen resolution changes");
+            UnityEngine.Object.DestroyImmediate(scaleProbe);
+            GameObject scrollProbe = new GameObject("UiScrollProbe", typeof(RectTransform),
+                typeof(UnityEngine.UI.ScrollRect));
+            UnityEngine.UI.ScrollRect wheelScroll = scrollProbe.GetComponent<UnityEngine.UI.ScrollRect>();
+            RoaUiScroll.Configure(wheelScroll);
+            UnityEngine.UI.Graphic wheelReceiver = scrollProbe.GetComponent<UnityEngine.UI.Graphic>();
+            Require(wheelScroll.vertical && !wheelScroll.horizontal
+                    && wheelScroll.viewport == scrollProbe.transform
+                    && wheelScroll.scrollSensitivity >= 18f
+                    && wheelReceiver != null && wheelReceiver.raycastTarget,
+                "mouse-wheel scrolling no longer has a raycastable viewport in generated interfaces");
+            UnityEngine.Object.DestroyImmediate(scrollProbe);
+            RoaHudCanvas.LayoutProfile desktopHud = RoaHudCanvas.ResolveLayout(false);
+            RoaHudCanvas.LayoutProfile mobileHud = RoaHudCanvas.ResolveLayout(true);
+            float desktopConsoleTop = (desktopHud.ConsolePosition.y
+                + 253f * desktopHud.ConsoleScale) / desktopReference.y;
+            float mobileConsoleTop = (mobileHud.ConsolePosition.y
+                + 253f * mobileHud.ConsoleScale) / mobileReference.y;
+            Require(desktopConsoleTop < 0.31f && mobileConsoleTop < 0.29f,
+                    "weapon console again obscures too much of the combat view");
+            Require(desktopHud.QuickbarPosition.y > desktopHud.ConsolePosition.y
+                        + 253f * desktopHud.ConsoleScale
+                    && mobileHud.QuickbarPosition.y > mobileHud.ConsolePosition.y
+                        + 253f * mobileHud.ConsoleScale,
+                    "quickbar overlaps the compact weapon console");
+            Require(mobileHud.PlayerScale < desktopHud.PlayerScale
+                    && mobileHud.MapScale < desktopHud.MapScale,
+                "mobile identity or minimap panels did not release combat space");
+            Require(RoaHudCanvas.ResolveFocusMode(false, false, false)
+                        == RoaHudCanvas.HudFocusMode.Exploration
+                    && RoaHudCanvas.ResolveFocusMode(true, false, false)
+                        == RoaHudCanvas.HudFocusMode.Combat
+                    && RoaHudCanvas.ResolveFocusMode(false, true, false)
+                        == RoaHudCanvas.HudFocusMode.Detailed
+                    && RoaHudCanvas.ResolveFocusMode(false, true, false, false)
+                        == RoaHudCanvas.HudFocusMode.Activity
+                    && RoaHudCanvas.ResolveFocusMode(true, true, false, false)
+                        == RoaHudCanvas.HudFocusMode.Combat
+                    && RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Detailed)
+                    && !RoaHudCanvas.ShowsIdentity(RoaHudCanvas.HudFocusMode.Combat)
+                    && RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
+                        false, false, false)
+                    && !RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Activity,
+                        false, false, false)
+                    && !RoaHudCanvas.ShowsQuickbar(RoaHudCanvas.HudFocusMode.Combat,
+                        true, false, false)
+                    && RoaCombat.IsCombatPresentationActive(6.9f, 7f)
+                    && !RoaCombat.IsCombatPresentationActive(7f, 7f),
+                "contextual combat focus no longer has deterministic lifetime or manual detail access");
+            float desktopCompactTop = (RoaHudCanvas.CompactConsolePosition(false).y
+                + 66f * RoaHudCanvas.CompactConsoleScale(false)) / desktopReference.y;
+            float mobileCompactTop = (RoaHudCanvas.CompactConsolePosition(true).y
+                + 66f * RoaHudCanvas.CompactConsoleScale(true)) / mobileReference.y;
+            Require(desktopCompactTop < 0.10f && mobileCompactTop < 0.11f
+                    && RoaHudCanvas.QuickbarFocusPosition(false,
+                        RoaHudCanvas.HudFocusMode.Exploration).y
+                        > RoaHudCanvas.CompactConsolePosition(false).y
+                            + 66f * RoaHudCanvas.CompactConsoleScale(false)
+                    && RoaHudCanvas.QuickbarFocusPosition(true,
+                        RoaHudCanvas.HudFocusMode.Exploration).y
+                        > RoaHudCanvas.CompactConsolePosition(true).y
+                            + 66f * RoaHudCanvas.CompactConsoleScale(true),
+                "exploration strip obscures the world or overlaps the quickbar");
+            Vector2 recoveredConsole = RoaHudCanvas.ClampBottomPanelPosition(
+                new Vector2(0f, -56f), new Vector2(560f, 66f), 0.94f,
+                new Vector2(1920f, 1080f));
+            Require(recoveredConsole.y >= 8f,
+                "legacy console offsets must not push the compact HUD below the safe area");
+            Vector2 recoveredWide = RoaHudCanvas.ClampBottomPanelPosition(
+                new Vector2(1600f, 16f), new Vector2(760f, 253f), 0.875f,
+                new Vector2(1920f, 1080f));
+            Require(recoveredWide.x < 1600f,
+                "dragged combat console must remain horizontally reachable");
+            GameObject hierarchyProbe = new GameObject("Hud hierarchy probe");
+            try
+            {
+                RoaHudCanvas hierarchyCanvas = hierarchyProbe.AddComponent<RoaHudCanvas>();
+                MethodInfo buildHud = typeof(RoaHudCanvas).GetMethod("Build",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(buildHud != null, "adaptive HUD builder is missing");
+                buildHud.Invoke(hierarchyCanvas, null);
+                Transform compactConsole = hierarchyProbe.transform.Find(
+                    "AdaptiveGameplayHud/SafeArea/CompactWeaponConsole");
+                Require(compactConsole != null
+                        && ((RectTransform)compactConsole).sizeDelta == new Vector2(560f, 66f)
+                        && compactConsole.GetComponent<CanvasGroup>() != null
+                        && compactConsole.Find("HpTrack/Fill") != null
+                        && compactConsole.Find("Weapon") != null
+                        && compactConsole.Find("Ammo") != null,
+                    "contextual exploration console is incomplete");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(hierarchyProbe);
+            }
+            RoaHudCanvas.ConnectionBannerState interrupted = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Disconnected, 3, 4.2f, string.Empty, false);
+            Require(interrupted.Kind == RoaHudCanvas.ConnectionBannerKind.Interrupted
+                    && interrupted.Title.Contains("ПОТЕРЯНА")
+                    && interrupted.Detail.Contains("5 с")
+                    && interrupted.Detail.Contains("3"),
+                "offline banner lost retry countdown or attempt number");
+            RoaHudCanvas.ConnectionBannerState connecting = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Connecting, 2, 0f, string.Empty, false);
+            Require(connecting.Kind == RoaHudCanvas.ConnectionBannerKind.Connecting
+                    && connecting.Detail.Contains("2"),
+                "connecting banner no longer explains the current attempt");
+            RoaHudCanvas.ConnectionBannerState synchronizing = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Joining, 2, 0f, string.Empty, false);
+            Require(synchronizing.Kind == RoaHudCanvas.ConnectionBannerKind.Synchronizing,
+                "join recovery is not presented as world synchronization");
+            RoaHudCanvas.ConnectionBannerState restored = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Joined, 0, 0f, string.Empty, true);
+            Require(restored.Kind == RoaHudCanvas.ConnectionBannerKind.Restored,
+                "successful reconnect has no confirmation");
+            RoaHudCanvas.ConnectionBannerState healthy = RoaHudCanvas.DescribeConnection(
+                RoaSocketClient.ConnectionPhase.Joined, 0, 0f, string.Empty, false);
+            Require(healthy.Kind == RoaHudCanvas.ConnectionBannerKind.Hidden,
+                "healthy connection leaves a permanent banner on screen");
+            CaptureIfRequested();
+            Debug.Log("[HUD CLEANUP 4.1] готово: исследование/активность/бой/детали, "
+                + "компактный бой, скрытая личность, приоритетная панель и чёткий Canvas.");
+        }
+
+        private static void CaptureIfRequested()
+        {
+            string path = Environment.GetEnvironmentVariable("ROA_HUD_CAPTURE");
+            if (string.IsNullOrWhiteSpace(path)) return;
+            GameObject host = null;
+            GameObject cameraObject = null;
+            RenderTexture target = null;
+            Texture2D readback = null;
+            RenderTexture previous = RenderTexture.active;
+            try
+            {
+                host = new GameObject("HudCanvasCapture");
+                RoaHud hud = host.AddComponent<RoaHud>();
+                Set(hud, "_selfId", "capture-player");
+                Set(hud, "_name", "Странник");
+                Set(hud, "_hp", 74);
+                Set(hud, "_maxHp", 100);
+                Set(hud, "_ap", 7f);
+                Set(hud, "_maxAp", 10);
+                Set(hud, "_level", 8);
+                Set(hud, "_xp", 630);
+                Set(hud, "_xpNeeded", 1000);
+                Set(hud, "_weapon", "fists");
+                Set(hud, "_armorThreshold", 4);
+                Set(hud, "_condition", 0.72f);
+
+                if (string.Equals(Environment.GetEnvironmentVariable(
+                        "ROA_HUD_CAPTURE_CONNECTION"), "1", StringComparison.Ordinal))
+                {
+                    RoaSocketClient socket = host.AddComponent<RoaSocketClient>();
+                    hud.Socket = socket;
+                    Set(socket, "_reconnectAttempt", 3);
+                    Set(socket, "_reconnectScheduled", true);
+                    Set(socket, "_reconnectAt", Time.realtimeSinceStartup + 4.2f);
+                }
+
+                RoaHudCanvas canvasOwner = host.AddComponent<RoaHudCanvas>();
+                canvasOwner.Configure(hud, null, null, null, null, null);
+                MethodInfo update = typeof(RoaHudCanvas).GetMethod("Update",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Require(update != null, "HUD capture cannot invoke presentation update");
+                update.Invoke(canvasOwner, null);
+
+                Canvas canvas = host.GetComponentInChildren<Canvas>(true);
+                Require(canvas != null, "HUD capture canvas was not built");
+                cameraObject = new GameObject("HudCaptureCamera");
+                Camera camera = cameraObject.AddComponent<Camera>();
+                camera.enabled = false;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(0.16f, 0.13f, 0.085f, 1f);
+                camera.nearClipPlane = 0.1f;
+                camera.farClipPlane = 100f;
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = camera;
+                canvas.planeDistance = 1f;
+
+                target = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32)
+                {
+                    name = "HudCanvasCapture",
+                    antiAliasing = 4
+                };
+                target.Create();
+                camera.targetTexture = target;
+                Canvas.ForceUpdateCanvases();
+                if (GraphicsSettings.currentRenderPipeline != null)
+                {
+                    var request = new RenderPipeline.StandardRequest { destination = target };
+                    RenderPipeline.SubmitRenderRequest(camera, request);
+                }
+                else camera.Render();
+
+                RenderTexture.active = target;
+                readback = new Texture2D(target.width, target.height, TextureFormat.RGBA32, false);
+                readback.ReadPixels(new Rect(0f, 0f, target.width, target.height), 0, 0);
+                readback.Apply(false, false);
+                File.WriteAllBytes(path, readback.EncodeToPNG());
+                Debug.Log("[ROA PROBE] HUD capture: " + path);
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                if (readback != null) UnityEngine.Object.DestroyImmediate(readback);
+                if (target != null)
+                {
+                    target.Release();
+                    UnityEngine.Object.DestroyImmediate(target);
+                }
+                if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
+                if (host != null) UnityEngine.Object.DestroyImmediate(host);
+            }
+        }
+
+        private static void Set<T>(object target, string fieldName, T value)
+        {
+            FieldInfo field = target.GetType().GetField(fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(field != null, "HUD capture field missing: " + fieldName);
+            field.SetValue(target, value);
         }
 
         private static void Require(bool condition, string message)

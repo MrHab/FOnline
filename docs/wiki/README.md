@@ -90,6 +90,7 @@ npm start
 - [Файлы Unity-клиента](CLIENT_FILES.md)
 - [Камера и видимость](CAMERA_AND_VISION.md)
 - [Графика и настройки качества](GRAPHICS_SETTINGS.md)
+- [Плашки имён и экранные подписи](NAMEPLATES_AND_LABELS.md)
 
 ### Мир и игровые системы
 

@@ -16,6 +16,10 @@ namespace RealmOfAshes.Game
     /// СИСТЕМНЫЙ ЖУРНАЛ, ГРУППА. Контакт на маршруте — блок с «Вступить / Обойти».
     /// Логика и серверные запросы остаются в RoaGlobalMap (фасад CanvasDriven…).
     /// </summary>
+    // Подписи карты проецируют мир в экран и обязаны обновляться после
+    // RoaCameraRig.LateUpdate — иначе при панорамировании и зуме они целый
+    // кадр живут по прошлой проекции и «плывут» относительно точек.
+    [DefaultExecutionOrder(50)]
     public sealed class RoaGlobalMapCanvas : MonoBehaviour
     {
         public enum MapJourneyStage
@@ -32,6 +36,7 @@ namespace RealmOfAshes.Game
             public RectTransform Rect;
             public Image Background;
             public Outline Outline;
+            public Image Accent;
             public Text Text;
         }
 
@@ -75,6 +80,9 @@ namespace RealmOfAshes.Game
         private readonly List<MapLabelSlot> _mapLabelPool = new List<MapLabelSlot>();
         private readonly List<RoaGlobalMap.OverlayLabel> _mapLabelFrames = new List<RoaGlobalMap.OverlayLabel>();
         private readonly List<Rect> _occupiedMapLabels = new List<Rect>();
+        // Вертикальный сдвиг слота каждой подписи на прошлом кадре (по frame.Id).
+        private Dictionary<string, float> _mapLabelSticky = new Dictionary<string, float>();
+        private Dictionary<string, float> _mapLabelNextSticky = new Dictionary<string, float>();
         private RectTransform _contactBox;
         private Text _contactTitle;
         private Text _contactDetails;
@@ -579,6 +587,7 @@ namespace RealmOfAshes.Game
 
             int visible = 0;
             int labelLimit = profile.OverlayLabelLimit;
+            _mapLabelNextSticky.Clear();
             for (int i = 0; i < _mapLabelFrames.Count; i++)
             {
                 if (visible >= labelLimit) break;
@@ -589,9 +598,14 @@ namespace RealmOfAshes.Game
                 Vector2 point = new Vector2(projected.x, Screen.height - projected.y);
                 Vector2 screenSize = OverlayLabelScreenSize(frame.Cluster, frame.Activity,
                     frame.Selected, _canvas.scaleFactor);
+                float stickyOffset = frame.Id != null
+                    && _mapLabelSticky.TryGetValue(frame.Id, out float saved) ? saved : 0f;
                 if (!RoaGlobalMap.TryResolveOverlayLabelRect(point, sidebar, _occupiedMapLabels,
-                    Screen.width, Screen.height, screenSize.x, screenSize.y,
+                    Screen.width, Screen.height, screenSize.x, screenSize.y, stickyOffset,
                     out Rect resolved)) continue;
+                if (frame.Id != null)
+                    _mapLabelNextSticky[frame.Id] = resolved.y
+                        - RoaGlobalMap.OverlayLabelBaseY(point.y, screenSize.y, Screen.height);
 
                 MapLabelSlot slot = _mapLabelPool[visible++];
                 slot.Root.SetActive(true);
@@ -606,6 +620,15 @@ namespace RealmOfAshes.Game
                 float alpha = frame.Selected ? 0.98f
                             : (frame.Activity ? 0.93f : (frame.Cluster ? 0.72f : 0.58f));
                 slot.Background.color = new Color(0.018f, 0.045f, 0.028f, alpha);
+                bool accentVisible = frame.Accent.a > 0.01f && !frame.Cluster;
+                if (slot.Accent != null)
+                {
+                    if (slot.Accent.gameObject.activeSelf != accentVisible)
+                        slot.Accent.gameObject.SetActive(accentVisible);
+                    if (accentVisible)
+                        slot.Accent.color = new Color(frame.Accent.r, frame.Accent.g,
+                            frame.Accent.b, Mathf.Min(1f, alpha + 0.25f));
+                }
                 slot.Outline.effectColor = new Color(frame.Color.r, frame.Color.g, frame.Color.b,
                     frame.Selected ? 0.95f : 0.68f);
                 slot.Outline.effectDistance = frame.Selected ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
@@ -615,6 +638,11 @@ namespace RealmOfAshes.Game
             for (int i = visible; i < _mapLabelPool.Count; i++)
                 if (_mapLabelPool[i].Root.activeSelf) _mapLabelPool[i].Root.SetActive(false);
             ActiveMapLabelCount = visible;
+            // Память слотов живёт один кадр: исчезнувшие подписи не тянут
+            // за собой устаревшие сдвиги.
+            Dictionary<string, float> swap = _mapLabelSticky;
+            _mapLabelSticky = _mapLabelNextSticky;
+            _mapLabelNextSticky = swap;
         }
 
         public static int OverlayLabelPriority(RoaGlobalMap.OverlayLabel label)
@@ -647,13 +675,30 @@ namespace RealmOfAshes.Game
                 rect.pivot = new Vector2(0.5f, 0.5f);
                 Image background = root.GetComponent<Image>();
                 background.raycastTarget = false;
+                // «Ленточная» пластина: скруглённые углы и вертикальный градиент
+                // вместо плоского прямоугольника.
+                background.sprite = MapLabelPlateSprite();
+                background.type = Image.Type.Sliced;
                 var outline = root.GetComponent<Outline>();
                 outline.useGraphicAlpha = true;
+
+                // Фракционная полоса у левого края — как гербовая лента поселения.
+                var accentGo = new GameObject("Accent", typeof(RectTransform), typeof(Image));
+                var accentRect = (RectTransform)accentGo.transform;
+                accentRect.SetParent(rect, false);
+                accentRect.anchorMin = new Vector2(0f, 0f);
+                accentRect.anchorMax = new Vector2(0f, 1f);
+                accentRect.pivot = new Vector2(0f, 0.5f);
+                accentRect.anchoredPosition = new Vector2(2f, 0f);
+                accentRect.sizeDelta = new Vector2(4f, -8f);
+                Image accent = accentGo.GetComponent<Image>();
+                accent.raycastTarget = false;
+
                 Text text = Label("Text", rect, 11, TextAnchor.MiddleCenter, Mono, FontStyle.Bold);
                 text.supportRichText = true;
                 text.horizontalOverflow = HorizontalWrapMode.Wrap;
                 text.verticalOverflow = VerticalWrapMode.Truncate;
-                Stretch(text.rectTransform, 6f);
+                Stretch(text.rectTransform, 4f);
                 root.SetActive(false);
                 _mapLabelPool.Add(new MapLabelSlot
                 {
@@ -661,9 +706,48 @@ namespace RealmOfAshes.Game
                     Rect = rect,
                     Background = background,
                     Outline = outline,
+                    Accent = accent,
                     Text = text
                 });
             }
+        }
+
+        private static Sprite _mapLabelPlateSprite;
+
+        /// <summary>
+        /// Процедурная пластина подписи: скруглённые углы (slice 8px) и мягкий
+        /// вертикальный градиент. Белая — итоговый цвет задаёт Image.color.
+        /// </summary>
+        private static Sprite MapLabelPlateSprite()
+        {
+            if (_mapLabelPlateSprite != null) return _mapLabelPlateSprite;
+            const int size = 24;
+            const float radius = 7f;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+                name = "MapLabelPlate"
+            };
+            var pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = Mathf.Max(0f, Mathf.Max(radius - x, x - (size - 1 - radius)));
+                    float dy = Mathf.Max(0f, Mathf.Max(radius - y, y - (size - 1 - radius)));
+                    float corner = Mathf.Sqrt(dx * dx + dy * dy);
+                    float alpha = Mathf.Clamp01(radius - corner + 0.5f);
+                    float shade = Mathf.Lerp(0.78f, 1.08f, (float)y / (size - 1));
+                    pixels[y * size + x] = new Color(shade, shade, shade, alpha);
+                }
+            }
+            texture.SetPixels(pixels);
+            texture.Apply(false, false);
+            _mapLabelPlateSprite = Sprite.Create(texture, new Rect(0, 0, size, size),
+                new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect,
+                new Vector4(8f, 8f, 8f, 8f));
+            return _mapLabelPlateSprite;
         }
 
         private void HideMapLabels()
@@ -693,10 +777,17 @@ namespace RealmOfAshes.Game
                 (screenHeight - screenRect.center.y - screenHeight * 0.5f) / scale);
         }
 
+        // Высота обязана вмещать хотя бы одну строку текста с учётом отступа
+        // пула (4px сверху и снизу): при verticalOverflow = Truncate строка,
+        // которая не помещается целиком, не рисуется вовсе, и плашка остаётся
+        // пустой. Строка Noto Sans bold 11–12px занимает ~15–17px.
         public static Vector2 OverlayLabelCanvasSize(bool cluster, bool activity, bool selected)
         {
-            float width = cluster ? 92f : (activity ? 220f : (selected ? 156f : 140f));
-            float height = cluster ? 24f : (activity ? 44f : 26f);
+            // Кластерную плашку делят метки «• N точек» и подписи дорог
+            // («СЕВЕРНЫЙ ТРАКТ» и т.п.): ширина обязана вмещать самое длинное
+            // название дороги одной строкой, иначе Truncate оставит полслова.
+            float width = cluster ? 132f : (activity ? 220f : (selected ? 188f : 168f));
+            float height = cluster ? 26f : (activity ? 44f : (selected ? 32f : 30f));
             return new Vector2(width, height);
         }
 

@@ -63,6 +63,25 @@ namespace RealmOfAshes.Game
             public float FogEnd;
         }
 
+        /// <summary>Авторитетный час мира из снимка симуляции (0–24).</summary>
+        public float WorldHour
+        {
+            get
+            {
+                float hour = _wasteland?["worldHour"]?.ToObject<float>() ?? 12f;
+                return Mathf.Repeat(float.IsFinite(hour) ? hour : 12f, 24f);
+            }
+        }
+
+        /// <summary>Мировой размах диорамы карты (для атмосферы и cookie облаков).</summary>
+        public float MapWorldSpan
+        {
+            get { return Mathf.Max(MapWidthPoints, MapHeightPoints) * MapWorldScale; }
+        }
+
+        /// <summary>Корень диорамы карты; null до постройки сцены.</summary>
+        public GameObject MapRoot { get { return _root; } }
+
         public static StrategicVisualProfile StrategicProfile(float mapSpan)
         {
             float span = Mathf.Max(40f, mapSpan);
@@ -109,13 +128,16 @@ namespace RealmOfAshes.Game
                         Sites = true,
                         Parties = true,
                         Threats = true,
-                        SiteBucket = 22f,
+                        SiteBucket = 0f,
                         PartyBucket = 0f,
                         ThreatBucket = 30f,
                         OverlayLabelLimit = 12,
                         ActivityLabelLimit = 3,
                         InfrastructureLabelLimit = 0
                     };
+                // SiteBucket = 0: близкие точки не сворачиваются в «победителя»
+                // с меткой «• N точек» — все маркеры видимы, а слишком близкие
+                // визуально разносятся (ApplySiteSeparation).
                 case MapDetailTier.Medium:
                     return new MapPresentationProfile
                     {
@@ -126,7 +148,7 @@ namespace RealmOfAshes.Game
                         Sites = true,
                         Parties = true,
                         Threats = true,
-                        SiteBucket = 55f,
+                        SiteBucket = 0f,
                         PartyBucket = 42f,
                         ThreatBucket = 72f,
                         OverlayLabelLimit = 9,
@@ -183,6 +205,8 @@ namespace RealmOfAshes.Game
             public string Semantic;
             public Vector3 World;
             public Color Color;
+            /// <summary>Фракционная лента у левого края плашки; alpha 0 — без ленты.</summary>
+            public Color Accent;
             public bool Activity;
             public bool Selected;
             public bool Cluster;
@@ -206,6 +230,8 @@ namespace RealmOfAshes.Game
             public GameObject Visual;
             public DynamicVisualLayer Layer;
             public GlobalMapPoint Point;
+            /// <summary>Позиция до разнесения близких маркеров (идемпотентность).</summary>
+            public Vector3 BaseLocalPosition;
             public Vector3 BaseScale;
             public bool Important;
             public int Priority;
@@ -652,6 +678,7 @@ namespace RealmOfAshes.Game
         private CameraClearFlags _savedCameraClearFlags;
         private Color _savedCameraBackground;
         private bool _mapLightingSaved;
+        private RoaGlobalMapAtmosphere _atmosphere;
         private AmbientMode _savedAmbientMode;
         private Color _savedAmbientSky;
         private Color _savedAmbientEquator;
@@ -1228,7 +1255,11 @@ namespace RealmOfAshes.Game
                         partyActor.Presentation = RegisterDynamicVisual(partyActor.Root,
                             DynamicVisualLayer.Party, target.Point, false, target.Priority);
                         if (partyActor.Actor != null)
+                        {
                             _ = partyActor.Actor.ConfigureParty(BaseUrl, row);
+                            partyActor.Actor.SetBanner(
+                                FactionColor(target.Faction, target.Accent));
+                        }
                     }
                     _dynamicTargets.Add(target);
                 }
@@ -1303,9 +1334,70 @@ namespace RealmOfAshes.Game
             BuildTrackedWorldTaskMarker();
             _dynamicPresentationVisuals.Sort((left, right) =>
                 (right?.Priority ?? 0).CompareTo(left?.Priority ?? 0));
+            ApplySiteSeparation();
             ResolveSelectedDynamic();
             RebuildRouteVisuals();
             ApplyDynamicPresentation(true);
+        }
+
+        // Вместо кластера «• N точек» близкие мировые точки разносятся визуально.
+        // Сдвиг ограничен запасом клика: NearestDynamicTarget ищет цель в радиусе
+        // DynamicSnapRadiusPoints (13) от авторитетной точки, поэтому смещённый
+        // маркер продолжает выбирать свою же точку.
+        private const float SiteSeparationPoints = 16f;
+        private const float SiteSeparationMaxOffsetPoints = 9f;
+
+        private void ApplySiteSeparation()
+        {
+            var sites = new List<DynamicVisualState>();
+            for (int i = 0; i < _dynamicPresentationVisuals.Count; i++)
+            {
+                DynamicVisualState state = _dynamicPresentationVisuals[i];
+                if (state?.Visual != null && state.Point != null
+                    && state.Layer == DynamicVisualLayer.Site) sites.Add(state);
+            }
+            if (sites.Count < 2) return;
+
+            var offsets = new Vector2[sites.Count];
+            for (int pass = 0; pass < 4; pass++)
+                for (int i = 0; i < sites.Count; i++)
+                    for (int j = i + 1; j < sites.Count; j++)
+                    {
+                        Vector2 a = new Vector2(sites[i].Point.X, sites[i].Point.Y) + offsets[i];
+                        Vector2 b = new Vector2(sites[j].Point.X, sites[j].Point.Y) + offsets[j];
+                        Vector2 delta = b - a;
+                        float distance = delta.magnitude;
+                        if (distance >= SiteSeparationPoints) continue;
+                        Vector2 direction = distance > 0.01f
+                            ? delta / distance
+                            : SeparationFallbackDirection(sites[i].Point, sites[j].Point);
+                        float push = (SiteSeparationPoints - distance) * 0.5f;
+                        offsets[i] -= direction * push;
+                        offsets[j] += direction * push;
+                    }
+
+            for (int i = 0; i < sites.Count; i++)
+            {
+                Vector2 offset = Vector2.ClampMagnitude(offsets[i], SiteSeparationMaxOffsetPoints);
+                Transform visual = sites[i].Visual.transform;
+                if (offset.sqrMagnitude < 0.01f)
+                {
+                    visual.localPosition = sites[i].BaseLocalPosition;
+                    continue;
+                }
+                Vector3 shifted = PointToWorld(sites[i].Point.X + offset.x,
+                    sites[i].Point.Y + offset.y, 0f);
+                Vector3 origin = PointToWorld(sites[i].Point.X, sites[i].Point.Y, 0f);
+                visual.localPosition = sites[i].BaseLocalPosition + (shifted - origin);
+            }
+        }
+
+        /// <summary>Детерминированное направление для совпадающих координат.</summary>
+        private static Vector2 SeparationFallbackDirection(GlobalMapPoint a, GlobalMapPoint b)
+        {
+            float angle = Mathf.Repeat(a.X * 73.856f + a.Y * 19.349f
+                + b.X * 83.492f + b.Y * 12.289f, 360f) * Mathf.Deg2Rad;
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
         }
 
         private void BuildTrackedWorldTaskMarker()
@@ -1571,6 +1663,7 @@ namespace RealmOfAshes.Game
                 Visual = visual,
                 Layer = layer,
                 Point = CopyPoint(point),
+                BaseLocalPosition = visual.transform.localPosition,
                 BaseScale = visual.transform.localScale,
                 Important = important,
                 Priority = priority,
@@ -2858,6 +2951,7 @@ namespace RealmOfAshes.Game
                     Text = row.Text,
                     World = _root.transform.TransformPoint(PointToWorld(row.Point.X, row.Point.Y, 1.2f)),
                     Color = row.Color,
+                    Accent = row.Color,
                     Activity = true,
                     Selected = selected,
                     Priority = selected ? 1500 : row.Priority
@@ -2882,6 +2976,7 @@ namespace RealmOfAshes.Game
                     World = _root.transform.TransformPoint(PointToWorld(
                         _selectedDynamic.Point.X, _selectedDynamic.Point.Y, 1.26f)),
                     Color = _selectedDynamic.Accent,
+                    Accent = FactionColor(_selectedDynamic.Faction, _selectedDynamic.Accent),
                     Activity = true,
                     Selected = true,
                     Cluster = false,
@@ -2889,7 +2984,6 @@ namespace RealmOfAshes.Game
                 });
             }
 
-            if (tier == MapDetailTier.Medium) AppendSiteClusterLabels(output);
             if (profile.InfrastructureLabelLimit > 0)
                 AppendInfrastructureLabels(output, profile.InfrastructureLabelLimit);
 
@@ -2915,6 +3009,8 @@ namespace RealmOfAshes.Game
                         World = NodeLabelWorld(node, 0.9f),
                         Color = selected ? new Color(0.3f, 0.88f, 1f, 1f)
                                           : new Color(0.94f, 0.82f, 0.47f, 1f),
+                        Accent = FactionColor(node.CapitalFaction,
+                            new Color(0.94f, 0.82f, 0.47f, 1f)),
                         Activity = false,
                         Selected = selected,
                         Cluster = false,
@@ -2923,47 +3019,6 @@ namespace RealmOfAshes.Game
                 }
             }
             return output.Count;
-        }
-
-        private void AppendSiteClusterLabels(List<OverlayLabel> output)
-        {
-            var buckets = new Dictionary<string, List<DynamicTarget>>();
-            for (int i = 0; i < _dynamicTargets.Count; i++)
-            {
-                DynamicTarget target = _dynamicTargets[i];
-                if (target == null || target.Kind != "site" || target.Point == null) continue;
-                string key = PresentationBucket(target.Point, 55f);
-                if (!buckets.TryGetValue(key, out List<DynamicTarget> rows))
-                {
-                    rows = new List<DynamicTarget>();
-                    buckets.Add(key, rows);
-                }
-                rows.Add(target);
-            }
-
-            foreach (KeyValuePair<string, List<DynamicTarget>> pair in buckets)
-            {
-                if (pair.Value == null || pair.Value.Count < 2) continue;
-                float x = 0f;
-                float y = 0f;
-                for (int i = 0; i < pair.Value.Count; i++)
-                {
-                    x += pair.Value[i].Point.X;
-                    y += pair.Value[i].Point.Y;
-                }
-                var point = new GlobalMapPoint { X = x / pair.Value.Count, Y = y / pair.Value.Count };
-                output.Add(new OverlayLabel
-                {
-                    Id = "cluster:" + pair.Key,
-                    Text = "• " + pair.Value.Count + " точек",
-                    World = _root.transform.TransformPoint(PointToWorld(point.X, point.Y, 0.82f)),
-                    Color = new Color(0.82f, 0.76f, 0.56f, 0.92f),
-                    Activity = false,
-                    Selected = false,
-                    Cluster = true,
-                    Priority = 250
-                });
-            }
         }
 
         private void AppendInfrastructureLabels(List<OverlayLabel> output, int limit)
@@ -4001,10 +4056,18 @@ namespace RealmOfAshes.Game
                     break;
                 }
             }
+
+            if (_atmosphere == null)
+                _atmosphere = RoaGlobalMapAtmosphere.Attach(this, RenderSettings.sun, CameraRig);
         }
 
         private void RestoreMapLighting()
         {
+            if (_atmosphere != null)
+            {
+                _atmosphere.DisposeAtmosphere();
+                _atmosphere = null;
+            }
             if (!_mapLightingSaved) return;
             RenderSettings.ambientMode = _savedAmbientMode;
             RenderSettings.ambientSkyColor = _savedAmbientSky;
@@ -4985,6 +5048,35 @@ namespace RealmOfAshes.Game
                                                       float requestedWidth, float requestedHeight,
                                                       out Rect resolved)
         {
+            return TryResolveOverlayLabelRect(point, blocked, occupied, screenWidth,
+                screenHeight, requestedWidth, requestedHeight, 0f, out resolved);
+        }
+
+        /// <summary>
+        /// Вертикальная база плашки для данной точки — то же клэмп-правило, что
+        /// внутри подбора. Каноничный расчёт «липкого» сдвига слота.
+        /// </summary>
+        public static float OverlayLabelBaseY(float pointY, float requestedHeight, int screenHeight)
+        {
+            const float margin = 5f;
+            float height = Mathf.Clamp(requestedHeight, 20f, Mathf.Max(20f, screenHeight - margin * 2f));
+            return Mathf.Clamp(pointY - height * 0.5f, margin,
+                               Mathf.Max(margin, screenHeight - height - margin));
+        }
+
+        /// <summary>
+        /// Подбор слота с памятью: родное место → слот прошлого кадра
+        /// (preferredYOffset относительно базы) → свободный слот со сдвигом.
+        /// Без памяти каждый пересчёт мог перекинуть подпись на другой
+        /// свободный слот, и названия «летали» при панорамировании.
+        /// </summary>
+        public static bool TryResolveOverlayLabelRect(Vector2 point, Rect blocked,
+                                                      IReadOnlyList<Rect> occupied,
+                                                      int screenWidth, int screenHeight,
+                                                      float requestedWidth, float requestedHeight,
+                                                      float preferredYOffset,
+                                                      out Rect resolved)
+        {
             const float margin = 5f;
             float width = Mathf.Clamp(requestedWidth, 60f, Mathf.Max(60f, screenWidth - margin * 2f));
             float height = Mathf.Clamp(requestedHeight, 20f, Mathf.Max(20f, screenHeight - margin * 2f));
@@ -5008,32 +5100,55 @@ namespace RealmOfAshes.Game
             }
 
             float x = Mathf.Clamp(point.x - width * 0.5f, margin, rightEdge - width);
-            float baseY = Mathf.Clamp(point.y - height * 0.5f, margin,
-                                      Mathf.Max(margin, screenHeight - height - margin));
-            for (int attempt = 0; attempt < 7; attempt++)
+            float maxY = Mathf.Max(margin, screenHeight - height - margin);
+            float baseY = Mathf.Clamp(point.y - height * 0.5f, margin, maxY);
+
+            // Подпись не должна уходить от своей точки. Если клэмп к краю экрана
+            // или сайдбару утащил плашку далеко по горизонтали, подпись честно
+            // пропускается, а не паркуется в стороне от маркера.
+            if (Mathf.Abs(x + width * 0.5f - point.x) > width * 0.5f + 24f)
             {
-                int step = attempt == 0 ? 0 : (attempt + 1) / 2;
-                float direction = attempt == 0 || attempt % 2 == 1 ? -1f : 1f;
-                float y = Mathf.Clamp(baseY + direction * step * (height + 3f), margin,
-                                      Mathf.Max(margin, screenHeight - height - margin));
-                var candidate = new Rect(x, y, width, height);
-                if (candidate.Overlaps(blocked)) continue;
-                bool overlaps = false;
-                if (occupied != null)
-                {
-                    for (int i = 0; i < occupied.Count; i++)
-                    {
-                        if (!candidate.Overlaps(occupied[i])) continue;
-                        overlaps = true;
-                        break;
-                    }
-                }
-                if (overlaps) continue;
-                resolved = candidate;
-                return true;
+                resolved = default;
+                return false;
+            }
+
+            // Родное место всегда проверяется первым: как только оно свободно,
+            // подпись возвращается к своей точке.
+            if (OverlayLabelCandidateFree(x, baseY, width, height, blocked, occupied,
+                    out resolved)) return true;
+
+            // Слот прошлого кадра, чтобы занятая подпись не прыгала между
+            // свободными слотами при каждом изменении набора соседей.
+            if (preferredYOffset != 0f
+                && OverlayLabelCandidateFree(x, Mathf.Clamp(baseY + preferredYOffset, margin, maxY),
+                    width, height, blocked, occupied, out resolved)) return true;
+
+            // Максимум один слот вверх или вниз: дальше подпись читалась бы как
+            // принадлежащая соседней точке, поэтому лучше не показать её вовсе.
+            for (int attempt = 1; attempt < 3; attempt++)
+            {
+                float direction = attempt % 2 == 1 ? -1f : 1f;
+                float y = Mathf.Clamp(baseY + direction * (height + 3f), margin, maxY);
+                if (OverlayLabelCandidateFree(x, y, width, height, blocked, occupied,
+                        out resolved)) return true;
             }
             resolved = default;
             return false;
+        }
+
+        private static bool OverlayLabelCandidateFree(float x, float y, float width, float height,
+                                                      Rect blocked, IReadOnlyList<Rect> occupied,
+                                                      out Rect resolved)
+        {
+            var candidate = new Rect(x, y, width, height);
+            resolved = candidate;
+            if (candidate.Overlaps(blocked)) return false;
+            if (occupied != null)
+            {
+                for (int i = 0; i < occupied.Count; i++)
+                    if (candidate.Overlaps(occupied[i])) return false;
+            }
+            return true;
         }
 
         private static GUIStyle Rich()

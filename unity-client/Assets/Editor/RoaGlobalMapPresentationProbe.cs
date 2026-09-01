@@ -35,7 +35,9 @@ namespace RealmOfAshes.EditorTools
                       && !medium.TerritoryFill && medium.TerritoryBorder
                       && medium.Sites && medium.Parties && medium.Threats
                       && medium.InfrastructureLabelLimit == 3
-                      && medium.SiteBucket > near.SiteBucket
+                      // Точки не сворачиваются в кластеры: маркеры разносит
+                      // ApplySiteSeparation, победители по bucket отключены.
+                      && medium.SiteBucket == 0f && near.SiteBucket == 0f
                       && near.TerritoryBorder && near.Influence && near.Sites
                       && near.Parties && near.Threats && near.OverlayLabelLimit == 12
                       && near.InfrastructureLabelLimit == 0,
@@ -49,6 +51,17 @@ namespace RealmOfAshes.EditorTools
                       && !RoaGlobalMap.TargetKindVisibleAtTier("zone",
                           RoaGlobalMap.MapDetailTier.Near, false, true),
                     "скрытые слои всё ещё могут притягивать курсор");
+
+                Check(RoaGlobalMapAtmosphere.DaylightFactor(12f) > 0.95f
+                      && RoaGlobalMapAtmosphere.DaylightFactor(0f) == 0f
+                      && RoaGlobalMapAtmosphere.DaylightFactor(6f) > 0f
+                      && RoaGlobalMapAtmosphere.SunIntensity(12f)
+                         > RoaGlobalMapAtmosphere.SunIntensity(0f)
+                      && RoaGlobalMapAtmosphere.SunPitchDeg(12f)
+                         > RoaGlobalMapAtmosphere.SunPitchDeg(6.2f)
+                      && RoaGlobalMapAtmosphere.DuskFactor(6.2f)
+                         > RoaGlobalMapAtmosphere.DuskFactor(12f),
+                    "время суток карты не различает полдень, рассвет и ночь");
 
                 Check(RoaGlobalMapCanvas.RouteStateLabel(true, true, false, false, false) == "КОНТАКТ"
                       && RoaGlobalMapCanvas.RouteStateLabel(true, false, false, false, false) == "В ПУТИ"

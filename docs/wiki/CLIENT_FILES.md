@@ -70,7 +70,8 @@ partial-части того же класса):
 **Игрок и акторы** — `RoaPlayerController` (ввод, предсказание, отправка
 `state`), `RoaRemotePlayers`, `RoaEnemies` (NPC и существа из
 `enemySnapshot`/`enemyFrame`), `RoaEnemyModels`, `RoaEnemyThreatTelegraph`,
-`RoaActorNameplates`.
+`RoaActorNameplates` (раскладка плашек — см.
+[плашки и подписи](NAMEPLATES_AND_LABELS.md)).
 
 **Бой** — `RoaCombat`, `RoaCombatPreview` (шанс/урон без изменения
 авторитетного состояния), `RoaCombatFx` (пулы трассеров/вспышек, взрывы, речь

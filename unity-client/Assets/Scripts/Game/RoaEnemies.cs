@@ -1731,8 +1731,9 @@ namespace RealmOfAshes.Game
         {
             if (rows == null) return;
             float maxSq = maxDistance * maxDistance;
-            foreach (Enemy enemy in _enemies.Values)
+            foreach (KeyValuePair<string, Enemy> pair in _enemies)
             {
+                Enemy enemy = pair.Value;
                 if (enemy == null || enemy.Dead || enemy.Root == null || enemy.Snapshot == null) continue;
                 if (enemy.Gate != null && !enemy.Gate.IsVisible) continue;
                 Vector3 delta = enemy.Root.transform.position - origin;
@@ -1747,6 +1748,7 @@ namespace RealmOfAshes.Game
                 bool hostile = ReadBoolean(enemy.Snapshot["hostileToPlayer"], true);
                 rows.Add(new RoaActorNameplates.Entry
                 {
+                    Key = "npc:" + pair.Key,
                     Name = important ? enemy.Snapshot["name"]?.ToString() ?? "Торговец" : string.Empty,
                     Faction = NpcCombatFactionLine(
                         enemy.Snapshot["faction"]?.ToString(), hostile,

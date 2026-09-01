@@ -23,7 +23,11 @@ namespace RealmOfAshes.EditorTools
             "Shader Graphs/glTF-pbrMetallicRoughness",
             "Shader Graphs/glTF-pbrSpecularGlossiness",
             "Shader Graphs/glTF-unlit",
-            "Shader Graphs/glTF-pbrMetallicRoughness-Clearcoat"
+            "Shader Graphs/glTF-pbrMetallicRoughness-Clearcoat",
+            // Дымка края глобальной карты (RoaGlobalMapAtmosphere) строит
+            // материал через Shader.Find — без явного включения стриппинг
+            // выкидывает шейдер из player-сборки.
+            "Sprites/Default"
         };
 
         public int callbackOrder => -1000;

@@ -187,29 +187,36 @@ simulation tick. Production Nginx сжимает `application/json` через g
 Сохранение sim state coalesced: dirty-state не записывается чаще
 `WASTELAND_SIM_SAVE_INTERVAL_MS`, кроме явно принудительных операций.
 
-## Загрузка клиента
+## Раздача клиентов
 
-`public/js/game.js` выполняет `Promise.all` для collider manifest и 60 JS-частей.
-После загрузки:
+Корень сайта отдаёт Unity WebGL-сборку `public/unity/index.html`; если сборки
+нет (dev/CI без Unity), сервер отдаёт legacy-клиент. Прежний Three.js-клиент
+всегда доступен по `/legacy/`.
 
-1. проверяется schema collider-каталога;
-2. части объединяются в порядке `GAME_SCRIPT_PARTS`;
-3. весь код исполняется в общей области через `new Function`.
+Для `/unity/*`:
 
-Это устраняет последовательную блокирующую загрузку, но сохраняет старый
-порядок объявлений клиента.
+- предсжатые `.br`/`.gz` отдаются с `Content-Encoding`, чтобы браузер
+  распаковывал их сам; `.unityweb` (decompression fallback) — без
+  `Content-Encoding`;
+- `/unity/Build/*` — `immutable` (имена файлов — хэши содержимого);
+- `/unity/` и `index.html` — `no-cache`.
+
+`/assets/models-lite/*` отдаёт облегчённые GLB с фолбэком на
+`/assets/models/*`.
 
 ## Cache policy Node.js
 
 Express выставляет:
 
-- `no-cache` для `/`, `index.html`, `js/game.js` и `css/game.css`;
-- `public, max-age=31536000, immutable` для ресурсов с query `?v=...`;
+- `no-cache` для `/`, `index.html`, `/unity/index.html`, `js/game.js` и
+  `css/game.css`;
+- `public, max-age=31536000, immutable` для `/unity/Build/*` и ресурсов с
+  query `?v=...`;
 - `public, max-age=86400` для остальных static assets;
 - ETag и Last-Modified включены.
 
-Shell-файлы остаются revalidation points, а versioned части, модели и текстуры
-могут долго жить в кэше.
+Shell-файлы остаются revalidation points, а versioned сборки, модели и
+текстуры могут долго жить в кэше.
 
 ## Production Nginx
 
@@ -264,6 +271,10 @@ Smoke дополнительно фиксирует архитектурные �
 `attackToken`, ревизионные и идемпотентные действия экипировки за 1 AP, запрет
 переэкипировки через `state`/бой, атомарный отказ для отсутствующего runtime-id,
 а также отказ без расхода ресурсов при слишком ранней атаке или недостатке AP.
+
+Проверки `check-client-js.js` и `check-client-state-integrity.js` покрывают
+**legacy** браузерный клиент (`/legacy/`); Unity-клиент проверяется
+редакторскими пробами, `check:unity-*` и `check:unity-parity`.
 
 `check-client-js.js` исполняет generation-drain сохранений: single-flight,
 coalescing новых поколений, максимум две записи при непрерывном producer, dirty

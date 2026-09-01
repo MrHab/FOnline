@@ -1,5 +1,32 @@
 # Журнал изменений Realm of Ashes
 
+## Wiki: Unity — единственный игровой клиент — 2026-09-01
+
+Документационное обновление без изменения кода: wiki приведена к текущему
+состоянию проекта, в котором игра поставляется только Unity-клиентом
+(`unity-client/`), а браузерный Three.js-клиент остаётся по `/legacy/` как
+источник parity-проверки.
+
+- Индекс, обзор и архитектура переписаны под пару «авторитетный Node.js-сервер +
+  Unity-клиент»; добавлен раздел про запуск Unity-клиента.
+- `CLIENT_FILES.md` описывает структуру `unity-client/` (Net/World/Game,
+  редакторские пробы, Tools, пакеты) вместо JS-частей `public/js/game/`.
+- `CAMERA_AND_VISION.md` и `GRAPHICS_SETTINGS.md` переписаны под Unity:
+  `RoaCameraRig`, `RoaFogOfWar`, `RoaRoofCutaway`, шесть URP-пресетов,
+  WebGL-поставка и models-lite.
+- Страницы Three.js-теней (`DYNAMIC_SHADOWS.md`, `SHADOWS_INIT_AND_BUDGET.md`)
+  перенесены в `docs/wiki/archive/`.
+- `PLAYER_SYSTEM.md`, `INVENTORY_SYSTEM.md`, `ENEMY_SYSTEM.md`,
+  `TRADER_SYSTEM.md` обновлены: управление и интерфейсы Unity, отсутствие
+  offline-режима, потоки `enemySnapshot`/`enemyFrame`.
+- `SERVER_FILES.md` дополнен полным списком активных модулей `src/server/`
+  (AI, активности, комнаты, live-регионы и др.); `SERVER_RUNTIME.md` описывает
+  раздачу Unity WebGL и legacy-клиента.
+- `LOCATIONS_AND_WORLD.md`: 30 локаций, 118 мировых точек, релизный срез
+  `location-release`.
+- `KNOWN_BUGS.md` и `ROADMAP.md` актуализированы: WebGL-долги, вывод legacy из
+  обязательного контура, кириллический путь при batch-сборке.
+
 ## v7.81.0 — Мимика и реакции персонажей — 2026-08-06
 
 - У игрока, сетевых персонажей и человекоподобных НПС появились естественные нерегулярные моргания.

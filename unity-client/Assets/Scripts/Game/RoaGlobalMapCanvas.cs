@@ -163,8 +163,129 @@ namespace RealmOfAshes.Game
         {
             if (_root == null || !_root.activeInHierarchy) return;
             RefreshHoverCard();
+            RefreshRegionLabels();
             RefreshMapLabels();
             UpdateWorldChangeToastVisual();
+        }
+
+        // ------------------------------------------------------------------
+        // Картографические названия регионов: крупный разреженный текст без
+        // пластины, только на ярусе «РЕГИОН» — как имена провинций на карте
+        // кампании. Слой лежит ПОД обычными подписями и не участвует в их
+        // анти-наложении: регионов мало и они далеко друг от друга.
+
+        private readonly List<RoaGlobalMap.RegionLabel> _regionLabelFrames =
+            new List<RoaGlobalMap.RegionLabel>();
+        private readonly List<Text> _regionLabelPool = new List<Text>();
+        private RectTransform _regionLabelLayer;
+        public int ActiveRegionLabelCount { get; private set; }
+
+        /// <summary>«СТАРЫЙ КЛИМ» → «С Т А Р Ы Й  К Л И М» — картографская разрядка.</summary>
+        public static string SpacedRegionName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return string.Empty;
+            var builder = new System.Text.StringBuilder(name.Length * 2);
+            string upper = name.Trim().ToUpperInvariant();
+            for (int i = 0; i < upper.Length; i++)
+            {
+                char symbol = upper[i];
+                if (symbol == ' ') { builder.Append("  "); continue; }
+                builder.Append(symbol);
+                if (i < upper.Length - 1 && upper[i + 1] != ' ') builder.Append(' ');
+            }
+            return builder.ToString();
+        }
+
+        private readonly List<Rect> _occupiedRegionRects = new List<Rect>();
+
+        private void RefreshRegionLabels()
+        {
+            bool wanted = Map != null && Map.DetailTier == RoaGlobalMap.MapDetailTier.Far;
+            Camera camera = Camera.main;
+            int visible = 0;
+            if (wanted && camera != null && _regionLabelLayer != null
+                && Map.CollectRegionLabels(_regionLabelFrames) > 0)
+            {
+                _occupiedRegionRects.Clear();
+                for (int i = 0; i < _regionLabelFrames.Count; i++)
+                {
+                    RoaGlobalMap.RegionLabel frame = _regionLabelFrames[i];
+                    Vector3 projected = camera.WorldToScreenPoint(Map.RegionLabelWorld(frame));
+                    if (projected.z <= 0f || projected.x < 0f || projected.x > Screen.width
+                        || projected.y < 0f || projected.y > Screen.height) continue;
+                    string text = SpacedRegionName(frame.Name);
+                    // Ширина по факту текста: разреженный шрифт 17px ≈ 10px/знак.
+                    float width = Mathf.Clamp(text.Length * 10f, 120f, 560f);
+                    if (!TryPlaceRegionRect(new Vector2(projected.x,
+                            Screen.height - projected.y), width, out Rect placed)) continue;
+                    Text label = EnsureRegionLabel(visible++);
+                    label.gameObject.SetActive(true);
+                    label.text = text;
+                    label.color = new Color(
+                        Mathf.Lerp(frame.Color.r, 1f, 0.35f),
+                        Mathf.Lerp(frame.Color.g, 1f, 0.35f),
+                        Mathf.Lerp(frame.Color.b, 1f, 0.35f), 0.52f);
+                    label.rectTransform.anchoredPosition = CanvasPositionForScreenRect(
+                        placed, Screen.width, Screen.height, _canvas.scaleFactor);
+                }
+            }
+            for (int i = visible; i < _regionLabelPool.Count; i++)
+                if (_regionLabelPool[i].gameObject.activeSelf)
+                    _regionLabelPool[i].gameObject.SetActive(false);
+            ActiveRegionLabelCount = visible;
+        }
+
+        /// <summary>
+        /// Крупные имена соседних владений не должны наезжать друг на друга:
+        /// центроиды регионов могут стоять рядом. Пробуем центр, затем сдвиги
+        /// вниз/вверх; если места нет — имя меньшего региона пропускается.
+        /// </summary>
+        private bool TryPlaceRegionRect(Vector2 point, float width, out Rect placed)
+        {
+            const float height = 34f;
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                int step = attempt == 0 ? 0 : (attempt + 1) / 2;
+                float direction = attempt == 0 || attempt % 2 == 1 ? 1f : -1f;
+                var candidate = new Rect(point.x - width * 0.5f,
+                    point.y - height * 0.5f + direction * step * (height + 6f),
+                    width, height);
+                bool overlaps = false;
+                for (int i = 0; i < _occupiedRegionRects.Count; i++)
+                {
+                    if (!candidate.Overlaps(_occupiedRegionRects[i])) continue;
+                    overlaps = true;
+                    break;
+                }
+                if (overlaps) continue;
+                _occupiedRegionRects.Add(candidate);
+                placed = candidate;
+                return true;
+            }
+            placed = default;
+            return false;
+        }
+
+        private Text EnsureRegionLabel(int index)
+        {
+            while (_regionLabelPool.Count <= index)
+            {
+                Text label = Label("RegionLabel:" + _regionLabelPool.Count, _regionLabelLayer,
+                    17, TextAnchor.MiddleCenter, Mono, FontStyle.Bold);
+                label.raycastTarget = false;
+                label.horizontalOverflow = HorizontalWrapMode.Overflow;
+                label.verticalOverflow = VerticalWrapMode.Overflow;
+                label.rectTransform.anchorMin = label.rectTransform.anchorMax
+                    = new Vector2(0.5f, 0.5f);
+                label.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+                label.rectTransform.sizeDelta = new Vector2(420f, 34f);
+                var shadow = label.gameObject.AddComponent<Shadow>();
+                shadow.effectColor = new Color(0f, 0f, 0f, 0.66f);
+                shadow.effectDistance = new Vector2(1f, -1f);
+                label.gameObject.SetActive(false);
+                _regionLabelPool.Add(label);
+            }
+            return _regionLabelPool[index];
         }
 
         // ------------------------------------------------------------------
@@ -201,6 +322,11 @@ namespace RealmOfAshes.Game
             _gestureHelp.text = "ЛКМ — МАРШРУТ  ·  WASD/ТЯНУТЬ — ОБЗОР  ·  ПКМ — ИНВ. Y  ·  КОЛЕСО — МАСШТАБ  ·  ЗАЖАТЬ КОЛЕСО — УГОЛ";
             Place(_gestureHelp.rectTransform, 0f, 0f, 1f, 0f,
                   new Vector2(18f, 16f), new Vector2(-SidebarWidth - 28f, 46f));
+
+            // Слой регионных имён создаётся раньше слоя подписей — он рисуется
+            // под пластинами городов и событий.
+            _regionLabelLayer = Child("RegionLabels", rootRect);
+            Stretch(_regionLabelLayer, 0f);
 
             _mapLabelLayer = Child("MapOverlayLabels", rootRect);
             Stretch(_mapLabelLayer, 0f);

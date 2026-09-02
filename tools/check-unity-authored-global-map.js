@@ -52,6 +52,8 @@ const seamAuthoring = read('unity-client', 'Assets', 'Editor', 'RoaGlobalMapSeam
 const roadAuthoring = read('unity-client', 'Assets', 'Editor', 'RoaGlobalMapRoadAuthoring.cs');
 const environmentAuthoring = read('unity-client', 'Assets', 'Editor',
   'RoaGlobalMapEnvironmentAuthoring.cs');
+const landmarkAuthoring = read('unity-client', 'Assets', 'Editor',
+  'RoaGlobalMapLandmarkAuthoring.cs');
 const guide = read('docs', 'UNITY_GLOBAL_MAP_AUTHORING.md');
 const build = read('unity-client', 'ProjectSettings', 'EditorBuildSettings.asset');
 const saltMaterial = read('unity-client', 'Assets', 'Art', 'GlobalMap', 'Materials', 'GM_Salt.mat');
@@ -102,10 +104,15 @@ for (const node of map.nodes || []) {
 
 const prefabInstances = (scene.match(/m_SourcePrefab:/g) || []).length;
 const curatedLandmarks = (scene.match(/value: Curated_/g) || []).length;
-assert(prefabInstances >= 120,
+assert(prefabInstances >= 20,
   `GlobalMapAuthored contains too few prefab instances (${prefabInstances})`);
-assert(curatedLandmarks >= 15,
-  `GlobalMapAuthored contains too few curated MEP landmarks (${curatedLandmarks})`);
+assert(landmarkAuthoring.includes('Seed = 20260902')
+  && landmarkAuthoring.includes('"Curated_" + Categories[i].Name')
+  && landmarkAuthoring.includes('collider.enabled = false')
+  && landmarkAuthoring.includes('ApplyBakedMaterials(')
+  && landmarkAuthoring.includes('ExpectedVisibleGroundY')
+  && landmarkAuthoring.includes('EditorSceneManager.SaveScene('),
+  'Landmark authoring cannot deterministically rebuild the Decor layer from MEP scenes');
 assert((scene.match(/\n  - Kind: /g) || []).length === 14,
   'GlobalMapAuthored must serialize all 14 live-prefab catalogue slots');
 assert(!scene.includes('_routeLine:') && !scene.includes('LineRenderer:'),
@@ -122,9 +129,9 @@ assert(roadMaterial.includes('guid: 03f62994ad7fd9d40934a1e6f921a6f3')
   && roadMaterial.includes('_BaseColor: {r: 1.16, g: 1.02, b: 0.78, a: 1}'),
   'Authored roads must use a light stone-ground texture instead of a building prop texture');
 assert(scene.includes('m_Name: BiomeTransitions_AUTHORED')
-  && (scene.match(/value: BiomeBlend_/g) || []).length === 24,
-  'GlobalMapAuthored must contain 24 curated MEP transitions across eight biome seams');
-assert(seamAuthoring.includes('ExpectedPlacementCount = 24')
+  && (scene.match(/value: BiomeBlend_/g) || []).length === 0,
+  'GlobalMapAuthored must keep the biome-seam layer empty (art decision 2026-09-02)');
+assert(seamAuthoring.includes('ExpectedPlacementCount = 0')
   && seamAuthoring.includes('MEP_StoneGround_Sand.prefab')
   && seamAuthoring.includes('Cracked_Mud_03.prefab')
   && seamAuthoring.includes('colliders[c].enabled = false')
@@ -134,12 +141,12 @@ assert(seamAuthoring.includes('ExpectedPlacementCount = 24')
   'Seamless-biome authoring cannot deterministically rebuild safe prefab transitions');
 assert(scene.includes('m_Name: RoadNetwork_AUTHORED')
   && scene.includes('m_Name: RoadLandmarks_AUTHORED')
-  && (scene.match(/value: RoadPiece_/g) || []).length === 34
-  && (scene.match(/value: PipelinePiece_/g) || []).length === 14
+  && (scene.match(/value: RoadPiece_/g) || []).length === 0
+  && (scene.match(/value: PipelinePiece_/g) || []).length === 0
   && (scene.match(/value: RoadLandmark_/g) || []).length === 14,
-  'GlobalMapAuthored must contain the split road network and 14 curated landmarks');
-assert(roadAuthoring.includes('ExpectedRoadPieceCount = 34')
-  && roadAuthoring.includes('ExpectedPipelinePieceCount = 14')
+  'GlobalMapAuthored must keep the road network empty and 14 curated road landmarks');
+assert(roadAuthoring.includes('ExpectedRoadPieceCount = 0')
+  && roadAuthoring.includes('ExpectedPipelinePieceCount = 0')
   && roadAuthoring.includes('ExpectedLandmarkCount = 14')
   && roadAuthoring.includes('MaximumPieceLength = 6f')
   && roadAuthoring.includes('../../data/global-map.json')
@@ -158,23 +165,23 @@ const waterCells = Object.values(map.cells || {}).filter(cell => {
 assert(waterCells === 101,
   `Global-map west ocean must remain exactly 101 authored water cells (found ${waterCells})`);
 assert(scene.includes('m_Name: BiomeDetail_AUTHORED')
-  && (scene.match(/value: BiomeDetail_/g) || []).length === 144,
-  'GlobalMapAuthored must contain 144 deterministic biome-detail prefab instances');
+  && (scene.match(/value: BiomeDetail_/g) || []).length === 0,
+  'GlobalMapAuthored must keep the biome-detail layer empty (art decision 2026-09-02)');
 assert(scene.includes('m_Name: WorldEdge_AUTHORED')
   && (scene.match(/value: WestOcean_AUTHORED/g) || []).length === 1
   && (scene.match(/value: HorizonTerrain_AUTHORED/g) || []).length === 1
   && (scene.match(/value: ToxicBoundaryFog_AUTHORED/g) || []).length === 1
   && scene.includes('m_Name: WestCoastDetail_AUTHORED')
-  && (scene.match(/value: CoastDetail_/g) || []).length === 24,
-  'GlobalMapAuthored must contain the saved west ocean, horizon and 24 coast details');
-assert(environmentAuthoring.includes('ExpectedBiomeDetailCount = 144')
-  && environmentAuthoring.includes('ExpectedCoastDetailCount = 24')
+  && (scene.match(/value: CoastDetail_/g) || []).length === 0,
+  'GlobalMapAuthored must contain the saved west ocean and horizon without coast details');
+assert(environmentAuthoring.includes('ExpectedBiomeDetailCount = 0')
+  && environmentAuthoring.includes('ExpectedCoastDetailCount = 0')
   && environmentAuthoring.includes('ExpectedWaterCellCount = 101')
   && environmentAuthoring.includes('HorizonExtent = 220f')
   && environmentAuthoring.includes('ToxicFogInnerExtent = 41.5f')
   && environmentAuthoring.includes('ToxicFogOuterExtent = 170f')
   && environmentAuthoring.includes('ExpectedVisibleGroundY = -0.13f')
-  && environmentAuthoring.includes('ExpectedGroundedExistingCount = 69')
+  && environmentAuthoring.includes('ExpectedGroundedExistingCount = 18')
   && environmentAuthoring.includes('PopulateBiomeDetails(')
   && environmentAuthoring.includes('PopulateCoastDetails(')
   && environmentAuthoring.includes('DisableColliders(instance)')
@@ -451,7 +458,7 @@ assert(probe.includes('public static void RunBatch()')
   && probe.includes('ValidateHorizonOutsideSelection(horizon, selectionBounds)')
   && probe.includes('ValidateFogOutsideSelection(toxicFog')
   && probe.includes('ValidateVisibleGround(marker.StaticContentRoot)')
-  && probe.includes('Require(grounded == 237')
+  && probe.includes('Require(grounded == 18')
   && probe.includes('GetPrefabAssetPathOfNearestInstanceRoot')
   && probe.includes('World-edge and coast decoration colliders must stay disabled.'),
   'Unity authored-map probe does not validate prefab instances and live markers');

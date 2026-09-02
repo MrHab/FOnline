@@ -49,6 +49,7 @@ WebGL-мост живёт в `Assets/Plugins/WebGL/RoaWebSocket.jslib`; прот
 | `RoaGroundDressing.cs` | процедурная растительность и разбивка однообразия земли |
 | `RoaEnvironmentPalette.cs` | палитры окружения локаций |
 | `RoaGlobalMapData.cs`, `RoaUnityGlobalMapScene.cs`, `RoaUnityLocationScene.cs` | данные и prefab-only сцены глобальной карты и локаций |
+| `RoaGlobalMapRelief.cs` | запечённое поле высот карты (ассет в Resources); рантайм сажает маркеры на рельеф через `PointToWorld` |
 
 ## Игровой слой (`Assets/Scripts/Game/`)
 
@@ -125,11 +126,21 @@ WebGL), `RoaUiScale` (единый CanvasScaler 1920×1080, mobile 1280×720),
   завершает Unity с кодом 1 при любой ошибке.
 - Генераторы: `RoaUiPrefabGenerator` (24 редактируемых UI-префаба),
   `RoaModelPrefabGenerator`, `RoaOldKlimSceneGenerator`, авторские инструменты
-  глобальной карты (`RoaGlobalMap*Authoring`).
+  глобальной карты (`RoaGlobalMap*Authoring`), включая генератор рельефа
+  `RoaGlobalMapReliefAuthoring` (поле высот из авторских данных, пересборка
+  тайлов земли и пересадка декораций), генератор окружения
+  `RoaGlobalMapMountainsRiversAuthoring` (горы из композиций демо-сцен MEP,
+  реки стоком) и генератор ориентиров `RoaGlobalMapLandmarkAuthoring`
+  (слой Decor из композиций демо-сцен по биомам карты).
 - `RoaWebGlBuild.cs` — меню «Realm of Ashes → Build WebGL», результат в
   `public/unity/` (в .gitignore).
 - `RoaCredentialGuard.cs` — защита от коммита включённого `AutoLoginOnStart`
   с заполненными учётными данными.
+- `RoaAgentGate.cs` — файловый канал команд для внешней автоматизации
+  (`Library/roa-agent-request.json` → `roa-agent-response.json`): ping,
+  `AssetDatabase.Refresh` без фокуса окна, детерминированные снимки авторской
+  глобальной карты и запуск пунктов меню Realm of Ashes; сцены не открывает и
+  не сохраняет.
 
 ## Сборка и проверка без редактора
 

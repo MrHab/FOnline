@@ -16,7 +16,9 @@ namespace RealmOfAshes.EditorTools
     public static class RoaGlobalMapSeamAuthoring
     {
         public const string LayerName = "BiomeTransitions_AUTHORED";
-        public const int ExpectedPlacementCount = 24;
+        // Художественное решение 2026-09-02: стыки биомов отключены — карта
+        // сведена к рельефу. Расстановка Placements сохранена для возврата.
+        public const int ExpectedPlacementCount = 0;
         public const float GroundSurfaceY = -0.13f;
         public const float GroundEmbedDepth = 0.105f;
 
@@ -127,7 +129,8 @@ namespace RealmOfAshes.EditorTools
                 SceneManager.MoveGameObjectToScene(layer, scene);
                 layer.transform.SetParent(marker.StaticContentRoot, false);
 
-                for (int i = 0; i < Placements.Length; i++)
+                for (int i = 0; i < Mathf.Min(Placements.Length,
+                         ExpectedPlacementCount); i++)
                 {
                     Placement placement = Placements[i];
                     GameObject source = placement.Stone ? stonePrefab : crackedPrefab;
@@ -164,7 +167,8 @@ namespace RealmOfAshes.EditorTools
                 if (!EditorSceneManager.SaveScene(scene))
                     throw new InvalidOperationException("GlobalMapAuthored could not be saved.");
                 Debug.Log("[ГЛОБАЛЬНАЯ КАРТА 3.1] бесшовные биомы сохранены: "
-                          + Placements.Length + " MEP-перехода по 8 границам.", marker);
+                          + Mathf.Min(Placements.Length, ExpectedPlacementCount)
+                          + " MEP-переходов.", marker);
             }
             finally
             {

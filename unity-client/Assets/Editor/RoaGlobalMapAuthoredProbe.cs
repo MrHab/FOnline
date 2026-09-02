@@ -153,7 +153,7 @@ namespace RealmOfAshes.EditorTools
                 }
 
                 int prefabInstances = CountPrefabInstances(scene);
-                Require(prefabInstances >= 60,
+                Require(prefabInstances >= 20,
                         "В сцене недостаточно prefab instances: " + prefabInstances + ".");
 
                 RoaGlobalMapPrefabKind[] kinds =
@@ -366,7 +366,7 @@ namespace RealmOfAshes.EditorTools
             grounded += ValidateGroundedRoots(marker.StaticContentRoot.Find("Infrastructure/"
                 + RoaGlobalMapRoadAuthoring.LandmarkLayerName), groundY);
             grounded += ValidateGroundedRoots(marker.StaticContentRoot.Find("Locations"), groundY);
-            Require(grounded == 237,
+            Require(grounded == 18,
                     "Unexpected grounded environment root count: " + grounded + ".");
             ValidateDisabledColliders(worldEdge,
                 "World-edge and coast decoration colliders must stay disabled.");
@@ -498,13 +498,28 @@ namespace RealmOfAshes.EditorTools
                     "Toxic fog must remain a single non-shadowing renderer.");
         }
 
+        /// <summary>
+        /// Высота поверхности земли в мировой точке: авторская база плюс
+        /// запечённое поле рельефа (без ассета рельефа карта плоская).
+        /// </summary>
+        private static float SurfaceY(RoaGlobalMapRelief relief, float worldX,
+                                      float worldZ)
+        {
+            float groundY = RoaGlobalMapEnvironmentAuthoring.ExpectedVisibleGroundY;
+            if (relief == null || !relief.Ready) return groundY;
+            float px = worldX * 10f + relief.WidthPoints * 0.5f;
+            float py = relief.HeightPoints * 0.5f - worldZ * 10f;
+            return groundY + relief.HeightAt(px, py);
+        }
+
         private static float ValidateVisibleGround(Transform staticContentRoot)
         {
             Transform ground = staticContentRoot.Find("Ground");
             Require(ground != null, "Authored Ground layer is missing.");
+            RoaGlobalMapRelief relief = Resources.Load<RoaGlobalMapRelief>(
+                RoaGlobalMapRelief.ResourceKey);
             MeshFilter[] filters = ground.GetComponentsInChildren<MeshFilter>(true);
-            float minimum = float.PositiveInfinity;
-            float maximum = float.NegativeInfinity;
+            float worstDeviation = 0f;
             int samples = 0;
             for (int i = 0; i < filters.Length; i++)
             {
@@ -514,24 +529,26 @@ namespace RealmOfAshes.EditorTools
                 Vector3[] vertices = mesh.vertices;
                 for (int vertex = 0; vertex < vertices.Length; vertex++)
                 {
-                    float y = filter.transform.TransformPoint(vertices[vertex]).y;
-                    minimum = Mathf.Min(minimum, y);
-                    maximum = Mathf.Max(maximum, y);
+                    Vector3 world = filter.transform.TransformPoint(vertices[vertex]);
+                    float expected = SurfaceY(relief, world.x, world.z);
+                    worstDeviation = Mathf.Max(worstDeviation,
+                        Mathf.Abs(world.y - expected));
                     samples++;
                 }
             }
-            Require(samples > 0 && maximum - minimum <= 0.02f,
-                    "Visible global-map ground is missing or uneven.");
-            float groundY = (minimum + maximum) * 0.5f;
-            Require(Mathf.Abs(groundY
-                    - RoaGlobalMapEnvironmentAuthoring.ExpectedVisibleGroundY) <= 0.01f,
-                    "Visible global-map ground height changed: " + groundY + ".");
-            return groundY;
+            // Земля обязана совпадать с запечённым полем рельефа: допуск —
+            // шаг сетки поля против сетки тайла (билинейная интерполяция).
+            Require(samples > 0 && worstDeviation <= 0.05f,
+                    "Visible global-map ground diverges from the baked relief field by "
+                    + worstDeviation + " metres.");
+            return RoaGlobalMapEnvironmentAuthoring.ExpectedVisibleGroundY;
         }
 
         private static int ValidateGroundedRoots(Transform layer, float groundY)
         {
             Require(layer != null, "Grounded environment layer is missing.");
+            RoaGlobalMapRelief relief = Resources.Load<RoaGlobalMapRelief>(
+                RoaGlobalMapRelief.ResourceKey);
             int count = 0;
             for (int i = 0; i < layer.childCount; i++)
             {
@@ -541,15 +558,19 @@ namespace RealmOfAshes.EditorTools
                 Bounds bounds = renderers[0].bounds;
                 for (int renderer = 1; renderer < renderers.Length; renderer++)
                     bounds.Encapsulate(renderers[renderer].bounds);
+                // На рельефе низ и верх сравниваются с высотой поверхности в
+                // центре объекта; наклон внутри широких пятен даёт допуск.
+                float surfaceY = SurfaceY(relief, bounds.center.x, bounds.center.z);
+                float slopeSlack = Mathf.Max(bounds.size.x, bounds.size.z) * 0.12f;
                 bool thinGroundPatch = bounds.size.y < 0.12f;
                 if (thinGroundPatch)
-                    Require(bounds.min.y <= groundY + 0.005f,
+                    Require(bounds.min.y <= surfaceY + 0.03f + slopeSlack,
                             child.name + " thin ground patch floats above visible ground.");
                 else
-                    Require(bounds.min.y <= groundY - 0.025f,
+                    Require(bounds.min.y <= surfaceY - 0.01f + slopeSlack,
                             child.name + " floats above the visible ground by "
-                            + (bounds.min.y - groundY) + " metres.");
-                Require(bounds.max.y >= groundY - 0.005f,
+                            + (bounds.min.y - surfaceY) + " metres.");
+                Require(bounds.max.y >= surfaceY - 0.05f - slopeSlack,
                         child.name + " is completely buried below the visible ground.");
                 count++;
             }

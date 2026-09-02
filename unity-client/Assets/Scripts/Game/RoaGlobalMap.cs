@@ -84,19 +84,25 @@ namespace RealmOfAshes.Game
 
         public static StrategicVisualProfile StrategicProfile(float mapSpan)
         {
+            // Туман начинается ЗА играбельной диорамой: при прежнем 1.12×span
+            // дальняя половина карты на обзорном зуме тонула в черноте.
+            // Ambient поднят до читаемого дневного уровня — карта светлая даже
+            // без пост-обработки (редакторские снимки и старые пресеты).
+            // 1.28×span: играбельная диорама целиком до тумана, а токсичное
+            // окружение и горизонт мягко растворяются, не показывая тайлинг.
             float span = Mathf.Max(40f, mapSpan);
-            float fogStart = Mathf.Max(72f, span * 1.12f);
+            float fogStart = Mathf.Max(96f, span * 1.28f);
             return new StrategicVisualProfile
             {
-                CameraBackground = new Color(0.035f, 0.031f, 0.025f, 1f),
-                FogColor = new Color(0.048f, 0.041f, 0.032f, 1f),
-                AmbientSky = new Color(0.48f, 0.405f, 0.31f, 1f),
-                AmbientEquator = new Color(0.315f, 0.265f, 0.195f, 1f),
-                AmbientGround = new Color(0.125f, 0.10f, 0.072f, 1f),
-                AmbientIntensity = 0.92f,
+                CameraBackground = new Color(0.052f, 0.046f, 0.037f, 1f),
+                FogColor = new Color(0.055f, 0.048f, 0.038f, 1f),
+                AmbientSky = new Color(0.63f, 0.545f, 0.42f, 1f),
+                AmbientEquator = new Color(0.42f, 0.355f, 0.26f, 1f),
+                AmbientGround = new Color(0.16f, 0.13f, 0.095f, 1f),
+                AmbientIntensity = 1.18f,
                 ReflectionIntensity = 0.32f,
                 FogStart = fogStart,
-                FogEnd = Mathf.Max(fogStart + 38f, span * 1.72f)
+                FogEnd = Mathf.Max(fogStart + 38f, span * 1.95f)
             };
         }
 
@@ -156,10 +162,13 @@ namespace RealmOfAshes.Game
                         InfrastructureLabelLimit = 3
                     };
                 default:
+                    // РЕГИОН: заливка владений вместе с границами — контур
+                    // региона читается сразу, названия рисует канва (регионные
+                    // картографические подписи видны только на этом ярусе).
                     return new MapPresentationProfile
                     {
                         TerritoryFill = true,
-                        TerritoryBorder = false,
+                        TerritoryBorder = true,
                         Influence = false,
                         Settlements = true,
                         Sites = false,
@@ -1131,6 +1140,7 @@ namespace RealmOfAshes.Game
             if (_authoredScene == null || _authoredScene.DynamicContentRoot == null) return;
             _authoredScene.ClearDynamicContent();
             _dynamicRoot = _authoredScene.DynamicContentRoot.gameObject;
+            BuildRimRidges();
             IndexExistingPartyActors();
             _routeVisuals.Clear();
             _routeVisualBaseScales.Clear();
@@ -1143,6 +1153,7 @@ namespace RealmOfAshes.Game
             _activityHighlightKey = string.Empty;
             _dynamicTargets.Clear();
             _territoryByCell.Clear();
+            _regionAccumulators.Clear();
             _factionSummary = string.Empty;
             TerritoryCellCount = 0;
             TerritoryBorderCount = 0;
@@ -1494,7 +1505,10 @@ namespace RealmOfAshes.Game
 
                 Color baseColor = TerritoryColor(row, owner);
                 float strength = Mathf.Clamp(Float(row["strength"], 0.3f), 0.1f, 1f);
-                float alpha = Mathf.Round((0.025f + strength * 0.065f) * 100f) / 100f;
+                // Заливка видна только на «РЕГИОН» (Medium/Near показывают лишь
+                // границы), поэтому она достаточно плотная, чтобы владение
+                // читалось как закрашенная провинция, а не как намёк.
+                float alpha = Mathf.Round((0.10f + strength * 0.13f) * 100f) / 100f;
                 Color fillColor = new Color(baseColor.r, baseColor.g, baseColor.b, alpha);
 
                 GameObject cell = InstantiateLivePrefab(RoaGlobalMapPrefabKind.TerritoryCell,
@@ -1520,9 +1534,200 @@ namespace RealmOfAshes.Game
                     if (PlaceTerritoryBorder(cx, cy, side, cellPoints, cellWorld, coreColor) != null)
                         TerritoryBorderCount++;
                 }
+
+                RegionAccumulator accumulator;
+                if (!_regionAccumulators.TryGetValue(owner, out accumulator))
+                    accumulator = new RegionAccumulator { Color = baseColor };
+                accumulator.SumX += (cx + 0.5f) * cellPoints;
+                accumulator.SumY += (cy + 0.5f) * cellPoints;
+                accumulator.Cells++;
+                _regionAccumulators[owner] = accumulator;
             }
 
+            RebuildRegionLabels(cellPoints);
             _factionSummary = ComposeFactionSummary();
+        }
+
+        // ------------------------------------------------------------------
+        // Картографические названия регионов: по одному на владение фракции,
+        // в центроиде её территориальных клеток. Показываются канвой только на
+        // ярусе «РЕГИОН» — вместе с включёнными там границами территории они
+        // отвечают на вопрос «чья это земля и где она кончается».
+
+        public struct RegionLabel
+        {
+            public string Owner;
+            public string Name;
+            public Color Color;
+            public GlobalMapPoint Point;
+            public int Cells;
+        }
+
+        private struct RegionAccumulator
+        {
+            public float SumX;
+            public float SumY;
+            public int Cells;
+            public Color Color;
+        }
+
+        private readonly Dictionary<string, RegionAccumulator> _regionAccumulators =
+            new Dictionary<string, RegionAccumulator>();
+        private readonly List<RegionLabel> _regionLabels = new List<RegionLabel>();
+
+        /// <summary>Минимум клеток, чтобы владение получило подпись региона.</summary>
+        public const int RegionLabelMinimumCells = 6;
+
+        private void RebuildRegionLabels(float cellPoints)
+        {
+            _regionLabels.Clear();
+            foreach (KeyValuePair<string, RegionAccumulator> pair in _regionAccumulators)
+            {
+                RegionAccumulator accumulator = pair.Value;
+                if (accumulator.Cells < RegionLabelMinimumCells) continue;
+                _regionLabels.Add(new RegionLabel
+                {
+                    Owner = pair.Key,
+                    Name = RegionShortName(pair.Key),
+                    Color = accumulator.Color,
+                    Point = new GlobalMapPoint
+                    {
+                        X = accumulator.SumX / accumulator.Cells,
+                        Y = accumulator.SumY / accumulator.Cells
+                    },
+                    Cells = accumulator.Cells
+                });
+            }
+            _regionLabels.Sort((left, right) => right.Cells.CompareTo(left.Cells));
+        }
+
+        /// <summary>Не больше шести самых крупных владений — карта не превращается в текст.</summary>
+        public const int RegionLabelLimit = 6;
+
+        public int CollectRegionLabels(List<RegionLabel> output)
+        {
+            if (output == null) return 0;
+            output.Clear();
+            if (!IsActive || _root == null) return 0;
+            for (int i = 0; i < _regionLabels.Count && i < RegionLabelLimit; i++)
+            {
+                RegionLabel label = _regionLabels[i];
+                label.Point = CopyPoint(label.Point);
+                output.Add(label);
+            }
+            return output.Count;
+        }
+
+        /// <summary>
+        /// Короткое картографическое имя владения: длинные названия столиц
+        /// («Караванный двор Старого Клима») на карте превращаются в кашу.
+        /// </summary>
+        private string RegionShortName(string factionId)
+        {
+            switch (FactionGroupKey(factionId))
+            {
+                case "old_klim": return "Старый Клим";
+                case "caravans": return "Вольные караваны";
+                case "scrap_union": return "Свалочный союз";
+                case "relay_order": return "Ретранслятор";
+                case "raiders": return "Рейдеры";
+                case "mutants": return "Супермутанты";
+                case "wild": return "Дикие земли";
+                default: return FactionName(factionId);
+            }
+        }
+
+        /// <summary>Мировая позиция подписи региона (для проекции канвой).</summary>
+        public Vector3 RegionLabelWorld(RegionLabel label)
+        {
+            return _root != null
+                ? _root.transform.TransformPoint(PointToWorld(label.Point.X, label.Point.Y, 0.6f))
+                : Vector3.zero;
+        }
+
+        // ------------------------------------------------------------------
+        // Рельефное обрамление: два ряда клонов авторских скальных кластеров
+        // (RockCluster_* из сцены GlobalMapAuthored) вдоль прямоугольного
+        // периметра диорамы. Настоящий MEP-арт вместо процедурных пирамид;
+        // сегменты напротив воды пропускаются — горы не растут из моря.
+        // Живёт как ребёнок корня авторской сцены и выгружается вместе с ней.
+
+        // Клоны паркуются прямо под корнем авторской сцены (правило проверки:
+        // рантайм карты не создаёт ни одного собственного GameObject — только
+        // экземпляры авторского контента) и выгружаются вместе со сценой.
+        private bool _rimBuilt;
+        public int RimRidgeCount { get; private set; }
+
+        private void BuildRimRidges()
+        {
+            if (_rimBuilt || _root == null || _map?.Grid == null) return;
+            Transform template = FindRimTemplate();
+            if (template == null) return;
+
+            _rimBuilt = true;
+            RimRidgeCount = 0;
+
+            var random = new System.Random(20260901);
+            // Ближний ряд — мельче и чаще, дальний — крупнее и реже: силуэт
+            // хребта с наложением, как рамка диорамы.
+            PlaceRimRow(template, random, 16f, 34f, 1.05f, 1.8f, 46f, -0.25f);
+            PlaceRimRow(template, random, 44f, 70f, 2.1f, 3.4f, 62f, -0.45f);
+        }
+
+        private Transform FindRimTemplate()
+        {
+            if (_root == null) return null;
+            foreach (Transform child in _root.GetComponentsInChildren<Transform>(true))
+                if (child != null && child.name.StartsWith("RockCluster", StringComparison.Ordinal))
+                    return child;
+            return null;
+        }
+
+        private void PlaceRimRow(Transform template, System.Random random,
+                                 float minOffset, float maxOffset,
+                                 float minScale, float maxScale,
+                                 float spacingPoints, float sinkWorld)
+        {
+            float w = MapWidthPoints, h = MapHeightPoints;
+            // Четыре стороны: точка на краю и наружная нормаль в координатах карты.
+            for (int side = 0; side < 4; side++)
+            {
+                float length = side < 2 ? w : h;
+                for (float t = spacingPoints * 0.5f; t < length; t += spacingPoints
+                     * Mathf.Lerp(0.8f, 1.25f, (float)random.NextDouble()))
+                {
+                    float edgeX = side == 0 ? t : side == 1 ? t : side == 2 ? 0f : w;
+                    float edgeY = side == 0 ? 0f : side == 1 ? h : t;
+                    float normalX = side == 2 ? -1f : side == 3 ? 1f : 0f;
+                    float normalY = side == 0 ? -1f : side == 1 ? 1f : 0f;
+                    if (RimAnchorFacesWater(edgeX, edgeY)) continue;
+
+                    float offset = Mathf.Lerp(minOffset, maxOffset, (float)random.NextDouble());
+                    float drift = ((float)random.NextDouble() - 0.5f) * spacingPoints * 0.4f;
+                    float px = edgeX + normalX * offset - normalY * drift;
+                    float py = edgeY + normalY * offset + normalX * drift;
+
+                    Transform clone = Instantiate(template.gameObject, _root.transform)
+                        .transform;
+                    clone.gameObject.name = "RimRidge:" + RimRidgeCount;
+                    clone.gameObject.SetActive(true);
+                    clone.localPosition = PointToWorld(px, py, sinkWorld);
+                    clone.localRotation = Quaternion.Euler(0f,
+                        (float)random.NextDouble() * 360f, 0f);
+                    clone.localScale = template.localScale
+                        * Mathf.Lerp(minScale, maxScale, (float)random.NextDouble());
+                    RimRidgeCount++;
+                }
+            }
+        }
+
+        /// <summary>Край карты напротив анкера — вода: море продолжается в туман.</summary>
+        private bool RimAnchorFacesWater(float edgeX, float edgeY)
+        {
+            float cell = Mathf.Max(0.01f, _map.Grid.CellPoints);
+            int cx = Mathf.Clamp(Mathf.FloorToInt(edgeX / cell), 0, _map.Grid.Cols - 1);
+            int cy = Mathf.Clamp(Mathf.FloorToInt(edgeY / cell), 0, _map.Grid.Rows - 1);
+            return IsWaterCell(cx, cy);
         }
 
         private void BuildFactionInfluence()
@@ -4159,6 +4364,8 @@ namespace RealmOfAshes.Game
             _authoredUnityScene = default;
             _authoredScene = null;
             _root = null;
+            _rimBuilt = false;
+            RimRidgeCount = 0;
             _playerMarker = null;
             _playerActor = null;
             _selectionMarker = null;
@@ -4323,10 +4530,28 @@ namespace RealmOfAshes.Game
         private float MapWidthPoints { get { return _map.Grid.Cols * _map.Grid.CellPoints; } }
         private float MapHeightPoints { get { return _map.Grid.Rows * _map.Grid.CellPoints; } }
 
+        private RoaGlobalMapRelief _relief;
+        private bool _reliefLoaded;
+
+        /// <summary>
+        /// Запечённый рельеф авторской карты. Единственная точка врезки —
+        /// PointToWorld: маркеры, кольца, отряды, подписи и территория едут по
+        /// холмам автоматически. Нет ассета — карта плоская, как раньше.
+        /// </summary>
+        private float ReliefHeightAt(float x, float y)
+        {
+            if (!_reliefLoaded)
+            {
+                _reliefLoaded = true;
+                _relief = Resources.Load<RoaGlobalMapRelief>(RoaGlobalMapRelief.ResourceKey);
+            }
+            return _relief != null && _relief.Ready ? _relief.HeightAt(x, y) : 0f;
+        }
+
         private Vector3 PointToWorld(float x, float y, float height)
         {
             return new Vector3((x - MapWidthPoints * 0.5f) * MapWorldScale,
-                               height,
+                               height + ReliefHeightAt(x, y),
                                (MapHeightPoints * 0.5f - y) * MapWorldScale);
         }
 

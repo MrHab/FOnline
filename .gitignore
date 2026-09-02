@@ -49,6 +49,8 @@ unity-client/Obj/
 unity-client/Build/
 unity-client/Builds/
 unity-client/MemoryCaptures/
+# Junction на общий каталог ассетов для локального UPM-пакета com.realmofashes.models
+unity-client/public/
 unity-client/*.csproj
 unity-client/*.sln
 

@@ -22,8 +22,10 @@ namespace RealmOfAshes.EditorTools
         public const string BiomeDetailLayerName = "BiomeDetail_AUTHORED";
         public const string WorldEdgeLayerName = "WorldEdge_AUTHORED";
         public const string CoastDetailLayerName = "WestCoastDetail_AUTHORED";
-        public const int ExpectedBiomeDetailCount = 144;
-        public const int ExpectedCoastDetailCount = 24;
+        // Художественное решение 2026-09-02: карта сведена к рельефу —
+        // детальные биомы, береговые формы и стыки отключены (счётчики 0).
+        public const int ExpectedBiomeDetailCount = 0;
+        public const int ExpectedCoastDetailCount = 0;
         public const int ExpectedWaterCellCount = 101;
         public const float HorizonExtent = 220f;
         // A soft visual overlap hides the 90x90 ground/horizon join. The fog has no
@@ -31,7 +33,9 @@ namespace RealmOfAshes.EditorTools
         public const float ToxicFogInnerExtent = 41.5f;
         public const float ToxicFogOuterExtent = 170f;
         public const float ExpectedVisibleGroundY = -0.13f;
-        public const int ExpectedGroundedExistingCount = 69;
+        // 18 = 14 дорожных MEP-ориентиров + 4 узла Locations; слои Decor и
+        // стыков пусты — окружение карты сведено к рельефу.
+        public const int ExpectedGroundedExistingCount = 18;
 
         public const string OceanMeshPath =
             "Assets/Art/GlobalMap/Meshes/GM_Mesh_WestOcean.asset";
@@ -591,6 +595,7 @@ namespace RealmOfAshes.EditorTools
                                                 Scene scene, List<Vector3> forbidden,
                                                 float groundY)
         {
+            if (ExpectedBiomeDetailCount == 0) return 0;
             int count = 0;
             for (int tileZ = 0; tileZ < 3; tileZ++)
             for (int tileX = 0; tileX < 3; tileX++)

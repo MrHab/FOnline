@@ -20,8 +20,10 @@ namespace RealmOfAshes.EditorTools
     {
         public const string NetworkLayerName = "RoadNetwork_AUTHORED";
         public const string LandmarkLayerName = "RoadLandmarks_AUTHORED";
-        public const int ExpectedRoadPieceCount = 34;
-        public const int ExpectedPipelinePieceCount = 14;
+        // Художественное решение 2026-09-02: дорожная сеть отключена — карта
+        // сведена к рельефу; код секций сохранён для возврата.
+        public const int ExpectedRoadPieceCount = 0;
+        public const int ExpectedPipelinePieceCount = 0;
         public const int ExpectedLandmarkCount = 14;
         public const float GroundSurfaceY = -0.13f;
 
@@ -162,7 +164,10 @@ namespace RealmOfAshes.EditorTools
                 int roadPieces = 0;
                 int pipelinePieces = 0;
                 JArray rows = map["infrastructure"] as JArray ?? new JArray();
-                for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+                for (int rowIndex = 0;
+                     rowIndex < rows.Count
+                     && ExpectedRoadPieceCount + ExpectedPipelinePieceCount > 0;
+                     rowIndex++)
                 {
                     JObject row = rows[rowIndex] as JObject;
                     string id = row?["id"]?.ToString() ?? "infrastructure_" + rowIndex;

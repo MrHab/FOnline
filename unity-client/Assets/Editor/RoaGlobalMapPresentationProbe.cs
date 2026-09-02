@@ -29,7 +29,9 @@ namespace RealmOfAshes.EditorTools
                     RoaGlobalMap.PresentationProfile(RoaGlobalMap.MapDetailTier.Medium);
                 RoaGlobalMap.MapPresentationProfile near =
                     RoaGlobalMap.PresentationProfile(RoaGlobalMap.MapDetailTier.Near);
-                Check(far.TerritoryFill && !far.TerritoryBorder && !far.Sites
+                // На «РЕГИОН» границы владений включены вместе с заливкой:
+                // контур региона читается без приближения.
+                Check(far.TerritoryFill && far.TerritoryBorder && !far.Sites
                       && !far.Parties && !far.Threats && far.OverlayLabelLimit == 6
                       && far.InfrastructureLabelLimit == 0
                       && !medium.TerritoryFill && medium.TerritoryBorder
@@ -51,6 +53,12 @@ namespace RealmOfAshes.EditorTools
                       && !RoaGlobalMap.TargetKindVisibleAtTier("zone",
                           RoaGlobalMap.MapDetailTier.Near, false, true),
                     "скрытые слои всё ещё могут притягивать курсор");
+
+                Check(RoaGlobalMapCanvas.SpacedRegionName("Старый Клим")
+                          == "С Т А Р Ы Й  К Л И М"
+                      && RoaGlobalMapCanvas.SpacedRegionName(" ") == string.Empty
+                      && RoaGlobalMap.RegionLabelMinimumCells >= 4,
+                    "картографические имена регионов потеряли разрядку или порог");
 
                 Check(RoaGlobalMapAtmosphere.DaylightFactor(12f) > 0.95f
                       && RoaGlobalMapAtmosphere.DaylightFactor(0f) == 0f

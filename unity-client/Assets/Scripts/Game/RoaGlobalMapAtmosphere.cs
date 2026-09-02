@@ -111,10 +111,15 @@ namespace RealmOfAshes.Game
             return Color.Lerp(noon, horizon, dusk);
         }
 
+        /// <summary>
+        /// Стратегическая карта обязана оставаться читаемой и ночью: это
+        /// интерфейс планирования, а не стелс-сцена. Ночь — холодный оттенок и
+        /// мягкий свет, но никогда не «чёрный экран».
+        /// </summary>
         public static float SunIntensity(float hour)
         {
             float daylight = DaylightFactor(hour);
-            return daylight <= 0f ? 0.24f : Mathf.Lerp(0.42f, 1.08f, daylight);
+            return daylight <= 0f ? 0.58f : Mathf.Lerp(0.68f, 1.12f, daylight);
         }
 
         /// <summary>Цветофильтр пост-обработки: тёплый закат, холодная ночь.</summary>
@@ -123,7 +128,7 @@ namespace RealmOfAshes.Game
             float daylight = DaylightFactor(hour);
             float dusk = DuskFactor(hour);
             var day = Color.white;
-            var night = new Color(0.78f, 0.84f, 1.02f);
+            var night = new Color(0.88f, 0.93f, 1.06f);
             var sunset = new Color(1.04f, 0.94f, 0.85f);
             Color baseGrade = Color.Lerp(night, day, Mathf.Clamp01(daylight * 1.6f));
             return Color.Lerp(baseGrade, sunset, dusk * 0.8f);
@@ -144,13 +149,16 @@ namespace RealmOfAshes.Game
             bloom.scatter.value = 0.62f;
 
             _vignette = _profile.Add<Vignette>(true);
-            _vignette.intensity.value = 0.24f;
+            _vignette.intensity.value = 0.16f;
             _vignette.smoothness.value = 0.42f;
             _vignette.color.value = new Color(0.02f, 0.03f, 0.02f);
 
             _colorAdjustments = _profile.Add<ColorAdjustments>(true);
+            // ACES заметно приглушает средние тона — небольшая компенсация
+            // экспозицией (основную яркость даёт поднятый ambient профиля).
+            _colorAdjustments.postExposure.value = 0.18f;
             _colorAdjustments.saturation.value = 6f;
-            _colorAdjustments.contrast.value = 7f;
+            _colorAdjustments.contrast.value = 5f;
             _colorAdjustments.colorFilter.value = GradeFilter(_visualHour);
 
             _volumeObject = new GameObject("GlobalMapVolume");
@@ -236,6 +244,8 @@ namespace RealmOfAshes.Game
         }
 
         // ------------------------------------------------------------------
+        // Рельефное обрамление строит RoaGlobalMap.BuildRimRidges — из клонов
+        // авторских скальных префабов сцены, а не из процедурных пирамид.
 
         /// <summary>
         /// Низкие клубы дымки по периметру диорамы: широкие вертикальные квады
@@ -284,7 +294,9 @@ namespace RealmOfAshes.Game
                 filterMode = FilterMode.Bilinear,
                 name = "GlobalMapEdgeBillow"
             };
-            var tint = new Color(0.30f, 0.42f, 0.22f);
+            // Приглушённый серо-оливковый: ярко-зелёная дымка перекрикивала
+            // всю рамку кадра.
+            var tint = new Color(0.29f, 0.33f, 0.24f);
             var pixels = new Color[size * size];
             for (int y = 0; y < size; y++)
             {
@@ -295,7 +307,7 @@ namespace RealmOfAshes.Game
                     float dome = Mathf.Clamp01(1f - Mathf.Abs(u - 0.5f) * 2f);
                     float rise = Mathf.Clamp01(1f - v * 1.25f);
                     float noise = Mathf.PerlinNoise(u * 6.5f, v * 3.4f);
-                    float alpha = Mathf.Clamp01(dome * rise * (0.35f + noise * 0.65f)) * 0.34f;
+                    float alpha = Mathf.Clamp01(dome * rise * (0.35f + noise * 0.65f)) * 0.22f;
                     pixels[y * size + x] = new Color(tint.r, tint.g, tint.b, alpha);
                 }
             }
@@ -331,7 +343,7 @@ namespace RealmOfAshes.Game
             if (_colorAdjustments != null)
                 _colorAdjustments.colorFilter.value = GradeFilter(_visualHour);
             if (_vignette != null)
-                _vignette.intensity.value = Mathf.Lerp(0.3f, 0.24f, DaylightFactor(_visualHour));
+                _vignette.intensity.value = Mathf.Lerp(0.21f, 0.16f, DaylightFactor(_visualHour));
         }
 
         private void DriftClouds()

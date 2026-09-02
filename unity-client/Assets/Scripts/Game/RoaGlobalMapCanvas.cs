@@ -742,7 +742,7 @@ namespace RealmOfAshes.Game
                 slot.Text.text = frame.Selected ? "◆ " + frame.Text : frame.Text;
                 slot.Text.alignment = frame.Activity ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter;
                 slot.Text.fontSize = frame.Activity || frame.Selected ? 12 : 11;
-                slot.Text.color = frame.Color;
+                slot.Text.color = RoaGlobalMap.ReadableOverlayColor(frame.Color);
                 float alpha = frame.Selected ? 0.98f
                             : (frame.Activity ? 0.93f : (frame.Cluster ? 0.72f : 0.58f));
                 slot.Background.color = new Color(0.018f, 0.045f, 0.028f, alpha);
@@ -755,8 +755,9 @@ namespace RealmOfAshes.Game
                         slot.Accent.color = new Color(frame.Accent.r, frame.Accent.g,
                             frame.Accent.b, Mathf.Min(1f, alpha + 0.25f));
                 }
-                slot.Outline.effectColor = new Color(frame.Color.r, frame.Color.g, frame.Color.b,
-                    frame.Selected ? 0.95f : 0.68f);
+                Color outlineColor = RoaGlobalMap.ReadableOverlayColor(frame.Color);
+                slot.Outline.effectColor = new Color(outlineColor.r, outlineColor.g,
+                    outlineColor.b, frame.Selected ? 0.95f : 0.68f);
                 slot.Outline.effectDistance = frame.Selected ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
                 _occupiedMapLabels.Add(resolved);
             }

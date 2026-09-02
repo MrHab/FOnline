@@ -62,6 +62,9 @@ unity-client/Assets/_Recovery.meta
 # ни по лицензии. Устанавливается локально через Package Manager/импорт.
 unity-client/Assets/MEP/
 unity-client/Assets/MEP.meta
+# Официальный сэмпл-пак террейна Unity (1.9 ГБ): ставится локально из Asset Store
+unity-client/Assets/TerrainSampleAssets/
+unity-client/Assets/TerrainSampleAssets.meta
 
 # Служебные каталоги Unity, созданные при открытии корня репозитория как
 # проекта (bake глобальной карты). Настоящий проект — только unity-client/.

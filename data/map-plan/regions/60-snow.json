@@ -1,0 +1,124 @@
+{
+  "id": "snow",
+  "container": "Plan_Snow_AUTHORED",
+  "bounds": {
+    "xMin": 690,
+    "xMax": 870,
+    "yMin": 115,
+    "yMax": 680
+  },
+  "edgeFadePoints": 30,
+  "noise": {
+    "threshold": 0.46,
+    "period": 65,
+    "density": 0.55,
+    "seed": 60,
+    "stepPoints": 8
+  },
+  "scale": {
+    "min": 0.75,
+    "max": 1.35
+  },
+  "maxHeightWorld": 0.5,
+  "quota": 780,
+  "groundTint": "#DDEBFA",
+  "groundTintStrength": 1.0,
+  "palette": [
+    {
+      "include": [
+        "ConiferTrees/MEP_Con_02/Con_02_b_N_Snow"
+      ],
+      "weight": 9,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "ConiferTrees/MEP_Con_02/Con_02_d_N_Snow"
+      ],
+      "weight": 9,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "ConiferTrees/MEP_Con_02/Con_02_g_N_Snow"
+      ],
+      "weight": 7,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "ConiferTrees/MEP_Con_02/Con_02_f_N_Snow"
+      ],
+      "weight": 7,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "ConiferTrees/MEP_Con_01/MEP_Con_01_c_N_Snow"
+      ],
+      "weight": 8,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "ConiferTrees/MEP_Con_01/MEP_Con_01_e_N_Snow"
+      ],
+      "weight": 8,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "MEP_Stones_01/MEP_Stone_Grp_02_Snow"
+      ],
+      "weight": 6,
+      "boost": 1.0,
+      "maxHeight": 0.15
+    },
+    {
+      "include": [
+        "MEP_Stones_01/MEP_Stone_Grp_05_Snow"
+      ],
+      "weight": 5,
+      "boost": 1.0,
+      "maxHeight": 0.15
+    },
+    {
+      "include": [
+        "MEP_Rock_01/MEP_Rock_01_N_b_Snow"
+      ],
+      "weight": 4,
+      "boost": 1.0,
+      "maxHeight": 0.25
+    },
+    {
+      "include": [
+        "MEP_Rock_05/MEP_Rock_05_Snow"
+      ],
+      "weight": 4,
+      "boost": 1.0,
+      "maxHeight": 0.15
+    },
+    {
+      "include": [
+        "DeadTrees/DeadTree_01/MEP_DeadTree_03_N_Snow"
+      ],
+      "weight": 2,
+      "boost": 1.0,
+      "maxHeight": 0.35
+    },
+    {
+      "include": [
+        "MEP_Skull/MEP_B_Skull_01_Snow"
+      ],
+      "weight": 1,
+      "boost": 1.0,
+      "maxHeight": 0.1
+    }
+  ]
+}

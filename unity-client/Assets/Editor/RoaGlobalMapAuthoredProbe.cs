@@ -319,11 +319,13 @@ namespace RealmOfAshes.EditorTools
             Require(oceanBounds.min.x <= -200f && oceanBounds.size.z >= 400f,
                     "West ocean no longer reaches the fog horizon around the map.");
 
+            // Художественное решение 2026-09-02: горизонт носит ЕДИНЫЙ
+            // материал земли — узор продолжается через кромку без шва.
             Bounds horizonBounds = ValidateEnvironmentPrefab(horizon,
                 RoaGlobalMapEnvironmentAuthoring.HorizonPrefabPath,
                 RoaGlobalMapEnvironmentAuthoring.HorizonMeshPath,
-                RoaGlobalMapEnvironmentAuthoring.HorizonMaterialPath,
-                "Universal Render Pipeline/Realm of Ashes/Global Map Horizon");
+                "Assets/Art/GlobalMap/Materials/GM_GroundUnified.mat",
+                "Universal Render Pipeline/Realm of Ashes/Global Map Unified Ground");
             float horizonExtent = RoaGlobalMapEnvironmentAuthoring.HorizonExtent;
             Require(horizonBounds.max.x >= horizonExtent - 2f
                     && horizonBounds.max.z >= horizonExtent - 2f
@@ -486,16 +488,24 @@ namespace RealmOfAshes.EditorTools
                             "Toxic fog intrudes beyond its authored soft perimeter overlap.");
                 }
             }
-            Require(vertexCount >= 2000 && vertexCount <= 3000
-                    && triangleCount >= 1000 && triangleCount <= 1500,
+            Require(vertexCount >= 2000 && vertexCount <= 3200
+                    && triangleCount >= 1000 && triangleCount <= 1600,
                     "Toxic fog mesh complexity changed unexpectedly: vertices="
                     + vertexCount + ", triangles=" + triangleCount + ".");
+            // Эпоха песчаной бури: у границы один меш-рендерер (стена,
+            // может быть выключена) плюс системы частиц — все без теней.
             Renderer[] renderers = fog.GetComponentsInChildren<Renderer>(true);
-            Require(renderers.Length == 1
-                    && renderers[0].shadowCastingMode ==
+            int meshRenderers = 0;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Require(renderers[i].shadowCastingMode ==
                         UnityEngine.Rendering.ShadowCastingMode.Off
-                    && !renderers[0].receiveShadows,
-                    "Toxic fog must remain a single non-shadowing renderer.");
+                        && !renderers[i].receiveShadows,
+                        "Boundary renderers must stay non-shadowing.");
+                if (renderers[i] is MeshRenderer) meshRenderers++;
+            }
+            Require(meshRenderers >= 1 && meshRenderers <= 2,
+                    "Boundary must keep the wall mesh and at most a border line.");
         }
 
         /// <summary>

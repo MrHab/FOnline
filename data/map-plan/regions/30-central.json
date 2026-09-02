@@ -1,0 +1,244 @@
+{
+  "id": "central",
+  "container": "Plan_Central_AUTHORED",
+  "bounds": {
+    "xMin": 300,
+    "xMax": 560,
+    "yMin": 115,
+    "yMax": 835
+  },
+  "edgeFadePoints": 30,
+  "noise": {
+    "threshold": 0.45,
+    "period": 64,
+    "density": 0.6,
+    "seed": 30,
+    "stepPoints": 6
+  },
+  "scale": {
+    "min": 0.75,
+    "max": 1.35
+  },
+  "maxHeightWorld": 0.5,
+  "quota": 1350,
+  "groundTint": "#8B8B85",
+  "groundTintStrength": 0.6,
+  "excludeRects": [
+    {
+      "xMin": 390,
+      "xMax": 450,
+      "yMin": 570,
+      "yMax": 630
+    }
+  ],
+  "palette": [
+    {
+      "include": [
+        "MEP_Trees/Grps/MEP_BrokenDeadTree_Grp_01"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 5,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "MEP_Trees/Grps/MEP_BrokenDeadTree_Grp_02"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 4,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "MEP_Trees/Grps/MEP_BrokenDeadTree_Grp_03"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 4,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "MEP_Bushes/Grps/Bush_04_Grp_01"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 5,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "DeadTrees/DeadTree_01/MEP_DeadTree_04_N"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 4,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "DeadTrees/DeadTree_01/MEP_DeadTree_07_N"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 4,
+      "boost": 1.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "MEP_Stones_01/MEP_Stone_Grp_01"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 3,
+      "boost": 1.2,
+      "maxHeight": 0.4
+    },
+    {
+      "include": [
+        "MEP_Stones_01/MEP_Stone_Grp_03"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 3,
+      "boost": 1.2,
+      "maxHeight": 0.4
+    },
+    {
+      "include": [
+        "MEP_Stones_01/MEP_Stone_Grp_06"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 3,
+      "boost": 1.2,
+      "maxHeight": 0.4
+    },
+    {
+      "include": [
+        "MEP_Buildings&Props/MEP_Fence_01_N"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 4,
+      "boost": 1.0,
+      "maxHeight": 0.3
+    }
+  ],
+  "landmarks": [
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_Broken_N.prefab",
+      "x": 320,
+      "y": 678,
+      "yaw": 105,
+      "scale": 1.4,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+      "x": 326,
+      "y": 672,
+      "yaw": 100,
+      "scale": 1.6,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_04_N.prefab",
+      "x": 352,
+      "y": 600,
+      "yaw": 40,
+      "scale": 1.3,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_Broken_N.prefab",
+      "x": 388,
+      "y": 640,
+      "yaw": 220,
+      "scale": 1.2,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+      "x": 383,
+      "y": 646,
+      "yaw": 40,
+      "scale": 1.5,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_04_N.prefab",
+      "x": 470,
+      "y": 562,
+      "yaw": 320,
+      "scale": 1.4,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_Broken_N.prefab",
+      "x": 508,
+      "y": 562,
+      "yaw": 150,
+      "scale": 1.5,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+      "x": 514,
+      "y": 568,
+      "yaw": 155,
+      "scale": 1.6,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_04_N.prefab",
+      "x": 462,
+      "y": 505,
+      "yaw": 25,
+      "scale": 1.3,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_Broken_N.prefab",
+      "x": 528,
+      "y": 478,
+      "yaw": 200,
+      "scale": 1.3,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Fence_01_N.prefab",
+      "x": 534,
+      "y": 472,
+      "yaw": 30,
+      "scale": 1.5,
+      "maxHeight": 0.8
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Buildings&Props/Prefabs/MEP_Shack_04_N.prefab",
+      "x": 530,
+      "y": 390,
+      "yaw": 60,
+      "scale": 1.2,
+      "maxHeight": 0.8
+    }
+  ]
+}

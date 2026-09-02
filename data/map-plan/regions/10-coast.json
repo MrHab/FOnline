@@ -1,0 +1,25 @@
+{
+  "id": "coast",
+  "container": "Plan_Coast_AUTHORED",
+  "bounds": { "xMin": 45, "xMax": 130, "yMin": 115, "yMax": 835 },
+  "edgeFadePoints": 20,
+  "noise": { "threshold": 0.5, "period": 55, "density": 0.45,
+             "seed": 10, "stepPoints": 8 },
+  "scale": { "min": 0.75, "max": 1.35 },
+  "maxHeightWorld": 0.4,
+  "quota": 250,
+  "groundTint": "#C7B592",
+  "groundTintStrength": 0.8,
+  "palette": [
+    { "include": ["MEP_Edge_01_b", "MEP_Edge_01_c", "MEP_Edge_01_k"],
+      "exclude": ["Snow", "Grass"], "weight": 6, "boost": 1.0, "maxHeight": 0.4 },
+    { "include": ["MEP_Edge_smStone_05_N", "MEP_Edge_smStone_06_N"],
+      "exclude": ["Snow", "Grass"], "weight": 5, "boost": 1.2, "maxHeight": 0.25 },
+    { "include": ["MEP_Edge_01_d", "MEP_Edge_01_e", "MEP_Edge_01_f"],
+      "exclude": ["Snow", "Grass"], "weight": 3, "boost": 1.0, "maxHeight": 0.4 },
+    { "include": ["MEP_Edge_Rock_03_N", "MEP_Edge_Rock_04_N"],
+      "exclude": ["Snow", "Grass"], "weight": 2, "boost": 1.0, "maxHeight": 0.4 },
+    { "include": ["MEP_Rock_01_N_a_Sand", "MEP_Rock_01_N_c_Sand"],
+      "exclude": ["Snow"], "weight": 1, "boost": 1.5, "maxHeight": 0.3 }
+  ]
+}

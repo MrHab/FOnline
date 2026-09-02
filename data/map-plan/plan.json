@@ -1,0 +1,15 @@
+{
+  "schema": "realm.map-plan.v1",
+  "demoMeterToWorld": 0.012,
+  "objectBudget": 5000,
+  "rendererBudget": 12000,
+  "bakedMaterialBudget": 40,
+  "exclusions": [
+    {
+      "xMin": 660,
+      "xMax": 860,
+      "yMin": 700,
+      "yMax": 860
+    }
+  ]
+}

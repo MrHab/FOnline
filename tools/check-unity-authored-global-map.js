@@ -119,7 +119,7 @@ assert(!scene.includes('_routeLine:') && !scene.includes('LineRenderer:'),
   'GlobalMapAuthored still contains the retired generated route line');
 assert(scene.includes('m_Name: GlobalMapSun_AUTHORED')
   && scene.includes('--- !u!108 &2147001002')
-  && scene.includes('m_Intensity: 1.25'),
+  && scene.includes('m_Intensity: 1.45'),
   'GlobalMapAuthored must contain its dedicated warm directional light');
 assert(saltMaterial.includes('guid: 832a7ce0389e3844a8e7a4f07a39d254')
   && !saltMaterial.includes('- _BaseMap:\n        m_Texture: {fileID: 0}'),

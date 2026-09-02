@@ -119,6 +119,14 @@ namespace RealmOfAshes.EditorTools
 
                 case "executeMenu":
                 {
+                    // Авторинг-меню в Play-режиме молча падают внутри
+                    // ExecuteMenuItem — отклоняем честно, агент повторит.
+                    if (EditorApplication.isPlaying)
+                    {
+                        Respond(false, "Редактор в Play-режиме — выйдите из"
+                            + " Play и повторите команду.");
+                        return;
+                    }
                     string path = request["path"]?.ToString() ?? string.Empty;
                     // Только меню проекта: никаких File/Save, Build и системных пунктов
                     // без явного намерения человека.

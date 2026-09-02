@@ -1,0 +1,127 @@
+{
+  "id": "ridge-east",
+  "container": "Plan_RidgeEast_AUTHORED",
+  "bounds": {
+    "xMin": 570,
+    "xMax": 660,
+    "yMin": 150,
+    "yMax": 270
+  },
+  "edgeFadePoints": 30,
+  "noise": {
+    "threshold": 0.42,
+    "period": 55,
+    "density": 0.85,
+    "seed": 41,
+    "stepPoints": 5
+  },
+  "scale": {
+    "min": 0.75,
+    "max": 1.35
+  },
+  "maxHeightWorld": 1.0,
+  "quota": 200,
+  "groundTint": "#7E7A72",
+  "groundTintStrength": 0.5,
+  "palette": [
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_05",
+        "Cliff_01/MEP_Cliff_06",
+        "Cliff_01/MEP_Cliff_18"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 5,
+      "boost": 2.2,
+      "maxHeight": 1.0
+    },
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_07"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 3,
+      "boost": 2.2,
+      "maxHeight": 1.0
+    },
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_19"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 1,
+      "boost": 2.2,
+      "maxHeight": 1.0
+    },
+    {
+      "include": [
+        "MEP_Rock_04/MEP_Rock_04"
+      ],
+      "exclude": [
+        "Snow",
+        "Sand",
+        "_a",
+        "_b"
+      ],
+      "weight": 4,
+      "boost": 2.2,
+      "maxHeight": 1.0
+    },
+    {
+      "include": [
+        "MEP_Rock_05/MEP_Rock_05"
+      ],
+      "exclude": [
+        "Snow",
+        "Sand",
+        "_d",
+        "_e",
+        "_f",
+        "_g",
+        "_h",
+        "_i",
+        "_j",
+        "_k"
+      ],
+      "weight": 3,
+      "boost": 2.2,
+      "maxHeight": 1.0
+    },
+    {
+      "include": [
+        "MEP_Stones_01/MEP_Stone_Grp_02",
+        "MEP_Stones_01/MEP_Stone_Grp_05"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 2,
+      "boost": 1.6,
+      "maxHeight": 1.0
+    }
+  ],
+  "landmarks": [
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Cave/Cave_Parts/Prefabs/MEP_C_Entrance_01_N.prefab",
+      "x": 575,
+      "y": 220,
+      "yaw": 270,
+      "scale": 3.0,
+      "maxHeight": 1.0
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Cave/Cave_Parts/Prefabs/MEP_C_Entrance_01_N.prefab",
+      "x": 618,
+      "y": 264,
+      "yaw": 180,
+      "scale": 2.5,
+      "maxHeight": 1.0
+    }
+  ]
+}

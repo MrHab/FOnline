@@ -162,6 +162,16 @@ namespace RealmOfAshes.EditorTools
                 removed += container.childCount;
                 UnityEngine.Object.DestroyImmediate(container.gameObject);
             }
+            // Контейнеры мастер-плана (Plan_*_AUTHORED) удаляются целиком.
+            for (int i = staticRoot.childCount - 1; i >= 0; i--)
+            {
+                Transform child = staticRoot.GetChild(i);
+                if (!child.name.StartsWith("Plan_", StringComparison.Ordinal)
+                    || !child.name.EndsWith("_AUTHORED", StringComparison.Ordinal))
+                    continue;
+                removed += child.childCount;
+                UnityEngine.Object.DestroyImmediate(child.gameObject);
+            }
             // Декоративные слои штатных инструментов тоже опустошаются
             // (контейнеры остаются — их имена пинятся контрактом): детальные
             // биомы, стыки и береговые формы отключены — карта = рельеф.
@@ -377,7 +387,7 @@ namespace RealmOfAshes.EditorTools
         // ------------------------------------------------------------------
         // Детерминированный шум пятен.
 
-        private static float Hash01(int x, int y, int seed)
+        internal static float Hash01(int x, int y, int seed)
         {
             unchecked
             {
@@ -396,7 +406,7 @@ namespace RealmOfAshes.EditorTools
             return Mathf.Lerp(Mathf.Lerp(a, b, tx), Mathf.Lerp(c, d, tx), ty);
         }
 
-        private static float PatchNoise(float px, float py, float period, int seed)
+        internal static float PatchNoise(float px, float py, float period, int seed)
         {
             return 0.62f * ValueNoise(px / period, py / period, seed)
                 + 0.38f * ValueNoise(px / (period * 0.31f),
@@ -501,7 +511,7 @@ namespace RealmOfAshes.EditorTools
         /// LOD-группы при масштабе карты куллят объект в ничто (крошечный
         /// экранный размер): остаётся только LOD0, группа удаляется.
         /// </summary>
-        private static void FlattenLods(GameObject clone)
+        internal static void FlattenLods(GameObject clone)
         {
             foreach (LODGroup group in
                      clone.GetComponentsInChildren<LODGroup>(true))

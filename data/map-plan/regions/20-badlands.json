@@ -1,0 +1,230 @@
+{
+  "id": "badlands",
+  "container": "Plan_Badlands_AUTHORED",
+  "bounds": {
+    "xMin": 110,
+    "xMax": 330,
+    "yMin": 115,
+    "yMax": 835
+  },
+  "edgeFadePoints": 30,
+  "noise": {
+    "threshold": 0.48,
+    "period": 70,
+    "density": 0.6,
+    "seed": 20,
+    "stepPoints": 8
+  },
+  "scale": {
+    "min": 0.75,
+    "max": 1.35
+  },
+  "maxHeightWorld": 0.5,
+  "quota": 780,
+  "groundTint": "#B0714F",
+  "groundTintStrength": 0.85,
+  "excludeRects": [
+    {
+      "xMin": 150,
+      "xMax": 290,
+      "yMin": 490,
+      "yMax": 630
+    }
+  ],
+  "palette": [
+    {
+      "include": [
+        "MEP_Desert_Cliff_04",
+        "MEP_Desert_Cliff_06"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 1,
+      "boost": 2.0,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "MEP_Rock_01_N_b_Sand",
+        "MEP_Rock_01_N_d_Sand"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 5,
+      "boost": 1.6,
+      "maxHeight": 0.35
+    },
+    {
+      "include": [
+        "Grps/Bush_04_Grp_01"
+      ],
+      "exclude": [
+        "Snow",
+        "Autumn"
+      ],
+      "weight": 9,
+      "boost": 1.0,
+      "maxHeight": 0.25
+    },
+    {
+      "include": [
+        "MEP_DeadTree_02_N",
+        "MEP_DeadTree_05_N"
+      ],
+      "exclude": [
+        "Snow"
+      ],
+      "weight": 2,
+      "boost": 1.4,
+      "maxHeight": 0.3
+    }
+  ],
+  "landmarks": [
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_19.prefab",
+      "x": 181,
+      "y": 301,
+      "yaw": 22,
+      "scale": 4.0,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_01.prefab",
+      "x": 170,
+      "y": 291,
+      "yaw": 140,
+      "scale": 5.4,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_02.prefab",
+      "x": 192,
+      "y": 308,
+      "yaw": 78,
+      "scale": 4.6,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_05.prefab",
+      "x": 173,
+      "y": 312,
+      "yaw": 231,
+      "scale": 5.0,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_01.prefab",
+      "x": 195,
+      "y": 289,
+      "yaw": 315,
+      "scale": 4.2,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_05.prefab",
+      "x": 205,
+      "y": 299,
+      "yaw": 105,
+      "scale": 3.4,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_19.prefab",
+      "x": 259,
+      "y": 468,
+      "yaw": 200,
+      "scale": 4.1,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_01.prefab",
+      "x": 247,
+      "y": 459,
+      "yaw": 42,
+      "scale": 5.8,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_02.prefab",
+      "x": 271,
+      "y": 463,
+      "yaw": 96,
+      "scale": 4.8,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_05.prefab",
+      "x": 251,
+      "y": 477,
+      "yaw": 283,
+      "scale": 5.2,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_01.prefab",
+      "x": 267,
+      "y": 481,
+      "yaw": 330,
+      "scale": 4.0,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_02.prefab",
+      "x": 278,
+      "y": 471,
+      "yaw": 12,
+      "scale": 3.6,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_19.prefab",
+      "x": 151,
+      "y": 653,
+      "yaw": 118,
+      "scale": 3.8,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_02.prefab",
+      "x": 139,
+      "y": 644,
+      "yaw": 205,
+      "scale": 5.0,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_01.prefab",
+      "x": 163,
+      "y": 647,
+      "yaw": 300,
+      "scale": 5.2,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_05.prefab",
+      "x": 144,
+      "y": 664,
+      "yaw": 57,
+      "scale": 4.8,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_02.prefab",
+      "x": 159,
+      "y": 669,
+      "yaw": 168,
+      "scale": 3.8,
+      "maxHeight": 1.2
+    },
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Desert_Cliff_01.prefab",
+      "x": 171,
+      "y": 658,
+      "yaw": 251,
+      "scale": 3.7,
+      "maxHeight": 1.2
+    }
+  ]
+}

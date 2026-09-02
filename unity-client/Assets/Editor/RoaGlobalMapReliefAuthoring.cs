@@ -251,8 +251,14 @@ namespace RealmOfAshes.EditorTools
                         height -= cut;
                     }
 
+                    // Рельеф гаснет к границам карты: кромка диорамы
+                    // сходится с губой горизонт-террейна без обрыва — шов
+                    // мира не читается резкой линией.
+                    float edgeFade = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(
+                        Mathf.Min(Mathf.Min(px, field.WidthPoints - px),
+                            Mathf.Min(py, field.HeightPoints - py)) / 70f));
                     field.Heights[sy * FieldSamples + sx] =
-                        Mathf.Clamp(height, -0.5f, 1.45f);
+                        Mathf.Clamp(height * edgeFade, -0.5f, 1.45f);
                 }
             }
             return field;

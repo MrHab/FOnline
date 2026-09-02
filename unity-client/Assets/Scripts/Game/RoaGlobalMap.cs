@@ -460,7 +460,7 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (_selectedDynamic != null) return _selectedDynamic.Name ?? _selectedDynamic.Id ?? "точка пустоши";
+                if (_selectedDynamic != null) return DynamicTargetTitle(_selectedDynamic);
                 if (_selectedNode != null) return NodeTitle(_selectedNode);
                 return "Точка пустоши";
             }
@@ -491,6 +491,38 @@ namespace RealmOfAshes.Game
                 nearestDistance = distance;
             }
             return nearest;
+        }
+
+        /// <summary>
+        /// Человеческое имя динамической цели: собственное имя, имя площадки
+        /// живой пустоши по id, иначе очеловеченный идентификатор — сырые
+        /// id вроде district_interest_4_4 не должны доходить до игрока.
+        /// </summary>
+        private string DynamicTargetTitle(DynamicTarget target)
+        {
+            if (target == null) return "Точка пустоши";
+            if (!string.IsNullOrWhiteSpace(target.Name)) return target.Name;
+            string id = target.Id ?? string.Empty;
+            foreach (JToken token in _wasteland?["sites"] as JArray ?? new JArray())
+            {
+                if (token?["id"]?.ToString() != id) continue;
+                string siteName = token["name"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(siteName)) return siteName;
+                break;
+            }
+            return HumanizeMapId(id);
+        }
+
+        /// <summary>Последний рубеж: превращает служебный id в читаемую подпись.</summary>
+        public static string HumanizeMapId(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return "Точка пустоши";
+            if (id.StartsWith("district_interest_", System.StringComparison.Ordinal))
+                return "Точка интереса " + id.Substring("district_interest_".Length)
+                    .Replace('_', '-');
+            if (id.StartsWith("random", System.StringComparison.Ordinal))
+                return "Случайная находка";
+            return id.Replace('_', ' ');
         }
 
         public string NodeTitle(GlobalMapNode node)
@@ -579,6 +611,8 @@ namespace RealmOfAshes.Game
         private GameObject _selectionMarker;
         private GameObject _cameraAnchor;
         private Collider _terrainCollider;
+        private MeshRenderer _boundaryDashRenderer;
+        private MaterialPropertyBlock _boundaryFlashBlock;
         private List<GameObject> _routeVisuals = new List<GameObject>();
         private List<Vector3> _routeVisualBaseScales = new List<Vector3>();
         private List<float> _routeVisualProgress = new List<float>();
@@ -1100,6 +1134,12 @@ namespace RealmOfAshes.Game
             _selectionMarker = authored.SelectionMarker;
             _cameraAnchor = authored.CameraAnchor != null ? authored.CameraAnchor.gameObject : null;
             _terrainCollider = authored.SelectionSurface;
+            Transform boundaryLine = authored.StaticContentRoot != null
+                ? authored.StaticContentRoot.Find(
+                    "WorldEdge_AUTHORED/ToxicBoundaryFog_AUTHORED/BoundaryLine")
+                : null;
+            _boundaryDashRenderer = boundaryLine != null
+                ? boundaryLine.GetComponent<MeshRenderer>() : null;
             _dynamicRoot = authored.DynamicContentRoot != null ? authored.DynamicContentRoot.gameObject : null;
             _playerMarkerBaseScale = _playerMarker != null ? _playerMarker.transform.localScale : Vector3.one;
             _selectionMarkerBaseScale = _selectionMarker != null ? _selectionMarker.transform.localScale : Vector3.one;
@@ -2071,6 +2111,17 @@ namespace RealmOfAshes.Game
                  : (tier == MapDetailTier.Medium ? 1.28f : 1.05f);
         }
 
+        /// <summary>
+        /// Пустой или почти чёрный акцент делает текст подписи невидимым на
+        /// тёмной плашке — вместо него тёплый читаемый цвет пустоши.
+        /// </summary>
+        public static Color ReadableOverlayColor(Color color)
+        {
+            if (color.a < 0.4f || color.r + color.g + color.b < 0.45f)
+                return new Color(0.93f, 0.88f, 0.7f, 1f);
+            return new Color(color.r, color.g, color.b, 1f);
+        }
+
         public static Color RouteVisualColor(float routePosition, float travelProgress,
                                              bool shadow, bool contact)
         {
@@ -3037,7 +3088,11 @@ namespace RealmOfAshes.Game
 
         private bool SelectScreenPointAndMaybeTravel(Vector2 screenPoint)
         {
-            if (!SelectFromScreen(screenPoint)) return false;
+            if (!SelectFromScreen(screenPoint))
+            {
+                NotifyBoundaryRefusal(screenPoint);
+                return false;
+            }
             if (!RouteClickAllowed(InputEnabled, _arrivalPending, _locationEntryPending,
                                    _pendingContact != null,
                                    !string.IsNullOrEmpty(AttachedPartyId))) return true;
@@ -3061,6 +3116,34 @@ namespace RealmOfAshes.Game
             return inputEnabled && !arrivalPending && !locationEntryPending
                 && !contactPending && !attachedToParty;
         }
+        /// <summary>
+        /// Клик мимо поверхности выбора: если луч уходит за границу мира —
+        /// красная вспышка на ближайшем участке пунктира и честный статус.
+        /// Затухание вспышки считает шейдер линии, обновлений не нужно.
+        /// </summary>
+        private void NotifyBoundaryRefusal(Vector2 screenPoint)
+        {
+            Camera camera = Camera.main;
+            if (camera == null || _boundaryDashRenderer == null) return;
+            Ray ray = camera.ScreenPointToRay(screenPoint);
+            var ground = new Plane(Vector3.up, new Vector3(0f, -0.13f, 0f));
+            if (!ground.Raycast(ray, out float enter)) return;
+            Vector3 hit = ray.GetPoint(enter);
+            const float half = 44.6f; // периметр пунктира границы
+            if (Mathf.Abs(hit.x) <= half && Mathf.Abs(hit.z) <= half) return;
+
+            var flashPoint = new Vector3(
+                Mathf.Clamp(hit.x, -half, half), -0.07f,
+                Mathf.Clamp(hit.z, -half, half));
+            if (_boundaryFlashBlock == null)
+                _boundaryFlashBlock = new MaterialPropertyBlock();
+            _boundaryDashRenderer.GetPropertyBlock(_boundaryFlashBlock);
+            _boundaryFlashBlock.SetVector("_FlashCenter", flashPoint);
+            _boundaryFlashBlock.SetFloat("_FlashStart", Time.timeSinceLevelLoad);
+            _boundaryDashRenderer.SetPropertyBlock(_boundaryFlashBlock);
+            StatusText = "Дальше — буря. Пути нет.";
+        }
+
         private bool SelectFromScreen(Vector2 screenPoint)
         {
             Camera camera = Camera.main;
@@ -3171,7 +3254,7 @@ namespace RealmOfAshes.Game
                 string semantic = string.IsNullOrWhiteSpace(_selectedDynamic.Semantic)
                     ? "ЦЕЛЬ"
                     : _selectedDynamic.Semantic.ToUpperInvariant();
-                string name = _selectedDynamic.Name ?? _selectedDynamic.Id ?? "Точка пустоши";
+                string name = DynamicTargetTitle(_selectedDynamic);
                 output.Add(new OverlayLabel
                 {
                     Id = "selected:" + (_selectedDynamic.Id ?? name),

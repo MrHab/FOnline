@@ -618,8 +618,26 @@ namespace RealmOfAshes.EditorTools
                     + source.name + "_" + hash.ToString("x8") + ".mat");
             }
 
+            // Требования комитета к WebGL-бюджету: GPU instancing у копий и
+            // потолок 1024 на текстурах — объекты карты всё равно точки.
+            target.enableInstancing = true;
+            ClampTextureSize(target.GetTexture("_BaseMap"));
+            if (target.HasProperty("_BumpMap"))
+                ClampTextureSize(target.GetTexture("_BumpMap"));
+
             cache.Add(source, target);
             return target;
+        }
+
+        private static void ClampTextureSize(Texture texture)
+        {
+            if (texture == null) return;
+            string path = AssetDatabase.GetAssetPath(texture);
+            if (string.IsNullOrEmpty(path)) return;
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null || importer.maxTextureSize <= 1024) return;
+            importer.maxTextureSize = 1024;
+            importer.SaveAndReimport();
         }
 
         private static void PlaceMountain(Transform container,

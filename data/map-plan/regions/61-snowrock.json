@@ -1,0 +1,134 @@
+{
+  "id": "snowrock",
+  "container": "Plan_SnowRock_AUTHORED",
+  "bounds": {
+    "xMin": 640,
+    "xMax": 720,
+    "yMin": 115,
+    "yMax": 300
+  },
+  "edgeFadePoints": 15,
+  "noise": {
+    "threshold": 0.4,
+    "period": 40,
+    "density": 0.65,
+    "seed": 61,
+    "stepPoints": 6
+  },
+  "scale": {
+    "min": 0.75,
+    "max": 1.35
+  },
+  "maxHeightWorld": 0.9,
+  "quota": 120,
+  "groundTint": "#C8D4E0",
+  "groundTintStrength": 0.85,
+  "palette": [
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_01_Snow"
+      ],
+      "weight": 6,
+      "boost": 1.4,
+      "maxHeight": 0.9
+    },
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_03_Snow"
+      ],
+      "weight": 5,
+      "boost": 1.5,
+      "maxHeight": 0.9
+    },
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_05_Snow"
+      ],
+      "weight": 6,
+      "boost": 1.4,
+      "maxHeight": 0.9
+    },
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_07_Snow"
+      ],
+      "weight": 5,
+      "boost": 1.4,
+      "maxHeight": 0.9
+    },
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_17_Snow"
+      ],
+      "weight": 4,
+      "boost": 1.4,
+      "maxHeight": 0.9
+    },
+    {
+      "include": [
+        "Cliff_01/MEP_Cliff_19_Snow"
+      ],
+      "weight": 3,
+      "boost": 1.3,
+      "maxHeight": 0.9
+    },
+    {
+      "include": [
+        "MEP_Rock_01/MEP_Rock_01_N_Snow"
+      ],
+      "weight": 4,
+      "boost": 1.3,
+      "maxHeight": 0.6
+    },
+    {
+      "include": [
+        "MEP_Rock_02_03/MEP_Rock_02_Snow"
+      ],
+      "weight": 3,
+      "boost": 1.3,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "MEP_Rock_04/MEP_Rock_04_Snow"
+      ],
+      "weight": 3,
+      "boost": 1.3,
+      "maxHeight": 0.5
+    },
+    {
+      "include": [
+        "MEP_Rock_05/MEP_Rock_05_Snow"
+      ],
+      "weight": 4,
+      "boost": 1.3,
+      "maxHeight": 0.2
+    },
+    {
+      "include": [
+        "MEP_Stones_01/MEP_Stone_Grp_04_Snow"
+      ],
+      "weight": 3,
+      "boost": 1.3,
+      "maxHeight": 0.15
+    },
+    {
+      "include": [
+        "MEP_Stones_01/MEP_Stone_Grp_06_Snow"
+      ],
+      "weight": 3,
+      "boost": 1.3,
+      "maxHeight": 0.15
+    }
+  ],
+  "landmarks": [
+    {
+      "path": "Assets/MEP/MEP_Environment/MEP_Rocks/Cliff_01/Prefabs/MEP_Cliff_16_Snow.prefab",
+      "x": 675,
+      "y": 190,
+      "yaw": 120,
+      "scale": 1.0,
+      "maxHeight": 1.0
+    }
+  ]
+}

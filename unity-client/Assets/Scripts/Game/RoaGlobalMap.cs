@@ -4567,6 +4567,9 @@ namespace RealmOfAshes.Game
 
         private GlobalMapNode NearestNode(GlobalMapPoint point, float radius)
         {
+            // До прихода серверных данных карта пуста: канвас может дёрнуть
+            // PlayerNode из Update раньше загрузки.
+            if (point == null || _map == null || _map.Nodes == null) return null;
             GlobalMapNode best = null;
             float bestDistance = radius;
             foreach (GlobalMapNode node in _map.Nodes)

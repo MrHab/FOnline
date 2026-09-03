@@ -41,15 +41,7 @@
       "radius": 4
     }
   ],
-  "containers": [
-    {
-      "id": "relay_workshop_tools",
-      "tx": 17,
-      "tz": 18,
-      "name": "Ящик техников",
-      "tier": "tools"
-    }
-  ],
+  "containers": [],
   "objects": [
     {
       "id": "relay_energy_bench",
@@ -208,82 +200,6 @@
       }
     },
     {
-      "id": "relay_workshop_trade_machine",
-      "model": "tradeMachine",
-      "name": "Автомат снабжения техмастерской",
-      "url": "/assets/models/wasteland/trade_machine.glb",
-      "position": {
-        "x": 3,
-        "y": 0,
-        "z": 9
-      },
-      "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "tradeMachine",
-        "vendingMachine",
-        "production-market"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "tradeMachine",
-        "role": "productionTradeMachine",
-        "siteId": "relayWorkshop",
-        "traderProfile": "relayWorkshopMachine",
-        "caps": 190,
-        "buyInterests": [
-          "materials",
-          "ammo",
-          "tools",
-          "weapons"
-        ],
-        "stock": [
-          {
-            "id": "electronics",
-            "price": 9,
-            "qty": 18
-          },
-          {
-            "id": "energyCell",
-            "price": 5,
-            "qty": 72
-          },
-          {
-            "id": "napalm",
-            "price": 7,
-            "qty": 36
-          },
-          {
-            "id": "repairKit",
-            "price": 24,
-            "qty": 5
-          },
-          {
-            "id": "laserPistol",
-            "price": 92,
-            "qty": 2
-          },
-          {
-            "id": "plasmaRifle",
-            "price": 180,
-            "qty": 1
-          }
-        ]
-      }
-    },
-    {
       "id": "relay_pole_01",
       "model": "utilityPole",
       "name": "Мачта питания",
@@ -416,53 +332,6 @@
         "mode": "none"
       },
       "role": "campfire"
-    },
-    {
-      "id": "relayWorkshop_job_board",
-      "model": "jobBoard",
-      "name": "Доска работ",
-      "url": "/assets/models/wasteland/job_board.glb",
-      "position": {
-        "x": -24,
-        "y": 0,
-        "z": -16
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        },
-        "groundSnap": true
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "jobBoard",
-        "questBoard"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "jobBoard",
-        "role": "worldTaskBoard",
-        "boardSiteId": "relayWorkshop"
-      }
     },
     {
       "id": "relayWorkshop_cot_01",

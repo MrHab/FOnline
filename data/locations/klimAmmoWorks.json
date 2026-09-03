@@ -41,17 +41,7 @@
       "radius": 4
     }
   ],
-  "containers": [
-    {
-      "id": "klim_ammo_crate",
-      "tx": 16,
-      "tz": 18,
-      "name": "Ящик мастерской",
-      "tier": "ammo",
-      "locked": true,
-      "lockDifficulty": "medium"
-    }
-  ],
+  "containers": [],
   "objects": [
     {
       "id": "klim_ammo_bench",
@@ -210,82 +200,6 @@
       }
     },
     {
-      "id": "klim_ammo_trade_machine",
-      "model": "tradeMachine",
-      "name": "Автомат снабжения патронной мастерской",
-      "url": "/assets/models/wasteland/trade_machine.glb",
-      "position": {
-        "x": 4,
-        "y": 0,
-        "z": 6
-      },
-      "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "tradeMachine",
-        "vendingMachine",
-        "production-market"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "tradeMachine",
-        "role": "productionTradeMachine",
-        "siteId": "klimAmmoWorks",
-        "traderProfile": "klimAmmoWorksMachine",
-        "caps": 180,
-        "buyInterests": [
-          "ammo",
-          "materials",
-          "weapons",
-          "tools"
-        ],
-        "stock": [
-          {
-            "id": "ammo9",
-            "price": 3,
-            "qty": 120
-          },
-          {
-            "id": "ammo556",
-            "price": 5,
-            "qty": 80
-          },
-          {
-            "id": "ammoParts",
-            "price": 4,
-            "qty": 24
-          },
-          {
-            "id": "repairKit",
-            "price": 22,
-            "qty": 4
-          },
-          {
-            "id": "pistol",
-            "price": 58,
-            "qty": 2
-          },
-          {
-            "id": "rifle",
-            "price": 88,
-            "qty": 1
-          }
-        ]
-      }
-    },
-    {
       "id": "klim_armory_01",
       "model": "armoryRack",
       "name": "Стойка с деталями",
@@ -391,53 +305,6 @@
         "mode": "none"
       },
       "role": "campfire"
-    },
-    {
-      "id": "klimAmmoWorks_job_board",
-      "model": "jobBoard",
-      "name": "Доска работ",
-      "url": "/assets/models/wasteland/job_board.glb",
-      "position": {
-        "x": -24,
-        "y": 0,
-        "z": -16
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        },
-        "groundSnap": true
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "jobBoard",
-        "questBoard"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "jobBoard",
-        "role": "worldTaskBoard",
-        "boardSiteId": "klimAmmoWorks"
-      }
     },
     {
       "id": "klimAmmoWorks_cot_01",

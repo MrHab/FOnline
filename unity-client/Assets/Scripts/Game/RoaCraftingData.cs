@@ -94,6 +94,7 @@ namespace RealmOfAshes.Game
             Recipe("medkitcraft", "Аптечка", "medkit", 2, "chem_station", "medicine", 4, "chemicals", 1, "scrap", 1),
             Recipe("doctorbagcraft", "Набор доктора", "doctorBag", 1, "chem_station", "medicine", 5, "electronics", 1, "scrap", 2),
             Recipe("antibioticscraft", "Антибиотики", "antibiotics", 2, "chem_station", "medicine", 3, "chemicals", 2),
+            Recipe("medicinecraft", "Медикаменты", "medicine", 3, "chem_station", "chemicals", 2, "water", 1),
             Recipe("repairkitcraft", "Ремкомплект", "repairKit", 1, "repair_bench", "ore", 2, "wood", 2),
             Recipe("knifecraft", "Боевой нож", "knife", 1, "weapon_bench", "ore", 2, "wood", 1),
             Recipe("pistolcraft", "9mm пистолет", "pistol", 1, "weapon_bench", "weaponParts", 1, "scrap", 4, "ammoParts", 2),
@@ -145,6 +146,36 @@ namespace RealmOfAshes.Game
             if (station == "energy_bench") return "craftStationEnergy";
             if (station == "chem_station") return "craftStationChem";
             return string.Empty;
+        }
+
+        /// <summary>
+        /// Канонический id станка по любому его токену. Зеркалит серверную
+        /// таблицу SERVER_CRAFT_STATION_TOKENS: сервер принимает синонимы
+        /// («electronics», «relay», «armory», «lab», «medicine»…), и авторские
+        /// локации ими пользуются (oldDepot помечает энергостанок только как
+        /// «electronics»). Без зеркала Unity не узнавал такие станки вовсе.
+        /// Пустая строка — токен не станок.
+        /// </summary>
+        public static string CanonicalStation(string token)
+        {
+            string id = (token ?? string.Empty).Trim().ToLowerInvariant();
+            switch (id)
+            {
+                case "ammo_bench": case "ammo": case "munition":
+                    return "ammo_bench";
+                case "weapon_bench": case "weapon": case "armory":
+                    return "weapon_bench";
+                case "tool_bench": case "tool":
+                    return "tool_bench";
+                case "repair_bench": case "repair":
+                    return "repair_bench";
+                case "energy_bench": case "energy": case "relay": case "electronics":
+                    return "energy_bench";
+                case "chem_station": case "chem": case "lab": case "medicine":
+                    return "chem_station";
+                default:
+                    return string.Empty;
+            }
         }
 
         public static string StationLabel(string id)

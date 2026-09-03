@@ -18,25 +18,30 @@ namespace RealmOfAshes.Game
     {
         private readonly List<Renderer> _renderers = new List<Renderer>();
         private bool _visible = true;
-        private int _knownChildCount = -1;
+        private int _knownHierarchyCount = -1;
 
         public bool IsVisible { get { return _visible; } }
 
         /// <summary>Пересобрать список рендереров при следующем применении.</summary>
         public void Invalidate()
         {
-            _knownChildCount = -1;
+            _knownHierarchyCount = -1;
         }
 
         public void SetVisible(bool visible)
         {
-            // Число потомков меняется, когда догрузилась модель или сменилось
-            // оружие. Это дешёвая проверка вместо поиска рендереров каждый кадр.
-            int childCount = transform.childCount;
+            // Пересобираем список рендереров, когда МЕНЯЕТСЯ ИЕРАРХИЯ ЛЮБОЙ
+            // глубины. transform.childCount ловит только прямых потомков, а
+            // GLTFast достраивает меши существу глубже (внуками) и порциями по
+            // кадрам: снимок по childCount фиксировал пустой список и больше не
+            // обновлялся — существо гасло по gate, но рендереры оставались
+            // включёнными. hierarchyCount меняется при добавлении узла на любом
+            // уровне и остаётся дешёвым (свойство, без аллокаций).
+            int hierarchyCount = transform.hierarchyCount;
 
-            if (_knownChildCount != childCount)
+            if (_knownHierarchyCount != hierarchyCount)
             {
-                _knownChildCount = childCount;
+                _knownHierarchyCount = hierarchyCount;
                 _renderers.Clear();
                 GetComponentsInChildren(true, _renderers);
 

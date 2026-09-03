@@ -41,30 +41,7 @@
       "radius": 4
     }
   ],
-  "containers": [
-    {
-      "id": "old_depot_ammo_cache",
-      "tx": 14,
-      "tz": 16,
-      "name": "Военный ящик с боеприпасами",
-      "tier": "ammo",
-      "locked": true,
-      "lockDifficulty": "hard"
-    },
-    {
-      "id": "old_depot_rare_cache",
-      "tx": 25,
-      "tz": 15,
-      "name": "Запертый армейский сейф",
-      "tier": "rare",
-      "locked": true,
-      "lockDifficulty": "hard",
-      "terminalLocked": true,
-      "terminalDifficulty": "hard",
-      "terminalUnlocksLock": true,
-      "terminalName": "Старый армейский терминал"
-    }
-  ],
+  "containers": [],
   "objects": [
     {
       "id": "depot_armory_01",

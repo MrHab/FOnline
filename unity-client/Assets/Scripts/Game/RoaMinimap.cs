@@ -177,10 +177,18 @@ namespace RealmOfAshes.Game
             GUI.Box(panel, GUIContent.none);
             GUI.Label(new Rect(x, panel.y + 5f, size, 20f), string.IsNullOrEmpty(LocationName) ? "Карта" : LocationName);
             var mapRect = new Rect(x, panel.y + 26f, size, size);
+
+            // Мир Unity зеркалит ось Z относительно серверной (ToUnity: z → −z),
+            // а миникарта строится в серверных тайлах, поэтому без разворота она
+            // выглядит перевёрнутой вверх ногами относительно 3D-вида. Отражаем
+            // карту по вертикали, чтобы верх миникарты совпадал с «от игрока».
+            Matrix4x4 previousMatrix = GUI.matrix;
+            GUIUtility.ScaleAroundPivot(new Vector2(1f, -1f), mapRect.center);
             GUI.DrawTexture(mapRect, _staticTexture, ScaleMode.StretchToFill, false);
             DrawGrid(mapRect);
-
             for (int i = 0; i < _markers.Count; i++) DrawMarker(mapRect, _markers[i]);
+            GUI.matrix = previousMatrix;
+
             DrawPlayer(mapRect);
 
             Vector2 playerPoint = WorldToMapNormalized(Player.transform.position);
@@ -235,9 +243,12 @@ namespace RealmOfAshes.Game
             Vector2 p = WorldToMapNormalized(Player.transform.position);
             if (p.x < 0f || p.y < 0f || p.x > 1f || p.y > 1f) return;
             EnsureArrowTexture();
-            Vector2 center = new Vector2(rect.x + p.x * rect.width, rect.y + p.y * rect.height);
+            // Карта отражена по вертикали (см. OnGUI), поэтому маркер игрока
+            // рисуем с зеркальной координатой Y и зеркальным углом курса.
+            Vector2 center = new Vector2(rect.x + p.x * rect.width,
+                rect.y + (1f - p.y) * rect.height);
             Matrix4x4 previous = GUI.matrix;
-            GUIUtility.RotateAroundPivot(Player.transform.eulerAngles.y, center);
+            GUIUtility.RotateAroundPivot(-Player.transform.eulerAngles.y, center);
             GUI.DrawTexture(new Rect(center.x - 5f, center.y - 7f, 10f, 14f), _arrowTexture);
             GUI.matrix = previous;
         }

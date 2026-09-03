@@ -344,53 +344,6 @@
       "vision": {
         "blocks": false
       }
-    },
-    {
-      "id": "resourceOldKlimFarm_job_board",
-      "model": "jobBoard",
-      "name": "Доска работ",
-      "url": "/assets/models/wasteland/job_board.glb",
-      "position": {
-        "x": -24,
-        "y": 0,
-        "z": -16
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        },
-        "groundSnap": true
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "jobBoard",
-        "questBoard"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "jobBoard",
-        "role": "worldTaskBoard",
-        "boardSiteId": "oldKlimFarm"
-      }
     }
   ]
 }

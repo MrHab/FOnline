@@ -15,9 +15,6 @@ namespace RealmOfAshes.EditorTools
             try
             {
                 Vector3 observer = Vector3.zero;
-                Require(Mathf.Approximately(RoaActorPresentationLod.DesktopNearDistance, RoaFootIk.MaxDistance(false))
-                        && Mathf.Approximately(RoaActorPresentationLod.MobileNearDistance, RoaFootIk.MaxDistance(true)),
-                    "пороги LOD позы и foot IK разошлись");
                 Require(RoaActorPresentationLod.Select(Vector3.zero, observer, false, false,
                             RoaActorPresentationTier.Near) == RoaActorPresentationTier.Hidden,
                     "невидимый персонаж не перешёл в Hidden LOD");
@@ -38,13 +35,13 @@ namespace RealmOfAshes.EditorTools
                 var view = host.AddComponent<RoaCharacterView>();
                 view.SetPresentationLod(RoaActorPresentationTier.Far);
                 Require(view.PresentationTier == RoaActorPresentationTier.Far
-                        && !view.ProceduralPresentationActive && !view.FootIkActive,
-                    "Far LOD оставил процедурную позу или foot IK активными");
+                        && !view.ProceduralPresentationActive,
+                    "Far LOD оставил процедурную позу активной");
                 view.SetPresentationLod(RoaActorPresentationTier.Hidden);
                 Require(view.PresentationTier == RoaActorPresentationTier.Hidden,
                     "CharacterView не принял Hidden LOD");
                 view.SetPresentationLod(RoaActorPresentationTier.Near);
-                Require(view.ProceduralPresentationActive && view.FootIkActive,
+                Require(view.ProceduralPresentationActive,
                     "Near LOD не вернул полную позу");
 
                 Debug.Log("[LOD ПЕРСОНАЖЕЙ] готово: Near "

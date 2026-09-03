@@ -381,35 +381,6 @@ function locationHasCraftingStation(loc = {}) {
     || row.interactive?.stationTypes));
 }
 
-function locationHasTradeMachine(loc = {}, siteId = '') {
-  const key = String(siteId || '');
-  const objects = Array.isArray(loc.objects) ? loc.objects : [];
-  return objects.some(row => {
-    const tags = (Array.isArray(row.tags) ? row.tags : []).map(tag => String(tag || '').toLowerCase());
-    const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-    const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-    const kind = String(interactive.kind || entity.kind || row.kind || '').toLowerCase();
-    const machineSiteId = String(interactive.siteId || interactive.marketSiteId || entity.siteId || row.siteId || '');
-    const stock = Array.isArray(interactive.stock) ? interactive.stock : (Array.isArray(entity.stock) ? entity.stock : []);
-    const isMachine = kind === 'trademachine' || tags.includes('trademachine') || tags.includes('vendingmachine');
-    return isMachine && stock.length > 0 && (!key || machineSiteId === key);
-  });
-}
-
-function locationHasJobBoard(loc = {}, siteId = '') {
-  const key = String(siteId || '');
-  const objects = Array.isArray(loc.objects) ? loc.objects : [];
-  return objects.some(row => {
-    const tags = (Array.isArray(row.tags) ? row.tags : []).map(tag => String(tag || '').toLowerCase());
-    const interactive = row.interactive && typeof row.interactive === 'object' ? row.interactive : {};
-    const entity = row.entity && typeof row.entity === 'object' ? row.entity : {};
-    const kind = String(interactive.kind || entity.kind || row.kind || '').toLowerCase();
-    const boardSiteId = String(interactive.boardSiteId || entity.boardSiteId || row.boardSiteId || '');
-    const isBoard = tags.includes('jobboard') || tags.includes('questboard') || kind === 'jobboard';
-    return isBoard && (!key || boardSiteId === key);
-  });
-}
-
 function locationModelText(row = {}) {
   return `${row.id || ''} ${row.model || ''} ${row.url || ''} ${row.name || ''}`.toLowerCase();
 }
@@ -528,15 +499,16 @@ for (const site of defaultSitesList) {
   if (loc.id !== site.locationId) {
     errors.push(`world economy site ${site.id}: location file id mismatch ${relPath}`);
   }
-  if (['resource', 'production', 'outpost'].includes(site.type) && !locationHasJobBoard(loc, site.id)) {
-    errors.push(`world economy site ${site.id}: missing authored job board in ${relPath}`);
-  }
+  // Доски заданий убраны из всех локаций по решению дизайна: контракты
+  // берутся через Пип-бой и с глобальной карты, а не у объекта в мире.
+  // Поэтому наличие доски на экономической площадке больше не требуется.
   if ((site.type === 'production' || site.type === 'outpost' || site.production) && !locationHasCraftingStation(loc)) {
     errors.push(`world economy site ${site.id}: missing authored crafting station in ${relPath}`);
   }
-  if (site.type === 'production' && !locationHasTradeMachine(loc, site.id)) {
-    errors.push(`world economy site ${site.id}: missing server-backed production trade machine in ${relPath}`);
-  }
+  // Торговые автоматы убраны из всех локаций по решению дизайна. Автомат был
+  // лишь игровой лавкой над складом площадки (tradeMachineMarketState), а не
+  // участником симуляции экономики, поэтому производственная площадка
+  // больше не обязана его иметь.
   const sleepProblem = locationSleepShelterProblem(loc);
   if (sleepProblem) {
     errors.push(`world economy site ${site.id}: invalid modular sleep building in ${relPath}: ${sleepProblem}`);

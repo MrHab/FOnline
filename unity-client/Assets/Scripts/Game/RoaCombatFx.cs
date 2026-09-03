@@ -90,6 +90,14 @@ namespace RealmOfAshes.Game
         public RoaCombatPresentationFx Polish;
         public bool CanvasDriven { get; set; }
 
+        /// <summary>
+        /// Туман войны: вспышка, трассер и вспышечный свет выстрела выдают
+        /// стрелка. Стрелок в тумане не должен подсвечивать себя выстрелом —
+        /// звук слышно, картинки нет. Своих выстрелов не касается: игрок для
+        /// себя всегда видим.
+        /// </summary>
+        public RoaFogOfWar Fog;
+
         private RoaSocketClient _socket;
         private RoaEnemies _enemies;
         private bool _subscribed;
@@ -205,6 +213,12 @@ namespace RealmOfAshes.Game
             start.y = Mathf.Max(start.y, 1.05f);
             end.y = Mathf.Max(end.y, 1.02f);
             Audio?.PlayShot(start, end, weaponId);
+
+            // Выстрел из тумана слышно, но не видно: вспышка у дула выдала бы
+            // скрытого стрелка. Гейт по позиции дула — свои выстрелы всегда
+            // видимы (игрок в центре обзора).
+            if (Fog != null && !Fog.IsVisible(start)) return;
+
             if (Polish != null)
             {
                 Polish.PlayShot(start, end, weaponId, profile);
@@ -240,6 +254,8 @@ namespace RealmOfAshes.Game
 
         public void PlayMiss(Vector3 point, Vector3 source, string weaponId)
         {
+            // Промах в тумане не подсвечивает скрытую цель искрой попадания.
+            if (Fog != null && !Fog.IsVisible(point)) return;
             WeaponFxProfile profile = ProfileFor(weaponId);
             if (Polish != null)
             {
@@ -262,6 +278,8 @@ namespace RealmOfAshes.Game
         public void PlayConfirmedHit(Vector3 target, Vector3 source, string weaponId,
                                      bool critical, bool killed)
         {
+            // Попадание по скрытой в тумане цели не выдаёт её вспышкой.
+            if (Fog != null && !Fog.IsVisible(target)) return;
             if (Polish != null)
             {
                 Polish.PlayConfirmedHit(target, source, weaponId, critical, killed);

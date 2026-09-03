@@ -33,17 +33,6 @@ namespace RealmOfAshes.Game
         };
 
         /// <summary>
-        /// Модели, авторизованные «лицом в +Z» в glTF. glTFast инвертирует Z,
-        /// поэтому в Unity они смотрят назад и требуют доворота на 180°.
-        /// Остальные авторизованы в −Z и после инверсии смотрят вперёд.
-        /// </summary>
-        private static readonly HashSet<string> FacingPlusZ = new HashSet<string>
-        {
-            "enemyGhoul", "enemySuperMutant", "enemyAshWolf",
-            "enemyGecko", "enemyFireGecko", "brahmin", "friendlyBrahmin"
-        };
-
-        /// <summary>
         /// Соответствие визуала ключу модели для строк, где сервер прислал
         /// species/visual без modelKey. MODEL_KEY_BY_VISUAL, 00a_actor_facing.js:23.
         /// </summary>
@@ -69,10 +58,22 @@ namespace RealmOfAshes.Game
             return Urls.TryGetValue(modelKey ?? string.Empty, out url) ? url : string.Empty;
         }
 
+        /// <summary>
+        /// Модели радскорпиона и муравья экспортированы с обратной осью и после
+        /// импорта смотрят назад — им нужен доворот на 180° (замер: спиной к
+        /// цели при нулевом довороте). Остальные существа, супермутанты и люди
+        /// смотрят вперёд по Atan2(vx,vz) направления движения без доворота, как
+        /// игрок на той же humanoid-базе.
+        /// </summary>
+        private static readonly HashSet<string> FacingHalfTurn = new HashSet<string>
+        {
+            "enemyRadscorpion", "enemyMutantAnt"
+        };
+
         /// <summary>Доворот модели в градусах.</summary>
         public static float YawOffset(string modelKey)
         {
-            return FacingPlusZ.Contains(modelKey ?? string.Empty) ? 180f : 0f;
+            return FacingHalfTurn.Contains(modelKey ?? string.Empty) ? 180f : 0f;
         }
 
         /// <summary>

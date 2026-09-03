@@ -3058,9 +3058,11 @@ const DEFAULT_LOCATIONS = {
     enemyCap: 12, spawnCount: 8,
     spawn: { tx: 19, tz: 32 }, entryFromSettlement: { tx: 19, tz: 34 },
     exit: { tx: 19, tz: 35, to: 'settlement', label: 'Дорога в поселение' },
+    // Обычные лутовые тайники (аптечка, боевой контейнер) убраны по решению
+    // дизайна вместе с досками и ящиками в локациях. Остаётся только квестовый:
+    // терминал третьего тайника ведёт шаг квеста Старого Клима (klimTerminal),
+    // и smoke-check требует хотя бы один контейнер в шаблоне пустоши.
     containers: [
-      { id: 'wasteland_cache_1', tx: 10, tz: 10, name: 'Заброшенная аптечка', tier: 'medical' },
-      { id: 'wasteland_cache_2', tx: 27, tz: 12, name: 'Ржавый боевой контейнер', tier: 'ammo', locked: true, lockDifficulty: 'medium' },
       { id: 'wasteland_cache_3', tx: 14, tz: 27, name: 'Запертый редкий тайник', tier: 'rare', locked: true, lockDifficulty: 'hard', terminalLocked: true, terminalDifficulty: 'hard', terminalUnlocksLock: true, terminalName: 'Ржавый терминал тайника' }
     ]
   },
@@ -3917,36 +3919,13 @@ function normalizedLocationPlayableBounds(loc = {}) {
   };
 }
 
+// Процедурные лутовые тайники площадок («Главный тайник», «Схрон») убраны по
+// решению дизайна вместе с досками, автоматами и ящиками в локациях. Остаются
+// только квестовые тайники (wasteland_cache_3 → шаг квеста Старого Клима).
+// Сигнатура и единственный вызов сохранены; свой сеяный rng функция создавала
+// локально, поэтому пустой результат не сдвигает остальную генерацию площадки.
 function worldSiteInstanceContainers(site = {}, bounds = {}, seed = 1) {
-  const rng = rngFactory((Number(seed) || 1) ^ 0x45d9f3b);
-  const activity = String(site.activityKind || '').toLowerCase();
-  const owner = String(site.owner || '').toLowerCase();
-  const preferredTier = activity.includes('medical') || activity.includes('clinic') ? 'medical'
-    : activity.includes('ammo') || activity.includes('military') || owner.includes('raider') ? 'ammo'
-      : activity.includes('scrap') || activity.includes('repair') || activity.includes('workshop') ? 'tools'
-        : Number(site.danger || 0) >= 3.6 ? 'rare'
-          : 'survival';
-  const count = clamp(1 + (Math.floor(Number(site.localContentVariant || 0)) % 3), 1, 3);
-  const rows = [];
-  for (let index = 0; index < count; index += 1) {
-    let tx = Math.round((bounds.minX || 0) + 4 + rng() * Math.max(1, Number(bounds.width || MAP_W) - 9));
-    let tz = Math.round((bounds.minZ || 0) + 4 + rng() * Math.max(1, Number(bounds.height || MAP_H) - 9));
-    for (let probe = 0; probe < 16 && rows.some(row => Math.hypot(row.tx - tx, row.tz - tz) < 5); probe += 1) {
-      tx = clamp(tx + 3 + probe, bounds.minX + 3, bounds.maxX - 3);
-      tz = clamp(tz + 5 + probe * 2, bounds.minZ + 3, bounds.maxZ - 3);
-    }
-    const tier = index === 0 ? preferredTier : (index === 2 && Number(site.danger || 0) >= 2.8 ? 'rare' : 'basic');
-    rows.push({
-      id: `site_cache_${String(site.id || 'site').replace(/[^a-zA-Z0-9_-]/g, '_')}_${index + 1}`.slice(0, 64),
-      tx,
-      tz,
-      name: `${index === 0 ? 'Главный тайник' : 'Схрон'}: ${String(site.landmark || site.name || 'пустошь')}`.slice(0, 80),
-      tier,
-      locked: tier === 'rare' || (index > 0 && rng() > 0.55),
-      lockDifficulty: tier === 'rare' ? 'hard' : 'easy'
-    });
-  }
-  return rows;
+  return [];
 }
 
 function syncWorldSiteLocationDefinitions(force = false) {
@@ -5354,10 +5333,11 @@ function serverNpcAttackRange(enemy = {}, target = null) {
 }
 
 function serverNpcRangedComfortMin(enemy = {}, target = null) {
-  const weapon = serverNpcWeaponDef(enemy);
-  if (!weapon?.ammoType) return 0;
-  const attackRange = serverNpcAttackRange(enemy, target);
-  return Math.min(Math.max(2.2, attackRange * 0.36), Math.max(2.2, attackRange * 0.58));
+  // Стрелки держат позицию: подошедший вплотную враг больше не заставляет их
+  // пятиться. Нулевая минимальная дистанция убирает кайтинг по близости —
+  // отступление по низкому HP (updateEnemyCombatRetreat) и доводка на дистанцию
+  // выстрела при выходе из радиуса или потере линии огня сохраняются.
+  return 0;
 }
 
 function serverNpcAttackCooldownSeconds(enemy = {}, weapon = null, rng = Math.random) {
@@ -7990,24 +7970,40 @@ function serverApplyMovementProposal(player = {}, data = {}, now = Date.now()) {
   const previousAt = Number(player.lastMovementProposalAt || now - 50);
   const elapsed = clamp((now - previousAt) / 1000, 0.016, 0.75);
   player.lastMovementProposalAt = now;
-  const dx = clamp(proposedX, -MAP_SIZE, MAP_SIZE) - Number(player.x || 0);
-  const dz = clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - Number(player.z || 0);
+  const fromX = Number(player.x || 0);
+  const fromZ = Number(player.z || 0);
+  const dx = clamp(proposedX, -MAP_SIZE, MAP_SIZE) - fromX;
+  const dz = clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - fromZ;
   const distance = Math.hypot(dx, dz);
   const maxDistance = PLAYER_SPEED * elapsed * 1.35 + 0.22;
   const scale = distance > maxDistance && distance > 0 ? maxDistance / distance : 1;
-  const nextX = Number(player.x || 0) + dx * scale;
-  const nextZ = Number(player.z || 0) + dz * scale;
   const room = rooms.get(player.roomId);
-  if (room && (
-    !isRoomTerrainWalkableWorld(room, nextX, nextZ, PLAYER_COLLISION_RADIUS)
-    || !roomStaticCollisionMoveAllowed(room, player.x, player.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
-    || !roomEnemyCollisionMoveAllowed(room, player.x, player.z, nextX, nextZ, PLAYER_COLLISION_RADIUS)
-  )) {
-    return { accepted: false, corrected: true };
+  const moveAllowed = (toX, toZ) => !room || (
+    isRoomTerrainWalkableWorld(room, toX, toZ, PLAYER_COLLISION_RADIUS)
+    && roomStaticCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
+    && roomEnemyCollisionMoveAllowed(room, fromX, fromZ, toX, toZ, PLAYER_COLLISION_RADIUS)
+  );
+  // Прижатие к стене или НПС — не читерство. Полный отказ здесь оборачивался
+  // movementCorrection на каждое касание, и клиента «откидывало» телепортом.
+  // Вместо отказа скользим по осям — так же гасит ход CharacterController.
+  let nextX = fromX + dx * scale;
+  let nextZ = fromZ + dz * scale;
+  if (!moveAllowed(nextX, nextZ)) {
+    if (moveAllowed(nextX, fromZ)) nextZ = fromZ;
+    else if (moveAllowed(fromX, nextZ)) nextX = fromX;
+    else { nextX = fromX; nextZ = fromZ; }
   }
   player.x = clamp(nextX, -MAP_SIZE, MAP_SIZE);
   player.z = clamp(nextZ, -MAP_SIZE, MAP_SIZE);
-  return { accepted: true, corrected: scale < 0.999 };
+  // Телепорт-коррекцию клиенту шлём только при реальном расхождении: щель в
+  // несколько сантиметров от трения о препятствие рассасывается сама, а рывок
+  // назад её лишь превращал в дёрганье. 0.6 юнита ловит настоящий десинк.
+  const divergence = Math.hypot(
+    clamp(proposedX, -MAP_SIZE, MAP_SIZE) - player.x,
+    clamp(proposedZ, -MAP_SIZE, MAP_SIZE) - player.z
+  );
+  const moved = Math.hypot(player.x - fromX, player.z - fromZ) > 0.0001;
+  return { accepted: moved || divergence <= 0.001, corrected: divergence > 0.6 };
 }
 
 function sanitizeServerLocationContext(input = {}, fallbackLocationId = '') {
@@ -9922,13 +9918,36 @@ function chooseNoiseInvestigationPoint(room, x, z, enemy) {
   const baseZ = Number(z || 0);
   const scatter = enemyNoiseScatter(enemy);
   if (scatter > 0.05) {
+    // Разброс растёт с толпой. Один и тот же шум проверяют до 6–8 НПС, а
+    // базовый круг ≤1.75 не вмещает столько тел радиусом ~0.45: разделение
+    // (0.55) лишь заставляло их толкаться на месте — отсюда «кучкование».
+    // Каждый следующий расследующий получает кольцо дальше и точку, самую
+    // далёкую от уже занятых, — толпа обступает шум, а не давится в нём.
+    const already = activeNoiseInvestigatorsNear(room, baseX, baseZ);
+    const radiusScale = Math.min(4.5, 1 + 0.5 * already);
+    const taken = [];
+    for (const other of room?.enemies?.values?.() || []) {
+      if (!other || other.dead || other === enemy || other.aiState !== 'investigate') continue;
+      const ox = Number(other.investigateX);
+      const oz = Number(other.investigateZ);
+      if (Number.isFinite(ox) && Number.isFinite(oz)) taken.push({ x: ox, z: oz });
+    }
+    let best = null;
+    let bestGap = -1;
     for (let tries = 0; tries < 8; tries++) {
       const a = Math.random() * Math.PI * 2;
-      const r = (0.35 + Math.random() * 0.65) * scatter;
+      const r = (0.35 + Math.random() * 0.65) * scatter * radiusScale;
       const px = baseX + Math.cos(a) * r;
       const pz = baseZ + Math.sin(a) * r;
-      if (isRoomWalkableWorld(room, px, pz, 0.28)) return { x: px, z: pz };
+      if (!isRoomWalkableWorld(room, px, pz, 0.28)) continue;
+      let gap = Infinity;
+      for (const t of taken) gap = Math.min(gap, Math.hypot(px - t.x, pz - t.z));
+      if (gap > bestGap) {
+        bestGap = gap;
+        best = { x: px, z: pz };
+      }
     }
+    if (best) return best;
   }
   const t = worldToTile(baseX, baseZ);
   const nearest = findNearestWalkablePathTile(room, t.tx, t.tz, 4);
@@ -11883,6 +11902,10 @@ const SERVER_CRAFT_RECIPE_COSTS = {
   medkitcraft: { medicine: 4, chemicals: 1, scrap: 1 },
   doctorbagcraft: { medicine: 5, electronics: 1, scrap: 2 },
   antibioticscraft: { medicine: 3, chemicals: 2 },
+  // Базовые медикаменты как крафтовый ресурс: до этого их можно было только
+  // собрать топором в лесу или найти в луте, а все медрецепты их потребляли.
+  // Химикаты и вода качаются насосом на нефти — рецепт самодостаточен.
+  medicinecraft: { chemicals: 2, water: 1 },
   repairkitcraft: { ore: 2, wood: 2 },
   knifecraft: { ore: 2, wood: 1 },
   pistolcraft: { weaponParts: 1, scrap: 4, ammoParts: 2 },
@@ -11932,6 +11955,7 @@ const SERVER_CRAFT_RECIPE_OUTPUTS = {
   medkitcraft: { id: 'medkit', qty: 2 },
   doctorbagcraft: { id: 'doctorBag', qty: 1 },
   antibioticscraft: { id: 'antibiotics', qty: 2 },
+  medicinecraft: { id: 'medicine', qty: 3 },
   repairkitcraft: { id: 'repairKit', qty: 1 },
   knifecraft: { id: 'knife', qty: 1 },
   pistolcraft: { id: 'pistol', qty: 1 },
@@ -11980,6 +12004,7 @@ const SERVER_CRAFT_RECIPE_STATIONS = {
   medkitcraft: 'chem_station',
   doctorbagcraft: 'chem_station',
   antibioticscraft: 'chem_station',
+  medicinecraft: 'chem_station',
   repairkitcraft: 'repair_bench',
   knifecraft: 'weapon_bench',
   pistolcraft: 'weapon_bench',
@@ -20569,8 +20594,15 @@ function serverResolveGlobalTravelContact(session = null, data = {}, leader = {}
   }
   if (partyId) {
     const party = simState?.parties?.[partyId] || null;
-    const encounterable = party && !party.destroyed && String(party.state || '') !== 'destroyed'
-      && !['onsite', 'engaged'].includes(String(party.state || '')) && Number(party.members || party.strength || 0) > 0;
+    const partyStateKey = String(party?.state || '');
+    // Зверь на фуражировке («onsite» посреди пустоши) остаётся встречаемым:
+    // стая видна на карте, и игрок вправе в неё врезаться. Караваны и патрули
+    // в «onsite» стоят внутри поселений — для них ограничение сохраняется.
+    const foragingBeast = String(party?.kind || '').toLowerCase() === 'monster'
+      && partyStateKey === 'onsite';
+    const encounterable = party && !party.destroyed && partyStateKey !== 'destroyed'
+      && (foragingBeast || !['onsite', 'engaged'].includes(partyStateKey))
+      && Number(party.members || party.strength || 0) > 0;
     const partyPoint = encounterable ? sanitizeServerGlobalMapPoint(party) : null;
     const radius = partyPoint ? serverGlobalWorldPartyRadius(party) : 0;
     if (partyPoint && serverGlobalPointDistance(expectedPoint, partyPoint) <= radius + SERVER_GLOBAL_PLAYER_RADIUS + SERVER_GLOBAL_TRAVEL_EARLY_TOLERANCE) {

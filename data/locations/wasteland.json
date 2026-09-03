@@ -58,22 +58,6 @@
   ],
   "containers": [
     {
-      "id": "wasteland_cache_1",
-      "tx": 10,
-      "tz": 10,
-      "name": "Заброшенная аптечка",
-      "tier": "medical"
-    },
-    {
-      "id": "wasteland_cache_2",
-      "tx": 27,
-      "tz": 12,
-      "name": "Ржавый боевой контейнер",
-      "tier": "ammo",
-      "locked": true,
-      "lockDifficulty": "medium"
-    },
-    {
       "id": "wasteland_cache_3",
       "tx": 14,
       "tz": 27,

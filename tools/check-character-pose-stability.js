@@ -26,11 +26,9 @@ async function main() {
   const playerController = fs.readFileSync(path.join(UNITY_GAME, 'RoaPlayerController.cs'), 'utf8');
   const locomotionPresentation = fs.readFileSync(path.join(UNITY_GAME, 'RoaLocomotionPresentation.cs'), 'utf8');
   const characterView = fs.readFileSync(path.join(UNITY_GAME, 'RoaCharacterView.cs'), 'utf8');
-  const footIk = fs.readFileSync(path.join(UNITY_GAME, 'RoaFootIk.cs'), 'utf8');
   const hitReaction = fs.readFileSync(path.join(UNITY_GAME, 'RoaHitReaction.cs'), 'utf8');
   const presentationLod = fs.readFileSync(path.join(UNITY_GAME, 'RoaActorPresentationLod.cs'), 'utf8');
   const groundShadow = fs.readFileSync(path.join(UNITY_GAME, 'RoaActorGroundShadow.cs'), 'utf8');
-  const groundingProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaGroundingProbe.cs'), 'utf8');
   const hitProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaHitReactionProbe.cs'), 'utf8');
   const remoteDeathProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaRemoteDeathProbe.cs'), 'utf8');
   const npcCombatProbe = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaNpcCombatBehaviorProbe.cs'), 'utf8');
@@ -53,34 +51,7 @@ async function main() {
   assert(playerController.includes('_controller.enableOverlapRecovery = true;')
     && playerController.includes('OnControllerColliderHit'),
   'Unity CharacterController lost overlap recovery or collision diagnostics');
-  assert(footIk.includes('Physics.SphereCastNonAlloc')
-    && footIk.includes('side.LockNormal = surfaceNormal;')
-    && footIk.includes('ApplyFootNormal(side, contactNormal, normalWeight)')
-    && footIk.includes('MaximumUnsupportedLift = 0.075f')
-    && footIk.includes('EnsureSupportContact(dead);')
-    && footIk.includes('BlendRateRelease = 18f')
-    && footIk.includes('TargetReachReserve = 0.018f')
-    && footIk.includes('MaximumWalkableRise = 0.30f')
-    && footIk.includes('IsActorCollider(hit.collider, _actorRoot)')
-    && footIk.includes('collider is CharacterController')
-    && footIk.includes('public void Suspend(string clip)')
-    && footIk.includes('public void StabilizeAction(')
-    && footIk.includes('StationaryActionLiftLimit = 0.18f')
-    && footIk.includes('MovingActionLiftLimit = 0.32f')
-    && footIk.includes('ActionSafetyActive = true;')
-    && footIk.includes('Suspended = true;')
-    && footIk.includes('ConstrainFootTarget(side, target)')
-    && footIk.includes('ConstrainFootTarget(support, target)'),
-  'Unity foot IK no longer follows ground or prevents a dual-foot flight phase');
-  assert(characterView.includes('public static bool ShouldSuspendFootIk(')
-    && characterView.includes('action == "hurt"')
-    && characterView.includes('|| hitReactionActive')
-    && characterView.includes('|| combatStabilizing')
-    && characterView.includes('|| contactStabilizing')
-    && characterView.includes('_weapon.IsMeleeEquipped')
-    && characterView.includes('_weapon.CancelAttackPose()')
-    && characterView.includes('_footIk.StabilizeAction(Time.deltaTime, _locomoting,')
-    && characterView.includes('FootActionSafetyActive')
+  assert(characterView.includes('_weapon.CancelAttackPose()')
     && characterView.includes('_animation.Play(_currentClip, PlayMode.StopAll)')
     && characterView.includes('_animation.Stop();')
     && enemies.includes('ResolveSnapshotDeadState(wasDead, snapshotDead)')
@@ -92,17 +63,11 @@ async function main() {
     && enemies.includes('CombatMotionLocked(enemy.Dead, enemy.ThreatActive,')
     && enemies.includes('enemy.ActionUntil, enemy.ReactionUntil, Time.time)')
     && enemies.includes('enemy.Hp = ResolveFrameHealth(previousHp, frameHp, deadFrame,')
-    && npcCombatProbe.includes('RoaFootIk.IsActorCollider(capsule, null)')
-    && npcCombatProbe.includes('RoaCharacterView.ShouldSuspendFootIk(false, "run", true, true)')
-    && npcCombatProbe.includes('false, false, false, true)')
+    && npcCombatProbe.includes('RoaCharacterView.IsActorCollider(capsule, null)')
     && auditRunner.includes('typeof(RoaNpcCombatBehaviorProbe)'),
-  'Unity combat pose no longer suspends leg IK or keeps death authoritative over stale movement');
-  assert(footIk.includes('DesktopMaxDistance = 20f')
-    && footIk.includes('MobileMaxDistance = 12f')
-    && footIk.includes('public static bool ShouldRun(')
-    && footIk.includes('public void Reset()')
-    && characterView.includes('SetGroundingLod(bool active)')
-    && characterView.includes('if (_groundingActive)')
+  'Unity combat pose no longer keeps death authoritative over stale movement');
+  assert(characterView.includes('SetGroundingLod(bool active)')
+    && characterView.includes('_groundShadow.SetActive(active)')
     && presentationLod.includes('DesktopNearDistance = 20f')
     && presentationLod.includes('MobileNearDistance = 12f')
     && presentationLod.includes('if (!visible) return RoaActorPresentationTier.Hidden;')
@@ -111,7 +76,7 @@ async function main() {
     && characterView.includes('ResetProceduralPresentation()')
     && remotePlayers.includes('RoaActorPresentationLod.Select(')
     && enemies.includes('RoaActorPresentationLod.Select('),
-  'Unity foot IK lost visibility/distance LOD or stale-state reset');
+  'Unity actor presentation lost visibility/distance LOD or stale-state reset');
   assert(groundShadow.includes('public sealed class RoaActorGroundShadow')
     && groundShadow.includes('ProceduralActorContactShadow')
     && groundShadow.includes('_renderer.sharedMaterial = _sharedMaterial;')
@@ -120,31 +85,12 @@ async function main() {
     && groundShadow.includes('Quaternion.FromToRotation(Vector3.up, groundNormal)')
     && characterView.includes('_groundShadow.UpdatePose(actorPosition, groundY, normal'),
   'Unity humanoids lost the shared slope-aware procedural contact shadow');
-  assert(groundingProbe.includes('[КОНТАКТ С ЗЕМЛЁЙ] готово:')
-    && groundingProbe.includes('ik.GroundProbeCount == 2')
-    && groundingProbe.includes('rightFoot.position.y > leftFoot.position.y + 0.12f')
-    && groundingProbe.includes('flightIk.SupportSafetyActive')
-    && groundingProbe.includes('обе свободные стопы остаются в воздухе')
-    && groundingProbe.includes('staleExtension < 0.995f && staleHorizontal < 0.16f')
-    && groundingProbe.includes('устаревший замок вытянул ногу за персонажем')
-    && groundingProbe.includes('PointBlankEnemyActor')
-    && groundingProbe.includes('коллайдер актёра поднял стопу при ударе в упор')
-    && groundingProbe.includes('ActionFootGuardRig')
-    && groundingProbe.includes('actionIk.ActionSafetyActive')
-    && groundingProbe.includes('actionHighest < 0.33f')
-    && groundingProbe.includes('SharedUsers == usersBefore')
-    && auditRunner.includes('typeof(RoaGroundingProbe)')
-    && auditRunner.includes('typeof(RoaLocomotionContactProbe)'),
-  'Unity grounding probe no longer verifies step height, LOD and shared-resource cleanup');
-  assert(characterView.includes('FootSupportSafetyActive')
-    && characterView.includes('TryGetFootContactLifts(out float left, out float right)')
-    && characterPreviewProbe.includes('for (int frame = 0; frame < 32; frame++)')
-    && characterPreviewProbe.includes('maximumMinimumLift <= 0.085f')
-    && characterPreviewProbe.includes('loaded.FootIkSuppressed && highestHitFoot < 0.36f')
+  assert(auditRunner.includes('typeof(RoaLocomotionContactProbe)'),
+  'Locomotion contact probe is not part of the batch Unity audit');
+  assert(characterPreviewProbe.includes('for (int frame = 0; frame < 32; frame++)')
     && characterPreviewProbe.includes('hurt.time = Mathf.Min(0.14f')
-    && characterPreviewProbe.includes('animation.IsPlaying("death") && !animation.IsPlaying("run")')
-    && characterPreviewProbe.includes('обе стопы настоящего бегового клипа одновременно оторвались'),
-  'Real GLB run-cycle probe no longer bounds simultaneous foot lift');
+    && characterPreviewProbe.includes('animation.IsPlaying("death") && !animation.IsPlaying("run")'),
+  'Real GLB probe no longer sweeps the run clip or guards the hurt/death clip handoff');
   assert(ikChain.includes('Vector3? pole')
     && ikChain.includes('ApplyPoleConstraint(pole.Value)')
     && weaponView.includes('ArmPole(true)')
@@ -188,7 +134,6 @@ async function main() {
     && characterView.includes('DeathContactBones')
     && characterView.includes('TryGetDeathShadowCenter(out Vector3 corpseCenter)')
     && groundShadow.includes('Mathf.Lerp(1.12f, 2.10f, deathWeight)')
-    && groundingProbe.includes('не следует за падением')
     && auditRunner.includes('typeof(RoaRemoteDeathProbe)')
     && characterPreviewProbe.includes('ROA_UNITY_DEATH_CAPTURE')
     && characterPreviewProbe.includes('утверждённый death-клип снова обрезан до фазы наклона')
@@ -350,6 +295,38 @@ this.__poseApi = {
     maxFoot < minHead - 0.8,
     `стопа поднимается почти до головы: стопа ${maxFoot.toFixed(2)} м, голова ${minHead.toFixed(2)} м`
   );
+
+  // Процедурные смещения костей (травмы, презентация активности, реакция на
+  // удар) аддитивны. Legacy Animation перестаёт писать кости после клипа Once,
+  // и без окна Begin/End смещение копилось бы каждый кадр (нога уходила по кругу).
+  const characterViewSource = fs.readFileSync(path.join(UNITY_GAME, 'RoaCharacterView.cs'), 'utf8')
+    .replace(/\r\n/g, '\n');
+  const beginAt = characterViewSource.indexOf('BeginBoneOffsets();\n            ApplyActivityPresentation(Time.deltaTime);');
+  const endAt = characterViewSource.indexOf('ApplyInjuryPose();\n            EndBoneOffsets();');
+  assert(beginAt > 0 && endAt > beginAt,
+    'RoaCharacterView: слои смещений костей должны идти внутри окна BeginBoneOffsets/EndBoneOffsets');
+  assert(characterViewSource.includes('bone.localRotation = state.Base;')
+    && characterViewSource.includes('entry.Value.Written = entry.Key.localRotation;')
+    && characterViewSource.includes('_boneOffsets.Clear();'),
+    'RoaCharacterView: смещения костей больше не откатываются на замороженной анимации');
+  assert(characterPreviewProbe.includes('animation.Stop();')
+    && characterPreviewProbe.includes('frozenDrift < 0.5f')
+    && characterPreviewProbe.includes('нога с переломом крутится на замороженной анимации')
+    && characterPreviewProbe.includes('healedDrift < 0.5f'),
+    'RoaCharacterPreviewProbe: нет проверки, что нога с переломом не крутится на замороженной анимации');
+  // Синхронный пробник на теле из каталога префабов: работает без сети и без
+  // фокуса окна редактора (через RoaAgentGate executeMenu).
+  const frozenBoneProbePath = path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaFrozenBoneProbe.cs');
+  const frozenBoneProbe = fs.readFileSync(frozenBoneProbePath, 'utf8');
+  assert(frozenBoneProbe.includes('[MenuItem("Realm of Ashes/Проверить заморозку костей (перелом ноги)")]')
+    && frozenBoneProbe.includes('animation.Stop();')
+    && frozenBoneProbe.includes('for (int frame = 0; frame < 60; frame++)')
+    && frozenBoneProbe.includes('drift < 0.5f && maxDrift < 0.5f')
+    && frozenBoneProbe.includes('healed < 0.5f')
+    && frozenBoneProbe.includes('["brokenLeg"] = true'),
+    'RoaFrozenBoneProbe: синхронная проверка заморозки костей потеряла перелом ноги, 60 кадров или допуски');
+  assert(/guid:\s*[0-9a-f]{32}/i.test(fs.readFileSync(frozenBoneProbePath + '.meta', 'utf8')),
+    'RoaFrozenBoneProbe.cs.meta отсутствует или без GUID');
 
   console.log(
     `Character pose stability OK: 6 с стрельбы на месте, стопа не выше `

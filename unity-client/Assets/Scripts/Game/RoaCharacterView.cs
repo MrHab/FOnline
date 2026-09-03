@@ -97,7 +97,6 @@ namespace RealmOfAshes.Game
         private bool _backward;
 
         private readonly RoaCharacterPose _pose = new RoaCharacterPose();
-        private readonly RoaFootIk _footIk = new RoaFootIk();
         private readonly RoaHitReaction _hitReaction = new RoaHitReaction();
         private readonly RoaActorGroundShadow _groundShadow = new RoaActorGroundShadow();
 
@@ -108,6 +107,26 @@ namespace RealmOfAshes.Game
         private Transform _modelRoot;
 
         private readonly Dictionary<string, Transform> _bones = new Dictionary<string, Transform>();
+
+        // База процедурных смещений костей за кадр. Смещения травм, презентации
+        // активности и реакции на удар прибавляются к текущему повороту кости;
+        // это безопасно, только пока аниматор переставляет кость каждый кадр.
+        // Legacy Animation перестаёт писать кости, когда клип Once (attack/hurt)
+        // закончился или анимация остановлена, — тогда прибавка копилась бы
+        // бесконечно (нога с переломом уходила по кругу). Здесь помним базу и
+        // то, что записали сами: если аниматор кость не тронул — сперва откат.
+        private sealed class BoneOffsetBase
+        {
+            public Quaternion Base;
+            public Quaternion Written;
+        }
+        private readonly Dictionary<Transform, BoneOffsetBase> _boneOffsets =
+            new Dictionary<Transform, BoneOffsetBase>();
+        private static readonly string[] ProceduralOffsetBones =
+        {
+            "thigh_l", "upperarm_r", "upperarm_l", "head",
+            "spine_01", "spine_02", "spine_03", "neck"
+        };
         private readonly List<SkinnedMeshRenderer> _deathGroundRenderers = new List<SkinnedMeshRenderer>();
         private RoaWeaponView _weapon;
         private RoaOffhandWeaponView _offhandWeapon;
@@ -149,8 +168,6 @@ namespace RealmOfAshes.Game
         /// </summary>
         private float _attackUntil;
         private float _hurtUntil;
-        private float _combatFootIkUntil;
-        private float _contactFootIkUntil;
         private string _activityPresentation = string.Empty;
         private float _activityPhaseOffset;
         private float _activityPresentationWeight;
@@ -161,7 +178,6 @@ namespace RealmOfAshes.Game
 
         /// <summary>Длительность вспышки удара по умолчанию, с.</summary>
         private const float AttackSeconds = 0.45f;
-        private const float MeleeFootIkStabilizeSeconds = 0.36f;
         private const float DeathImpactMemorySeconds = 0.9f;
 
         // Утверждённый humanoid death-клип уже содержит потерю равновесия,
@@ -232,21 +248,6 @@ namespace RealmOfAshes.Game
             }
         }
 
-        /// <summary>Сколько стоп зафиксировано foot IK сейчас. Для диагностики.</summary>
-        public int FootLocks { get { return _footIk.LockedCount; } }
-
-        /// <summary>Foot IK нашёл кости ног и работает.</summary>
-        public bool FootIkReady { get { return _footIk.Ready; } }
-        public bool FootIkActive { get { return _groundingActive && !_dead && !_footIk.Suspended; } }
-        public bool FootIkSuppressed { get { return _footIk.Suspended; } }
-        public bool CombatFootIkStabilized { get { return Time.time < _combatFootIkUntil; } }
-        public bool ContactFootIkStabilized { get { return Time.time < _contactFootIkUntil; } }
-        public bool FootSupportSafetyActive { get { return _footIk.SupportSafetyActive; } }
-        public bool FootActionSafetyActive { get { return _footIk.ActionSafetyActive; } }
-        public bool TryGetFootContactLifts(out float left, out float right)
-        {
-            return _footIk.TryGetContactLifts(out left, out right);
-        }
         public bool GroundShadowReady { get { return _groundShadow.Ready; } }
         public bool GroundShadowVisible { get { return _groundShadow.Visible; } }
         public RoaActorPresentationTier PresentationTier { get { return _presentationTier; } }
@@ -266,18 +267,22 @@ namespace RealmOfAshes.Game
         /// <summary>Сглаженная сила контактной позы у препятствия.</summary>
         public float LocomotionContactPressure { get { return _pose.ContactPressure; } }
 
-        public static bool ShouldSuspendFootIk(bool dead, string clip,
-                                               bool locomoting, bool hitReactionActive,
-                                               bool combatStabilizing = false,
-                                               bool contactStabilizing = false)
+        /// <summary>
+        /// Коллайдер принадлежит живому актёру (игроку, NPC или удалённому
+        /// игроку), а не стене или предмету. Нужен контроллеру игрока, чтобы
+        /// не считать столкновение с телом NPC контактом со стеной, и пробам.
+        /// Перенесён сюда из удалённой системы foot IK.
+        /// </summary>
+        public static bool IsActorCollider(Collider collider, Transform owner)
         {
-            if (dead) return true;
-            string action = clip ?? string.Empty;
-            return action == "hurt"
-                || action == "attack"
-                || hitReactionActive
-                || combatStabilizing
-                || contactStabilizing;
+            if (collider == null) return false;
+            Transform hit = collider.transform;
+            if (owner != null && hit != null && hit.IsChildOf(owner)) return true;
+            if (collider is CharacterController) return true;
+            if (hit == null) return false;
+            if (hit.GetComponentInParent<RoaPlayerController>() != null) return true;
+            if (hit.GetComponentInParent<RoaCharacterView>() != null) return true;
+            return hit.GetComponentInParent<RoaVisibilityGate>() != null;
         }
 
         public static CombatPresentationPhase ResolveCombatPresentationPhase(
@@ -376,7 +381,6 @@ namespace RealmOfAshes.Game
                 return;
             }
             _groundingActive = active;
-            if (!active) _footIk.Reset();
             _groundShadow.SetActive(active);
         }
 
@@ -489,10 +493,6 @@ namespace RealmOfAshes.Game
 
             if (_weapon != null && _weapon.Ready)
             {
-                if (_weapon.IsMeleeEquipped)
-                    _combatFootIkUntil = Mathf.Max(_combatFootIkUntil,
-                        Time.time + Mathf.Max(MeleeFootIkStabilizeSeconds,
-                            meleeSwingSeconds));
                 _weapon.PlayAttack(meleeSwingSeconds);
                 _attackUntil = 0f;
                 return;
@@ -527,8 +527,6 @@ namespace RealmOfAshes.Game
             RememberImpact(sourceWorld, hasSource);
             _attackUntil = 0f;
             if (_weapon != null) _weapon.CancelAttackPose();
-            _combatFootIkUntil = Mathf.Max(_combatFootIkUntil,
-                Time.time + RoaHitReaction.Duration);
             if (_presentationTier == RoaActorPresentationTier.Near)
                 _hitReaction.Trigger(transform, sourceWorld, hasSource, damage, critical);
 
@@ -626,12 +624,9 @@ namespace RealmOfAshes.Game
                 _turnHold = 0f;
                 _attackUntil = 0f;
                 _hurtUntil = 0f;
-                _combatFootIkUntil = 0f;
-                _contactFootIkUntil = 0f;
                 _activityPresentation = string.Empty;
                 _activityPresentationWeight = 0f;
                 if (_weapon != null) _weapon.CancelAttackPose();
-                _footIk.Reset();
                 _hitReaction.Reset();
                 if (!wasDead || !_deathFallStarted)
                 {
@@ -646,8 +641,6 @@ namespace RealmOfAshes.Game
             }
             else
             {
-                _combatFootIkUntil = 0f;
-                _contactFootIkUntil = 0f;
                 _deathFallStarted = false;
                 _deathPoseFrozen = false;
                 _deathSettleWeight = 0f;
@@ -867,6 +860,7 @@ namespace RealmOfAshes.Game
             UsesProjectPrefab = false;
             _clips.Clear();
             _bones.Clear();
+            _boneOffsets.Clear();
 
             GameObject prefabInstance;
             UsesProjectPrefab = RoaModelPrefabCatalog.TryInstantiate(
@@ -903,11 +897,10 @@ namespace RealmOfAshes.Game
             if (!LoadIsCurrent(loadRequest)) return;
 
             // Позу покоя снимаем до первого клипа: она эталон и для демпфирования
-            // верха, и для высоты стоп в foot IK.
+            // верха.
             _pose.Bind(transform);
 
             _modelRoot = FindDeep(transform, LibraryRootName) ?? FindDeep(transform, BaseRootName);
-            if (_modelRoot != null) _footIk.Bind(transform, _modelRoot);
             _groundShadow.Bind(transform);
             _groundShadow.SetActive(_groundingActive);
 
@@ -925,8 +918,7 @@ namespace RealmOfAshes.Game
             if (_dead) SetDead(true);
 
             Debug.Log("[ROA] Модель " + key + ", клипы: " + string.Join(", ", _clips)
-                + ", поза: " + (_pose.Ready ? "включена" : "выключена")
-                + ", foot IK: " + (_footIk.Ready ? "включён" : "выключен"));
+                + ", поза: " + (_pose.Ready ? "включена" : "выключена"));
             NotifyVisualChanged();
         }
 
@@ -1158,8 +1150,6 @@ namespace RealmOfAshes.Game
             float contactForward = Vector3.Dot(obstacleDirection, facing);
             float contactSide = Vector3.Dot(obstacleDirection, right);
             float contactWeight = Mathf.Clamp01(collisionPressure);
-            if (contactWeight > 0.05f)
-                _contactFootIkUntil = Mathf.Max(_contactFootIkUntil, Time.time + 0.14f);
 
             Vector3 move = actuallyMoving
                 ? new Vector3(velocity.x, 0f, velocity.z).normalized
@@ -1285,6 +1275,7 @@ namespace RealmOfAshes.Game
 
             // Поверх клипа и направленной позы, но до оружейного IK: корпус
             // отшатывается, а кисти затем снова точно садятся на рукояти.
+            BeginBoneOffsets();
             ApplyActivityPresentation(Time.deltaTime);
             _hitReaction.Apply(Time.deltaTime);
 
@@ -1293,24 +1284,11 @@ namespace RealmOfAshes.Game
             if (_weapon != null) _weapon.Apply(_aimPoint, _hasAim);
             if (_offhandWeapon != null) _offhandWeapon.Apply(_aimPoint, _hasAim);
 
-            // Foot IK последним: он трогает только ноги, а их мировые позиции
-            // к этому моменту окончательные.
-            if (_groundingActive)
-            {
-                bool suspendFootIk = ShouldSuspendFootIk(false, _currentClip,
-                    _locomoting, _hitReaction.Active, CombatFootIkStabilized,
-                    ContactFootIkStabilized);
-                if (suspendFootIk)
-                    _footIk.StabilizeAction(Time.deltaTime, _locomoting,
-                        _currentClip, _pose.KneeFlex);
-                else _footIk.Apply(Time.deltaTime, _locomoting, Turning, false,
-                    _currentClip, _pose.KneeFlex);
-            }
-
             // Травма — самый верхний визуальный слой. Перелом руки намеренно
-            // ослабляет идеальный IK-хват, а перелом ноги остаётся видим после
-            // того, как foot IK поставил стопу на землю.
+            // ослабляет идеальный IK-хват, а перелом ноги остаётся видим поверх
+            // авторской анимации ног (foot IK удалён: стопы следуют клипу).
             ApplyInjuryPose();
+            EndBoneOffsets();
             UpdateGroundShadow();
         }
 
@@ -1328,7 +1306,7 @@ namespace RealmOfAshes.Game
                 groundY = actorPosition.y;
                 normal = Vector3.up;
             }
-            else if (!_footIk.TryGetGroundPose(out groundY, out normal))
+            else
             {
                 groundY = actorPosition.y;
                 normal = Vector3.up;
@@ -1448,8 +1426,53 @@ namespace RealmOfAshes.Game
         private void AddBoneOffset(string name, float x, float y, float z)
         {
             if (!_bones.TryGetValue(name, out Transform bone) || bone == null) return;
+            if (!_boneOffsets.ContainsKey(bone))
+            {
+                _boneOffsets[bone] = new BoneOffsetBase
+                {
+                    Base = bone.localRotation,
+                    Written = bone.localRotation
+                };
+            }
             bone.localRotation = bone.localRotation * Quaternion.Euler(
                 x * Mathf.Rad2Deg, y * Mathf.Rad2Deg, z * Mathf.Rad2Deg);
+        }
+
+        // Открывает окно процедурных смещений кадра. Кость, которую аниматор в
+        // этом кадре не переставил (её поворот равен тому, что записали мы),
+        // сначала возвращается к базе — иначе смещение копилось бы каждый кадр.
+        private void BeginBoneOffsets()
+        {
+            for (int i = 0; i < ProceduralOffsetBones.Length; i++)
+            {
+                if (!_bones.TryGetValue(ProceduralOffsetBones[i], out Transform listed)
+                    || listed == null || _boneOffsets.ContainsKey(listed)) continue;
+                _boneOffsets[listed] = new BoneOffsetBase
+                {
+                    Base = listed.localRotation,
+                    Written = listed.localRotation
+                };
+            }
+            foreach (KeyValuePair<Transform, BoneOffsetBase> entry in _boneOffsets)
+            {
+                Transform bone = entry.Key;
+                if (bone == null) continue;
+                BoneOffsetBase state = entry.Value;
+                if (Mathf.Abs(Quaternion.Dot(bone.localRotation, state.Written)) > 0.999999f)
+                    bone.localRotation = state.Base;
+                state.Base = bone.localRotation;
+            }
+        }
+
+        // Закрывает окно: запоминаем, что именно записали, чтобы в следующем
+        // кадре отличить «аниматор переставил кость» от «кость заморожена».
+        private void EndBoneOffsets()
+        {
+            foreach (KeyValuePair<Transform, BoneOffsetBase> entry in _boneOffsets)
+            {
+                if (entry.Key == null) continue;
+                entry.Value.Written = entry.Key.localRotation;
+            }
         }
 
         private void UpdateInjuryIndicator()

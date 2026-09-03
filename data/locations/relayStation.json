@@ -143,21 +143,7 @@
       "armor"
     ]
   },
-  "containers": [
-    {
-      "id": "relay_terminal_1",
-      "tx": 18,
-      "tz": 16,
-      "name": "Технический ящик станции",
-      "tier": "rare",
-      "locked": true,
-      "lockDifficulty": "medium",
-      "terminalLocked": true,
-      "terminalDifficulty": "medium",
-      "terminalUnlocksLock": true,
-      "terminalName": "Пульт ретранслятора"
-    }
-  ],
+  "containers": [],
   "objects": [
     {
       "id": "relay_antenna_01",
@@ -213,53 +199,6 @@
       ],
       "vision": {
         "blocks": true
-      }
-    },
-    {
-      "id": "relayStation_job_board_01",
-      "model": "jobBoard",
-      "name": "Доска заданий",
-      "url": "/assets/models/wasteland/job_board.glb",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": -6
-      },
-      "rotation": {
-        "x": 0,
-        "y": 2.6704,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        },
-        "groundSnap": true
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "jobBoard",
-        "questBoard"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "jobBoard",
-        "role": "worldTaskBoard",
-        "boardSiteId": "relayStation"
       }
     },
     {

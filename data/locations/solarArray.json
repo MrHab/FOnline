@@ -204,71 +204,6 @@
       }
     },
     {
-      "id": "solar_array_trade_machine",
-      "model": "tradeMachine",
-      "name": "Автомат снабжения солнечной станции",
-      "url": "/assets/models/wasteland/trade_machine.glb",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "z": 7
-      },
-      "rotation": {
-        "x": 0,
-        "y": 3.141592653589793,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "tradeMachine",
-        "vendingMachine",
-        "production-market"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "tradeMachine",
-        "role": "productionTradeMachine",
-        "siteId": "solarArray",
-        "traderProfile": "solarArrayMachine",
-        "caps": 130,
-        "buyInterests": [
-          "materials",
-          "ammo",
-          "tools"
-        ],
-        "stock": [
-          {
-            "id": "energyCell",
-            "price": 4,
-            "qty": 96
-          },
-          {
-            "id": "electronics",
-            "price": 8,
-            "qty": 14
-          },
-          {
-            "id": "repairKit",
-            "price": 22,
-            "qty": 4
-          },
-          {
-            "id": "laserPistol",
-            "price": 90,
-            "qty": 1
-          }
-        ]
-      }
-    },
-    {
       "id": "rest_campfire_01",
       "model": "campfireRest",
       "name": "Место отдыха",
@@ -412,53 +347,6 @@
       ],
       "vision": {
         "blocks": false
-      }
-    },
-    {
-      "id": "solarArray_job_board",
-      "model": "jobBoard",
-      "name": "Доска работ",
-      "url": "/assets/models/wasteland/job_board.glb",
-      "position": {
-        "x": -24,
-        "y": 0,
-        "z": -16
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        },
-        "groundSnap": true
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "jobBoard",
-        "questBoard"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "jobBoard",
-        "role": "worldTaskBoard",
-        "boardSiteId": "solarArray"
       }
     }
   ]

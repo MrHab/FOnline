@@ -34,24 +34,7 @@
     "to": "wasteland",
     "label": "Путь в Пепельный лес"
   },
-  "containers": [
-    {
-      "id": "settlement_supply_1",
-      "tx": 12,
-      "tz": 22,
-      "name": "Ящик выживальщика",
-      "tier": "survival"
-    },
-    {
-      "id": "settlement_tools_1",
-      "tx": 26,
-      "tz": 22,
-      "name": "Ящик с инструментами",
-      "tier": "tools",
-      "locked": true,
-      "lockDifficulty": "easy"
-    }
-  ],
+  "containers": [],
   "pvp": false,
   "fullDrop": false,
   "schema": "realm.location.v1",
@@ -450,52 +433,6 @@
       },
       "vision": {
         "mode": "cover"
-      }
-    },
-    {
-      "id": "settlement_job_board_01",
-      "model": "jobBoard",
-      "name": "Доска заданий",
-      "url": "/assets/models/wasteland/job_board.glb",
-      "position": {
-        "x": 1,
-        "y": 0,
-        "z": 7
-      },
-      "rotation": {
-        "x": 0,
-        "y": 1.571,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "jobBoard",
-        "questBoard"
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "jobBoard",
-        "role": "worldTaskBoard"
       }
     },
     {

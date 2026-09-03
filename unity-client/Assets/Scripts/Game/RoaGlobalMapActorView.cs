@@ -305,34 +305,37 @@ namespace RealmOfAshes.Game
             {
                 case "player":
                     return HumanoidProfile(2.15f, 0.50f, sex);
+                // Доворот берётся из единого источника RoaEnemyModels.YawOffset,
+                // чтобы разворот отрядов на глобальной карте совпадал с боем и не
+                // расходился при правках (скорпион/муравей — 180°, остальные — 0°).
                 case "enemySuperMutant":
-                    return Profile(1.95f, 0.37f, 180f,
+                    return Profile(1.95f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Height,
                         BoundsOf(0.005f, 1.053f, 0.047f, 0.953f, 2.147f, 1.196f));
                 case "enemyGhoul":
-                    return Profile(1.68f, 0.37f, 180f,
+                    return Profile(1.68f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Height,
                         BoundsOf(0.004f, 0.906f, 0.032f, 0.770f, 1.838f, 0.992f));
                 case "friendlyBrahmin":
                 case "brahmin":
-                    return Profile(1.95f, 0.37f, 180f,
+                    return Profile(1.95f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(0.063f, 1.193f, -0.354f, 2.922f, 2.388f, 3.280f));
                 case "enemyAshWolf":
-                    return Profile(1.72f, 0.37f, 180f,
+                    return Profile(1.72f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(0f, 0.958f, 0.053f, 0.916f, 1.916f, 3.266f));
                 case "enemyGecko":
                 case "enemyFireGecko":
-                    return Profile(1.75f, 0.37f, 180f,
+                    return Profile(1.75f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(0f, 1.451f, 0.501f, 2.122f, 2.903f, 5.216f));
                 case "enemyRadscorpion":
-                    return Profile(1.82f, 0.37f, 0f,
+                    return Profile(1.82f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(-0.025f, 0.629f, 0.243f, 2.340f, 1.257f, 2.303f));
                 case "enemyMutantAnt":
-                    return Profile(1.68f, 0.37f, 0f,
+                    return Profile(1.68f, 0.37f, RoaEnemyModels.YawOffset(modelKey),
                         RoaStrategicActorFitMode.Footprint,
                         BoundsOf(0f, 0.355f, -0.011f, 2.053f, 0.708f, 2.186f));
                 default:

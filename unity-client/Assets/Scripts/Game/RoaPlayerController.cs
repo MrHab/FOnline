@@ -300,7 +300,7 @@ namespace RealmOfAshes.Game
             // A living actor blocks displacement, but it is not a wall: feeding
             // this contact into the compression pose bends the pelvis while foot
             // IK tries to keep both soles planted and can fold a leg upward.
-            if (RoaFootIk.IsActorCollider(hit.collider, transform))
+            if (RoaCharacterView.IsActorCollider(hit.collider, transform))
             {
                 _actorContact = true;
                 return;

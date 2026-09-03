@@ -28,7 +28,7 @@ namespace RealmOfAshes.EditorTools
                 Require(body != null && body.isKinematic && !body.useGravity
                     && body.detectCollisions,
                     "тело NPC не настроено как управляемое сетевой презентацией");
-                Require(RoaFootIk.IsActorCollider(capsule, null),
+                Require(RoaCharacterView.IsActorCollider(capsule, null),
                     "контроллер игрока не распознаёт коллайдер NPC как актёра");
 
                 Vector3 player = new Vector3(3f, 0.9f, -2f);
@@ -75,12 +75,6 @@ namespace RealmOfAshes.EditorTools
                     && RoaEnemies.NpcCombatFactionLine("old_klim", false,
                         "idle", false).StartsWith("МИРНЫЙ · "),
                     "плашка NPC не объясняет принадлежность и текущую угрозу");
-                Require(RoaCharacterView.ShouldSuspendFootIk(false, "run", true, true)
-                    && RoaCharacterView.ShouldSuspendFootIk(false, "attack", true, false)
-                    && RoaCharacterView.ShouldSuspendFootIk(false, "run", true, false, true)
-                    && RoaCharacterView.ShouldSuspendFootIk(false, "run", false, false, false, true)
-                    && !RoaCharacterView.ShouldSuspendFootIk(false, "run", true, false),
-                    "foot IK не защищён на движущемся попадании или ближнем замахе");
 
                 RoaEnemies.SetPresentationBodyAlive(capsule, body, false);
                 Require(!capsule.enabled && !body.detectCollisions,

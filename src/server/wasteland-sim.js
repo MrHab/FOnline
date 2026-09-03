@@ -2584,6 +2584,20 @@ function createWastelandSimulation(options = {}) {
       dirty = true;
       return existing;
     }
+    // Одно событие на локацию. Ключ дедупа включает тип, поэтому два разных
+    // события (вылазка + сигнал бедствия) на одной площадке создавались оба и
+    // мешали друг другу. Обновление ТОГО ЖЕ события по ключу выше сохранено;
+    // здесь блокируем лишь второе, отличное событие-в-локации на занятой siteId.
+    // Караванные/патрульные контракты (partyId) и снабжение сюда не входят.
+    if (SITE_ACTIVITY_TYPES.has(taskType) && data.siteId && !data.partyId) {
+      const busy = state.worldTasks.find(task => task
+        && task.status === 'active'
+        && String(task.siteId || '') === String(data.siteId)
+        && !task.partyId
+        && SITE_ACTIVITY_TYPES.has(String(task.type || ''))
+        && Number(task.expiresHour || 0) > now);
+      if (busy) return null;
+    }
     const priority = clamp(data.priority ?? 1, 0, 5);
     const task = normalizeWorldTask({
       id: `${taskType}_${safeId(data.siteId || data.partyId || 'world')}_${Math.floor(now * 10)}_${Math.random().toString(36).slice(2, 6)}`,

@@ -69,24 +69,7 @@
   },
   "transitions": [],
   "worldZones": [],
-  "containers": [
-    {
-      "id": "caravan_camp_supply_1",
-      "tx": 12,
-      "tz": 22,
-      "name": "Дорожный ящик",
-      "tier": "survival"
-    },
-    {
-      "id": "caravan_camp_tools_1",
-      "tx": 26,
-      "tz": 22,
-      "name": "Ящик каравана",
-      "tier": "tools",
-      "locked": true,
-      "lockDifficulty": "easy"
-    }
-  ],
+  "containers": [],
   "pvp": false,
   "fullDrop": false,
   "objects": [
@@ -214,66 +197,6 @@
       },
       "vision": {
         "blocks": false
-      }
-    },
-    {
-      "id": "caravan_camp_job_board_01",
-      "model": "jobBoard",
-      "name": "Доска заданий",
-      "url": "/assets/models/wasteland/job_board.glb",
-      "position": {
-        "x": 1,
-        "y": 0,
-        "z": 9
-      },
-      "rotation": {
-        "x": 0,
-        "y": 1.571,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "jobBoard",
-        "questBoard"
-      ],
-      "activitySlots": [
-        {
-          "id": "caravan_sayla_shop",
-          "type": "shop",
-          "capacity": 1,
-          "position": {
-            "x": -5,
-            "y": 0,
-            "z": 9
-          },
-          "rotationY": 0,
-          "visualAction": "shop"
-        }
-      ],
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "anchor": "cell-center",
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        }
-      },
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "jobBoard",
-        "role": "worldTaskBoard"
       }
     },
     {
@@ -1422,6 +1345,18 @@
           },
           "rotationY": 1.5707963267948966,
           "visualAction": "sleep"
+        },
+        {
+          "id": "caravan_sayla_shop",
+          "type": "shop",
+          "capacity": 1,
+          "position": {
+            "x": -5,
+            "y": 0,
+            "z": 9
+          },
+          "rotationY": 0,
+          "visualAction": "shop"
         }
       ],
       "footprint": {

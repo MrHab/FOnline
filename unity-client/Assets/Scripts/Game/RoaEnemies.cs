@@ -60,6 +60,11 @@ namespace RealmOfAshes.Game
         private static readonly Dictionary<string, Task<GltfImport>> ModelCache =
             new Dictionary<string, Task<GltfImport>>();
 
+        // Существа-гуманоиды с костью hand_r, которые держат оружие в руке.
+        // Звери (волк, геккон, скорпион, муравей, брамин) сюда не входят.
+        private static readonly HashSet<string> CreatureWeaponModels =
+            new HashSet<string> { "enemySuperMutant", "enemyGhoul" };
+
         private sealed class Enemy
         {
             public GameObject Root;
@@ -69,6 +74,17 @@ namespace RealmOfAshes.Game
             public bool UnifiedHumanoid;
             public string Clip = string.Empty;
             public float YawOffset;
+
+            // Существа-гуманоиды (супермутант, гуль) не единая humanoid-база, но
+            // носят видимую броню и оружие — как в web (05a_remote_actor_equipment,
+            // 04d). Их GLB несёт полный humanoid-скелет (spine/pelvis/hand_r/...),
+            // поэтому броня перепривязывается к их костям по имени, а оружие
+            // цепляется к hand_r. Звери оружие/броню не носят.
+            public bool CarriesWeapon;
+            public GameObject WeaponHolder;
+            public string WeaponModelId = string.Empty;
+            public RoaEquipmentView CreatureEquipment;
+            public Dictionary<string, Transform> CreatureBones;
 
             public Vector3 TargetPosition;
             public Vector3 Velocity;
@@ -909,6 +925,7 @@ namespace RealmOfAshes.Game
                 if (payload?["weapon"] != null) enemy.Snapshot["weapon"] = payload["weapon"].DeepClone();
                 if (payload?["equipment"] != null) enemy.Snapshot["equipment"] = payload["equipment"].DeepClone();
                 if (enemy.UnifiedHumanoid) _ = RefreshHumanoidEquipment(enemy);
+                else if (enemy.CarriesWeapon) _ = RefreshCreatureWeapon(enemy);
             }
             bool windupAnimated = Time.time < enemy.AttackWindupUntil;
             enemy.ThreatActive = false;
@@ -1138,6 +1155,7 @@ namespace RealmOfAshes.Game
                 }
                 if (enemy.CharacterView.Ready) _ = RefreshHumanoidEquipment(enemy);
             }
+            else if (enemy.CarriesWeapon) _ = RefreshCreatureWeapon(enemy);
 
             if (enemy.Root != null && enemy.Root.transform.position == Vector3.zero)
                 enemy.Root.transform.position = position;
@@ -1184,6 +1202,7 @@ namespace RealmOfAshes.Game
                 Root = root,
                 Gate = root.AddComponent<RoaVisibilityGate>(),
                 UnifiedHumanoid = unifiedHumanoid,
+                CarriesWeapon = !unifiedHumanoid && CreatureWeaponModels.Contains(key),
                 YawOffset = unifiedHumanoid ? 0f : RoaEnemyModels.YawOffset(key),
                 Snapshot = (JObject)row.DeepClone(),
                 LastPacketTime = Time.time,
@@ -1357,6 +1376,113 @@ namespace RealmOfAshes.Game
 
             enemy.Animation.wrapMode = WrapMode.Loop;
             PlayClip(enemy, enemy.Dead ? "death" : "idle");
+
+            if (enemy.CarriesWeapon) await RefreshCreatureWeapon(enemy);
+        }
+
+        // Тип телосложения для брони существа: под её кости подбирается ближайший
+        // авторский вариант скина. Мутант крупный → male_large, гуль суше → medium.
+        private static string CreatureArmorBodyKey(Enemy enemy)
+        {
+            string key = RoaEnemyModels.ResolveKey(
+                enemy?.Snapshot?["modelKey"]?.ToString(),
+                enemy?.Snapshot?["visual"]?.ToString(),
+                enemy?.Snapshot?["species"]?.ToString());
+            return key == "enemyGhoul" ? "male_medium" : "male_large";
+        }
+
+        /// <summary>
+        /// Броня и оружие существа-гуманоида (супермутант, гуль). Их GLB несёт
+        /// полный humanoid-скелет, поэтому броня перепривязывается к их костям по
+        /// имени (RoaEquipmentView, как у людей), а оружие цепляется к hand_r и
+        /// совмещается узлом socket_grip_r с центром кисти. Обновляется по
+        /// серверному снимку. Звери сюда не попадают.
+        /// </summary>
+        private async Task RefreshCreatureWeapon(Enemy enemy)
+        {
+            if (enemy == null || enemy.Root == null || !enemy.CarriesWeapon) return;
+
+            JObject equipment = EnemyEquipment(enemy.Snapshot);
+
+            // Кости строятся один раз из загруженного скелета существа.
+            if (enemy.CreatureBones == null)
+                enemy.CreatureBones = CollectBones(enemy.Root.transform);
+
+            // Броня: перепривязка утверждённых скинов к костям существа.
+            if (enemy.CreatureBones.Count > 0)
+            {
+                if (enemy.CreatureEquipment == null) enemy.CreatureEquipment = new RoaEquipmentView();
+                await enemy.CreatureEquipment.Apply(BaseUrl, equipment,
+                    CreatureArmorBodyKey(enemy), enemy.Root.transform, enemy.CreatureBones);
+                if (enemy.Root == null) return;
+            }
+
+            // Оружие в руке.
+            string weaponId = equipment["weapon"]?.ToString() ?? "fists";
+            string modelId = string.IsNullOrEmpty(weaponId) || weaponId == "fists"
+                ? string.Empty : weaponId;
+            if (modelId != enemy.WeaponModelId)
+            {
+                enemy.WeaponModelId = modelId;
+                if (enemy.WeaponHolder != null)
+                {
+                    Destroy(enemy.WeaponHolder);
+                    enemy.WeaponHolder = null;
+                }
+                if (!string.IsNullOrEmpty(modelId))
+                    await AttachCreatureWeapon(enemy, modelId);
+            }
+            enemy.Gate?.Invalidate();
+        }
+
+        private async Task AttachCreatureWeapon(Enemy enemy, string modelId)
+        {
+            Transform hand = FindDeepChild(enemy.Root.transform, "hand_r");
+            if (hand == null) return;
+
+            string url = BaseUrl.TrimEnd('/')
+                + "/assets/models/weapons/weapon_" + modelId + ".glb";
+            GltfImport import = await LoadCached(url);
+            if (import == null || enemy.Root == null || enemy.WeaponModelId != modelId) return;
+
+            var holder = new GameObject("CreatureWeapon:" + modelId);
+            holder.transform.SetParent(hand, false);
+            if (!await import.InstantiateMainSceneAsync(holder.transform)
+                || enemy.Root == null || enemy.WeaponModelId != modelId)
+            {
+                Destroy(holder);
+                return;
+            }
+
+            // Совместить рукоять оружия с центром кисти: socket_grip_r → начало
+            // hand_r. Точная доводка поворота — по визуальной проверке.
+            Transform grip = FindDeepChild(holder.transform, "socket_grip_r");
+            if (grip != null)
+                holder.transform.localPosition =
+                    -holder.transform.InverseTransformPoint(grip.position);
+
+            enemy.WeaponHolder = holder;
+        }
+
+        private static Dictionary<string, Transform> CollectBones(Transform root)
+        {
+            var bones = new Dictionary<string, Transform>();
+            if (root == null) return bones;
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                if (!bones.ContainsKey(t.name)) bones[t.name] = t;
+            return bones;
+        }
+
+        private static Transform FindDeepChild(Transform root, string name)
+        {
+            if (root == null) return null;
+            if (root.name == name) return root;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform found = FindDeepChild(root.GetChild(i), name);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         private static Task<GltfImport> LoadCached(string url)

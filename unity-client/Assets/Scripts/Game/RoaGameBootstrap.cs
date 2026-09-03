@@ -232,6 +232,7 @@ namespace RealmOfAshes.Game
             if (CombatFx == null) CombatFx = gameObject.AddComponent<RoaCombatFx>();
             CombatFx.Audio = Audio;
             CombatFx.Polish = CombatPresentation;
+            CombatFx.Fog = Fog;
             CombatFx.Configure(Socket, Enemies);
 
             Camera movementFxCamera = CameraRig != null ? CameraRig.GetComponent<Camera>() : Camera.main;

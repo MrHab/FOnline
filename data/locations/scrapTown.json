@@ -153,24 +153,7 @@
       "armor"
     ]
   },
-  "containers": [
-    {
-      "id": "scraptown_parts_1",
-      "tx": 13,
-      "tz": 22,
-      "name": "Ящик запчастей",
-      "tier": "tools",
-      "locked": true,
-      "lockDifficulty": "easy"
-    },
-    {
-      "id": "scraptown_supply_1",
-      "tx": 25,
-      "tz": 21,
-      "name": "Сухой паёк",
-      "tier": "survival"
-    }
-  ],
+  "containers": [],
   "objects": [
     {
       "id": "scrap_gratch",
@@ -234,53 +217,6 @@
       },
       "vision": {
         "mode": "none"
-      }
-    },
-    {
-      "id": "scrapTown_job_board_01",
-      "model": "jobBoard",
-      "name": "Доска заданий",
-      "url": "/assets/models/wasteland/job_board.glb",
-      "position": {
-        "x": 9,
-        "y": 0,
-        "z": -2
-      },
-      "rotation": {
-        "x": 0,
-        "y": 0.4712,
-        "z": 0
-      },
-      "scale": {
-        "x": 1,
-        "y": 1,
-        "z": 1
-      },
-      "footprint": {
-        "x": 2,
-        "z": 2
-      },
-      "placement": {
-        "gridStep": 2,
-        "cells": {
-          "x": 1,
-          "z": 1
-        },
-        "groundSnap": true
-      },
-      "collision": "solid",
-      "tags": [
-        "interactive",
-        "jobBoard",
-        "questBoard"
-      ],
-      "vision": {
-        "mode": "cover"
-      },
-      "interactive": {
-        "kind": "jobBoard",
-        "role": "worldTaskBoard",
-        "boardSiteId": "scrapTown"
       }
     },
     {

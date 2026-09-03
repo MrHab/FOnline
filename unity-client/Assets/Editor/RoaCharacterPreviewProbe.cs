@@ -299,7 +299,7 @@ namespace RealmOfAshes.EditorTools
                     ? loaded.transform.parent.position.y : loaded.transform.position.y;
                 float highestHitFoot = Mathf.Max(hitLeftFoot.position.y, hitRightFoot.position.y) - hitGroundY;
                 float hitFootSplit = Mathf.Abs(hitLeftFoot.position.y - hitRightFoot.position.y);
-                Check(loaded.FootIkSuppressed && highestHitFoot < 0.36f && hitFootSplit < 0.26f,
+                Check(highestHitFoot < 0.36f && hitFootSplit < 0.26f,
                     "нога улетела вверх при ударе в упор: max="
                     + highestHitFoot.ToString("0.000") + ", split=" + hitFootSplit.ToString("0.000"));
                 Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] вооружённая реакция spine_02: "
@@ -321,9 +321,52 @@ namespace RealmOfAshes.EditorTools
 
                 reaction.Reset();
 
-                // Sweep the real authored run cycle through gameplay LateUpdate. Even when
-                // both authored feet enter their flight phase, one procedural support foot
-                // must stay close enough to the sampled ground to read as planted.
+                // Frozen-bone regime: when a WrapMode.Once clip (attack/hurt) has ended,
+                // legacy Animation stops writing bones. Procedural offsets (broken leg,
+                // broken arm, concussion, activity) are additive and used to accumulate
+                // every LateUpdate — the leg visibly spun in a circle once foot IK no
+                // longer rewrote the thigh. Each LateUpdate must yield the same pose.
+                Transform frozenThigh = null;
+                foreach (Transform node in loaded.GetComponentsInChildren<Transform>(true))
+                    if (node.name == "thigh_l") { frozenThigh = node; break; }
+                Check(frozenThigh != null, "thigh_l настоящего GLB не найдена для проверки заморозки");
+                loaded.UpdateLocomotion(Vector3.zero, 0f, false, false);
+                animation.Play("idle");
+                idle.time = Mathf.Min(0.35f, idle.length * 0.35f);
+                animation.Sample();
+                runtimeLateUpdate.Invoke(loaded, null);
+                animation.Play("idle");
+                animation.Sample();
+                Quaternion authoredThigh = frozenThigh.localRotation;
+                loaded.SetInjuries(new JObject { ["brokenLeg"] = true });
+                Check(loaded.HasBrokenLegVisual, "перелом ноги не принят настоящим персонажем");
+                animation.Stop();
+                runtimeLateUpdate.Invoke(loaded, null);
+                Quaternion injuredThigh = frozenThigh.localRotation;
+                float injuryAngle = Quaternion.Angle(authoredThigh, injuredThigh);
+                Check(injuryAngle > 3f && injuryAngle < 8f,
+                    "смещение перелома ноги не наложилось ровно один раз: "
+                    + injuryAngle.ToString("0.00") + "°");
+                for (int frame = 0; frame < 60; frame++) runtimeLateUpdate.Invoke(loaded, null);
+                float frozenDrift = Quaternion.Angle(injuredThigh, frozenThigh.localRotation);
+                Check(frozenDrift < 0.5f,
+                    "нога с переломом крутится на замороженной анимации: за 60 кадров ушла на "
+                    + frozenDrift.ToString("0.00") + "°");
+                loaded.SetInjuries(new JObject());
+                Check(!loaded.HasBrokenLegVisual, "перелом ноги не снялся");
+                runtimeLateUpdate.Invoke(loaded, null);
+                float healedDrift = Quaternion.Angle(authoredThigh, frozenThigh.localRotation);
+                Check(healedDrift < 0.5f,
+                    "после снятия перелома бедро не вернулось к позе клипа: "
+                    + healedDrift.ToString("0.00") + "°");
+                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] замороженная анимация: перелом="
+                    + injuryAngle.ToString("0.00") + "°, дрейф за 60 кадров="
+                    + frozenDrift.ToString("0.00") + "°, после лечения="
+                    + healedDrift.ToString("0.00") + "°");
+
+                // Sweep the real authored run cycle through gameplay LateUpdate so the
+                // pose/grounding layers are warm before the shot-recoil check below.
+                // Feet follow the authored clip directly: foot IK was removed.
                 AnimationState run = animation["run"];
                 Check(run != null, "run-клип недоступен для проверки выстрела в движении");
                 loaded.SetGroundingLod(true);
@@ -331,23 +374,12 @@ namespace RealmOfAshes.EditorTools
                 animation.Play("run");
                 run.enabled = true;
                 run.weight = 1f;
-                float maximumMinimumLift = 0f;
-                int supportSafetyFrames = 0;
                 for (int frame = 0; frame < 32; frame++)
                 {
                     run.normalizedTime = frame / 32f;
                     animation.Sample();
                     runtimeLateUpdate.Invoke(loaded, null);
-                    Check(loaded.TryGetFootContactLifts(out float leftLift, out float rightLift),
-                        "foot IK не выдал контакт настоящего бегового клипа");
-                    maximumMinimumLift = Mathf.Max(maximumMinimumLift, Mathf.Min(leftLift, rightLift));
-                    if (loaded.FootSupportSafetyActive) supportSafetyFrames++;
                 }
-                Check(maximumMinimumLift <= 0.085f,
-                    "обе стопы настоящего бегового клипа одновременно оторвались от земли: "
-                    + maximumMinimumLift.ToString("0.000") + " м");
-                Debug.Log("[ПРЕДПРОСМОТР ПЕРСОНАЖА] опора бега: max="
-                    + maximumMinimumLift.ToString("0.000") + " м, safety=" + supportSafetyFrames + "/32");
 
                 // A firearm shot must be a layer over locomotion. The authored attack clip
                 // has static feet, so switching to it here would visibly stop a running actor.

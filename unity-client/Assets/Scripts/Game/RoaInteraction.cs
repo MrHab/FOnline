@@ -3152,37 +3152,39 @@ namespace RealmOfAshes.Game
             return storage ? TargetKind.Storage : TargetKind.None;
         }
 
+        // Возвращает КАНОНИЧЕСКИЙ id станка (energy_bench, chem_station…), а не
+        // сырой токен: авторские объекты помечают станки серверными синонимами
+        // («electronics», «relay», «armory», «lab»), и именно канонический id
+        // сравнивается с recipe.Station. Сырой синоним ломал бы это сравнение.
         private static string CraftingStationId(LocationObject entry)
         {
             if (entry == null) return string.Empty;
+            string station;
             if (entry.CraftingStations != null)
                 foreach (string value in entry.CraftingStations)
-                    if (IsCraftingStation(value)) return value.ToLowerInvariant();
+                    if (!string.IsNullOrEmpty(station = RoaCraftingData.CanonicalStation(value))) return station;
 
             string[] fields = { "craftingStation", "station", "stationType", "stationId" };
             foreach (JObject source in new[] { entry.Interactive, entry.Entity })
             {
                 if (source == null) continue;
                 foreach (string field in fields)
-                {
-                    string value = source[field]?.ToString();
-                    if (IsCraftingStation(value)) return value.ToLowerInvariant();
-                }
+                    if (!string.IsNullOrEmpty(station = RoaCraftingData.CanonicalStation(source[field]?.ToString())))
+                        return station;
                 foreach (JToken value in source["craftingStations"] as JArray ?? new JArray())
-                    if (IsCraftingStation(value?.ToString())) return value.ToString().ToLowerInvariant();
+                    if (!string.IsNullOrEmpty(station = RoaCraftingData.CanonicalStation(value?.ToString())))
+                        return station;
             }
 
             if (entry.Tags != null)
                 foreach (string value in entry.Tags)
-                    if (IsCraftingStation(value)) return value.ToLowerInvariant();
+                    if (!string.IsNullOrEmpty(station = RoaCraftingData.CanonicalStation(value))) return station;
             return string.Empty;
         }
 
         private static bool IsCraftingStation(string value)
         {
-            string id = (value ?? string.Empty).ToLowerInvariant();
-            return id == "ammo_bench" || id == "weapon_bench" || id == "tool_bench"
-                || id == "repair_bench" || id == "energy_bench" || id == "chem_station";
+            return !string.IsNullOrEmpty(RoaCraftingData.CanonicalStation(value));
         }
 
         private static bool IsResourceObject(LocationObject entry)

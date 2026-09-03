@@ -373,7 +373,7 @@ namespace RealmOfAshes.Game
         {
             get
             {
-                if (_hoverDynamic != null) return _hoverDynamic.Name ?? _hoverDynamic.Id ?? "Точка пустоши";
+                if (_hoverDynamic != null) return DynamicTargetTitle(_hoverDynamic);
                 return _hoverNode != null ? NodeTitle(_hoverNode) : string.Empty;
             }
         }
@@ -2780,7 +2780,7 @@ namespace RealmOfAshes.Game
 
             GlobalMapPoint point = WorldToPoint(hit.point);
             DynamicTarget target = NearestDynamicTarget(point,
-                DynamicSnapRadiusPoints * 0.9f, true);
+                DynamicSnapRadiusPoints * 0.9f, true, true);
             GlobalMapNode node = target == null ? NearestNode(point, NodeSnapRadiusPoints * 0.9f) : null;
             _hoverDynamic = target;
             _hoverNode = node;
@@ -4667,14 +4667,18 @@ namespace RealmOfAshes.Game
         }
 
         private DynamicTarget NearestDynamicTarget(GlobalMapPoint point, float radius,
-                                                   bool respectPresentation = false)
+                                                   bool respectPresentation = false,
+                                                   bool includeNonEnterable = false)
         {
             DynamicTarget best = null;
             float bestDistance = radius;
             foreach (DynamicTarget target in _dynamicTargets)
             {
                 if (target == null || target.Point == null) continue;
-                if (!target.CanEnter && !string.Equals(target.Kind, "site", StringComparison.OrdinalIgnoreCase)) continue;
+                // Ховер информационный: отряд «onsite» нельзя выбрать целью,
+                // но подпись над ним обязана появляться — иначе зверь у скрытой
+                // площадки выглядит немым багом.
+                if (!includeNonEnterable && !target.CanEnter && !string.Equals(target.Kind, "site", StringComparison.OrdinalIgnoreCase)) continue;
                 if (respectPresentation && !TargetVisibleForSelection(target,
                     CurrentDetailTier())) continue;
                 float distance = Distance(point, target.Point);
@@ -4740,7 +4744,12 @@ namespace RealmOfAshes.Game
         {
             if (row == null || row["destroyed"]?.ToObject<bool>() == true) return false;
             string state = row["state"]?.ToString()?.ToLowerInvariant() ?? string.Empty;
-            if (state == "destroyed" || state == "onsite" || state == "engaged") return false;
+            if (state == "destroyed" || state == "engaged") return false;
+            // Фуражирующий зверь («onsite» в чистом поле) встречаем — зеркалит
+            // серверное правило; караваны и патрули в поселениях по-прежнему нет.
+            bool foragingBeast = string.Equals(row["kind"]?.ToString(), "monster",
+                StringComparison.OrdinalIgnoreCase);
+            if (state == "onsite" && !foragingBeast) return false;
             return Float(row["members"], Float(row["strength"], 0f)) > 0f;
         }
 

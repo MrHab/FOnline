@@ -13,7 +13,6 @@ const resolver = read(game, 'RoaLocomotionPresentation.cs');
 const controller = read(game, 'RoaPlayerController.cs');
 const character = read(game, 'RoaCharacterView.cs');
 const pose = read(game, 'RoaCharacterPose.cs');
-const footIk = read(game, 'RoaFootIk.cs');
 const grip = read(game, 'RoaWeaponGrip.cs');
 const weapon = read(game, 'RoaWeaponView.cs');
 const enemies = read(game, 'RoaEnemies.cs');
@@ -34,7 +33,7 @@ assert(resolver.includes('public static Vector3 SmoothVisualVelocity')
 
 assert(controller.includes('_requestedVelocity = requestedVelocity;')
   && controller.includes('pressure > _collisionPressure')
-  && controller.includes('RoaFootIk.IsActorCollider(hit.collider, transform)')
+  && controller.includes('RoaCharacterView.IsActorCollider(hit.collider, transform)')
   && controller.includes('_actorContact = true;')
   && controller.includes('ResolveCollisionVelocity(')
   && controller.includes('SmoothVisualVelocity(')
@@ -43,22 +42,12 @@ assert(controller.includes('_requestedVelocity = requestedVelocity;')
   'Player controller no longer separates actor contact, selects the strongest wall contact, or uses resolved presentation motion');
 assert(character.includes('Vector3 collisionNormal = default(Vector3)')
   && character.includes('float contactWeight = Mathf.Clamp01(collisionPressure);')
-  && character.includes('_contactFootIkUntil = Mathf.Max(_contactFootIkUntil, Time.time + 0.14f);')
-  && character.includes('_footIk.StabilizeAction(Time.deltaTime, _locomoting,')
-  && character.includes('FootActionSafetyActive')
-  && character.includes('ContactFootIkStabilized);')
   && character.includes('contactWeight, contactForward, contactSide'),
   'Character view no longer maps world contact into the facing-relative pose');
-assert(footIk.includes('public void StabilizeAction(')
-  && footIk.includes('StationaryActionLiftLimit = 0.18f')
-  && footIk.includes('MovingActionLiftLimit = 0.32f')
-  && footIk.includes('StabilizeActionSide(_left')
-  && footIk.includes('ActionSafetyActive = true;'),
-  'Full-body combat clips can again fold an unsupported foot toward the pelvis');
 assert(enemies.includes('Vector3 contactNormal = Vector3.zero;')
   && enemies.includes('contactNormal = presentedPosition - _localPlayer.transform.position;')
   && enemies.includes('contactConstrained ? 1f : 0f)'),
-  'Point-blank NPC correction no longer reaches the contact pose and foot-IK stabilizer');
+  'Point-blank NPC correction no longer reaches the contact pose');
 assert(weapon.includes('public void CancelAttackPose()')
   && character.includes('CombatPresentationPhase phase = ResolveCombatPresentationPhase(')
   && character.includes('if (phase == CombatPresentationPhase.Death')
@@ -91,7 +80,7 @@ assert(probe.includes('Vector3.back * 4f')
   && probe.includes('fastToSlow')
   && probe.includes('wrappedFast')
   && probe.includes('spine01.localRotation'),
-  'Editor probe does not cover reversal, wall slide, contact-aligned gait phase, foot IK compression and body response');
+  'Editor probe does not cover reversal, wall slide, contact-aligned gait phase, knee compression and body response');
 assert(runner.includes('typeof(RoaLocomotionContactProbe)'),
   'Locomotion contact probe is not part of the batch Unity audit');
 

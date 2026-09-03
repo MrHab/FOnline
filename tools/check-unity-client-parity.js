@@ -420,6 +420,38 @@ assert(browserCamera.includes("const CAMERA_ZOOM_STORAGE_KEY = 'realm.cameraZoom
   && unityCamera.includes('PlayerPrefs.SetFloat(ZoomPrefsKey, Distance);')
   && unityCamera.includes('RoaGameBootstrap.BlocksWorldHud ? 0f'),
   'Unity local camera zoom must persist and ignore wheel input behind open UI');
+// The strategic camera pose (anchor, pitch, yaw, distance) survives entering a
+// location and restarting the client; the authored default is only for the
+// first launch, and saved values are clamped to the current map bounds.
+assert(unityGlobalMap.includes('private const string CameraPosePrefsPrefix = "roa.globalMap.camera.v1";')
+  && unityGlobalMap.includes('TryLoadStrategicCameraPose(out savedAnchorLocal, out savedPitch, out savedYaw, out savedDistance)')
+  && unityGlobalMap.includes('public static Vector3 ClampStrategicCameraPose(')
+  && unityGlobalMap.includes('PersistStrategicCameraPoseIfChanged();')
+  && unityGlobalMap.indexOf('CameraRig.PitchDeg = StrategicDefaultPitchDeg;')
+    < unityGlobalMap.indexOf('TryLoadStrategicCameraPose(out savedAnchorLocal')
+  && /SaveStrategicCameraPose\(\);\s*RestoreCamera\(\);/.test(unityGlobalMap),
+  'Unity strategic camera pose must persist across location entry and client restarts');
+
+// Pip-Boy radio: the four browser channels keep their names, and in Unity the
+// selected channel actually plays a generated broadcast, feeds an "ЭФИР" list
+// from the public wasteland summary and remembers the channel across restarts.
+const unityRadio = read('unity-client/Assets/Scripts/Game/RoaRadio.cs');
+const unityRadioPipboy = read('unity-client/Assets/Scripts/Game/RoaPipboy.cs');
+const unityRadioCanvas = read('unity-client/Assets/Scripts/Game/RoaPipboyCanvas.cs');
+const browserRadioTabs = read('public/js/game/03a_pipboy_social_world_tasks.js');
+for (const title of ['Поселенческий маяк', 'Пепельная частота', 'Канал безопасности', 'Тишина']) {
+  assert(browserRadioTabs.includes(title) && unityRadioPipboy.includes(title),
+    `Radio channel "${title}" must exist in both the browser and Unity Pip-Boy`);
+}
+assert(unityRadio.includes('private const string ChannelPrefsKey = "roa.radio.channel.v1";')
+  && unityRadio.includes('public const int ExpectedClipCount = 16;')
+  && unityRadio.includes('AudioClip.Create(')
+  && unityRadio.includes('public static int ChannelForEvent(string type, string title)')
+  && unityRadio.includes('Pipboy.EnsureWorldData();')
+  && unityBootstrap.includes('Radio.Pipboy = Pipboy;')
+  && unityRadioCanvas.includes('AddHeading(_radioRows, _radioList, "ЭФИР");')
+  && read('unity-client/Assets/Editor/RoaClientAuditRunner.cs').includes('typeof(RoaRadioProbe)'),
+  'Unity Pip-Boy radio must synthesize its broadcast, persist the channel and show the live feed');
 assert(browserGlobalControls.includes('e.button !== 1 && e.button !== 2')
   && unityGlobalMap.includes('private bool UpdateCameraOrbit()')
   && unityGlobalMap.includes('Input.GetMouseButtonDown(2)')

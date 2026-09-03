@@ -108,8 +108,9 @@ namespace RealmOfAshes.Game
 
         private readonly Dictionary<string, Transform> _bones = new Dictionary<string, Transform>();
 
-        // База процедурных смещений костей за кадр. Смещения травм, презентации
-        // активности и реакции на удар прибавляются к текущему повороту кости;
+        // База процедурных смещений костей за кадр. Смещения направленной позы и
+        // приседа (RoaCharacterPose), травм, презентации активности и реакции на
+        // удар прибавляются к текущему повороту кости;
         // это безопасно, только пока аниматор переставляет кость каждый кадр.
         // Legacy Animation перестаёт писать кости, когда клип Once (attack/hurt)
         // закончился или анимация остановлена, — тогда прибавка копилась бы
@@ -124,8 +125,8 @@ namespace RealmOfAshes.Game
             new Dictionary<Transform, BoneOffsetBase>();
         private static readonly string[] ProceduralOffsetBones =
         {
-            "thigh_l", "upperarm_r", "upperarm_l", "head",
-            "spine_01", "spine_02", "spine_03", "neck"
+            "pelvis", "thigh_l", "upperarm_r", "upperarm_l", "head",
+            "spine_01", "spine_02", "spine_03", "neck_01", "neck"
         };
         private readonly List<SkinnedMeshRenderer> _deathGroundRenderers = new List<SkinnedMeshRenderer>();
         private RoaWeaponView _weapon;
@@ -1250,6 +1251,10 @@ namespace RealmOfAshes.Game
                 return;
             }
 
+            // Окно процедурных смещений открывается до направленной позы и приседа:
+            // RoaCharacterPose тоже пишет таз и позвоночник аддитивно, и на
+            // замороженной анимации наклон таза копился по кадрам — тело кувыркалось.
+            BeginBoneOffsets();
             if (_pose.Ready)
             {
                 // Доворот таза: модель поворачивается относительно родителя, который
@@ -1275,7 +1280,6 @@ namespace RealmOfAshes.Game
 
             // Поверх клипа и направленной позы, но до оружейного IK: корпус
             // отшатывается, а кисти затем снова точно садятся на рукояти.
-            BeginBoneOffsets();
             ApplyActivityPresentation(Time.deltaTime);
             _hitReaction.Apply(Time.deltaTime);
 

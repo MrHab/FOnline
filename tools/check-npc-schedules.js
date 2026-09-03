@@ -175,6 +175,47 @@ try {
   'updateNpcSocialSpeech'
 ].forEach(needle => requireText('updateNpcDailySchedule', updateScheduleBody, needle));
 
+// Охрана и рабочие без авторского слота не должны проваливаться в общее
+// блуждание (трое охранников кучковались у точки спавна): запасной пост
+// детерминирован, разведён по рангу и не привязан к койкам/костру.
+const fallbackTargetBody = functionBody(server, 'npcRoutineFallbackTarget');
+[
+  "type === 'guard' || type === 'work'",
+  'objectAnchor: false',
+  'rank: npcRoutinePeerRank(room, enemy)'
+].forEach(needle => requireText('npcRoutineFallbackTarget', fallbackTargetBody, needle));
+const scheduleAnchorBody = functionBody(server, 'npcScheduleAnchor');
+requireText('npcScheduleAnchor', scheduleAnchorBody, "options.objectAnchor === false ? null : npcScheduleObjectAnchor(");
+requireText('npcScheduleAnchor', scheduleAnchorBody, '+ rank) % offsets.length');
+
+// Дружественный NPC не расследует добычу/удары своего игрока, а стрельбу
+// проверяет не больше одного — иначе охрана сходилась на кольцо у шума.
+const roomNoiseBody = functionBody(server, 'addRoomNoise');
+[
+  'enemy.hostileToPlayer === false && sourcePlayerInRoom && !serverActorHostileToPlayer(enemy, sourcePlayerInRoom)',
+  'if (!weaponNoise) continue;',
+  'if (!alreadyAssigned && activeInvestigatorsHere >= 1) continue;'
+].forEach(needle => requireText('addRoomNoise friendly gate', roomNoiseBody, needle));
+
+// У станции ретранслятора авторские посты охраны: по одному на каждого из
+// трёх сим-охранников, с разными позициями.
+try {
+  const relayStationDef = JSON.parse(require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'data', 'locations', 'relayStation.json'), 'utf8'));
+  const relayGuardSlots = (relayStationDef.objects || [])
+    .flatMap(row => (Array.isArray(row.activitySlots) ? row.activitySlots : []))
+    .filter(slot => slot && slot.type === 'guard');
+  if (relayGuardSlots.length < 3) errors.push(`relayStation must author at least 3 guard posts, found ${relayGuardSlots.length}`);
+  const relayGuardPoints = new Set(relayGuardSlots.map(slot => `${slot.position?.x}:${slot.position?.z}`));
+  if (relayGuardPoints.size !== relayGuardSlots.length) errors.push('relayStation guard posts must not share a position');
+  for (const slot of relayGuardSlots) {
+    if (Number(slot.capacity) !== 1) errors.push(`relayStation guard post ${slot.id} must have capacity 1`);
+    if (slot.visualAction !== 'guard') errors.push(`relayStation guard post ${slot.id} must use the guard visual action`);
+  }
+} catch (error) {
+  errors.push(`relayStation guard post checks failed: ${error?.message || String(error)}`);
+}
+
 const combatBranch = updateEnemiesBody.indexOf('if (factionCombatActors.has(enemy.id))');
 const dialogueBranch = updateEnemiesBody.indexOf('if (Number(enemy.dialogueFocusUntil || 0) > 0)');
 if (combatBranch < 0 || dialogueBranch < 0 || combatBranch >= dialogueBranch) {

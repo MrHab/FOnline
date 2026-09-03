@@ -72,6 +72,7 @@ namespace RealmOfAshes.Game
         public RoaCombatFx CombatFx;
         public RoaCombatPresentationFx CombatPresentation;
         public RoaAudio Audio;
+        public RoaRadio Radio;
         public RoaMovementFx MovementFx;
         public RoaMobileControls MobileControls;
         public RoaQuickbar Quickbar;
@@ -268,6 +269,12 @@ namespace RealmOfAshes.Game
 
             if (Pipboy == null) Pipboy = GetComponent<RoaPipboy>();
             if (Pipboy == null) Pipboy = gameObject.AddComponent<RoaPipboy>();
+            // Радио Pip-Boy: отдельный синтезированный эфир, читает канал из Pip-Boy
+            // и сводку пустоши из него же; общая громкость — через AudioListener.
+            if (Radio == null) Radio = GetComponent<RoaRadio>();
+            if (Radio == null) Radio = gameObject.AddComponent<RoaRadio>();
+            Radio.Pipboy = Pipboy;
+            Radio.Bootstrap = this;
             Pipboy.Configure(Socket, RemotePlayers, BaseUrl);
             if (ActorNameplates == null) ActorNameplates = GetComponent<RoaActorNameplates>();
             if (ActorNameplates == null) ActorNameplates = gameObject.AddComponent<RoaActorNameplates>();

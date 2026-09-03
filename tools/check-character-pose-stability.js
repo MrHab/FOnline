@@ -301,10 +301,21 @@ this.__poseApi = {
   // и без окна Begin/End смещение копилось бы каждый кадр (нога уходила по кругу).
   const characterViewSource = fs.readFileSync(path.join(UNITY_GAME, 'RoaCharacterView.cs'), 'utf8')
     .replace(/\r\n/g, '\n');
-  const beginAt = characterViewSource.indexOf('BeginBoneOffsets();\n            ApplyActivityPresentation(Time.deltaTime);');
+  // Окно открывается ДО направленной позы/приседа (RoaCharacterPose тоже пишет
+  // таз и позвоночник аддитивно) и закрывается после травм.
+  const beginAt = characterViewSource.indexOf('BeginBoneOffsets();\n            if (_pose.Ready)');
+  const poseApplyAt = characterViewSource.indexOf('_pose.Apply();');
+  const activityAt = characterViewSource.indexOf('ApplyActivityPresentation(Time.deltaTime);');
   const endAt = characterViewSource.indexOf('ApplyInjuryPose();\n            EndBoneOffsets();');
-  assert(beginAt > 0 && endAt > beginAt,
-    'RoaCharacterView: слои смещений костей должны идти внутри окна BeginBoneOffsets/EndBoneOffsets');
+  assert(beginAt > 0 && poseApplyAt > beginAt && activityAt > poseApplyAt && endAt > activityAt,
+    'RoaCharacterView: поза, активность, удар и травмы должны идти внутри окна BeginBoneOffsets/EndBoneOffsets');
+  assert(characterViewSource.includes('"pelvis"') && characterViewSource.includes('"neck_01"'),
+    'RoaCharacterView: таз и шея (neck_01) должны быть зарегистрированы в окне смещений');
+  const frozenBoneProbeSource = fs.readFileSync(path.join(ROOT, 'unity-client', 'Assets', 'Editor', 'RoaFrozenBoneProbe.cs'), 'utf8');
+  assert(frozenBoneProbeSource.includes('view.UpdateLocomotion(Vector3.zero, 0f, false, true)')
+    && frozenBoneProbeSource.includes('crouchDrift < 0.5f')
+    && frozenBoneProbeSource.includes('таз кувыркается в приседе на замороженной анимации'),
+    'RoaFrozenBoneProbe: нет проверки, что таз не кувыркается в приседе на замороженной анимации');
   assert(characterViewSource.includes('bone.localRotation = state.Base;')
     && characterViewSource.includes('entry.Value.Written = entry.Key.localRotation;')
     && characterViewSource.includes('_boneOffsets.Clear();'),

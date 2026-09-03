@@ -2404,6 +2404,25 @@ namespace RealmOfAshes.Game
                     button.onClick.AddListener(() => { Pipboy.RadioChannel = channel; _refreshAt = 0f; });
                     _radioRows.Add(row);
                 }
+
+                // Живой эфир выбранного канала: статус приёма и последние строки из
+                // сводки пустоши. Сам звук ведёт RoaRadio, страница только читает.
+                RoaRadio radio = RoaRadio.Active;
+                AddHeading(_radioRows, _radioList, "ЭФИР");
+                if (radio == null || Pipboy.RadioChannel == RoaRadio.ChannelSilence)
+                {
+                    AddTextCard(_radioRows, _radioList, "Приёмник отключён", "Остаётся только системный журнал.");
+                }
+                else
+                {
+                    AddTextCard(_radioRows, _radioList, radio.StatusLine,
+                        string.IsNullOrEmpty(radio.SignalLine) ? "Настройка на несущую…" : radio.SignalLine);
+                    IReadOnlyList<RoaRadio.Broadcast> lines = radio.Lines;
+                    if (lines.Count == 0)
+                        AddTextCard(_radioRows, _radioList, "Несущая", "Эфир пуст — ждём сводку пустоши.");
+                    for (int i = 0; i < lines.Count; i++)
+                        AddTextCard(_radioRows, _radioList, lines[i].Stamp, lines[i].Text);
+                }
             });
         }
 

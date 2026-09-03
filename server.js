@@ -10331,6 +10331,16 @@ function addRoomNoise(room, x, z, radius = ENEMY_HEARING_SHOT_RANGE, sourceId = 
     const maxRange = Number.isFinite(Number(radius)) ? Math.min(Number(radius), typeRange) : typeRange;
     if (d > maxRange) continue;
 
+    // Дружественный NPC не бежит проверять шум своего же игрока: добыча и
+    // удары в безопасном городе — не повод, а стрельбу проверяет не больше
+    // одного охранника. Раньше трое сходились на кольцо 1.3–3 м вокруг каждого
+    // выстрела или удара топора и толкали друг друга.
+    if (enemy.hostileToPlayer === false && sourcePlayerInRoom && !serverActorHostileToPlayer(enemy, sourcePlayerInRoom)) {
+      if (!weaponNoise) continue;
+      const alreadyAssigned = !!(sourceLock && sourceLock.assignedIds.has(enemy.id));
+      if (!alreadyAssigned && activeInvestigatorsHere >= 1) continue;
+    }
+
     // Шум не должен постепенно вытягивать всю комнату в центр карты.
     // Моб реагирует на звук только внутри своей домашней зоны интереса.
     const homeToNoise = Math.hypot(nx - home.x, nz - home.z);
@@ -14502,8 +14512,10 @@ function rebuildRoomEnemyAiLookupCaches(room) {
   room.enemyAttackersByTargetId = attackersByTargetId;
 }
 
-function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest') {
-  const authoredAnchor = npcScheduleObjectAnchor(room, loc, enemy, state);
+function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest', options = {}) {
+  // Пост охраны не привязывается к койкам и костру: objectAnchor=false
+  // оставляет только детерминированное смещение от дома.
+  const authoredAnchor = options.objectAnchor === false ? null : npcScheduleObjectAnchor(room, loc, enemy, state);
   if (authoredAnchor) return authoredAnchor;
   const seed = String(enemy.npcProfile?.id || enemy.id || 'npc');
   const base = normalizeLocationPoint(loc.spawn || loc.entryFromWorld, { tx: 19, tz: 19 });
@@ -14513,7 +14525,10 @@ function npcScheduleAnchor(room, loc = {}, enemy = {}, state = 'rest') {
     [-4, 1], [-2, 2], [1, 3], [3, 2],
     [-3, 4], [0, 5], [3, 4], [5, 1]
   ];
-  const index = Math.floor(npcStableRoll(seed, `anchor:${state}`) * offsets.length) % offsets.length;
+  // Ранг среди NPC той же роли разводит соседей по разным смещениям, даже
+  // если их дома совпадают (авторские NPC в одной точке).
+  const rank = Math.max(0, Math.floor(Number(options.rank || 0)));
+  const index = (Math.floor(npcStableRoll(seed, `anchor:${state}`) * offsets.length) + rank) % offsets.length;
   const offset = offsets[index] || [0, 0];
   let tx = home.tx;
   let tz = home.tz;
@@ -14625,6 +14640,21 @@ function npcActivityFacingLookPoint(enemy = {}, facing = 0) {
   };
 }
 
+// Порядковый номер NPC среди живых дружественных актёров той же роли в
+// комнате — стабильный ключ, по которому запасные посты разводятся в стороны.
+function npcRoutinePeerRank(room, enemy = {}) {
+  const role = String(enemy.wastelandWorkerRole || enemy.role || '').toLowerCase();
+  const keys = [];
+  for (const other of (room?.enemies || new Map()).values()) {
+    if (!other || other.dead || other.hostileToPlayer !== false) continue;
+    if (String(other.wastelandWorkerRole || other.role || '').toLowerCase() !== role) continue;
+    keys.push(npcScheduleActorSortKey(other));
+  }
+  keys.sort();
+  const index = keys.indexOf(npcScheduleActorSortKey(enemy));
+  return index < 0 ? 0 : index;
+}
+
 function npcRoutineFallbackTarget(room, loc = {}, enemy = {}, routinePackage = {}) {
   const type = npcRoutineSlotType(routinePackage.type || routinePackage.state || '');
   if (['rest', 'social'].includes(type)) {
@@ -14633,6 +14663,16 @@ function npcRoutineFallbackTarget(room, loc = {}, enemy = {}, routinePackage = {
   }
   if (type === 'shop') {
     return { x: Number(enemy.homeX || enemy.x || 0), z: Number(enemy.homeZ || enemy.z || 0) };
+  }
+  // Охрана и рабочие без авторского слота раньше получали null: рутина
+  // отказывалась, и NPC уходил в общее блуждание вокруг почти общей точки
+  // спавна — трое охранников кучковались и толкали друг друга. Теперь каждый
+  // получает свой детерминированный пост рядом с домом и стоит на нём.
+  if (type === 'guard' || type === 'work') {
+    return npcScheduleAnchor(room, loc, enemy, type, {
+      objectAnchor: false,
+      rank: npcRoutinePeerRank(room, enemy)
+    });
   }
   return null;
 }

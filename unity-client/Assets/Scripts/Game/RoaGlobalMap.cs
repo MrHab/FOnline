@@ -610,6 +610,19 @@ namespace RealmOfAshes.Game
         private GameObject _playerMarker;
         private GameObject _selectionMarker;
         private GameObject _cameraAnchor;
+
+        // Поза стратегической камеры переживает вход в локацию и перезапуск клиента:
+        // позиция якоря (в координатах корня карты), тангаж, рыскание и дистанция.
+        // Раньше каждый вход на карту сбрасывал камеру в авторскую точку.
+        private const string CameraPosePrefsPrefix = "roa.globalMap.camera.v1";
+        private const float CameraPoseSaveDelaySeconds = 0.75f;
+        public static bool RestoreSavedCameraPose = true;
+        private bool _cameraPoseTracked;
+        private Vector3 _cameraPoseTrackedAnchor;
+        private float _cameraPoseTrackedPitch;
+        private float _cameraPoseTrackedYaw;
+        private float _cameraPoseTrackedDistance;
+        private float _cameraPoseChangedAt = -1f;
         private Collider _terrainCollider;
         private MeshRenderer _boundaryDashRenderer;
         private MaterialPropertyBlock _boundaryFlashBlock;
@@ -844,6 +857,7 @@ namespace RealmOfAshes.Game
 
         private void OnDestroy()
         {
+            if (IsActive) SaveStrategicCameraPose();
             DetachSocket();
             RestoreMapLighting();
             ClearVisuals();
@@ -991,6 +1005,7 @@ namespace RealmOfAshes.Game
             _arrivalPending = false;
             if (_wastelandPoll != null) StopCoroutine(_wastelandPoll);
             _wastelandPoll = null;
+            SaveStrategicCameraPose();
             RestoreCamera();
             RestoreMapLighting();
             ClearVisuals();
@@ -2415,6 +2430,8 @@ namespace RealmOfAshes.Game
         private void Update()
         {
             if (!IsActive) return;
+
+            PersistStrategicCameraPoseIfChanged();
 
             if (_pendingEntry && !_locationEntryPending && _pendingArrival != null
                 && Time.realtimeSinceStartup >= _locationEntryRetryAt)
@@ -4411,7 +4428,27 @@ namespace RealmOfAshes.Game
             CameraRig.MinDistance = StrategicMinimumCameraDistance(span);
             CameraRig.MaxDistance = StrategicMaximumCameraDistance(span);
             CameraRig.Distance = Mathf.Clamp(span * 1.05f, CameraRig.MinDistance, CameraRig.MaxDistance);
+            // Дефолт выше — только для первого запуска: сохранённая поза перекрывает
+            // его, а кламп к границам и допустимым углам защищает от старых значений.
+            Vector3 savedAnchorLocal;
+            float savedPitch;
+            float savedYaw;
+            float savedDistance;
+            if (RestoreSavedCameraPose && _root != null
+                && TryLoadStrategicCameraPose(out savedAnchorLocal, out savedPitch, out savedYaw, out savedDistance))
+            {
+                Vector3 anchorWorld = _root.transform.TransformPoint(savedAnchorLocal);
+                anchorWorld.y = _cameraAnchor.transform.position.y;
+                _cameraAnchor.transform.position = ClampCameraPan(anchorWorld,
+                    MapWidthPoints * MapWorldScale, MapHeightPoints * MapWorldScale);
+                Vector3 pose = ClampStrategicCameraPose(savedPitch, savedYaw, savedDistance,
+                    CameraRig.MinDistance, CameraRig.MaxDistance);
+                CameraRig.PitchDeg = pose.x;
+                CameraRig.YawDeg = pose.y;
+                CameraRig.Distance = pose.z;
+            }
             CameraRig.SnapToTarget();
+            TrackStrategicCameraPose();
             ApplyDynamicPresentation(true);
         }
 
@@ -4432,6 +4469,90 @@ namespace RealmOfAshes.Game
             }
             CameraRig.ZoomPersistenceEnabled = true;
             _cameraSaved = false;
+        }
+
+        /// <summary>Тангаж/рыскание/дистанция в допустимых для стратегической камеры пределах.</summary>
+        public static Vector3 ClampStrategicCameraPose(float pitchDeg, float yawDeg, float distance,
+                                                       float minDistance, float maxDistance)
+        {
+            float pitch = float.IsNaN(pitchDeg) || float.IsInfinity(pitchDeg)
+                ? StrategicDefaultPitchDeg
+                : Mathf.Clamp(pitchDeg, StrategicMinimumPitchDeg, StrategicMaximumPitchDeg);
+            float yaw = float.IsNaN(yawDeg) || float.IsInfinity(yawDeg)
+                ? StrategicDefaultYawDeg
+                : Mathf.Repeat(yawDeg, 360f);
+            float dist = float.IsNaN(distance) || float.IsInfinity(distance)
+                ? maxDistance
+                : Mathf.Clamp(distance, minDistance, maxDistance);
+            return new Vector3(pitch, yaw, dist);
+        }
+
+        private bool TryLoadStrategicCameraPose(out Vector3 anchorLocal, out float pitchDeg,
+                                                out float yawDeg, out float distance)
+        {
+            anchorLocal = Vector3.zero;
+            pitchDeg = StrategicDefaultPitchDeg;
+            yawDeg = StrategicDefaultYawDeg;
+            distance = 0f;
+            if (!PlayerPrefs.HasKey(CameraPosePrefsPrefix + ".saved")) return false;
+            anchorLocal = new Vector3(
+                PlayerPrefs.GetFloat(CameraPosePrefsPrefix + ".x", 0f),
+                PlayerPrefs.GetFloat(CameraPosePrefsPrefix + ".y", 0f),
+                PlayerPrefs.GetFloat(CameraPosePrefsPrefix + ".z", 0f));
+            pitchDeg = PlayerPrefs.GetFloat(CameraPosePrefsPrefix + ".pitch", StrategicDefaultPitchDeg);
+            yawDeg = PlayerPrefs.GetFloat(CameraPosePrefsPrefix + ".yaw", StrategicDefaultYawDeg);
+            distance = PlayerPrefs.GetFloat(CameraPosePrefsPrefix + ".distance", 0f);
+            return distance > 0f;
+        }
+
+        private void SaveStrategicCameraPose()
+        {
+            if (CameraRig == null || _cameraAnchor == null || _root == null) return;
+            Vector3 local = _root.transform.InverseTransformPoint(_cameraAnchor.transform.position);
+            PlayerPrefs.SetFloat(CameraPosePrefsPrefix + ".x", local.x);
+            PlayerPrefs.SetFloat(CameraPosePrefsPrefix + ".y", local.y);
+            PlayerPrefs.SetFloat(CameraPosePrefsPrefix + ".z", local.z);
+            PlayerPrefs.SetFloat(CameraPosePrefsPrefix + ".pitch", CameraRig.PitchDeg);
+            PlayerPrefs.SetFloat(CameraPosePrefsPrefix + ".yaw", CameraRig.YawDeg);
+            PlayerPrefs.SetFloat(CameraPosePrefsPrefix + ".distance", CameraRig.Distance);
+            PlayerPrefs.SetInt(CameraPosePrefsPrefix + ".saved", 1);
+            PlayerPrefs.Save();
+            TrackStrategicCameraPose();
+        }
+
+        private void TrackStrategicCameraPose()
+        {
+            if (CameraRig == null || _cameraAnchor == null) return;
+            _cameraPoseTracked = true;
+            _cameraPoseTrackedAnchor = _cameraAnchor.transform.position;
+            _cameraPoseTrackedPitch = CameraRig.PitchDeg;
+            _cameraPoseTrackedYaw = CameraRig.YawDeg;
+            _cameraPoseTrackedDistance = CameraRig.Distance;
+            _cameraPoseChangedAt = -1f;
+        }
+
+        // Пан, орбита, зум колесом/щипком и «камера к игроку» меняют позу разными
+        // путями; вместо хуков в каждом сравниваем позу раз в кадр и пишем в
+        // PlayerPrefs, когда она устоялась. Так поза не теряется даже при
+        // закрытии клиента без выхода с карты.
+        private void PersistStrategicCameraPoseIfChanged()
+        {
+            if (!_cameraPoseTracked || CameraRig == null || _cameraAnchor == null) return;
+            bool changed = (_cameraAnchor.transform.position - _cameraPoseTrackedAnchor).sqrMagnitude > 0.0001f
+                || Mathf.Abs(CameraRig.PitchDeg - _cameraPoseTrackedPitch) > 0.01f
+                || Mathf.Abs(CameraRig.YawDeg - _cameraPoseTrackedYaw) > 0.01f
+                || Mathf.Abs(CameraRig.Distance - _cameraPoseTrackedDistance) > 0.01f;
+            if (changed)
+            {
+                _cameraPoseTrackedAnchor = _cameraAnchor.transform.position;
+                _cameraPoseTrackedPitch = CameraRig.PitchDeg;
+                _cameraPoseTrackedYaw = CameraRig.YawDeg;
+                _cameraPoseTrackedDistance = CameraRig.Distance;
+                _cameraPoseChangedAt = Time.unscaledTime;
+                return;
+            }
+            if (_cameraPoseChangedAt >= 0f && Time.unscaledTime - _cameraPoseChangedAt >= CameraPoseSaveDelaySeconds)
+                SaveStrategicCameraPose();
         }
 
         private void ClearVisuals()

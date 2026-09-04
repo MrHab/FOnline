@@ -435,8 +435,9 @@ assert(unityGlobalMap.includes('private const string CameraPosePrefsPrefix = "ro
 // Pip-Boy radio: the four browser channels keep their names, and in Unity the
 // selected channel streams real records from the built library
 // (tools/radio-library.py → public/radio/manifest.json + MP3): one station per
-// track so the channels sound different, shuffled playlist without immediate
-// repeats, next record preloaded. No synthesized sounds remain — without the
+// track so the channels sound different, and one shared schedule for every
+// player: a deterministic order per station (manifest seed) cycles from a common
+// epoch on server time, so switching channels lands mid-record like real radio. No synthesized sounds remain — without the
 // manifest the receiver stays silent and retries every minute. The "ЭФИР" list
 // comes from the public wasteland summary and the channel survives restarts.
 const unityRadio = read('unity-client/Assets/Scripts/Game/RoaRadio.cs');
@@ -458,10 +459,13 @@ assert(unityRadio.includes('private const string ChannelPrefsKey = "roa.radio.ch
 assert(unityRadio.includes('public const string ManifestPath = "/radio/manifest.json";')
   && unityRadio.includes('public static List<Track> ParseManifest(string json)')
   && unityRadio.includes('UnityWebRequestMultimedia.GetAudioClip(url, AudioType.MPEG)')
-  && unityRadio.includes('public static int NextTrackCursor(int count, int cursor, bool advance)')
+  && unityRadio.includes('public static List<int> BuildOrder(IReadOnlyList<Track> tracks, int channel, int seed)')
+  && unityRadio.includes('public static int SlotAt(double time, double cycle, double[] starts, out double offset)')
+  && unityRadio.includes('ClockOffsetFromDateHeader(request.GetResponseHeader("Date")')
+  && read('tools/radio-library.py').includes('"scheduleSeed"')
   && !unityRadio.includes('AudioClip.Create(')
   && read('tools/radio-library.py').includes('return [CHANNEL_SAFETY]'),
-  'Unity Pip-Boy radio must stream the built radio library, one station per track, with no synthesized sounds');
+  'Unity Pip-Boy radio must stream the built radio library on one shared server-time schedule, one station per track, with no synthesized sounds');
 assert(browserGlobalControls.includes('e.button !== 1 && e.button !== 2')
   && unityGlobalMap.includes('private bool UpdateCameraOrbit()')
   && unityGlobalMap.includes('Input.GetMouseButtonDown(2)')

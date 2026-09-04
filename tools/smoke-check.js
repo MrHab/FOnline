@@ -809,14 +809,16 @@ async function assertEditorAndWorldDataApis() {
   for (const loc of locationInstances) {
     instanceSeeds.push(Number(loc.seed || 0));
     instanceBounds.push(`${loc.playableBounds?.width || 0}x${loc.playableBounds?.height || 0}`);
+    // Районные тайники убраны по решению дизайна (уборка локаций: генератор
+    // worldSiteInstanceContainers отключён), поэтому у скрытого инстанса
+    // обязан быть массив контейнеров, но пустой — это норма.
     if (loc.runtimeMode !== 'worldSiteInstance'
       || !loc.worldSiteId
       || !loc.templateLocationId
       || !loc.description
       || !loc.playableBounds
       || (Array.isArray(loc.objects) && loc.objects.length > 0)
-      || !Array.isArray(loc.containers)
-      || loc.containers.length < 1) {
+      || !Array.isArray(loc.containers)) {
       fail(`hidden world location instance is incomplete: ${loc.id || 'unknown'}`, JSON.stringify(loc));
     }
   }

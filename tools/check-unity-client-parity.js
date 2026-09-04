@@ -433,8 +433,12 @@ assert(unityGlobalMap.includes('private const string CameraPosePrefsPrefix = "ro
   'Unity strategic camera pose must persist across location entry and client restarts');
 
 // Pip-Boy radio: the four browser channels keep their names, and in Unity the
-// selected channel actually plays a generated broadcast, feeds an "ЭФИР" list
-// from the public wasteland summary and remembers the channel across restarts.
+// selected channel streams real records from the built library
+// (tools/radio-library.py → public/radio/manifest.json + MP3): one station per
+// track so the channels sound different, shuffled playlist without immediate
+// repeats, next record preloaded. No synthesized sounds remain — without the
+// manifest the receiver stays silent and retries every minute. The "ЭФИР" list
+// comes from the public wasteland summary and the channel survives restarts.
 const unityRadio = read('unity-client/Assets/Scripts/Game/RoaRadio.cs');
 const unityRadioPipboy = read('unity-client/Assets/Scripts/Game/RoaPipboy.cs');
 const unityRadioCanvas = read('unity-client/Assets/Scripts/Game/RoaPipboyCanvas.cs');
@@ -444,14 +448,20 @@ for (const title of ['Поселенческий маяк', 'Пепельная 
     `Radio channel "${title}" must exist in both the browser and Unity Pip-Boy`);
 }
 assert(unityRadio.includes('private const string ChannelPrefsKey = "roa.radio.channel.v1";')
-  && unityRadio.includes('public const int ExpectedClipCount = 16;')
-  && unityRadio.includes('AudioClip.Create(')
   && unityRadio.includes('public static int ChannelForEvent(string type, string title)')
   && unityRadio.includes('Pipboy.EnsureWorldData();')
   && unityBootstrap.includes('Radio.Pipboy = Pipboy;')
   && unityRadioCanvas.includes('AddHeading(_radioRows, _radioList, "ЭФИР");')
+  && unityRadioCanvas.includes('radio.NowPlayingTitle')
   && read('unity-client/Assets/Editor/RoaClientAuditRunner.cs').includes('typeof(RoaRadioProbe)'),
-  'Unity Pip-Boy radio must synthesize its broadcast, persist the channel and show the live feed');
+  'Unity Pip-Boy radio must persist the channel, show the live feed and the current record');
+assert(unityRadio.includes('public const string ManifestPath = "/radio/manifest.json";')
+  && unityRadio.includes('public static List<Track> ParseManifest(string json)')
+  && unityRadio.includes('UnityWebRequestMultimedia.GetAudioClip(url, AudioType.MPEG)')
+  && unityRadio.includes('public static int NextTrackCursor(int count, int cursor, bool advance)')
+  && !unityRadio.includes('AudioClip.Create(')
+  && read('tools/radio-library.py').includes('return [CHANNEL_SAFETY]'),
+  'Unity Pip-Boy radio must stream the built radio library, one station per track, with no synthesized sounds');
 assert(browserGlobalControls.includes('e.button !== 1 && e.button !== 2')
   && unityGlobalMap.includes('private bool UpdateCameraOrbit()')
   && unityGlobalMap.includes('Input.GetMouseButtonDown(2)')

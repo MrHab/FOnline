@@ -2417,6 +2417,10 @@ namespace RealmOfAshes.Game
                 {
                     AddTextCard(_radioRows, _radioList, radio.StatusLine,
                         string.IsNullOrEmpty(radio.SignalLine) ? "Настройка на несущую…" : radio.SignalLine);
+                    // Пластинка из библиотеки (public/radio): сводка может перезаписать
+                    // строку сигнала, поэтому «сейчас играет» показывается отдельной карточкой.
+                    if (radio.MusicPlaying && !string.IsNullOrEmpty(radio.NowPlayingTitle))
+                        AddTextCard(_radioRows, _radioList, "♪ Сейчас играет", radio.NowPlayingTitle);
                     IReadOnlyList<RoaRadio.Broadcast> lines = radio.Lines;
                     if (lines.Count == 0)
                         AddTextCard(_radioRows, _radioList, "Несущая", "Эфир пуст — ждём сводку пустоши.");

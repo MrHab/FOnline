@@ -87,3 +87,8 @@ public/unity/
 # Облегчённые копии GLB (npm run build:models-lite), генерируются при деплое.
 public/assets/models-lite/
 unity-client/Data/
+
+# Библиотека музыки радио: исходники качает tools/radio-library.py fetch,
+# public/radio/ генерируется командой build при деплое.
+radio-library/
+public/radio/

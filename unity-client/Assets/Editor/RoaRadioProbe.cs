@@ -8,9 +8,10 @@ using UnityEngine;
 namespace RealmOfAshes.EditorTools
 {
     /// <summary>
-    /// Радио Pip-Boy: все клипы эфира синтезируются и не пусты, события сводки
-    /// раскладываются по каналам, счётчик угроз считает только враждебные
-    /// группы, выбор канала сохраняется и восстанавливается.
+    /// Радио Pip-Boy: синтезированных клипов больше нет — без манифеста приёмник
+    /// молчит; манифест библиотеки разбирается по маске каналов, курсор
+    /// плейлиста ходит по кругу, события сводки раскладываются по каналам,
+    /// счётчик угроз считает только враждебные группы, выбор канала сохраняется.
     /// </summary>
     public static class RoaRadioProbe
     {
@@ -27,8 +28,10 @@ namespace RealmOfAshes.EditorTools
                 host = new GameObject("RoaRadioProbe");
                 RoaRadio radio = host.AddComponent<RoaRadio>();
                 radio.EnsureBuilt();
-                Require(radio.GeneratedClipCount == RoaRadio.ExpectedClipCount,
-                    "радио сгенерировало " + radio.GeneratedClipCount + " клипов вместо " + RoaRadio.ExpectedClipCount);
+                Require(host.GetComponentsInChildren<AudioSource>(true).Length == 1,
+                    "у радио должен быть один источник — пластинка, без шума и джинглов");
+                Require(!radio.MusicPlaying && !radio.Playing && !radio.LibraryReady && radio.TrackCount == 0,
+                    "без манифеста библиотека должна быть пустой, а приёмник — молчать");
 
                 Require(RoaRadio.ChannelForEvent("raid", "Рейд на Свалочный город") == RoaRadio.ChannelSafety,
                     "рейд не попал в канал безопасности");
@@ -36,20 +39,36 @@ namespace RealmOfAshes.EditorTools
                     "караван не попал в поселенческий маяк");
                 Require(RoaRadio.ChannelForEvent("relay_signal", "Старый ретранслятор ожил") == RoaRadio.ChannelAsh,
                     "технический пакет не попал в пепельную частоту");
-                Require(RoaRadio.BeatInterval(RoaRadio.ChannelSafety, 0) > RoaRadio.BeatInterval(RoaRadio.ChannelSafety, 3),
-                    "тревога не учащается с ростом числа угроз");
-                Require(RoaRadio.BeatInterval(RoaRadio.ChannelSilence, 0) > 1000f,
-                    "«Тишина» продолжает бить ритм");
-                for (int note = 0; note < 8; note++)
-                    for (float roll = 0f; roll <= 1f; roll += 0.05f)
-                    {
-                        int next = RoaRadio.NextBeaconNote(note, roll);
-                        Require(next >= 0 && next < 8, "нота маяка вышла за пределы гаммы");
-                    }
+
+                // Манифест библиотеки (tools/radio-library.py build): каналы по маске,
+                // трек без каналов уходит в пепел, курсор плейлиста ходит по кругу.
+                var manifestTracks = RoaRadio.ParseManifest(new JObject
+                {
+                    ["version"] = 1,
+                    ["tracks"] = new JArray(
+                        new JObject { ["id"] = "a", ["file"] = "a.mp3", ["title"] = "Марш", ["artist"] = "Ансамбль", ["year"] = "1941", ["channels"] = new JArray("safety"), ["duration"] = 180.5 },
+                        new JObject { ["id"] = "b", ["file"] = "b.mp3", ["title"] = "Романс", ["channels"] = new JArray("ash") },
+                        new JObject { ["id"] = "c", ["file"] = "c.mp3", ["title"] = "Без каналов", ["channels"] = new JArray() },
+                        new JObject { ["id"] = "broken", ["title"] = "Без файла" })
+                }.ToString());
+                Require(manifestTracks.Count == 3, "манифест: ожидалось 3 трека с файлами, получено " + manifestTracks.Count);
+                Require(manifestTracks[0].OnChannel(RoaRadio.ChannelSafety) && !manifestTracks[0].OnChannel(RoaRadio.ChannelBeacon)
+                        && !manifestTracks[0].OnChannel(RoaRadio.ChannelAsh),
+                    "маска каналов трека разобрана неверно");
+                Require(manifestTracks[2].OnChannel(RoaRadio.ChannelAsh), "трек без каналов должен уйти в пепельную частоту");
+                Require(manifestTracks[0].Caption == "Марш — Ансамбль (1941)", "подпись трека собрана неверно: " + manifestTracks[0].Caption);
+                Require(RoaRadio.NextTrackCursor(3, 2, true) == 0 && RoaRadio.NextTrackCursor(3, 0, false) == 0
+                        && RoaRadio.NextTrackCursor(1, 0, true) == 0 && RoaRadio.NextTrackCursor(0, 5, true) == 0,
+                    "курсор плейлиста не ходит по кругу");
+                Require(RoaRadio.Plural(1, "запись", "записи", "записей") == "запись"
+                        && RoaRadio.Plural(23, "запись", "записи", "записей") == "записи"
+                        && RoaRadio.Plural(111, "запись", "записи", "записей") == "записей",
+                    "склонение числа записей");
 
                 radio.SetChannel(RoaRadio.ChannelSafety);
-                Require(radio.Channel == RoaRadio.ChannelSafety && radio.BedClipName == "RadioCarrierBed",
-                    "канал безопасности не переключил подложку на несущую");
+                Require(radio.Channel == RoaRadio.ChannelSafety && radio.StatusLine == "Канал безопасности"
+                        && radio.SignalLine == "Настройка на несущую…",
+                    "канал безопасности без манифеста должен ждать несущую: " + radio.StatusLine + " / " + radio.SignalLine);
                 Require(PlayerPrefs.GetInt(ChannelPrefsKey, -1) == RoaRadio.ChannelSafety,
                     "выбор канала не сохранён в PlayerPrefs");
 
@@ -72,21 +91,21 @@ namespace RealmOfAshes.EditorTools
                 Require(radio.DangerCount == 1, "счётчик угроз должен считать только живые враждебные группы: " + radio.DangerCount);
                 Require(radio.Lines.Count == 1 && radio.Lines[0].Text.StartsWith("Тревога: ", StringComparison.Ordinal),
                     "канал безопасности должен показывать только тревожные события");
-                Require(radio.StatusLine.Contains("тревога"), "статус канала безопасности не отражает угрозу");
+                Require(radio.StatusLine.Contains("тревога") && radio.SignalLine.EndsWith("Настройка на несущую…", StringComparison.Ordinal),
+                    "статус канала безопасности не отражает угрозу и состояние библиотеки");
 
                 radio.SetChannel(RoaRadio.ChannelBeacon);
                 radio.ApplyWasteland(wasteland);
-                Require(radio.BedClipName == "RadioBeaconPad" && radio.Lines.Count == 1
-                        && radio.Lines[0].Text.StartsWith("Маяк: ", StringComparison.Ordinal),
+                Require(radio.Lines.Count == 1 && radio.Lines[0].Text.StartsWith("Маяк: ", StringComparison.Ordinal),
                     "поселенческий маяк должен показывать торговые и поселенческие события");
                 radio.ApplyWasteland(wasteland);
                 Require(radio.Lines.Count == 1, "повторная сводка продублировала строки эфира");
 
                 radio.SetChannel(RoaRadio.ChannelSilence);
-                Require(string.IsNullOrEmpty(radio.BedClipName) && radio.StatusLine == "Приёмник отключён",
+                Require(radio.StatusLine == "Приёмник отключён" && string.IsNullOrEmpty(radio.NowPlayingTitle),
                     "«Тишина» не выключила приёмник");
 
-                Debug.Log("[РАДИО] готово: " + radio.GeneratedClipCount + " клипов эфира, каналы разложены, "
+                Debug.Log("[РАДИО] готово: без синтеза, манифест разбирается, каналы разложены, "
                     + "угрозы=" + radio.DangerCount + ", выбор канала сохраняется.");
             }
             catch (Exception error)

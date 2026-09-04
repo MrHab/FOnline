@@ -599,6 +599,9 @@ namespace RealmOfAshes.Game
         private static double Number(JToken token)
         {
             if (token == null || token.Type == JTokenType.Null) return 0d;
+            // Числовые JToken читаются напрямую: JValue.ToString() форматирует double
+            // текущей культурой, и "173,3" при инвариантном разборе молча даёт 0.
+            if (token.Type == JTokenType.Integer || token.Type == JTokenType.Float) return token.Value<double>();
             double value;
             return double.TryParse(token.ToString(), System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture, out value) ? value : 0d;

@@ -52,6 +52,29 @@ namespace RealmOfAshes.EditorTools
                 Require(beacon > 0 && ash > 0 && safety > 0, "какой-то канал остался без треков");
                 Require(multi == 0, "у " + multi + " треков не одна станция — каналы должны звучать по-разному");
 
+                // Общее расписание: что сейчас в эфире каждой станции по серверным часам.
+                int seed; double epoch;
+                RoaRadio.ReadScheduleSettings(manifest.downloadHandler.text, out seed, out epoch);
+                double clockOffset = RoaRadio.ClockOffsetFromDateHeader(manifest.GetResponseHeader("Date"),
+                    (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds);
+                double now = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds + clockOffset - epoch;
+                var onAir = new System.Text.StringBuilder();
+                for (int channel = RoaRadio.ChannelBeacon; channel <= RoaRadio.ChannelSafety; channel++)
+                {
+                    List<int> order = RoaRadio.BuildOrder(tracks, channel, seed);
+                    double cycle;
+                    double[] starts = RoaRadio.BuildStarts(tracks, order, out cycle);
+                    double offset;
+                    int slot = RoaRadio.SlotAt(now, cycle, starts, out offset);
+                    Require(slot >= 0 && slot < order.Count, "расписание канала " + channel + " не дало слот");
+                    RoaRadio.Track current = tracks[order[slot]];
+                    onAir.Append("\n  ").Append(RoaPipboy.RadioTitles[channel]).Append(": ").Append(current.Caption)
+                        .Append(offset >= current.SlotDuration ? " (пауза)" : " @ " + offset.ToString("F0") + " с")
+                        .Append(", цикл ").Append((cycle / 3600d).ToString("F1")).Append(" ч");
+                }
+                Debug.Log("[РАДИО·БИБЛИОТЕКА] в эфире сейчас (seed " + seed + ", поправка часов "
+                    + clockOffset.ToString("F1") + " с):" + onAir);
+
                 RoaRadio.Track track = tracks[tracks.Count / 2];
                 string url = baseUrl + "/radio/" + UnityWebRequest.EscapeURL(track.File).Replace("+", "%20");
                 Send(UnityWebRequestMultimedia.GetAudioClip(url, AudioType.MPEG), audio =>

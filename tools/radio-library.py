@@ -30,6 +30,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+import zlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 USER_AGENT = "RealmOfAshesRadio/1.0 (https://github.com/MrHab; radio library fetcher)"
@@ -425,9 +426,16 @@ def cmd_build(args):
     tiers = {}
     for t in tracks:
         tiers[t["tier"]] = tiers.get(t["tier"], 0) + 1
+    generated_at = time.strftime("%Y-%m-%dT%H:%M:%S")
     manifest = {
         "version": 1,
-        "generatedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "generatedAt": generated_at,
+        # Общее расписание эфира: клиенты считают текущую пластинку и смещение
+        # от серверных часов детерминированно (RoaRadio.BuildOrder/SlotAt),
+        # так что все игроки слышат одно и то же. Пересборка манифеста меняет
+        # порядок у всех одновременно.
+        "scheduleEpoch": 1767225600,
+        "scheduleSeed": zlib.crc32(generated_at.encode("utf-8")) & 0x7FFFFFFF,
         "channels": {CHANNEL_BEACON: 0, CHANNEL_ASH: 1, CHANNEL_SAFETY: 2},
         "counts": counts,
         "tiers": tiers,

@@ -2421,6 +2421,8 @@ namespace RealmOfAshes.Game
                     // строку сигнала, поэтому «сейчас играет» показывается отдельной карточкой.
                     if (radio.MusicPlaying && !string.IsNullOrEmpty(radio.NowPlayingTitle))
                         AddTextCard(_radioRows, _radioList, "♪ Сейчас играет", radio.NowPlayingTitle);
+                    if (!string.IsNullOrEmpty(radio.NextUpTitle))
+                        AddTextCard(_radioRows, _radioList, "Далее в эфире", radio.NextUpTitle);
                     IReadOnlyList<RoaRadio.Broadcast> lines = radio.Lines;
                     if (lines.Count == 0)
                         AddTextCard(_radioRows, _radioList, "Несущая", "Эфир пуст — ждём сводку пустоши.");

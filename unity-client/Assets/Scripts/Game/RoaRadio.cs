@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -13,11 +14,18 @@ namespace RealmOfAshes.Game
     /// tools/radio-library.py (public/radio/manifest.json + MP3), у каждого
     /// трека ровно одна станция, поэтому каналы звучат по-разному —
     /// маяк: народное и бытовое; пепел: романсы, арии, дореволюционные записи;
-    /// безопасность: марши и военные ансамбли. Синтезированных звуков больше
-    /// нет: без манифеста приёмник молчит и повторяет запрос раз в минуту.
-    /// Текстовая лента «эфира» строится из публичной сводки пустоши
-    /// (/api/wasteland). Выбор канала переживает перезапуск клиента. Радио —
-    /// чистая презентация: сервер о нём не знает, игровых эффектов нет.
+    /// безопасность: марши и военные ансамбли.
+    ///
+    /// Эфир общий для всех игроков: у каждой станции детерминированный порядок
+    /// пластинок (seed из манифеста) и непрерывный цикл от общей эпохи, а
+    /// текущая запись и смещение в ней считаются от серверных часов (заголовок
+    /// Date ответа с манифестом). Поэтому переключение канала попадает в
+    /// середину идущей пластинки, как на настоящем радио, и все слышат одно и
+    /// то же. Синтезированных звуков нет: без манифеста приёмник молчит и
+    /// повторяет запрос раз в минуту. Текстовая лента «эфира» строится из
+    /// публичной сводки пустоши (/api/wasteland). Выбор канала переживает
+    /// перезапуск клиента. Радио — чистая презентация: сервер о нём не знает,
+    /// игровых эффектов нет.
     /// </summary>
     public sealed class RoaRadio : MonoBehaviour
     {
@@ -28,6 +36,12 @@ namespace RealmOfAshes.Game
 
         /// <summary>Манифест библиотеки (tools/radio-library.py build → public/radio/manifest.json).</summary>
         public const string ManifestPath = "/radio/manifest.json";
+        /// <summary>Пауза тишины между пластинками в общем расписании.</summary>
+        public const double GapSeconds = 2.5d;
+        /// <summary>Общая эпоха расписания, если манифест её не задал: 2026-01-01T00:00:00Z.</summary>
+        public const double DefaultScheduleEpoch = 1767225600d;
+        /// <summary>Длина слота для записи без известной длительности.</summary>
+        public const double FallbackDuration = 180d;
 
         private const string ChannelPrefsKey = "roa.radio.channel.v1";
         private const float WorldRefreshSeconds = 20f;
@@ -35,9 +49,11 @@ namespace RealmOfAshes.Game
         private const float MusicVolume = 0.55f;
         private const float MusicFadeSpeed = 0.6f;
         private const float ManifestRetrySeconds = 60f;
-        private const float PreloadLeadSeconds = 8f;
-        private const float GapMinSeconds = 1.5f;
-        private const float GapMaxSeconds = 3.5f;
+        private const double PreloadLeadSeconds = 8d;
+        private const double DriftToleranceSeconds = 1.2d;
+        private const float DriftCheckSeconds = 2f;
+
+        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         private static readonly string[] HostileFactions =
         {
@@ -66,6 +82,8 @@ namespace RealmOfAshes.Game
             public float Duration;
 
             public bool OnChannel(int channel) { return (ChannelMask & (1 << channel)) != 0; }
+            /// <summary>Длительность в расписании: известная или запасная.</summary>
+            public double SlotDuration { get { return Duration > 1f ? Duration : FallbackDuration; } }
             public string Caption
             {
                 get
@@ -91,31 +109,38 @@ namespace RealmOfAshes.Game
         public bool LibraryReady { get; private set; }
         public int TrackCount { get { return _tracks.Count; } }
         /// <summary>Сколько треков библиотеки на текущем канале.</summary>
-        public int ChannelTrackCount { get { return _playlist.Count; } }
+        public int ChannelTrackCount { get { return _order.Count; } }
         public string NowPlayingTitle { get; private set; } = string.Empty;
+        public string NextUpTitle { get; private set; } = string.Empty;
         public bool MusicPlaying { get { return _music != null && _music.isPlaying && _music.clip != null; } }
         public bool Playing { get { return MusicPlaying && _music.volume > 0.001f; } }
+        /// <summary>Поправка местных часов к серверным, секунды (из заголовка Date манифеста).</summary>
+        public double ClockOffsetSeconds { get; private set; }
+        public int ScheduleSeed { get; private set; }
+        public double ScheduleEpoch { get; private set; } = DefaultScheduleEpoch;
 
         private readonly List<Broadcast> _lines = new List<Broadcast>();
         private readonly HashSet<string> _seenEventKeys = new HashSet<string>();
         private readonly List<Track> _tracks = new List<Track>();
-        private readonly List<int> _playlist = new List<int>();
+        private List<int> _order = new List<int>();
+        private double[] _starts = new double[0];
+        private double _cycle;
         private AudioSource _music;
         private AudioClip _nextClip;
-        private Track _nextTrack;
+        private int _nextSlot = -1;
+        private int _currentSlot = -1;
         private bool _hasCurrentTrack;
         private bool _loadingTrack;
         private bool _manifestRequested;
         private bool _manifestMissing;
         private bool _built;
         private float _nextManifestAttemptAt;
-        private float _nextTrackAt;
+        private float _nextLoadAttemptAt;
+        private float _nextDriftCheckAt;
         private float _nextWorldRefreshAt;
         private double _appliedWorldUpdatedAt = -1d;
-        private int _playlistCursor;
         private int _trackFailures;
         private int _trackRequest;
-        private uint _rng = 0x2f6b1a3du;
 
         private void Awake()
         {
@@ -168,8 +193,7 @@ namespace RealmOfAshes.Game
             _seenEventKeys.Clear();
             _appliedWorldUpdatedAt = -1d;
             StopMusic();
-            RebuildPlaylist();
-            _nextTrackAt = Time.unscaledTime + 1.2f;
+            RebuildSchedule();
             ApplyChannelPresentation();
             if (Pipboy != null && Pipboy.Wasteland != null) ApplyWasteland(Pipboy.Wasteland);
         }
@@ -208,8 +232,96 @@ namespace RealmOfAshes.Game
         }
 
         // ------------------------------------------------------------------
-        // Библиотека пластинок
+        // Общее расписание эфира
         // ------------------------------------------------------------------
+
+        /// <summary>Секунды от эпохи расписания по серверным часам.</summary>
+        public double ScheduleNow()
+        {
+            return UnixNow() + ClockOffsetSeconds - ScheduleEpoch;
+        }
+
+        private static double UnixNow()
+        {
+            return (DateTime.UtcNow - UnixEpoch).TotalSeconds;
+        }
+
+        /// <summary>
+        /// Порядок пластинок станции: индексы треков канала, перемешанные
+        /// детерминированно по seed манифеста и номеру канала — одинаково у всех клиентов.
+        /// </summary>
+        public static List<int> BuildOrder(IReadOnlyList<Track> tracks, int channel, int seed)
+        {
+            var order = new List<int>();
+            for (int i = 0; i < tracks.Count; i++)
+                if (tracks[i].OnChannel(channel)) order.Add(i);
+            uint state = unchecked((uint)seed * 2654435761u) ^ unchecked((uint)(channel + 1) * 0x9e3779b9u) ^ 0x2f6b1a3du;
+            for (int i = order.Count - 1; i > 0; i--)
+            {
+                state = state * 1664525u + 1013904223u;
+                int j = (int)(((state >> 8) & 0xffffffu) % (uint)(i + 1));
+                int swap = order[i];
+                order[i] = order[j];
+                order[j] = swap;
+            }
+            return order;
+        }
+
+        /// <summary>Начала слотов в цикле; слот = длительность записи + пауза; возвращает длину цикла.</summary>
+        public static double[] BuildStarts(IReadOnlyList<Track> tracks, IReadOnlyList<int> order, out double cycle)
+        {
+            var starts = new double[order.Count];
+            double at = 0d;
+            for (int i = 0; i < order.Count; i++)
+            {
+                starts[i] = at;
+                at += tracks[order[i]].SlotDuration + GapSeconds;
+            }
+            cycle = at;
+            return starts;
+        }
+
+        /// <summary>Слот расписания в момент time и смещение внутри слота (≥ длительности — пауза между записями).</summary>
+        public static int SlotAt(double time, double cycle, double[] starts, out double offset)
+        {
+            offset = 0d;
+            if (starts == null || starts.Length == 0 || cycle <= 0d) return -1;
+            double t = ((time % cycle) + cycle) % cycle;
+            int slot = starts.Length - 1;
+            for (int i = 1; i < starts.Length; i++)
+            {
+                if (starts[i] > t) { slot = i - 1; break; }
+            }
+            offset = t - starts[slot];
+            return slot;
+        }
+
+        /// <summary>Разбор seed и эпохи расписания из манифеста; без полей — значения по умолчанию.</summary>
+        public static void ReadScheduleSettings(string json, out int seed, out double epoch)
+        {
+            JObject root = JObject.Parse(json ?? "{}");
+            seed = (int)Number(root["scheduleSeed"]);
+            double parsedEpoch = Number(root["scheduleEpoch"]);
+            epoch = parsedEpoch > 0d ? parsedEpoch : DefaultScheduleEpoch;
+        }
+
+        /// <summary>Поправка часов из заголовка Date (RFC 1123) ответа сервера; 0, если заголовка нет.</summary>
+        public static double ClockOffsetFromDateHeader(string dateHeader, double localUnixNow)
+        {
+            DateTime serverTime;
+            if (string.IsNullOrEmpty(dateHeader) || !DateTime.TryParseExact(dateHeader, "r", CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out serverTime))
+                return 0d;
+            return (serverTime - UnixEpoch).TotalSeconds - localUnixNow;
+        }
+
+        private void RebuildSchedule()
+        {
+            _order = BuildOrder(_tracks, Channel, ScheduleSeed);
+            _starts = BuildStarts(_tracks, _order, out _cycle);
+            _currentSlot = -1;
+            NextUpTitle = string.Empty;
+        }
 
         private void UpdateLibrary()
         {
@@ -222,32 +334,60 @@ namespace RealmOfAshes.Game
                 }
                 return;
             }
-            if (_playlist.Count == 0 || _music == null) return;
+            if (_order.Count == 0 || _music == null) return;
 
-            float now = Time.unscaledTime;
-            if (MusicPlaying)
+            double offset;
+            int slot = SlotAt(ScheduleNow(), _cycle, _starts, out offset);
+            if (slot < 0) return;
+            Track track = _tracks[_order[slot]];
+            double slotDuration = track.SlotDuration;
+            bool inGap = offset >= slotDuration;
+
+            if (slot != _currentSlot)
             {
-                // Следующая пластинка подгружается заранее, чтобы между ними
-                // оставалась только короткая пауза.
-                float remaining = _music.clip.length - _music.time;
-                if (remaining <= PreloadLeadSeconds && _nextClip == null && !_loadingTrack)
-                    StartCoroutine(LoadTrack(PeekNextTrack(), true));
-                return;
-            }
-            if (_hasCurrentTrack && _music.clip != null && !_music.isPlaying)
-            {
+                // Новый слот: естественная смена, переключение канала или поздний вход.
                 ReleaseCurrentClip();
+                _hasCurrentTrack = false;
                 NowPlayingTitle = string.Empty;
-                _nextTrackAt = now + Mathf.Lerp(GapMinSeconds, GapMaxSeconds, NextUnit());
+                _currentSlot = slot;
+                NextUpTitle = _order.Count > 1 ? _tracks[_order[(slot + 1) % _order.Count]].Caption : string.Empty;
+                if (_nextClip != null && _nextSlot == slot)
+                {
+                    StartClip(track, _nextClip, offset);
+                    _nextClip = null;
+                    _nextSlot = -1;
+                }
+                else if (_nextClip != null)
+                {
+                    Destroy(_nextClip);
+                    _nextClip = null;
+                    _nextSlot = -1;
+                }
             }
-            if (now < _nextTrackAt || _loadingTrack) return;
-            if (_nextClip != null)
+
+            if (_hasCurrentTrack)
             {
-                StartClip(_nextTrack, _nextClip);
-                _nextClip = null;
-                return;
+                if (inGap)
+                {
+                    if (MusicPlaying) _music.Stop();
+                }
+                else if (MusicPlaying && Time.unscaledTime >= _nextDriftCheckAt)
+                {
+                    // Дрейф: часы клиента и декодер расходятся — подтягиваемся к расписанию.
+                    _nextDriftCheckAt = Time.unscaledTime + DriftCheckSeconds;
+                    if (Math.Abs(_music.time - offset) > DriftToleranceSeconds) Seek(offset);
+                }
             }
-            StartCoroutine(LoadTrack(PeekNextTrack(), false));
+            else if (!inGap && !_loadingTrack && Time.unscaledTime >= _nextLoadAttemptAt)
+            {
+                StartCoroutine(LoadTrack(slot, false));
+            }
+
+            // Следующая пластинка подгружается заранее, чтобы смена слота была бесшовной.
+            double remaining = slotDuration + GapSeconds - offset;
+            if (_order.Count > 1 && _nextClip == null && !_loadingTrack && remaining <= PreloadLeadSeconds
+                && Time.unscaledTime >= _nextLoadAttemptAt)
+                StartCoroutine(LoadTrack((slot + 1) % _order.Count, true));
         }
 
         private string RadioBaseUrl()
@@ -266,9 +406,15 @@ namespace RealmOfAshes.Game
                 yield return request.SendWebRequest();
                 _manifestRequested = false;
                 List<Track> parsed = null;
+                int seed = 0;
+                double epoch = DefaultScheduleEpoch;
                 if (request.result == UnityWebRequest.Result.Success)
                 {
-                    try { parsed = ParseManifest(request.downloadHandler.text); }
+                    try
+                    {
+                        parsed = ParseManifest(request.downloadHandler.text);
+                        ReadScheduleSettings(request.downloadHandler.text, out seed, out epoch);
+                    }
                     catch (Exception error) { Debug.LogWarning("[ROA] Радио: манифест не разобран: " + error.Message); }
                 }
                 if (parsed == null || parsed.Count == 0)
@@ -279,15 +425,18 @@ namespace RealmOfAshes.Game
                     ApplyChannelPresentation();
                     yield break;
                 }
+                ClockOffsetSeconds = ClockOffsetFromDateHeader(request.GetResponseHeader("Date"), UnixNow());
+                ScheduleSeed = seed;
+                ScheduleEpoch = epoch;
                 _manifestMissing = false;
                 _tracks.Clear();
                 _tracks.AddRange(parsed);
                 LibraryReady = true;
-                RebuildPlaylist();
-                _nextTrackAt = Time.unscaledTime + 0.5f;
+                RebuildSchedule();
                 ApplyChannelPresentation();
                 Debug.Log("[ROA] Радио: библиотека " + _tracks.Count + " треков, на канале "
-                    + RoaPipboy.RadioTitles[Channel] + " — " + _playlist.Count);
+                    + RoaPipboy.RadioTitles[Channel] + " — " + _order.Count + ", поправка часов "
+                    + ClockOffsetSeconds.ToString("F1", CultureInfo.InvariantCulture) + " с");
             }
         }
 
@@ -330,46 +479,18 @@ namespace RealmOfAshes.Game
             return result;
         }
 
-        /// <summary>Плейлист канала: перемешан детерминированно на сессию, без немедленных повторов.</summary>
-        private void RebuildPlaylist()
-        {
-            _playlist.Clear();
-            _playlistCursor = 0;
-            for (int i = 0; i < _tracks.Count; i++)
-                if (_tracks[i].OnChannel(Channel)) _playlist.Add(i);
-            for (int i = _playlist.Count - 1; i > 0; i--)
-            {
-                int j = Mathf.Clamp(Mathf.FloorToInt(NextUnit() * (i + 1)), 0, i);
-                int swap = _playlist[i];
-                _playlist[i] = _playlist[j];
-                _playlist[j] = swap;
-            }
-        }
-
-        private Track PeekNextTrack()
-        {
-            int index = _playlist[NextTrackCursor(_playlist.Count, _playlistCursor, _hasCurrentTrack)];
-            return _tracks[index];
-        }
-
-        /// <summary>Курсор плейлиста: по кругу; при одном треке он же и повторяется.</summary>
-        public static int NextTrackCursor(int count, int cursor, bool advance)
-        {
-            if (count <= 0) return 0;
-            int next = advance ? cursor + 1 : cursor;
-            return ((next % count) + count) % count;
-        }
-
-        private IEnumerator LoadTrack(Track track, bool preload)
+        private IEnumerator LoadTrack(int slot, bool preload)
         {
             _loadingTrack = true;
             int request = ++_trackRequest;
+            Track track = _tracks[_order[slot]];
             string url = RadioBaseUrl() + "/radio/" + UnityWebRequest.EscapeURL(track.File).Replace("+", "%20");
             using (UnityWebRequest web = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.MPEG))
             {
+                // Клип грузится целиком: по расписанию нужно вставать в середину записи,
+                // а перемотка потокового клипа ненадёжна.
                 var handler = web.downloadHandler as DownloadHandlerAudioClip;
-                if (handler != null && Application.platform != RuntimePlatform.WebGLPlayer)
-                    handler.streamAudio = true;
+                if (handler != null) handler.streamAudio = false;
                 yield return web.SendWebRequest();
                 _loadingTrack = false;
                 if (request != _trackRequest) yield break;
@@ -377,31 +498,43 @@ namespace RealmOfAshes.Game
                 if (clip == null)
                 {
                     _trackFailures++;
-                    _playlistCursor = NextTrackCursor(_playlist.Count, _playlistCursor, true);
-                    _nextTrackAt = Time.unscaledTime + Mathf.Min(30f, 2f * _trackFailures);
+                    _nextLoadAttemptAt = Time.unscaledTime + Mathf.Min(30f, 2f * _trackFailures);
                     Debug.LogWarning("[ROA] Радио: трек не загрузился: " + track.File + " — " + web.error);
                     yield break;
                 }
                 _trackFailures = 0;
                 if (preload)
                 {
+                    if (_nextClip != null) Destroy(_nextClip);
                     _nextClip = clip;
-                    _nextTrack = track;
+                    _nextSlot = slot;
+                    yield break;
                 }
-                else StartClip(track, clip);
+                double offset;
+                int nowSlot = SlotAt(ScheduleNow(), _cycle, _starts, out offset);
+                if (nowSlot == slot && nowSlot == _currentSlot && offset < track.SlotDuration) StartClip(track, clip, offset);
+                else Destroy(clip);
             }
         }
 
-        private void StartClip(Track track, AudioClip clip)
+        private void StartClip(Track track, AudioClip clip, double offset)
         {
             if (_music == null || clip == null) return;
             ReleaseCurrentClip();
-            _playlistCursor = NextTrackCursor(_playlist.Count, _playlistCursor, _hasCurrentTrack);
             _hasCurrentTrack = true;
             _music.clip = clip;
             _music.volume = 0f;
+            Seek(offset);
             _music.Play();
+            _nextDriftCheckAt = Time.unscaledTime + DriftCheckSeconds;
             NowPlayingTitle = track.Caption;
+        }
+
+        private void Seek(double offset)
+        {
+            if (_music == null || _music.clip == null) return;
+            float length = _music.clip.length;
+            _music.time = Mathf.Clamp((float)offset, 0f, Mathf.Max(0f, length - 0.05f));
         }
 
         private void ReleaseCurrentClip()
@@ -422,8 +555,11 @@ namespace RealmOfAshes.Game
                 ReleaseCurrentClip();
             }
             if (_nextClip != null) { Destroy(_nextClip); _nextClip = null; }
+            _nextSlot = -1;
+            _currentSlot = -1;
             _hasCurrentTrack = false;
             NowPlayingTitle = string.Empty;
+            NextUpTitle = string.Empty;
         }
 
         // ------------------------------------------------------------------
@@ -554,8 +690,9 @@ namespace RealmOfAshes.Game
                 return _manifestMissing
                     ? "Библиотека эфира недоступна, повтор запроса через минуту."
                     : "Настройка на несущую…";
-            if (_playlist.Count == 0) return "На этой частоте записей нет.";
-            return "В ротации " + _playlist.Count + " " + Plural(_playlist.Count, "запись", "записи", "записей") + ".";
+            if (_order.Count == 0) return "На этой частоте записей нет.";
+            return "В ротации " + _order.Count + " " + Plural(_order.Count, "запись", "записи", "записей")
+                + ", эфир общий для всех приёмников.";
         }
 
         private void ApplyChannelPresentation()
@@ -578,12 +715,6 @@ namespace RealmOfAshes.Game
             return many;
         }
 
-        private float NextUnit()
-        {
-            _rng = _rng * 1664525u + 1013904223u;
-            return ((_rng >> 8) & 0xffffu) / 65535f;
-        }
-
         private static bool ContainsAny(string haystack, params string[] needles)
         {
             for (int i = 0; i < needles.Length; i++)
@@ -603,8 +734,7 @@ namespace RealmOfAshes.Game
             // текущей культурой, и "173,3" при инвариантном разборе молча даёт 0.
             if (token.Type == JTokenType.Integer || token.Type == JTokenType.Float) return token.Value<double>();
             double value;
-            return double.TryParse(token.ToString(), System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out value) ? value : 0d;
+            return double.TryParse(token.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value) ? value : 0d;
         }
     }
 }
